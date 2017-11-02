@@ -14,6 +14,7 @@ module heun_driver
                                        , zero_rk4_cohort            & ! subroutine
                                        , integration_buff           & ! intent(out)
                                        , rk4site                    ! ! intent(out)
+      use ed_para_coms          , only : nthreads                   ! ! intent(in)
       use ed_state_vars         , only : edtype                     & ! structure
                                        , polygontype                & ! structure
                                        , sitetype                   & ! structure
@@ -73,20 +74,10 @@ module heun_driver
       real                                   :: old_can_prss
       real                                   :: patch_vels
       integer                                :: ibuff
-      integer                                :: nthreads
       integer                                :: npa_thread
       integer                                :: ita
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter  :: test_energy_sanity = .false.
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Find out the number of threads.                                                 !
-      !------------------------------------------------------------------------------------!
-      nthreads = 1
-      !$ nthreads = omp_get_max_threads()
       !------------------------------------------------------------------------------------!
 
       polyloop: do ipy = 1,cgrid%npolygons
@@ -222,11 +213,11 @@ module heun_driver
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,initp,patch_vels)
+                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
                   !------------------------------------------------------------------------!
 
                   !----- Get photosynthesis, stomatal conductance, and transpiration. -----!
-                  call canopy_photosynthesis(csite,cmet,nzg,ipa                            &
+                  call canopy_photosynthesis(csite,cmet,nzg,ipa,ibuff                      &
                                             ,cpoly%ntext_soil(:,isi)                       &
                                             ,cpoly%leaf_aging_factor(:,isi)                &
                                             ,cpoly%green_leaf_factor(:,isi))
@@ -532,7 +523,7 @@ module heun_driver
 
          !----- Get initial derivatives ---------------------------------------------------!
          call leaf_derivs(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,csite,ipa &
-                         ,h,.false.)
+                         ,ibuff,h,.false.)
 
          !----- Get scalings used to determine stability ----------------------------------!
          call get_yscal(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,h           &
@@ -657,12 +648,12 @@ module heun_driver
 
                   if (reject_result) then
                      !----- Run the LSM sanity check but this time we force the print. ----!
-                     call rk4_sanity_check(integration_buff(ibuff)%ytemp,test_reject,csite &
-                                          ,ipa,integration_buff(ibuff)%dydx,h,.true.)
+                     call rk4_sanity_check(ibuff,integration_buff(ibuff)%ytemp,test_reject &
+                                          ,csite,ipa,integration_buff(ibuff)%dydx,h,.true.)
                      call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                   elseif (reject_step) then
-                     call rk4_sanity_check(integration_buff(ibuff)%ak3,test_reject,csite   &
-                                          ,ipa,integration_buff(ibuff)%dydx,h,.true.)
+                     call rk4_sanity_check(ibuff,integration_buff(ibuff)%ak3,test_reject   &
+                                          ,csite,ipa,integration_buff(ibuff)%dydx,h,.true.)
                      call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                   else
                      call print_errmax(errmax,integration_buff(ibuff)%yerr                 &
@@ -684,13 +675,13 @@ module heun_driver
                !      need  to make some minor adjustments.                                !
                !---------------------------------------------------------------------------!
                !----- i.   Update leaf properties to avoid negative water. ----------------!
-               call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
+               call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa,ibuff)
                !----- ii.  Update of top soil properties to avoid off-bounds moisture. ----!
-               call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h)
+               call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,ibuff)
                !----- iii.  Make snow layers stable and positively defined. ---------------!
-               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp,h)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp,h,ibuff)
                !----- iv. Update the diagnostic variables. --------------------------------!
-               call update_diagnostic_vars(integration_buff(ibuff)%ytemp,csite,ipa)
+               call update_diagnostic_vars(integration_buff(ibuff)%ytemp,csite,ipa,ibuff)
                !---------------------------------------------------------------------------!
 
 
@@ -771,8 +762,8 @@ module heun_driver
                   integration_buff(ibuff)%y%sfcwater_energy(ksn) =                         &
                                   integration_buff(ibuff)%y%sfcwater_energy(ksn) - qwfree
 
-                  call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4)
-                  call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa)
+                  call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,ibuff)
+                  call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa,ibuff)
 
                   !----- Compute runoff for output ----------------------------------------!
                   if (fast_diagnostics) then
@@ -904,7 +895,7 @@ module heun_driver
       call copy_rk4_patch(integration_buff(ibuff)%y,integration_buff(ibuff)%ak3,cpatch)
       call inc_rk4_patch (integration_buff(ibuff)%ak3,integration_buff(ibuff)%dydx         &
                          ,heun_b21*h, cpatch)
-      call update_diagnostic_vars(integration_buff(ibuff)%ak3      ,csite,ipa)
+      call update_diagnostic_vars(integration_buff(ibuff)%ak3      ,csite,ipa,ibuff)
       !------------------------------------------------------------------------------------!
 
 
@@ -915,7 +906,7 @@ module heun_driver
       ! derivative correction using it, the Euler step must be bounded.  If not, reject    !
       ! the step and try a smaller step size.                                              !
       !------------------------------------------------------------------------------------!
-      call rk4_sanity_check(integration_buff(ibuff)%ak3,reject_step,csite,ipa              &
+      call rk4_sanity_check(ibuff,integration_buff(ibuff)%ak3,reject_step,csite,ipa        &
                            ,integration_buff(ibuff)%dydx,h,print_diags)
       if (reject_step) return
       !------------------------------------------------------------------------------------!
@@ -927,7 +918,7 @@ module heun_driver
       ! predicted state.                                                                   !
       !------------------------------------------------------------------------------------!
       call leaf_derivs(integration_buff(ibuff)%ak3,integration_buff(ibuff)%ak2, csite,ipa  &
-                      ,h,.false.)
+                      ,ibuff,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -947,7 +938,7 @@ module heun_driver
       ! will run the full adjustment, to make sure that the step will be rejected          !
       ! especially if there are issues with the top soil properties.                       !
       !------------------------------------------------------------------------------------!
-      call update_diagnostic_vars(integration_buff(ibuff)%ytemp,csite,ipa)
+      call update_diagnostic_vars(integration_buff(ibuff)%ytemp,csite,ipa,ibuff)
       !------------------------------------------------------------------------------------!
 
 
@@ -956,7 +947,7 @@ module heun_driver
       !    Check to see if this attempt of advancing one time step makes sense.  If not,   !
       ! reject the result and try a smaller step size.                                     !
       !------------------------------------------------------------------------------------!
-      call rk4_sanity_check(integration_buff(ibuff)%ytemp,reject_result,csite,ipa          &
+      call rk4_sanity_check(ibuff,integration_buff(ibuff)%ytemp,reject_result,csite,ipa    &
                            ,integration_buff(ibuff)%ak2,h,print_diags)
       if(reject_result)return
       !------------------------------------------------------------------------------------!

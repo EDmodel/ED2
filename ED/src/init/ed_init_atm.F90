@@ -38,6 +38,7 @@ subroutine ed_init_atm()
                                     , sendnum                      & ! intent(in)
                                     , recvnum                      ! ! intent(in)
 #endif
+   use ed_para_coms          , only : nthreads                     ! ! intent(in)
    use ed_therm_lib          , only : calc_veg_hcap                & ! subroutine
                                     , ed_grndvap                   ! ! subroutine
    use canopy_layer_coms     , only : canstr                       & ! intent(out)
@@ -62,7 +63,6 @@ subroutine ed_init_atm()
                                     , update_polygon_derived_props & ! sub-routine
                                     , read_soil_moist_temp         ! ! sub-routine
    use fusion_fission_coms   , only : ifusion                      ! ! intent(in)
-   !$ use omp_lib
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)        , pointer  :: cgrid
@@ -91,7 +91,6 @@ subroutine ed_init_atm()
    real                           :: can_exner
    real                           :: rvaux
    integer                        :: ibuff
-   integer                        :: nbuff
    !----- Local variables (MPI only). -----------------------------------------------------!
 #if defined(RAMS_MPI)
    integer                        :: ierr
@@ -116,10 +115,8 @@ subroutine ed_init_atm()
    !---------------------------------------------------------------------------------------!
    !    Initialize the canopy structure arrays.                                            !
    !---------------------------------------------------------------------------------------!
-   nbuff = 1
-   !$ nbuff= OMP_get_max_threads()
-   allocate(canstr(nbuff))
-   do ibuff=1,nbuff
+   allocate(canstr(nthreads))
+   do ibuff=1,nthreads
       call alloc_canopy_layer_mbs(canstr(ibuff))
    end do
    !---------------------------------------------------------------------------------------!
@@ -303,6 +300,10 @@ subroutine ed_init_atm()
             patchloop2: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
+               !------ Make dummy ibuff for the time being. -------------------------------!
+               ibuff = 1 + modulo(ipa-1,nthreads)
+               !---------------------------------------------------------------------------!
+
                if (csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0              &
                    .or. ied_init_mode == 7 ) then  ! The third is redundant, but keep it
 
@@ -384,7 +385,7 @@ subroutine ed_init_atm()
                end if
 
                !----- Initialise vegetation wind and turbulence parameters. ---------------!
-               call canopy_turbulence(cpoly,isi,ipa)
+               call canopy_turbulence(cpoly,isi,ipa,ibuff)
 
                !----- Compute the storage terms for CO2, energy, and water budgets. -------!
                call update_budget(csite,cpoly%lsl(isi),ipa)

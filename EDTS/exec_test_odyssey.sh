@@ -277,8 +277,8 @@ declare -a SITECPU=( ${CPU_M34} ${CPU_S67} ${CPU_HAR} ${CPU_PDG} ${CPU_TON} ${CP
 
 
 #----- POI debug time. --------------------------------------------------------------------#
-declare -a D_IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2007 2000 2011 2009)
-declare -a D_IYEARZS=(1501 1501 2008 1501 2001 2001 2002 1501 2006 2008 2001 2012 2010)
+declare -a D_IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2007 2000 2011 2008)
+declare -a D_IYEARZS=(1501 1501 2008 1501 2001 2001 2002 1501 2006 2008 2001 2012 2009)
 declare -a D_INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6    0   )
 declare -a D_RUNTYPS=( INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
@@ -323,10 +323,10 @@ rapid)
    echo " - Performing rapid tests (2 years for POI, 1 year for grid)"
 
    #----- POI tests will run for two years. -----------------------------------------------#
-   declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2007 2000 2011)
-   declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007 2009 2002 2013)
-   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6   )
-   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
+   declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2007 2000 2011 2008)
+   declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007 2009 2002 2013 2010)
+   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6    0   )
+   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
    #---------------------------------------------------------------------------------------#
 
@@ -350,10 +350,10 @@ medium)
    echo " - Performing intermediate tests (75 years for POI, 12 years for grid)"
 
    #----- POI tests will run for two years. -----------------------------------------------#
-   declare -a IYEARAS=(1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975)
-   declare -a IYEARZS=(2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050)
-   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6   )
-   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
+   declare -a IYEARAS=(1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975)
+   declare -a IYEARZS=(2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050)
+   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6    0   )
+   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
    #---------------------------------------------------------------------------------------#
 
@@ -377,10 +377,10 @@ long)
    echo " - Performing long tests (300 years for POI, 35 year for grid)"
 
    #----- POI tests will run for 300 years. -----------------------------------------------#
-   declare -a IYEARAS=(1500 1500 1500 1500 1500 1500 1500 1500 1500 1500 1500 1500)
-   declare -a IYEARZS=(1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800)
-   declare -a INITMDS=(0    0    0    0    0    0    0    0    0    0    0    0   )
-   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
+   declare -a IYEARAS=(1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800)
+   declare -a IYEARZS=(2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100)
+   declare -a INITMDS=(0    0    0    0    0    0    0    0    0    0    0    0    0   )
+   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#
 
@@ -1036,7 +1036,7 @@ do
       jobout=${HERE}/${VERSION}/main_${GRIDID[i]}.out
       joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_main
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=1"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
       jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
       jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
@@ -1054,7 +1054,7 @@ do
       jobout=${HERE}/${VERSION}/test_${GRIDID[i]}.out
       joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_test
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=1"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
       jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
       jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
@@ -1072,7 +1072,7 @@ do
       jobout=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
       joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_dbug
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=1"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
       jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
       jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"

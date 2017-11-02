@@ -4,7 +4,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
 
-   use ed_para_coms, only: mainnum,nmachs,machsize,machnum
+   use ed_para_coms, only: mainnum,nmachs,machsize,machnum,nthreads
    use ed_node_coms, only: mynum,nnodetot,sendnum,recvnum,master_num,machs
 
    implicit none
@@ -51,6 +51,7 @@ subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
      call MPI_Send(nmachs,1,MPI_INTEGER,machnum(nm),314,MPI_COMM_WORLD,ierr)
      call MPI_Send(machnum,nmachs,MPI_INTEGER,machnum(nm),315,MPI_COMM_WORLD,ierr)
      call MPI_Send(machsize,1,MPI_INTEGER,machnum(nm),316,MPI_COMM_WORLD,ierr)
+     call MPI_Send(nthreads,1,MPI_INTEGER,machnum(nm),317,MPI_COMM_WORLD,ierr)
    enddo
 #endif
 
@@ -1240,7 +1241,7 @@ subroutine ed_nodeget_processid(init)
                           , nnodetot   & ! intent(out)
                           , sendnum    & ! intent(out)
                           , recvnum    ! ! intent(out)
-
+   use ed_para_coms, only : nthreads   ! ! intent(out)
    implicit none
    integer :: init
 
@@ -1259,6 +1260,7 @@ subroutine ed_nodeget_processid(init)
       call MPI_Recv(nmachs,1,MPI_INTEGER,0,314,MPI_COMM_WORLD,status,ierr)
       call MPI_Recv(machs,nmachs,MPI_INTEGER,0,315,MPI_COMM_WORLD,status,ierr)
       call MPI_Recv(nnodetot,1,MPI_INTEGER,0,316,MPI_COMM_WORLD,status,ierr)
+      call MPI_Recv(nthreads,1,MPI_INTEGER,0,317,MPI_COMM_WORLD,status,ierr)
 
       recvnum = mynum-1
       sendnum = mynum+1

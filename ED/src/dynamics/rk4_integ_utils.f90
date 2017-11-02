@@ -8,7 +8,7 @@ module rk4_integ_utils
    !     This subroutine will drive the integration of several ODEs that drive the fast-   !
    ! -scale state variables.                                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine odeint(csite,ipa,isi,nsteps)
+   subroutine odeint(csite,ipa,isi,ibuff,nsteps)
 
       use ed_state_vars  , only : sitetype               & ! structure
                                 , patchtype              & ! structure
@@ -34,13 +34,13 @@ module rk4_integ_utils
                                 , simplerunoff           ! ! intent(in)
       use consts_coms    , only : wdnsi8                 ! ! intent(in)
       use therm_lib8     , only : tl2uint8               ! ! intent(in)
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)            , target      :: csite   ! Current site
       integer                   , intent(in)  :: ipa     ! Current patch ID
       integer                   , intent(in)  :: isi     ! Current site ID
+      integer                   , intent(in)  :: ibuff   ! Current thread ID
       integer                   , intent(out) :: nsteps  ! Number of steps taken.
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)           , pointer     :: cpatch  ! Current patch
@@ -54,13 +54,10 @@ module rk4_integ_utils
       real(kind=8)                            :: hdid    ! delta-t that worked (???)
       real(kind=8)                            :: qwfree  ! Free water internal energy
       real(kind=8)                            :: wfreeb  ! Free water 
-      integer                                 :: ibuff
       !----- External function. -----------------------------------------------------------!
       real                      , external    :: sngloff
       !------------------------------------------------------------------------------------!
 
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
 
       cpatch => csite%patch(ipa)
@@ -96,7 +93,7 @@ module rk4_integ_utils
 
          !----- Get initial derivatives ---------------------------------------------------!
          call leaf_derivs(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,csite,ipa &
-                         ,h,.false.)
+                         ,ibuff,h,.false.)
 
          !----- Get scalings used to determine stability ----------------------------------!
          call get_yscal(integration_buff(ibuff)%y, integration_buff(ibuff)%dydx,h          &
@@ -110,7 +107,7 @@ module rk4_integ_utils
          if ((x+h-tend)*(x+h-tbeg) > 0.d0) h = tend - x
 
          !----- Take the step -------------------------------------------------------------!
-         call rkqs(x,h,hgoal,hdid,hnext,csite,ipa,isi)
+         call rkqs(x,h,hgoal,hdid,hnext,csite,ipa,isi,ibuff)
 
          !----- If the integration reached the next step, make some final adjustments -----!
          if((x-tend)*dtrk4 >= 0.d0)then
@@ -148,8 +145,8 @@ module rk4_integ_utils
                                         integration_buff(ibuff)%y%sfcwater_energy(ksn)     &
                                       - qwfree
 
-                  call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4)
-                  call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa)
+                  call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,ibuff)
+                  call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa,ibuff)
 
                   !----- Compute runoff for output ----------------------------------------!
                   if (fast_diagnostics) then
@@ -1187,6 +1184,7 @@ module rk4_integ_utils
                                        , allocate_rk4_aux      & ! sub-routine
                                        , allocate_bdf2_patch   & ! sub-routine
                                        , deallocate_bdf2_patch ! ! sub-routine
+      use ed_para_coms          , only : nthreads              ! ! intent(in)
       use canopy_layer_coms     , only : tai_lyr_max           ! ! intent(in)
       use ed_misc_coms          , only : integration_scheme    & ! intent(in)
                                        , ibigleaf              ! ! intent(in)
@@ -1204,8 +1202,6 @@ module rk4_integ_utils
                                        , dealloc_radscratch    & ! sub-routine
                                        , nullify_radscratch    ! ! sub-routine
 
-      !$ use omp_lib
-
       implicit none
       !----- Argument ---------------------------------------------------------------------!
       logical           , intent(in) :: init
@@ -1220,14 +1216,10 @@ module rk4_integ_utils
       integer                        :: ipy
       integer                        :: isi
       integer                        :: ipa
-      integer                        :: nbuff
       integer                        :: ibuff
       !------------------------------------------------------------------------------------!
 
       ! With openmp, we need to initialize as many buffers as there are threads
-
-      nbuff = 1
-      !$ nbuff= OMP_get_max_threads()
 
 
       if (init) then
@@ -1235,20 +1227,20 @@ module rk4_integ_utils
          !---------------------------------------------------------------------------------!
          ! Initialize the photosynthesis arrays.
          !---------------------------------------------------------------------------------!
-         allocate(thispft(nbuff))
-         allocate(met(nbuff))
-         allocate(aparms(nbuff))
-         allocate(stopen(nbuff))
-         allocate(stclosed(nbuff))
-         allocate(rubiscolim(nbuff))
-         allocate(co2lim(nbuff))
-         allocate(lightlim(nbuff))
+         allocate(thispft(nthreads))
+         allocate(met(nthreads))
+         allocate(aparms(nthreads))
+         allocate(stopen(nthreads))
+         allocate(stclosed(nthreads))
+         allocate(rubiscolim(nthreads))
+         allocate(co2lim(nthreads))
+         allocate(lightlim(nthreads))
 
          !---------------------------------------------------------------------------------!
          ! Initialize radiation scratch space                                              !
          !---------------------------------------------------------------------------------!
-         allocate(radscr(nbuff))
-         do ibuff=1,nbuff
+         allocate(radscr(nthreads))
+         do ibuff=1,nthreads
             call nullify_radscratch(radscr(ibuff))
          end do
 
@@ -1256,13 +1248,13 @@ module rk4_integ_utils
          !     If this initialization, make sure soil and sfcwater arrays are allocated.   !
          !---------------------------------------------------------------------------------!
 
-         allocate(integration_buff(nbuff))
-         allocate(rk4aux(nbuff))
+         allocate(integration_buff(nthreads))
+         allocate(rk4aux(nthreads))
 
          select case (integration_scheme)
          case (3)
 
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                allocate(integration_buff(ibuff)%initp)
                allocate(integration_buff(ibuff)%ytemp)
                call allocate_rk4_patch(integration_buff(ibuff)%initp )
@@ -1271,7 +1263,7 @@ module rk4_integ_utils
          
          case default
             
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                allocate(integration_buff(ibuff)%initp )
                allocate(integration_buff(ibuff)%yscal )
                allocate(integration_buff(ibuff)%y     )
@@ -1296,14 +1288,14 @@ module rk4_integ_utils
          select case(integration_scheme) 
          case (0) !----- Euler. -----------------------------------------------------------!
 
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                allocate(integration_buff(ibuff)%dinitp)
                call allocate_rk4_patch(integration_buff(ibuff)%dinitp)
             end do
 
          case (1) !----- Runge-Kutta. -----------------------------------------------------!
 
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                allocate(integration_buff(ibuff)%ak2)
                allocate(integration_buff(ibuff)%ak3)
                allocate(integration_buff(ibuff)%ak4)
@@ -1320,7 +1312,7 @@ module rk4_integ_utils
             
          case (2) !----- Heun's. ----------------------------------------------------------!
 
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                allocate(integration_buff(ibuff)%ak2)
                allocate(integration_buff(ibuff)%ak3)
                call allocate_rk4_patch(integration_buff(ibuff)%ak2)
@@ -1329,7 +1321,7 @@ module rk4_integ_utils
 
          case (3) !----- Hybrid (forward Euler/BDF2)---------------------------------------!
             
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                allocate(integration_buff(ibuff)%dinitp)
                call allocate_rk4_patch(integration_buff(ibuff)%dinitp)
                allocate(integration_buff(ibuff)%yprev)
@@ -1343,15 +1335,15 @@ module rk4_integ_utils
          ! patches.                                                                        !
          !---------------------------------------------------------------------------------!
 
-         if(integration_scheme == 3)then
+         select case (integration_scheme)
+         case (3)
 
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                call deallocate_rk4_coh(integration_buff(ibuff)%initp )
                call deallocate_rk4_coh(integration_buff(ibuff)%ytemp )
             end do
-
-         else
-            do ibuff=1,nbuff
+         case default
+            do ibuff=1,nthreads
                call deallocate_rk4_coh(integration_buff(ibuff)%initp )
                call deallocate_rk4_coh(integration_buff(ibuff)%yscal )
                call deallocate_rk4_coh(integration_buff(ibuff)%y     )
@@ -1359,10 +1351,10 @@ module rk4_integ_utils
                call deallocate_rk4_coh(integration_buff(ibuff)%yerr  )
                call deallocate_rk4_coh(integration_buff(ibuff)%ytemp )
             end do
-         end if
+         end select
 
          !------ De-allocate the auxiliary structure. -------------------------------------!
-         do ibuff=1,nbuff
+         do ibuff=1,nthreads
             call deallocate_rk4_aux(rk4aux(ibuff))
          end do
 
@@ -1372,11 +1364,11 @@ module rk4_integ_utils
          !---------------------------------------------------------------------------------!
          select case(integration_scheme) 
          case (0) !----- Euler. -----------------------------------------------------------!
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                call deallocate_rk4_coh(integration_buff(ibuff)%dinitp)
             end do
          case (1) !----- Runge-Kutta. -----------------------------------------------------!
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                call deallocate_rk4_coh(integration_buff(ibuff)%ak2)
                call deallocate_rk4_coh(integration_buff(ibuff)%ak3)
                call deallocate_rk4_coh(integration_buff(ibuff)%ak4)
@@ -1385,12 +1377,12 @@ module rk4_integ_utils
                call deallocate_rk4_coh(integration_buff(ibuff)%ak7)
             end do
          case (2) !----- Heun's. ----------------------------------------------------------!
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                call deallocate_rk4_coh(integration_buff(ibuff)%ak2)
                call deallocate_rk4_coh(integration_buff(ibuff)%ak3)
             end do
          case (3) !----- Hybrid -----------------------------------------------------------!
-            do ibuff=1,nbuff
+            do ibuff=1,nthreads
                call deallocate_rk4_coh(integration_buff(ibuff)%dinitp)
                call deallocate_bdf2_patch(integration_buff(ibuff)%yprev)
             end do
@@ -1417,13 +1409,14 @@ module rk4_integ_utils
       ! write (unit=*,fmt='(a,1x,i5)') 'Maxcohort = ',maxcohort
 
       !----- Create new memory in each of the integration patches. ------------------------!
-      if(integration_scheme == 3)then
-         do ibuff=1,nbuff
+      select case (integration_scheme)
+      case (3)
+         do ibuff=1,nthreads
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%initp )
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ytemp )
          end do
-      else
-         do ibuff=1,nbuff
+      case default
+         do ibuff=1,nthreads
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%initp )
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%yscal )
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%y     )
@@ -1431,7 +1424,7 @@ module rk4_integ_utils
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%yerr  )
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ytemp )
          end do
-      end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -1440,11 +1433,11 @@ module rk4_integ_utils
       !------------------------------------------------------------------------------------!
       select case(integration_scheme) 
       case (0) !----- Euler. --------------------------------------------------------------!
-         do ibuff=1,nbuff
+         do ibuff=1,nthreads
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%dinitp)
          end do
       case (1) !----- Runge-Kutta. --------------------------------------------------------!
-         do ibuff=1,nbuff
+         do ibuff=1,nthreads
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak2   )
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak3   )
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak4   )
@@ -1453,12 +1446,12 @@ module rk4_integ_utils
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak7   )
          end do
       case (2) !----- Heun's. -------------------------------------------------------------!
-         do ibuff=1,nbuff
+         do ibuff=1,nthreads
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak2   )
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak3   )
          end do
       case (3) !----- Hybrid --------------------------------------------------------------!
-         do ibuff=1,nbuff
+         do ibuff=1,nthreads
             call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%dinitp)
             call allocate_bdf2_patch(integration_buff(ibuff)%yprev,maxcohort)
          end do
@@ -1488,15 +1481,15 @@ module rk4_integ_utils
          end do
       end select
     
-      do ibuff=1,nbuff
+      do ibuff=1,nthreads
          call dealloc_radscratch(radscr(ibuff))
       end do
-      do ibuff=1,nbuff
+      do ibuff=1,nthreads
          call alloc_radscratch(radscr(ibuff),maxcohort)
       end do
 
       !------ Allocate and initialise the auxiliary structure. ----------------------------!
-      do ibuff=1,nbuff
+      do ibuff=1,nthreads
          call allocate_rk4_aux(rk4aux(ibuff),nzg,nzs,maxcohort)
       end do
       !------------------------------------------------------------------------------------!
@@ -1650,11 +1643,17 @@ module rk4_integ_utils
    end subroutine initialize_misc_stepvars
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !   This subroutine is the main Runge-Kutta step driver.                                !
    !---------------------------------------------------------------------------------------!
-   subroutine rkqs(x,htry,hgoal,hdid,hnext,csite,ipa,isi)
+   subroutine rkqs(x,htry,hgoal,hdid,hnext,csite,ipa,isi,ibuff)
 
       use rk4_coms      , only : rk4patchtype              & ! structure
                                , integration_buff          & ! intent(inout)
@@ -1682,12 +1681,12 @@ module rk4_integ_utils
       use grid_coms     , only : nzg                       & ! intent(in)
                                , nzs                       ! ! intent(in)
       use ed_misc_coms  , only : dtlsm                     ! ! intent(in)
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer                  , intent(in)    :: ipa
       integer                  , intent(in)    :: isi
+      integer                  , intent(in)    :: ibuff
       type(sitetype)           , target        :: csite
       real(kind=8)             , intent(in)    :: htry
       real(kind=8)             , intent(inout) :: hgoal
@@ -1701,11 +1700,7 @@ module rk4_integ_utils
       logical                                  :: minstep,stuck,test_reject
       logical                                  :: gapstep
       integer                                  :: k
-      integer                                  :: ibuff
       !------------------------------------------------------------------------------------!
-
-      ibuff=1
-      !$ ibuff = OMP_get_thread_num()+1
 
       gapstep     =  htry < hgoal
       h           =  htry
@@ -1715,7 +1710,7 @@ module rk4_integ_utils
          !---------------------------------------------------------------------------------!
          ! 1. Try a step of varying size.                                                  !
          !---------------------------------------------------------------------------------!
-         call rkck(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx                  &
+         call rkck(ibuff,integration_buff(ibuff)%y,integration_buff(ibuff)%dydx            &
                   ,integration_buff(ibuff)%ytemp,integration_buff(ibuff)%yerr              &
                   ,integration_buff(ibuff)%ak2,integration_buff(ibuff)%ak3                 &
                   ,integration_buff(ibuff)%ak4,integration_buff(ibuff)%ak5                 &
@@ -1810,12 +1805,12 @@ module rk4_integ_utils
 
                if (reject_result) then
                   !----- Run the LSM sanity check but this time we force the print. -------!
-                  call rk4_sanity_check(integration_buff(ibuff)%ytemp,test_reject,csite    &
-                                       ,ipa,integration_buff(ibuff)%dydx,h,.true.)
+                  call rk4_sanity_check(ibuff,integration_buff(ibuff)%ytemp,test_reject    &
+                                       ,csite,ipa,integration_buff(ibuff)%dydx,h,.true.)
                   call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                elseif (reject_step) then
-                  call rk4_sanity_check(integration_buff(ibuff)%ak7,test_reject,csite,ipa  &
-                                       ,integration_buff(ibuff)%dydx,h,.true.)
+                  call rk4_sanity_check(ibuff,integration_buff(ibuff)%ak7,test_reject      &
+                                       ,csite,ipa,integration_buff(ibuff)%dydx,h,.true.)
                   call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                else
                   call print_errmax(errmax,integration_buff(ibuff)%yerr                    &
@@ -1837,13 +1832,13 @@ module rk4_integ_utils
             !      to do some minor adjustments before...                                  !
             !------------------------------------------------------------------------------!
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
-            call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
+            call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa,ibuff)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h)
+            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,ibuff)
             !----- iii. Make temporary surface water stable and positively defined. -------!
-            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h)
+            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h,ibuff)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
-            call update_diagnostic_vars(integration_buff(ibuff)%ytemp, csite,ipa)
+            call update_diagnostic_vars(integration_buff(ibuff)%ytemp, csite,ipa,ibuff)
             !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
@@ -1904,7 +1899,7 @@ module rk4_integ_utils
    !=======================================================================================!
    !    This subroutine will update the variables and perform the actual time stepping.    !
    !---------------------------------------------------------------------------------------!
-   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,h,csite,ipa                  &
+   subroutine rkck(ibuff,y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,h,csite,ipa              &
                   ,reject_step,reject_result)
 
       use rk4_coms       , only : rk4patchtype           & ! structure
@@ -1951,6 +1946,7 @@ module rk4_integ_utils
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
+      integer           , intent(in)  :: ibuff
       integer           , intent(in)  :: ipa
       real(kind=8)      , intent(in)  :: h
       type(rk4patchtype), target      :: y,dydx,yout,yerr
@@ -1992,14 +1988,14 @@ module rk4_integ_utils
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b21*h, cpatch)
       combh = rk4_b21*h
-      call update_diagnostic_vars(ak7, csite,ipa)
-      call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
+      call update_diagnostic_vars(ak7, csite,ipa,ibuff)
+      call rk4_sanity_check(ibuff,ak7, reject_step, csite, ipa,dydx,h,print_diags)
       if (reject_step) return
       !------------------------------------------------------------------------------------!
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak2, csite, ipa,h,.false.)
+      call leaf_derivs(ak7, ak2, csite, ipa,ibuff,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -2011,14 +2007,14 @@ module rk4_integ_utils
       call inc_rk4_patch(ak7, dydx, rk4_b31*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, rk4_b32*h, cpatch)
       combh = (rk4_b31+rk4_b32)*h
-      call update_diagnostic_vars(ak7, csite,ipa)
-      call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
+      call update_diagnostic_vars(ak7, csite,ipa,ibuff)
+      call rk4_sanity_check(ibuff,ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
       !------------------------------------------------------------------------------------!
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak3, csite,ipa,h,.false.)
+      call leaf_derivs(ak7, ak3, csite,ipa,ibuff,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -2031,14 +2027,14 @@ module rk4_integ_utils
       call inc_rk4_patch(ak7,  ak2, rk4_b42*h, cpatch)
       call inc_rk4_patch(ak7,  ak3, rk4_b43*h, cpatch)
       combh = (rk4_b41+rk4_b42+rk4_b43)*h
-      call update_diagnostic_vars(ak7, csite,ipa)
-      call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
+      call update_diagnostic_vars(ak7, csite,ipa,ibuff)
+      call rk4_sanity_check(ibuff,ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if (reject_step) return
       !------------------------------------------------------------------------------------!
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak4, csite, ipa,h,.false.)
+      call leaf_derivs(ak7, ak4, csite, ipa,ibuff,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -2052,14 +2048,14 @@ module rk4_integ_utils
       call inc_rk4_patch(ak7,  ak3, rk4_b53*h, cpatch)
       call inc_rk4_patch(ak7,  ak4, rk4_b54*h, cpatch)
       combh = (rk4_b51+rk4_b52+rk4_b53+rk4_b54)*h
-      call update_diagnostic_vars(ak7, csite,ipa)
-      call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
+      call update_diagnostic_vars(ak7, csite,ipa,ibuff)
+      call rk4_sanity_check(ibuff,ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
       !------------------------------------------------------------------------------------!
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak5, csite, ipa,h,.false.)
+      call leaf_derivs(ak7, ak5, csite, ipa,ibuff,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -2074,14 +2070,14 @@ module rk4_integ_utils
       call inc_rk4_patch(ak7,  ak4, rk4_b64*h, cpatch)
       call inc_rk4_patch(ak7,  ak5, rk4_b65*h, cpatch)
       combh = (rk4_b61+rk4_b62+rk4_b63+rk4_b64+rk4_b65)*h
-      call update_diagnostic_vars(ak7, csite,ipa)
-      call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
+      call update_diagnostic_vars(ak7, csite,ipa,ibuff)
+      call rk4_sanity_check(ibuff,ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
       !------------------------------------------------------------------------------------!
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak6, csite,ipa,h,.false.)
+      call leaf_derivs(ak7, ak6, csite,ipa,ibuff,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -2095,8 +2091,8 @@ module rk4_integ_utils
       call inc_rk4_patch(yout,  ak4, rk4_c4*h, cpatch)
       call inc_rk4_patch(yout,  ak6, rk4_c6*h, cpatch)
       combh = (rk4_c1+rk4_c3+rk4_c4+rk4_c6)*h
-      call update_diagnostic_vars   (yout, csite,ipa)
-      call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
+      call update_diagnostic_vars   (yout, csite,ipa,ibuff)
+      call rk4_sanity_check(ibuff,yout, reject_result, csite,ipa,dydx,h,print_diags)
       !------------------------------------------------------------------------------------!
       if(reject_result)return
       !------------------------------------------------------------------------------------!
@@ -2131,7 +2127,7 @@ module rk4_integ_utils
    ! and lower bound are defined in rk4_coms.f90, so if you need to change any limit for   !
    ! some reason, you can adjust there.                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine rk4_sanity_check(y,reject_step, csite,ipa,dydx,h,print_problems)
+   subroutine rk4_sanity_check(ibuff,y,reject_step, csite,ipa,dydx,h,print_problems)
       use rk4_coms              , only : rk4patchtype          & ! structure
                                        , integration_vars      & ! structure
                                        , rk4site               & ! intent(in)
@@ -2163,10 +2159,10 @@ module rk4_integ_utils
       use ed_state_vars         , only : sitetype              & ! structure
                                        , patchtype             ! ! structure
       use grid_coms             , only : nzg                   ! ! intent(in)
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
+      integer                          :: ibuff
       type(rk4patchtype) , target      :: y
       type(rk4patchtype) , target      :: dydx
       type(sitetype)     , target      :: csite
@@ -2185,11 +2181,7 @@ module rk4_integ_utils
       logical                          :: cflag8
       logical                          :: cflag9
       logical                          :: cflag10
-      integer                          :: ibuff
       !------------------------------------------------------------------------------------!
-
-      ibuff=1
-      !$ ibuff = OMP_get_thread_num()+1
 
 
       !----- Be optimistic and start assuming that things are fine. -----------------------!

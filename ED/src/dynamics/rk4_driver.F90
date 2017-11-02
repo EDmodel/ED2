@@ -17,6 +17,7 @@ module rk4_driver
                                         , zero_rk4_patch             & ! subroutine
                                         , zero_rk4_cohort            & ! subroutine
                                         , integration_buff           ! ! intent(out)
+      use ed_para_coms           , only : nthreads                   ! ! intent(in)
       use ed_state_vars          , only : edtype                     & ! structure
                                         , polygontype                & ! structure
                                         , sitetype                   ! ! structure
@@ -79,22 +80,12 @@ module rk4_driver
       real                                    :: old_can_prss
       real                                    :: patch_vels
       integer                                 :: ibuff
-      integer                                 :: nthreads
       integer                                 :: npa_thread
       integer                                 :: ita
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter   :: test_energy_sanity = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Find out the number of threads.                                                 !
-      !------------------------------------------------------------------------------------!
-      nthreads = 1
-      !$ nthreads = omp_get_max_threads()
       !------------------------------------------------------------------------------------!
 
 
@@ -250,12 +241,13 @@ module rk4_driver
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,initp,patch_vels)
+                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
                   !------------------------------------------------------------------------!
 
 
                   !----- Get photosynthesis, stomatal conductance, and transpiration. -----!
-                  call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%ntext_soil(:,isi)    &
+                  call canopy_photosynthesis(csite,cmet,nzg,ipa,ibuff                      &
+                                            ,cpoly%ntext_soil(:,isi)                       &
                                             ,cpoly%leaf_aging_factor(:,isi)                &
                                             ,cpoly%green_leaf_factor(:,isi))
                   !------------------------------------------------------------------------!
@@ -276,7 +268,7 @@ module rk4_driver
                   !------------------------------------------------------------------------!
                   !    This is the driver for the integration process...                   !
                   !------------------------------------------------------------------------!
-                  call integrate_patch_rk4(csite,initp,ipa,isi                             &
+                  call integrate_patch_rk4(csite,initp,ipa,isi,ibuff                       &
                                           ,cpoly%nighttime(isi),wcurr_loss2atm             &
                                           ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm    &
                                           ,wcurr_loss2drainage,ecurr_loss2drainage         &
@@ -339,7 +331,7 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_rk4(csite,initp,ipa,isi,nighttime,wcurr_loss2atm             &
+   subroutine integrate_patch_rk4(csite,initp,ipa,isi,ibuff,nighttime,wcurr_loss2atm       &
                                  ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm             &
                                  ,wcurr_loss2drainage,ecurr_loss2drainage                  &
                                  ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
@@ -359,6 +351,7 @@ module rk4_driver
       type(rk4patchtype)    , target      :: initp
       integer               , intent(in)  :: ipa
       integer               , intent(in)  :: isi
+      integer               , intent(in)  :: ibuff
       logical               , intent(in)  :: nighttime
       real                  , intent(out) :: wcurr_loss2atm
       real                  , intent(out) :: ecurr_netrad
@@ -383,7 +376,7 @@ module rk4_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-      call odeint(csite,ipa,isi,nsteps)
+      call odeint(csite,ipa,isi,ibuff,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !

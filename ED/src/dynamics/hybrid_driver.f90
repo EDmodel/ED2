@@ -19,6 +19,7 @@ module hybrid_driver
                                       , tend               &
                                       , dtrk4              &
                                       , dtrk4i
+     use ed_para_coms          , only : nthreads           ! ! intent(in)
      use rk4_driver            , only : initp2modelp
      use ed_state_vars         , only : edtype             & ! structure
                                       , polygontype        & ! structure
@@ -87,7 +88,6 @@ module hybrid_driver
      real                                   :: wtime0
      real(kind=8)                           :: hbeg
      integer                                :: ibuff
-     integer                                :: nthreads
      integer                                :: npa_thread
      integer                                :: ita
      !----- Local constants. -----------------------------------------------!
@@ -95,13 +95,6 @@ module hybrid_driver
      !----- External functions. --------------------------------------------!
      real, external                         :: walltime
      !----------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !    Find out the number of threads.                                                 !
-      !------------------------------------------------------------------------------------!
-      nthreads = 1
-      !$ nthreads = omp_get_max_threads()
-      !------------------------------------------------------------------------------------!
 
      polyloop: do ipy = 1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
@@ -235,7 +228,7 @@ module hybrid_driver
                  !------------------------------------------------------------------!
                  !     Set up the integration patch.                                !
                  !------------------------------------------------------------------!
-                 call copy_patch_init(csite,ipa,initp,patch_vels)
+                 call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
 
                  !------------------------------------------------------------------!
                  !     Set up the buffer for the previous step's leaf temperature   !
@@ -244,7 +237,7 @@ module hybrid_driver
 
                  !----- Get photosynthesis, stomatal conductance,
                  !                                    and transpiration. -----------!
-                 call canopy_photosynthesis(csite,cmet,nzg,ipa,                     &
+                 call canopy_photosynthesis(csite,cmet,nzg,ipa,ibuff,               &
                       cpoly%ntext_soil(:,isi),cpoly%leaf_aging_factor(:,isi),       &
                       cpoly%green_leaf_factor(:,isi))
 
@@ -292,7 +285,7 @@ module hybrid_driver
                   !----- Go into the ODE integrator using Euler. ----------------------------!
 
                   call hybrid_integ(hbeg,csite,yprev,initp,dinitp,                         &
-                       ytemp,ipa,isi,nsteps)
+                       ytemp,ipa,isi,ibuff,nsteps)
 
                   !--------------------------------------------------------------------------!
                   !  Normalize canopy-atmosphere flux values.  These values are updated ever !
@@ -361,7 +354,8 @@ module hybrid_driver
     !  This subroutine will drive the integration of several ODEs that drive     !
     !  the fast-scale state variables.                                           !
     !----------------------------------------------------------------------------!
-    subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,isi,nsteps)
+    subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,isi,ibuff      &
+                           ,nsteps)
       use ed_state_vars  , only : sitetype                  & ! structure
                                 , patchtype                 ! ! structure
       use rk4_coms       , only : integration_vars          & ! structure
@@ -411,7 +405,6 @@ module hybrid_driver
                                 , t3ple8                    & ! intent(in)
                                 , tsupercool_liq8               & ! intent(in)
                                 , wdnsi8                    ! ! intent(in)
-      !$ use omp_lib
       implicit none
       !----- Arguments ----------------------------------------------------------!
       type(sitetype)            , target      :: csite   ! Current site
@@ -423,6 +416,7 @@ module hybrid_driver
 
       integer                   , intent(in)  :: ipa     ! Current patch ID
       integer                   , intent(in)  :: isi     ! Current site ID
+      integer                   , intent(in)  :: ibuff   ! Multithread ID
       real(kind=8)              , intent(in)  :: h1      ! First guess of delta-t
       integer                   , intent(out) :: nsteps  ! Number of steps taken.
       !----- Local variables ----------------------------------------------------!
@@ -459,13 +453,9 @@ module hybrid_driver
                                                               ! time.
       integer                                 :: nsolve       ! Size of a badger
 
-      integer                                 :: ibuff
       !----- External function. -------------------------------------------------!
       real                      , external    :: sngloff
       !--------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Use some aliases for simplicity. -----------------------------------!
       cpatch => csite%patch(ipa)
@@ -493,7 +483,7 @@ module hybrid_driver
          reject_step =  .false.
          hstep:   do
 
-            call leaf_derivs(initp,dinitp,csite,ipa,h,.true.)
+            call leaf_derivs(initp,dinitp,csite,ipa,ibuff,h,.true.)
 
             !---------------------------------------------------------------------!
             ! Very simple analysis of derivative.  ie try to reduce drastic
@@ -552,7 +542,7 @@ module hybrid_driver
             !--------------------------------------------------------------------!
             !   Integrate the implicit/backwards step                            !
             !--------------------------------------------------------------------!
-            call bdf2_solver(cpatch,yprev,initp,ytemp,dinitp,h, &
+            call bdf2_solver(ibuff,cpatch,yprev,initp,ytemp,dinitp,h, &
                  dble(csite%hprev(ipa)))
 
             !----- Perform a sanity check on canopy,leaf and wood stuff ---------!
@@ -647,16 +637,16 @@ module hybrid_driver
                ! 3b.  Great, it worked, so now we can advance to the next step.  We just need !
                !      to do some minor adjustments before...                                  !
                !------------------------------------------------------------------------------!
-               call adjust_veg_properties(ytemp,h,csite,ipa)
+               call adjust_veg_properties(ytemp,h,csite,ipa,ibuff)
 
                !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-               call adjust_topsoil_properties(ytemp,h)
+               call adjust_topsoil_properties(ytemp,h,ibuff)
 
                !----- ii. Make temporary surface water stable and positively defined. --------!
-               call adjust_sfcw_properties(nzg,nzs,ytemp,h)
+               call adjust_sfcw_properties(nzg,nzs,ytemp,h,ibuff)
 
                !----- iii.  Update the diagnostic variables. ---------------------------------!
-               call update_diagnostic_vars(ytemp, csite,ipa)
+               call update_diagnostic_vars(ytemp, csite,ipa,ibuff)
                !------------------------------------------------------------------------------!
 
                !------------------------------------------------------------------------------!
@@ -731,8 +721,8 @@ module hybrid_driver
                   !----- Recompute the energy removing runoff --------------------------------!
                   initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
 
-                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4)
-                  call update_diagnostic_vars(initp,csite,ipa)
+                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,ibuff)
+                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
 
                   !----- Compute runoff for output -------------------------------------------!
                   if (fast_diagnostics) then

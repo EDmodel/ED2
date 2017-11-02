@@ -1947,7 +1947,7 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine find_derived_thbounds(can_theta,can_temp,can_shv,can_prss,can_depth)
+   subroutine find_derived_thbounds(ibuff,can_theta,can_temp,can_shv,can_prss,can_depth)
       use grid_coms   , only : nzg           ! ! intent(in)
       use consts_coms , only : rdry8         & ! intent(in)
                              , epim18        & ! intent(in)
@@ -1965,10 +1965,10 @@ module rk4_coms
                              , reducedpress8 ! ! function
       use soil_coms   , only : soil8         ! ! intent(in)
       use ed_misc_coms, only : current_time  ! ! intent(in)
-      !$ use omp_lib
       
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
+      integer                     , intent(in) :: ibuff
       real(kind=8)                , intent(in) :: can_theta
       real(kind=8)                , intent(in) :: can_temp
       real(kind=8)                , intent(in) :: can_shv
@@ -1983,11 +1983,7 @@ module rk4_coms
       integer                                  :: minute
       integer                                  :: second
       integer                                  :: nsoil
-      integer                                  :: ibuff
       !------------------------------------------------------------------------------------!
-
-      ibuff=1
-      !$ ibuff = OMP_get_thread_num()+1
 
 
 

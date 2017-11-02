@@ -13,7 +13,7 @@ module rk4_derivs
    ! whereas in LEAF-3 the actual step is done at once. This derivative will be used for   !
    ! the  Runge-Kutta integration step.                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine leaf_derivs(initp,dinitp,csite,ipa,dt,is_hybrid)
+   subroutine leaf_derivs(initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
 
       use rk4_coms               , only : rk4patchtype       ! ! structure
       use ed_state_vars          , only : sitetype           & ! structure
@@ -25,6 +25,8 @@ module rk4_derivs
       type(rk4patchtype) , target     :: dinitp    ! Structure with RK4 derivatives
       type(sitetype)     , target     :: csite     ! This site (with previous values);
       integer            , intent(in) :: ipa       ! Patch ID
+      integer            , intent(in) :: ibuff     ! The shared memory processor index
+                                                   ! for the buffer space
       real(kind=8)       , intent(in) :: dt        ! Current time step
       logical            , intent(in) :: is_hybrid ! Flag to tell whether it is a hybrid
                                                    !    solver solution.
@@ -38,7 +40,7 @@ module rk4_derivs
 
 
       !----- Find the derivatives. --------------------------------------------------------!
-      call leaftw_derivs(nzg,initp,dinitp,csite,ipa,dt,is_hybrid)
+      call leaftw_derivs(nzg,initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
       !------------------------------------------------------------------------------------!
 
       return
@@ -53,7 +55,7 @@ module rk4_derivs
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
+   subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
       use ed_max_dims          , only : nzgmax                & ! intent(in)
                                       , nzsmax                ! ! intent(in)
       use consts_coms          , only : cliq8                 & ! intent(in)
@@ -85,7 +87,6 @@ module rk4_derivs
                                       , polygontype           ! ! structure
       use therm_lib8           , only : tl2uint8              ! ! functions
       use physiology_coms      , only : h2o_plant_lim         ! ! intent(in)
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -93,6 +94,8 @@ module rk4_derivs
       type(rk4patchtype)  , target     :: dinitp    ! RK4 structure, derivatives
       type(sitetype)      , target     :: csite     ! Current site (before integration)
       integer             , intent(in) :: ipa       ! Current patch number
+      integer             , intent(in) :: ibuff     ! The shared memory processor index
+                                                    ! for the buffer space
       integer             , intent(in) :: mzg       ! Number of ground layers
       real(kind=8)        , intent(in) :: dt        ! Timestep
       logical             , intent(in) :: is_hybrid ! Hybrid solver?
@@ -141,12 +144,8 @@ module rk4_derivs
       real(kind=8)                :: wloss_tot_k1     ! Total water loss (lyr k1)
       real(kind=8)                :: wloss_tot_k2     ! Total water loss (lyr k2)
       real(kind=8)                :: uint_water_k2    ! Intensive Internal Energy (lyr k2)
-      integer                     :: ibuff            ! The shared memory processor index
-                                                      ! for the buffer space (privatize)
       !------------------------------------------------------------------------------------!
 
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Set the pointer to the current patch. ----------------------------------------!
       cpatch => csite%patch(ipa)
@@ -370,7 +369,7 @@ module rk4_derivs
       !      Get derivatives of vegetation and canopy air space variables, plus some       !
       ! fluxes that will be used for soil top boundary conditions and for transpiration.   !
       !------------------------------------------------------------------------------------!
-      call canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hflxgc       &
+      call canopy_derivs_two(mzg,initp,dinitp,csite,ipa,ibuff,hflxsc,wflxsc,qwflxsc,hflxgc &
                             ,wflxgc,qwflxgc,dewgnd,qdewgnd,ddewgnd,throughfall_tot         &
                             ,qthroughfall_tot,dthroughfall_tot,wshed_tot,qwshed_tot        &
                             ,dwshed_tot,dt,is_hybrid)
@@ -792,8 +791,8 @@ module rk4_derivs
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hflxgc    &
-                               ,wflxgc,qwflxgc,dewgndflx,qdewgndflx,ddewgndflx             &
+   subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,ibuff,hflxsc,wflxsc,qwflxsc     &
+                               ,hflxgc,wflxgc,qwflxgc,dewgndflx,qdewgndflx,ddewgndflx      &
                                ,throughfall_tot,qthroughfall_tot,dthroughfall_tot          &
                                ,wshed_tot,qwshed_tot,dwshed_tot,dt,is_hybrid)
       use rk4_coms              , only : rk4patchtype         & ! Structure
@@ -811,7 +810,7 @@ module rk4_derivs
                                        , leaf_intercept       ! ! intent(in)
       use ed_state_vars         , only : sitetype             & ! Structure
                                        , patchtype            & ! Structure
-                                       , polygontype
+                                       , polygontype          ! ! Structure
       use consts_coms           , only : twothirds8           & ! intent(in)
                                        , day_sec8             & ! intent(in)
                                        , grav8                & ! intent(in)
@@ -837,7 +836,6 @@ module rk4_derivs
       use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
       use pft_coms              , only : agf_bs               ! ! intent(in)
       use budget_utils          , only : compute_netrad       ! ! function
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -845,7 +843,8 @@ module rk4_derivs
       type(rk4patchtype) , target      :: initp            ! RK4 structure, state vars
       type(rk4patchtype) , target      :: dinitp           ! RK4 structure, derivatives
       integer            , intent(in)  :: ipa              ! Current patch ID
-      integer            , intent(in)  :: mzg              ! Current patch ID
+      integer            , intent(in)  :: ibuff            ! Multithread ID
+      integer            , intent(in)  :: mzg              ! Number of soil layers
       real(kind=8)       , intent(in)  :: dt               ! Timestep
       logical            , intent(in)  :: is_hybrid        ! Is this a hybrid call?
       real(kind=8)       , intent(out) :: hflxsc           ! Ground->canopy sens. heat flux
@@ -930,13 +929,9 @@ module rk4_derivs
       real(kind=8)                 :: a,b,c0            ! Temporary variables for solving
                                                         ! the CO2 ODE
       real(kind=8)                 :: max_dwdt          ! Used for capping leaf evap
-      integer                      :: ibuff
       !----- Functions --------------------------------------------------------------------!
       real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
       !------------------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- First step, we assign the pointer for the current patch. ---------------------!
       cpatch => csite%patch(ipa)

@@ -12,6 +12,7 @@ module euler_driver
                                        , zero_rk4_cohort            & ! subroutine
                                        , integration_buff           & ! intent(out)
                                        , rk4site                    ! ! intent(out)
+      use ed_para_coms          , only : nthreads                   ! ! intent(in)
       use ed_state_vars         , only : edtype                     & ! structure
                                        , polygontype                & ! structure
                                        , sitetype                   & ! structure
@@ -73,20 +74,12 @@ module euler_driver
       real                                   :: old_can_temp
       real                                   :: old_can_prss
       integer                                :: ibuff
-      integer                                :: nthreads
       integer                                :: npa_thread
       integer                                :: ita
       !----- Local constants. -------------------------------------------------------------!
       logical                  , parameter   :: test_energy_sanity = .false.
       !------------------------------------------------------------------------------------!
 
-
-      !------------------------------------------------------------------------------------!
-      !    Find out the number of threads.                                                 !
-      !------------------------------------------------------------------------------------!
-      nthreads = 1
-      !$ nthreads = omp_get_max_threads()
-      !------------------------------------------------------------------------------------!
 
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -227,13 +220,14 @@ module euler_driver
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,integration_buff(ibuff)%initp,patch_vels)
+                  call copy_patch_init(csite,ipa,ibuff,integration_buff(ibuff)%initp       &
+                                      ,patch_vels)
                   !------------------------------------------------------------------------!
 
 
 
                   !----- Get photosynthesis, stomatal conductance, and transpiration. -----!
-                  call canopy_photosynthesis(csite,cmet,nzg,ipa                            &
+                  call canopy_photosynthesis(csite,cmet,nzg,ipa,ibuff                      &
                                             ,cpoly%ntext_soil(:,isi)                       &
                                             ,cpoly%leaf_aging_factor(:,isi)                &
                                             ,cpoly%green_leaf_factor(:,isi))
@@ -264,7 +258,7 @@ module euler_driver
                                             ,integration_buff(ibuff)%yscal                 &
                                             ,integration_buff(ibuff)%yerr                  &
                                             ,integration_buff(ibuff)%dydx                  &
-                                            ,ipa,isi,cpoly%nighttime(isi)                  &
+                                            ,ipa,isi,ibuff,cpoly%nighttime(isi)            &
                                             ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm    &
                                             ,co2curr_loss2atm,wcurr_loss2drainage          &
                                             ,ecurr_loss2drainage,wcurr_loss2runoff         &
@@ -325,7 +319,7 @@ module euler_driver
    !     This subroutine will drive the integration process using the Euler method.        !
    ! Notice that most of the Euler method utilises the subroutines from Runge-Kutta.       !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi       &
+   subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,ibuff &
                                    ,nighttime,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm   &
                                    ,co2curr_loss2atm,wcurr_loss2drainage                   &
                                    ,ecurr_loss2drainage,wcurr_loss2runoff                  &
@@ -358,6 +352,7 @@ module euler_driver
       type(rk4patchtype)    , target      :: dydx
       integer               , intent(in)  :: ipa
       integer               , intent(in)  :: isi
+      integer               , intent(in)  :: ibuff
       logical               , intent(in)  :: nighttime
       real                  , intent(out) :: wcurr_loss2atm
       real                  , intent(out) :: ecurr_netrad
@@ -400,7 +395,7 @@ module euler_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator using Euler. --------------------------------------!
-      call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nsteps)
+      call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,ibuff,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -436,7 +431,7 @@ module euler_driver
    !     This subroutine will drive the integration of several ODEs that drive the fast-   !
    ! -scale state variables.                                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nsteps)
+   subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,ibuff,nsteps)
       use ed_state_vars  , only : sitetype                  & ! structure
                                 , patchtype                 & ! structure
                                 , polygontype               ! ! structure
@@ -498,6 +493,7 @@ module euler_driver
       type(rk4patchtype)        , target      :: dydx        ! Patch integration error
       integer                   , intent(in)  :: ipa         ! Current patch ID
       integer                   , intent(in)  :: isi         ! Current patch ID
+      integer                   , intent(in)  :: ibuff       ! Multithread ID
       real(kind=8)              , intent(in)  :: h1          ! First guess of delta-t
       integer                   , intent(out) :: nsteps      ! Number of steps taken.
       !----- Local variables --------------------------------------------------------------!
@@ -545,7 +541,7 @@ module euler_driver
 
 
          !----- Get initial derivatives ---------------------------------------------------!
-         call leaf_derivs(initp,dinitp,csite,ipa,h,.false.)
+         call leaf_derivs(initp,dinitp,csite,ipa,ibuff,h,.false.)
 
          !----- Get scalings used to determine stability ----------------------------------!
          call get_yscal(initp,dinitp,h,yscal,cpatch)
@@ -574,10 +570,10 @@ module euler_driver
             ! shooting, provided that the overshooting is small.                           !
             !------------------------------------------------------------------------------!
             call inc_rk4_patch(ytemp,dinitp,h,cpatch)
-            call update_diagnostic_vars(ytemp,csite,ipa)
+            call update_diagnostic_vars(ytemp,csite,ipa,ibuff)
 
             !----- Perform a sanity check. ------------------------------------------------!
-            call rk4_sanity_check(ytemp,reject_step,csite,ipa,dinitp,h,print_diags)
+            call rk4_sanity_check(ibuff,ytemp,reject_step,csite,ipa,dinitp,h,print_diags)
             !------------------------------------------------------------------------------!
 
 
@@ -636,7 +632,7 @@ module euler_driver
                   write (unit=*,fmt='(a)') '   Likely to be a rejected step problem.'
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
 
-                  call rk4_sanity_check(ytemp,test_reject,csite,ipa,dinitp,h,.true.)
+                  call rk4_sanity_check(ibuff,ytemp,test_reject,csite,ipa,dinitp,h,.true.)
                   call print_sanity_check(ytemp,csite,ipa)
                   call print_rk4patch(ytemp, csite,ipa)
                end if
@@ -647,13 +643,13 @@ module euler_driver
                !      need to do some minor adjustments before...                          !
                !---------------------------------------------------------------------------!
                !----- i.   Update leaf properties to avoid negative water. ----------------!
-               call adjust_veg_properties(ytemp,h,csite,ipa)
+               call adjust_veg_properties(ytemp,h,csite,ipa,ibuff)
                !----- ii.  Update top soil properties to avoid off-bounds moisture. -------!
-               call adjust_topsoil_properties(ytemp,h)
+               call adjust_topsoil_properties(ytemp,h,ibuff)
                !----- ii. Make temporary surface water stable and positively defined. -----!
-               call adjust_sfcw_properties(nzg,nzs,ytemp,h)
+               call adjust_sfcw_properties(nzg,nzs,ytemp,h,ibuff)
                !----- iii.  Update the diagnostic variables. ------------------------------!
-               call update_diagnostic_vars(ytemp, csite,ipa)
+               call update_diagnostic_vars(ytemp, csite,ipa,ibuff)
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -668,7 +664,7 @@ module euler_driver
                end if
                !---------------------------------------------------------------------------!
 
-               call leaf_derivs(ytemp,dydx,csite,ipa,hnext,.false.)
+               call leaf_derivs(ytemp,dydx,csite,ipa,ibuff,hnext,.false.)
 
 
                !------ 3d. Normalise the fluxes if the user wants detailed debugging. -----!
@@ -722,8 +718,8 @@ module euler_driver
                   !----- Recompute the energy removing runoff -----------------------------!
                   initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
 
-                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4)
-                  call update_diagnostic_vars(initp,csite,ipa)
+                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,ibuff)
+                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
 
                   !----- Compute runoff for output ----------------------------------------!
                   if (fast_diagnostics) then

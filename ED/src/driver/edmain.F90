@@ -132,7 +132,6 @@ program main
    !---------------------------------------------------------------------------------------!
 
 
-
 #if defined(RAMS_MPI)
    !---------------------------------------------------------------------------------------!
    !      Find out if sequential or MPI run; if MPI run, enroll this process.  If          !
@@ -160,10 +159,24 @@ program main
       machsize = 1
    end select
    !---------------------------------------------------------------------------------------!
+#else
+   !---------------------------------------------------------------------------------------!
+   !   Set dummy values for all MPI variables.                                             !
+   !---------------------------------------------------------------------------------------!
+   isingle       = 1
+   machnum       = 0
+   machsize      = 1
+   num_procs     = 1
+   !---------------------------------------------------------------------------------------!
+#endif
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
-   ! Check OMP thread and processor use and availability.                                  !
+   !     Check OMP thread and processor use and availability.  This is done outside the    !
+   !  preprocessor "if block" because it is possible to activate multithread without       !
+   ! compiling with mpif90.                                                                       !
    !                                                                                       !
    ! Note: One could use omp_get_num_threads() in loop, but that would depend on how many  !
    ! threads were open at the time of its call.                                            !
@@ -174,7 +187,6 @@ program main
    cpu           = 1
    thread_use(:) = 0
    cpu_use(:)    = 0
-
    !$ max_threads = omp_get_max_threads()
    !$ num_procs   = omp_get_num_procs()
 
@@ -182,13 +194,15 @@ program main
    do n = 1,max_threads
      !$ thread = omp_get_thread_num() + 1
      !$ cpu    = findmycpu() + 1
-
      thread_use(thread) = 1
      cpu_use(cpu)       = 1
    end do
    !$OMP END PARALLEL DO
    !---------------------------------------------------------------------------------------!
 
+
+
+   !------ Always print the banner. -------------------------------------------------------!
    write (*,'(a)')       '+---------------- MPI parallel info: --------------------+'
    write (*,'(a,1x,i6)') '+  - Machnum  =',machnum
    write (*,'(a,1x,i6)') '+  - Machsize =',machsize
@@ -199,30 +213,7 @@ program main
    write (*,'(a,1x,i6)') '+  - cpus    max: ', num_procs
    write (*,'(a)')       '+  Note: Max vals are for node, not sockets.'
    write (*,'(a)')       '+--------------------------------------------------------+'
-#else
-
-
    !---------------------------------------------------------------------------------------!
-   !   Set dummy values for all OMP variables.                                             !
-   !---------------------------------------------------------------------------------------!
-   isingle       = 1
-   machnum       = 0
-   machsize      = 1
-   max_threads   = 1
-   num_procs     = 1
-   thread        = 1
-   cpu           = 1
-   thread_use(:) = 0
-   cpu_use(:)    = 0
-   do n = 1,max_threads
-     thread_use(thread) = 1
-     cpu_use(cpu)       = 1
-   end do
-   !---------------------------------------------------------------------------------------!
-
-#endif
-   !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -262,7 +253,7 @@ program main
 
    !----- Read the namelist and initialize the variables in the nodes if needed. ----------!
    if (icall == 0) then
-      call ed_1st_master(ipara,machsize,nslaves,machnum,name_name)
+      call ed_1st_master(ipara,machsize,nslaves,machnum,max_threads,name_name)
    else
       call ed_1st_node(1)
    endif

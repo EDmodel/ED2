@@ -10,7 +10,7 @@ module rk4_misc
    !    This subroutine copies that variables that are integrated by the Runge-Kutta       !
    ! solver to a buffer structure.                                                         !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
+   subroutine copy_patch_init(sourcesite,ipa,ibuff,targetp,vels)
       use ed_state_vars         , only : sitetype               & ! structure
                                        , patchtype              ! ! structure
       use grid_coms             , only : nzg                    & ! intent(in)
@@ -44,13 +44,13 @@ module rk4_misc
       use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
       use canopy_air_coms       , only : ubmin8
       use canopy_struct_dynamics, only : canopy_turbulence8     ! ! subroutine
-      !$ use omp_lib
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype)    , target     :: targetp
       type(sitetype)        , target     :: sourcesite
       integer               , intent(in) :: ipa
+      integer               , intent(in) :: ibuff
       real                  , intent(in) :: vels
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)       , pointer    :: cpatch
@@ -59,11 +59,7 @@ module rk4_misc
       integer                            :: ipft
       integer                            :: k
       integer                            :: ksn
-      integer                            :: ibuff
       !------------------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !---- Alias for the current patch. --------------------------------------------------!
       cpatch => sourcesite%patch(ipa)
@@ -143,8 +139,8 @@ module rk4_misc
 
 
       !----- Find the lower and upper bounds for the derived properties. ------------------!
-      call find_derived_thbounds(targetp%can_theta,targetp%can_temp,targetp%can_shv,       &
-                                 targetp%can_prss ,targetp%can_depth)
+      call find_derived_thbounds(ibuff,targetp%can_theta,targetp%can_temp,targetp%can_shv  &
+                                ,targetp%can_prss ,targetp%can_depth)
       !------------------------------------------------------------------------------------!
 
 
@@ -405,7 +401,7 @@ module rk4_misc
 
 
       !----- Initialise the characteristic properties, and the heat capacities. -----------!
-      call canopy_turbulence8(sourcesite,targetp,ipa)
+      call canopy_turbulence8(sourcesite,targetp,ipa,ibuff)
       !------------------------------------------------------------------------------------!
 
       !----- Diagnostics variables --------------------------------------------------------!
@@ -560,7 +556,7 @@ module rk4_misc
    ! variables, namely the temperature and liquid fraction of leaf water, soil layers and  !
    ! temporary snow/pond layers.                                                           !
    !---------------------------------------------------------------------------------------!
-   subroutine update_diagnostic_vars(initp, csite,ipa)
+   subroutine update_diagnostic_vars(initp, csite,ipa,ibuff)
       use rk4_coms              , only : rk4site               & ! intent(in)
                                        , ibranch_thermo        & ! intent(in)
                                        , rk4tiny_sfcw_mass     & ! intent(in)
@@ -611,12 +607,12 @@ module rk4_misc
                                        , toodry8               ! ! intent(in)
       use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
       use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
-      !$ use omp_lib
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: initp
       type(sitetype)     , target     :: csite
       integer            , intent(in) :: ipa
+      integer            , intent(in) :: ibuff
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer :: cpatch
       integer                          :: ico
@@ -645,11 +641,7 @@ module rk4_misc
       real(kind=8)                     :: wgt_leaf
       real(kind=8)                     :: wgt_wood
       real(kind=8)                     :: bulk_sfcw_dens
-      integer                          :: ibuff
       !------------------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Then we define some logicals to make the code cleaner. -----------------------!
       ok_shv      = initp%can_shv      >= rk4min_can_shv        .and.                      &
@@ -1258,7 +1250,7 @@ module rk4_misc
 
       !----- Compute canopy turbulence properties. ----------------------------------------!
       if (ok_leaf .and. ok_wood .and. ok_shv .and. ok_theta .and. ok_ground) then
-         call canopy_turbulence8(csite,initp,ipa)
+         call canopy_turbulence8(csite,initp,ipa,ibuff)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1283,7 +1275,7 @@ module rk4_misc
    ! 3. Compute the amount of mass each layer has, and redistribute them accordingly.      !
    ! 4. Percolates excessive liquid water if needed.                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid)
+   subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,ibuff)
 
       use rk4_coms      , only : rk4patchtype          & ! structure
                                , rk4site               & ! intent(in)
@@ -1316,7 +1308,6 @@ module rk4_misc
                                , tq2enthalpy8          & ! function
                                , alvi8                 & ! function
                                , alvl8                 ! ! function
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1324,6 +1315,7 @@ module rk4_misc
       real(kind=8)           , intent(in) :: hdid
       integer                , intent(in) :: nzg
       integer                , intent(in) :: nzs
+      integer                , intent(in) :: ibuff
       !----- Local variables --------------------------------------------------------------!
       integer                             :: kold
       integer                             :: newlayers
@@ -1331,7 +1323,6 @@ module rk4_misc
       integer                             :: ksn
       integer                             :: ksnnew
       integer                             :: k
-      integer                             :: ibuff
       !----- Control variables ------------------------------------------------------------!
       real(kind=8)                        :: hdidi
       real(kind=8)                        :: wtold
@@ -1406,9 +1397,6 @@ module rk4_misc
       real(kind=8)           , parameter  :: Crmax   = 1.d-1
       real(kind=8)           , parameter  :: ge      = 2.d2
       !------------------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Find the inverse of the time step. -------------------------------------------!
       hdidi      = 1.d0 / hdid
@@ -2199,7 +2187,7 @@ module rk4_misc
    ! (*) slightly off is defined as outside the range but within the desired accuracy      !
    !     (rk4eps).                                                                         !
    !---------------------------------------------------------------------------------------!
-   subroutine adjust_topsoil_properties(initp,hdid)
+   subroutine adjust_topsoil_properties(initp,hdid,ibuff)
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4eps               & ! intent(in)
@@ -2223,11 +2211,11 @@ module rk4_misc
       use soil_coms            , only : soil8                & ! intent(in)
                                       , dslzi8               & ! intent(in)
                                       , dslz8                ! ! intent(in)
-      !$ use omp_lib
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype)     , target     :: initp  ! Integration buffer
       real(kind=8)           , intent(in) :: hdid   ! Time step 
+      integer                , intent(in) :: ibuff  ! Multithread ID
       !----- Local variables --------------------------------------------------------------!
       integer                             :: kt
       integer                             :: kb
@@ -2252,12 +2240,7 @@ module rk4_misc
       real(kind=8)                        :: virtual_latent
       logical                             :: slightlymoist
       logical                             :: slightlydry
-      integer                             :: ibuff
-
       !------------------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Inverse of time increment ----------------------------------------------------!
       hdidi = 1.d0 / hdid
@@ -2766,7 +2749,7 @@ module rk4_misc
    ! through shedding.  After this is checked, we then update the remaining leaf proper-   !
    ! ties, namely the temperature and liquid water fraction.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine adjust_veg_properties(initp,hdid,csite,ipa)
+   subroutine adjust_veg_properties(initp,hdid,csite,ipa,ibuff)
       use rk4_coms             , only : rk4patchtype       & ! structure
                                       , rk4aux             &
                                       , rk4min_veg_lwater  & ! intent(in)
@@ -2782,13 +2765,13 @@ module rk4_misc
       use therm_lib8           , only : uextcm2tl8         & ! subroutine
                                       , tl2uint8           & ! function
                                       , tq2enthalpy8       ! ! function
-      !$ use omp_lib
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype)     , target     :: initp  ! Integration buffer
       type(sitetype)         , target     :: csite  ! Current site
       integer                , intent(in) :: ipa    ! Current patch ID
       real(kind=8)           , intent(in) :: hdid   ! Time step 
+      integer                , intent(in) :: ibuff  ! Multithread ID
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer    :: cpatch
       integer                             :: ico
@@ -2836,11 +2819,7 @@ module rk4_misc
       real(kind=8)                        :: old_wood_temp
       real(kind=8)                        :: old_wood_fliq
       real(kind=8)                        :: hdidi
-      integer                             :: ibuff
       !------------------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       cpatch => csite%patch(ipa)
       

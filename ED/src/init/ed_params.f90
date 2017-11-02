@@ -2169,7 +2169,6 @@ subroutine init_pft_alloc_params()
    !----- Local variables. ----------------------------------------------------------------!
    integer                   :: ipft
    integer                   :: n
-   logical                   :: write_allom
    real   , dimension(n_pft) :: abas
    real                      :: aux
    real                      :: init_density_grass
@@ -2216,14 +2215,6 @@ subroutine init_pft_alloc_params()
    real, dimension(3)    , parameter :: ndead_large = (/-0.8346805, 2.4255736, 2.6822805 /)
    real, dimension(3)    , parameter :: nleaf       = (/ 0.0192512, 0.9749494, 2.5858509 /)
    real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
-   !----- Other constants. ----------------------------------------------------------------!
-   character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Check whether to print the allometry table or not. ------------------------------!
-   write_allom = btest(idetailed,5)
    !---------------------------------------------------------------------------------------!
 
 
@@ -3394,12 +3385,14 @@ subroutine init_pft_alloc_params()
       !      Grasses are assumed to have constant rooting depth.  Tree rooting depth is a  !
       ! function of dbh and height.                                                        !
       !------------------------------------------------------------------------------------!
-      b1Rd(:) = merge(-0.700,- exp(0.545*log(10.)) * 0.65 * pi1 * 0.11 * 0.11,is_grass(:))
-      b2Rd(:) = merge( 0.000,0.277                                           ,is_grass(:))
+      b1Rd(:) = merge( -0.700                                                              &
+                     , - exp(0.545*log(10.)) * (0.65 * pi1 * 0.11 * 0.11)**0.277           &
+                     , is_grass(:) )
+      b2Rd(:) = merge( 0.000,0.277,is_grass(:))
       !------------------------------------------------------------------------------------!
    case default
       !------------------------------------------------------------------------------------!
-      !     This is just a test, not based on any paper.  This is simply a fit that would  !
+      !     Simple fit based on that most of the extracted water  maximum extraction of water at This is just a test, not based on any paper.  This is simply a fit that would  !
       ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
       !------------------------------------------------------------------------------------!
       b1Rd(:)  = -1.1140580
@@ -3413,12 +3406,7 @@ subroutine init_pft_alloc_params()
    !    Initial storage pool, relative to on-allometry living biomass, to be given to the  !
    ! PFTs when the model is run using INITIAL conditions.                                  !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      f_bstorage_init(:) = 0.50
-   case default
-      f_bstorage_init(:) = 0.00
-   end select
+   f_bstorage_init(:) = 0.50
    !---------------------------------------------------------------------------------------!
 
 
@@ -3461,41 +3449,6 @@ subroutine init_pft_alloc_params()
    h_edge = 0.5          !< maximum height advantage for lianas
    liana_dbh_crit = 26.0 !< liana specific critical dbh
    !---------------------------------------------------------------------------------------!
-
-   if (write_allom) then
-      open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(507a)') ('-',n=1,507)
-      write(unit=18,fmt='(39(1x,a))') '         PFT','    Tropical','       Grass'         &
-                                     ,'         Rho','        b1Ht','        b2Ht'         &
-                                     ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
-                                     ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
-                                     ,'  b2Bs_Small','  b1Bs_Large','  b1Bs_Large'         &
-                                     ,'        b1Ca','        b2Ca',' b1WAI_small'         &
-                                     ,' b2WAI_small',' b1WAI_large',' b2WAI_large'         &
-                                     ,'        b1Xs','        b1Xb','     Hgt_min'         &
-                                     ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
-                                     ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
-                                     ,'  Bdead_Crit','   Init_dens',' Init_LAImax'         &
-                                     ,'         SLA','F_Bstor_init','           q'         &
-                                     ,'         qsw','       qbark','       qrhob'
-
-      write(unit=18,fmt='(507a)') ('-',n=1,507)
-      do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),36(1x,es12.5))')                             &
-                        ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
-                       ,b2Ht(ipft),hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft)         &
-                       ,b1Bl_large(ipft),b2Bl_large(ipft),b1Bs_small(ipft)                 &
-                       ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
-                       ,b2Ca(ipft),b1WAI_small(ipft),b2WAI_small(ipft),b1WAI_large(ipft)   &
-                       ,b2WAI_large(ipft),b1Xs(ipft),b1Xb(ipft),hgt_min(ipft)              &
-                       ,hgt_max(ipft),min_dbh(ipft),dbh_adult(ipft),dbh_crit(ipft)         &
-                       ,dbh_bigleaf(ipft),bleaf_adult(ipft),bdead_crit(ipft)               &
-                       ,init_density(ipft),init_laimax(ipft),sla(ipft)                     &
-                       ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)
-      end do
-      write(unit=18,fmt='(507a)') ('-',n=1,507)
-      close(unit=18,status='keep')
-   end if
 
    return
 end subroutine init_pft_alloc_params
@@ -6007,7 +5960,11 @@ subroutine init_derived_params_after_xml()
    use physiology_coms      , only : iphysiol                ! ! intent(in)
    use pft_coms             , only : is_tropical             & ! intent(in)
                                    , is_grass                & ! intent(in)
+                                   , is_savannah             & ! intent(in)
+                                   , is_conifer              & ! intent(in)
+                                   , is_liana                & ! intent(in)
                                    , init_density            & ! intent(in)
+                                   , init_laimax             & ! intent(in)
                                    , c2n_leaf                & ! intent(in)
                                    , c2n_stem                & ! intent(in)
                                    , c2n_storage             & ! intent(in)
@@ -6015,13 +5972,33 @@ subroutine init_derived_params_after_xml()
                                    , b2Ht                    & ! intent(in)
                                    , hgt_min                 & ! intent(in)
                                    , hgt_ref                 & ! intent(in)
+                                   , b1Bl_small              & ! intent(in)
+                                   , b2Bl_small              & ! intent(in)
+                                   , b1Bl_large              & ! intent(in)
+                                   , b2Bl_large              & ! intent(in)
+                                   , b1Bs_small              & ! intent(in)
+                                   , b2Bs_small              & ! intent(in)
+                                   , b1Bs_large              & ! intent(in)
+                                   , b2Bs_large              & ! intent(in)
+                                   , b1Ca                    & ! intent(in)
+                                   , b2Ca                    & ! intent(in)
+                                   , b1WAI_small             & ! intent(in)
+                                   , b2WAI_small             & ! intent(in)
+                                   , b1WAI_large             & ! intent(in)
+                                   , b2WAI_large             & ! intent(in)
+                                   , b1Xs                    & ! intent(in)
+                                   , b1Xb                    & ! intent(in)
+                                   , min_dbh                 & ! intent(in)
+                                   , dbh_adult               & ! intent(in)
+                                   , dbh_bigleaf             & ! intent(in)
+                                   , bleaf_adult             & ! intent(in)
                                    , q                       & ! intent(in)
                                    , qsw                     & ! intent(in)
+                                   , qrhob                   & ! intent(in)
                                    , qbark                   & ! intent(in)
+                                   , rho                     & ! intent(in)
                                    , sla                     & ! intent(in)
                                    , pft_name16              & ! intent(in)
-                                   , hgt_max                 & ! intent(in)
-                                   , dbh_crit                & ! intent(in)
                                    , dbh_bigleaf             & ! intent(in)
                                    , f_bstorage_init         & ! intent(in)
                                    , c_grn_leaf_dry          & ! intent(in)
@@ -6046,7 +6023,10 @@ subroutine init_derived_params_after_xml()
                                    , photosyn_pathway        & ! intent(in)
                                    , dark_respiration_factor & ! intent(in)
                                    , water_conductance       & ! intent(in)
+                                   , hgt_max                 & ! intent(inout)
                                    , repro_min_h             & ! intent(inout)
+                                   , dbh_crit                & ! intent(inout)
+                                   , bdead_crit              & ! intent(inout)
                                    , seed_rain               & ! intent(inout)
                                    , Rd_low_temp             & ! intent(inout)
                                    , Rd_high_temp            & ! intent(inout)
@@ -6142,6 +6122,7 @@ subroutine init_derived_params_after_xml()
    !----- Local constants. ----------------------------------------------------------------!
    character(len=str_len), parameter :: zero_table_fn = 'pft_sizes.txt'
    character(len=str_len), parameter :: photo_file    = 'photo_param.txt'
+   character(len=str_len), parameter :: allom_file    = 'allom_param.txt'
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -6163,10 +6144,28 @@ subroutine init_derived_params_after_xml()
             / (1. + wat_dry_ratio_bark(:)) + delta_c_bark(:)
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !      Hgt_max of temperate trees cannot exceed b1Ht, and cannot exceed hgt_ref for     !
+   ! tropical trees (IALLOM=2 or IALLOM=3).                                                !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (2,3)
+      where(is_tropical(:) .and. (hgt_max(:) >= 0.99 * hgt_ref(:)))
+         hgt_max(:) = 0.99 * hgt_ref(:)
+      end where
+   end select
+   where ( (.not. is_tropical(:)) .and. hgt_max(:) >= 0.99 * b1Ht(:))
+       hgt_max(:) = 0.99 * b1Ht(:)
+   end where
+   !---------------------------------------------------------------------------------------!
 
    !------ Repro_min_h cannot be 0.  Make sure that height is at least hgt_min. -----------!
    repro_min_h(:) = merge(repro_min_h(:),hgt_min(:),repro_min_h(:) >= hgt_min(:))
    !---------------------------------------------------------------------------------------!
+
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     The minimum recruitment size and the recruit carbon to nitrogen ratio.  Both      !
@@ -6199,6 +6198,13 @@ subroutine init_derived_params_after_xml()
 
 
    do ipft = 1,n_pft
+      !----- Re-define the "critical" parameters as the numbers may have changed. ---------!
+      dbh_crit  (ipft) = h2dbh(hgt_max(ipft),ipft)
+      bdead_crit(ipft) = dbh2bd(dbh_crit(ipft),ipft)
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh          = h2dbh(hgt_min(ipft),ipft)
@@ -6683,6 +6689,45 @@ subroutine init_derived_params_after_xml()
       close(unit=18,status='keep')
    end if
    !---------------------------------------------------------------------------------------!
+
+
+   !----- Print allometric coefficients. --------------------------------------------------!
+   if (print_zero_table) then
+      open (unit=18,file=trim(allom_file),status='replace',action='write')
+      write(unit=18,fmt='(546a)') ('-',n=1,546)
+      write(unit=18,fmt='(42(1x,a))') '         PFT','    Tropical','       Grass'         &
+                                     ,'     Conifer','    Savannah','       Liana'         &
+                                     ,'         Rho','        b1Ht','        b2Ht'         &
+                                     ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
+                                     ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
+                                     ,'  b2Bs_Small','  b1Bs_Large','  b1Bs_Large'         &
+                                     ,'        b1Ca','        b2Ca',' b1WAI_small'         &
+                                     ,' b2WAI_small',' b1WAI_large',' b2WAI_large'         &
+                                     ,'        b1Xs','        b1Xb','     Hgt_min'         &
+                                     ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
+                                     ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
+                                     ,'  Bdead_Crit','   Init_dens',' Init_LAImax'         &
+                                     ,'         SLA','F_Bstor_init','           q'         &
+                                     ,'         qsw','       qbark','       qrhob'
+
+      write(unit=18,fmt='(546a)') ('-',n=1,546)
+      do ipft=1,n_pft
+         write (unit=18,fmt='(8x,i5,5(12x,l1),36(1x,es12.5))')                             &
+                        ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
+                       ,is_savannah(ipft),is_liana(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft)   &
+                       ,hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft),b1Bl_large(ipft)   &
+                       ,b2Bl_large(ipft),b1Bs_small(ipft),b2Bs_small(ipft)                 &
+                       ,b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft),b2Ca(ipft)            &
+                       ,b1WAI_small(ipft),b2WAI_small(ipft),b1WAI_large(ipft)              &
+                       ,b2WAI_large(ipft),b1Xs(ipft),b1Xb(ipft),hgt_min(ipft)              &
+                       ,hgt_max(ipft),min_dbh(ipft),dbh_adult(ipft),dbh_crit(ipft)         &
+                       ,dbh_bigleaf(ipft),bleaf_adult(ipft),bdead_crit(ipft)               &
+                       ,init_density(ipft),init_laimax(ipft),sla(ipft)                     &
+                       ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)
+      end do
+      write(unit=18,fmt='(546a)') ('-',n=1,546)
+      close(unit=18,status='keep')
+   end if
 
 
    return

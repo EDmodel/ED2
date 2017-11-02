@@ -14,10 +14,11 @@
 !    modules can be properly initialized.                                                  !
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
+subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, max_threads,name_name)
    use ed_met_driver, only : read_met_driver_head ! ! subroutine
    use ed_para_coms , only : iparallel            & ! intent(inout)
-                           , machsize             ! ! intent(in)
+                           , machsize             & ! intent(out)
+                           , nthreads             ! ! intent(out)
    use ed_misc_coms , only : runtype              ! ! intent(inout)
    use ed_state_vars, only : allocate_edglobals   & ! subroutine
                            , filltab_alltypes     ! ! subroutine
@@ -33,6 +34,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    integer         , intent(in) :: nnodestotal  ! total number of nodes on any run
    integer         , intent(in) :: nslaves      ! number of slaves on a parallel run
    integer         , intent(in) :: headnode_num ! this process rank on a parallel run
+   integer         , intent(in) :: max_threads  ! Maximum number of threads
    character(len=*), intent(in) :: name_name    ! namelist file name
    !----- Local variables (MPI only). -----------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -58,8 +60,11 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    !----- Save parallel flag (0 - serial, 1 - parallel). ----------------------------------!
    iparallel=ipara
    
-   !----- Setup number of machines. -------------------------------------------------------!
+   !----- Set up number of machines. ------------------------------------------------------!
    machsize = nnodestotal
+   
+   !----- Set up number of threads. -------------------------------------------------------!
+   nthreads = max_threads
 
    !----- Read the namelist file. ---------------------------------------------------------!
    write (unit=*,fmt='(a)') 'Reading namelist information'

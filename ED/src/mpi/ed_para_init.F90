@@ -560,7 +560,6 @@ subroutine ed_load_work_from_history()
                                   , memsize             & ! intent(inout)
                                   , datatype_id         ! ! intent(inout)
    use ed_init_full_history, only : hdf_getslab_r       ! ! sub-routine
-! $OMP use omp_lib
 
 #if USE_HDF5
    use hdf5

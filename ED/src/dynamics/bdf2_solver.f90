@@ -20,7 +20,7 @@
 !
 !==============================================================================
 
-subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
+subroutine bdf2_solver(ibuff,cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
   use grid_coms,only         : nzg
   use rk4_coms,only          : effarea_heat,rk4site,rk4patchtype,rk4aux &
@@ -34,10 +34,10 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
        alli8,t3ple8,alvi38,wdns8,cph2o8,tsupercool_liq8,pi18
   use therm_lib8,only      : uint2tl8,uextcm2tl8,tq2enthalpy8, tl2uint8, cmtl2uext8
   use soil_coms, only      : soil8
-  !$ use omp_lib
   implicit none
   
   ! define the previous,current and next patch states
+  integer, intent(in)                        :: ibuff
   integer                                    :: nstate
   real(kind=8),pointer,dimension(:)          :: Y
   real(kind=8),pointer,dimension(:)          :: Yf
@@ -86,10 +86,6 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   real(kind=8)  :: qtransp,qtransp_tot
   real(kind=8)  :: hflxlc,hflxlc_tot
   real(kind=8)  :: hflxwc,hflxwc_tot
-  integer       :: ibuff
-
-  ibuff = 1
-  !$ ibuff = OMP_get_thread_num()+1
 
   !==========================================================================!
   !                                                                          !

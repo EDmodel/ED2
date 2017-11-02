@@ -10,7 +10,7 @@ module photosyn_driv
    !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).     !
    ! This is called every step, but not every sub-step.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil,leaf_aging_factor        &
+   subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ibuff,ntext_soil,leaf_aging_factor  &
                                    ,green_leaf_factor)
       use ed_state_vars  , only : sitetype           & ! structure
                                 , patchtype          ! ! structure
@@ -43,6 +43,7 @@ module photosyn_driv
       type(sitetype)            , target      :: csite             ! Current site
       type(met_driv_state)      , target      :: cmet              ! Current met. cond.
       integer                   , intent(in)  :: ipa               ! Current patch #
+      integer                   , intent(in)  :: ibuff             ! Multithread ID
       integer                   , intent(in)  :: mzg               ! Number of soil layers
       integer, dimension(mzg)   , intent(in)  :: ntext_soil        ! Soil class
       real   , dimension(n_pft) , intent(in)  :: leaf_aging_factor !
@@ -292,8 +293,8 @@ module photosyn_driv
                !    Notice that the units that are per unit area are per m2 of leaf, not   !
                ! the patch area.                                                           !
                !---------------------------------------------------------------------------!
-               call lphysiol_full(         & !
-                  csite%can_prss(ipa)      & ! Canopy air pressure              [       Pa]
+               call lphysiol_full(ibuff    & ! Multithread ID
+                , csite%can_prss(ipa)      & ! Canopy air pressure              [       Pa]
                 , csite%can_rhos(ipa)      & ! Canopy air density               [    kg/m3]
                 , csite%can_shv(ipa)       & ! Canopy air sp. humidity          [    kg/kg]
                 , csite%can_co2(ipa)       & ! Canopy air CO2 mixing ratio      [ umol/mol]
@@ -375,8 +376,8 @@ module photosyn_driv
                !    Notice that the units that are per unit area are per m2 of leaf, not   !
                ! the patch area.                                                           !
                !---------------------------------------------------------------------------!
-               call lphysiol_full(            & !
-                  csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
+               call lphysiol_full(ibuff       & ! Multithread ID
+                , csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
                 , csite%can_rhos(ipa)         & ! Canopy air density            [    kg/m3]
                 , csite%can_shv(ipa)          & ! Canopy air sp. humidity       [    kg/kg]
                 , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio   [ umol/mol]

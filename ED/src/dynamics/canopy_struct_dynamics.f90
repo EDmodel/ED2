@@ -84,7 +84,7 @@ module canopy_struct_dynamics
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_turbulence(cpoly,isi,ipa)
+   subroutine canopy_turbulence(cpoly,isi,ipa,ibuff)
       use ed_state_vars    , only : polygontype          & ! structure
                                   , sitetype             & ! structure
                                   , patchtype            ! ! structure
@@ -147,13 +147,13 @@ module canopy_struct_dynamics
                                   , size2bl          ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)   , target      :: cpoly         ! Current polygon
       integer             , intent(in)  :: isi           ! Site index
       integer             , intent(in)  :: ipa           ! Patch index
+      integer             , intent(in)  :: ibuff         ! Multithread index
       !----- Pointers ---------------------------------------------------------------------!
       type(sitetype)      , pointer     :: csite         ! Current site
       type(patchtype)     , pointer     :: cpatch        ! Current patch
@@ -233,13 +233,10 @@ module canopy_struct_dynamics
       real           :: c3_cumldrag  ! c3 * cumulative drag.                    [      ---]
       real           :: rt_cumldrag  ! Aux variable to avoid underflow.         [      ---]
       real           :: snowfac_can  ! fraction of canopy covered in snow
-      integer        :: ibuff
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
 
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Assign some pointers. --------------------------------------------------------!
       csite  => cpoly%site(isi)
@@ -1405,7 +1402,7 @@ module canopy_struct_dynamics
    ! heat from the soil surface to canopy air space and from the leaf surfaces to canopy   !
    ! air space.                                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_turbulence8(csite,initp,ipa)
+   subroutine canopy_turbulence8(csite,initp,ipa,ibuff)
       use ed_state_vars    , only : polygontype          & ! structure
                                   , sitetype             & ! structure
                                   , patchtype            ! ! structure
@@ -1466,13 +1463,13 @@ module canopy_struct_dynamics
                                   , size2bl          ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
-      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite         ! Current site
       type(rk4patchtype) , target     :: initp         ! Current integrator
       integer            , intent(in) :: ipa           ! Patch loop
+      integer            , intent(in) :: ibuff         ! Multithread ID
       !----- Pointers ---------------------------------------------------------------------!
       type(patchtype)    , pointer    :: cpatch        ! Current patch
       !----- Local variables --------------------------------------------------------------!
@@ -1537,14 +1534,10 @@ module canopy_struct_dynamics
       real(kind=8)   :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
       real(kind=8)   :: c3_cumldrag  ! c3 * cumulative drag                     [      ---]
       real(kind=8)   :: snowfac_can  ! percent vertical canopy covered in snow
-      integer        :: ibuff
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
       !------------------------------------------------------------------------------------!
-
-      ibuff = 1
-      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Assign some pointers. --------------------------------------------------------!
       cpatch=>csite%patch(ipa)

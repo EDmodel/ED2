@@ -119,7 +119,7 @@ module structural_growth
 
 
       !----- Previous month (for crop yield update and carbon balance mortality). ---------!
-      prev_month = 1 + mod(month+10,12)
+      prev_month = 1 + modulo(month-2,12)
       !------------------------------------------------------------------------------------!
 
 

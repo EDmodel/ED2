@@ -14,6 +14,7 @@ module radiate_driver
                                        , polygontype           & ! structure
                                        , sitetype              & ! structure
                                        , patchtype             ! ! structure
+      use ed_para_coms          , only : nthreads              ! ! intent(in)
       use canopy_radiation_coms , only : cosz_min              & ! intent(in)
                                        , rshort_twilight_min   ! ! intent(in)
       use consts_coms           , only : pio180                ! ! intent(in)
@@ -22,7 +23,6 @@ module radiate_driver
       use radiate_utils         , only : angle_of_incid        & ! sub-routine
                                        , ed_zen                & ! function
                                        , update_rad_avg        ! ! function
-      !$ use omp_lib
       implicit none
       !----- Argument. --------------------------------------------------------------------!
       type(edtype)     , target   :: cgrid
@@ -46,18 +46,8 @@ module radiate_driver
       real(kind=8)                :: par_beam_norm
       real(kind=8)                :: par_diff_norm
       integer                     :: ibuff
-      integer                     :: nthreads
       integer                     :: npa_thread
       integer                     :: ita
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Find out the number of threads.                                                 !
-      !------------------------------------------------------------------------------------!
-      nthreads = 1
-      !$ nthreads = omp_get_max_threads()
       !------------------------------------------------------------------------------------!
 
 
