@@ -1036,6 +1036,8 @@ module structural_growth
       real                           :: bd_target !> Target Bd to reach maxh height
       real                           :: delta_bd  !> Target Bd - actual Bd
       logical                        :: late_spring
+      logical                        :: zero_growth
+      logical                        :: zero_repro
       logical          , parameter   :: printout  = .false.
       character(len=13), parameter   :: fracfile  = 'storalloc.txt'
       !----- Locally saved variables. -----------------------------------------------------!
@@ -1078,43 +1080,44 @@ module structural_growth
          ! dropping leaves or off allometry.                                               !
          !---------------------------------------------------------------------------------!
          if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
+
+
+            !----- Check whether PFT is sufficiently tall for reproduction. ---------------!
+            zero_repro = hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
             !------------------------------------------------------------------------------!
-            !      This is where allocation to seeds is occuring.  The two approaches for  !
-            ! grasses are equivalent, therefore we can always use the "big-bang" approach. !
+
+
+
             !------------------------------------------------------------------------------!
-            if (is_grass(ipft)) then ! Grasses
-               if ( hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)) ) then 
-                  !------------------------------------------------------------------------!
-                  !   Grasses have reached the maximum height, stop growing in size and    !
-                  ! send everything to reproduction.                                       !
-                  !------------------------------------------------------------------------!
+            !      Decide allocation to seeds and heartwood based on size and life form.   !
+            !------------------------------------------------------------------------------!
+            if (is_grass(ipft)) then
+               !----- Grasses.  Stop growth when grasses are at the maximum height. -------!
+               zero_growth = hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)     )
+               !---------------------------------------------------------------------------!
+
+               !----- Decide allocation based on size. ------------------------------------!
+               if (zero_growth) then
                   f_bseeds = 1.0 - st_fract(ipft)
-                  !------------------------------------------------------------------------!
-               elseif (hite < ( (1.0-r_tol_trunc) * repro_min_h(ipft) ) ) then
-                  !----- The plant is too short, invest as much as it can in growth. ------!
-                  f_bseeds = 0.0
-                  !------------------------------------------------------------------------!
-               else ! repro_min_h < hite< hgt_max
-                  !----- Medium-sized grass, use prescribed reproduction rate. ------------!
-                  f_bseeds = r_fract(ipft)
-                  !------------------------------------------------------------------------!
-               end if
-               select case (igrass)
-               case (0)
-                  f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
-               case (1)
                   f_bdead  = 0.0
-               end select
+               elseif (zero_repro) then
+                  f_bseeds = 0.0
+                  f_bdead  = 1.0 - st_fract(ipft)
+               else
+                  f_bseeds = r_fract(ipft)
+                  f_bdead  = 1.0 - st_fract(ipft) - r_fract(ipft)
+               end if
                !---------------------------------------------------------------------------!
 
             elseif (is_liana(ipft)) then
+               zero_growth = hite >= ( (1.0-r_tol_trunc) * maxh )
+
                !---------------------------------------------------------------------------!
                !    Lianas: we must check height relative to the rest of the local plant   !
                ! community.                                                                !
                !---------------------------------------------------------------------------!
-               if (hite >= ( (1.0-r_tol_trunc) *  maxh)) then
-                  f_bseeds = merge(0.0, r_fract(ipft)                                      &
-                                  ,hite < ( (1.0-r_tol_trunc) * repro_min_h(ipft)) )
+               if (zero_growth) then
+                  f_bseeds = merge(0.0, r_fract(ipft), zero_repro)
                   f_bdead  = 0.0
                else
                   bd_target = dbh2bd(h2dbh(maxh,ipft),ipft)
@@ -1133,22 +1136,18 @@ module structural_growth
                   f_bdead   = merge(0.0                                                    &
                                    ,min(delta_bd / bstorage, 1.0)                          &
                                    ,bstorage * delta_bd <= 0.0)
-                  f_bseeds  = merge( 0.0, merge( r_fract(ipft), 1.0 - f_bdead              &
-                                               , r_fract(ipft) < 1.0 - f_bdead)            &
-                                   , hite <= repro_min_h(ipft))
+                  f_bseeds  = merge( 0.0, min(r_fract(ipft),1.0-f_bdead),zero_repro)
                end if
                !---------------------------------------------------------------------------!
-
-
-            elseif (hite < ((1.0-r_tol_trunc) * repro_min_h(ipft))) then
-               !----- The tree is too short, invest as much as it can in growth. ----------!
-               f_bseeds = 0.0
-               f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
-               !---------------------------------------------------------------------------!
             else
-               !----- Medium-sized tree, use prescribed reproduction rate. ----------------!
-               f_bseeds = r_fract(ipft)
-               f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+               !------ Trees. -------------------------------------------------------------!
+               if (zero_repro) then
+                  f_bseeds = 0.0
+                  f_bdead  = 1.0 - st_fract(ipft)
+               else
+                  f_bseeds = r_fract(ipft)
+                  f_bdead  = max(0.0,1.0 - st_fract(ipft) - r_fract(ipft))
+               end if
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!

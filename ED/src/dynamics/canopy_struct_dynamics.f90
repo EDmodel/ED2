@@ -515,7 +515,8 @@ module canopy_struct_dynamics
                !    Find the aerodynamic conductances for heat and water at the wood       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call wood_aerodynamic_conductances(cpatch%veg_wind(ico)                     &
+               call wood_aerodynamic_conductances(ipft                                     &
+                                                 ,cpatch%veg_wind(ico)                     &
                                                  ,cpatch%wood_temp(ico)                    &
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_rhos(ipa)                      &
@@ -680,7 +681,8 @@ module canopy_struct_dynamics
                !    Find the aerodynamic conductances for heat and water at the wood       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call wood_aerodynamic_conductances(cpatch%veg_wind(ico)                     &
+               call wood_aerodynamic_conductances(ipft                                     &
+                                                 ,cpatch%veg_wind(ico)                     &
                                                  ,cpatch%wood_temp(ico)                    &
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_rhos(ipa)                      &
@@ -1113,7 +1115,8 @@ module canopy_struct_dynamics
                !    Find the aerodynamic conductances for heat and water at the wood       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call wood_aerodynamic_conductances(cpatch%veg_wind(ico)                     &
+               call wood_aerodynamic_conductances(ipft                                     &
+                                                 ,cpatch%veg_wind(ico)                     &
                                                  ,cpatch%wood_temp(ico)                    &
                                                  ,csite%can_temp(ipa)                      &
                                                  ,csite%can_rhos(ipa)                      &
@@ -1770,7 +1773,8 @@ module canopy_struct_dynamics
                !    Find the aerodynamic conductances for heat and water at the leaf       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call wood_aerodynamic_conductances8(initp%veg_wind(ico)                     &
+               call wood_aerodynamic_conductances8(ipft                                    &
+                                                  ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
                                                   ,initp%can_rhos                          &
                                                   ,initp%can_cp                            &
@@ -1936,7 +1940,8 @@ module canopy_struct_dynamics
                !    Find the aerodynamic conductances for heat and water at the leaf       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call wood_aerodynamic_conductances8(initp%veg_wind(ico)                     &
+               call wood_aerodynamic_conductances8(ipft                                    &
+                                                  ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
                                                   ,initp%can_rhos                          &
                                                   ,initp%can_cp                            &
@@ -2376,7 +2381,8 @@ module canopy_struct_dynamics
                !    Find the aerodynamic conductances for heat and water at the leaf       !
                ! boundary layer.                                                           !
                !---------------------------------------------------------------------------!
-               call wood_aerodynamic_conductances8(initp%veg_wind(ico)                     &
+               call wood_aerodynamic_conductances8(ipft                                    &
+                                                  ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
                                                   ,initp%can_rhos                          &
                                                   ,initp%can_cp                            &
@@ -3870,16 +3876,16 @@ module canopy_struct_dynamics
       real(kind=4)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
       real(kind=4)   , intent(in)  :: leaf_temp       ! Leaf temperature        [        K]
       real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
-      real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m�]
+      real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m2]
       real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=4)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m�/s]
-      real(kind=4)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m�/s]
+      real(kind=4)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m2/s]
+      real(kind=4)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m2/s]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)                 :: lwidth          ! Leaf width              [        m]
-      real(kind=4)                 :: kin_visc        ! Kinematic viscosity     [     m�/s]
-      real(kind=4)                 :: th_diff         ! Kinematic viscosity     [     m�/s]
+      real(kind=4)                 :: kin_visc        ! Kinematic viscosity     [     m2/s]
+      real(kind=4)                 :: th_diff         ! Kinematic viscosity     [     m2/s]
       real(kind=4)                 :: th_expan        ! Thermal expansion       [      1/K]
-      real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_visc� [   1/K/m�]
+      real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_visc2 [   1/K/m2]
       real(kind=4)                 :: grashof         ! Grashof number          [      ---]
       real(kind=4)                 :: reynolds        ! Reynolds number         [      ---]
       real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
@@ -3912,7 +3918,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( can_temp - t00 ) )
       th_diff  = th_diff0  * ( 1.0 + dth_diff  * ( can_temp - t00 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu�) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nu2) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -3956,7 +3962,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m�/s and kg/m�/s, respectively].                     !
+      ! entropy and water fluxes [J/K/m2/s and kg/m2/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
       leaf_gbh =             gbh_mos * can_rhos * can_cp
@@ -4014,20 +4020,20 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
       real(kind=8)   , intent(in)  :: leaf_temp       ! Leaf temperature        [        K]
       real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
-      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m�]
+      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m2]
       real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=8)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m�/s]
-      real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m�/s]
+      real(kind=8)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m2/s]
+      real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m2/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
       real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
       real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
       real(kind=8)   , intent(out) :: nusselt_forced  ! Nusselt number (forced) [      ---]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                 :: lwidth          ! Leaf width              [        m]
-      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m�/s]
-      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     m�/s]
+      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m2/s]
+      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     m2/s]
       real(kind=8)                 :: th_expan        ! Thermal expansion       [      1/K]
-      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc� [   1/K/m�]
+      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc2 [   1/K/m2]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
@@ -4056,7 +4062,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( can_temp - t008 ) )
       th_diff  = th_diff08  * ( 1.d0 + dth_diff8  * ( can_temp - t008 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu�) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nu2) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav8  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -4099,7 +4105,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m�/s and kg/m�/s, respectively].                     !
+      ! entropy and water fluxes [J/K/m2/s and kg/m2/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
       leaf_gbh =              gbh_mos * can_rhos * can_cp
@@ -4131,8 +4137,8 @@ module canopy_struct_dynamics
    ! - gbh is in J/(K m2 s), and                                                           !
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine wood_aerodynamic_conductances(veg_wind,wood_temp,can_temp,can_rhos,can_cp    &
-                                           ,wood_gbh,wood_gbw)
+   subroutine wood_aerodynamic_conductances(ipft,veg_wind,wood_temp,can_temp,can_rhos      &
+                                           ,can_cp,wood_gbh,wood_gbw)
       use canopy_air_coms, only : acyli_lami    & ! intent(in)
                                 , ocyli_lami    & ! intent(in)
                                 , ncyli_lami    & ! intent(in)
@@ -4151,8 +4157,10 @@ module canopy_struct_dynamics
                                 , th_diff0      & ! intent(in)
                                 , dth_diff      ! ! intent(in)
       use physiology_coms, only : gbh_2_gbw     ! ! intent(in)
+      use pft_coms       , only : branch_diam   ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
+      integer        , intent(in)  :: ipft            ! Current PFT             [       --]
       real(kind=4)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
       real(kind=4)   , intent(in)  :: wood_temp       ! Wood temperature        [        K]
       real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
@@ -4173,14 +4181,16 @@ module canopy_struct_dynamics
       real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=4)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=4)                 :: gbh_mos         ! Total convection cond.  [      m/s]
-      !------------------------------------------------------------------------------------!
-      !      This is the characteristic diameter.  For simplicity we assume a fixed        !
-      ! diameter of 2 cm.  This could be improved with better branching models.            !
-      !------------------------------------------------------------------------------------!
-      real(kind=4) , parameter     :: w_diam=0.02     ! Wood "diameter"         [        m]
+      real(kind=4)                 :: w_diam          ! Typical branch diameter [        m]
       !------------------------------------------------------------------------------------!
 
-
+      !------------------------------------------------------------------------------------!
+      !      Characteristic branch diameter.  We currently assume a fixed size for         !
+      ! simplicity, but we could make it dynamic by applying a branch size distribution    !
+      ! model.                                                                             !
+      !------------------------------------------------------------------------------------!
+      w_diam = branch_diam(ipft)
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !     Compute kinematic viscosity, thermal diffusivity, and expansion coefficient as !
@@ -4196,7 +4206,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( can_temp - t00 ) )
       th_diff  = th_diff0  * ( 1.0 + dth_diff  * ( can_temp - t00 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu�) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nu2) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -4240,7 +4250,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m�/s and kg/m�/s, respectively].                     !
+      ! entropy and water fluxes [J/K/m2/s and kg/m2/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
       wood_gbh =             gbh_mos * can_rhos * can_cp
@@ -4272,8 +4282,8 @@ module canopy_struct_dynamics
    ! - gbh is in J/(K m2 s), and                                                           !
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine wood_aerodynamic_conductances8(veg_wind,wood_temp,can_temp,can_rhos,can_cp   &
-                                            ,wood_gbh,wood_gbw,reynolds,grashof            &
+   subroutine wood_aerodynamic_conductances8(ipft,veg_wind,wood_temp,can_temp,can_rhos     &
+                                            ,can_cp,wood_gbh,wood_gbw,reynolds,grashof     &
                                             ,nusselt_free,nusselt_forced)
       use canopy_air_coms, only : ocyli_lami8   & ! intent(in)
                                 , acyli_lami8   & ! intent(in)
@@ -4293,34 +4303,40 @@ module canopy_struct_dynamics
                                 , th_diff08     & ! intent(in)
                                 , dth_diff8     ! ! intent(in)
       use physiology_coms, only : gbh_2_gbw8    ! ! intent(in)
+      use pft_coms       , only : branch_diam   ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
+      integer        , intent(in)  :: ipft            ! Current PFT             [       --]
       real(kind=8)   , intent(in)  :: veg_wind        ! Wind at cohort height   [      m/s]
       real(kind=8)   , intent(in)  :: wood_temp       ! Wood temperature        [        K]
       real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
-      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m�]
+      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m2]
       real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=8)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m�/s]
-      real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m�/s]
+      real(kind=8)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m2/s]
+      real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m2/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
       real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
       real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
       real(kind=8)   , intent(out) :: nusselt_forced  ! Nusselt number (forced) [      ---]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m�/s]
-      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     m�/s]
+      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m2/s]
+      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     m2/s]
       real(kind=8)                 :: th_expan        ! Thermal expansion       [      1/K]
-      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc� [   1/K/m�]
+      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc2 [   1/K/m2]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
+      real(kind=8)                 :: w_diam          ! Typical branch diameter [        m]
       !------------------------------------------------------------------------------------!
-      !      This is the characteristic diameter.  For simplicity we assume a fixed        !
-      ! diameter of 2 cm.  This could be improved with better branching models.            !
+
       !------------------------------------------------------------------------------------!
-      real(kind=8)   , parameter   :: w_diam = 2.d-2  ! Wood "diameter"         [        m]
+      !      Characteristic branch diameter.  We currently assume a fixed size for         !
+      ! simplicity, but we could make it dynamic by applying a branch size distribution    !
+      ! model.                                                                             !
+      !------------------------------------------------------------------------------------!
+      w_diam = dble(branch_diam(ipft))
       !------------------------------------------------------------------------------------!
 
 
@@ -4339,7 +4355,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( can_temp - t008 ) )
       th_diff  = th_diff08  * ( 1.d0 + dth_diff8  * ( can_temp - t008 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu�) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nu2) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav8  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -4382,7 +4398,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m�/s and kg/m�/s, respectively].                     !
+      ! entropy and water fluxes [J/K/m2/s and kg/m2/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
       wood_gbh =              gbh_mos * can_rhos * can_cp

@@ -169,14 +169,6 @@ module physiology_coms
    !                  (1.0 = default).                                                     !
    ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
    !                  (1.0 = default).                                                     !
-   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
-   !                  layer conductance (gbh and gbw).                                     !
-   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
-   !                  only.                                                                !
-   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
-   !                  only.                                                                !
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
@@ -199,9 +191,6 @@ module physiology_coms
    real(kind=4)               :: klowco2in
    real(kind=4)               :: rrffact
    real(kind=4)               :: growthresp
-   real(kind=4)               :: lwidth_grass
-   real(kind=4)               :: lwidth_bltree
-   real(kind=4)               :: lwidth_nltree
    real(kind=4)               :: q10_c3
    real(kind=4)               :: q10_c4
    !---------------------------------------------------------------------------------------!

@@ -433,6 +433,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) water_conductance(myPFT) = real(rval)
            call getConfigREAL  ('leaf_width','pft',i,rval,texist)
            if(texist) leaf_width(myPFT) = real(rval)
+           call getConfigREAL  ('branch_diam','pft',i,rval,texist)
+           if(texist) branch_diam(myPFT) = real(rval)
 
 ! respiration & turnover variables
            call getConfigREAL  ('growth_resp_factor','pft',i,rval,texist)
@@ -1633,6 +1635,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("cuticular_cond",   cuticular_cond(i))
         call putConfigREAL("water_conductance",water_conductance(i))
         call putConfigREAL("leaf_width",       leaf_width(i))
+        call putConfigREAL("branch_diam",      branch_diam(i))
 
 
 !! RESPIRAION AND TURNOVER

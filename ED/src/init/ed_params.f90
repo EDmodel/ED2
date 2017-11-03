@@ -2092,79 +2092,85 @@ end subroutine init_hrzshade_params
 !==========================================================================================!
 subroutine init_pft_alloc_params()
 
-   use pft_coms     , only : is_tropical           & ! intent(in)
-                           , is_savannah           & ! intent(in)
-                           , is_conifer            & ! intent(in)
-                           , is_liana              & ! intent(in)
-                           , is_grass              & ! intent(in)
-                           , rho                   & ! intent(out)
-                           , SLA                   & ! intent(out)
-                           , leaf_turnover_rate    & ! intent(out)
-                           , q                     & ! intent(out)
-                           , qsw                   & ! intent(out)
-                           , qbark                 & ! intent(out)
-                           , qrhob                 & ! intent(out)
-                           , init_density          & ! intent(out)
-                           , init_laimax           & ! intent(out)
-                           , agf_bs                & ! intent(out)
-                           , brf_wd                & ! intent(out)
-                           , hgt_min               & ! intent(out)
-                           , hgt_ref               & ! intent(out)
-                           , hgt_max               & ! intent(out)
-                           , min_dbh               & ! intent(out)
-                           , dbh_crit              & ! intent(out)
-                           , dbh_bigleaf           & ! intent(out)
-                           , dbh_adult             & ! intent(out)
-                           , min_bdead             & ! intent(out)
-                           , bdead_crit            & ! intent(out)
-                           , bleaf_adult           & ! intent(out)
-                           , b1Ht                  & ! intent(out)
-                           , b2Ht                  & ! intent(out)
-                           , b1Bs_small            & ! intent(out)
-                           , b2Bs_small            & ! intent(out)
-                           , b1Bs_large            & ! intent(out)
-                           , b2Bs_large            & ! intent(out)
-                           , b1Ca                  & ! intent(out)
-                           , b2Ca                  & ! intent(out)
-                           , b1Cl                  & ! intent(out)
-                           , b2Cl                  & ! intent(out)
-                           , b1Rd                  & ! intent(out)
-                           , b2Rd                  & ! intent(out)
-                           , b1Vol                 & ! intent(out)
-                           , b2Vol                 & ! intent(out)
-                           , b1Bl_small            & ! intent(out)
-                           , b2Bl_small            & ! intent(out)
-                           , b1Bl_large            & ! intent(out)
-                           , b2Bl_large            & ! intent(out)
-                           , b1WAI_small           & ! intent(out)
-                           , b2WAI_small           & ! intent(out)
-                           , b1WAI_large           & ! intent(out)
-                           , b2WAI_large           & ! intent(out)
-                           , b1Xs                  & ! intent(out)
-                           , b1Xb                  & ! intent(out)
-                           , C2B                   & ! intent(out)
-                           , sla_scale             & ! intent(out)
-                           , sla_inter             & ! intent(out)
-                           , sla_slope             & ! intent(out)
-                           , sapwood_ratio         & ! intent(out)
-                           , f_bstorage_init       & ! intent(out)
-                           , h_edge                & ! intent(out)
-                           , liana_dbh_crit        ! ! intent(out)
-   use allometry    , only : h2dbh                 & ! function
-                           , dbh2bd                & ! function
-                           , size2bl               ! ! function
-   use consts_coms  , only : onethird              & ! intent(in)
-                           , onesixth              & ! intent(in)
-                           , twothirds             & ! intent(in)
-                           , huge_num              & ! intent(in)
-                           , pi1                   ! ! intent(in)
-   use ed_max_dims  , only : n_pft                 & ! intent(in)
-                           , str_len               & ! intent(in)
-                           , undef_real            ! ! intent(in)
-   use ed_misc_coms , only : iallom                & ! intent(in)
-                           , igrass                & ! intent(in)
-                           , ibigleaf              ! ! intent(in)
-   use detailed_coms, only : idetailed             ! ! intent(in)
+   use pft_coms       , only : is_tropical           & ! intent(in)
+                             , is_savannah           & ! intent(in)
+                             , is_conifer            & ! intent(in)
+                             , is_liana              & ! intent(in)
+                             , is_grass              & ! intent(in)
+                             , rho                   & ! intent(out)
+                             , SLA                   & ! intent(out)
+                             , leaf_turnover_rate    & ! intent(out)
+                             , q                     & ! intent(out)
+                             , qsw                   & ! intent(out)
+                             , qbark                 & ! intent(out)
+                             , qrhob                 & ! intent(out)
+                             , init_density          & ! intent(out)
+                             , init_laimax           & ! intent(out)
+                             , agf_bs                & ! intent(out)
+                             , brf_wd                & ! intent(out)
+                             , hgt_min               & ! intent(out)
+                             , hgt_ref               & ! intent(out)
+                             , hgt_max               & ! intent(out)
+                             , min_dbh               & ! intent(out)
+                             , dbh_crit              & ! intent(out)
+                             , dbh_bigleaf           & ! intent(out)
+                             , dbh_adult             & ! intent(out)
+                             , min_bdead             & ! intent(out)
+                             , bdead_crit            & ! intent(out)
+                             , bleaf_adult           & ! intent(out)
+                             , b1Ht                  & ! intent(out)
+                             , b2Ht                  & ! intent(out)
+                             , b1Bs_small            & ! intent(out)
+                             , b2Bs_small            & ! intent(out)
+                             , b1Bs_large            & ! intent(out)
+                             , b2Bs_large            & ! intent(out)
+                             , b1Ca                  & ! intent(out)
+                             , b2Ca                  & ! intent(out)
+                             , b1Cl                  & ! intent(out)
+                             , b2Cl                  & ! intent(out)
+                             , b1Rd                  & ! intent(out)
+                             , b2Rd                  & ! intent(out)
+                             , b1Vol                 & ! intent(out)
+                             , b2Vol                 & ! intent(out)
+                             , b1Bl_small            & ! intent(out)
+                             , b2Bl_small            & ! intent(out)
+                             , b1Bl_large            & ! intent(out)
+                             , b2Bl_large            & ! intent(out)
+                             , b1WAI_small           & ! intent(out)
+                             , b2WAI_small           & ! intent(out)
+                             , b1WAI_large           & ! intent(out)
+                             , b2WAI_large           & ! intent(out)
+                             , b1Xs                  & ! intent(out)
+                             , b1Xb                  & ! intent(out)
+                             , C2B                   & ! intent(out)
+                             , sla_scale             & ! intent(out)
+                             , sla_inter             & ! intent(out)
+                             , sla_slope             & ! intent(out)
+                             , sapwood_ratio         & ! intent(out)
+                             , f_bstorage_init       & ! intent(out)
+                             , leaf_width            & ! intent(out)
+                             , branch_diam           & ! intent(out)
+                             , h_edge                & ! intent(out)
+                             , liana_dbh_crit        ! ! intent(out)
+   use allometry      , only : h2dbh                 & ! function
+                             , dbh2bd                & ! function
+                             , size2bl               ! ! function
+   use consts_coms    , only : onethird              & ! intent(in)
+                             , onesixth              & ! intent(in)
+                             , twothirds             & ! intent(in)
+                             , huge_num              & ! intent(in)
+                             , pi1                   ! ! intent(in)
+   use ed_max_dims    , only : n_pft                 & ! intent(in)
+                             , str_len               & ! intent(in)
+                             , undef_real            ! ! intent(in)
+   use ed_misc_coms   , only : iallom                & ! intent(in)
+                             , igrass                & ! intent(in)
+                             , ibigleaf              ! ! intent(in)
+   use detailed_coms  , only : idetailed             ! ! intent(in)
+   use canopy_air_coms, only : lwidth_grass          & ! intent(in)
+                             , lwidth_bltree         & ! intent(in)
+                             , lwidth_nltree         ! ! intent(in)
+
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                   :: ipft
@@ -3441,6 +3447,21 @@ subroutine init_pft_alloc_params()
 
 
 
+   !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
+   leaf_width(:) = merge( lwidth_grass                                                     &
+                        , merge(lwidth_nltree,lwidth_bltree,is_conifer(:))                 &
+                        , is_grass(:) )
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Characteristic branch diameter [m].  This controls the boundary layer             !
+   ! conductance.  Currently we assumed a fixed size, although we could use branch size    !
+   ! distribution functions to estimate it dynamically.                                    !
+   !---------------------------------------------------------------------------------------!
+   branch_diam(:) = 0.02
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !     Liana-specific parameters, move here so they are properly initialised.            !
    ! MLO - Manfredo, is there a reason two define two dbh_crit for lianas? Couldn't this   !
@@ -3488,7 +3509,6 @@ subroutine init_pft_photo_params()
                              , Rd_hor                  & ! intent(out)
                              , Rd_q10                  & ! intent(out)
                              , stomatal_slope          & ! intent(out)
-                             , leaf_width              & ! intent(out)
                              , cuticular_cond          & ! intent(out)
                              , quantum_efficiency      & ! intent(out)
                              , photosyn_pathway        & ! intent(out)
@@ -3515,9 +3535,6 @@ subroutine init_pft_photo_params()
                              , alpha_c4                & ! intent(in)
                              , kw_grass                & ! intent(in)
                              , kw_tree                 & ! intent(in)
-                             , lwidth_grass            & ! intent(in)
-                             , lwidth_bltree           & ! intent(in)
-                             , lwidth_nltree           & ! intent(in)
                              , q10_c3                  & ! intent(in)
                              , q10_c4                  ! ! intent(in)
    implicit none
@@ -3805,14 +3822,6 @@ subroutine init_pft_photo_params()
    !  m2/s/kg_C_root.                                                                      !
    !---------------------------------------------------------------------------------------!
    water_conductance(:) = merge(kw_grass,kw_tree,is_grass(:)) / yr_sec
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width(:) = merge( lwidth_grass                                                     &
-                        , merge(lwidth_nltree,lwidth_bltree,is_conifer(:))                 &
-                        , is_grass(:) )
    !---------------------------------------------------------------------------------------!
 
    return
@@ -6174,7 +6183,7 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(36(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(37(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BROOT_MIN'               &
                                               ,'BSAPWOOD_MIN','   BBARK_MIN'               &
@@ -6187,11 +6196,12 @@ subroutine init_derived_params_after_xml()
                                               ,'BSAPWOOD_MAX','   BBARK_MAX'               &
                                               ,'  BALIVE_MAX','   BDEAD_MAX'               &
                                               ,'BSTORAGE_MAX','   INIT_DENS'               &
-                                              ,'MIN_REC_SIZE','MIN_COH_SIZE'               &
-                                              ,' NEGL_NPLANT','         SLA'               &
-                                              ,'VEG_HCAP_MIN','     LAI_MIN'               &
-                                              ,' REPRO_MIN_H','     HGT_MAX'               &
-                                              ,'    DBH_CRIT',' ONE_PLANT_C'
+                                              ,'   SEED_RAIN','MIN_REC_SIZE'               &
+                                              ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
+                                              ,'         SLA','VEG_HCAP_MIN'               &
+                                              ,'     LAI_MIN',' REPRO_MIN_H'               &
+                                              ,'     HGT_MAX','    DBH_CRIT'               &
+                                              ,' ONE_PLANT_C'
                                               
    end if
    !---------------------------------------------------------------------------------------!
@@ -6356,6 +6366,16 @@ subroutine init_derived_params_after_xml()
          veg_hcap_min(ipft) = onesixth * leaf_hcap_min
          lai_min            = onesixth * init_density(ipft) * bleaf_min * sla(ipft)
          !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Seed_rain is the density of seedling that will be added from somewhere else. !
+         ! By default, this variable is initialised as a function of the cohort's minimum  !
+         ! size to ensure it allows for reintroduction.  In case this has been initialised !
+         ! through xml, then don't change the values.                                      !
+         !---------------------------------------------------------------------------------! 
+         if (seed_rain(ipft) == undef_real) seed_rain(ipft)  = 0.1 * init_density(ipft)
+         !---------------------------------------------------------------------------------! 
       end select
       !------------------------------------------------------------------------------------! 
 
@@ -6384,7 +6404,7 @@ subroutine init_derived_params_after_xml()
       !     Add PFT parameters to the reference table.                                     !
       !------------------------------------------------------------------------------------! 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,34(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,35(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,broot_min,bsapwood_min  &
                                                     ,bbark_min,balive_min,bdead_min        &
@@ -6394,6 +6414,7 @@ subroutine init_derived_params_after_xml()
                                                     ,broot_max,bsapwood_max,bbark_max      &
                                                     ,balive_max,bdead_max,bstorage_max     &
                                                     ,init_density(ipft)                    &
+                                                    ,seed_rain(ipft)                       &
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &

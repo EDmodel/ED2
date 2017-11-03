@@ -72,6 +72,22 @@ module canopy_air_coms
    real   :: ribmax      ! Maximum bulk Richardson number (ignored when ISFCLYRM = 1)
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
+   !                  layer conductance (gbh and gbw).                                     !
+   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
+   !                  only.                                                                !
+   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
+   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
+   !                  only.                                                                !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)               :: lwidth_grass
+   real(kind=4)               :: lwidth_bltree
+   real(kind=4)               :: lwidth_nltree
+   !---------------------------------------------------------------------------------------!
+
+
    !=======================================================================================!
    !=======================================================================================!
    !     Parameters used in Euler and Runge-Kutta.                                         !

@@ -536,8 +536,15 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 
 
+
    !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
    real, dimension(n_pft) :: leaf_width
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- This is the characteristic branch diameter [m]. ---------------------------------!
+   real, dimension(n_pft) :: branch_diam
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Parameters to find the crown length, which will be used to find the height of the !

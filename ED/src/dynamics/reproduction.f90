@@ -56,7 +56,8 @@ module reproduction
                                      , area_indices               & ! subroutine
                                      , dbh2krdepth                ! ! function
       use grid_coms           , only : nzg                        ! ! intent(in)
-      use ed_misc_coms        , only : ibigleaf                   ! ! intent(in)
+      use ed_misc_coms        , only : ibigleaf                   & ! intent(in)
+                                     , current_time               ! ! intent(in)
       use phenology_aux       , only : pheninit_balive_bstorage   ! ! intent(in)
       use budget_utils        , only : update_budget              ! ! sub-routine
       use therm_lib           , only : cmtl2uext                  ! ! function
@@ -86,6 +87,7 @@ module reproduction
       integer                             :: ncohorts_new
       logical                             :: late_spring
       logical                             :: allow_pft
+      logical                             :: make_recruit
       real                                :: elim_nplant
       real                                :: elim_lai
       real                                :: nplant_inc
@@ -96,6 +98,8 @@ module reproduction
       real                                :: bbark_plant
       real                                :: balive_plant
       real                                :: rec_biomass
+      logical          , parameter        :: printout  = .false.
+      character(len=17), parameter        :: fracfile  = 'repro_details.txt'
       !----- Saved variables --------------------------------------------------------------!
       logical          , save             :: first_time = .true.
       !------------------------------------------------------------------------------------!
@@ -109,6 +113,18 @@ module reproduction
       !------------------------------------------------------------------------------------!
       if (first_time) then
          if (repro_scheme == 0) seedling_mortality(1:n_pft) = 1.0
+
+         !----- Make the header. ----------------------------------------------------------!
+         if (printout) then
+            open (unit=66,file=fracfile,status='replace',action='write')
+            write (unit=66,fmt='(11(a,1x))')                                               &
+              ,      '  YEAR',     '  MONTH',      '   DAY',      '   IPA',      '   ICO'  &
+              ,      '   PFT','  REC_NPLANT',' REC_BIOMASS','       REPRO','MIN_REC_SIZE'  &
+              ,'MAKE_RECRUIT'
+            close (unit=66,status='keep')
+         end if
+         !---------------------------------------------------------------------------------!
+
          first_time = .false.
       end if
       !------------------------------------------------------------------------------------!
@@ -268,11 +284,30 @@ module reproduction
                                                        + rectest%bstorage )
                         !------------------------------------------------------------------!
 
+                        !----- Decide whether it is possible to build a recruit. ----------!
+                        make_recruit = rec_biomass >= min_recruit_size(ipft)
+                        !------------------------------------------------------------------!
+
+
+                        !------------------------------------------------------------------!
+                        !     Print additional information for debugging.                  !
+                        !------------------------------------------------------------------!
+                        if (printout) then
+                           open (unit=66,file=fracfile,status='old',position='append'      &
+                                ,action='write')
+                           write(unit=66,fmt='(6(1x,i6),4(1x,f12.6),1(12x,l1))')           &
+                              current_time%year,current_time%month,current_time%date       &
+                              ,ipa,ico,ipft,rectest%nplant,rec_biomass                     &
+                              ,csite%repro(ipft,ipa),min_recruit_size(ipft),make_recruit
+                           close (unit=66,status='keep')
+                        end if
+                        !------------------------------------------------------------------!
+
 
                         !------------------------------------------------------------------!
                         !      Create new recruit in case there is enough biomass.         !
                         !------------------------------------------------------------------!
-                        if (rec_biomass >= min_recruit_size(ipft)) then
+                        if (make_recruit) then
 
                            !----- Add new recruit. ----------------------------------------!
                            inew = inew + 1
