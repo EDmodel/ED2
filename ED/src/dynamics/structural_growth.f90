@@ -1079,13 +1079,10 @@ module structural_growth
          !---------------------------------------------------------------------------------!
          if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
             !------------------------------------------------------------------------------!
-            !      This is where allocation to seeds is occuring.  It will need to be      !
-            ! modified but I'm leaving it for later --- GRASSES!  Want to add a functional !
-            ! form to constrain this throughout the season - also consider moving this to  !
-            ! growth_balive since it isn't actually structural growth                      !
+            !      This is where allocation to seeds is occuring.  The two approaches for  !
+            ! grasses are equivalent, therefore we can always use the "big-bang" approach. !
             !------------------------------------------------------------------------------!
-            if (is_grass(ipft) .and. igrass == 1) then
-               !----- New grasses. --------------------------------------------------------!
+            if (is_grass(ipft)) then ! Grasses
                if ( hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)) ) then 
                   !------------------------------------------------------------------------!
                   !   Grasses have reached the maximum height, stop growing in size and    !
@@ -1102,7 +1099,12 @@ module structural_growth
                   f_bseeds = r_fract(ipft)
                   !------------------------------------------------------------------------!
                end if
-               f_bdead  = 0.0
+               select case (igrass)
+               case (0)
+                  f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+               case (1)
+                  f_bdead  = 0.0
+               end select
                !---------------------------------------------------------------------------!
 
             elseif (is_liana(ipft)) then

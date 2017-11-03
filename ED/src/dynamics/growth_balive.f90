@@ -56,7 +56,8 @@ module growth_balive
                                      , growth_resp_scheme         & ! intent(in)
                                      , storage_resp_scheme        ! ! intent(in)
       use budget_utils        , only : update_budget              ! ! sub-routine
-      use consts_coms         , only : tiny_num                   ! ! intent(in)
+      use consts_coms         , only : tiny_num                   & ! intent(in)
+                                     , r_tol_trunc                ! ! intent(in)
       use stable_cohorts      , only : is_resolvable              ! ! function
       use update_derived_utils, only : update_patch_derived_props ! ! sub-routine
 
@@ -260,7 +261,8 @@ module growth_balive
                      !---------------------------------------------------------------------!
                      !                  Update the phenology status.                       !
                      !---------------------------------------------------------------------!
-                     on_allometry = balive_aim - cpatch%balive(ico) <= 0.000001*balive_aim
+                     on_allometry = ( balive_aim - cpatch%balive(ico) ) <=                 &
+                                    ( r_tol_trunc * balive_aim )
                      if (flushing .and. cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                         cpatch%phenology_status(ico) = 0
                      elseif(cpatch%bleaf(ico) < tiny_num .and.                             &
