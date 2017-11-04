@@ -324,7 +324,7 @@ if nsite>0
         else
             
             % Ecosystem Profiles
-	    fprintf(fid,'\\frame{\\noindent\\includegraphics[width=0.48\\textwidth]{%s}\\includegraphics[width=0.48\\textwidth]{%s}}\n',strcomp_timg{is},strcomp_cimg{is});
+            fprintf(fid,'\\frame{\\noindent\\includegraphics[width=0.48\\textwidth]{%s}\\includegraphics[width=0.48\\textwidth]{%s}}\n',strcomp_timg{is},strcomp_cimg{is});
 
             % Biophysics Variables 1
             fprintf(fid,'\\frame{\\includegraphics[height=0.92\\textheight]{%s}}\n',fluxes_img{is});
@@ -333,7 +333,7 @@ if nsite>0
             fprintf(fid,'\\frame{\\includegraphics[height=0.92\\textheight]{%s}}\n',states_img{is});
             
             % Succession
-            fprintf(fid,'\\frame{\\includegraphics[height=0.95\\textheight]{%s}}\n',pftsucc_img{is});
+            fprintf(fid,'\\frame{\\noindent\\includegraphics[width=0.64\\textwidth]{%s}\\includegraphics[width=0.32\\textwidth]{%s}}\n',pftsucc_img{is},soilcarb_img{is});
         end
     end
 end

@@ -41,12 +41,26 @@ DBUG_EXE_PATH="${EXE_PATH}/ed_2.1-dbug"
 #------------------------------------------------------------------------------------------#
 # TESTTYPE -- Which tests are you going to run?  Options are:                              #
 #             "rapid"  -- 2-3 years of simulation                                          #
-#             "medium" -- ~ 75 years of simulation.   The long tests will take a long      #
+#             "medium" -- ~ 125 years of simulation.   The long tests will take a long     #
 #                         time, beware.                                                    #
 #             "long"  -- ~ 300 years of simulation.   The long tests will take a really    #
 #                        really long time, beware.                                         #
 #------------------------------------------------------------------------------------------#
 TESTTYPE="rapid"
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+# RUNTYPE -- Should the test suite start from scratch or continue from where it stopped?   #
+#            Options are:                                                                  #
+#            INITIAL -- start from the beginning.  Most often the case                     #
+#            HISTORY -- continue from where it stopped.  Only use this option in case      #
+#                       you want to resume runs that were stopped by reasons other than    #
+#                       the model crashing (like power outage, queue terminated job, full  #
+#                       disk, etc.)                                                        #
+#------------------------------------------------------------------------------------------#
+RUNTYPE="HISTORY"
 #------------------------------------------------------------------------------------------#
 
 
@@ -145,20 +159,20 @@ MEM_RJG="1845"     # Gridded 12x12 simulation centred on Reserva Jaru
 #                                                                                          #
 # High-frequency runs by default require 1 CPU, as they have only one patch.               #
 #------------------------------------------------------------------------------------------#
-CPU_M34="20"  # Manaus K34 POI (MAXPATCH=20; RAPID_INIT_MODE=5)
-CPU_S67="3"   # Santarem km 67 POI (MAXPATCH=20; RAPID_INIT_MODE=0)
-CPU_HAR="30"  # Harvard Forest POI (MAXPATCH=20; RAPID_INIT_MODE=6)
-CPU_PDG="3"   # Pe-de-Gigante POI (MAXPATCH=20; RAPID_INIT_MODE=0)
-CPU_TON="3"   # Tonzi POI (MAXPATCH=8; RAPID_INIT_MODE=5)
-CPU_CAX="3"   # Caxiuana POI (MAXPATCH=20; RAPID_INIT_MODE=0)
-CPU_TNF="20"  # Tapajos National Forest POI (MAXPATCH=20; RAPID_INIT_MODE=5)
-CPU_ATA="3"   # Atacama Desert POI (MAXPATCH=20; RAPID_INIT_MODE=0)
-CPU_PET="3"   # Petrolina POI (MAXPATCH=20; RAPID_INIT_MODE=6)
-CPU_GYF="3"   # Paracou POI (MAXPATCH=20; RAPID_INIT_MODE=0)
-CPU_S83="20"  # Santarem Km 83 (logging) POI (MAXPATCH=20; RAPID_INIT_MODE=5)
-CPU_PRG="24"  # Paragominas (ALS init) POI (MAXPATCH=24; RAPID_INIT_MODE=6)
-CPU_TL2="3"   # Toolik (Boreal) POI (MAXPATCH=20; RAPID_INIT_MODE=0)
-CPU_RJG="27"  # Gridded 12x12 simulation centred on Reserva Jaru (NPTS=144)
+CPU_M34="12"   # Manaus K34 POI (MAXPATCH=20; RAPID_INIT_MODE=5)
+CPU_S67="12"   # Santarem km 67 POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_HAR="12"   # Harvard Forest POI (MAXPATCH=20; RAPID_INIT_MODE=6)
+CPU_PDG="12"   # Pe-de-Gigante POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_TON="12"   # Tonzi POI (MAXPATCH=8; RAPID_INIT_MODE=5)
+CPU_CAX="12"   # Caxiuana POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_TNF="12"   # Tapajos National Forest POI (MAXPATCH=20; RAPID_INIT_MODE=5)
+CPU_ATA="12"   # Atacama Desert POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_PET="12"   # Petrolina POI (MAXPATCH=20; RAPID_INIT_MODE=6)
+CPU_GYF="12"   # Paracou POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_S83="12"   # Santarem Km 83 (logging) POI (MAXPATCH=20; RAPID_INIT_MODE=5)
+CPU_PRG="24"   # Paragominas (ALS init) POI (MAXPATCH=24; RAPID_INIT_MODE=6)
+CPU_TL2="12"   # Toolik (Boreal) POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_RJG="27"   # Gridded 12x12 simulation centred on Reserva Jaru (NPTS=144)
 #------------------------------------------------------------------------------------------#
 
 
@@ -347,11 +361,11 @@ rapid)
 
 medium)
 
-   echo " - Performing intermediate tests (75 years for POI, 12 years for grid)"
+   echo " - Performing intermediate tests (125 years for POI, 15 years for grid)"
 
    #----- POI tests will run for two years. -----------------------------------------------#
    declare -a IYEARAS=(1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975)
-   declare -a IYEARZS=(2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050)
+   declare -a IYEARZS=(2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100)
    declare -a INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6    0   )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
@@ -360,7 +374,7 @@ medium)
 
 
    #----- Gridded tests will run for only 1 year. -----------------------------------------#
-   declare -a IYEARAG=(1998)
+   declare -a IYEARAG=(1995)
    declare -a IYEARZG=(2010)
    declare -a INITMDG=(5)
    declare -a RUNTYPG=(INITIAL)
@@ -400,7 +414,7 @@ long)
    ;;
 *)
    #----- I don't know what to do... ------------------------------------------------------#
-   echo " !Invalid TESTTYPE: ${TESTTYPE}.  Please specify either 'rapid' or 'long'."
+   echo " !Invalid TESTTYPE: ${TESTTYPE}.  Please specify either 'rapid', 'medium' or 'long'."
    exit 99
    #---------------------------------------------------------------------------------------#
    ;;
@@ -496,53 +510,56 @@ DBUG_EXE=$(basename ${DBUG_EXE_PATH})
 #------------------------------------------------------------------------------------------#
 #     Create the working folder.                                                           #
 #------------------------------------------------------------------------------------------#
-if [ -s ${HERE}/${VERSION} ]
-then
-   echo ""
-   echo "     Delete previous data and generate pristine directory: ${VERSION}? [y|n]"
-   echo " In case you answer y ALL previous data will be lost!"
-   read flusher
-   flusher=$(echo ${flusher} | tr '[:upper:]' '[:lower:]')
-   case ${flusher} in
-   y|Y)
-      #----- Be nice and give a chance to the user to change their minds. -----------------#
-      echo "Fine, but if you regret later don't say I didn't warn you..."
-      echo "I am giving you a few seconds to kill this script in case you aren't sure..."
-      delfun=16
-      while [ ${delfun} -gt 1 ]
-      do
-         let delfun=${delfun}-1
-         echo "  - Deletion will begin in '${delfun}' seconds..."
-         sleep 1
-      done
-      #------------------------------------------------------------------------------------#
+RUNTYPE=$(echo ${RUNTYPE} | tr '[:lower:]' '[:upper:]')
+case "${RUNTYPE}" in
+INITIAL)
+   if [ -s ${HERE}/${VERSION} ]
+   then
+      echo ""
+      echo "     Delete previous data and generate pristine directory: ${VERSION}? [y|n]"
+      echo " In case you answer y ALL previous data will be lost!"
+      read flusher
+      flusher=$(echo ${flusher} | tr '[:upper:]' '[:lower:]')
+      case ${flusher} in
+      y|Y)
+         #----- Be nice and give a chance to the user to change their minds. --------------#
+         echo "Fine, but if you regret later don't say I didn't warn you..."
+         echo "I'm giving you a few seconds to kill this script in case you aren't sure."
+         delfun=16
+         while [ ${delfun} -gt 1 ]
+         do
+            let delfun=${delfun}-1
+            echo "  - Deletion will begin in '${delfun}' seconds..."
+            sleep 1
+         done
+         #---------------------------------------------------------------------------------#
 
 
-      #------------------------------------------------------------------------------------#
-      #     Purge directory then recreate it.  Use find to erase it because it's faster.   #
-      #------------------------------------------------------------------------------------#
-      find ${HERE}/${VERSION} -print -delete
-      #------------------------------------------------------------------------------------#
+         #----- Purge directory then recreate it. -----------------------------------------#
+         find ${HERE}/${VERSION} -print -delete
+         #---------------------------------------------------------------------------------#
 
-      ;;
-   n|N)
+         ;;
+      n|N)
+         #---------------------------------------------------------------------------------#
+         #     Overwrite stuff.                                                            #
+         #---------------------------------------------------------------------------------#
+         echo " Keeping the current directory.  Files may be overwritten, beware..."
+         ;;
+         #---------------------------------------------------------------------------------#
+      *)
+         #----- User doesn't want to continue, stop script. -------------------------------#
+         echo " Invalid option. Hint: 'y' is short of yes, and 'n' is short of no."
+         echo " 'Maybe' and 'whatever' have not been implemented yet."
+         exit 0
+         #---------------------------------------------------------------------------------#
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
-      #     Overwrite stuff.                                                               #
-      #------------------------------------------------------------------------------------#
-      echo " Keeping the current directory.  Files may be overwritten, beware..."
-      ;;
-      #------------------------------------------------------------------------------------#
-   *)
-      #----- User doesn't want to continue, stop script. ----------------------------------#
-      echo " Invalid option. Hint: 'y' is short of yes, and 'n' is short of no."
-      echo " 'Maybe' and 'whatever' have not been implemented yet."
-      exit 0
-      #------------------------------------------------------------------------------------#
-      ;;
-   esac
+   fi
    #---------------------------------------------------------------------------------------#
-fi
-#------------------------------------------------------------------------------------------#
+   ;; 
+esac
 
 
 #----- Start a new directory, create links and copy xml files. ----------------------------#
@@ -550,12 +567,13 @@ mkdir -p ${HERE}/${VERSION}
 LNK_MAIN_EXE="${HERE}/${VERSION}/${MAIN_EXE}"
 LNK_TEST_EXE="${HERE}/${VERSION}/${TEST_EXE}"
 LNK_DBUG_EXE="${HERE}/${VERSION}/${DBUG_EXE}"
-ln -sv ${DATAPATH}            ${HERE}/${VERSION}/edts_datasets
-ln -sv ${MAIN_EXE_PATH}       ${LNK_MAIN_EXE}
-ln -sv ${TEST_EXE_PATH}       ${LNK_TEST_EXE}
-ln -sv ${DBUG_EXE_PATH}       ${LNK_DBUG_EXE}
+ln -sfv ${DATAPATH}            ${HERE}/${VERSION}/edts_datasets
+ln -sfv ${MAIN_EXE_PATH}       ${LNK_MAIN_EXE}
+ln -sfv ${TEST_EXE_PATH}       ${LNK_TEST_EXE}
+ln -sfv ${DBUG_EXE_PATH}       ${LNK_DBUG_EXE}
 cp -v  ${HERE}/Templates/*xml ${HERE}/${VERSION}/
 #------------------------------------------------------------------------------------------#
+
 
 
 
@@ -659,11 +677,154 @@ do
       #------------------------------------------------------------------------------------#
 
 
+      #----- Output folders. --------------------------------------------------------------#
+      F_MAIN_PATH="${HERE}/${VERSION}/F_main_${SITEID[i]}"
+      S_MAIN_PATH="${HERE}/${VERSION}/S_main_${SITEID[i]}"
+      F_TEST_PATH="${HERE}/${VERSION}/F_test_${SITEID[i]}"
+      S_TEST_PATH="${HERE}/${VERSION}/S_test_${SITEID[i]}"
+      F_DBUG_PATH="${HERE}/${VERSION}/F_dbug_${SITEID[i]}"
+      S_DBUG_PATH="${HERE}/${VERSION}/S_dbug_${SITEID[i]}"
+      #------------------------------------------------------------------------------------#
 
-      #----- Modify the ED2IN RUNTYPE. ----------------------------------------------------#
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPS[i]}\'   ${FILEMAIN}
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPS[i]}\'   ${FILETEST}
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPS[i]}\' ${FILEDBUG}
+
+      #----- Output prefixes. -------------------------------------------------------------#
+      F_MAIN_PREF="${F_MAIN_PATH}/main_${SITEID[i]}"
+      S_MAIN_PREF="${S_MAIN_PATH}/main_${SITEID[i]}"
+      F_TEST_PREF="${F_TEST_PATH}/test_${SITEID[i]}"
+      S_TEST_PREF="${S_TEST_PATH}/test_${SITEID[i]}"
+      F_DBUG_PREF="${F_DBUG_PATH}/dbug_${SITEID[i]}"
+      S_DBUG_PREF="${S_DBUG_PATH}/dbug_${SITEID[i]}"
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Reset and flush the output folders. ------------------------------------------#
+      mkdir -p ${F_MAIN_PATH}
+      mkdir -p ${F_TEST_PATH}
+      mkdir -p ${F_DBUG_PATH}
+      mkdir -p ${S_MAIN_PATH}
+      mkdir -p ${S_TEST_PATH}
+      mkdir -p ${S_DBUG_PATH}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Decide whether to continue the run or start from beginning. ------------------#
+      case ${RUNTYPE} in
+      INITIAL)
+         #----- Use default initialisation. -----------------------------------------------#
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPS[i]}\'   ${FILEMAIN}
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPS[i]}\'   ${FILETEST}
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPS[i]}\' ${FILEDBUG}
+         #---------------------------------------------------------------------------------#
+
+         #----- Initial.  All simulations must be submitted. ------------------------------#
+         SUBMIT_MAIN="y"
+         SUBMIT_TEST="y"
+         SUBMIT_DBUG="y"
+         #---------------------------------------------------------------------------------#
+
+         ;;
+      HISTORY)
+         #----- Look for history files (MAIN) then decide how to set up the run. ----------#
+         LHIST_MAIN=$(/bin/ls -1 ${S_MAIN_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_MAIN}" != "" ]
+         then
+            IYEARH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 12-15)
+            IMONTHH_MAIN=$(echo ${LHIST_MAIN} | cut -c 17-18)
+            IDATEH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 20-21)
+            ITIMEH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'      ${FILEMAIN}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_MAIN} ${FILEMAIN}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_MAIN_PREF}\'   ${FILEMAIN}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPS[i]}\'   ${FILEMAIN}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Look for history files (TEST) then decide how to set up the run. ----------#
+         LHIST_TEST=$(/bin/ls -1 ${S_TEST_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         
+         if [ "${LHIST_TEST}" != "" ]
+         then
+            IYEARH_TEST=$(echo  ${LHIST_TEST} | cut -c 12-15)
+            IMONTHH_TEST=$(echo ${LHIST_TEST} | cut -c 17-18)
+            IDATEH_TEST=$(echo  ${LHIST_TEST} | cut -c 20-21)
+            ITIMEH_TEST=$(echo  ${LHIST_TEST} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'      ${FILETEST}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_TEST}   ${FILETEST}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_TEST} ${FILETEST}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_TEST}   ${FILETEST}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_TEST}   ${FILETEST}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_TEST_PREF}\'   ${FILETEST}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPS[i]}\'   ${FILETEST}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Look for history files (DBUG) then decide how to set up the run. ----------#
+         LHIST_DBUG=$(/bin/ls -1 ${S_DBUG_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_DBUG}" != "" ]
+         then
+            IYEARH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 12-15)
+            IMONTHH_DBUG=$(echo ${LHIST_DBUG} | cut -c 17-18)
+            IDATEH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 20-21)
+            ITIMEH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'         ${FILEDBUG}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_DBUG}    ${FILEDBUG}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_DBUG_PREF}\'      ${FILEDBUG}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPS[i]}\'   ${FILEDBUG}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find out whether to submit the run or not.  Default is yes, unless it has   #
+         # reached the end.                                                                #
+         #---------------------------------------------------------------------------------#
+         #----- Main. ---------------------------------------------------------------------#
+         STDOUT_MAIN="${HERE}/${VERSION}/main_${SITEID[i]}.out"
+         THE_END_MAIN=$(grep "ED-2.2 execution ends" ${STDOUT_MAIN} 2> /dev/null | wc -l)
+         if [ ${THE_END_MAIN} -gt 0 ]
+         then 
+            SUBMIT_MAIN="n"
+         else
+            SUBMIT_MAIN="y"
+         fi
+         #----- Test. ---------------------------------------------------------------------#
+         STDOUT_TEST="${HERE}/${VERSION}/test_${SITEID[i]}.out"
+         THE_END_TEST=$(grep "ED-2.2 execution ends" ${STDOUT_TEST} 2> /dev/null | wc -l)
+         if [ ${THE_END_TEST} -gt 0 ]
+         then 
+            SUBMIT_TEST="n"
+         else
+            SUBMIT_TEST="y"
+         fi
+         #----- DBUG. ---------------------------------------------------------------------#
+         STDOUT_DBUG="${HERE}/${VERSION}/dbug_${SITEID[i]}.out"
+         THE_END_DBUG=$(grep "ED-2.2 execution ends" ${STDOUT_DBUG} 2> /dev/null | wc -l)
+         if [ ${THE_END_DBUG} -gt 0 ]
+         then 
+            SUBMIT_DBUG="n"
+         else
+            SUBMIT_DBUG="y"
+         fi
+         #---------------------------------------------------------------------------------#
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
@@ -689,14 +850,13 @@ do
 
 
       #----- Modify the ED2IN files to point to the desired output directories. -----------#
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_main_'${SITEID[i]}'/main_'${SITEID[i]}''\' ${FILEMAIN}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_main_'${SITEID[i]}'/main_'${SITEID[i]}''\' ${FILEMAIN}
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_test_'${SITEID[i]}'/test_'${SITEID[i]}''\' ${FILETEST}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_test_'${SITEID[i]}'/test_'${SITEID[i]}''\' ${FILETEST}
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_dbug_'${SITEID[i]}'/dbug_'${SITEID[i]}''\' ${FILEDBUG}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_dbug_'${SITEID[i]}'/dbug_'${SITEID[i]}''\' ${FILEDBUG}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_MAIN_PREF}\' ${FILEMAIN}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_MAIN_PREF}\' ${FILEMAIN}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_TEST_PREF}\' ${FILETEST}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_TEST_PREF}\' ${FILETEST}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_DBUG_PREF}\' ${FILEDBUG}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_DBUG_PREF}\' ${FILEDBUG}
       #------------------------------------------------------------------------------------#
-
 
 
       #----- Modify the state file output frequency. --------------------------------------#
@@ -706,74 +866,89 @@ do
       #------------------------------------------------------------------------------------#
 
 
-      #----- Reset and flush the output folders. ------------------------------------------#
-      mkdir -p ${HERE}/${VERSION}/F_main_${SITEID[i]}
-      mkdir -p ${HERE}/${VERSION}/F_test_${SITEID[i]}
-      mkdir -p ${HERE}/${VERSION}/F_dbug_${SITEID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_main_${SITEID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_test_${SITEID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_dbug_${SITEID[i]}
       #------------------------------------------------------------------------------------#
-
-
-      #----- Update count. ----------------------------------------------------------------#
-      let maincount=${tcount}+0
-      let testcount=${tcount}+1
-      let dbugcount=${tcount}+2
+      #   Make sure medium and long tests won't write fast or daily files.                 #
       #------------------------------------------------------------------------------------#
-
+      case ${TESTTYPE} in
+      medium|long)
+         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILEDBUG}
+         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILEDBUG}
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/main_${SITEID[i]}.out
-      joberr=${HERE}/${VERSION}/main_${SITEID[i]}.err
-      jobname=${VERSION}_${SITEID[i]}_main
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
-      jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
-      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_MAIN} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/main_${SITEID[i]}.out
+         joberr=${HERE}/${VERSION}/main_${SITEID[i]}.err
+         jobname=${VERSION}_${SITEID[i]}_main
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
+         jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
+         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Main has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/test_${SITEID[i]}.out
-      joberr=${HERE}/${VERSION}/test_${SITEID[i]}.err
-      jobname=${VERSION}_${SITEID[i]}_test
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
-      jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
-      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_TEST} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/test_${SITEID[i]}.out
+         joberr=${HERE}/${VERSION}/test_${SITEID[i]}.err
+         jobname=${VERSION}_${SITEID[i]}_test
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
+         jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
+         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Test has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/dbug_${SITEID[i]}.out
-      joberr=${HERE}/${VERSION}/dbug_${SITEID[i]}.err
-      jobname=${VERSION}_${SITEID[i]}_dbug
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
-      jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
-      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_DBUG} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/dbug_${SITEID[i]}.out
+         joberr=${HERE}/${VERSION}/dbug_${SITEID[i]}.err
+         jobname=${VERSION}_${SITEID[i]}_dbug
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
+         jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
+         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Dbug has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
@@ -823,11 +998,154 @@ do
       #------------------------------------------------------------------------------------#
 
 
+      #----- Output folders. --------------------------------------------------------------#
+      F_MAIN_PATH="${HERE}/${VERSION}/F_main_${HIFRID[i]}"
+      S_MAIN_PATH="${HERE}/${VERSION}/S_main_${HIFRID[i]}"
+      F_TEST_PATH="${HERE}/${VERSION}/F_test_${HIFRID[i]}"
+      S_TEST_PATH="${HERE}/${VERSION}/S_test_${HIFRID[i]}"
+      F_DBUG_PATH="${HERE}/${VERSION}/F_dbug_${HIFRID[i]}"
+      S_DBUG_PATH="${HERE}/${VERSION}/S_dbug_${HIFRID[i]}"
+      #------------------------------------------------------------------------------------#
 
-      #----- Modify the ED2IN RUNTYPE. ----------------------------------------------------#
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\' ${FILEMAIN}
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\' ${FILETEST}
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\' ${FILEDBUG}
+
+      #----- Output prefixes. -------------------------------------------------------------#
+      F_MAIN_PREF="${F_MAIN_PATH}/main_${HIFRID[i]}"
+      S_MAIN_PREF="${S_MAIN_PATH}/main_${HIFRID[i]}"
+      F_TEST_PREF="${F_TEST_PATH}/test_${HIFRID[i]}"
+      S_TEST_PREF="${S_TEST_PATH}/test_${HIFRID[i]}"
+      F_DBUG_PREF="${F_DBUG_PATH}/dbug_${HIFRID[i]}"
+      S_DBUG_PREF="${S_DBUG_PATH}/dbug_${HIFRID[i]}"
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Reset and flush the output folders. ------------------------------------------#
+      mkdir -p ${F_MAIN_PATH}
+      mkdir -p ${F_TEST_PATH}
+      mkdir -p ${F_DBUG_PATH}
+      mkdir -p ${S_MAIN_PATH}
+      mkdir -p ${S_TEST_PATH}
+      mkdir -p ${S_DBUG_PATH}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Decide whether to continue the run or start from beginning. ------------------#
+      case ${RUNTYPE} in
+      INITIAL)
+         #----- Use default initialisation. -----------------------------------------------#
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\'   ${FILEMAIN}
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\'   ${FILETEST}
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPH[i]}\' ${FILEDBUG}
+         #---------------------------------------------------------------------------------#
+
+         #----- Initial.  All simulations must be submitted. ------------------------------#
+         SUBMIT_MAIN="y"
+         SUBMIT_TEST="y"
+         SUBMIT_DBUG="y"
+         #---------------------------------------------------------------------------------#
+
+         ;;
+      HISTORY)
+         #----- Look for history files (MAIN) then decide how to set up the run. ----------#
+         LHIST_MAIN=$(/bin/ls -1 ${S_MAIN_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_MAIN}" != "" ]
+         then
+            IYEARH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 12-15)
+            IMONTHH_MAIN=$(echo ${LHIST_MAIN} | cut -c 17-18)
+            IDATEH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 20-21)
+            ITIMEH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'      ${FILEMAIN}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_MAIN} ${FILEMAIN}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_MAIN_PREF}\'   ${FILEMAIN}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\'   ${FILEMAIN}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Look for history files (TEST) then decide how to set up the run. ----------#
+         LHIST_TEST=$(/bin/ls -1 ${S_TEST_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_TEST}" != "" ]
+         then
+            IYEARH_TEST=$(echo  ${LHIST_TEST} | cut -c 12-15)
+            IMONTHH_TEST=$(echo ${LHIST_TEST} | cut -c 17-18)
+            IDATEH_TEST=$(echo  ${LHIST_TEST} | cut -c 20-21)
+            ITIMEH_TEST=$(echo  ${LHIST_TEST} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'      ${FILETEST}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_TEST}   ${FILETEST}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_TEST} ${FILETEST}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_TEST}   ${FILETEST}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_TEST}   ${FILETEST}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_TEST_PREF}\'   ${FILETEST}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\'   ${FILETEST}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Look for history files (DBUG) then decide how to set up the run. ----------#
+         LHIST_DBUG=$(/bin/ls -1 ${S_DBUG_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_DBUG}" != "" ]
+         then
+            IYEARH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 12-15)
+            IMONTHH_DBUG=$(echo ${LHIST_DBUG} | cut -c 17-18)
+            IDATEH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 20-21)
+            ITIMEH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'         ${FILEDBUG}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_DBUG}    ${FILEDBUG}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_DBUG_PREF}\'      ${FILEDBUG}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPH[i]}\'   ${FILEDBUG}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find out whether to submit the run or not.  Default is yes, unless it has   #
+         # reached the end.                                                                #
+         #---------------------------------------------------------------------------------#
+         #----- Main. ---------------------------------------------------------------------#
+         STDOUT_MAIN="${HERE}/${VERSION}/main_${HIFRID[i]}.out"
+         THE_END_MAIN=$(grep "ED-2.2 execution ends" ${STDOUT_MAIN} 2> /dev/null | wc -l)
+         if [ ${THE_END_MAIN} -gt 0 ]
+         then 
+            SUBMIT_MAIN="n"
+         else
+            SUBMIT_MAIN="y"
+         fi
+         #----- Test. ---------------------------------------------------------------------#
+         STDOUT_TEST="${HERE}/${VERSION}/test_${HIFRID[i]}.out"
+         THE_END_TEST=$(grep "ED-2.2 execution ends" ${STDOUT_TEST} 2> /dev/null | wc -l)
+         if [ ${THE_END_TEST} -gt 0 ]
+         then 
+            SUBMIT_TEST="n"
+         else
+            SUBMIT_TEST="y"
+         fi
+         #----- DBUG. ---------------------------------------------------------------------#
+         STDOUT_DBUG="${HERE}/${VERSION}/dbug_${HIFRID[i]}.out"
+         THE_END_DBUG=$(grep "ED-2.2 execution ends" ${STDOUT_DBUG} 2> /dev/null | wc -l)
+         if [ ${THE_END_DBUG} -gt 0 ]
+         then 
+            SUBMIT_DBUG="n"
+         else
+            SUBMIT_DBUG="y"
+         fi
+         #---------------------------------------------------------------------------------#
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
@@ -853,83 +1171,87 @@ do
 
 
       #----- Modify the ED2IN files to point to the desired output directories. -----------#
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_main_'${HIFRID[i]}'/main_'${HIFRID[i]}''\' ${FILEMAIN}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_main_'${HIFRID[i]}'/main_'${HIFRID[i]}''\' ${FILEMAIN}
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_test_'${HIFRID[i]}'/test_'${HIFRID[i]}''\' ${FILETEST}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_test_'${HIFRID[i]}'/test_'${HIFRID[i]}''\' ${FILETEST}
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_dbug_'${HIFRID[i]}'/dbug_'${HIFRID[i]}''\' ${FILEDBUG}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_dbug_'${HIFRID[i]}'/dbug_'${HIFRID[i]}''\' ${FILEDBUG}
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Reset and flush the output folders. ------------------------------------------#
-      mkdir -p ${HERE}/${VERSION}/F_main_${HIFRID[i]}
-      mkdir -p ${HERE}/${VERSION}/F_test_${HIFRID[i]}
-      mkdir -p ${HERE}/${VERSION}/F_dbug_${HIFRID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_main_${HIFRID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_test_${HIFRID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_dbug_${HIFRID[i]}
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Update count. ----------------------------------------------------------------#
-      let maincount=${tcount}+0
-      let testcount=${tcount}+1
-      let dbugcount=${tcount}+2
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_MAIN_PREF}\' ${FILEMAIN}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_MAIN_PREF}\' ${FILEMAIN}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_TEST_PREF}\' ${FILETEST}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_TEST_PREF}\' ${FILETEST}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_DBUG_PREF}\' ${FILEDBUG}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_DBUG_PREF}\' ${FILEDBUG}
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/main_${HIFRID[i]}.out
-      joberr=${HERE}/${VERSION}/main_${HIFRID[i]}.err
-      jobname=${VERSION}_${HIFRID[i]}_main
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
-      jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
-      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_MAIN} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/main_${HIFRID[i]}.out
+         joberr=${HERE}/${VERSION}/main_${HIFRID[i]}.err
+         jobname=${VERSION}_${HIFRID[i]}_main
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
+         jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
+         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Main has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/test_${HIFRID[i]}.out
-      joberr=${HERE}/${VERSION}/test_${HIFRID[i]}.err
-      jobname=${VERSION}_${HIFRID[i]}_test
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
-      jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
-      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_TEST} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/test_${HIFRID[i]}.out
+         joberr=${HERE}/${VERSION}/test_${HIFRID[i]}.err
+         jobname=${VERSION}_${HIFRID[i]}_test
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
+         jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
+         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Test has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/dbug_${HIFRID[i]}.out
-      joberr=${HERE}/${VERSION}/dbug_${HIFRID[i]}.err
-      jobname=${VERSION}_${HIFRID[i]}_dbug
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
-      jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
-      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_DBUG} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/dbug_${HIFRID[i]}.out
+         joberr=${HERE}/${VERSION}/dbug_${HIFRID[i]}.err
+         jobname=${VERSION}_${HIFRID[i]}_dbug
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
+         jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
+         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Dbug has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
       ;;
@@ -974,12 +1296,156 @@ do
       #------------------------------------------------------------------------------------#
 
 
-
-      #----- Modify the ED2IN RUNTYPE. ----------------------------------------------------#
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPG[i]}\'   ${FILEMAIN}
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPG[i]}\'   ${FILETEST}
-      sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPG[i]}\' ${FILEDBUG}
+      #----- Output folders. --------------------------------------------------------------#
+      F_MAIN_PATH="${HERE}/${VERSION}/F_main_${GRIDID[i]}"
+      S_MAIN_PATH="${HERE}/${VERSION}/S_main_${GRIDID[i]}"
+      F_TEST_PATH="${HERE}/${VERSION}/F_test_${GRIDID[i]}"
+      S_TEST_PATH="${HERE}/${VERSION}/S_test_${GRIDID[i]}"
+      F_DBUG_PATH="${HERE}/${VERSION}/F_dbug_${GRIDID[i]}"
+      S_DBUG_PATH="${HERE}/${VERSION}/S_dbug_${GRIDID[i]}"
       #------------------------------------------------------------------------------------#
+
+
+      #----- Output prefixes. -------------------------------------------------------------#
+      F_MAIN_PREF="${F_MAIN_PATH}/main_${GRIDID[i]}"
+      S_MAIN_PREF="${S_MAIN_PATH}/main_${GRIDID[i]}"
+      F_TEST_PREF="${F_TEST_PATH}/test_${GRIDID[i]}"
+      S_TEST_PREF="${S_TEST_PATH}/test_${GRIDID[i]}"
+      F_DBUG_PREF="${F_DBUG_PATH}/dbug_${GRIDID[i]}"
+      S_DBUG_PREF="${S_DBUG_PATH}/dbug_${GRIDID[i]}"
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Reset and flush the output folders. ------------------------------------------#
+      mkdir -p ${F_MAIN_PATH}
+      mkdir -p ${F_TEST_PATH}
+      mkdir -p ${F_DBUG_PATH}
+      mkdir -p ${S_MAIN_PATH}
+      mkdir -p ${S_TEST_PATH}
+      mkdir -p ${S_DBUG_PATH}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Decide whether to continue the run or start from beginning. ------------------#
+      case ${RUNTYPE} in
+      INITIAL)
+         #----- Use default initialisation. -----------------------------------------------#
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPG[i]}\'   ${FILEMAIN}
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPG[i]}\'   ${FILETEST}
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPG[i]}\' ${FILEDBUG}
+         #---------------------------------------------------------------------------------#
+
+         #----- Initial.  All simulations must be submitted. ------------------------------#
+         SUBMIT_MAIN="y"
+         SUBMIT_TEST="y"
+         SUBMIT_DBUG="y"
+         #---------------------------------------------------------------------------------#
+
+         ;;
+      HISTORY)
+         #----- Look for history files (MAIN) then decide how to set up the run. ----------#
+         LHIST_MAIN=$(/bin/ls -1 ${S_MAIN_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_MAIN}" != "" ]
+         then
+            IYEARH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 12-15)
+            IMONTHH_MAIN=$(echo ${LHIST_MAIN} | cut -c 17-18)
+            IDATEH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 20-21)
+            ITIMEH_MAIN=$(echo  ${LHIST_MAIN} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'      ${FILEMAIN}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_MAIN} ${FILEMAIN}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_MAIN}   ${FILEMAIN}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_MAIN_PREF}\'   ${FILEMAIN}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPG[i]}\'   ${FILEMAIN}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Look for history files (TEST) then decide how to set up the run. ----------#
+         LHIST_TEST=$(/bin/ls -1 ${S_TEST_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_TEST}" != "" ]
+         then
+            IYEARH_TEST=$(echo  ${LHIST_TEST} | cut -c 12-15)
+            IMONTHH_TEST=$(echo ${LHIST_TEST} | cut -c 17-18)
+            IDATEH_TEST=$(echo  ${LHIST_TEST} | cut -c 20-21)
+            ITIMEH_TEST=$(echo  ${LHIST_TEST} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'      ${FILETEST}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_TEST}   ${FILETEST}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_TEST} ${FILETEST}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_TEST}   ${FILETEST}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_TEST}   ${FILETEST}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_TEST_PREF}\'   ${FILETEST}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPG[i]}\'   ${FILETEST}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Look for history files (DBUG) then decide how to set up the run. ----------#
+         LHIST_DBUG=$(/bin/ls -1 ${S_DBUG_PREF}-S-*h5 2> /dev/null | xargs -n 1 basename   \
+                      2> /dev/null | tail -1)
+         if [ "${LHIST_DBUG}" != "" ]
+         then
+            IYEARH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 12-15)
+            IMONTHH_DBUG=$(echo ${LHIST_DBUG} | cut -c 17-18)
+            IDATEH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 20-21)
+            ITIMEH_DBUG=$(echo  ${LHIST_DBUG} | cut -c 23-26)
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\''HISTORY'\'         ${FILEDBUG}
+            sed -i '/NL%IYEARH/c\   NL%IYEARH = '${IYEARH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%IMONTHH/c\   NL%IMONTHH = '${IMONTHH_DBUG}    ${FILEDBUG}
+            sed -i '/NL%IDATEH/c\   NL%IDATEH = '${IDATEH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_DBUG}      ${FILEDBUG}
+            sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_DBUG_PREF}\'      ${FILEDBUG}
+         else
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPG[i]}\'   ${FILEDBUG}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find out whether to submit the run or not.  Default is yes, unless it has   #
+         # reached the end.                                                                #
+         #---------------------------------------------------------------------------------#
+         #----- Main. ---------------------------------------------------------------------#
+         STDOUT_MAIN="${HERE}/${VERSION}/main_${GRIDID[i]}.out"
+         THE_END_MAIN=$(grep "ED-2.2 execution ends" ${STDOUT_MAIN} 2> /dev/null | wc -l)
+         if [ ${THE_END_MAIN} -gt 0 ]
+         then 
+            SUBMIT_MAIN="n"
+         else
+            SUBMIT_MAIN="y"
+         fi
+         #----- Test. ---------------------------------------------------------------------#
+         STDOUT_TEST="${HERE}/${VERSION}/test_${GRIDID[i]}.out"
+         THE_END_TEST=$(grep "ED-2.2 execution ends" ${STDOUT_TEST} 2> /dev/null | wc -l)
+         if [ ${THE_END_TEST} -gt 0 ]
+         then 
+            SUBMIT_TEST="n"
+         else
+            SUBMIT_TEST="y"
+         fi
+         #----- DBUG. ---------------------------------------------------------------------#
+         STDOUT_DBUG="${HERE}/${VERSION}/dbug_${GRIDID[i]}.out"
+         THE_END_DBUG=$(grep "ED-2.2 execution ends" ${STDOUT_DBUG} 2> /dev/null | wc -l)
+         if [ ${THE_END_DBUG} -gt 0 ]
+         then 
+            SUBMIT_DBUG="n"
+         else
+            SUBMIT_DBUG="y"
+         fi
+         #---------------------------------------------------------------------------------#
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
 
 
       #----- Modify the ED2IN IED_INIT_MODE. ----------------------------------------------#
@@ -1004,83 +1470,99 @@ do
 
 
       #----- Modify the ED2IN files to point to the desired output directories. -----------#
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_main_'${GRIDID[i]}'/main_'${GRIDID[i]}''\' ${FILEMAIN}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_main_'${GRIDID[i]}'/main_'${GRIDID[i]}''\' ${FILEMAIN}
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_test_'${GRIDID[i]}'/test_'${GRIDID[i]}''\' ${FILETEST}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_test_'${GRIDID[i]}'/test_'${GRIDID[i]}''\' ${FILETEST}
-      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${HERE}'/'${VERSION}'/F_dbug_'${GRIDID[i]}'/dbug_'${GRIDID[i]}''\' ${FILEDBUG}
-      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${HERE}'/'${VERSION}'/S_dbug_'${GRIDID[i]}'/dbug_'${GRIDID[i]}''\' ${FILEDBUG}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_MAIN_PREF}\' ${FILEMAIN}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_MAIN_PREF}\' ${FILEMAIN}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_TEST_PREF}\' ${FILETEST}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_TEST_PREF}\' ${FILETEST}
+      sed -i '/NL%FFILOUT/c\   NL%FFILOUT = '\'${F_DBUG_PREF}\' ${FILEDBUG}
+      sed -i '/NL%SFILOUT/c\   NL%SFILOUT = '\'${S_DBUG_PREF}\' ${FILEDBUG}
       #------------------------------------------------------------------------------------#
 
 
-      #----- Reset and flush the output folders. ------------------------------------------#
-      mkdir -p ${HERE}/${VERSION}/F_main_${GRIDID[i]}
-      mkdir -p ${HERE}/${VERSION}/F_test_${GRIDID[i]}
-      mkdir -p ${HERE}/${VERSION}/F_dbug_${GRIDID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_main_${GRIDID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_test_${GRIDID[i]}
-      mkdir -p ${HERE}/${VERSION}/S_dbug_${GRIDID[i]}
       #------------------------------------------------------------------------------------#
-
-
-      #----- Update count. ----------------------------------------------------------------#
-      let maincount=${tcount}+0
-      let testcount=${tcount}+1
-      let dbugcount=${tcount}+2
+      #   Make sure medium and long tests won't write fast or daily files.                 #
+      #------------------------------------------------------------------------------------#
+      case ${TESTTYPE} in
+      medium|long)
+         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILEDBUG}
+         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILEDBUG}
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/main_${GRIDID[i]}.out
-      joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
-      jobname=${VERSION}_${GRIDID[i]}_main
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
-      jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_MAIN} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/main_${GRIDID[i]}.out
+         joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
+         jobname=${VERSION}_${GRIDID[i]}_main
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
+         jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Main has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/test_${GRIDID[i]}.out
-      joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
-      jobname=${VERSION}_${GRIDID[i]}_test
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
-      jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_TEST_EXE} -f ${FILETEST}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_TEST} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/test_${GRIDID[i]}.out
+         joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
+         jobname=${VERSION}_${GRIDID[i]}_test
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
+         jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_TEST_EXE} -f ${FILETEST}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Test has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
-      joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
-      jobname=${VERSION}_${GRIDID[i]}_dbug
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
-      jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
-      jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_DBUG_EXE} -f ${FILEDBUG}"
-      jobwrap="\"(${jobwrap})\""
-      jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
-      jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
-      echo ${jobcomm} >> ${subbatch}
+      case ${SUBMIT_DBUG} in
+      y|Y)
+         jobout=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
+         joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
+         jobname=${VERSION}_${GRIDID[i]}_dbug
+         jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
+         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
+         jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+         jobwrap="\"(${jobwrap})\""
+         jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
+         jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
+         echo ${jobcomm} >> ${subbatch}
+         ;;
+      *)
+         echo "     * Dbug has already reached the end and won't be submitted."
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
       ;;

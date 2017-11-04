@@ -1,134 +1,264 @@
 #!/bin/bash
+#==========================================================================================#
+#==========================================================================================#
+#  Simple script to check simulation status.                                               #
+#------------------------------------------------------------------------------------------#
+here=$(pwd)
 
-#===============================================================================
-#  Simple script to check executions
-#===============================================================================
+#----- Find the number of arguments. ------------------------------------------------------#
+nargs=$#
+args=$@
+#------------------------------------------------------------------------------------------#
 
-# This variable is key to defining your output
 
-echo ""
-echo "==========================================="
+#----- Initialise variables. --------------------------------------------------------------#
+SUITE=""
+PLATFORM=""
+OUTFORM="JobName%200,State%12"
+VERBOSE=false
+#------------------------------------------------------------------------------------------#
 
-if [ -z "$1" ]
-  then
-    echo "One arguments is expected"
-    echo "arg 1: string defining the run version"
-    echo ""
-    echo "example 1:"
-    echo "prompt>./check_runs.sh 81rk4rapid"
-    echo "==========================================="
-    echo ""
-    exit
+
+
+#----- Argument parsing. ------------------------------------------------------------------#
+while [[ ${#} > 0 ]]
+do
+   key="${1}"
+   case ${key} in
+   -p|--platform)
+      PLATFORM="${2}"
+      shift 2
+      ;;
+   -s|--suite)
+      SUITE="${2}"
+      shift 2
+      ;;
+   -o|--outform)
+      OUTFORM="${2}"
+      shift 2
+      ;;
+   -v|--verbose)
+      VERBOSE=true
+      shift 1
+      ;;
+   *)
+      echo "Unrecognised option ${key}"
+      echo "Usage: ./check_runs.sh -p <platform> -s <suite> [-o <outform>]"
+      ;;
+   esac
+done
+#------------------------------------------------------------------------------------------#
+
+
+#---- Ask user in case they didn't provide the platform. ----------------------------------#
+if [ "${PLATFORM}" == "" ]
+then
+   echo -n  "Which platform are you using? (e.g. odyssey, sdumont)   "
+   read PLATFORM
 fi
+#------------------------------------------------------------------------------------------#
 
-version=$1
-folder=$1
 
-nmain=`ls ${folder}/main*out | wc -l`
-ntest=`ls ${folder}/test*out | wc -l`
-ndbug=`ls ${folder}/dbug*out | wc -l`
 
-ls ${folder}/main*out > mainfiles.txt
-ls ${folder}/test*out > testfiles.txt
-ls ${folder}/dbug*out > dbugfiles.txt
-
-# Loop through the longest list and pull the tags
-
-if [ $nmain -gt $ntest ]; then
-    if [ $nmain -gt $ndbug ]; then
-	#USE NMAIN
-	LIST=mainfiles.txt
-	FLAG=main
-    else
-	#USE NDBUG
-	LIST=dbugfiles.txt
-	FLAG=dbug
-    fi
-else
-    if [ $ntest -gt $ndbug ]; then
-	#USE NTEST
-	LIST=testfiles.txt
-	FLAG=test
-    else
-	#USE NDBUG
-	LIST=dbugfiles.txt
-	FLAG=dbug
-    fi
+#---- Ask the user in case they didn't provide the test suite path. -----------------------#
+if [ "${SUITE}" == "" ]
+then
+   echo ""
+   echo ""
+   /bin/ls ${here}
+   echo ""
+   echo -n  "Which test suite to check? (possibly listed above)   "
+   read SUITE
 fi
+#------------------------------------------------------------------------------------------#
 
+#----- Delete trailing slashes from SUITE. ------------------------------------------------#
+SUITE=$(echo ${SUITE} | sed s@"/$"@""@g)
+#------------------------------------------------------------------------------------------#
 
-echo "SITE DBUG TEST MAIN"
-while IFS= read -r line
-  do
+#----- List sites. ------------------------------------------------------------------------#
+sites=$(ls ${SUITE}/ED2IN-???-MAIN | sed s@"${SUITE}/"@""@g | cut -c 7-9)
+sites=$(echo ${sites} | tr '[:upper:]' '[:lower:]')
+nsites=$(ls ${SUITE}/ED2IN-???-MAIN | wc -l)
+#------------------------------------------------------------------------------------------#
 
-  echo $line
+#---- List tests. -------------------------------------------------------------------------#
+sims="dbug test main"
+nsims=$(echo ${sims} | wc -w)
+#------------------------------------------------------------------------------------------#
 
-  id1=`expr index "$line" '/'`
-  token=${line:$id1}
-  id2=`expr index "$token" '_'`
-  tag=${token:$id2:3}
+let nsuite=${nsites}*${nsims}
 
-  # Check dbug
-  DCHECK=`qstat -u ${USER} | grep -is $tag | grep -is dbug | wc -l`
-  if [ $DCHECK -gt 0 ]; then
-      DRES="RUNN"
-  else
-      lastfile=`ls ${folder}/dbug_${tag}*out | awk '{ f=$NF };END{ print f }'`
-      if [ -f $lastfile ]; then
-	  DCHECK=`grep -is 'ED execution ends' $lastfile | wc -l`
-	  if [ $DCHECK -gt 0 ];then
-	      DRES="COMP"
-	  else
-	      DRES="FAIL"
-	  fi
+#----- Go through all sites. --------------------------------------------------------------#
+ffout=
+for site in ${sites}
+do
+
+   echo " Site ${site}:"
+
+   for sim in ${sims}
+   do
+
+      #------------------------------------------------------------------------------------#
+      #    Format count.                                                                   #
+      #------------------------------------------------------------------------------------#
+      if   [ ${nsuite} -ge 10   ] && [ ${nsuite} -lt 100   ]
+      then
+         ffout=$(printf '%2.2i' ${ff})
+      elif [ ${nsuite} -ge 100  ] && [ ${nsuite} -lt 1000  ]
+      then
+         ffout=$(printf '%2.2i' ${ff})
+      elif [ ${nsuite} -ge 100  ] && [ ${nsuite} -lt 10000 ]
+      then
+         ffout=$(printf '%2.2i' ${ff})
       else
-	  DRES="----"
+         ffout=${ff}
       fi
-  fi
-
-  # Check test
-  TCHECK=`qstat -u ${USER} | grep -is $tag | grep -is test | wc -l`
-  if [ $TCHECK -gt 0 ]; then
-      TRES="RUNN"
-  else
-      lastfile=`ls ${folder}/test_${tag}*out | awk '{ f=$NF };END{ print f }'`
-      if [ -f $lastfile ]; then
-          TCHECK=`grep -is 'ED execution ends' $lastfile | wc -l`
-          if [ $TCHECK -gt 0 ];then
-              TRES="COMP"
-          else
-              TRES="FAIL"
-          fi
-      else
-          TRES="----"
-      fi
-  fi
+      #------------------------------------------------------------------------------------#
 
 
-  # Check main
-  MCHECK=`qstat -u ${USER} | grep -is $tag | grep -is main | wc -l`
-  if [ $MCHECK -gt 0 ]; then
-      MRES="RUNN"
-  else
-      lastfile=`ls ${folder}/main_${tag}*out | awk '{ f=$NF };END{ print f }'`
-      if [ -f $lastfile ]; then
-          MCHECK=`grep -is 'ED execution ends' $lastfile | wc -l`
-          if [ $MCHECK -gt 0 ];then
-              MRES="COMP"
-          else
-              MRES="FAIL"
-          fi
-      else
-          MRES="----"
-      fi
-  fi
+      #------------------------------------------------------------------------------------#
+      #     Set some variables to check whether the simulation is running.                 #
+      #------------------------------------------------------------------------------------#
+      stdout="${here}/${SUITE}/${sim}_${site}.out"
+      stderr="${here}/${SUITE}/${sim}_${site}.err"
+      jobname="${SUITE}_${site}_${sim}"
+      #------------------------------------------------------------------------------------#
 
-  echo $tag"  "$DRES $TRES $MRES
 
-done < $LIST
+      if [ -s ${stdout} ]
+      then
+         case ${PLATFORM} in
+         odyssey|sdumont)
+            stask="stask --noheader -u ${USER} -j ${jobname} -t ${jobname}"
+            running=$(${stask} -o "${OUTFORM}" | grep "RUNNING"   | wc -l)
+            pending=$(${stask} -o "${OUTFORM}" | grep "PENDING"   | wc -l)
+            suspend=$(${stask} -o "${OUTFORM}" | grep "SUSPENDED" | wc -l)
+            ;;
+         sun-lncc)
+            running=$(qcheck   -s R -n | grep ${jobname} 2> /dev/null | wc -l)
+            pending=$(qcheck   -s P -n | grep ${jobname} 2> /dev/null | wc -l)
+            suspend=$(qcheck -s S -n | grep ${jobname} 2> /dev/null | wc -l)
+            ;;
+         # lbl)
+         #    DCHECK=$(qstat -u ${USER} | grep -is $tag | grep -is dbug | wc -l)
+         #    if [ $DCHECK -gt 0 ]; then
+         #        DRES="RUNN"
+         #    else
+         #        lastfile=`ls ${folder}/dbug_${tag}*out | awk '{ f=$NF };END{ print f }'`
+         #        if [ -f $lastfile ]; then
+         #            DCHECK=$(grep -is 'ED execution ends' $lastfile | wc -l)
+         #            if [ $DCHECK -gt 0 ];then
+         #                DRES="COMP"
+         #            else
+         #                DRES="FAIL"
+         #            fi
+         #        else
+         #            DRES="----"
+         #        fi
+         #    fi
+         #    ;;
+         *)
+            echo "Platform is not recognised.  Check script and add your commands."
+            exit 1
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
 
-# clean-up
 
-rm -f testfiles.txt
-rm -f mainfiles.txt
-rm -f dbugfiles.txt
+         #---- Check the current simulation time. -----------------------------------------#
+         simline=$(grep "Simulating: "   ${stdout} | tail -1)
+         runtime=$(echo ${simline} | awk '{print $3}')
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Check for segmentation violations. ----------------------------------------#
+         if [ -s ${stderr} ]
+         then
+            segv1=$(grep -i "sigsegv"            ${stderr} | wc -l)
+            segv2=$(grep -i "segmentation fault" ${stderr} | wc -l)
+            let sigsegv=${segv1}+${segv2}
+         else
+            sigsegv=0
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Check whether met files are missing... (bad start) ------------------------#
+         metbs1=$(grep "Cannot open met driver input file" ${stdout} | wc -l)
+         metbs2=$(grep "Specify ED_MET_DRIVER_DB properly" ${stdout} | wc -l)
+         let metmiss=${metbs1}+${metbs2}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Check whether met files are missing... (bad start) ------------------------#
+         metbs1=$(grep "Cannot open met driver input file" ${stdout} | wc -l)
+         metbs2=$(grep "Specify ED_MET_DRIVER_DB properly" ${stdout} | wc -l)
+         let metmiss=${metbs1}+${metbs2}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Check for other possible outcomes. ----------------------------------------#
+         stopped=$(grep "FATAL ERROR"                       ${stdout} | wc -l)
+         crashed=$(grep "IFLAG1 problem."                   ${stdout} | wc -l)
+         bad_met=$(grep "Meteorological forcing has issues" ${stdout} | wc -l)
+         the_end=$(grep "ED-2.2 execution ends"             ${stdout} | wc -l)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Plot a message so the user knows what is going on.                          #
+         #---------------------------------------------------------------------------------#
+         if [ ${sigsegv} -gt 0 ]
+         then
+            echo  "    ${sim} HAD SEGMENTATION VIOLATION."
+         elif [ ${crashed} -gt 0 ]
+         then 
+            echo  "    ${sim} HAS CRASHED (RK4 PROBLEM)."
+         elif [ ${bad_met} -gt 0 ]
+         then 
+            echo  "    ${sim} HAS BAD MET DRIVERS."
+         elif [ ${metmiss} -gt 0 ]
+         then 
+            echo  "    ${sim} DID NOT FIND MET DRIVERS."
+         elif [ ${stopped} -gt 0 ]
+         then
+            echo  "    ${sim} STOPPED (UNKNOWN REASON)!"
+         elif [ ${the_end} -gt 0 ]
+         then
+            echo  "    ${sim} has finished."
+         elif [ ${suspend} -gt 0 ] 
+         then
+            echo  "    ${sim} is SUSPENDED (${runtime})."
+         elif [ ${running} -gt 0 ] 
+         then
+            echo  "    ${sim} is running (${runtime})."
+         elif ${VERBOSE}
+         then
+            echo  "    ${sim} status is UNKNOWN (Last time ${runtime})."
+            echo  "       STASK   -- ${stask}"
+            echo  "       OUTFORM -- ${OUTFORM}"
+            echo  "       RUNNING -- ${running}"
+            echo  "       PENDING -- ${pending}"
+            echo  "       SUSPEND -- ${suspend}"
+            echo  "       SIGSEGV -- ${sigsegv}"
+            echo  "       METMISS -- ${metmiss}"
+            echo  "       STOPPED -- ${stopped}"
+            echo  "       CRASHED -- ${crashed}"
+            echo  "       THE_END -- ${the_end}"
+         else
+            echo  "    ${sim} status is UNKNOWN (Last time ${runtime})."
+         fi
+         #---------------------------------------------------------------------------------#
+   else
+      echo "    ${sim} is pending ."
+   fi
+   #---------------------------------------------------------------------------------------#
+   done
+   #---------------------------------------------------------------------------------------#
+done
+#------------------------------------------------------------------------------------------#

@@ -1098,16 +1098,17 @@ subroutine init_met_params()
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
-   atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
+   atm_tmp_max = 350.     ! About 78degC, or > 20degC higher than Death Valley's record
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
-   atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32degC at 1000hPa.
+   atm_shv_min = 1.0e-6   ! That corresponds to a relative humidity of 0.1% at 1000hPa
+   atm_shv_max = 5.0e-2   ! That corresponds to a dew point of 41degC at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [umol/mol]. ---------------------!
-   atm_co2_min = 100.     !
-   atm_co2_max = 1100.    !
+   atm_co2_min =   10.    ! Very low limit to allow Tonzi TS to run.  Plants may find it 
+                          ! hard to thrive with such low CO2.
+   atm_co2_max = 2000.    ! This should allow any RCP simulation to run with no problem
    !----- Minimum and maximum acceptable pressure [Pa]. -----------------------------------!
-   prss_min =  45000. ! It may crash if you run a simulation in Mt. Everest.
-   prss_max = 110000. ! It may crash if you run a simulation under water.
+   prss_min =  45000.     ! It may crash if you run a simulation in Mt. Everest.
+   prss_max = 110000.     ! It may crash if you run a simulation under water.
    !----- Minimum and maximum acceptable precipitation rates [kg/m2/s]. -------------------!
    pcpg_min     = 0.0     ! No negative precipitation is allowed
    pcpg_max     = 0.1111  ! This is a precipitation rate of 400mm/hr.

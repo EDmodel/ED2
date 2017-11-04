@@ -847,7 +847,7 @@ module fuse_fiss_utils
                      write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE: ',total_size
                      write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE: ',new_size
                      call fatal_error('Cohort fusion didn''t conserve plant size!!!'       &
-                                     &,'fuse_2_cohorts','fuse_fiss_utils.f90')
+                                     &,'new_fuse_cohorts','fuse_fiss_utils.f90')
                   end if
                   !------------------------------------------------------------------------!
                else
@@ -1139,7 +1139,7 @@ module fuse_fiss_utils
                         write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE: ',total_size
                         write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE: ',new_size
                         call fatal_error('Cohort fusion didn''t conserve plant size!!!'    &
-                                        &,'fuse_2_cohorts','fuse_fiss_utils.f90')
+                                        &,'old_fuse_cohorts','fuse_fiss_utils.f90')
                      end if
                      !---------------------------------------------------------------------!
 
@@ -1563,17 +1563,50 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
+      !     Fuse all carbon pools.  This is done before we find DBH and height, as these   !
+      ! quantities depend on whether the PFT is (new) grass or not.                        !
+      !------------------------------------------------------------------------------------!
+      cpatch%bdead    (recc) = cpatch%bdead    (recc) * rnplant                            &
+                             + cpatch%bdead    (donc) * dnplant
+      cpatch%bleaf    (recc) = cpatch%bleaf    (recc) * rnplant                            &
+                             + cpatch%bleaf    (donc) * dnplant
+      cpatch%broot    (recc) = cpatch%broot    (recc) * rnplant                            &
+                             + cpatch%broot    (donc) * dnplant
+      cpatch%bsapwooda(recc) = cpatch%bsapwooda(recc) * rnplant                            &
+                             + cpatch%bsapwooda(donc) * dnplant
+      cpatch%bsapwoodb(recc) = cpatch%bsapwoodb(recc) * rnplant                            &
+                             + cpatch%bsapwoodb(donc) * dnplant
+      cpatch%bbark    (recc) = cpatch%bbark    (recc) * rnplant                            &
+                             + cpatch%bbark    (donc) * dnplant
+      cpatch%bstorage (recc) = cpatch%bstorage (recc) * rnplant                            &
+                             + cpatch%bstorage (donc) * dnplant
+      cpatch%btimber  (recc) = cpatch%btimber  (recc) * rnplant                            &
+                             + cpatch%btimber  (donc) * dnplant
+      cpatch%bseeds   (recc) = cpatch%bseeds   (recc) * rnplant                            &
+                             + cpatch%bseeds   (donc) * dnplant
+      cpatch%byield   (recc) = cpatch%byield   (recc) * rnplant                            &
+                             + cpatch%byield   (donc) * dnplant
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find balive from the other pools. -------------------------------------------!
+      cpatch%balive   (recc) = cpatch%bleaf    (recc) + cpatch%broot    (recc)             &
+                             + cpatch%bsapwooda(recc) + cpatch%bsapwoodb(recc)             &
+                             + cpatch%bbark    (recc)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
       !      Find DBH and height.  Make sure that carbon is conserved.                     !
       !------------------------------------------------------------------------------------!
       if (is_grass(cpatch%pft(donc)) .and. igrass == 1) then
           !----- New grass scheme, use bleaf then find DBH and height. --------------------!
-          cpatch%bleaf(recc) = cpatch%bleaf(recc) * rnplant + cpatch%bleaf(donc) * dnplant
           cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
           cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
           !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
-          cpatch%bdead(recc) = cpatch%bdead(recc) * rnplant + cpatch%bdead(donc) * dnplant
           cpatch%dbh  (recc) = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
           cpatch%hite (recc) = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
           !--------------------------------------------------------------------------------!
@@ -1590,29 +1623,7 @@ module fuse_fiss_utils
 
 
 
-
-      !------------------------------------------------------------------------------------!
-      !     Conserving carbon to get balive, bleaf, and bstorage.                          !
-      !------------------------------------------------------------------------------------!
-      cpatch%balive           (recc) = cpatch%balive          (recc) * rnplant             &
-                                     + cpatch%balive          (donc) * dnplant
-      cpatch%broot            (recc) = cpatch%broot           (recc) * rnplant             &
-                                     + cpatch%broot           (donc) * dnplant
-      cpatch%bsapwooda        (recc) = cpatch%bsapwooda       (recc) * rnplant             &
-                                     + cpatch%bsapwooda       (donc) * dnplant
-      cpatch%bsapwoodb        (recc) = cpatch%bsapwoodb       (recc) * rnplant             &
-                                     + cpatch%bsapwoodb       (donc) * dnplant
-      cpatch%bbark            (recc) = cpatch%bbark           (recc) * rnplant             &
-                                     + cpatch%bbark           (donc) * dnplant
-      cpatch%bstorage         (recc) = cpatch%bstorage        (recc) * rnplant             &
-                                     + cpatch%bstorage        (donc) * dnplant
-      cpatch%btimber          (recc) = cpatch%btimber         (recc) * rnplant             &
-                                     + cpatch%btimber         (donc) * dnplant
-      cpatch%bseeds           (recc) = cpatch%bseeds          (recc) * rnplant             &
-                                     + cpatch%bseeds          (donc) * dnplant
-      cpatch%byield           (recc) = cpatch%byield          (recc) * rnplant             &
-                                     + cpatch%byield          (donc) * dnplant
-
+      !----- Maintenance costs. -----------------------------------------------------------!
       cpatch%leaf_maintenance (recc) = cpatch%leaf_maintenance(recc) * rnplant             &
                                      + cpatch%leaf_maintenance(donc) * dnplant
       cpatch%root_maintenance (recc) = cpatch%root_maintenance(recc) * rnplant             &
@@ -1623,17 +1634,6 @@ module fuse_fiss_utils
                                      + cpatch%leaf_drop       (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
-
-      !------------------------------------------------------------------------------------!
-      !    Bleaf must be zero if phenology status is 2.  This is probably done correctly   !
-      ! throughout the code, but being safe here.                                          !
-      !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(recc) /= -2) then
-         cpatch%bleaf(recc)  = rnplant * cpatch%bleaf(recc) + dnplant * cpatch%bleaf(donc)
-      else
-         cpatch%bleaf(recc)  = 0.
-      end if
-      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!

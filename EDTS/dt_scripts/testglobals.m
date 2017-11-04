@@ -10,9 +10,14 @@ global dtycolor;
 global dtyshort;
 global dtylong;
 global dtyname;
+global scpcolor;
+global scpshort;
+global scplong;
+global scpname;
 global npft;
 global npftmx;
 global ndty;
+global nscp;
 global actcmap;
 global diffcmap;
 
@@ -21,6 +26,7 @@ fasz = 9;
 npft = 17;
 ndty =  8;
 npftmx = 8;
+nscp=3;
 
 pftlong = {'C4 Grass',       ...   %1
            'Early Tropical', ...   %2
@@ -127,13 +133,29 @@ dtyshort = {'PST',  ... %1
             'CPL'};     %8
 
 dtycolor = [230    92   23; ...   % PST
-             41   150  204; ...   % FPL
+             84   247  252; ...   % FPL
              48   102   20; ...   % TFL
             153    15   15; ...   % BRN
              41   150  204; ...   % ABN
             163   204   82; ...   % FLL
             180   158  210; ...   % SRD
             245   200   88]./255; % CPL
+
+scplong = {'Metabolic (Fast)',          ...   %1
+           'Structural (Intermediate)', ...   %2
+           'Dissolved (Slow)'};               %3
+
+scpname = {'Fast',                      ...   %1
+           'Intermediate',              ...   %2
+           'Slow'};                           %3
+
+scpshort = {'FSC',  ... %1
+            'ISC',  ... %2
+            'SSC'};     %3
+
+scpcolor = [147   184  221; ...   % FSC
+             70   164  102; ...   % ISC
+            198   119  145]./255; % SSC
 
 actcmap = [140    81   10; ...
            146    83    9; ...

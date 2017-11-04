@@ -330,7 +330,7 @@ $ED_NL
    !        grid number.  Each grid has its own initialization file.  As an example, if a  !
    !        user has two files to initialize their grids with:                             !
    !        example_file_init-g01.h5 and example_file_init-g02.h5                          !
-   !        NL%SFILIN = 'example_file_init'                                                !
+   !        SFILIN = 'example_file_init'                                                   !
    !                                                                                       !
    !    5.  This is similar to option 4, except that you may provide several files         !
    !        (including a mix of regional and POI runs, each file ending at a different     !
@@ -343,7 +343,7 @@ $ED_NL
    !        /mypath/P0002-S-1966-01-01-000000-g02.h5,                                      !
    !        ...                                                                            !
    !        /mypath/P1000-S-1687-01-01-000000-g01.h5:                                      !
-   !        NL%SFILIN = '/mypath/P'                                                        !
+   !        SFILIN = '/mypath/P'                                                           !
    !                                                                                       !
    !    6 - Initialize with ED-2 style files without multiple sites, exactly like option   !
    !        2, except that the PFT types are preserved.                                    !

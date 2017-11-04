@@ -167,6 +167,13 @@ module landuse_init
                !---------------------------------------------------------------------------!
 
 
+
+               !----- Initialise the PFT-dependent arrays. --------------------------------!
+               cpoly%mindbh_harvest    (:,:) = huge_dbh
+               cpoly%prob_harvest      (:,:) = 0.
+               !---------------------------------------------------------------------------!
+
+
                !---------------------------------------------------------------------------!
                !     Compute the distance between the current polygon and all the files.   !
                !---------------------------------------------------------------------------!
@@ -323,11 +330,6 @@ module landuse_init
                   cpoly%num_landuse_years(isi) = max(yd_last,iyearz)-min(yd_1st,iyeara) + 1
 
 
-                  !----- Initialise the PFT-dependent arrays. -----------------------------!
-                  cpoly%mindbh_harvest    (1:n_pft,isi) = huge_dbh
-                  cpoly%prob_harvest      (1:n_pft,isi) = 0.
-
-
                   !----- Fill the arrays with the appropriate PFT. ------------------------!
                   select case(cpoly%plantation(isi))
                   case (0)
@@ -401,6 +403,14 @@ module landuse_init
 
                      !----- Determine the number of disturbance years. --------------------!
                      cpoly%num_landuse_years(isi) = cpoly%num_landuse_years(1)
+                     !---------------------------------------------------------------------!
+
+
+                     !----- PFT-dependent harvest characteristics. ------------------------!
+                     cpoly%mindbh_harvest(:,isi) = cpoly%mindbh_harvest(:,1)
+                     cpoly%prob_harvest  (:,isi) = cpoly%prob_harvest  (:,1)
+                     !---------------------------------------------------------------------!
+
 
 
                      !----- Disturbances. -------------------------------------------------!
@@ -537,6 +547,13 @@ module landuse_init
                   !----- Determine the number of disturbance years. -----------------------!
                   cpoly%num_landuse_years(isi) = cpoly%num_landuse_years(1)
                   !------------------------------------------------------------------------!
+
+
+                  !----- PFT-dependent harvest characteristics. ---------------------------!
+                  cpoly%mindbh_harvest(:,isi) = cpoly%mindbh_harvest(:,1)
+                  cpoly%prob_harvest  (:,isi) = cpoly%prob_harvest  (:,1)
+                  !------------------------------------------------------------------------!
+
 
 
                   !----- Disturbances. ----------------------------------------------------!

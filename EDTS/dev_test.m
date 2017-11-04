@@ -16,7 +16,7 @@ close all;
 %     User defined variables
 %==========================================================================
 
-test_name = '1d07ca0-mlo-ae1e92c-v1_rapid';
+test_name = '1d07ca0-mlo-700050e-v1_rapid';
 
 use_m34 = true;       % POI Manaus km34
 use_ata = true;       % POI Atacama
@@ -906,6 +906,8 @@ for is = 1:nsite
                     agb_c = zeros([nsfiles,size(tmp,1)]);
                     lai_t = zeros([nsfiles,size(tmp,1)]);
                     lai_c = zeros([nsfiles,size(tmp,1)]);
+                    scp_t = zeros([nsfiles,3]);
+                    scp_c = zeros([nsfiles,3]);
                 end
                 
                 tmp = hdf5read(tsfile,'/AGB_PY');
@@ -919,18 +921,37 @@ for is = 1:nsite
                 
                 tmp = hdf5read(csfile,'/LAI_PY');
                 lai_c(it,:) = sum(tmp,2);
+                
+                scp_t(it,1) = hdf5read(tsfile,'/FAST_SOIL_C_PY'  );
+                scp_t(it,2) = hdf5read(tsfile,'/STRUCT_SOIL_C_PY');
+                scp_t(it,3) = hdf5read(tsfile,'/SLOW_SOIL_C_PY'  );
+                
+                scp_c(it,1) = hdf5read(csfile,'/FAST_SOIL_C_PY'  );
+                scp_c(it,2) = hdf5read(csfile,'/STRUCT_SOIL_C_PY');
+                scp_c(it,3) = hdf5read(csfile,'/SLOW_SOIL_C_PY'  );
             end
 
             pftsucc_pref{is} = sprintf('%sagb_lai_pft_%s',outdir,siteid{is});
             pftsucc_img{is} = sprintf('%s.eps',pftsucc_pref{is});
             titlestr = sprintf('%s\n',site_name{is});
-            
             plot_succession(dns,agb_t,agb_c,lai_t,lai_c,titlestr, ...
                 pftsucc_pref{is},visible)
-            
-            pftsucc_plt(is)=1;
+
+
+            soilcarb_pref{is} = sprintf('%ssoilcarbon_%s',outdir,siteid{is});
+            soilcarb_img{is}  = sprintf('%s.eps',soilcarb_pref{is});
+            titlestr = sprintf('%s\n',site_name{is});
+            plot_soilcarbon(dns,scp_t,scp_c,titlestr,soilcarb_pref{is},visible)
+
+            longterm_pref{is} = sprintf('%slongterm_%s',outdir,siteid{is});
+            longterm_img{is}  = sprintf('%s.eps',longterm_pref{is});
+
+        
+
+
+            longterm_plt(is)=1;
         else
-            pftsucc_plt(is)=0;
+            longterm_plt(is)=0;
         end % if nsfiles>2
         
     end % if passed

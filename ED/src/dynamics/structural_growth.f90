@@ -1080,37 +1080,12 @@ module structural_growth
          ! dropping leaves or off allometry.                                               !
          !---------------------------------------------------------------------------------!
          if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
-
-
-            !----- Check whether PFT is sufficiently tall for reproduction. ---------------!
-            zero_repro = hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
-            !------------------------------------------------------------------------------!
-
-
-
             !------------------------------------------------------------------------------!
             !      Decide allocation to seeds and heartwood based on size and life form.   !
             !------------------------------------------------------------------------------!
-            if (is_grass(ipft)) then
-               !----- Grasses.  Stop growth when grasses are at the maximum height. -------!
-               zero_growth = hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)     )
-               !---------------------------------------------------------------------------!
-
-               !----- Decide allocation based on size. ------------------------------------!
-               if (zero_growth) then
-                  f_bseeds = 1.0 - st_fract(ipft)
-                  f_bdead  = 0.0
-               elseif (zero_repro) then
-                  f_bseeds = 0.0
-                  f_bdead  = 1.0 - st_fract(ipft)
-               else
-                  f_bseeds = r_fract(ipft)
-                  f_bdead  = 1.0 - st_fract(ipft) - r_fract(ipft)
-               end if
-               !---------------------------------------------------------------------------!
-
-            elseif (is_liana(ipft)) then
+            if (is_liana(ipft)) then
                zero_growth = hite >= ( (1.0-r_tol_trunc) * maxh )
+               zero_repro  = hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
 
                !---------------------------------------------------------------------------!
                !    Lianas: we must check height relative to the rest of the local plant   !
@@ -1140,8 +1115,22 @@ module structural_growth
                end if
                !---------------------------------------------------------------------------!
             else
-               !------ Trees. -------------------------------------------------------------!
-               if (zero_repro) then
+               !---------------------------------------------------------------------------!
+               !    Trees and grasses.  Currently the only difference is that grasses stop !
+               ! growing once they reach maximum height (as they don't have an actual      !
+               ! DBH).                                                                     !
+               !---------------------------------------------------------------------------!
+               zero_repro  = hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
+               zero_growth = is_grass(ipft) .and.                                          &
+                             hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)     )
+               !---------------------------------------------------------------------------!
+
+
+               !----- Decide allocation based on size. ------------------------------------!
+               if (zero_growth) then
+                  f_bseeds = 1.0 - st_fract(ipft)
+                  f_bdead  = 0.0
+               elseif (zero_repro) then
                   f_bseeds = 0.0
                   f_bdead  = 1.0 - st_fract(ipft)
                else
