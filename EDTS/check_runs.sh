@@ -44,6 +44,7 @@ do
    *)
       echo "Unrecognised option ${key}"
       echo "Usage: ./check_runs.sh -p <platform> -s <suite> [-o <outform>]"
+      exit 1
       ;;
    esac
 done

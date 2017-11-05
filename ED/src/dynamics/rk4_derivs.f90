@@ -128,11 +128,9 @@ module rk4_derivs
       real(kind=8)                :: wilting_factor   ! Wilting factor
       real(kind=8)                :: ext_weight       ! Layer weight for transpiration
       real(kind=8)                :: wloss            ! Water loss due to transpiration
-      real(kind=8)                :: wvlmeloss        ! Water loss due to transpiration
       real(kind=8)                :: wloss_tot        ! Total water loss amongst cohorts
       real(kind=8)                :: wvlmeloss_tot    ! Total water loss amongst cohorts
       real(kind=8)                :: qloss            ! Energy loss due to transpiration
-      real(kind=8)                :: qvlmeloss        ! Energy loss due to transpiration
       real(kind=8)                :: qloss_tot        ! Total energy loss amongst cohorts
       real(kind=8)                :: qvlmeloss_tot    ! Total energy loss amongst cohorts
       real(kind=8)                :: infilt           ! Surface infiltration rate
@@ -733,16 +731,10 @@ module rk4_derivs
                ! leaf level, the internal energy must stay with the leaves so energy is    !
                ! preserved.                                                                !
                !---------------------------------------------------------------------------!
-               wloss_tot      = 0.d0
-               qloss_tot      = 0.d0
-               wvlmeloss_tot  = 0.d0
-               qvlmeloss_tot  = 0.d0
-               do ico=1,cpatch%ncohorts
+              do ico=1,cpatch%ncohorts
                   !----- Find the loss from this cohort. ----------------------------------!
                   wloss         = rk4aux(ibuff)%extracted_water(ico,k1) * ext_weight
                   qloss         = wloss * uint_water_k2
-                  wvlmeloss     = wloss * wdnsi8 * dslzi8(k2)
-                  qvlmeloss     = qloss * dslzi8(k2)
                   !------------------------------------------------------------------------!
 
 

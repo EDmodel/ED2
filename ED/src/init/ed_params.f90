@@ -5742,19 +5742,19 @@ subroutine init_dt_thermo_params()
    ! usually the standard, but a few of them are defined differently so they can be scaled !
    ! depending on the cohort and soil grid definitions.                                    !
    !---------------------------------------------------------------------------------------!
-   rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
-   rk4max_can_temp   =  3.5100d2  ! Maximum canopy    temperature               [        K]
+   rk4min_can_temp   =  1.7400d2  ! Minimum canopy    temperature               [        K]
+   rk4max_can_temp   =  3.6000d2  ! Maximum canopy    temperature               [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
-   rk4max_can_shv    =  6.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
+   rk4max_can_shv    =  8.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
-   rk4min_can_co2    =  3.0000d1  ! Minimum canopy    CO2 mixing ratio          [ umol/mol]
+   rk4min_can_co2    =  1.0000d0  ! Minimum canopy    CO2 mixing ratio          [ umol/mol]
    rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ umol/mol]
-   rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
-   rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
-   rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
-   rk4max_veg_temp   =  3.5100d2  ! Maximum leaf      temperature               [        K]
-   rk4min_sfcw_temp  =  1.9315d2  ! Minimum snow/pond temperature               [        K]
-   rk4max_sfcw_temp  =  3.5100d2  ! Maximum snow/pond temperature               [        K]
+   rk4min_soil_temp  =  1.7400d2  ! Minimum soil      temperature               [        K]
+   rk4max_soil_temp  =  3.6000d2  ! Maximum soil      temperature               [        K]
+   rk4min_veg_temp   =  1.7400d2  ! Minimum leaf      temperature               [        K]
+   rk4max_veg_temp   =  3.6000d2  ! Maximum leaf      temperature               [        K]
+   rk4min_sfcw_temp  =  1.7400d2  ! Minimum snow/pond temperature               [        K]
+   rk4max_sfcw_temp  =  3.6000d2  ! Maximum snow/pond temperature               [        K]
    !.......................................................................................!
    ! (**) Please, don't be too strict here.  The model currently doesn't have radiation    !
    !      fog, so supersaturation may happen.  This is a problem we may want to address in !

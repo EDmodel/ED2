@@ -16,7 +16,7 @@ close all;
 %     User defined variables
 %==========================================================================
 
-test_name = '1d07ca0-mlo-700050e-v1_rapid';
+test_name = '1d07ca0-mlo-700050e-v1_medium';
 
 use_m34 = true;       % POI Manaus km34
 use_ata = true;       % POI Atacama
@@ -137,12 +137,9 @@ use_hifr = [use_hip,use_him,use_hih];
 use_grid = [use_rjg];
 
 for is=1:nsite
-    testout_srch = sprintf('%s/test_%s.',test_name, ...
-        siteid{is});
-    mainout_srch  = sprintf('%s/main_%s.',test_name, ...
-        siteid{is});
-    dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
-        siteid{is});
+    testout_srch = sprintf('%s/test_%s.',test_name,siteid{is});
+    mainout_srch = sprintf('%s/main_%s.',test_name,siteid{is});
+    dbugout_srch = sprintf('%s/dbug_%s.',test_name,siteid{is});
     
     srch_test=dir(strcat(testout_srch,'*out'));
     srch_dbug=dir(strcat(dbugout_srch,'*out'));
@@ -150,10 +147,8 @@ for is=1:nsite
     
     
     if (isempty(srch_test) | isempty(srch_dbug) | isempty(srch_main))
-        
         use_site(is)=false;
         continue
-        
     else
         
         testout_str=sprintf('%s/%s',test_name,srch_test(end).name);
@@ -161,9 +156,8 @@ for is=1:nsite
         mainout_str=sprintf('%s/%s',test_name,srch_main(end).name);
         
         if(use_site(is))
-            if (exist(testout_str,'file') && ...
-                    exist(mainout_str,'file') && ...
-                    exist(dbugout_str,'file'))
+            if (exist(testout_str,'file') && exist(mainout_str,'file') && ...
+                exist(dbugout_str,'file'))
                 use_site(is)=true;
                 display(sprintf('%s - %s',siteid{is},site_name{is}));
             else
@@ -174,12 +168,9 @@ for is=1:nsite
 end
 
 for ih=1:nhifr
-    testout_srch = sprintf('%s/test_%s.',test_name, ...
-        hifrid{ih});
-    mainout_srch  = sprintf('%s/main_%s.',test_name, ...
-        hifrid{ih});
-    dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
-        hifrid{ih});
+    testout_srch = sprintf('%s/test_%s.',test_name,hifrid{ih});
+    mainout_srch = sprintf('%s/main_%s.',test_name,hifrid{ih});
+    dbugout_srch = sprintf('%s/dbug_%s.',test_name,hifrid{ih});
     
     
     srch_test=dir(strcat(testout_srch,'*out'));
@@ -199,9 +190,8 @@ for ih=1:nhifr
         mainout_str=sprintf('%s/%s',test_name,srch_main(end).name);
         
         if(use_hifr(ih))
-            if (exist(testout_str,'file') && ...
-                    exist(mainout_str,'file') && ...
-                    exist(dbugout_str,'file'))
+            if (exist(testout_str,'file') && exist(mainout_str,'file') && ...
+                exist(dbugout_str,'file'))
                 use_hifr(ih)=true;
                 display(sprintf('%s - %s',hifrid{ih},hifr_name{ih}));
             else
@@ -213,34 +203,24 @@ end
 
 for ig=1:ngrid
     
-    testout_srch = sprintf('%s/test_%s.',test_name, ...
-        gridid{ig});
-    mainout_srch  = sprintf('%s/main_%s.',test_name, ...
-        gridid{ig});
-    dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
-        gridid{ig});
-    
-    
+    testout_srch = sprintf('%s/test_%s.',test_name,gridid{ig});
+    mainout_srch = sprintf('%s/main_%s.',test_name,gridid{ig});
+    dbugout_srch = sprintf('%s/dbug_%s.',test_name,gridid{ig});
+
     srch_test=dir(strcat(testout_srch,'*out'));
     srch_dbug=dir(strcat(dbugout_srch,'*out'));
     srch_main=dir(strcat(mainout_srch,'*out'));
-    
-    
+
     if (isempty(srch_test) | isempty(srch_dbug) | isempty(srch_main))
-        
         use_site(ig)=false;
         continue
-        
     else
-        
         testout_str=sprintf('%s/%s',test_name,srch_test(end).name);
         dbugout_str=sprintf('%s/%s',test_name,srch_dbug(end).name);
         mainout_str=sprintf('%s/%s',test_name,srch_main(end).name);
-        
         if(use_grid(ig))
-            if (exist(testout_str,'file') && ...
-                    exist(mainout_str,'file') && ...
-                    exist(dbugout_str,'file'))
+            if (exist(testout_str,'file') && exist(mainout_str,'file') && ...
+                exist(dbugout_str,'file'))
                 use_grid(ig)=true;
                 display(sprintf('%s - %s',gridid{ig},grid_name{ig}));
             else
@@ -324,12 +304,12 @@ nsite = is;
 ngrid = ig;
 nhifr = ih;
 
-runstat = {'Fail','Pass'};
+runstat = {'Pending','Running','SIGSEGV','CRASHED','BAD_MET','METMISS','STOPPED','Success'};
 pause(2);
 
 
 % =========================================================================
-% Part 0 - Check if debug sites completed
+% Part 0 - Check whether simulations have completed
 % =========================================================================
 
 display(sprintf('\nChecking Simulations for Completion\n'));
@@ -338,53 +318,165 @@ if nsite>0; spass=zeros(nsite,3);end
 if ngrid>0; gpass=zeros(nsite,3);end
 if nhifr>0; hpass=zeros(nsite,3);end
 
+
+% -----------------------------------------------------------------------------
+% Sites of Interest (SOI)
+% -----------------------------------------------------------------------------
 if nsite>0
 
     for is=1:nsite
-
-        dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
-            siteid{is});
-        srch=dir(strcat(dbugout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);
+        % ---------------------------------------------------------------------
+        %  DBUG: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        dbugout_srch  = sprintf('%s/dbug_%s.',test_name,siteid{is});
+        outsrch=dir(strcat(dbugout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                spass(is,1) = 1;
+            spass(is,1) = 1;
+            if (strfind(tline,'sigsegv'))
+               spass(is,1) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               spass(is,1) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               spass(is,1) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               spass(is,1) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               spass(is,1) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               spass(is,1) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               spass(is,1) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               spass(is,1) = 7;
             end
         end
         fclose(fid);
+        % Check error output file in case it exists
+        errsrch=dir(strcat(dbugout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  spass(is,1) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  spass(is,1) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
 
-        testout_srch  = sprintf('%s/test_%s.',test_name, ...
-            siteid{is});
-        srch=dir(strcat(testout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);
+
+
+        % ---------------------------------------------------------------------
+        %  TEST: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        testout_srch  = sprintf('%s/test_%s.',test_name,siteid{is});
+        outsrch=dir(strcat(testout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                spass(is,2) = 1;
+            spass(is,2) = 1;
+            if (strfind(tline,'sigsegv'))
+               spass(is,2) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               spass(is,2) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               spass(is,2) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               spass(is,2) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               spass(is,2) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               spass(is,2) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               spass(is,2) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               spass(is,2) = 7;
             end
         end
-        fclose(fid);        
-        
-        mainout_srch  = sprintf('%s/main_%s.',test_name, ...
-            siteid{is});
-        srch=dir(strcat(mainout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);  
+        fclose(fid);
+        % Check error output file in case it exists
+        errsrch=dir(strcat(testout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  spass(is,2) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  spass(is,2) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
 
+
+
+
+        % ---------------------------------------------------------------------
+        %  MAIN: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        mainout_srch  = sprintf('%s/main_%s.',test_name,siteid{is});
+        outsrch=dir(strcat(mainout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                spass(is,3) = 1;
+            spass(is,3) = 1;
+            if (strfind(tline,'sigsegv'))
+               spass(is,3) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               spass(is,3) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               spass(is,3) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               spass(is,3) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               spass(is,3) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               spass(is,3) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               spass(is,3) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               spass(is,3) = 7;
             end
         end
-        fclose(fid);        
-        
+        fclose(fid);
+        % Check error output file in case it exists
+        errsrch=dir(strcat(mainout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  spass(is,3) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  spass(is,3) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
+
         display(sprintf('%s - dbug:%s test:%s main:%s ',...
             siteid{is},runstat{spass(is,1)+1}, ...
             runstat{spass(is,2)+1}, ...
@@ -392,51 +484,165 @@ if nsite>0
         
     end
 end
+% -----------------------------------------------------------------------------
 
+
+
+
+% -----------------------------------------------------------------------------
+% Gridded Simulations
+% -----------------------------------------------------------------------------
 if ngrid>0
     for ig=1:ngrid
 
-        dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
-            gridid{ig});
-        srch=dir(strcat(dbugout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);
+        % ---------------------------------------------------------------------
+        %  DBUG: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        dbugout_srch  = sprintf('%s/dbug_%s.',test_name,gridid{ig});
+        outsrch=dir(strcat(dbugout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                gpass(ig,1)=1;
+            gpass(ig,1) = 1;
+            if (strfind(tline,'sigsegv'))
+               gpass(ig,1) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               gpass(ig,1) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               gpass(ig,1) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               gpass(ig,1) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               gpass(ig,1) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               gpass(ig,1) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               gpass(ig,1) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               gpass(ig,1) = 7;
             end
         end
         fclose(fid);
-        
-        testout_srch  = sprintf('%s/test_%s.',test_name, ...
-            gridid{ig});
-        srch=dir(strcat(testout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);
+        % Check error output file in case it exists
+        errsrch=dir(strcat(dbugout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  gpass(ig,1) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  gpass(ig,1) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
+
+
+
+        % ---------------------------------------------------------------------
+        %  TEST: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        testout_srch  = sprintf('%s/test_%s.',test_name,gridid{ig});
+        outsrch=dir(strcat(testout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                gpass(ig,2)=1;
+            gpass(ig,2) = 1;
+            if (strfind(tline,'sigsegv'))
+               gpass(ig,2) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               gpass(ig,2) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               gpass(ig,2) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               gpass(ig,2) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               gpass(ig,2) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               gpass(ig,2) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               gpass(ig,2) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               gpass(ig,2) = 7;
             end
         end
         fclose(fid);
-        
-        mainout_srch  = sprintf('%s/main_%s.',test_name, ...
-            gridid{ig});
-        srch=dir(strcat(mainout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);       
+        % Check error output file in case it exists
+        errsrch=dir(strcat(testout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  gpass(ig,2) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  gpass(ig,2) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
+
+        % ---------------------------------------------------------------------
+        %  MAIN: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        mainout_srch  = sprintf('%s/main_%s.',test_name,gridid{ig});
+        outsrch=dir(strcat(mainout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                gpass(ig,3)=1;
+            gpass(ig,3) = 1;
+            if (strfind(tline,'sigsegv'))
+               gpass(ig,3) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               gpass(ig,3) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               gpass(ig,3) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               gpass(ig,3) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               gpass(ig,3) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               gpass(ig,3) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               gpass(ig,3) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               gpass(ig,3) = 7;
             end
         end
         fclose(fid);
+        % Check error output file in case it exists
+        errsrch=dir(strcat(mainout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  gpass(ig,3) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  gpass(ig,3) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
         
         display(sprintf('%s - dbug:%s test:%s main:%s ',...
             gridid{ig},runstat{gpass(ig,1)+1}, ...
@@ -444,51 +650,169 @@ if ngrid>0
             runstat{gpass(ig,3)+1}));
     end
 end
+% -----------------------------------------------------------------------------
 
+
+
+
+% -----------------------------------------------------------------------------
+% High-frequency simulations
+% -----------------------------------------------------------------------------
 if nhifr>0
     for ih=1:nhifr
-        dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
-            hifrid{ih});
-        srch=dir(strcat(dbugout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);
+        % ---------------------------------------------------------------------
+        %  DBUG: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        dbugout_srch  = sprintf('%s/dbug_%s.',test_name,hifrid{ih});
+        outsrch=dir(strcat(dbugout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                hpass(ih,1) = 1;
+            hpass(ih,1) = 1;
+            if (strfind(tline,'sigsegv'))
+               hpass(ih,1) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               hpass(ih,1) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               hpass(ih,1) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               hpass(ih,1) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               hpass(ih,1) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               hpass(ih,1) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               hpass(ih,1) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               hpass(ih,1) = 7;
             end
         end
         fclose(fid);
-        
-        testout_srch  = sprintf('%s/test_%s.',test_name, ...
-             hifrid{ih});
-        srch=dir(strcat(testout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);
+        % Check error output file in case it exists
+        errsrch=dir(strcat(dbugout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  hpass(ih,1) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  hpass(ih,1) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
+
+
+
+
+        % ---------------------------------------------------------------------
+        %  TEST: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        testout_srch  = sprintf('%s/test_%s.',test_name,hifrid{ih});
+        outsrch=dir(strcat(testout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                hpass(ih,2) = 1;
+            hpass(ih,2) = 1;
+            if (strfind(tline,'sigsegv'))
+               hpass(ih,2) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               hpass(ih,2) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               hpass(ih,2) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               hpass(ih,2) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               hpass(ih,2) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               hpass(ih,2) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               hpass(ih,2) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               hpass(ih,2) = 7;
             end
         end
         fclose(fid);
-        
-        mainout_srch  = sprintf('%s/main_%s.',test_name, ...
-             hifrid{ih});
-        srch=dir(strcat(mainout_srch,'*out'));
-        outfile=sprintf('%s/%s',test_name,srch(end).name);
+        % Check error output file in case it exists
+        errsrch=dir(strcat(testout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  hpass(ih,2) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  hpass(ih,2) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
+
+
+
+
+        % ---------------------------------------------------------------------
+        %  MAIN: 
+        % ---------------------------------------------------------------------
+        % Check regular output file
+        mainout_srch  = sprintf('%s/main_%s.',test_name,hifrid{ih});
+        outsrch=dir(strcat(mainout_srch,'*out'));
+        outfile=sprintf('%s/%s',test_name,outsrch(end).name);
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED-2.2 execution ends'))
-                hpass(ih,3) = 1;
+            hpass(ih,3) = 1;
+            if (strfind(tline,'sigsegv'))
+               hpass(ih,3) = 2;
+            elseif (strfind(tline,'segmentation fault'))
+               hpass(ih,3) = 2;
+            elseif (strfind(tline,'IFLAG1 problem.'))
+               hpass(ih,3) = 3;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               hpass(ih,3) = 4;
+            elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
+               hpass(ih,3) = 5;
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               hpass(ih,3) = 5;
+            elseif(  strfind(tline,'FATAL ERROR'))
+               hpass(ih,3) = 6;
+            elseif (strfind(tline,'ED-2.2 execution ends'))
+               hpass(ih,3) = 7;
             end
         end
         fclose(fid);
-        
+        % Check error output file in case it exists
+        errsrch=dir(strcat(mainout_srch,'*err'));
+        errfile=sprintf('%s/%s',test_name,errsrch(end).name);
+        if (exist(errfile,'file') == 2)
+           fid=fopen(outfile);
+           while 1
+               tline = fgetl(fid);
+               if ~ischar(tline), break, end
+               if (strfind(tline,'sigsegv'))
+                  hpass(ih,3) = 2;
+               elseif (strfind(tline,'segmentation fault'))
+                  hpass(ih,3) = 2;
+               end
+           end
+           fclose(fid);
+        end
+        % ---------------------------------------------------------------------
+
         display(sprintf('%s - dbug:%s test:%s main:%s ',...
             hifrid{ih},runstat{hpass(ih,1)+1}, ...
             runstat{hpass(ih,2)+1}, ...
@@ -512,7 +836,7 @@ latex_funit = {'$[mm/m^2]$','$[W/m^2]$','$[W/m^2]$','$[W/m^2]$'...
 
 for is = 1:nsite
     
-    if(~(spass(is,2) && spass(is,3)))
+    if((spass(is,2) ~= 7) || (spass(is,3) ~= 7))
         display(sprintf('Site: %s did not complete both main and test',...
             siteid{is}));
     else
@@ -974,7 +1298,7 @@ latex_hunit={'$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$GJ/m^2$', ...
               '$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$umol/m^2$','$umol/m^2$'};
 
 for ih = 1:nhifr
-    if(~(hpass(ih,2) && hpass(ih,3)))
+    if((hpass(ih,2) ~= 7) || (hpass(ih,3) ~= 7))
         display(sprintf('Site: %s did not complete both main and test',...
                         hifrid{ih}));
     else
@@ -1143,7 +1467,7 @@ latex_gtab = zeros(2,ngrid);
    display('Assessing Gridded site(s)'); 
     for ig=1:ngrid
         
-        if(~(gpass(ig,2) && gpass(ig,3)))
+        if((gpass(ig,2) ~= 7) || (gpass(ig,3) ~= 7))
             display(sprintf('Grid: %s did not complete for main and test',...
                 gridid{ig}));
         else
