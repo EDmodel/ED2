@@ -871,8 +871,10 @@ do
       #------------------------------------------------------------------------------------#
       case ${TESTTYPE} in
       medium|long)
-         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILEDBUG}
-         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILEDBUG}
+         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILETEST}
+         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILETEST}
+         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILEMAIN}
+         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILEMAIN}
          ;;
       esac
       #------------------------------------------------------------------------------------#
@@ -1484,8 +1486,10 @@ do
       #------------------------------------------------------------------------------------#
       case ${TESTTYPE} in
       medium|long)
-         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILEDBUG}
-         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILEDBUG}
+         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILETEST}
+         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILETEST}
+         sed -i '/NL%IFOUTPUT/c\   NL%IFOUTPUT  = 0' ${FILEMAIN}
+         sed -i '/NL%IDOUTPUT/c\   NL%IDOUTPUT  = 0' ${FILEMAIN}
          ;;
       esac
       #------------------------------------------------------------------------------------#

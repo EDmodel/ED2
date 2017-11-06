@@ -195,7 +195,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IFOUTPUT  =  0
    NL%IDOUTPUT  =  0
-   NL%IMOUTPUT  =  3
+   NL%IMOUTPUT  =  0
    NL%IQOUTPUT  =  3
    NL%IYOUTPUT  =  0
    NL%ITOUTPUT  =  0

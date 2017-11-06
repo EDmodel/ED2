@@ -5698,7 +5698,7 @@ subroutine init_dt_thermo_params()
    !---------------------------------------------------------------------------------------!
    debug         = .false.  ! Verbose output for debug                             [   T|F]
    toocold       = 1.5315d2 ! Minimum temperature for saturation specific hum.     [     K]
-   toohot        = 3.5315d2 ! Maximum temperature for saturation specific hum.     [     K]
+   toohot        = 3.6315d2 ! Maximum temperature for saturation specific hum.     [     K]
    lai_to_cover  = 1.5d0    ! Canopies with LAI less than this number  are assumed to be
                             !     open, ie, some fraction of the rain-drops can reach
                             !    the soil/litter layer unimpeded.

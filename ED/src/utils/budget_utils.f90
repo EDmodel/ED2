@@ -407,7 +407,7 @@ module budget_utils
 
          if (.not. co2_ok) then
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a)') '|           !!! ): CO2 budget failed :( !!!        |'
+            write (unit=*,fmt='(a)') '|           !!!    CO2 budget failed    !!!        |'
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
@@ -444,7 +444,7 @@ module budget_utils
 
          if (.not. energy_ok) then
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a)') '|         !!! ): Enthalpy budget failed :( !!!     |'
+            write (unit=*,fmt='(a)') '|         !!!    Enthalpy budget failed    !!!     |'
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
@@ -469,7 +469,7 @@ module budget_utils
 
          if (.not. water_ok) then
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a)') '|          !!! ): Water budget failed :( !!!       |'
+            write (unit=*,fmt='(a)') '|          !!!    Water budget failed    !!!       |'
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
