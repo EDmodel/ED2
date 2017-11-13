@@ -338,13 +338,14 @@ epostexe="R CMD BATCH --no-save --no-restore ${rscript} ${epostout}"
 #------------------------------------------------------------------------------------------#
 #   Make sure memory does not exceed maximum amount that can be requested.                 #
 #------------------------------------------------------------------------------------------#
-if [ ${sim_memory} -gt ${node_memory} ]
+if [ ${sim_memory} -eq 0 ]
+then
+   let sim_memory=${node_memory}/${n_tpn}
+   let node_memory=${n_tpn}*${sim_memory}
+elif [ ${sim_memory} -gt ${node_memory} ]
 then 
    echo "Simulation memory ${sim_memory} cannot exceed node memory ${node_memory}!"
    exit 99
-elif [ ${sim_memory} -eq 0 ]
-then
-   let sim_memory=${node_memory}/${n_tpn}
 else
    #------ Set memory and number of CPUs per task. ----------------------------------------#
    let n_tpn_try=${node_memory}/${sim_memory}
@@ -356,6 +357,25 @@ else
       let node_memory=${n_tpn}*${sim_memory}
    fi
    #---------------------------------------------------------------------------------------#
+fi
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#----- Determine the number of polygons to run. -------------------------------------------#
+let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
+if [ ${npolys} -lt 100 ]
+then
+   ndig=2
+elif [ ${npolys} -lt 1000 ]
+then
+   ndig=3
+elif [ ${npolys} -lt 10000 ]
+then
+   ndig=4
+else
+   ndig=5
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -386,13 +406,25 @@ let ntasks=1+${polyz}-${polya}
 #------------------------------------------------------------------------------------------#
 
 
-
-
-
-
-#----- Determine the number of polygons to run. -------------------------------------------#
-let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
-echo "Number of polygons: ${npolys}..."
+#----- Summary for this submission preparation.  Then give 5 seconds for user to cancel. --#
+echo "------------------------------------------------"
+echo "  Submission summary: "
+echo ""
+echo "  Memory per cpu:      ${sim_memory}"
+echo "  Tasks per node:      ${n_tpn}"
+echo "  Queue:               ${global_queue}"
+echo "  First polygon:       ${polya}"
+echo "  Last polygon:        ${polyz}"
+echo "  Job Name:            ${jobname}"
+echo "  Total polygon count: ${npolys}"
+echo " "
+echo " Partial submission:   ${partial}"
+echo " Automatic submission: ${submit}"
+echo " "
+echo " R script:             ${rscript}"
+echo "------------------------------------------------"
+echo ""
+sleep 5
 #------------------------------------------------------------------------------------------#
 
 

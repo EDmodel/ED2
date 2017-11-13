@@ -836,9 +836,9 @@ latex_funit = {'$[mm/m^2]$','$[W/m^2]$','$[W/m^2]$','$[W/m^2]$'...
 
 for is = 1:nsite
     
-    if((spass(is,2) ~= 7) || (spass(is,3) ~= 7))
-        display(sprintf('Site: %s did not complete both main and test',...
-            siteid{is}));
+    if ( ( (spass(is,2) ~= 1) && (spass(is,2) ~= 7) ) || ...
+         ( (spass(is,3) ~= 1) && (spass(is,3) ~= 7) ) )
+       display(sprintf('Site %s (test/main/both) is pending or had problems.',siteid{is}));
     else
         
         display(sprintf('%s\n',siteid{is}));
@@ -865,20 +865,8 @@ for is = 1:nsite
         test_s_flist = dir(strcat(test_s_pfx,'*h5'));
         cont_s_flist = dir(strcat(cont_s_pfx,'*h5'));
         
-        nqfiles     = length(test_q_flist);
-        nsfiles     = length(test_s_flist);
-        
-        if (nqfiles ~= length(cont_q_flist))
-            display(sprintf('Q File lists are different lengths - %s',...
-                siteid{is}));
-            return;
-        end
-        
-        if (nsfiles ~= length(cont_s_flist))
-            display(sprintf('S File lists are different lengths - %s',...
-                siteid{is}));
-            return;
-        end
+        nqfiles     = min([length(cont_q_flist) length(test_q_flist)]);
+        nsfiles     = min([length(cont_s_flist) length(test_s_flist)]);
         
         dnq = zeros(nqfiles,1);
         dns = zeros(nsfiles,1);
@@ -1149,8 +1137,8 @@ for is = 1:nsite
         % End stage biomass POI
         %==================================================================
         
-        tsfile = strcat(test_s_dir,test_s_flist(end).name);
-        csfile = strcat(cont_s_dir,cont_s_flist(end).name);
+        tsfile = strcat(test_s_dir,test_s_flist(nsfiles).name);
+        csfile = strcat(cont_s_dir,cont_s_flist(nsfiles).name);
         
         testfig = sprintf('%sprofbar_test_%s',outdir,siteid{is});
         edpoi_biostat(tsfile,1,sprintf('test-%s',siteid{is}),testfig,visible,2);
@@ -1298,9 +1286,8 @@ latex_hunit={'$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$GJ/m^2$', ...
               '$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$umol/m^2$','$umol/m^2$'};
 
 for ih = 1:nhifr
-    if((hpass(ih,2) ~= 7) || (hpass(ih,3) ~= 7))
-        display(sprintf('Site: %s did not complete both main and test',...
-                        hifrid{ih}));
+    if( (hpass(ih,2) ~= 7) || (hpass(ih,3) ~= 7) )
+       display(sprintf('Site %s is not ready or had problems.',hifrid{ih}));
     else
         display(sprintf('%s\n',hifrid{ih}));
         
@@ -1467,9 +1454,9 @@ latex_gtab = zeros(2,ngrid);
    display('Assessing Gridded site(s)'); 
     for ig=1:ngrid
         
-        if((gpass(ig,2) ~= 7) || (gpass(ig,3) ~= 7))
-            display(sprintf('Grid: %s did not complete for main and test',...
-                gridid{ig}));
+        if( ( (gpass(ig,2) ~= 1) &&  (gpass(ig,2) ~= 7) ) || ...
+            ( (gpass(ig,3) ~= 1) &&  (gpass(ig,3) ~= 7) ) )
+       display(sprintf('Site %s (test/main/both) is pending or had problems.',gridid{ig}));
         else
             
             display(sprintf('%s\n',gridid{ig}));
@@ -1485,8 +1472,11 @@ latex_gtab = zeros(2,ngrid);
             id=strfind(test_gs_pfx,'/');
             test_gs_dir = test_gs_pfx(1:id(end));
             
-            tsfile = strcat(test_gs_dir,test_gs_flist(end).name);
-            csfile = strcat(cont_gs_dir,cont_gs_flist(end).name);
+            ngsfiles    = min([length(cont_gs_flist) length(test_gs_flist)]);
+            
+            
+            tsfile = strcat(test_gs_dir,test_gs_flist(ngsfiles).name);
+            csfile = strcat(cont_gs_dir,cont_gs_flist(ngsfiles).name);
             
             lat_gt    = double(hdf5read(tsfile,'/LATITUDE'));
             lon_gt    = double(hdf5read(tsfile,'/LONGITUDE'));

@@ -278,8 +278,9 @@ if nsite>0
     fprintf(fid,'\\section{\nSite of Interest (SOI) Runs\n}\n');
     for is=1:nsite
         fprintf(fid,'\\subsection{%s}\n',site_name{is});
-        if((spass(is,2) ~= 7) || (spass(is,3) ~= 7))
-            fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION DID NOT COMPLETE \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
+        if( ( (spass(is,2) ~= 1) && (spass(is,2) ~= 7) ) || ...
+            ( (spass(is,3) ~= 1) && (spass(is,3) ~= 7) ) )
+            fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION IS PENDING OR HAD PROBLEMS \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
         else
             
             % Ecosystem Profiles
@@ -305,7 +306,7 @@ if nhifr>0
     fprintf(fid,'\\section{\nHigh Frequency Output\n}\n');
     for ih=1:nhifr
         fprintf(fid,'\\subsection{%s}\n',hifr_name{ih});
-        if((hpass(ih,2) ~= 7) || (hpass(ih,3) ~= 7))
+        if ( (hpass(ih,2) ~= 7) || (hpass(ih,3) ~= 7) )
             fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION DID NOT COMPLETE \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
         else
 
@@ -329,8 +330,9 @@ if ngrid>0
     fprintf(fid,'\\section{\nGridded Output\n}\n');
     for ig=1:ngrid
         fprintf(fid,'\\subsection{%s}\n',grid_name{ig});
-        if((gpass(ig,2) ~= 7) || (gpass(ig,3) ~= 7))
-            fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION DID NOT COMPLETE \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
+        if( ( (gpass(ig,2) ~= 1) && (gpass(ig,2) ~= 7) ) || ...
+            ( (gpass(ig,3) ~= 1) && (gpass(ig,3) ~= 7) ) )
+            fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION IS PENDING OR HAD PROBLEMS \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
         else
             % AGB Maps
             fprintf(fid,'\\frame{\\includegraphics[height=0.92\\textheight]{%s}}\n',agbmap_img{ig});

@@ -535,42 +535,14 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) min_dbh(myPFT) = real(rval)
            call getConfigREAL  ('dbh_crit','pft',i,rval,texist)
            if(texist) dbh_crit(myPFT) = real(rval)
-           call getConfigREAL  ('dbh_adult','pft',i,rval,texist)
-           if(texist) dbh_adult(myPFT) = real(rval)
            call getConfigREAL  ('dbh_bigleaf','pft',i,rval,texist)
            if(texist) dbh_bigleaf(myPFT) = real(rval)
 
      ! Leaf
            call getConfigREAL  ('b1Bl','pft',i,rval,texist)
-           if (texist) then
-              b1Bl_small(myPFT) = real(rval)
-              b1Bl_large(myPFT) = real(rval)
-           end if
+           if (texist) b1Bl(myPFT) = real(rval)
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
-           if (texist) then
-              b2Bl_small(myPFT) = real(rval)
-              b2Bl_large(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b1Bl_small','pft',i,rval,texist)
-           if (texist) then
-              b1Bl_small(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b2Bl_small','pft',i,rval,texist)
-           if (texist) then
-              b2Bl_small(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b1Bl_large','pft',i,rval,texist)
-           if (texist) then
-              b1Bl_large(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b2Bl_large','pft',i,rval,texist)
-           if (texist) then
-              b2Bl_large(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('bleaf_adult','pft',i,rval,texist)
-           if (texist) then
-              bleaf_adult(myPFT) = real(rval)
-           end if
+           if (texist) b2Bl(myPFT) = real(rval)
 
 
      ! Stem
@@ -613,23 +585,9 @@ recursive subroutine read_ed_xml_config(filename)
 
      ! branches
            call getConfigREAL  ('b1WAI','pft',i,rval,texist)
-           if (texist) then
-              b1WAI_small(myPFT) = real(rval)
-              b1WAI_large(myPFT) = real(rval)
-           end if
+           if (texist) b1WAI(myPFT) = real(rval)
            call getConfigREAL  ('b2WAI','pft',i,rval,texist)
-           if (texist) then
-              b2WAI_small(myPFT) = real(rval)
-              b2WAI_large(myPFT) = real(rval)
-           end if
-	   call getConfigREAL  ('b1WAI_small','pft',i,rval,texist)
-           if(texist) b1WAI_small(myPFT) = real(rval)
-	   call getConfigREAL  ('b2WAI_small','pft',i,rval,texist)
-           if(texist) b2WAI_small(myPFT) = real(rval)
-	   call getConfigREAL  ('b1WAI_large','pft',i,rval,texist)
-           if(texist) b1WAI_large(myPFT) = real(rval)
-	   call getConfigREAL  ('b2WAI_large','pft',i,rval,texist)
-           if(texist) b2WAI_large(myPFT) = real(rval)
+           if (texist) b2WAI(myPFT) = real(rval)
 	   call getConfigREAL  ('brf_wd','pft',i,rval,texist)
            if(texist) brf_wd(myPFT) = real(rval)
 
@@ -1691,15 +1649,11 @@ subroutine write_ed_xml_config
         call putConfigREAL("hgt_max",    hgt_max(i))
         call putConfigREAL("min_dbh",    min_dbh(i))
         call putConfigREAL("dbh_crit",   dbh_crit(i))
-        call putConfigREAL("dbh_adult",  dbh_adult(i))
         call putConfigREAL("dbh_bigleaf",dbh_bigleaf(i))
 
      !! LEAF
-        call putConfigREAL("b1Bl_small", b1Bl_small(i))
-        call putConfigREAL("b1Bl_large", b1Bl_large(i))
-        call putConfigREAL("b2Bl_small", b2Bl_small(i))
-        call putConfigREAL("b2Bl_large", b2Bl_large(i))
-        call putConfigREAL("bleaf_adult",bleaf_adult(i))
+        call putConfigREAL("b1Bl", b1Bl(i))
+        call putConfigREAL("b2Bl", b2Bl(i))
 
      !! STEM
         call putConfigREAL("b1Bs_small",b1Bs_small(i))
@@ -1714,11 +1668,9 @@ subroutine write_ed_xml_config
         call putConfigREAL("b2Ca",      b2Ca(i))
 
      !! BRANCHES
-        call putConfigREAL("b1WAI_small", b1WAI_small(i))
-        call putConfigREAL("b1WAI_large", b1WAI_large(i))
-        call putConfigREAL("b2WAI_small", b2WAI_small(i))
-        call putConfigREAL("b2WAI_large", b2WAI_large(i))
-        call putConfigREAL("brf_wd"     , brf_wd     (i))
+        call putConfigREAL("b1WAI" , b1WAI (i))
+        call putConfigREAL("b2WAI" , b2WAI (i))
+        call putConfigREAL("brf_wd", brf_wd(i))
 
      !! BARK/SAPWOOD THICKNESS
         call putConfigREAL("qrhob",   qrhob(i))

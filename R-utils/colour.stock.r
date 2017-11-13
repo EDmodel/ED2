@@ -85,7 +85,7 @@ colour.stock <<- function(n,alt=FALSE,shf=alt,pvf=3){
    vibr[2,] = cone  + cwgt * vibr[2,]
    vibr[3,] = czero + cwgt * vibr[3,]
    vibr     = hsv(h=vibr[1,],s=vibr[2,],v=vibr[3,])
-   cstock   = c(pale,cstock,vibr)
+   cstock   = c(cstock,vibr,pale)
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#

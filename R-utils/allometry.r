@@ -75,10 +75,7 @@ dbh2bl <<- function(dbh,ipft){
    }#end if
 
    dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
-   bleaf  = ifelse( test = dbhuse %<% pft$dbh.adult[zpft]
-                  , yes  = pft$b1Bl.small[zpft] /C2B * dbhuse ^ pft$b2Bl.small[zpft]
-                  , no   = pft$b1Bl.large[zpft] /C2B * dbhuse ^ pft$b2Bl.large[zpft]
-                  )#end ifelse
+   bleaf  = pft$b1Bl[zpft] /C2B * dbhuse ^ pft$b2Bl[zpft]
 
    return(bleaf)
 }# end function dbh2bl
@@ -144,10 +141,7 @@ dbh2ca <<- function(dbh,ipft){
    if (iallom %in% c(0,1,2)){
       crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
    }else if (iallom %in% c(3)){
-      crown = ifelse( dbhuse >= pft$dbh.adult[ipft]
-                    , pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
-                    , loclai
-                    )#end ifelse
+      crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
    }#end if
    #---------------------------------------------------------------------------------------#
 
