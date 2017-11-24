@@ -2897,7 +2897,6 @@ module disturbance_utils
       use ed_state_vars, only : sitetype            & ! structure
                               , patchtype           & ! structure
                               , polygontype         ! ! structure
-      use decomp_coms  , only : f_labile            ! ! intent(in)
       use disturb_coms , only : cl_fleaf_harvest    & ! intent(in)
                               , cl_fstorage_harvest ! ! intent(in)
       use ed_max_dims  , only : n_pft               ! ! intent(in)
@@ -2905,7 +2904,9 @@ module disturbance_utils
                               , c2n_leaf            & ! intent(in)
                               , c2n_stem            & ! intent(in)
                               , l2n_stem            & ! intent(in)
-                              , agf_bs              ! ! intent(in)
+                              , agf_bs              & ! intent(in)
+                              , f_labile_leaf       & ! intent(in)
+                              , f_labile_stem       ! ! intent(in)
       use mortality    , only : survivorship        ! ! function
 
       implicit none
@@ -2925,9 +2926,14 @@ module disturbance_utils
       integer                                         :: ico
       integer                                         :: ipft
       integer                                         :: bdbh
-      real                                            :: falive_timber
-      real                                            :: balive_remain
-      real                                            :: bdead_remain
+      real                                            :: bfast_before
+      real                                            :: bstruct_before
+      real                                            :: bstorage_before
+      real                                            :: bfast_remove
+      real                                            :: bstruct_remove
+      real                                            :: bstorage_remove
+      real                                            :: bfast_remain
+      real                                            :: bstruct_remain
       real                                            :: bstorage_remain
       real                                            :: bcrop_harvest
       real                                            :: blogging_harvest
@@ -2968,6 +2974,21 @@ module disturbance_utils
          ipft = cpatch%pft(ico)
          bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
 
+         !----- Split biomass components that are labile or structural. -------------------!
+         bfast_before    = f_labile_leaf(ipft)                                             &
+                         * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                       &
+                         + f_labile_stem(ipft)                                             &
+                         * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                 &
+                           + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
+         bstruct_before  = ( 1.0 - f_labile_leaf(ipft) )                                   &
+                         * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                       &
+                         + ( 1.0 - f_labile_stem(ipft) )                                   &
+                         * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                 &
+                           + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
+         bstorage_before = cpatch%bstorage(ico)
+         !---------------------------------------------------------------------------------!
+
+
          !---------------------------------------------------------------------------------!
          !     Find the biomass that remains in patch upon disturbance (as opposed to      !
          ! being removed from the patch).  In the case of logging or forest plantation, we !
@@ -2978,37 +2999,40 @@ module disturbance_utils
          !---------------------------------------------------------------------------------!
          select case(new_lu)
          case (8)
-            !------ Agriculture. Harvest living tissues and NSC. --------------------------! 
-            balive_remain    = cpatch%balive  (ico) - cl_fleaf_harvest * cpatch%bleaf(ico)
-            bdead_remain     = cpatch%bdead   (ico)
-            bstorage_remain  = (1. - cl_fstorage_harvest) * cpatch%bstorage(ico)
+            !------ Agriculture. Harvest living tissues and NSC. --------------------------!
+            bfast_remove     = f_labile_leaf(ipft) * cl_fleaf_harvest * cpatch%bleaf(ico)
+            bstruct_remove   = ( 1.0 - f_labile_leaf(ipft) )                               &
+                             * cl_fleaf_harvest * cpatch%bleaf(ico)
+            bstorage_remove  = cl_fstorage_harvest * cpatch%bstorage(ico)
             bcrop_harvest    = cl_fleaf_harvest    * cpatch%bleaf   (ico)                  & 
                              + cl_fstorage_harvest * cpatch%bstorage(ico)
             blogging_harvest = 0.
             !------------------------------------------------------------------------------!
          case (2,6)
             !------ Felling / forest plantation.  Harvest commercial timber. --------------!
-            falive_timber    = (cpatch%bsapwooda(ico) + agf_bs(ipft) * cpatch%bbark(ico))  &
-                             / ( cpatch%bsapwooda(ico)                                     &
-                               + agf_bs(ipft) * (cpatch%bbark(ico) + cpatch%bdead(ico)) )
-            balive_remain    = cpatch%balive  (ico) - falive_timber * cpatch%btimber(ico)
-            bdead_remain     = cpatch%bdead   (ico)                                        &
-                             - (1. - falive_timber) * cpatch%btimber(ico)
-            bstorage_remain  = cpatch%bstorage(ico)
+            bfast_remove     =         f_labile_stem(ipft)   * cpatch%btimber(ico)
+            bstruct_remove   = ( 1.0 - f_labile_stem(ipft) ) * cpatch%btimber(ico)
+            bstorage_remove  = 0.0
             bcrop_harvest    = 0.
             blogging_harvest = cpatch%btimber(ico)
             !------------------------------------------------------------------------------!
          case default
             !------ Other types.  Everything remains in. ----------------------------------!
-            balive_remain    = cpatch%balive  (ico)
-            bdead_remain     = cpatch%bdead   (ico)
-            bstorage_remain  = cpatch%bstorage(ico)
+            bfast_remove     = 0.0
+            bstruct_remove   = 0.0
+            bstorage_remove  = 0.0
             bcrop_harvest    = 0.
             blogging_harvest = 0.
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
 
+
+         !----- Find the remaining biomass that will go to different soil carbon pools. ---!
+         bfast_remain    = bfast_before    - bfast_remove
+         bstruct_remain  = bstruct_before  - bstruct_remove
+         bstorage_remain = bstorage_before - bstorage_remove
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -3095,19 +3119,12 @@ module disturbance_utils
 
          !------ Update soil carbon inputs. -----------------------------------------------!
          fast_litter   = fast_litter                                                       &
-                       + (1. - survival_fac)                                               &
-                       * ( f_labile(ipft) * balive_remain + bstorage_remain)               &
-                       * cpatch%nplant(ico)
+                       + (1. - survival_fac) * cpatch%nplant(ico)                          &
+                       * ( bfast_remain + bstorage_remain )
          fast_litter_n = fast_litter_n                                                     &
-                       + (1. - survival_fac)                                               &
-                       * ( f_labile(ipft) * balive_remain   / c2n_leaf(ipft)               &
-                         +                  bstorage_remain / c2n_storage    )             &
-                       * cpatch%nplant(ico)
-
-         struct_cohort = cpatch%nplant(ico)                                                &
-                       * (1. - survival_fac)                                               &
-                       * ( bdead_remain + (1. - f_labile(ipft)) * balive_remain )
-
+                       + (1. - survival_fac) * cpatch%nplant(ico)                          &
+                       * ( bfast_remain / c2n_leaf(ipft) + bstorage_remain / c2n_storage )
+         struct_cohort = (1. - survival_fac) * cpatch%nplant(ico) * bstruct_remain
          struct_litter = struct_litter + struct_cohort
          struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
          !---------------------------------------------------------------------------------!
@@ -3342,8 +3359,9 @@ module disturbance_utils
                                 , l2n_stem                 & ! intent(in)
                                 , c2n_stem                 & ! intent(in)
                                 , c2n_leaf                 & ! intent(in)
-                                , is_liana                 ! ! intent(in)
-      use decomp_coms,     only : f_labile                 ! ! intent(in)
+                                , is_liana                 & ! intent(in)
+                                , f_labile_leaf            & ! intent(in)
+                                , f_labile_stem            ! ! intent(in)
       use ed_max_dims,     only : n_pft                    ! ! intent(in)
       use consts_coms,     only : pio4                     ! ! intent(in)
       use budget_utils,    only : update_budget            ! ! sub-routine
@@ -3373,8 +3391,8 @@ module disturbance_utils
       real                                         :: old_leaf_hcap
       real                                         :: old_wood_hcap
       real                                         :: bleaf_max
-      real                                         :: delta_alive
-      real                                         :: delta_dead
+      real                                         :: delta_blfrt
+      real                                         :: delta_bwood
       !------------------------------------------------------------------------------------!
 
 
@@ -3462,21 +3480,26 @@ module disturbance_utils
             !------------------------------------------------------------------------!
 
 
-            !-- Compute the amount of carbon lost due to pruning and send to litter --!
-            delta_alive = bleaf_in + bsapa_in + bbark_in                              &
-                        - cpatch%bleaf(ico) - cpatch%bsapwooda(ico) - cpatch%bbark(ico)
-            delta_dead  = bdead_in - cpatch%bdead(ico)
+            !-- Compute the amount of carbon lost due to pruning and send to litter -------!
+            delta_blfrt = f_labile_leaf(ipft) * ( bleaf_in - cpatch%bleaf(ico) )           &
+                        + f_labile_stem(ipft)                                              &
+                        * ( bsapa_in - cpatch%bsapwooda(ico)                               &
+                          + agf_bs(ipft) * ( bbark_in - cpatch%bbark(ico)                  &
+                                           + bdead_in - cpatch%bdead(ico) ) )
+            delta_bwood = ( 1.0 - f_labile_leaf(ipft) ) * ( bleaf_in - cpatch%bleaf(ico) ) &
+                        + ( 1.0 - f_labile_stem(ipft) )                                    &
+                        * ( bsapa_in - cpatch%bsapwooda(ico)                               &
+                          + agf_bs(ipft) * ( bbark_in - cpatch%bbark(ico)                  &
+                                           + bdead_in - cpatch%bdead(ico) ) )
 
-            fast_litter   = fast_litter + (f_labile(ipft) * delta_alive) * cpatch%nplant(ico)
-            fast_litter_n = fast_litter_n + (f_labile(ipft) * delta_alive / c2n_leaf(ipft))   &
-               * cpatch%nplant(ico)
+            fast_litter   = fast_litter + delta_blfrt * cpatch%nplant(ico)
+            fast_litter_n = fast_litter_n                                                  &
+                          + delta_blfrt / c2n_leaf(ipft) * cpatch%nplant(ico)
 
-            struct_cohort = (delta_dead + (1. - f_labile(ipft)) * delta_alive )     &
-               * cpatch%nplant(ico)
-
+            struct_cohort = delta_bwood * cpatch%nplant(ico)
             struct_litter = struct_litter + struct_cohort
             struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
-            !-----------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
 
          end if
 

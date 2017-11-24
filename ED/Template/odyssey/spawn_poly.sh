@@ -36,8 +36,6 @@ packdatasrc="${d_path}/to_scratch"
 lumain="${d_path}/ed2_data/land_use"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch=true
-#----- Memory per simulation. Zero uses the default for each queue. -----------------------#
-sim_memory=4000
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -62,13 +60,15 @@ initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 submit=false
 #----- Settings for this group of polygons. -----------------------------------------------#
 global_queue="moorcroft_amd"  # Queue
+sim_memory=0                  # Memory per simulation. Zero uses queue's default
+n_cpt=8                       # Number of cpus per task (it will be limited by maximum)
 partial=true                  # Partial submission (false will ignore polya and npartial
                               #    and send all polygons.
 polya=21                      # First polygon to submit
 npartial=300                  # Maximum number of polygons to include in this bundle
                               #    (actual number will be adjusted for total number of 
                               #     polygons if needed be).
-dttask=8                      # Time to wait between task submission
+dttask=2                      # Time to wait between task submission
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -161,44 +161,51 @@ fi
 case ${global_queue} in
    bigmem)
       n_nodes_max=6
-      n_cpt=1
+      n_cpt_max=16
       n_tpn=64
       runtime="31-00:00:00"
       node_memory=514842
       ;;
    general)
-      n_nodes_max=166
-      n_cpt=1
+      n_nodes_max=141
+      n_cpt_max=16
       n_tpn=32
       runtime="7-00:00:00"
       node_memory=262499
       ;;
    moorcroft_amd)
       n_nodes_max=8
-      n_cpt=1
+      n_cpt_max=16
       n_tpn=64
-      runtime="31-00:00:00"
+      runtime="Infinite"
       node_memory=256302
       ;;
    moorcroft_6100)
-      n_nodes_max=35
-      n_cpt=1
+      n_nodes_max=33
+      n_cpt_max=6
       n_tpn=12
-      runtime="31-00:00:00"
+      runtime="Infinite"
       node_memory=22150
+      ;;
+   shared)
+      n_nodes_max=456
+      n_cpt_max=16
+      n_tpn=32
+      runtime="7-00:00:00"
+      node_memory=129072
       ;;
    unrestricted)
       n_nodes_max=8
-      n_cpt=1
+      n_cpt_max=16
       n_tpn=64
-      runtime="31-00:00:00"
+      runtime="Infinite"
       node_memory=262499
       ;;
    wofsy)
       n_nodes_max=2
-      n_cpt=1
+      n_cpt_max=8
       n_tpn=32
-      runtime="31-00:00:00"
+      runtime="Infinite"
       node_memory=262499
       ;;
    *)
@@ -206,7 +213,17 @@ case ${global_queue} in
       exit
       ;;
 esac
-let n_tasks_max=${n_nodes_max}*${n_tpn}
+if [ ${n_cpt} -gt ${n_cpt_max} ]
+then
+   echo " Too many CPUs per task requested:"
+   echo " Queue                   = ${global_queue}"
+   echo " Maximum CPUs per task   = ${n_cpt_max}"
+   echo " Requested CPUs per task = ${n_cpt}"
+   exit 99
+else
+   let n_tasks_max=${n_nodes_max}*${n_tpn}
+   let n_tasks_max=${n_tasks_max}/${n_cpt}
+fi
 #------------------------------------------------------------------------------------------#
 
 
@@ -255,6 +272,7 @@ then
    jobname="${desc}-sims_${partlabel}"
 else
    ff=0
+   polya=1
    polyz=${npolys}
    sbatch="${here}/sub_batch.sh"
    obatch="${here}/out_batch.log"
@@ -271,6 +289,7 @@ echo "  Submission summary: "
 echo ""
 echo "  Memory per cpu:      ${sim_memory}"
 echo "  Tasks per node:      ${n_tpn}"
+echo "  CPUs per task:       ${n_cpt}"
 echo "  Queue:               ${global_queue}"
 echo "  First polygon:       ${polya}"
 echo "  Last polygon:        ${polyz}"
@@ -308,7 +327,7 @@ touch ${sbatch}
 chmod u+x ${sbatch}
 echo "#!/bin/bash" >> ${sbatch}
 echo "#SBATCH --ntasks=${ntasks}              # Number of tasks"               >> ${sbatch}
-echo "#SBATCH --cpus-per-task=1               # Number of CPUs per task"       >> ${sbatch}
+echo "#SBATCH --cpus-per-task=${n_cpt}        # Number of CPUs per task"       >> ${sbatch}
 echo "#SBATCH --partition=${global_queue}     # Queue that will run job"       >> ${sbatch}
 echo "#SBATCH --job-name=${jobname}           # Job name"                      >> ${sbatch}
 echo "#SBATCH --mem-per-cpu=${sim_memory}     # Memory per CPU"                >> ${sbatch}
@@ -372,13 +391,13 @@ do
    #---------------------------------------------------------------------------------------#
    #    Format count.                                                                      #
    #---------------------------------------------------------------------------------------#
-   if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
+   if   [ ${npolys} -lt 100   ]
    then
       ffout=$(printf '%2.2i' ${ff})
-   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
+   elif [ ${npolys} -lt 1000  ]
    then
       ffout=$(printf '%3.3i' ${ff})
-   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
+   elif [ ${npolys} -lt 10000 ]
    then
       ffout=$(printf '%4.4i' ${ff})
    else
@@ -487,21 +506,22 @@ do
    igndvap=$(echo ${oi}      | awk '{print $91 }')
    iphen=$(echo ${oi}        | awk '{print $92 }')
    iallom=$(echo ${oi}       | awk '{print $93 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $94 }')
-   integscheme=$(echo ${oi}  | awk '{print $95 }')
-   nsubeuler=$(echo ${oi}    | awk '{print $96 }')
-   irepro=$(echo ${oi}       | awk '{print $97 }')
-   treefall=$(echo ${oi}     | awk '{print $98 }')
-   ianthdisturb=$(echo ${oi} | awk '{print $99 }')
-   ianthdataset=$(echo ${oi} | awk '{print $100}')
-   slscale=$(echo ${oi}      | awk '{print $101}')
-   slyrfirst=$(echo ${oi}    | awk '{print $102}')
-   slnyrs=$(echo ${oi}       | awk '{print $103}')
-   bioharv=$(echo ${oi}      | awk '{print $104}')
-   skidarea=$(echo ${oi}     | awk '{print $105}')
-   skidsmall=$(echo ${oi}    | awk '{print $106}')
-   skidlarge=$(echo ${oi}    | awk '{print $107}')
-   fellingsmall=$(echo ${oi} | awk '{print $108}')
+   igrass=$(echo ${oi}       | awk '{print $94 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $95 }')
+   integscheme=$(echo ${oi}  | awk '{print $96 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $97 }')
+   irepro=$(echo ${oi}       | awk '{print $98 }')
+   treefall=$(echo ${oi}     | awk '{print $99 }')
+   ianthdisturb=$(echo ${oi} | awk '{print $100}')
+   ianthdataset=$(echo ${oi} | awk '{print $101}')
+   slscale=$(echo ${oi}      | awk '{print $102}')
+   slyrfirst=$(echo ${oi}    | awk '{print $103}')
+   slnyrs=$(echo ${oi}       | awk '{print $104}')
+   bioharv=$(echo ${oi}      | awk '{print $105}')
+   skidarea=$(echo ${oi}     | awk '{print $106}')
+   skidsmall=$(echo ${oi}    | awk '{print $107}')
+   skidlarge=$(echo ${oi}    | awk '{print $108}')
+   fellingsmall=$(echo ${oi} | awk '{print $109}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1786,6 +1806,7 @@ do
    sed -i~ s@myplantation@${plantation}@g        ${ED2IN}
    sed -i~ s@myiphen@${iphen}@g                  ${ED2IN}
    sed -i~ s@myallom@${iallom}@g                 ${ED2IN}
+   sed -i~ s@mygrass@${igrass}@g                 ${ED2IN}
    sed -i~ s@myisoilflg@${polyisoil}@g           ${ED2IN}
    sed -i~ s@mynslcon@${polyntext}@g             ${ED2IN}
    sed -i~ s@myslxsand@${polysand}@g             ${ED2IN}
@@ -1923,11 +1944,13 @@ do
    cp -f ${here}/Template/callserial.sh ${callserial}
    sed -i s@thisroot@${here}@g          ${callserial}
    sed -i s@thispoly@${polyname}@g      ${callserial}
+   sed -i s@myname@${moi}@g             ${callserial}
    sed -i s@myexec@${execname}@g        ${callserial}
    sed -i s@mypackdata@${packdatasrc}@g ${callserial}
    sed -i s@myscenario@${iscenario}@g   ${callserial}
    sed -i s@myscenmain@${scentype}@g    ${callserial}
    sed -i s@mycopy@${copy2scratch}@g    ${callserial}
+   sed -i s@mycpus@${n_cpt}@g           ${callserial}
    #---------------------------------------------------------------------------------------#
 
 

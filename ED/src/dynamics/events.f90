@@ -292,10 +292,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use pft_coms, only:qsw,qbark,q,hgt_min, agf_bs, is_grass
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices, ed_biomass, &
-                        size2bt,size2xb
+  use allometry, only : bd2dbh, bw2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices &
+                      , ed_biomass,size2bt,size2xb
   use consts_coms, only : pio4
-  use ed_misc_coms     , only : igrass               ! ! intent(in)
+  use ed_misc_coms     , only : igrass               & ! intent(in)
+                              , iallom               ! ! intent(in)
   use budget_utils     , only : update_budget
   implicit none
   real(kind=8),intent(in) :: agb_frac8
@@ -396,6 +397,12 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     if(is_grass(cpatch%pft(ico)) .and. igrass==1) then
                        cpatch%hite(ico) = max( hgt_min(pft), bl2h(cpatch%bleaf(ico),pft))
                        cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
+                    elseif (iallom == 3) then
+                       cpatch%dbh (ico) = bw2dbh(cpatch%bsapwooda(ico)                     &
+                                                ,cpatch%bsapwoodb(ico)                     &
+                                                ,cpatch%bdead    (ico)                     &
+                                                ,cpatch%pft      (ico))
+                       cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
                     else
                        cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
                        cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
@@ -700,8 +707,7 @@ subroutine event_till(rval8)
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype
-  use pft_coms, only: c2n_storage,c2n_leaf,c2n_stem,l2n_stem
-  use decomp_coms, only: f_labile
+  use pft_coms, only: c2n_storage,c2n_leaf,c2n_stem,l2n_stem,f_labile_leaf,f_labile_stem
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
   use budget_utils     , only : update_budget
@@ -711,7 +717,7 @@ subroutine event_till(rval8)
 
   real :: depth
   integer :: ifm,ipy,isi,ipa,pft,ico
-  real :: elim_nplant,elim_lai
+  real :: elim_nplant,elim_lai,bfast,bstruct
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
   type(sitetype),pointer :: csite
@@ -752,20 +758,34 @@ subroutine event_till(rval8)
               do ico=1,cpatch%ncohorts
 
                  pft = cpatch%pft(ico)
+                 bfast   = f_labile_leaf(pft)                                              &
+                         * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                       &
+                         + f_labile_stem(pft)                                              &
+                         * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                 &
+                           + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
+                 bstruct = f_labile_leaf(pft)                                                &
+                         * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                       &
+                         + f_labile_stem(pft)                                              &
+                         * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                 &
+                           + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
+                 
+                 !! MLO - I multiplied bfast/bstruct/bstorage by cpatch%nplant.  
+                 !!       I never used this routine and I am not sure about this fix,
+                 !!       but it seems to me that the units were inconsistent
+                 !!       (fast_soil_C/struct_soil_C are in kgC/m2 whereas
+                 !!       bfast/bstruct/bstorage are in kgC/plant)
+                 
                  !! move biomass to debris/litter pools
-                 csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa) + &
-                      f_labile(pft)*cpatch%balive(ico) + &
-                      cpatch%bstorage(ico)
+                 csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                           &
+                           + cpatch%nplant(ico) * (bfast + cpatch%bstorage(ico))
 
-                 csite%structural_soil_C(ipa) = csite%structural_soil_C(ipa) + &
-                      (1.0-f_labile(pft))*cpatch%balive(ico) + &
-                      cpatch%bdead(ico)
-                 csite%structural_soil_L(ipa) = csite%structural_soil_L(ipa) + &
-                      (1.0-f_labile(pft))*cpatch%balive(ico)* l2n_stem / c2n_stem(pft) + &
-                      cpatch%bdead(ico)* l2n_stem / c2n_stem(pft)
-                 csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa) &
-                      + f_labile(pft)*cpatch%balive(ico)/c2n_leaf(pft) &
-                      + cpatch%bstorage(ico)/c2n_storage
+                 csite%structural_soil_C(ipa) = csite%structural_soil_C(ipa)               &
+                           + cpatch%nplant(ico) * bstruct
+                 csite%structural_soil_L(ipa) = csite%structural_soil_L(ipa)               &
+                           + cpatch%nplant(ico) * bstruct * l2n_stem / c2n_stem(pft)
+                 csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                           &
+                      + cpatch%nplant(ico) * ( bfast/c2n_leaf(pft)                         &
+                                             + cpatch%bstorage(ico)/c2n_storage )
                  !! where does bdead's N go??
 
 

@@ -79,9 +79,8 @@ module pft_coms
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    real :: C2B
    !----- Parameters used by the model that predicts SLA based on leaf life span. ---------!
-   real :: sla_scale
-   real :: sla_inter
-   real :: sla_slope 
+   real, dimension(n_pft) :: sla_s0
+   real, dimension(n_pft) :: sla_s1
    !=======================================================================================!
    !=======================================================================================!
 
@@ -240,8 +239,11 @@ module pft_coms
    !----- This is the inverse of fine root life span [1/year]. ----------------------------!
    real, dimension(n_pft) :: root_turnover_rate
 
-   !----- This is the inverse of fine bark life span [1/year]. ----------------------------!
+   !----- This is the inverse of bark life span [1/year]. ---------------------------------!
    real, dimension(n_pft) :: bark_turnover_rate
+
+   !----- This is the inverse of sapwood life span [1/year]. ------------------------------!
+   real, dimension(n_pft) :: sapw_turnover_rate
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the rate of dark (i.e., leaf) respiration.  It is dimensionless !
@@ -477,7 +479,7 @@ module pft_coms
    real   , dimension(n_pft)    :: b2Bs_large
    !----- DBH-leaf allometry intercept. All PFTs ------------------------------------------!
    real   , dimension(n_pft)    :: b1Bl
-   !----- DBH-leaf allometry slope. All PFTs ----------------------------------------------!
+   !----- DBH-leaf allometry slope for. All PFTs ------------------------------------------!
    real   , dimension(n_pft)    :: b2Bl
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
@@ -501,6 +503,10 @@ module pft_coms
    real   , dimension(n_pft)    :: min_bdead
    !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
    real   , dimension(n_pft)    :: bdead_crit
+   !----- Critical Bwood, maximum allocation to woody tissues. ----------------------------!
+   real   , dimension(n_pft)    :: bwood_crit
+   !----- Critical balive, maximum allocation to living tissues. --------------------------!
+   real   , dimension(n_pft)    :: balive_crit
    !=======================================================================================!
    !=======================================================================================!
 
@@ -676,6 +682,17 @@ module pft_coms
    !=======================================================================================!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Labile fraction of different tissues.  This is the fraction of biomass that goes  !
+   ! to the fast soil pools as opposed to the structural soil carbon.                      !
+   ! MLO.  Migrated the parameters from decomp_coms to here because these are              !
+   ! PFT-dependent parameters.  Also split the fractions for "leaf" and "stem".            !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: f_labile_leaf !  Leaf and fire root
+   real, dimension(n_pft) :: f_labile_stem !  Sapwood, bark, heartwood
+   !---------------------------------------------------------------------------------------!
+
+
 
 
 
@@ -690,6 +707,19 @@ module pft_coms
    !=======================================================================================!
    !=======================================================================================!
 
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Look-up table used to convert total woody biomass to DBH.                         !
+   !---------------------------------------------------------------------------------------!
+   integer                                   :: nbt_lut
+   real(kind=4), dimension(:,:), allocatable :: dbh_lut
+   real(kind=4), dimension(:,:), allocatable :: bwood_lut
+   real(kind=4), dimension(:,:), allocatable :: balive_lut
+   logical     , dimension(:)  , allocatable :: le_mask_lut
+   logical     , dimension(:)  , allocatable :: ge_mask_lut
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 

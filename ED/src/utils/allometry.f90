@@ -124,8 +124,12 @@ module allometry
    !=======================================================================================!
 
 
+
+
    !=======================================================================================!
    !=======================================================================================!
+   !     Function that finds Bdead from DBH.                                               !
+   !---------------------------------------------------------------------------------------!
    real function dbh2bd(dbh,ipft)
 
       use pft_coms    , only : C2B         & ! intent(in)
@@ -142,17 +146,19 @@ module allometry
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
 
-         if (is_grass(ipft) .and. igrass==1) then
-            dbh2bd = 0.0
-         else if (dbh <= dbh_crit(ipft)) then
-            dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
-         else
-            dbh2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)
+      if (is_grass(ipft) .and. igrass==1) then
+         dbh2bd = 0.0
+      else if (dbh <= dbh_crit(ipft)) then
+         dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
+      else
+         dbh2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)
       end if
       return
    end function dbh2bd
    !=======================================================================================!
    !=======================================================================================!
+
+
 
 
    !=======================================================================================!
@@ -251,6 +257,223 @@ module allometry
    !=======================================================================================!
    !=======================================================================================!
 
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Function that finds wood biomass from DBH and height (wood here means heartwood   !
+   ! and sapwood.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   real function size2bw(dbh,hite,ipft)
+
+      use pft_coms    , only : qsw         ! ! intent(in), lookup table
+      use ed_misc_coms, only : igrass      ! ! intent(in)
+
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: dbh
+      real   , intent(in) :: hite
+      integer, intent(in) :: ipft
+      !----- Local variables. -------------------------------------------------------------!
+      real                :: bleaf
+      real                :: bsapw
+      real                :: bdead
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find wood equivalent. --------------------------------------------------------!
+      bleaf   = size2bl(dbh,hite,ipft)
+      bsapw   = qsw(ipft) * hite * bleaf
+      bdead   = dbh2bd(dbh,ipft)
+      size2bw = bsapw + bdead
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function size2bw
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This subroutine finds DBH given the biomass of woody tissues.  This uses a       !
+   ! look-up table and assumes that the partition of woody biomass does not matter for     !
+   ! DBH.                                                                                  !
+   !---------------------------------------------------------------------------------------!
+   real function bw2dbh(bsapa,bsapb,bdead,ipft)
+      use pft_coms    , only : is_grass    & ! intent(in)
+                             , qsw         & ! intent(in)
+                             , dbh_crit    & ! intent(in)
+                             , bdead_crit  & ! intent(in)
+                             , nbt_lut     & ! intent(in)
+                             , dbh_lut     & ! intent(in)
+                             , bwood_lut   & ! intent(in)
+                             , le_mask_lut & ! intent(out)
+                             , ge_mask_lut ! ! intent(out)
+      use ed_misc_coms, only : igrass      ! ! intent(in)
+      use consts_coms , only : lnexp_min   & ! intent(in)
+                             , lnexp_max   ! ! intent(in)
+
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: bsapa       ! AG sapwood biomass
+      real   , intent(in) :: bsapb       ! BG sapwood biomass
+      real   , intent(in) :: bdead       ! Heartwood biomass
+      integer, intent(in) :: ipft        ! PFT
+      !----- Local variables. -------------------------------------------------------------!
+      integer             :: ilwr        ! Lower index of the lookup table
+      integer             :: iupr        ! Upper index of the lookup table
+      real                :: bwood       ! Current wood biomass
+      real                :: bwood_crit  ! Highest wood biomass
+      real                :: height_crit ! Height at DBH_crit
+      real                :: bleaf_crit  ! Leaf biomass at DBH_crit
+      real                :: bsapw_crit  ! Sapwood biomass at DBH_crit
+      real                :: bdead_eqv   ! Equivalent heartwood biomass
+      real                :: finterp     ! Interpolation factor
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Make sure this is never called by new grasses. -------------------------------!
+      if (is_grass(ipft) .and. igrass==1) then
+         call fatal_error('Function bw2dbh cannot be accessed by new grasses!'             &
+                         ,'bw2dbh','allometry.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find current and critical wood biomass (at maximum height). ------------------!
+      bwood      = bsapa + bsapb + bdead
+      bwood_crit = bwood_lut(nbt_lut,ipft)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    In case there is more biomass than bwood_crit, assume all excess is in bdead    !
+      ! and use the bdead->dbh allometry to obtain dbh.                                    !
+      !------------------------------------------------------------------------------------!
+      if (bwood >= bwood_crit) then
+         !----- Find sapwood and bark biomass at dbh_crit. --------------------------------!
+         height_crit = dbh2h(ipft,dbh_crit(ipft))
+         bleaf_crit  = size2bl(dbh_crit(ipft),height_crit,ipft)
+         bsapw_crit  = qsw  (ipft) * height_crit * bleaf_crit
+         !---------------------------------------------------------------------------------!
+
+         !----- Find the bdead-equivalent. ------------------------------------------------!
+         bdead_eqv   = bwood - bsapw_crit
+         bw2dbh      = bd2dbh(ipft,bdead_eqv)
+         !---------------------------------------------------------------------------------!
+      elseif (bwood <= bwood_lut(1,ipft)) then
+         !----- In case bwood is less than the minimum, linearly scale it. ----------------!
+         bw2dbh      = dbh_lut(1,ipft) * bdead / bwood
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Use the look-up table to find the best dbh. -------------------------------!
+         le_mask_lut(:) = bwood <= bwood_lut(:,ipft)
+         ge_mask_lut(:) = bwood >= bwood_lut(:,ipft)
+         ilwr  = maxloc (bwood_lut(:,ipft),dim=1,mask=le_mask_lut)
+         iupr  = minloc (bwood_lut(:,ipft),dim=1,mask=ge_mask_lut)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !      In case ilwr and iupr are the same, we have an exact estimate.  Otherwise, !
+         ! use log-linear interpolation.                                                   !
+         !---------------------------------------------------------------------------------!
+         if (ilwr == iupr) then
+            bw2dbh = dbh_lut(ilwr,ipft)
+         else
+            finterp = log( dbh_lut  (iupr,ipft) / dbh_lut  (ilwr,ipft))                    &
+                    * log( bwood                / bwood_lut(ilwr,ipft))                    &
+                    / log( bwood_lut(iupr,ipft) / bwood_lut(ilwr,ipft))
+            finterp = max(lnexp_min,min(lnexp_max,finterp))
+            bw2dbh  = dbh_lut(ilwr,ipft) * exp(finterp)
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+    end function bw2dbh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This subroutine finds height given the biomass of living tissues, assuming       !
+   ! minimum sapwood biomass given DBH.                                                    !
+   !---------------------------------------------------------------------------------------!
+   real function ba2h(balive,ipft)
+      use pft_coms    , only : qsw         & ! intent(in)
+                             , hgt_min     & ! intent(in)
+                             , hgt_max     & ! intent(in)
+                             , balive_crit & ! intent(in)
+                             , nbt_lut     & ! intent(in)
+                             , dbh_lut     & ! intent(in)
+                             , balive_lut  & ! intent(in)
+                             , le_mask_lut & ! intent(out)
+                             , ge_mask_lut ! ! intent(out)
+      use consts_coms , only : lnexp_min   & ! intent(in)
+                             , lnexp_max   ! ! intent(in)
+
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: balive      ! Live biomass
+      integer, intent(in) :: ipft        ! PFT
+      !----- Local variables. -------------------------------------------------------------!
+      integer             :: ilwr        ! Lower index of the lookup table
+      integer             :: iupr        ! Upper index of the lookup table
+      real                :: dbh         ! Best guess for DBH.
+      real                :: height_crit ! Height at DBH_crit
+      real                :: finterp     ! Interpolation factor
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    In case there is more biomass than balive_crit, assume that the plant is at     !
+      ! maximum height.                                                                    !
+      !------------------------------------------------------------------------------------!
+      if (balive >= balive_crit(ipft)) then
+         ba2h        = hgt_max(ipft)
+      elseif (balive <= balive_lut(1,ipft)) then
+         !----- Do not let height be less than minimum. -----------------------------------!
+         ba2h        = hgt_min(ipft)
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Use the look-up table to find the best dbh. -------------------------------!
+         le_mask_lut(:) = balive <= balive_lut(:,ipft)
+         ge_mask_lut(:) = balive >= balive_lut(:,ipft)
+         ilwr  = maxloc (balive_lut(:,ipft),dim=1,mask=le_mask_lut)
+         iupr  = minloc (balive_lut(:,ipft),dim=1,mask=ge_mask_lut)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !      In case ilwr and iupr are the same, we have an exact estimate.  Otherwise, !
+         ! use log-linear interpolation.                                                   !
+         !---------------------------------------------------------------------------------!
+         if (ilwr == iupr) then
+            dbh     = dbh_lut(ilwr,ipft)
+         else
+            finterp = log( dbh_lut   (iupr,ipft) / dbh_lut   (ilwr,ipft))                  &
+                    * log( balive                / balive_lut(ilwr,ipft))                  &
+                    / log( balive_lut(iupr,ipft) / balive_lut(ilwr,ipft))
+            finterp = max(lnexp_min,min(lnexp_max,finterp))
+            dbh     = dbh_lut(ilwr,ipft) * exp(finterp)
+         end if
+         ba2h = dbh2h(ipft,dbh)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+    end function ba2h
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 

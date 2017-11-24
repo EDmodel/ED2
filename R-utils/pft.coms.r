@@ -649,9 +649,10 @@ pft01 = list( name               = "C4 grass"
             , gamma.resp         = gamma.c4
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.0
-            , root.turnover.rate = 2.0
-            , SLA                = 30.0
+            , leaf.turnover.rate = ifelse(iallom %in% 3, 3.0, 2.0)
+            , root.turnover.rate = NA
+            , bark.turnover.rate = 0.0
+            , SLA                = 22.7
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -716,9 +717,10 @@ pft02 = list( name               = "Early tropical"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.53
-            , leaf.turnover.rate = 1.282
-            , root.turnover.rate = 1.282
-            , SLA                = 23.0
+            , leaf.turnover.rate = ifelse(iallom %in% 3, 1.25, 1.00)
+            , root.turnover.rate = NA
+            , bark.turnover.rate = NA
+            , SLA                = NA
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -783,8 +785,9 @@ pft03 = list( name               = "Mid tropical"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.71
-            , leaf.turnover.rate = 0.596
-            , root.turnover.rate = 0.596
+            , leaf.turnover.rate = ifelse(iallom %in% 3, 0.60, 0.50)
+            , root.turnover.rate = NA
+            , bark.turnover.rate = NA
             , SLA                = 16.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
@@ -850,9 +853,10 @@ pft04 = list( name               = "Late tropical"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.90
-            , leaf.turnover.rate = 0.266
-            , root.turnover.rate = 0.266
-            , SLA                = 9.0
+            , leaf.turnover.rate = ifelse(iallom %in% 3, 0.25, 1./3.)
+            , root.turnover.rate = NA
+            , bark.turnover.rate = NA
+            , SLA                = NA
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -918,7 +922,8 @@ pft05 = list( name               = "Temperate C3 Grass"
             , effarea.transp     = 1.0
             , rho                = 0.32
             , leaf.turnover.rate = 2.0
-            , root.turnover.rate = 2.0
+            , root.turnover.rate = NA
+            , bark.turnover.rate = 0.0
             , SLA                = 22.0
             , hgt.ref            = 0.0
             , b1Ht               = 0.4778
@@ -986,6 +991,7 @@ pft06 = list( name               = "North Pine"
             , rho                = NA
             , leaf.turnover.rate = 1./3.
             , root.turnover.rate = 3.927218
+            , bark.turnover.rate = 0.0
             , SLA                = 6.0
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
@@ -1053,6 +1059,7 @@ pft07 = list( name               = "South Pine"
             , rho                = NA
             , leaf.turnover.rate = 1./3.
             , root.turnover.rate = 4.117847
+            , bark.turnover.rate = 0.4
             , SLA                = 9.0
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
@@ -1120,6 +1127,7 @@ pft08 = list( name               = "Late conifer"
             , rho                = NA
             , leaf.turnover.rate = 1./3.
             , root.turnover.rate = 3.800132
+            , bark.turnover.rate = 0.0
             , SLA                = 10.0
             , hgt.ref            = 1.3
             , b1Ht               = 22.79
@@ -1185,8 +1193,9 @@ pft09 = list( name               = "Early hardwood"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = NA
-            , leaf.turnover.rate = NA
+            , leaf.turnover.rate = 0.0
             , root.turnover.rate = 5.772506
+            , bark.turnover.rate = 0.0
             , SLA                = 30.0
             , hgt.ref            = 1.3
             , b1Ht               = 22.6799
@@ -1252,8 +1261,9 @@ pft10 = list( name               = "Mid hardwood"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = NA
-            , leaf.turnover.rate = NA
+            , leaf.turnover.rate = 0.0
             , root.turnover.rate = 5.083700
+            , bark.turnover.rate = 0.0
             , SLA                = 24.2
             , hgt.ref            = 1.3
             , b1Ht               = 25.18
@@ -1319,8 +1329,9 @@ pft11 = list( name               = "Late hardwood"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = NA
-            , leaf.turnover.rate = NA
+            , leaf.turnover.rate = 0.0
             , root.turnover.rate = 5.070992
+            , bark.turnover.rate = 0.4
             , SLA                = 60.0
             , hgt.ref            = 1.3
             , b1Ht               = 23.3874
@@ -1387,7 +1398,8 @@ pft15 = list( name               = "Araucaria"
             , effarea.transp     = 2.0
             , rho                = 0.54
             , leaf.turnover.rate = 1./6.
-            , root.turnover.rate = 1./6.
+            , root.turnover.rate = NA
+            , bark.turnover.rate = NA
             , SLA                = 10.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
@@ -1453,9 +1465,10 @@ pft16 = list( name               = "C3 grass"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.0
-            , root.turnover.rate = 2.0
-            , SLA                = 30.0
+            , leaf.turnover.rate = ifelse(iallom %in% 3, 3.0, 2.0)
+            , root.turnover.rate = NA
+            , bark.turnover.rate = NA
+            , SLA                = 22.7
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -1513,16 +1526,17 @@ pft17 = list( name               = "Liana"
             , lr.high.temp       = lr.thot.aa  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 15.625  * vmfact.c3 * umol.2.mol
+            , vm0                = 9.09  * vmfact.c3 * umol.2.mol
             , m                  = mphoto.aa
             , alpha              = alpha.c3
             , b                  = b.aa * umol.2.mol
             , gamma.resp         = gamma.aa
             , effarea.transp     = 2.0
             , rho                = 0.59
-            , leaf.turnover.rate = 1./6.
-            , root.turnover.rate = 1./6.
-            , SLA                = 10.0
+            , leaf.turnover.rate = 1.27
+            , root.turnover.rate = NA
+            , bark.turnover.rate = 0.0
+            , SLA                = NA
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -1613,43 +1627,66 @@ pft = as.data.frame(pft,stringsAsFactors=FALSE)
 #------------------------------------------------------------------------------------------#
 #     Define minimum and maximum height based on life form and allometry.                  #
 #------------------------------------------------------------------------------------------#
-pft$hgt.min = ifelse( test = pft$tropical
-                    , yes  = 0.50 + (iallom %in% 3) * 0.25
-                    , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
-                    )#end ifelse
-pft$hgt.max = ifelse( test = pft$tropical
-                    , yes  = ifelse(test=pft$grass,yes=1.5         ,no=hgt.max.trop )
-                    , no   = ifelse(test=pft$grass,yes=.95*pft$b1Ht,no=.999*pft$b1Ht)
-                    )#end ifelse
+if (iallom %in% 3){
+   pft$hgt.min = ifelse( test = pft$tropical
+                       , yes  = ifelse(test=pft$grass,yes=0.15,no=0.5)
+                       , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
+                       )#end ifelse
+   pft$hgt.max = ifelse( test = pft$tropical
+                       , yes  = ifelse(test=pft$grass,yes=1.5         ,no=hgt.max.trop )
+                       , no   = ifelse(test=pft$grass,yes=.95*pft$b1Ht,no=.999*pft$b1Ht)
+                       )#end ifelse
+}else{
+   pft$hgt.min = ifelse( test = pft$tropical
+                       , yes  = ifelse(test=pft$grass,yes=0.5,no=0.5+0.2*(iallom %in% 3))
+                       , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
+                       )#end ifelse
+   pft$hgt.max = ifelse( test = pft$tropical
+                       , yes  = ifelse(test=pft$grass,yes=1.5         ,no=hgt.max.trop )
+                       , no   = ifelse(test=pft$grass,yes=.95*pft$b1Ht,no=.999*pft$b1Ht)
+                       )#end ifelse
+}#end if
 #------------------------------------------------------------------------------------------#
 
 
 
 
 #------------------------------------------------------------------------------------------#
-#     Set SLA, leaf turnover rate, and Vm0 following a combination of two trait data sets: #
-# GLOPNET (W04) and the wood economic spectrum (C09), and developing equations using the   #
-# standardised major axis to relate both variables.  All variables except for wood density #
-# were log-transformed.                                                                    #
+#     Set specific leaf area (SLA, m2leaf/kgC), and turnover rates for root and bark for   #
+# those PFTs that have NA.  The curve relating SLA and leaf turnover rate came from        #
+# fitting a model to trait data base (GLOPNET, W04).  The old model fitting was included   #
+# in K12, whereas the new model is based on SMA fitting.                                   #
 #                                                                                          #
 # Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics spectrum.   #
 #    Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).                   #
+#                                                                                          #
+# Kim, Y., R. G. Knox, M. Longo, D. Medvigy, L. R. Hutyra, E. H. Pyle, S. C. Wofsy,        #
+#    R. L. Bras, and P. R. Moorcroft. Seasonal carbon dynamics and water fluxes in an      #
+#    Amazon rainforest. Glob. Change Biol., 18 (4):1322 (K12).                             #
 #                                                                                          #
 # Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne. Towards a  #
 #    worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366, Apr 2009.              #
 #    doi:10.1111/j.1461-0248.2009.01285.x (C09).                                           #
 #------------------------------------------------------------------------------------------#
-for (ipft in sequence(npft)){
-   #---- Check PFT and allometry. ---------------------------------------------------------#
-   usedef = with(pft,grass[ipft] || liana[ipft] || conifer[ipft] || (! tropical[ipft]))
-   if (! usedef){
-      pft$SLA               [ipft] = exp(4.44824590-2.50747710*pft$rho[ipft])
-      pft$leaf.turnover.rate[ipft] = exp(2.57332880-4.38819777*pft$rho[ipft])
-      pft$root.turnover.rate[ipft] = pft$leaf.turnover.rate [ipft]
-      pft$vm0               [ipft] = exp(4.63093593-3.27792920*pft$rho[ipft]) * umol.2.mol
-   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]))
-   #---------------------------------------------------------------------------------------#
-}#end for (ipft in sequence(npft))
+if (iallom %in% 3){
+  sla.s0 = 19.41946059
+  sla.s1 = 0.60550954
+}else{
+  sla.s0 = exp(log(0.1*C2B)+2.4*log(10.)-0.46*log(12.))
+  sla.s1 = 0.46
+}#end if
+pft$SLA                = ifelse( test = is.finite(pft$SLA)
+                               , yes  = pft$SLA
+                               , no   = sla.s0*pft$leaf.turnover.rate^sla.s1
+                               )#end ifelse
+pft$root.turnover.rate = ifelse( test = is.finite(pft$root.turnover.rate)
+                               , yes  = pft$root.turnover.rate
+                               , no   = pft$leaf.turnover.rate
+                               )#end ifelse
+pft$bark.turnover.rate = ifelse( test = is.finite(pft$bark.turnover.rate)
+                               , yes  = pft$bark.turnover.rate
+                               , no   = 0.4
+                               )#end ifelse
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -1659,6 +1696,8 @@ for (ipft in sequence(npft)){
    #---- Check PFT and allometry. ---------------------------------------------------------#
    if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% 3){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["aa"]
+   }else if (pft$tropical[ipft] && pft$grass[ipft] && iallom %in% 3){
+      pft$qsw[ipft] = 1.0e-5
    }else if (pft$tropical[ipft] && iallom %in% 3){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["bl"]
    }else{
@@ -1821,8 +1860,7 @@ for (ipft in sequence(npft)){
 }#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
 
-#----- Change maximum height for 
-#------------------------------------------------------------------------------------------#
+
 
 #----- Minimum and Maximum DBH. -----------------------------------------------------------#
 pft$dbh.min   = rep(NA,times=npft+1)
@@ -1881,65 +1919,6 @@ d2l   =   0.438
 for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
       #------------------------------------------------------------------------------------#
-      #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
-      # parameters for crown area.                                                         #
-      #------------------------------------------------------------------------------------#
-      if (iallom %in% c(0,1)){
-         pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
-         pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
-      }else if (iallom %in% c(2)){
-         pft$b1Ca[ipft] = exp(ncrown.area[1])
-         pft$b2Ca[ipft] = ncrown.area[2]
-      }else if (iallom %in% c(3)){
-         #---------------------------------------------------------------------------------#
-         #     Allometry using the Sustainable Landscapes data.                            #
-         #---------------------------------------------------------------------------------#
-         #                                                                                 #
-         #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in #
-         #       the Amazon. Environ. Res. Lett., in prep.                                 #
-         #                                                                                 #
-         #    Equation was derived from forest inventory measurements carried out at       #
-         # multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic  #
-         # least squares approach.                                                         #
-         #                                                                                 #
-         # Total number of trees: 17072                                                    #
-         # b1Ca    = 0.582 (95% CI: [0.543;0.628])                                         #
-         # b2Ca    = 1.224 (95% CI: [1.201;1.245])                                         #
-         # R2      = 0.501                                                                 #
-         # RMSE    = 29.89                                                                 #
-         #---------------------------------------------------------------------------------#
-         pft$b1Ca[ipft] = 0.582
-         pft$b2Ca[ipft] = 1.224
-         #---------------------------------------------------------------------------------#
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #      Fill in the leaf biomass parameters.                                          #
-      #------------------------------------------------------------------------------------#
-      if (iallom %in% c(0,1)){
-         #---- ED-2.1 allometry. ----------------------------------------------------------#
-         pft$b1Bl [ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
-         aux                   = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
-                                 + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
-         pft$b2Bl [ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
-      }else if(iallom %in% c(2)){
-         pft$b1Bl [ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
-         pft$b2Bl [ipft] = nleaf[2]
-      }else if(iallom %in% c(3)){
-         #---------------------------------------------------------------------------------#
-         #    Use Lescure et al. (1983).                                                   #
-         #---------------------------------------------------------------------------------#
-         pft$b1Bl [ipft] = x16.l1 * pft$SLA[3] / pft$SLA[ipft]
-         pft$b2Bl [ipft] = x16.l2
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
       #      Fill in the structural biomass parameters.                                    #
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(0)){
@@ -1962,12 +1941,58 @@ for (ipft in sequence(npft)){
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(3)){
-         #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
-         pft$b1Bs.small[ipft] = C2B * 0.1051096 * pft$rho[ipft]
-         pft$b2Bs.small[ipft] = 2.5079994
-         pft$b2Bs.large[ipft] = 2.3464530
-         pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
-                                ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
+         if (pft$grass[ipft]){
+            #----- Small value just in case we are using old grass scheme. ----------------#
+            pft$b1Bs.small[ipft] = 1.e-5
+            pft$b2Bs.small[ipft] = 1.0
+            pft$b1Bs.large[ipft] = pft$b1Bs.small[ipft]
+            pft$b2Bs.large[ipft] = pft$b2Bs.small[ipft]
+            #------------------------------------------------------------------------------#
+         }else{
+            #---- Based on a re-fit of the Chave et al. (2014) allometry. -----------------#
+            pft$b1Bs.small[ipft] = C2B * 0.1549521 * pft$rho[ipft]
+            pft$b2Bs.small[ipft] = 2.4818755
+            pft$b2Bs.large[ipft] = 1.9657980
+            pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
+                                   ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
+            #------------------------------------------------------------------------------#
+         }#end if
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
+      # parameters for crown area.                                                         #
+      #------------------------------------------------------------------------------------#
+      if (iallom %in% c(0,1)){
+         pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
+         pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
+      }else if (iallom %in% c(2)){
+         pft$b1Ca[ipft] = exp(ncrown.area[1])
+         pft$b2Ca[ipft] = ncrown.area[2]
+      }else if (iallom %in% c(3)){
+         #---------------------------------------------------------------------------------#
+         #     Allometry using the Sustainable Landscapes data.                            #
+         #---------------------------------------------------------------------------------#
+         #                                                                                 #
+         #    Longo, M. et al.  Carbon Debt and Recovery time of degraded forests in       #
+         #       the Amazon. Environ. Res. Lett., in prep.                                 #
+         #                                                                                 #
+         #    Equation was derived from forest inventory measurements carried out at       #
+         # multiple locations in the Brazilian Amazon, and fitted using a                  #
+         # heteroscedastic least squares approach.                                         #
+         #                                                                                 #
+         # Total number of trees: 17072                                                    #
+         # b1Ca    = 0.582 (95% CI: [0.543;0.628])                                         #
+         # b2Ca    = 1.224 (95% CI: [1.201;1.245])                                         #
+         # R2      = 0.501                                                                 #
+         # RMSE    = 29.89                                                                 #
+         #---------------------------------------------------------------------------------#
+         pft$b1Ca[ipft] = 0.582
+         pft$b2Ca[ipft] = 1.224
+         #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1992,6 +2017,38 @@ for (ipft in sequence(npft)){
       if (iallom %in% c(3) && (! pft$grass[ipft])){
          pft$b1Cl[ipft] = 0.29754
          pft$b2Cl[ipft] = 1.0324
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Fill in the leaf biomass parameters.                                          #
+      #------------------------------------------------------------------------------------#
+      if (iallom %in% c(0,1)){
+         #---- ED-2.1 allometry. ----------------------------------------------------------#
+         pft$b1Bl [ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
+         aux                   = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
+                                 + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
+         pft$b2Bl [ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
+      }else if(iallom %in% c(2)){
+         pft$b1Bl [ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
+         pft$b2Bl [ipft] = nleaf[2]
+      }else if(iallom %in% c(3)){
+         #---------------------------------------------------------------------------------#
+         #    Use Xu et al. (2016) for trees, and a parameterised ratio for grasses that   #
+         # will make the individual-level LAI to go from 0.5 at minimum height to 3.5 at   #
+         # maximum height, which is similar to the numbers for temperate grasses.          #
+         #---------------------------------------------------------------------------------#
+         lclai.max       = ifelse(test=pft$grass[ipft],yes=2.0,no=7.0)
+         lclai.min       = 1.0
+         pft$b2Bl [ipft] = ( pft$b2Ca[ipft]
+                           + log(lclai.max/lclai.min)
+                           / log(pft$dbh.crit[ipft] / pft$dbh.min[ipft])
+                           )#end pft$b2Bl
+         pft$b1Bl [ipft] = ( lclai.min * C2B * pft$b1Ca[ipft] /pft$SLA[ipft]
+                           * pft$dbh.min[ipft]^(pft$b2Ca[ipft]-pft$b2Bl[ipft])
+                           )#end pft$b1Bl
       }#end if
       #------------------------------------------------------------------------------------#
    }#end if (pft$tropical[ipft]

@@ -60,36 +60,36 @@ USE_GIT=true
 STEP=0
 
 # Argument parsing
-while [[ $# > 0 ]]
+while [[ ${#} > 0 ]]
 do
-key="$1"
-   case $key in
+   key="${1}"
+   case ${key} in
    -p|--platform)
-      PLATFORM="$2"
-      shift # past argument
+      PLATFORM="${2}"
+      shift 2 # past argument
       ;;
    -k|--kind)
-      KIND="$2"
-      shift # past argument
+      KIND="${2}"
+      shift 2 # past argument
       ;;
    -c|--clean)
       CLEAN="clean"
       STEP=1
+      shift 1
       ;;
    -g|--gitoff)
       USE_GIT=false
+      shift 1
       ;;
    -s|--step)
-      STEP="$2"
-      shift # past argument
+      STEP="${2}"
+      shift 2 # past argument
       ;;
    *)
       echo "Unknown key-value argument pair."
       exit 2
       ;;
    esac
-
-   shift # past argument or value
 done
 
 if [ "x${PLATFORM}" == "x" ]

@@ -10,7 +10,7 @@ subroutine ed_driver()
    use ed_met_driver        , only : init_met_drivers           & ! subroutine
                                    , read_met_drivers_init      & ! subroutine
                                    , update_met_drivers         ! ! subroutine
-   use ed_init_full_history , only : init_full_history_restart  ! ! subroutine
+   use ed_init_history      , only : resume_from_history        ! ! subroutine
    use ed_init              , only : set_polygon_coordinates    & ! subroutine
                                    , sfcdata_ed                 & ! subroutine
                                    , load_ecosystem_state       ! ! subroutine
@@ -184,12 +184,12 @@ subroutine ed_driver()
       if (mynum /= 1) then
          call MPI_RECV(ping,1,MPI_INTEGER,recvnum,81,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
       else
-         write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
+         write (unit=*,fmt='(a)') ' [+] Resume_From_History...'
       end if
 #else
-      write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
+      write (unit=*,fmt='(a)') ' [+] Resume_From_History...'
 #endif
-      call init_full_history_restart()
+      call resume_from_history()
 
 #if defined(RAMS_MPI)
       if (mynum < nnodetot ) then
@@ -281,8 +281,8 @@ subroutine ed_driver()
 
    !---------------------------------------------------------------------------------------!
    !      Initialise some derived variables.  This must be done outside                    !
-   ! init_full_history_restart because it depends on some meteorological variables that    !
-   ! were not initialised until the sub-routine ed_init_atm was called.                    !
+   ! resume_from_history because it depends on some meteorological variables that were not !
+   ! initialised until the sub-routine ed_init_atm was called.                             !
    !---------------------------------------------------------------------------------------!
    do ifm=1,ngrids
       call update_derived_props(edgrid_g(ifm))

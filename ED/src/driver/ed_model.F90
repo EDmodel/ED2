@@ -85,8 +85,7 @@ subroutine ed_model()
                                   , initialize_misc_stepvars    ! ! sub-routine
    use stable_cohorts      , only : flag_stable_cohorts         ! ! sub-routine
    use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
-   use vegetation_dynamics , only : veg_dynamics_driver         & ! sub-routine
-                                  , veg_dynamics_driver_eq_0    ! ! sub-routine
+   use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    implicit none
    !----- Common blocks. ------------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -112,6 +111,7 @@ subroutine ed_model()
    logical            :: past_one_day
    logical            :: past_one_month
    logical            :: printbanner
+   logical            :: veget_dyn_on
    real               :: wtime_start
    real               :: t1
    real               :: wtime1
@@ -139,6 +139,8 @@ subroutine ed_model()
    !----- Print the hour banner only for regional runs that aren't massively parallel. ----!
    printbanner = n_ed_region > 0 .and. edgrid_g(1)%npolygons > 50 .and. mynum == 1
 
+   !----- Run with vegetation dynamics turned on?  ----------------------------------------!
+   veget_dyn_on = ivegt_dynamics == 1
 
    wtime_start=walltime(0.)
    istp = 0
@@ -387,25 +389,7 @@ subroutine ed_model()
          !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
          ! whether we will apply them to the ecosystem or not.                             !
          !---------------------------------------------------------------------------------!
-         select case (ivegt_dynamics)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     Dummy vegetation dynamics, we compute the tendencies but we don't really !
-            ! apply to the vegetation, so they will remain constant throughout the entire  !
-            ! simulation.                                                                  !
-            !------------------------------------------------------------------------------!
-            call veg_dynamics_driver_eq_0(new_month,new_year)
-            !------------------------------------------------------------------------------!
-
-         case (1)
-            !------------------------------------------------------------------------------!
-            !     Actual vegetation dynamics, we compute the tendencies and apply to the   !
-            ! vegetation.                                                                  !
-            !------------------------------------------------------------------------------!
-            call veg_dynamics_driver(new_month,new_year)
-            !------------------------------------------------------------------------------!
-
-         end select
+         call veg_dynamics_driver(new_month,new_year,veget_dyn_on)
          !---------------------------------------------------------------------------------!
 
          !----- First day of a month. -----------------------------------------------------!

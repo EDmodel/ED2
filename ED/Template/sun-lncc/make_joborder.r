@@ -225,6 +225,7 @@ default = list( run           = "unnamed"
               , igndvap       = 0
               , iphen         = -1
               , iallom        = 3
+              , igrass        = 0
               , ibigleaf      = 0
               , integ.scheme  = 1
               , nsub.euler    = 50

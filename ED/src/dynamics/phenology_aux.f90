@@ -195,9 +195,8 @@ module phenology_aux
                                 , sitetype           & ! structure
                                 , patchtype          ! ! structure
       use pft_coms       , only : phenology          & ! intent(in)
-                                , sla_scale          & ! intent(in)
-                                , sla_inter          & ! intent(in)
-                                , sla_slope          & ! intent(in)
+                                , sla_s0             & ! intent(in)
+                                , sla_s1             & ! intent(in)
                                 , leaf_turnover_rate ! ! intent(in)
       use phenology_coms , only : radint             & ! intent(in)
                                 , radslp             & ! intent(in)
@@ -311,9 +310,7 @@ module phenology_aux
 
                !----- Update the specific leaf area (SLA). --------------------------------!
                turnover_now    = cpatch%turnover_amp(ico) * leaf_turnover_rate(ipft)
-               cpatch%sla(ico) = 10.0 ** ( sla_inter                                       &
-                                         + sla_slope * log10( 12.0 / turnover_now ) )      &
-                               * sla_scale
+               cpatch%sla(ico) = sla_s0(ipft) * turnover_now ** sla_s1(ipft)
             case default
                !----- The default is to keep these variables the same. --------------------!
                continue

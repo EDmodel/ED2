@@ -30,6 +30,7 @@ subroutine read_ed21_history_file
                                   , iyearh                  & ! intent(in)
                                   , idateh                  & ! intent(in)
                                   , igrass                  & ! intent(in)
+                                  , iallom                  & ! intent(in)
                                   , itimeh                  ! ! intent(in)
    use ed_state_vars       , only : polygontype             & ! variable type
                                   , sitetype                & ! variable type
@@ -64,7 +65,7 @@ subroutine read_ed21_history_file
    use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
    use disturb_coms        , only : ianth_disturb           ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
-   use ed_init_full_history, only : hdf_getslab_i           & ! sub-routine
+   use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
                                   , hdf_getslab_r           ! ! sub-routine
    use ed_init             , only : soil_default_fill       ! ! sub-routine
    use ed_type_init        , only : init_ed_cohort_vars     & ! subroutine
@@ -601,7 +602,12 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (igrass == 1 .and. is_grass(ipft)                            &
+                           if (iallom == 3) then
+                              !----- New allometry, initialise with DBH. ------------------!
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                           elseif (igrass == 1 .and. is_grass(ipft)                        &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
@@ -947,6 +953,7 @@ subroutine read_ed21_history_unstruct
    use ed_misc_coms        , only : sfilin                  & ! intent(in)
                                   , ied_init_mode           & ! intent(in)
                                   , igrass                  & ! intent(in)
+                                  , iallom                  & ! intent(in)
                                   , max_poi99_dist          ! ! intent(in)
    use ed_state_vars       , only : polygontype             & ! variable type
                                   , sitetype                & ! variable type
@@ -984,7 +991,7 @@ subroutine read_ed21_history_unstruct
                                   , min_patch_area          ! ! intent(in)
    use soil_coms           , only : soil                    ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
-   use ed_init_full_history, only : hdf_getslab_i           & ! sub-routine
+   use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
                                   , hdf_getslab_r           ! ! sub-routine
    use ed_type_init        , only : init_ed_cohort_vars     & ! subroutine
                                   , init_ed_patch_vars      & ! subroutine
@@ -1871,7 +1878,12 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (igrass == 1 .and. is_grass(ipft)                            &
+                           if (iallom == 3) then
+                              !----- New allometry, initialise with DBH. ------------------!
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                           elseif (igrass == 1 .and. is_grass(ipft)                        &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
@@ -2222,6 +2234,7 @@ subroutine read_ed21_polyclone
                                   , f_bstorage_init         & ! intent(in)
                                   , agf_bs                  ! ! intent(in)
    use ed_misc_coms        , only : sfilin                  & ! intent(in)
+                                  , iallom                  & ! intent(in)
                                   , igrass                  ! ! intent(in)
    use ed_state_vars       , only : polygontype             & ! variable type
                                   , sitetype                & ! variable type
@@ -2261,7 +2274,7 @@ subroutine read_ed21_polyclone
                                   , slzt                    & ! intent(in)
                                   , isoilcol                ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
-   use ed_init_full_history, only : hdf_getslab_i           & ! sub-routine
+   use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
                                   , hdf_getslab_r           ! ! sub-routine
    use ed_init             , only : soil_default_fill       ! ! sub-routine
    use ed_type_init        , only : init_ed_cohort_vars     & ! subroutine
@@ -3111,7 +3124,12 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (igrass == 1 .and. is_grass(ipft)                            &
+                           if (iallom == 3) then
+                              !----- New allometry, initialise with DBH. ------------------!
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                           elseif (igrass == 1 .and. is_grass(ipft)                        &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !

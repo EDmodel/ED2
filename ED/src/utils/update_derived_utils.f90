@@ -56,6 +56,7 @@ module update_derived_utils
       use ed_state_vars , only : patchtype           ! ! structure
       use pft_coms      , only : is_grass            ! ! function
       use allometry     , only : bd2dbh              & ! function
+                               , bw2dbh              & ! function
                                , dbh2h               & ! function
                                , dbh2krdepth         & ! function
                                , bl2dbh              & ! function
@@ -67,6 +68,7 @@ module update_derived_utils
                                , area_indices        ! ! subroutine
       use consts_coms   , only : pio4                ! ! intent(in)
       use ed_misc_coms  , only : igrass              & ! intent(in)
+                               , iallom              & ! intent(in)
                                , current_time        ! ! intent(in)
       use detailed_coms , only : dt_census           & ! intent(in)
                                , yr1st_census        & ! intent(in)
@@ -105,11 +107,17 @@ module update_derived_utils
           !---- New grasses get dbh_effective and height from bleaf. ----------------------!
           cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), ipft)
           cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft)
+      elseif (iallom == 3) then
+          !---- Update dbh based on total woody biomass. ----------------------------------!
+          cpatch%dbh(ico)  = bw2dbh(cpatch%bsapwooda(ico)                                  &
+                                   ,cpatch%bsapwoodb(ico)                                  &
+                                   ,cpatch%bdead    (ico)                                  &
+                                   ,ipft                 )
+          cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico))
       else
           !---- Trees and old grasses get dbh from bdead. ---------------------------------!
           cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdead(ico))
           cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico))
-   !       cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico), cpatch%hite(1))
       end if
       !------------------------------------------------------------------------------------!
 

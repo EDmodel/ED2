@@ -203,6 +203,13 @@ case ${global_queue} in
       runtime="7-00:00:00"
       node_memory=262499
       ;;
+   shared)
+      n_nodes_max=456
+      n_cpt=1
+      n_tpn=32
+      runtime="7-00:00:00"
+      node_memory=129072
+      ;;
    moorcroft_amd)
       n_nodes_max=8
       n_cpt=1
@@ -397,6 +404,7 @@ then
    ebatch="${here}/err_${rprefix}_${partlabel}.log"
 else
    ff=0
+   polya=1
    polyz=${npolys}
    sbatch="${here}/sub_${rprefix}.sh"
    obatch="${here}/out_${rprefix}.log"
@@ -612,21 +620,22 @@ do
    igndvap=$(echo ${oi}      | awk '{print $91 }')
    iphen=$(echo ${oi}        | awk '{print $92 }')
    iallom=$(echo ${oi}       | awk '{print $93 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $94 }')
-   integscheme=$(echo ${oi}  | awk '{print $95 }')
-   nsubeuler=$(echo ${oi}    | awk '{print $96 }')
-   irepro=$(echo ${oi}       | awk '{print $97 }')
-   treefall=$(echo ${oi}     | awk '{print $98 }')
-   ianthdisturb=$(echo ${oi} | awk '{print $99 }')
-   ianthdataset=$(echo ${oi} | awk '{print $100}')
-   slscale=$(echo ${oi}      | awk '{print $101}')
-   slyrfirst=$(echo ${oi}    | awk '{print $102}')
-   slnyrs=$(echo ${oi}       | awk '{print $103}')
-   bioharv=$(echo ${oi}      | awk '{print $104}')
-   skidarea=$(echo ${oi}     | awk '{print $105}')
-   skidsmall=$(echo ${oi}    | awk '{print $106}')
-   skidlarge=$(echo ${oi}    | awk '{print $107}')
-   fellingsmall=$(echo ${oi} | awk '{print $108}')
+   igrass=$(echo ${oi}       | awk '{print $94 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $95 }')
+   integscheme=$(echo ${oi}  | awk '{print $96 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $97 }')
+   irepro=$(echo ${oi}       | awk '{print $98 }')
+   treefall=$(echo ${oi}     | awk '{print $99 }')
+   ianthdisturb=$(echo ${oi} | awk '{print $100}')
+   ianthdataset=$(echo ${oi} | awk '{print $101}')
+   slscale=$(echo ${oi}      | awk '{print $102}')
+   slyrfirst=$(echo ${oi}    | awk '{print $103}')
+   slnyrs=$(echo ${oi}       | awk '{print $104}')
+   bioharv=$(echo ${oi}      | awk '{print $105}')
+   skidarea=$(echo ${oi}     | awk '{print $106}')
+   skidsmall=$(echo ${oi}    | awk '{print $107}')
+   skidlarge=$(echo ${oi}    | awk '{print $108}')
+   fellingsmall=$(echo ${oi} | awk '{print $109}')
    #---------------------------------------------------------------------------------------#
 
 

@@ -105,7 +105,34 @@ dbh2bd <<- function(dbh,ipft){
    bdead[large] = ( pft$b1Bs.large[zpft[large]] / C2B * dbh[large] 
                   ^ pft$b2Bs.large[zpft[large]] )
    return(bdead)
-}# end function dbh2bl
+}# end function dbh2bw
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+dbh2bw <<- function(dbh,ipft){
+   if (length(ipft) == 1){
+     zpft = rep(ipft,times=length(dbh))
+   }else{
+     zpft = ipft
+   }#end if
+
+
+   if (iallom %in% 3){
+      bwood = dbh2bd(dbh=dbh,ipft=zpft)
+   }else{
+      bdead  = dbh2bd(dbh=dbh,ipft=zpft)
+      bsapw  = pft$qsw[ipft] * dbh2h(dbh=dbh,ipft=zpft) * dbh2bl(dbh=dbh,ipft=zpft)
+      bwood  = bdead + bsapw
+   }#end if
+   return(bwood)
+}# end function dbh2bw
 #==========================================================================================#
 #==========================================================================================#
 
@@ -162,7 +189,7 @@ dbh2ca <<- function(dbh,ipft){
 
 #==========================================================================================#
 #==========================================================================================#
-#    Wood area index from Ahrends et al. (2010).                                           #
+#    Wood area index.                                                                      #
 #------------------------------------------------------------------------------------------#
 dbh2wai <<- function(dbh,ipft,chambers=FALSE){
    if (length(ipft) == 1){
@@ -173,31 +200,7 @@ dbh2wai <<- function(dbh,ipft,chambers=FALSE){
 
 
    dbh.use  = pmin(pft$dbh.crit[zpft],dbh)
-   #---------------------------------------------------------------------------------------#
-   #     Chambers method.                                                                  #
-   #---------------------------------------------------------------------------------------#
-   if (chambers){
-      height   = dbh2h(ipft=zpft,dbh=dbh.use)
-      wdens    = ifelse(is.na(pft$rho[zpft]),0.6,pft$rho[zpft])
-      hcb      = h2crownbh(height=height,ipft=zpft)
-      dcb      = 1.045676 * dbh/hcb^0.091
-      dcb.use  = 1.045676 * dbh.use/hcb^0.091
-      abole    = 2.5e-3 * pi * (dbh.use+dcb.use) * sqrt(4*hcb^2-1.e-4*(dbh.use-dcb.use)^2)
-      vbole    = 1.0e-4 * pi * hcb * (dbh.use^2+dbh.use*dcb.use+dcb.use^2) / 12.
-      bbole    = 1000. * wdens * vbole / C2B
-      bleaf    = dbh2bl(dbh=dbh.use,ipft=zpft)
-      bsapwood = bleaf * pft$qsw[zpft] * height
-      bdead    = dbh2bd(dbh=dbh.use,ipft=zpft)
-      agb.wood = pft$agf.bs[zpft] * (bsapwood + bdead)
-      bbranch  = agb.wood - bbole
-      dbmin    = 0.2 + 0 * dbh.use
-      kterm    = 0.4 * bbranch*C2B/(pi*wdens*(dcb.use-dbmin))
-      abranch  = pi*kterm*log(dcb.use/dbmin)
-      wai      = ( abole + abranch )
-      wai      = wai * dbh2ca(dbh=pft$dbh.crit[zpft],ipft=zpft)/max(wai)
-   }else{
-      wai      = pft$qwai[zpft] * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
-   }#end if
+   wai      = pft$qwai[zpft] * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
    if (any(is.na(wai))) browser()
    #---------------------------------------------------------------------------------------#
    

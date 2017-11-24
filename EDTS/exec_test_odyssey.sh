@@ -1037,7 +1037,7 @@ do
          #----- Use default initialisation. -----------------------------------------------#
          sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\'   ${FILEMAIN}
          sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\'   ${FILETEST}
-         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPH[i]}\' ${FILEDBUG}
+         sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\' ${FILEDBUG}
          #---------------------------------------------------------------------------------#
 
          #----- Initial.  All simulations must be submitted. ------------------------------#
@@ -1108,7 +1108,7 @@ do
             sed -i '/NL%ITIMEH/c\   NL%ITIMEH = '${ITIMEH_DBUG}      ${FILEDBUG}
             sed -i '/NL%SFILIN/c\   NL%SFILIN = '\'${S_DBUG_PREF}\'      ${FILEDBUG}
          else
-            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${D_RUNTYPH[i]}\'   ${FILEDBUG}
+            sed -i '/NL%RUNTYPE/c\   NL%RUNTYPE = '\'${RUNTYPH[i]}\'   ${FILEDBUG}
          fi
          #---------------------------------------------------------------------------------#
 

@@ -460,10 +460,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    flagvar[["iallom"]]          = list( descr   = "Allometry"
                                       , numeric = TRUE
                                       , values  = seq(from=0,to=3,by=1)
-                                      , names   = c("Original ED-2.1"
-                                                  ,"AGB-Chave, BL-Original"
-                                                  ,"AGB-Chave, BL-ColeEwel"
-                                                  ,"AGB-Chave, BL-Lescure")
+                                      , names   = c("ED-1.0","ED-2.0","ED-2.1","ED-2.2")
                                       )#end list
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["h2o.plant.limit"]] = list( descr   = "Water limitation"
@@ -626,10 +623,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , names  = c("Old","New")
                                        )#end list
    #----- Grass type. ---------------------------------------------------------------------#
-   flagvar[["igrass"]]           = list( descr  = "Grass type"
+   flagvar[["igrass"]]           = list( descr  = "Grass scheme"
                                       , numeric = TRUE
-                                       , values = c(3,4,34)
-                                       , names  = c("C3","C4","C3 and C4")
+                                       , values = c(0,1)
+                                       , names  = c("ED-1","Swann")
                                        )#end list
    #----- Grass type. ---------------------------------------------------------------------#
    flagvar[["isoilbc"]]          = list( descr  = "Soil Bnd. Cond."
@@ -1273,6 +1270,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("isas","iage","idiversity")
          na     = c(     6,    14,          20)
          nz     = c(     8,    15,          21)
+      }else if (lenici == 22){
+         nparms = 2
+         param  = c("iallom","igrass")
+         na     = c(      12,      21)
+         nz     = c(      13,      22)
       }else if (lenici == 22){
          nparms = 2
          param  = c("ihrzrad","include.fire")

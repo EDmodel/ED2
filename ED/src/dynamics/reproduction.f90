@@ -11,7 +11,7 @@ module reproduction
    ! and PFT-specific reproduction properties.  No reproduction will happen if the user    !
    ! didn't want it, in which case the seedling biomass will go to the litter pools.       !
    !---------------------------------------------------------------------------------------!
-   subroutine reproduction_driver(cgrid,month)
+   subroutine reproduction_driver(cgrid,month,veget_dyn_on)
       use ed_state_vars       , only : edtype                     & ! structure
                                      , polygontype                & ! structure
                                      , sitetype                   & ! structure
@@ -70,6 +70,7 @@ module reproduction
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
       integer          , intent(in) :: month
+      logical          , intent(in) :: veget_dyn_on
       !----- Local variables --------------------------------------------------------------!
       type(polygontype), pointer          :: cpoly
       type(sitetype)   , pointer          :: csite
@@ -112,10 +113,14 @@ module reproduction
       ! kill all potential recruits and send their biomass to the litter pool.             !
       !------------------------------------------------------------------------------------!
       if (first_time) then
-         if (repro_scheme == 0) seedling_mortality(1:n_pft) = 1.0
+         !---- Halt reproduction by killing all seedlings. --------------------------------!
+         if (repro_scheme == 0 .or. (.not. veget_dyn_on)) then
+            seedling_mortality(1:n_pft) = 1.0
+         end if
+         !---------------------------------------------------------------------------------!
 
          !----- Make the header. ----------------------------------------------------------!
-         if (printout) then
+         if (printout .and. veget_dyn_on) then
             open (unit=66,file=fracfile,status='replace',action='write')
             write (unit=66,fmt='(11(a,1x))')                                               &
               ,      '  YEAR',     '  MONTH',      '   DAY',      '   IPA',      '   ICO'  &
@@ -129,6 +134,34 @@ module reproduction
       end if
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !     Make sure repro is set to zero in case vegetation dynamics is off.             !
+      !------------------------------------------------------------------------------------!
+      if (.not. veget_dyn_on) then
+         offpolyloop: do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
+
+            offsiteloop: do isi = 1,cpoly%nsites
+               csite => cpoly%site(isi)
+
+               !---------------------------------------------------------------------------!
+               !    Zero all reproduction stuff...                                         !
+               !---------------------------------------------------------------------------!
+               offpatchloop: do ipa = 1,csite%npatches
+                  call zero_recruit(n_pft,recruit)
+                  csite%repro(:,ipa)  = 0.0
+               end do offpatchloop
+               !---------------------------------------------------------------------------!
+
+               !----- Reset minimum monthly temperature. ----------------------------------!
+               cpoly%min_monthly_temp(isi) = huge(1.)
+               !---------------------------------------------------------------------------!
+            end do offsiteloop
+            !------------------------------------------------------------------------------!
+         end do offpolyloop
+         return
+      end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -141,7 +174,7 @@ module reproduction
          !---------------------------------------------------------------------------------!
 
 
-!        !----- The big loops start here. -------------------------------------------------!
+         !----- The big loops start here. -------------------------------------------------!
          polyloop: do ipy = 1,cgrid%npolygons
 
             !------------------------------------------------------------------------------!
@@ -784,80 +817,6 @@ module reproduction
 
       return
    end subroutine reproduction_driver
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !      This subroutine will bypass all reproduction.                                    !
-   !---------------------------------------------------------------------------------------!
-   subroutine reproduction_driver_eq_0(cgrid)
-      use ed_state_vars      , only : edtype                & ! structure
-                                    , polygontype           & ! structure
-                                    , sitetype              & ! structure
-                                    , patchtype             & ! structure
-                                    , allocate_patchtype    & ! subroutine
-                                    , copy_patchtype        & ! subroutine
-                                    , deallocate_patchtype  ! ! subroutine
-      use pft_coms           , only : recruittype           & ! structure
-                                    , zero_recruit          & ! subroutine
-                                    , copy_recruit          & ! subroutine
-                                    , seedling_mortality    ! ! intent(in)
-      use ed_max_dims        , only : n_pft                 ! ! intent(in)
-      use fuse_fiss_utils    , only : sort_cohorts          & ! subroutine
-                                    , terminate_cohorts     ! ! subroutine
-      use consts_coms        , only : pio4                  ! ! intent(in)
-      use ed_therm_lib       , only : calc_veg_hcap         ! ! function
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      type(edtype)     , target     :: cgrid
-      !----- Local variables --------------------------------------------------------------!
-      type(polygontype), pointer          :: cpoly
-      type(sitetype)   , pointer          :: csite
-      type(recruittype), dimension(n_pft) :: recruit
-      integer                             :: ipy
-      integer                             :: isi
-      integer                             :: ipa
-
-
-      !------------------------------------------------------------------------------------!
-      !    If this is the first time, check whether the user wants reproduction.  If not,  !
-      ! kill all potential recruits and send their biomass to the litter pool.             !
-      !------------------------------------------------------------------------------------!
-      seedling_mortality(1:n_pft) = 1.0
-      !------------------------------------------------------------------------------------!
-
-
-      !----- The big loops start here. ----------------------------------------------------!
-      polyloop: do ipy = 1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-
-         siteloop: do isi = 1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-            !------------------------------------------------------------------------------!
-            !    Zero all reproduction stuff...                                            !
-            !------------------------------------------------------------------------------!
-            patchloop: do ipa = 1,csite%npatches
-               call zero_recruit(n_pft,recruit)
-               csite%repro(:,ipa)  = 0.0
-            end do patchloop
-            !------------------------------------------------------------------------------!
-
-            !----- Reset minimum monthly temperature. -------------------------------------!
-            cpoly%min_monthly_temp(isi) = huge(1.)
-            !------------------------------------------------------------------------------!
-         end do siteloop
-         !---------------------------------------------------------------------------------!
-      end do polyloop
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine reproduction_driver_eq_0
    !=======================================================================================!
    !=======================================================================================!
 

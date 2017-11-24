@@ -1499,10 +1499,10 @@ ed_init_atm.o : $(ED_INIT)/ed_init_atm.F90
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 
-ed_init_full_history.o : $(ED_IO)/ed_init_full_history.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+ed_init_history.o : $(ED_IO)/ed_init_history.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_LOWO_COMMAND) $(<F:.f90=.f90)
 
 ed_max_dims.o : $(ED_MEMORY)/ed_max_dims.F90
 	/bin/rm -f $(<F:.F90=.F90)

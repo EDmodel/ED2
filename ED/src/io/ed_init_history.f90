@@ -1,9 +1,9 @@
 !==========================================================================================!
 !==========================================================================================!
-!   Module ed_init_full_history.  This module has routines that allow restarting the model !
+!   Module ed_init_history.  This module has routines that allow restarting the model      !
 ! with (hopefully) binary reproducibility.                                                 !
 !------------------------------------------------------------------------------------------!
-module ed_init_full_history
+module ed_init_history
   contains
 
    !=======================================================================================!
@@ -22,7 +22,7 @@ module ed_init_full_history
    ! all of the polygons in the file.  Nonetheless, it will traverse the tree from these   !
    ! polygons and populate the model states with what is found in the files tree.          !
    !---------------------------------------------------------------------------------------!
-   subroutine init_full_history_restart()
+   subroutine resume_from_history()
       use ed_max_dims      , only : n_pft                 & ! intent(in)
                                   , str_len               ! ! intent(in)
       use ed_misc_coms     , only : sfilin                & ! intent(in)
@@ -123,14 +123,14 @@ module ed_init_full_history
          if (.not.exists) then
             !----- History couldn't be found.  Stop the run. ------------------------------!
             call fatal_error ('File '//trim(hnamel)//' not found.'                         &
-                             ,'init_full_history_restart','ed_init_full_history.F90')
+                             ,'resume_from_history','ed_init_history.f90')
          else
             call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
             if (hdferr < 0) then
                write(unit=*,fmt='(a,1x,i8)') 'Error opening HDF5 file - error - ',hdferr
                write(unit=*,fmt='(a,1x,a)' ) '- Filename: ',trim(hnamel)
                call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)         &
-                               ,'init_full_history_restart','ed_init_full_history.F90')
+                               ,'resume_from_history','ed_init_history.f90')
             end if
          end if
 
@@ -287,7 +287,7 @@ module ed_init_full_history
                write (unit=*,fmt='(a)'          ) '------------------------------------------'
 
                call fatal_error('Mismatch between polygon and dataset'                     &
-                               ,'init_full_history_restart','ed_init_full_history.F90')
+                               ,'resume_from_history','ed_init_history.f90')
             end if
             !------------------------------------------------------------------------------!
 
@@ -360,8 +360,8 @@ module ed_init_full_history
                      write (unit=*,fmt='(a,1x,es12.5)') ' - Latitude  :',cgrid%lat(ipy)
                      write (unit=*,fmt='(a)'          ) '---------------------------------'
                      call fatal_error('Attempted to load an empty site.'                   &
-                                     ,'init_full_history_restart'                          &
-                                     ,'ed_init_full_history.F90')
+                                     ,'resume_from_history'                          &
+                                     ,'ed_init_history.f90')
                   end if
 
                end do siteloop
@@ -377,7 +377,7 @@ module ed_init_full_history
                write (unit=*,fmt='(a,1x,es12.5)') ' - Latitude  :',cgrid%lat(ipy)
                write (unit=*,fmt='(a)'          ) '------------------------------------'
                call fatal_error('Attempted to load an empty polygon.'                      &
-                               ,'init_full_history_restart','ed_init_full_history.F90')
+                               ,'resume_from_history','ed_init_history.f90')
             end if
          end do polyloop
 
@@ -386,7 +386,7 @@ module ed_init_full_history
          if (hdferr /= 0) then
              print*,hdferr
              call fatal_error('Could not close the HDF file'                               &
-                             ,'init_full_history_restart','ed_init_full_history.F90')
+                             ,'resume_from_history','ed_init_history.f90')
 
          end if
 
@@ -427,7 +427,7 @@ module ed_init_full_history
       call phenology_init()
 
       return
-   end subroutine init_full_history_restart
+   end subroutine resume_from_history
    !=======================================================================================!
    !=======================================================================================!
 
@@ -4399,7 +4399,7 @@ module ed_init_full_history
       !   call h5dopen_f(file_id,'SOIL_WATER_PA ', dset_id, hdferr)                        !
       !   if (hdferr /= 0 ) then                                                           !
       !      call fatal_error('Dataset did not have soil water?' &                         !
-      !           ,'fill_history_site','ed_init_full_history.F90')                         !
+      !           ,'fill_history_site','ed_init_history.f90')                              !
       !   endif                                                                            !
       !                                                                                    !
       !------ Determine data size of any given object in a set.----------------------------!
@@ -4421,7 +4421,7 @@ module ed_init_full_history
       !      deallocate(buff)                                                              !
       !  else                                                                              !
       !     call fatal_error('Soil water dataset is not real nor double?'                & !
-      !                     ,'fill_history_site','ed_init_full_history.F90')               !
+      !                     ,'fill_history_site','ed_init_history.f90')                    !
       !  end if                                                                            !
       !------------------------------------------------------------------------------------!
 
@@ -5549,7 +5549,7 @@ module ed_init_full_history
          write(unit=*,fmt=*) 'File_ID = ',file_id
          write(unit=*,fmt=*) 'Dset_ID = ',dset_id
          call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-              ,'hdf_getslab_r','ed_init_full_history.F90')
+              ,'hdf_getslab_r','ed_init_history.f90')
          !---------------------------------------------------------------------------------!
 
       else if ((.not. foundvar) .and. (.not.required) ) then
@@ -5587,14 +5587,14 @@ module ed_init_full_history
          call h5dget_space_f(dset_id,filespace,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!'&
-                 ,'hdf_getslab_r','ed_init_full_history.F90')
+                 ,'hdf_getslab_r','ed_init_history.f90')
          end if
 
          call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
               chnkdims,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)// &
-                             '!','hdf_getslab_r','ed_init_full_history.F90')
+                             '!','hdf_getslab_r','ed_init_history.f90')
          end if
 
          call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -5602,14 +5602,14 @@ module ed_init_full_history
             write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
             write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
             call fatal_error('Couldn''t create the hyperslab memspace for '//trim(varn)//  &
-                             '!','hdf_getslab_r','ed_init_full_history.F90')
+                             '!','hdf_getslab_r','ed_init_history.f90')
          end if
 
          call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
               memdims,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)// &
-                             '!','hdf_getslab_r','ed_init_full_history.F90')
+                             '!','hdf_getslab_r','ed_init_history.f90')
          end if
 
          if (iparallel == 1) then
@@ -5620,7 +5620,7 @@ module ed_init_full_history
 
             if (hdferr /= 0) then
                call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//   &
-                                '!','hdf_getslab_r','ed_init_full_history.F90')
+                                '!','hdf_getslab_r','ed_init_history.f90')
             end if
 
          else
@@ -5630,7 +5630,7 @@ module ed_init_full_history
 
             if (hdferr /= 0) then
                call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//   &
-                                '!','hdf_getslab_r','ed_init_full_history.F90')
+                                '!','hdf_getslab_r','ed_init_history.f90')
             end if
 
          end if
@@ -5716,7 +5716,7 @@ module ed_init_full_history
          write(unit=*,fmt=*) 'File_ID = ',file_id
          write(unit=*,fmt=*) 'Dset_ID = ',dset_id
          call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-              ,'hdf_getslab_d','ed_init_full_history.F90')
+              ,'hdf_getslab_d','ed_init_history.f90')
          !---------------------------------------------------------------------------------!
 
       else if ((.not. foundvar) .and. (.not.required) ) then
@@ -5752,14 +5752,14 @@ module ed_init_full_history
          call h5dget_space_f(dset_id,filespace,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//   &
-                             '!','hdf_getslab_d','ed_init_full_history.F90')
+                             '!','hdf_getslab_d','ed_init_history.f90')
          end if
 
          call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
               chnkdims,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)// &
-                             '!','hdf_getslab_d','ed_init_full_history.F90')
+                             '!','hdf_getslab_d','ed_init_history.f90')
          end if
 
          call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -5767,14 +5767,14 @@ module ed_init_full_history
             write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
             write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
             call fatal_error('Couldn''t create the hyperslab memspace for '//trim(varn)//  &
-                             '!','hdf_getslab_d','ed_init_full_history.F90')
+                             '!','hdf_getslab_d','ed_init_history.f90')
          end if
 
          call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
               memdims,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)// &
-                             '!','hdf_getslab_d','ed_init_full_history.F90')
+                             '!','hdf_getslab_d','ed_init_history.f90')
          end if
 
          if (iparallel == 1) then
@@ -5785,7 +5785,7 @@ module ed_init_full_history
 
             if (hdferr /= 0) then
                call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//   &
-                                '!','hdf_getslab_d','ed_init_full_history.F90')
+                                '!','hdf_getslab_d','ed_init_history.f90')
             end if
 
          else
@@ -5795,7 +5795,7 @@ module ed_init_full_history
 
             if (hdferr /= 0) then
                call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//   &
-                                '!','hdf_getslab_d','ed_init_full_history.F90')
+                                '!','hdf_getslab_d','ed_init_history.f90')
             end if
 
          end if
@@ -5880,7 +5880,7 @@ module ed_init_full_history
          write(unit=*,fmt=*) 'File_ID = ',file_id
          write(unit=*,fmt=*) 'Dset_ID = ',dset_id
          call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-              ,'hdf_getslab_i','ed_init_full_history.F90')
+              ,'hdf_getslab_i','ed_init_history.f90')
          !---------------------------------------------------------------------------------!
 
       else if ((.not. foundvar) .and. (.not.required) ) then
@@ -5916,14 +5916,14 @@ module ed_init_full_history
          call h5dget_space_f(dset_id,filespace,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//   &
-                             '!','hdf_getslab_i','ed_init_full_history.F90')
+                             '!','hdf_getslab_i','ed_init_history.f90')
          end if
 
          call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
               chnkdims,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)// &
-                             '!','hdf_getslab_i','ed_init_full_history.F90')
+                             '!','hdf_getslab_i','ed_init_history.f90')
          end if
 
          call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -5931,14 +5931,14 @@ module ed_init_full_history
             write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
             write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
             call fatal_error('Couldn''t create the hyperslab memspace for '//trim(varn)//  &
-                             '!','hdf_getslab_i','ed_init_full_history.F90')
+                             '!','hdf_getslab_i','ed_init_history.f90')
          end if
 
          call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
               memdims,hdferr)
          if (hdferr /= 0) then
             call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)// &
-                             '!','hdf_getslab_i','ed_init_full_history.F90')
+                             '!','hdf_getslab_i','ed_init_history.f90')
          end if
 
          if (iparallel == 1) then
@@ -5949,7 +5949,7 @@ module ed_init_full_history
 
             if (hdferr /= 0) then
                call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//   &
-                                '!','hdf_getslab_i','ed_init_full_history.F90')
+                                '!','hdf_getslab_i','ed_init_history.f90')
             end if
 
          else
@@ -5959,7 +5959,7 @@ module ed_init_full_history
 
             if (hdferr /= 0) then
                call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//   &
-                                '!','hdf_getslab_i','ed_init_full_history.F90')
+                                '!','hdf_getslab_i','ed_init_history.f90')
             end if
 
          end if
@@ -5976,6 +5976,6 @@ module ed_init_full_history
    !=======================================================================================!
    !=======================================================================================!
 
-end module ed_init_full_history
+end module ed_init_history
 !==========================================================================================!
 !==========================================================================================!

@@ -909,18 +909,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Allocation and productivity relative to the total living biomass. ---------#
-         f.gppconow        =  100. * gppconow        / pmax(baliveconow,0.01)
-         f.plant.respconow =  100. * plant.respconow / pmax(baliveconow,0.01)
-         f.nppconow        =  100. * nppconow        / pmax(baliveconow,0.01)
-         f.mcoconow        =  100. * mcostconow      / pmax(baliveconow,0.01)
-         f.dcbadtconow     =  100. * dcbadtconow     / pmax(baliveconow,0.01)
-         f.cbaconow        =         cbaconow        / pmax(baliveconow,0.01)
-         f.bstorageconow   =         bstorageconow   / pmax(baliveconow,0.01)
-         f.bleafconow      =         bleafconow      / pmax(baliveconow,0.01)
-         f.bstemconow      =         bstemconow      / pmax(baliveconow,0.01)
-         f.brootconow      =         brootconow      / pmax(baliveconow,0.01)
-         f.bbarkconow      =         bbarkconow      / pmax(baliveconow,0.01)
-         f.bseedsconow     =         bseedsconow     / pmax(baliveconow,0.01)
+         f.gppconow        =  100.  * gppconow        / pmax(baliveconow ,0.01)
+         f.plant.respconow =  100.  * plant.respconow / pmax(baliveconow ,0.01)
+         f.nppconow        =  100.  * nppconow        / pmax(baliveconow ,0.01)
+         f.mcoconow        =  100.  * mcostconow      / pmax(baliveconow ,0.01)
+         f.dcbadtconow     =  100.  * dcbadtconow     / pmax(baliveconow ,0.01)
+         f.cbaconow        =  1000. * cbaconow        / pmax(biomassconow,0.01)
+         f.bstorageconow   =  1000. * bstorageconow   / pmax(biomassconow,0.01)
+         f.bleafconow      =  1000. * bleafconow      / pmax(biomassconow,0.01)
+         f.bstemconow      =  1000. * bstemconow      / pmax(biomassconow,0.01)
+         f.brootconow      =  1000. * brootconow      / pmax(biomassconow,0.01)
+         f.bbarkconow      =  1000. * bbarkconow      / pmax(biomassconow,0.01)
+         f.bseedsconow     =  1000. * bseedsconow     / pmax(biomassconow,0.01)
          #---------------------------------------------------------------------------------#
 
 

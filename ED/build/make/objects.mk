@@ -35,7 +35,7 @@ OBJ_MODEL =                        \
 	ed_grid.o                  \
 	ed_init.o                  \
 	ed_init_atm.o              \
-	ed_init_full_history.o     \
+	ed_init_history.o          \
 	ed_load_namelist.o         \
 	ed_max_dims.o              \
 	ed_mem_alloc.o             \

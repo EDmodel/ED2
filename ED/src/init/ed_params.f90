@@ -2138,15 +2138,15 @@ subroutine init_pft_alloc_params()
                              , b1Xs                  & ! intent(out)
                              , b1Xb                  & ! intent(out)
                              , C2B                   & ! intent(out)
-                             , sla_scale             & ! intent(out)
-                             , sla_inter             & ! intent(out)
-                             , sla_slope             & ! intent(out)
+                             , sla_s0                & ! intent(out)
+                             , sla_s1                & ! intent(out)
                              , sapwood_ratio         & ! intent(out)
                              , f_bstorage_init       & ! intent(out)
                              , leaf_width            & ! intent(out)
                              , branch_diam           & ! intent(out)
                              , h_edge                & ! intent(out)
-                             , liana_dbh_crit        ! ! intent(out)
+                             , liana_dbh_crit        & ! intent(out)
+                             , nbt_lut               ! ! intent(out)
    use allometry      , only : h2dbh                 & ! function
                              , dbh2bd                & ! function
                              , size2bl               ! ! function
@@ -2178,6 +2178,8 @@ subroutine init_pft_alloc_params()
    real                      :: eta_f16
    real                      :: eta_c_f16
    real                      :: asal_bar
+   real                      :: llmin
+   real                      :: llmax
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
    real                  , parameter :: b1          =   1.047
@@ -2216,6 +2218,11 @@ subroutine init_pft_alloc_params()
    real, dimension(3)    , parameter :: ndead_large = (/-0.8346805, 2.4255736, 2.6822805 /)
    real, dimension(3)    , parameter :: nleaf       = (/ 0.0192512, 0.9749494, 2.5858509 /)
    real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
+   !----- Lower and upper bounds for local LAI. -------------------------------------------!
+   real                  , parameter :: llmin_grass = 0.5
+   real                  , parameter :: llmax_grass = 2.0
+   real                  , parameter :: llmin_tree  = 1.0
+   real                  , parameter :: llmax_tree  = 7.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -2255,85 +2262,116 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Leaf turnover rate.  We only initialise it here for tropical trees when IALLOM is !
-   ! not 4, because the old method makes SLA a function of LTOR.  Otherwise, we assign     !
-   ! undefined and fill in init_pft_resp_params.                                           !
+   !     Leaf turnover rate.  We initialise it here despite not being allocation because   !
+   ! this parameter is needed to define SLA.                                               !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3) ! Only lianas are initialised here.
-      leaf_turnover_rate(:) = merge(1.27,undef_real,is_liana(:))
-   case default
-      do ipft=1,n_pft
-         if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-            !----- Grasses and Non-tropical, initialise in init_pft_resp_params. ----------!
-            leaf_turnover_rate(ipft) = undef_real
-            !------------------------------------------------------------------------------!
-         elseif (is_liana(ipft)) then
-            leaf_turnover_rate(ipft) = 1.27
-         else
-            !------------------------------------------------------------------------------!
-            !     Grasses and trees, we must assign case by case.                          !
-            !------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_liana(ipft)) then ! Lianas
+         leaf_turnover_rate(ipft) = 1.27
+      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
+         leaf_turnover_rate(ipft) = onesixth
+      elseif (is_conifer(ipft)) then ! Temperate conifers
+         leaf_turnover_rate(ipft) = onethird
+      elseif (is_grass(ipft) .and. (.not. is_tropical(ipft))) then ! Temperate grasses
+         leaf_turnover_rate(ipft) = 2.0
+      elseif (.not. is_tropical(ipft)) then ! Hardwoods. Phenology drives turnover.
+         leaf_turnover_rate(ipft) = 0.0
+      else
+         !---------------------------------------------------------------------------------!
+         !  MLO - Updated tropical parameters based on GLOPNET (W04).                      !
+         !                                                                                 !
+         !  References                                                                     !
+         !                                                                                 !
+         !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics   !
+         !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403      !
+         !     (W04).                                                                      !
+         !                                                                                 !
+         !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.  !
+         !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,    !
+         !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                       !
+         !---------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         select case (iallom)
+         case (3)
+            !------ Updated tropical parameters based on GLOPNET (W04). -------------------!
             select case (ipft)
-            case (2,12) ! Early-successional tropical
-               leaf_turnover_rate(ipft) = 1.0
-            case (3,13) ! Mid-successional tropical
-               leaf_turnover_rate(ipft) = 0.5
-            case (4,14) ! Late-successional tropical
-               leaf_turnover_rate(ipft) = onethird
+            case (1,16)  ! Grasses
+               leaf_turnover_rate(ipft) = 2.00
+            case (2,12)  ! Early- successional
+               leaf_turnover_rate(ipft) = 1.25
+            case (3,13)  ! Mid-successional
+               leaf_turnover_rate(ipft) = 0.60
+            case (4,14)  ! Late-successional
+               leaf_turnover_rate(ipft) = 0.25
+            case default ! Just in case
+               leaf_turnover_rate(ipft) = 0.60
             end select
             !------------------------------------------------------------------------------!
-         end if
+         case default
+            !------ Updated tropical parameters based on GLOPNET (W04). -------------------!
+            select case (ipft)
+            case (1,16)  ! Grasses
+               leaf_turnover_rate(ipft) = 2.00
+            case (2,12)  ! Early- successional
+               leaf_turnover_rate(ipft) = 1.00
+            case (3,13)  ! Mid-successional
+               leaf_turnover_rate(ipft) = 0.50
+            case (4,14)  ! Late-successional
+               leaf_turnover_rate(ipft) = onethird
+            case default ! Just in case
+               leaf_turnover_rate(ipft) = 0.50
+            end select
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
-      end do
+      end if
       !------------------------------------------------------------------------------------!
-   end select
+   end do
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !     Specific leaf area [m2 leaf / kg C].   For tropical PFTs, this is a turnover rate !
-   ! defined by the slope, intercept and scale.                                            !
-   !---------------------------------------------------------------------------------------!
-   !----- New parameters. -----------------------------------------------------------------!
-   sla_scale =  0.1 * C2B!C2B=2
-   sla_inter =  2.4
-   sla_slope = -0.46
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !  KIM - new tropical parameters.                                                       !
+   !     Set specific leaf area (SLA, m2leaf/kgC).  The curve relating SLA and leaf        !
+   ! turnover rate came from fitting a model to trait data base (GLOPNET, W04).  The model !
+   ! fitting for IALLOM /= 3 was developed by K12, whereas the IALLOM=3 fitting is based   !
+   ! on SMA fitting.                                                                       !
    !                                                                                       !
-   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
-   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
-   !        account for variation on both axes, all equations were developed using         !
-   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
-   !        density, all variables were log-transformed.  These changes are only applied   !
-   !        to IALLOM=3 for back-compability.                                              !
+   ! References:                                                                           !
    !                                                                                       !
-   !  References                                                                           !
+   ! Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics          !
+   !    spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).      !
    !                                                                                       !
-   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
-   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
+   ! Kim, Y., R. G. Knox, M. Longo, D. Medvigy, L. R. Hutyra, E. H. Pyle, S. C. Wofsy,     !
+   !    R. L. Bras, and P. R. Moorcroft. Seasonal carbon dynamics and water fluxes in an   !
+   !    Amazon rainforest. Glob. Change Biol., 18 (4):1322 (K12).                          !
    !                                                                                       !
-   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
-   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
-   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
+   ! Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne. Towards !
+   !    a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366, Apr 2009.         !
+   !    doi:10.1111/j.1461-0248.2009.01285.x (C09).                                        !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       if (is_tropical(ipft)) then
-         if (leaf_turnover_rate(ipft) /= undef_real) then ! Kim's allometry
-            SLA(ipft) = sla_scale                                                          &
-                      * 10.**(sla_inter + sla_slope * log10(12./leaf_turnover_rate(ipft)))
-         elseif (is_grass(ipft)) then ! Tropical grasses
-            SLA(ipft) = 22.7
-         elseif (is_liana(ipft)) then ! Just in case, but lianas are init. in Kim's block
-            SLA(ipft) = 17.87954
-         elseif (is_conifer(ipft)) then ! Sub-tropical conifers 
-            SLA(ipft) = 10.
+         if (is_grass(ipft)) then ! Tropical grasses
+            SLA   (ipft) = 22.7
+            sla_s0(ipft) = SLA(ipft)
+            sla_s1(ipft) = 0.0
+         elseif (is_conifer(ipft)) then ! Sub-tropical conifers
+            SLA   (ipft) = 10.0
+            sla_s0(ipft) = SLA(ipft)
+            sla_s1(ipft) = 0.0
          else ! Tropical trees
-            SLA(ipft) = exp(4.44824590-2.50747710*rho(ipft))
+            select case (iallom)
+            case (3)
+               sla_s0(ipft) = 19.41946059
+               sla_s1(ipft) =  0.60550954
+            case default
+               sla_s0(ipft) = exp(log(0.1*C2B)+2.4*log(10.)-0.46*log(12.))
+               sla_s1(ipft) = 0.46
+            end select
+            sla_s0(ipft) = exp(log(0.1*C2B)+2.4*log(10.)-0.46*log(12.))
+            sla_s1(ipft) = 0.46
+            SLA(ipft) = sla_s0(ipft) * leaf_turnover_rate(ipft) ** sla_s1(ipft)
          end if
          !---------------------------------------------------------------------------------!
       else
@@ -2359,6 +2397,8 @@ subroutine init_pft_alloc_params()
             SLA(ipft) = 15.0
          end select
          !---------------------------------------------------------------------------------!
+         sla_s0(ipft) = SLA(ipft)
+         sla_s1(ipft) = 0.0
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -2428,6 +2468,12 @@ subroutine init_pft_alloc_params()
             ! Mind that this number may be off by one or two orders of magnitude.          !
             !------------------------------------------------------------------------------!
             sapwood_ratio(ipft) = 3900.0
+            !------------------------------------------------------------------------------!
+         elseif (is_tropical(ipft) .and. is_grass(ipft)) then
+            !------------------------------------------------------------------------------!
+            !     Tropical grasses.  Only a small fraction should be sapwood.              !
+            !------------------------------------------------------------------------------!
+            sapwood_ratio(ipft) = SLA(ipft) / 1.0e-5
             !------------------------------------------------------------------------------!
          elseif (is_tropical(ipft)) then
             !------------------------------------------------------------------------------!
@@ -2597,25 +2643,6 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      init_density(:) = 1.0
-   case default
-      select case (igrass)
-      case (1)
-         init_density_grass = 1.
-      case default
-         init_density_grass = 0.1
-      end select
-      init_density(:) = merge(init_density_grass,0.1,is_grass(:))
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
    !   DBH/height allometry parameters.                                                    !
    !                                                                                       !
    !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
@@ -2742,8 +2769,10 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      hgt_min(:) = merge(0.75,merge(0.15,hgt_ref+0.2,is_grass(:)),is_tropical(:))
-      hgt_max(:) = merge( merge(1.5,42.0,is_grass(:))                                      &
+      hgt_min(:) = merge( merge(0.15,       0.75,is_grass(:))                              &
+                        , merge(0.15,hgt_ref+0.2,is_grass(:))                              &
+                        , is_tropical(:) )
+      hgt_max(:) = merge( merge(1.00,42.0,is_grass(:))                                     &
                         , merge(0.95*b1Ht(:),0.999*b1Ht(:),is_grass(:))                    &
                         , is_tropical(:) )
    case default
@@ -2764,6 +2793,35 @@ subroutine init_pft_alloc_params()
       min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
       dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
+   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
+   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
+   ! guess is about 1/3 of the critical DBH for trees.                                     !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (0,1)
+      !----- Critical DBH for all PFTs. ---------------------------------------------------!
+      dbh_bigleaf(:) = dbh_crit(:)
+      !------------------------------------------------------------------------------------!
+   case default
+      do ipft=1,n_pft
+         if (is_grass(ipft)) then
+            !----- Grasses: critical DBH. -------------------------------------------------!
+            dbh_bigleaf(ipft) = dbh_crit(ipft)
+            !------------------------------------------------------------------------------!
+         else
+            !----- Trees: 1/3 of the critical DBH. ----------------------------------------!
+            dbh_bigleaf(ipft) = dbh_crit(ipft) * onethird
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -2803,26 +2861,35 @@ subroutine init_pft_alloc_params()
             b2Ca(ipft) = ncrown_area(2)
             !------------------------------------------------------------------------------!
          case (3)
-            !------------------------------------------------------------------------------!
-            !     Allometry using the Sustainable Landscapes data.                         !
-            !------------------------------------------------------------------------------!
-            !                                                                              !
-            !    Longo, M. et al. Carbon Debt and Recovery time of degraded forests        !
-            !       in the Amazon, in prep.                                                !
-            !                                                                              !
-            !    Equation was derived from forest inventory measurements carried out at    !
-            ! multiple locations in the Brazilian Amazon, and fitted using a hetero-       !
-            ! scedastic least squares approach.                                            !
-            !                                                                              !
-            ! Total number of trees: 17066                                                 !
-            ! b1Ca = 0.582 (95% CI: [0.543;0.628])                                         !
-            ! b2Ca = 1.224 (95% CI: [1.201;1.245])                                         !
-            ! R2   = 0.501                                                                 !
-            ! RMSE = 29.89                                                                 !
-            !------------------------------------------------------------------------------!
-            b1Ca(ipft) = 0.582
-            b2Ca(ipft) = 1.224
-            !------------------------------------------------------------------------------!
+            if (is_grass(ipft)) then
+               !----- Grasses: assume that local leaf area index is 1. --------------------!
+               llmin   = llmin_grass
+               llmax   = llmax_grass
+               b2Ca(ipft) = log(llmax/llmin) / log(dbh_crit(ipft)/min_dbh(ipft))
+               b1Ca(ipft) = llmin * min_dbh(ipft) ** (-b2Ca(ipft))
+               !---------------------------------------------------------------------------!
+            else
+               !---------------------------------------------------------------------------!
+               !     Allometry using the Sustainable Landscapes data.                      !
+               !---------------------------------------------------------------------------!
+               !                                                                           !
+               !    Longo, M. et al. Carbon Debt and Recovery time of degraded forests     !
+               !       in the Amazon, in prep.                                             !
+               !                                                                           !
+               !    Equation was derived from forest inventory measurements carried out at !
+               ! multiple locations in the Brazilian Amazon, and fitted using a hetero-    !
+               ! scedastic least squares approach.                                         !
+               !                                                                           !
+               ! Total number of trees: 17066                                              !
+               ! b1Ca = 0.582 (95% CI: [0.543;0.628])                                      !
+               ! b2Ca = 1.224 (95% CI: [1.201;1.245])                                      !
+               ! R2   = 0.501                                                              !
+               ! RMSE = 29.89                                                              !
+               !---------------------------------------------------------------------------!
+               b1Ca(ipft) = 0.582
+               b2Ca(ipft) = 1.224
+               !---------------------------------------------------------------------------!
+            end if
          end select
          !---------------------------------------------------------------------------------!
       else
@@ -2893,35 +2960,6 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
-   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
-   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
-   ! guess is about 1/3 of the critical DBH for trees.                                     !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (0,1)
-      !----- Critical DBH for all PFTs. ---------------------------------------------------!
-      dbh_bigleaf(:) = dbh_crit(:)
-      !------------------------------------------------------------------------------------!
-   case default
-      do ipft=1,n_pft
-         if (is_grass(ipft)) then
-            !----- Grasses: critical DBH. -------------------------------------------------!
-            dbh_bigleaf(ipft) = dbh_crit(ipft)
-            !------------------------------------------------------------------------------!
-         else
-            !----- Trees: 1/3 of the critical DBH. ----------------------------------------!
-            dbh_bigleaf(ipft) = dbh_crit(ipft) * onethird
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !     Parameters for DBH -> Bleaf allometry.                                            !
@@ -2966,35 +3004,45 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
          case (3)
             !------------------------------------------------------------------------------!
-            !     ED-2.2 allometry.  We use the allometric parameters from X16 for ever-   !
-            ! greens because the biomass is similar to L83 for large trees (based on >     !
-            ! 1400 sampled trees with DBH > 1cm in French Guiana) and the small size is    !
-            ! similar to values from K09 (based on ~100 trees with 0.1 < DBH < 32cm in     !
-            ! Malaysia).  We use their values as the reference for mid-tropical trees and  !
-            ! apply a SLA correction factor similar to the wood-density correction that    !
-            ! B04 applied for AGB using wood density.                                      !
+            !    Define Bleaf based on local LAI.  Although a few bleaf allometric models  !
+            ! exist (e.g L83, K09, X16), if they are not constrained together with crown   !
+            ! area they may yield to unrealistic local leaf area.  We define the Bleaf     !
+            ! based on crown area allometry (more widely available) and limit local LAI    !
+            ! to be close to the compensation point.  Exponent is about 1.5, which may be  !
+            ! somewhat low, but could indicate that small plants have different exponents, !
+            ! as most crown area and leaf biomass allometric equation have a high dbh      !
+            ! threshold.                                                                   !
             !                                                                              !
             ! References:                                                                  !
             !                                                                              !
-            ! Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau.  !
-            !    La phytomasse epigee d'une foret dense en Guyane Francaise.  Acta         !
-            !    Ecol.-Oec. Gen., 4(3), 237--251, 1983.                                    !
+            ! Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and               !
+            !    A. Beneteau.  La phytomasse epigee d'une foret dense en Guyane            !
+            !    Francaise.  Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                   !
             !    http://www.documentation.ird.fr/hor/fdi:010005089 (L83)                   !
             !                                                                              !
             ! Kenzo, T., T. Ichie, D. Hattori, T. Itioka, C. Handa, T. Ohkubo,             !
             !    J. J. Kendawang, M. Nakamura, M. Sakaguchi, N. Takahashi, M. Okamoto,     !
             !    A. Tanaka-Oda, K. Sakurai, and I. Ninomiya. Development of allometric     !
-            !    relationships for accurate estimation of above- and below-ground biomass  !
-            !    in tropical secondary forests in Sarawak, Malaysia. J. Trop. Ecol.,       !
-            !    25(4):371-386, Jul 2009. doi:10.1017/S0266467409006129. (K09)             !
+            !    relationships for accurate estimation of above- and below-ground          !
+            !    biomass in tropical secondary forests in Sarawak, Malaysia.               !
+            !    J. Trop. Ecol., 25(4):371-386, Jul 2009.                                  !
+            !    doi:10.1017/S0266467409006129. (K09)                                      !
             !                                                                              !
-            ! Xu, X., D. Medvigy, J. S. Powers, J. M. Becknell, and K. Guan. Diversity in  !
-            !    plant hydraulic traits explains seasonal and inter-annual variations of   !
-            !    vegetation dynamics in seasonally dry tropical forests. New Phytol.,      !
-            !    212(1):80-95, Oct 2016. doi:10.1111/nph.14009. (X16).                     !
+            ! Xu, X., D. Medvigy, J. S. Powers, J. M. Becknell, and K. Guan. Diversity     !
+            !    in plant hydraulic traits explains seasonal and inter-annual              !
+            !    variations of vegetation dynamics in seasonally dry tropical forests.     !
+            !    New Phytol., 212(1):80-95, Oct 2016. doi:10.1111/nph.14009. (X16).        !
             !------------------------------------------------------------------------------!
-            b1Bl (ipft) = 0.046 * SLA(3) / SLA(ipft)
-            b2Bl (ipft) = 1.930
+            if (is_grass(ipft)) then
+               llmin   = llmin_grass
+               llmax   = llmax_grass
+            else
+               llmin   = llmin_tree
+               llmax   = llmax_tree
+            end if
+            b2Bl(ipft) = b2Ca(ipft) + log(llmax/llmin) / log(dbh_crit(ipft)/min_dbh(ipft))
+            b1Bl(ipft) = llmin * C2B * b1Ca(ipft) / SLA(ipft)                              &
+                       * min_dbh(ipft) ** (b2Ca(ipft)-b2Bl(ipft))
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3022,6 +3070,9 @@ subroutine init_pft_alloc_params()
          case (11) ! Late hardwood. 
             b1Bl(ipft) = 0.017
             b2Bl(ipft) = 1.731
+         case default ! Just in case
+            b1Bl(ipft) = 0.046
+            b2Bl(ipft) = 1.930
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -3098,22 +3149,35 @@ subroutine init_pft_alloc_params()
             b2Bs_large(ipft) = ndead_large(2)
             !------------------------------------------------------------------------------!
          case (3)
-            !------------------------------------------------------------------------------!
-            !     Parameters based on a model re-fit from Chave et al. (2014).             !
-            !  Biomass was estimated from rho*D^2*h using the height allometry from SL     !
-            !  bdead was found by subtracting leaves and above-ground sapwood, and scaled  !
-            !  to include below ground biomass.  The result was fit using a DBH-dependent  !
-            !  only model.                                                                 !
-            !                                                                              !
-            ! Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to !
-            !    estimate the aboveground biomass of tropical trees. Glob. Change Biol.,   !
-            !    20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.                        !
-            !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * 0.1051096 * rho(ipft)
-            b2Bs_small(ipft) = 2.5079994
-            b2Bs_large(ipft) = 2.3464530
-            b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
-                             * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
+            if (is_grass(ipft)) then
+               !---------------------------------------------------------------------------!
+               !    Grasses don't have structural biomass.  Use the same parameters as     !
+               ! temperate C3 grasses (only used by "old grasses").                        !
+               !---------------------------------------------------------------------------!
+               b1Bs_small(ipft) = 1.e-5
+               b2Bs_small(ipft) = 1.0
+               b1Bs_large(ipft) = b1Bs_small(ipft)
+               b2Bs_large(ipft) = b2Bs_small(ipft)
+               !---------------------------------------------------------------------------!
+            else
+               !---------------------------------------------------------------------------!
+               !     Parameters based on a model re-fit from Chave et al. (2014).          !
+               !  Biomass was estimated from rho*D^2*h using the height allometry from SL  !
+               !  bdead was found by subtracting leaves and above-ground sapwood, and      !
+               !  scaled to include below ground biomass.  The result was fit using a      !
+               !  DBH-dependent  only model.                                               !
+               !                                                                           !
+               ! Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models !
+               !    to estimate the aboveground biomass of tropical trees. Glob. Change    !
+               !    Biol., 20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.              !
+               !----------------------------------------------------------------- ---------!
+               b1Bs_small(ipft) = C2B * 0.1549521 * rho(ipft)
+               b2Bs_small(ipft) = 2.4818755
+               b2Bs_large(ipft) = 1.9657980
+               b1Bs_large(ipft) = b1Bs_small(ipft)                                         &
+                                * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
+               !---------------------------------------------------------------------------!
+            end if
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3365,7 +3429,7 @@ subroutine init_pft_alloc_params()
       case (2)
          init_density(:) = 0.1
       case (3)
-         init_density(:) = 1.0
+         init_density(:) = 0.25
       end select
       !------------------------------------------------------------------------------------!
 
@@ -3408,6 +3472,11 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    h_edge = 0.5          !< maximum height advantage for lianas
    liana_dbh_crit = 26.0 !< liana specific critical dbh
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Define the number of bins for the look-up tables. -------------------------------!
+   nbt_lut = 10000
    !---------------------------------------------------------------------------------------!
 
    return
@@ -3548,22 +3617,6 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !     Vm0 is the maximum photosynthesis capacity in umol/m2/s.  Notice that depending   !
    ! on the size structure (SAS or Big Leaf), there is an addition factor multiplied.      !
-   !                                                                                       !
-   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
-   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
-   !        account for variation on both axes, all equations were developed using         !
-   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
-   !        density, all variables were log-transformed.  This fit is only applied when    !
-   !        IALLOM = 3 for back-compability.                                               !
-   !                                                                                       !
-   !  References                                                                           !
-   !                                                                                       !
-   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
-   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
-   !                                                                                       !
-   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
-   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
-   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
    !---------------------------------------------------------------------------------------!
    !----- Find the additional factor to multiply Vm0. -------------------------------------!
    select case (ibigleaf)
@@ -3572,53 +3625,38 @@ subroutine init_pft_photo_params()
       case (1)
          ssfact = 3.0
    end select
-   !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
+   !---- Define Vm0 (case by case). -------------------------------------------------------!
    do ipft=1,n_pft
-      if (is_liana(ipft)) then ! Lianas
-         Vm0(ipft) = 9.0970000
-      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Araucarias
+      select case (ipft)
+      case (1)     ! C4 grass. 
+         Vm0(ipft) = 12.500000
+      case (2,12)  ! Early-successional tropical tree
+         Vm0(ipft) = 18.75
+      case (3,13)  ! Mid-successional tropical tree
+         Vm0(ipft) = 12.50
+      case (4,14)  ! Late-successional tropical tree
+         Vm0(ipft) = 6.25
+      case (5)     ! C3 grass. 
+         Vm0(ipft) = 18.300000
+      case (6,7)   ! Pines (N/S). 
+         Vm0(ipft) = 11.350000
+      case (8)     ! Late conifers. 
+         Vm0(ipft) = 4.540000
+      case (9)     ! Early hardwood. 
+         Vm0(ipft) = 20.387075
+      case (10)    ! Mid hardwood. 
+         Vm0(ipft) = 17.454687
+      case (11)    ! Late hardwood.
+         Vm0(ipft) = 6.981875
+      case (15)    ! Subtropical conifer
          Vm0(ipft) = 10.
-      elseif (is_tropical(ipft) .and. (.not. is_grass(ipft))) then ! Tropical trees
-         select case (iallom)
-         case (3) ! GLOPNET fit
-            Vm0(ipft) = exp(4.63093593-3.27792920*rho(ipft))
-         case default    ! Original numbers, each PFT must be initialised separately.
-            select case (ipft)
-            case (2,12)  ! Early-successional tropical tree
-               Vm0(ipft) = 18.75
-            case (3,13)  ! Mid-successional tropical tree
-               Vm0(ipft) = 12.50
-            case (4,14)  ! Late-successional tropical tree
-               Vm0(ipft) =  6.25
-            case default ! Just in case
-            end select
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !    Temperate trees, each PFT must be initialised separately.                    !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (1)     ! C4 grass. 
-            Vm0(ipft) = 12.500000
-         case (5,16)  ! C3 grass. 
-            Vm0(ipft) = 18.300000
-         case (6,7)   ! Pines (N/S). 
-            Vm0(ipft) = 11.350000
-         case (8)     ! Late conifers. 
-            Vm0(ipft) = 4.540000
-         case (9)     ! Early hardwood. 
-            Vm0(ipft) = 20.387075
-         case (10)    ! Mid hardwood. 
-            Vm0(ipft) = 17.454687
-         case (11)    ! Late hardwood.
-            Vm0(ipft) = 6.981875
-         case default !  Just in case. 
-            Vm0(ipft) = 15.625
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
+      case (16)
+         Vm0(ipft) = 18.75
+      case (17)    ! Liana
+         Vm0(ipft) = 9.097
+      case default !  Just in case. 
+         Vm0(ipft) = 15.625
+      end select
       !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
@@ -3786,19 +3824,21 @@ subroutine init_pft_resp_params()
                              , is_conifer                & ! intent(in)
                              , is_liana                  & ! intent(in)
                              , rho                       & ! intent(in)
-                             , leaf_turnover_rate        & ! intent(inout)
+                             , leaf_turnover_rate        & ! intent(in)
                              , growth_resp_factor        & ! intent(out)
                              , root_turnover_rate        & ! intent(out)
+                             , sapw_turnover_rate        & ! intent(out)
                              , bark_turnover_rate        & ! intent(out)
                              , storage_turnover_rate     & ! intent(out)
                              , root_respiration_factor   & ! intent(out)
-                             , rrf_low_temp              & ! intent(inout)
-                             , rrf_high_temp             & ! intent(inout)
-                             , rrf_decay_e               & ! intent(inout)
-                             , rrf_hor                   & ! intent(inout)
-                             , rrf_q10                   ! ! intent(inout)
+                             , rrf_low_temp              & ! intent(out)
+                             , rrf_high_temp             & ! intent(out)
+                             , rrf_decay_e               & ! intent(out)
+                             , rrf_hor                   & ! intent(out)
+                             , rrf_q10                   & ! intent(out)
+                             , f_labile_leaf             & ! intent(out)
+                             , f_labile_stem             ! ! intent(out)
    use ed_misc_coms   , only : iallom                    ! ! intent(in)
-   use decomp_coms    , only : f_labile                  ! ! intent(out)
    use consts_coms    , only : onesixth                  & ! intent(in)
                              , onethird                  & ! intent(in)
                              , t00                       ! ! intent(in)
@@ -3813,50 +3853,6 @@ subroutine init_pft_resp_params()
    !---------------------------------------------------------------------------------------!
    growth_resp_factor(:) = merge(0.4503    ,merge(onethird,0.0,is_grass(:)),is_conifer (:))
    growth_resp_factor(:) = merge(growthresp,          growth_resp_factor(:),is_tropical(:))
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    MLO -- Tropical PFT numbers updated using trait data base in case iallom=3.  The   !
-   !           old allometry uses LTOR to define SLA, so we check whether the variable     !
-   !           has been already initialised.                                               !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (leaf_turnover_rate(ipft) /= undef_real) then ! Old initialisation, do nothing
-         continue
-      elseif (is_liana(ipft)) then ! Lianas
-         leaf_turnover_rate(ipft) = 1.27
-      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
-         leaf_turnover_rate(ipft) = onesixth
-      elseif (is_conifer(ipft)) then ! Temperate conifers
-         leaf_turnover_rate(ipft) = onethird
-      elseif (is_grass(ipft)) then ! Grasses (tropical and temperate)
-         leaf_turnover_rate(ipft) = 2.0
-      elseif (.not. is_tropical(ipft)) then ! Hardwoods. Phenology drives turnover.
-         leaf_turnover_rate(ipft) = 0.0
-      else
-         !---------------------------------------------------------------------------------!
-         !  MLO - Updated tropical parameters based on empirical models relating leaf      !
-         !        traits from GLOPNET (W04) with wood density from (C09).  Because the     !
-         !        idea is to account for variation on both axes, all equations were        !
-         !        developed using standardised major axis (SMA) models - R package smatr.  !
-         !        Except for wood density, all variables were log-transformed.             !
-         !                                                                                 !
-         !  References                                                                     !
-         !                                                                                 !
-         !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics   !
-         !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403      !
-         !     (W04).                                                                      !
-         !                                                                                 !
-         !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.  !
-         !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,    !
-         !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                       !
-         !---------------------------------------------------------------------------------!
-         leaf_turnover_rate(ipft) = exp(2.57332880-4.38819777*rho(ipft))
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -3909,17 +3905,48 @@ subroutine init_pft_resp_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !    Storage turnover rate.  Number for tropical trees is a crude estimate based on the !
-   ! arithmetic average carbon age measured by M13.                                        !
+   !    Sapwood turnover rate.   This is currently used only when IALLOM=3, and this is    !
+   ! used to convert sapwood into heartwood, as opposed to generating heartwood directly   !
+   ! from storage.  The values are based on limited analysis from vdS15 (essentially one   !
+   ! species for each functional group) so it may be adjusted in the future.               !
    !                                                                                       !
-   ! Muhr, J., A. Angert, R. I. Negron-Juarez, W. A. Munoz, G. Kraemer, J. Q. Chambers,    !
-   !    and S. E. Trumbore. Carbon dioxide emitted from live stems of tropical trees is    !
-   !    several years old. Tree Physiol., 33(7):743-752, Jul 2013.                         !
-   !    doi:10.1093/treephys/tpt049. (M13)                                                 !
+   ! van der Sande, M. T., P. A. Zuidema, and F. Sterck. Explaining biomass growth of      !
+   !    tropical canopy trees: the importance of sapwood. Oecologia, 177(4):1145-1155,     !
+   !    Apr 2015. doi:10.1007/s00442-015-3220-y (vdS15).                                   !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      storage_turnover_rate(:) = merge( merge(0.0,0.174,is_grass(:))                       &
+      do ipft=1,n_pft
+         if (is_grass(ipft)) then ! Grasses, assume leaf turnover
+            sapw_turnover_rate(ipft) = leaf_turnover_rate(ipft)
+         elseif (.not. is_tropical(ipft)) then ! Non-tropical, assume 
+            sapw_turnover_rate(ipft) = 0.08
+         else
+            select case (ipft)
+            case (2,12) ! Early-successional 
+               sapw_turnover_rate(ipft) = 0.120  ! Approximate Schizolobium
+            case (3,13) ! Mid-successional
+               sapw_turnover_rate(ipft) = 0.080  ! Intermediate value
+            case (4,14) ! Late-successional
+               sapw_turnover_rate(ipft) = 0.040  ! Approximate Sweetia
+            case default
+            end select
+         end if
+      end do
+   case default
+      sapw_turnover_rate(:) = 0.0
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Storage turnover rate.  Number for tropical trees is based on tuning for the time  !
+   ! being.                                                                                !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      storage_turnover_rate(:) = merge( onethird                                           &
                                       , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))   &
                                       , is_tropical(:) )
    case default
@@ -3930,10 +3957,37 @@ subroutine init_pft_resp_params()
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     Labile fraction of leaves, fine roots and sapwood.                                !
-   ! MLO - Should sapwood have the same labile fraction as leaves and fine roots?          !
+   !    Labile fraction of leaf-like tissues (leaves and fine roots) and wood-like tissues !
+   ! (sapwood, heartwood, bark).  These names are rather confusing but I adopted the same  !
+   ! names already in use in c2n factors.                                                  !
    !---------------------------------------------------------------------------------------!
-   f_labile(:) = merge(0.79,merge(1.00,0.79,is_tropical(:) .or. is_grass(:)),is_conifer(:))
+   select case (iallom)
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !   Use the numbers from previous CENTURY model publications (e.g B98, S09).         !
+      ! These are not directly based on observations, so they may need updates.            !
+      !                                                                                    !
+      ! References:                                                                        !
+      !                                                                                    !
+      ! Bolker, B. M., S. W. Pacala, and W. J. Parton. Linear analysis of soil             !
+      !    decomposition: in- sights from the CENTURY model. Ecol. Appl., 8(2):425-439,    !
+      !    May 1998. doi:10.1890/1051- 0761(1998)008[0425:LAOSDI]2.0.CO;2 (B98).           !
+      !                                                                                    !
+      ! Shevliakova, E., S. W. Pacala, S. Malyshev, G. C. Hurtt, P. C. D. Milly,           !
+      !    J. P. Caspersen, L. T. Sent- man, J. P. Fisk, C. Wirth, and C. Crevoisier.      !
+      !    Carbon cycling under 300 years of land use change: Importance of the secondary  !
+      !    vegetation sink. Global Biogeochem. Cycles, 23(2):GB2022, Jun 2009.             !
+      !    doi:10.1029/2007GB003176 (S09).                                                 !
+      !------------------------------------------------------------------------------------!
+      f_labile_leaf(:) = 0.80
+      f_labile_stem(:) = 0.20
+      !------------------------------------------------------------------------------------!
+   case default
+      f_labile_leaf(:) = merge( 0.79                                                       &
+                              , merge(1.00,0.79,is_tropical(:) .or. is_grass(:))           &
+                              , is_conifer(:)                                    )
+      f_labile_stem(:) = 0.0
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -4070,9 +4124,9 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      mort0(:) = merge(-0.35,  0.0,is_tropical(:))
+      mort0(:) = merge(-0.25,  0.0,is_tropical(:))
       mort1(:) = merge(  5.0,  1.0,is_tropical(:))
-      mort2(:) = merge( 15.0, 20.0,is_tropical(:))
+      mort2(:) = merge( 20.0, 20.0,is_tropical(:))
    case default
       mort0(:) = merge(-0.35,  0.0,is_tropical(:))
       mort1(:) = merge(  2.0,  1.0,is_tropical(:))
@@ -4093,17 +4147,35 @@ subroutine init_pft_mort_params()
    ! mortality is in line with what stated in the aforementioned article (lianas have +-6% !
    ! turnover rate, 3 times that of trees...)                                              !
    !---------------------------------------------------------------------------------------!
-   if (treefall_disturbance_rate >= 0.) then
-      m3_slope                  = 0.15
-   else
+   select case (iallom)
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !      Use the typical wood-density mortality slope based on K10.  We picked BCI     !
+      ! because the time series is longer.                                                 !
+      !                                                                                    !
+      ! Reference:                                                                         !
+      !                                                                                    !
+      ! Kraft, N. J. B., M. R. Metz, R. S. Condit, and J. Chave. The relationship between  !
+      !    wood density and mortality in a global tropical forest data set. New Phytol.,   !
+      !    188(4):1124-1136, Dec 2010. doi:10.1111/j.1469- 8137.2010.03444.x (K10).        !
+      !------------------------------------------------------------------------------------!
       treefall_disturbance_rate = abs(treefall_disturbance_rate)
-      m3_slope                  = 0.075 
-   end if
+      m3_slope                  = 0.041
+      !------------------------------------------------------------------------------------!
+   case default
+      !----- Original ED defaults. --------------------------------------------------------!
+      m3_slope = merge(0.15,0.075,treefall_disturbance_rate >= 0.)
+      treefall_disturbance_rate = abs(treefall_disturbance_rate)
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       if (is_liana(ipft)) then ! Lianas, taken from O. Phillips (2005). 
          mort3(ipft) = 0.06311576
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Araucaria. Same as S pines.
          mort3(ipft) = 0.0043
+      elseif (is_tropical(ipft) .and. is_grass(ipft)) then ! Tropical grasses.
+         mort3(ipft) = 0.066
       elseif (is_tropical(ipft)) then ! Tropical grasses and trees, use ED-1 approach.
          mort3(ipft) = m3_slope * (1. - rho(ipft) / rho(4))
       else
@@ -4588,9 +4660,14 @@ subroutine init_pft_repro_params()
 
    !---------------------------------------------------------------------------------------!
    !      Allocation to storage (amount that is save in each month, not going to           !
-   ! reproduction or growth).  Currently only tropical trees with IALLOM=3 allocate 10% to !
-   ! storage as a reserve for hard times.  This number is based on tuning, not on          !
-   ! literature, though.                                                                   !
+   ! reproduction or growth).  Currently only tropical trees with IALLOM=3 maintain        !
+   ! storage pools.  The fraction is tuned to make the pool somewhat closer to the         !
+   ! typical storage/biomass ratio (e.g. MV16).                                            !
+   !                                                                                       !
+   ! Martinez-Vilalta, J, A. Sala, D. Asensio, L. Galiano, G. Hoch, S. Palacio,            !
+   !    F. I. Piper, and F. Lloret. Dynamics of non-structural carbohydrates in            !
+   !    terrestrial plants: a global synthesis. Ecol. Monogr., 86(4):495-516, Nov 2016.    !
+   !    doi:10.1002/ecm.1231.                                                              !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
@@ -5912,7 +5989,6 @@ end subroutine overwrite_with_xml_config
 !    from ed_max_dims, so it is easy to track.                                             !
 !------------------------------------------------------------------------------------------!
 subroutine init_derived_params_after_xml()
-   use decomp_coms          , only : f_labile                ! ! intent(in)
    use detailed_coms        , only : idetailed               ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf                & ! intent(in)
                                    , iallom                  ! ! intent(in)
@@ -5923,13 +5999,15 @@ subroutine init_derived_params_after_xml()
                                    , twothirds               & ! intent(in)
                                    , cliq                    & ! intent(in)
                                    , yr_sec                  & ! intent(in)
-                                   , almost_zero             ! ! intent(in)
+                                   , almost_zero             & ! intent(in)
+                                   , tiny_num                ! ! intent(in)
    use physiology_coms      , only : iphysiol                ! ! intent(in)
    use pft_coms             , only : is_tropical             & ! intent(in)
                                    , is_grass                & ! intent(in)
                                    , is_savannah             & ! intent(in)
                                    , is_conifer              & ! intent(in)
                                    , is_liana                & ! intent(in)
+                                   , nbt_lut                 & ! intent(in)
                                    , init_density            & ! intent(in)
                                    , init_laimax             & ! intent(in)
                                    , c2n_leaf                & ! intent(in)
@@ -6003,6 +6081,8 @@ subroutine init_derived_params_after_xml()
                                    , r_fract                 & ! intent(in)
                                    , nonlocal_dispersal      & ! intent(in)
                                    , seed_rain               & ! intent(in)
+                                   , f_labile_leaf           & ! intent(in)
+                                   , f_labile_stem           & ! intent(in)
                                    , hgt_max                 & ! intent(inout)
                                    , repro_min_h             & ! intent(inout)
                                    , dbh_crit                & ! intent(inout)
@@ -6019,6 +6099,8 @@ subroutine init_derived_params_after_xml()
                                    , rrf_decay_e             & ! intent(inout)
                                    , rrf_hor                 & ! intent(inout)
                                    , rrf_q10                 & ! intent(inout)
+                                   , balive_crit             & ! intent(out)
+                                   , bwood_crit              & ! intent(out)
                                    , one_plant_c             & ! intent(out)
                                    , min_recruit_size        & ! intent(out)
                                    , min_cohort_size         & ! intent(out)
@@ -6027,7 +6109,12 @@ subroutine init_derived_params_after_xml()
                                    , veg_hcap_min            & ! intent(out)
                                    , cleaf                   & ! intent(out)
                                    , cwood                   & ! intent(out)
-                                   , cbark                   ! ! intent(out)
+                                   , cbark                   & ! intent(out)
+                                   , dbh_lut                 & ! intent(out)
+                                   , balive_lut              & ! intent(out)
+                                   , bwood_lut               & ! intent(out)
+                                   , le_mask_lut             & ! intent(out)
+                                   , ge_mask_lut             ! ! intent(out)
    use phenology_coms       , only : elongf_min              & ! intent(in)
                                    , elongf_flush            ! ! intent(in)
    use fusion_fission_coms  , only : ifusion                 & ! intent(in)
@@ -6072,11 +6159,21 @@ subroutine init_derived_params_after_xml()
    character(len=2)                  :: char_pathway
    integer                           :: ipft
    integer                           :: ihgt
+   integer                           :: ilut
    integer                           :: n
    logical                           :: print_zero_table
+   real(kind=8)                      :: exp_dbh8
+   real(kind=8)                      :: dbh_mult8
+   real(kind=8)                      :: dbh_now8
+   real                              :: dbh_now
    real                              :: dbh
    real                              :: huge_dbh
    real                              :: huge_height
+   real                              :: height_now
+   real                              :: bleaf_now
+   real                              :: bsapwood_now
+   real                              :: bbark_now
+   real                              :: bdead_now
    real                              :: bleaf_min
    real                              :: broot_min
    real                              :: bsapwood_min
@@ -6084,6 +6181,8 @@ subroutine init_derived_params_after_xml()
    real                              :: balive_min
    real                              :: bdead_min
    real                              :: bstorage_min
+   real                              :: bfast_min
+   real                              :: bstruct_min
    real                              :: bleaf_max
    real                              :: broot_max
    real                              :: bsapwood_max
@@ -6109,6 +6208,8 @@ subroutine init_derived_params_after_xml()
    character(len=str_len), parameter :: photo_file    = 'photo_param.txt'
    character(len=str_len), parameter :: allom_file    = 'allom_param.txt'
    character(len=str_len), parameter :: strat_file    = 'strategy_param.txt'
+   !----- External functions. -------------------------------------------------------------!
+   real                  , external  :: sngloff
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -6186,8 +6287,13 @@ subroutine init_derived_params_after_xml()
 
    do ipft = 1,n_pft
       !----- Re-define the "critical" parameters as the numbers may have changed. ---------!
-      dbh_crit  (ipft) = h2dbh(hgt_max(ipft),ipft)
-      bdead_crit(ipft) = dbh2bd(dbh_crit(ipft),ipft)
+      dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
+      bdead_crit (ipft) = dbh2bd(dbh_crit(ipft),ipft)
+      balive_crit(ipft) = size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)                       &
+                        * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hgt_max(ipft) )
+      bwood_crit (ipft) = qsw(ipft) * hgt_max(ipft)                                        &
+                        * size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)                       &
+                        + bdead_crit(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -6261,7 +6367,7 @@ subroutine init_derived_params_after_xml()
          !     New method, each PFT has a minimum resolvable density. The fraction ensures !
          ! that plants start as resolvable.                                                !
          !---------------------------------------------------------------------------------!
-         nplant_res_min     = 0.25 * init_density(ipft)
+         nplant_res_min     = 0.10 * init_density(ipft)
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
@@ -6369,11 +6475,14 @@ subroutine init_derived_params_after_xml()
 
 
       !----- Find the recruit carbon to nitrogen ratio. -----------------------------------!
-      c2n_recruit(ipft)      = (balive_min + bdead_min + bstorage_min)                     &
-                             / (balive_min * ( f_labile(ipft) / c2n_leaf(ipft)             &
-                             + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
-                             + bdead_min/c2n_stem(ipft)                                    &
-                             + bstorage_min/c2n_storage)
+      bfast_min   = f_labile_leaf(ipft) * ( bleaf_min + broot_min)                         &
+                  + f_labile_stem(ipft) * ( bsapwood_min + bbark_min + bdead_min)
+      bstruct_min = (1.0 - f_labile_leaf(ipft)) * ( bleaf_min + broot_min )                &
+                  + (1.0 - f_labile_stem(ipft)) * ( bsapwood_min + bbark_min + bdead_min )
+      c2n_recruit(ipft) = (balive_min + bdead_min + bstorage_min)                          &
+                        / ( bfast_min    / c2n_leaf(ipft)                                  &
+                          + bstruct_min  / c2n_stem(ipft)                                  &
+                          + bstorage_min / c2n_storage    )
       !------------------------------------------------------------------------------------! 
 
 
@@ -6617,6 +6726,37 @@ subroutine init_derived_params_after_xml()
 
 
 
+   !----- Build the look-up table for btotal. ---------------------------------------------!
+   if (nbt_lut < 2) then
+      write(unit=*,fmt='(a,1x,i5)') ' NBT_LUT = ',nbt_lut
+      call fatal_error(' NBT_LUT must be at least 2.','init_derived_params_after_xml'      &
+                      ,'ed_params.f90')
+   else
+      allocate(dbh_lut    (nbt_lut,n_pft))
+      allocate(balive_lut (nbt_lut,n_pft))
+      allocate(bwood_lut  (nbt_lut,n_pft))
+      allocate(le_mask_lut(nbt_lut      ))     ! Aux variable used by bw2dbh
+      allocate(ge_mask_lut(nbt_lut      ))     ! Aux variable used by bw2dbh
+      exp_dbh8 = 1.d0 / (dble(nbt_lut) - 1.d0)
+      do ipft=1,n_pft
+         dbh_mult8 = (dble(dbh_crit(ipft))/dble(min_dbh(ipft))) **exp_dbh8
+         do ilut = 1, nbt_lut
+            dbh_now8              = dble(min_dbh(ipft)) * dbh_mult8 ** (ilut-1)
+            dbh_now               = sngloff(dbh_now8,tiny_num)
+            height_now            = dbh2h(ipft, dbh_now)
+            bleaf_now             = size2bl(dbh_now,height_now,ipft)
+            bsapwood_now          = bleaf_now * qsw(ipft)   * height_now
+            bdead_now             = dbh2bd(dbh_now,ipft)
+            dbh_lut   (ilut,ipft) = dbh_now
+            balive_lut(ilut,ipft) = bleaf_now                                              &
+                                  * (1. + q(ipft) + (qsw(ipft) + qbark(ipft))*height_now)
+            bwood_lut (ilut,ipft) = bsapwood_now + bdead_now
+         end do
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -6684,7 +6824,7 @@ subroutine init_derived_params_after_xml()
    !----- Print allometric coefficients. --------------------------------------------------!
    if (print_zero_table) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(36(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=18,fmt='(38(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
                                      ,'         RHO','        B1HT','        B2HT'         &
                                      ,'     HGT_REF','        B1BL','        B2BL'         &
@@ -6693,22 +6833,23 @@ subroutine init_derived_params_after_xml()
                                      ,'       B1WAI','       B2WAI','        B1XS'         &
                                      ,'        B1XB','     HGT_MIN','     HGT_MAX'         &
                                      ,'     MIN_DBH','    DBH_CRIT',' DBH_BIGLEAF'         &
-                                     ,'  BDEAD_CRIT','   INIT_DENS','         SLA'         &
-                                     ,'F_BSTOR_INIT','           Q','         QSW'         &
-                                     ,'       QBARK','       QRHOB',' INIT_LAIMAX'
+                                     ,'  BDEAD_CRIT',' BALIVE_CRIT','  BWOOD_CRIT'         &
+                                     ,'   INIT_DENS','         SLA','F_BSTOR_INIT'         &
+                                     ,'           Q','         QSW','       QBARK'         &
+                                     ,'       QRHOB',' INIT_LAIMAX'
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,5(12x,l1),29(1x,f12.6),1(1x,es12.5))')                 &
+         write (unit=18,fmt='(8x,i5,5(12x,l1),31(1x,f12.6),1(1x,es12.5))')                 &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft)   &
                        ,hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)               &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
                        ,b2Ca(ipft),b1WAI(ipft),b2WAI(ipft),b1Xs(ipft),b1Xb(ipft)           &
                        ,hgt_min(ipft),hgt_max(ipft),min_dbh(ipft),dbh_crit(ipft)           &
-                       ,dbh_bigleaf(ipft),bdead_crit(ipft),init_density(ipft),sla(ipft)    &
+                       ,dbh_bigleaf(ipft),bdead_crit(ipft),balive_crit(ipft)               &
+                       ,bwood_crit(ipft),init_density(ipft),sla(ipft)                      &
                        ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)    &
                        ,init_laimax(ipft)
       end do
-      write(unit=18,fmt='(546a)') ('-',n=1,546)
       close(unit=18,status='keep')
    end if
 
@@ -6716,39 +6857,40 @@ subroutine init_derived_params_after_xml()
    !----- Print trait coefficients. -------------------------------------------------------!
    if (print_zero_table) then
       open (unit=19,file=trim(strat_file),status='replace',action='write')
-      write(unit=19,fmt='(60(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=19,fmt='(61(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
                                      ,'         RHO','         SLA','         VM0'         &
                                      ,'  F_DARKRESP',' F_GROW_RESP','    LEAF_TOR'         &
                                      ,'    ROOT_TOR','    BARK_TOR',' STORAGE_TOR'         &
-                                     ,'    F_LABILE','       MORT0','       MORT1'         &
-                                     ,'       MORT2','       MORT3','   SEED_MORT'         &
-                                     ,'TFALL_S_GTHT',' FELL_S_GTHV',' FELL_S_LTHV'         &
-                                     ,' SKID_S_GTHV',' SKID_S_LTHV','    ST_FRACT'         &
-                                     ,'     R_FRACT',' NONLOC_DISP','   SEED_RAIN'         &
-                                     ,'    EFF_HEAT','    EFF_EVAP','  EFF_TRANSP'         &
-                                     ,'  LTRANS_VIS','LREFLECT_VIS','  WTRANS_VIS'         &
-                                     ,'WREFLECT_VIS','  LTRANS_NIR','LREFLECT_NIR'         &
-                                     ,'  WTRANS_NIR','WREFLECT_NIR','  LEMISS_TIR'         &
-                                     ,'  WEMISS_TIR',' ORIENT_FACT','   LSCAT_VIS'         &
-                                     ,'  LBSCAT_VIS','   WSCAT_VIS','  WBSCAT_VIS'         &
-                                     ,'   LSCAT_NIR','  LBSCAT_NIR','   WSCAT_NIR'         &
-                                     ,'  WBSCAT_NIR','  LBSCAT_TIR','  WBSCAT_TIR'         &
-                                     ,'        PHI1','        PHI2','      MU_BAR'         &
-                                     ,'       CLEAF','       CWOOD','       CBARK'
+                                     ,'FLABILE_LEAF','FLABILE_STEM','       MORT0'         &
+                                     ,'       MORT1','       MORT2','       MORT3'         &
+                                     ,'   SEED_MORT','TFALL_S_GTHT',' FELL_S_GTHV'         &
+                                     ,' FELL_S_LTHV',' SKID_S_GTHV',' SKID_S_LTHV'         &
+                                     ,'    ST_FRACT','     R_FRACT',' NONLOC_DISP'         &
+                                     ,'   SEED_RAIN','    EFF_HEAT','    EFF_EVAP'         &
+                                     ,'  EFF_TRANSP','  LTRANS_VIS','LREFLECT_VIS'         &
+                                     ,'  WTRANS_VIS','WREFLECT_VIS','  LTRANS_NIR'         &
+                                     ,'LREFLECT_NIR','  WTRANS_NIR','WREFLECT_NIR'         &
+                                     ,'  LEMISS_TIR','  WEMISS_TIR',' ORIENT_FACT'         &
+                                     ,'   LSCAT_VIS','  LBSCAT_VIS','   WSCAT_VIS'         &
+                                     ,'  WBSCAT_VIS','   LSCAT_NIR','  LBSCAT_NIR'         &
+                                     ,'   WSCAT_NIR','  WBSCAT_NIR','  LBSCAT_TIR'         &
+                                     ,'  WBSCAT_TIR','        PHI1','        PHI2'         &
+                                     ,'      MU_BAR','       CLEAF','       CWOOD'         &
+                                     ,'       CBARK'
       do ipft=1,n_pft
-         write (unit=19,fmt='(8x,i5,5(12x,l1),54(1x,f12.6))')                              &
+         write (unit=19,fmt='(8x,i5,5(12x,l1),55(1x,f12.6))')                              &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),SLA(ipft),Vm0(ipft)     &
                        ,dark_respiration_factor(ipft),growth_resp_factor(ipft)             &
                        ,leaf_turnover_rate(ipft),root_turnover_rate(ipft)                  &
                        ,bark_turnover_rate(ipft),storage_turnover_rate(ipft)               &
-                       ,f_labile(ipft),mort0(ipft),mort1(ipft),mort2(ipft),mort3(ipft)     &
-                       ,seedling_mortality(ipft),treefall_s_ltht(ipft)                     &
-                       ,felling_s_gtharv(ipft),felling_s_ltharv(ipft)                      &
-                       ,skid_s_gtharv(ipft),skid_s_ltharv(ipft),st_fract(ipft)             &
-                       ,r_fract(ipft),nonlocal_dispersal(ipft),seed_rain(ipft)             &
-                       ,effarea_heat,effarea_evap,effarea_transp(ipft)                     &
+                       ,f_labile_leaf(ipft),f_labile_stem(ipft),mort0(ipft),mort1(ipft)    &
+                       ,mort2(ipft),mort3(ipft),seedling_mortality(ipft)                   &
+                       ,treefall_s_ltht(ipft),felling_s_gtharv(ipft)                       &
+                       ,felling_s_ltharv(ipft),skid_s_gtharv(ipft),skid_s_ltharv(ipft)     &
+                       ,st_fract(ipft),r_fract(ipft),nonlocal_dispersal(ipft)              &
+                       ,seed_rain(ipft),effarea_heat,effarea_evap,effarea_transp(ipft)     &
                        ,leaf_trans_vis(ipft),leaf_reflect_vis(ipft)                        &
                        ,wood_trans_vis(ipft),wood_reflect_vis(ipft),leaf_trans_nir(ipft)   &
                        ,leaf_reflect_nir(ipft),wood_trans_nir(ipft),wood_reflect_nir(ipft) &

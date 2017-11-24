@@ -117,10 +117,10 @@ module fuse_fiss_utils
       use pft_coms           , only : min_cohort_size  & ! intent(in)
                                     , l2n_stem         & ! intent(in)
                                     , c2n_stem         & ! intent(in)
-                                    , c2n_storage      & ! intent(in), lookup table
-                                    , c2n_leaf         ! ! intent(in), lookup table
-
-      use decomp_coms        , only : f_labile         ! ! intent(in), lookup table
+                                    , c2n_storage      & ! intent(in)
+                                    , c2n_leaf         & ! intent(in)
+                                    , f_labile_leaf    & ! intent(in)
+                                    , f_labile_stem    ! ! intent(in)
 
       use ed_state_vars      , only : patchtype        & ! structure
                                     , sitetype         ! ! structure
@@ -167,20 +167,35 @@ module fuse_fiss_utils
 
             !----- Update litter pools ----------------------------------------------------!
             csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
-                              * (f_labile(ipft)*cpatch%balive(ico) + cpatch%bstorage(ico))
+                              * ( cpatch%bstorage(ico)                                     &
+                                + f_labile_leaf(ipft)                                      &
+                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
+                                + f_labile_stem(ipft)                                      &
+                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
+                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )
 
             csite%fsn_in(ipa) = csite%fsn_in(ipa) + cpatch%nplant(ico)                     &
-                              * ( f_labile(ipft) * cpatch%balive(ico) / c2n_leaf(ipft)     &
-                                + cpatch%bstorage(ico) / c2n_storage)
-            
-            csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%nplant(ico)                     &
-                              * ( (1.0 - f_labile(ipft)) * cpatch%balive(ico)              &
-                                + cpatch%bdead(ico))
-            
-            csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
-                              * ( (1.0 - f_labile(ipft)) * cpatch%balive(ico)              &
-                                + cpatch%bdead(ico) ) * l2n_stem/c2n_stem(ipft)
+                              * ( cpatch%bstorage(ico) / c2n_storage                       &
+                                + f_labile_leaf(ipft)  / c2n_leaf(ipft)                    &
+                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
+                                + f_labile_stem(ipft)  / c2n_leaf(ipft)                    &
+                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
+                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )
 
+            csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%nplant(ico)                     &
+                              * ( ( 1.0 - f_labile_leaf(ipft) )                            &
+                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
+                                + ( 1.0 - f_labile_stem(ipft) )                            &
+                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
+                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )
+
+            csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
+                              * ( ( 1.0 - f_labile_leaf(ipft) )                            &
+                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
+                                + ( 1.0 - f_labile_stem(ipft) )                            &
+                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
+                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )      &
+                              * l2n_stem / c2n_stem(ipft)
          end if
       end do
 
@@ -1240,11 +1255,12 @@ module fuse_fiss_utils
       use ed_max_dims          , only : n_pft                         ! ! intent(in)
       use allometry            , only : dbh2h                         & ! function
                                       , bd2dbh                        & ! function
+                                      , bw2dbh                        & ! function
                                       , bl2dbh                        & ! function
                                       , bl2h                          & ! function
-                                      , size2bl                       & ! function
-                                      , dbh2bd                        ! ! function
-      use ed_misc_coms         , only : igrass                        ! ! intent(in)
+                                      , size2bl                       ! ! function
+      use ed_misc_coms         , only : igrass                        & ! intent(in)
+                                      , iallom                        ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
       real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
@@ -1381,7 +1397,27 @@ module fuse_fiss_utils
 
                      cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
                      cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
-                     cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))            
+                     cpatch%hite (inew)  = bl2h  (cpatch%bleaf(inew), cpatch%pft(inew))
+                     !---------------------------------------------------------------------!
+                  elseif (iallom == 3) then
+                     !-- use bdead for trees and old grasses. -----------------------------!
+                     cpatch%bdead    (ico)  = cpatch%bdead    (ico) * (1.-epsilon)
+                     cpatch%bsapwooda(ico)  = cpatch%bsapwooda(ico) * (1.-epsilon)
+                     cpatch%bsapwoodb(ico)  = cpatch%bsapwoodb(ico) * (1.-epsilon)
+                     cpatch%dbh      (ico)  = bw2dbh(cpatch%bsapwooda(ico)                 &
+                                                    ,cpatch%bsapwoodb(ico)                 &
+                                                    ,cpatch%bdead    (ico)                 &
+                                                    ,cpatch%pft      (ico) )
+                     cpatch%hite     (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+
+                     cpatch%bdead    (inew) = cpatch%bdead    (inew) * (1.+epsilon)
+                     cpatch%bsapwooda(inew) = cpatch%bsapwooda(inew) * (1.+epsilon)
+                     cpatch%bsapwoodb(inew) = cpatch%bsapwoodb(inew) * (1.+epsilon)
+                     cpatch%dbh      (inew) = bw2dbh(cpatch%bsapwooda(inew)                &
+                                                    ,cpatch%bsapwoodb(inew)                &
+                                                    ,cpatch%bdead    (inew)                &
+                                                    ,cpatch%pft      (inew) )
+                     cpatch%hite     (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
                      !---------------------------------------------------------------------!
                   else
                      !-- use bdead for trees and old grasses. -----------------------------!
@@ -1465,6 +1501,7 @@ module fuse_fiss_utils
                                     , qslif                  ! ! function
       use allometry          , only : dbh2krdepth            & ! function
                                     , bd2dbh                 & ! function
+                                    , bw2dbh                 & ! function
                                     , bl2dbh                 & ! function
                                     , bl2h                   & ! function
                                     , dbh2h                  & ! function
@@ -1474,7 +1511,8 @@ module fuse_fiss_utils
                                     , writing_eorq           & ! intent(in)
                                     , writing_dcyc           & ! intent(in)
                                     , ndcycle                & ! intent(in)
-                                    , igrass                 ! ! intent(in)
+                                    , igrass                 & ! intent(in)
+                                    , iallom                 ! ! intent(in)
       use consts_coms        , only : lnexp_min              & ! intent(in)
                                     , lnexp_max              & ! intent(in)
                                     , tiny_num               ! ! intent(in)
@@ -1604,6 +1642,14 @@ module fuse_fiss_utils
           !----- New grass scheme, use bleaf then find DBH and height. --------------------!
           cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
           cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
+          !--------------------------------------------------------------------------------!
+      elseif (iallom == 3) then
+          !----- Use woody biomass (not only bdead) to update DBH then height. ------------!
+          cpatch%dbh  (recc) = bw2dbh(cpatch%bsapwooda(recc)                               &
+                                     ,cpatch%bsapwoodb(recc)                               &
+                                     ,cpatch%bdead    (recc)                               &
+                                     ,cpatch%pft      (recc))
+          cpatch%hite (recc) = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
           !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!

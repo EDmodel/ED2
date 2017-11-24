@@ -9,8 +9,6 @@
 !------------------------------------------------------------------------------------------!
 Module decomp_coms
 
-   use ed_max_dims, only: n_pft
-
    implicit none
 
    !=======================================================================================!
@@ -125,12 +123,6 @@ Module decomp_coms
    ! decayed from the structural pool.                                                     !
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_ssc
-   !---------------------------------------------------------------------------------------!
-   !     Labile fraction of leaves, fine roots and sapwood. (parte non immediatamente      !
-   !     solubile che però a un certo punto diventa disponibile)                           !
-   !     ([[MCD]].  Moved setting of values to initialize_pft_resp_params)                 !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: f_labile
    !---------------------------------------------------------------------------------------!
 
 end Module decomp_coms

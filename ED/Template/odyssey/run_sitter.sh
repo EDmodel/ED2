@@ -191,6 +191,19 @@ sed -i~ s@"${hereline}"@"here=\"${here}\""@g ${transfer}
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let n_polygon=$(wc -l ${joborder} | awk '{print $1 }')-3
+if [ ${n_polygon} -lt 100 ]
+then
+   ndig=2
+elif [ ${n_polygon} -lt 1000 ]
+then
+   ndig=3
+elif [ ${n_polygon} -lt 10000 ]
+then
+   ndig=4
+else
+   ndig=5
+fi
+pfmt="%${ndig}.${ndig}i"
 echo "Number of polygons: ${n_polygon}..."
 #------------------------------------------------------------------------------------------#
 
@@ -273,18 +286,9 @@ do
       #------------------------------------------------------------------------------------#
       #    Format count.                                                                   #
       #------------------------------------------------------------------------------------#
-      if   [ ${n_polygon} -ge 10   ] && [ ${n_polygon} -lt 100   ]
-      then
-         ffout=$(printf '%2.2i' ${ff})
-      elif [ ${n_polygon} -ge 100  ] && [ ${n_polygon} -lt 1000  ]
-      then
-         ffout=$(printf '%2.2i' ${ff})
-      elif [ ${n_polygon} -ge 100  ] && [ ${n_polygon} -lt 10000 ]
-      then
-         ffout=$(printf '%2.2i' ${ff})
-      else
-         ffout=${ff}
-      fi
+      let ff=${ff}+1
+      let line=${ff}+3
+      ffout=$(printf "${pfmt}" ${ff})
       #------------------------------------------------------------------------------------#
 
 
@@ -388,21 +392,22 @@ do
       igndvap=$(echo ${oi}      | awk '{print $91 }')
       iphen=$(echo ${oi}        | awk '{print $92 }')
       iallom=$(echo ${oi}       | awk '{print $93 }')
-      ibigleaf=$(echo ${oi}     | awk '{print $94 }')
-      integscheme=$(echo ${oi}  | awk '{print $95 }')
-      nsubeuler=$(echo ${oi}    | awk '{print $96 }')
-      irepro=$(echo ${oi}       | awk '{print $97 }')
-      treefall=$(echo ${oi}     | awk '{print $98 }')
-      ianthdisturb=$(echo ${oi} | awk '{print $99 }')
-      ianthdataset=$(echo ${oi} | awk '{print $100}')
-      slscale=$(echo ${oi}      | awk '{print $101}')
-      slyrfirst=$(echo ${oi}    | awk '{print $102}')
-      slnyrs=$(echo ${oi}       | awk '{print $103}')
-      bioharv=$(echo ${oi}      | awk '{print $104}')
-      skidarea=$(echo ${oi}     | awk '{print $105}')
-      skidsmall=$(echo ${oi}    | awk '{print $106}')
-      skidlarge=$(echo ${oi}    | awk '{print $107}')
-      fellingsmall=$(echo ${oi} | awk '{print $108}')
+      igrass=$(echo ${oi}       | awk '{print $94 }')
+      ibigleaf=$(echo ${oi}     | awk '{print $95 }')
+      integscheme=$(echo ${oi}  | awk '{print $96 }')
+      nsubeuler=$(echo ${oi}    | awk '{print $97 }')
+      irepro=$(echo ${oi}       | awk '{print $98 }')
+      treefall=$(echo ${oi}     | awk '{print $99 }')
+      ianthdisturb=$(echo ${oi} | awk '{print $100}')
+      ianthdataset=$(echo ${oi} | awk '{print $101}')
+      slscale=$(echo ${oi}      | awk '{print $102}')
+      slyrfirst=$(echo ${oi}    | awk '{print $103}')
+      slnyrs=$(echo ${oi}       | awk '{print $104}')
+      bioharv=$(echo ${oi}      | awk '{print $105}')
+      skidarea=$(echo ${oi}     | awk '{print $106}')
+      skidsmall=$(echo ${oi}    | awk '{print $107}')
+      skidlarge=$(echo ${oi}    | awk '{print $108}')
+      fellingsmall=$(echo ${oi} | awk '{print $109}')
       #------------------------------------------------------------------------------------#
 
 
@@ -532,20 +537,20 @@ do
          exit 85
          ;;
       esac
-      #---------------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
 
 
-      #---------------------------------------------------------------------------------------#
-      #     Correct years so it is not tower-based or Sheffield.                              #
-      #---------------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
+      #     Correct years so it is not tower-based or Sheffield.                           #
+      #------------------------------------------------------------------------------------#
       if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
          [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ] &&
          [ ${iscenario} != "WFDEI"     ]
       then
          metcyc1=1972
-         metcycf=2012
+         metcycf=2011
       fi
-      #---------------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
@@ -558,7 +563,7 @@ do
 
 
 
-      #----- Update the R script that controls the run. --------------------------------------#
+      #----- Update the R script that controls the run. -----------------------------------#
       /bin/rm -f ${here}/${polyname}/whichrun.r
       /bin/cp -f ${here}/Template/whichrun.r    ${here}/${polyname}/whichrun.r
       sed -i s@thispoly@${polyname}@g           ${here}/${polyname}/whichrun.r
@@ -574,17 +579,19 @@ do
       sed -i s@thismetcycf@${metcycf}@g         ${here}/${polyname}/whichrun.r
       sed -i s@thisnyearmin@${nyearmin}@g       ${here}/${polyname}/whichrun.r
       sed -i s@thisststcrit@${ststcrit}@g       ${here}/${polyname}/whichrun.r
-      #---------------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
 
 
 
-      #---------------------------------------------------------------------------------------#
-      #    Retrieve the information on statusrun.txt because it may tell whether the run was  #
-      # in steady state or all PFTs went extinct, and we don't need to check them again.      #
-      #---------------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
+      #    Retrieve the information on statusrun.txt because it may tell whether the run   #
+      # was in steady state or all PFTs went extinct, and we don't need to check them      #
+      # again.                                                                             #
+      #------------------------------------------------------------------------------------#
       statrun=${here}/${polyname}/statusrun.txt
       if [ -s ${statrun} ]
       then
+         #----- Obtain previous status. ---------------------------------------------------#
          yearh_old=$(cat ${statrun}  | awk '{print  $2}')
          monthh_old=$(cat ${statrun} | awk '{print  $3}')
          dateh_old=$(cat ${statrun}  | awk '{print  $4}')
@@ -595,6 +602,25 @@ do
          lai_old=$(cat ${statrun}    | awk '{print  $9}')
          scb_old=$(cat ${statrun}    | awk '{print $10}')
          npa_old=$(cat ${statrun}    | awk '{print $11}')
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- In case the simulation never started, force it to be INITIAL. -------------#
+         if [ ${yearh_old} -eq ${yeara} ] && [ ${monthh_old} -eq ${montha} ]
+         then
+            yearh_old=${yeara}
+            monthh_old=${montha}
+            dateh_old=${datea}
+            timeh_old=${timea}
+            runt_old="INITIAL"
+            agb_old="NA"
+            bsa_old="NA"
+            lai_old="NA"
+            scb_old="NA"
+            npa_old="NA"
+         fi
+         #---------------------------------------------------------------------------------#
       else
          yearh_old=${yeara}
          monthh_old=${montha}
@@ -791,25 +817,28 @@ do
       #     Update the history time for ED2IN so it doesn't start from the beginning in    #
       # case the job is resubmitted automatically.                                         #
       #------------------------------------------------------------------------------------#
-      ED2IN="${here}/${polyname}/ED2IN"
-      runtype_new="   NL%RUNTYPE = 'HISTORY'"
-      sfilin_new="   NL%SFILIN = '${here}/${polyname}/histo/${polyname}'"
-      itimeh_new="   NL%ITIMEH = ${timeh}"
-      idateh_new="   NL%IDATEH = ${dateh}"
-      imonthh_new="   NL%IMONTHH = ${monthh}"
-      iyearh_new="   NL%IYEARH = ${yearh}"
-      runtype_old=$(grep  -i "NL%RUNTYPE" ${ED2IN} | grep -v "\!")
-      sfilin_old=$(grep  -i "NL%SFILIN"   ${ED2IN} | grep -v "\!")
-      itimeh_old=$(grep  -i "NL%ITIMEH"   ${ED2IN} )
-      idateh_old=$(grep  -i "NL%IDATEH"   ${ED2IN} )
-      imonthh_old=$(grep -i "NL%IMONTHH"  ${ED2IN} )
-      iyearh_old=$(grep -i  "NL%IYEARH"   ${ED2IN} )
-      sed -i~ s@"${runtype_old}"@"${runtype_new}"@g ${ED2IN}
-      sed -i~ s@"${sfilin_old}"@"${sfilin_new}"@g   ${ED2IN}
-      sed -i~ s@"${itimeh_old}"@"${itimeh_new}"@g   ${ED2IN}
-      sed -i~ s@"${idateh_old}"@"${idateh_new}"@g   ${ED2IN}
-      sed -i~ s@"${imonthh_old}"@"${imonthh_new}"@g ${ED2IN}
-      sed -i~ s@"${iyearh_old}"@"${iyearh_new}"@g   ${ED2IN}
+      if [ -s ${stdout} ]
+      then
+         ED2IN="${here}/${polyname}/ED2IN"
+         runtype_new="   NL%RUNTYPE = 'HISTORY'"
+         sfilin_new="   NL%SFILIN = '${here}/${polyname}/histo/${polyname}'"
+         itimeh_new="   NL%ITIMEH = ${timeh}"
+         idateh_new="   NL%IDATEH = ${dateh}"
+         imonthh_new="   NL%IMONTHH = ${monthh}"
+         iyearh_new="   NL%IYEARH = ${yearh}"
+         runtype_old=$(grep  -i "NL%RUNTYPE" ${ED2IN} | grep -v "\!")
+         sfilin_old=$(grep  -i "NL%SFILIN"   ${ED2IN} | grep -v "\!")
+         itimeh_old=$(grep  -i "NL%ITIMEH"   ${ED2IN} )
+         idateh_old=$(grep  -i "NL%IDATEH"   ${ED2IN} )
+         imonthh_old=$(grep -i "NL%IMONTHH"  ${ED2IN} )
+         iyearh_old=$(grep -i  "NL%IYEARH"   ${ED2IN} )
+         sed -i~ s@"${runtype_old}"@"${runtype_new}"@g ${ED2IN}
+         sed -i~ s@"${sfilin_old}"@"${sfilin_new}"@g   ${ED2IN}
+         sed -i~ s@"${itimeh_old}"@"${itimeh_new}"@g   ${ED2IN}
+         sed -i~ s@"${idateh_old}"@"${idateh_new}"@g   ${ED2IN}
+         sed -i~ s@"${imonthh_old}"@"${imonthh_new}"@g ${ED2IN}
+         sed -i~ s@"${iyearh_old}"@"${iyearh_new}"@g   ${ED2IN}
+      fi
       #------------------------------------------------------------------------------------#
    done
    #---------------------------------------------------------------------------------------#
