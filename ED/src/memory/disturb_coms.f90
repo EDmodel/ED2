@@ -59,6 +59,15 @@ module disturb_coms
 
    !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
    real :: fire_parameter
+   
+   !----- Fractions of fast and structural carbon lost through combustion. ----------------!
+   real :: f_combusted_fast
+   real :: f_combusted_struct
+   !---- Temporary parameters to indicate above-ground (and flammable) necromass. ---------!
+   real :: agf_fsc
+   real :: agf_stsc
+   !---- Maximum height for non-grass cohort to be considered part of fuel. ---------------!
+   real :: fuel_height_max
 
    !---------------------------------------------------------------------------------------!
    !     Anthropogenic disturbance.  1 means that anthropogenic disturbances will be       !

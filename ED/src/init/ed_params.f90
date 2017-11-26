@@ -598,6 +598,7 @@ end subroutine init_ff_coms
 subroutine init_disturb_params
 
    use disturb_coms , only : treefall_disturbance_rate & ! intent(in)
+                           , include_fire              & ! intent(in)
                            , treefall_hite_threshold   & ! intent(out)
                            , fire_hite_threshold       & ! intent(out)
                            , forestry_on               & ! intent(out)
@@ -609,6 +610,11 @@ subroutine init_disturb_params
                            , min_oldgrowth             & ! intent(out)
                            , fire_dryness_threshold    & ! intent(out)
                            , fire_smoist_depth         & ! intent(out)
+                           , fuel_height_max           & ! intent(out)
+                           , f_combusted_fast          & ! intent(out)
+                           , f_combusted_struct        & ! intent(out)
+                           , agf_fsc                   & ! intent(out)
+                           , agf_stsc                  & ! intent(out)
                            , k_fire_first              & ! intent(out)
                            , min_plantation_frac       & ! intent(out)
                            , max_plantation_dist       ! ! intent(out)
@@ -654,6 +660,28 @@ subroutine init_disturb_params
    !----- Maximum depth that will be considered in the average soil -----------------------!
    fire_smoist_depth     = -0.50
    !---------------------------------------------------------------------------------------!
+
+   !----- Cut-off for fuel counting (used only when include_fire is 3). -------------------!
+   fuel_height_max       = 2.0
+   !---------------------------------------------------------------------------------------!
+
+   !----- Fraction of biomass and necromass that are combusted and lost to air. -----------!
+   select case (include_fire)
+   case (3)
+      f_combusted_fast   = 0.8
+      f_combusted_struct = 0.5
+   case default
+      f_combusted_fast   = 1.0
+      f_combusted_struct = 1.0
+   end select
+   !---------------------------------------------------------------------------------------!
+
+   !----- Estimate of aboveground fractions of fast and structural carbon. ----------------!
+   agf_fsc            = 0.5
+   agf_stsc           = 0.7
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Determine the top layer to consider for fires in case include_fire is 2 or 3. ---!
    kfireloop: do k_fire_first=nzg-1,1,-1
@@ -4049,8 +4077,10 @@ subroutine init_pft_mort_params()
                           , seedling_mortality         & ! intent(out)
                           , treefall_s_gtht            & ! intent(out)
                           , treefall_s_ltht            & ! intent(out)
-                          , fire_s_gtht                & ! intent(out)
-                          , fire_s_ltht                & ! intent(out)
+                          , fire_s_min                 & ! intent(out)
+                          , fire_s_max                 & ! intent(out)
+                          , fire_s_inter               & ! intent(out)
+                          , fire_s_slope               & ! intent(out)
                           , felling_s_ltharv           & ! intent(out)
                           , felling_s_gtharv           & ! intent(out)
                           , skid_s_ltharv              & ! intent(out)
@@ -4063,11 +4093,12 @@ subroutine init_pft_mort_params()
                           , twothirds                  ! ! intent(in)
    use ed_misc_coms, only : ibigleaf                   & ! intent(in)
                           , iallom                     ! ! intent(in)
-   use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
+   use disturb_coms, only : include_fire               & ! intent(in)
                           , time2canopy                & ! intent(in)
                           , sl_skid_s_gtharv           & ! intent(in)
                           , sl_skid_s_ltharv           & ! intent(in)
-                          , sl_felling_s_ltharv        ! ! intent(in)
+                          , sl_felling_s_ltharv        & ! intent(in)
+                          , treefall_disturbance_rate  ! ! intent(inout)
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
@@ -4342,8 +4373,18 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    !      Fire survivorship fraction.  These variables will be replaced by bark thickness  !                                                    !
    !---------------------------------------------------------------------------------------!
-   fire_s_gtht(:) = 0.0
-   fire_s_ltht(:) = 0.0
+   select case (include_fire)
+   case (3)
+      fire_s_min  (:) = merge(0.2,0.2,is_grass(:))
+      fire_s_max  (:) = merge(0.2,0.9,is_grass(:))
+      fire_s_inter(:) =  1.5
+      fire_s_slope(:) = -1.0
+   case default
+      fire_s_min  (:) = 0.0
+      fire_s_max  (:) = 0.0
+      fire_s_inter(:) =  1.5
+      fire_s_slope(:) = -1.0
+   end select
    !---------------------------------------------------------------------------------------!
 
    return
@@ -4359,60 +4400,58 @@ end subroutine init_pft_mort_params
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_pft_nitro_params()
-   use pft_coms   , only: Vm0                  & ! intent(in)
-                        , SLA                  & ! intent(in)
-                        , is_tropical          & ! intent(in)
-                        , is_savannah          & ! intent(in)
-                        , is_conifer           & ! intent(in)
-                        , is_grass             & ! intent(in)
-                        , c2n_leaf             & ! intent(out)
-                        , c2n_slow             & ! intent(out)
-                        , c2n_structural       & ! intent(out)
-                        , c2n_storage          & ! intent(out)
-                        , c2n_stem             & ! intent(out)
-                        , l2n_stem             & ! intent(out)
-                        , plant_N_supply_scale ! ! intent(out)
-   use ed_max_dims, only : n_pft               ! ! intent(in)
+   use pft_coms   , only : Vm0                  & ! intent(in)
+                         , SLA                  & ! intent(in)
+                         , is_tropical          & ! intent(in)
+                         , is_savannah          & ! intent(in)
+                         , is_conifer           & ! intent(in)
+                         , is_grass             & ! intent(in)
+                         , c2n_leaf             & ! intent(out)
+                         , c2n_slow             & ! intent(out)
+                         , c2n_structural       & ! intent(out)
+                         , c2n_storage          & ! intent(out)
+                         , c2n_stem             & ! intent(out)
+                         , l2n_stem             & ! intent(out)
+                         , plant_N_supply_scale ! ! intent(out)
+   use ed_max_dims, only : n_pft                ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer :: ipft
    real    :: vm0_ref
    !---------------------------------------------------------------------------------------!
-
-
-   c2n_slow       = 10.0  ! Carbon to Nitrogen ratio, slow pool.
-   c2n_structural = 150.0 ! Carbon to Nitrogen ratio, structural pool.
-   c2n_storage    = 150.0 ! Carbon to Nitrogen ratio, storage pool.
-   c2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
-   l2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
-
-   plant_N_supply_scale = 0.5 
-
-
-   do ipft=1,n_pft
+   pftloop: do ipft=1,n_pft
       !------ Temperate trees. Use non-optimised Vm0 values. ------------------------------!
-      select case (ipft)
-      case (6,7)   ! Northern and Southern Pines. 
+      ! MLO - There must be something uninitialised.  This works when I use if, but it 
+      !       fails with -O3 when I use select case (which normally should be safer).
+      if (ipft == 6 .or. ipft == 7) then ! Northern and Southern Pines. 
          vm0_ref = 15.625
-      case (8)     ! Late conifers. 
+      elseif (ipft == 8) then     ! Late conifers. 
          vm0_ref = 6.25
-      case (9)     ! Early hardwood. 
+      elseif (ipft == 9) then     ! Early hardwood. 
          vm0_ref = 18.25
-      case (10)    ! Mid hardwood. 
+      elseif (ipft == 10) then   ! Mid hardwood. 
          vm0_ref = 15.625
-      case (11)    ! Late hardwood. 
+      elseif (ipft == 11) then   ! Late hardwood. 
          vm0_ref = 6.25
-      case default ! Use actual Vm0 in case we missed some PFT. 
+      else ! Use actual Vm0 in case we missed some PFT. 
          vm0_ref = Vm0(ipft)
-      end select
+      end if
       !------------------------------------------------------------------------------------!
 
 
       !----- Ratio. -----------------------------------------------------------------------!
       c2n_leaf(ipft) = 1000.0 / ( (0.11289 + 0.12947 *   vm0_ref) * SLA(ipft) )
       !------------------------------------------------------------------------------------!
-   end do
+   end do pftloop
    !---------------------------------------------------------------------------------------!
+
+   c2n_slow       = 10.0  ! Carbon to Nitrogen ratio, slow pool.
+   c2n_structural = 150.0 ! Carbon to Nitrogen ratio, structural pool.
+   c2n_storage    = 150.0 ! Carbon to Nitrogen ratio, storage pool.
+   l2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
+   plant_N_supply_scale = 0.5 
+
+   c2n_stem(:)    = 150.0 ! Carbon to Nitrogen ratio, structural stem.
 
 
    return
@@ -6077,6 +6116,10 @@ subroutine init_derived_params_after_xml()
                                    , felling_s_ltharv        & ! intent(in)
                                    , skid_s_gtharv           & ! intent(in)
                                    , skid_s_ltharv           & ! intent(in)
+                                   , fire_s_min              & ! intent(in)
+                                   , fire_s_max              & ! intent(in)
+                                   , fire_s_inter            & ! intent(in)
+                                   , fire_s_slope            & ! intent(in)
                                    , st_fract                & ! intent(in)
                                    , r_fract                 & ! intent(in)
                                    , nonlocal_dispersal      & ! intent(in)
@@ -6857,7 +6900,7 @@ subroutine init_derived_params_after_xml()
    !----- Print trait coefficients. -------------------------------------------------------!
    if (print_zero_table) then
       open (unit=19,file=trim(strat_file),status='replace',action='write')
-      write(unit=19,fmt='(61(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=19,fmt='(65(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
                                      ,'         RHO','         SLA','         VM0'         &
                                      ,'  F_DARKRESP',' F_GROW_RESP','    LEAF_TOR'         &
@@ -6866,20 +6909,21 @@ subroutine init_derived_params_after_xml()
                                      ,'       MORT1','       MORT2','       MORT3'         &
                                      ,'   SEED_MORT','TFALL_S_GTHT',' FELL_S_GTHV'         &
                                      ,' FELL_S_LTHV',' SKID_S_GTHV',' SKID_S_LTHV'         &
-                                     ,'    ST_FRACT','     R_FRACT',' NONLOC_DISP'         &
-                                     ,'   SEED_RAIN','    EFF_HEAT','    EFF_EVAP'         &
-                                     ,'  EFF_TRANSP','  LTRANS_VIS','LREFLECT_VIS'         &
-                                     ,'  WTRANS_VIS','WREFLECT_VIS','  LTRANS_NIR'         &
-                                     ,'LREFLECT_NIR','  WTRANS_NIR','WREFLECT_NIR'         &
-                                     ,'  LEMISS_TIR','  WEMISS_TIR',' ORIENT_FACT'         &
-                                     ,'   LSCAT_VIS','  LBSCAT_VIS','   WSCAT_VIS'         &
-                                     ,'  WBSCAT_VIS','   LSCAT_NIR','  LBSCAT_NIR'         &
-                                     ,'   WSCAT_NIR','  WBSCAT_NIR','  LBSCAT_TIR'         &
-                                     ,'  WBSCAT_TIR','        PHI1','        PHI2'         &
-                                     ,'      MU_BAR','       CLEAF','       CWOOD'         &
-                                     ,'       CBARK'
+                                     ,'  FIRE_S_MIN','  FIRE_S_MAX','FIRE_S_INTER'         &
+                                     ,'FIRE_S_SLOPE','    ST_FRACT','     R_FRACT'         &
+                                     ,' NONLOC_DISP','   SEED_RAIN','    EFF_HEAT'         &
+                                     ,'    EFF_EVAP','  EFF_TRANSP','  LTRANS_VIS'         &
+                                     ,'LREFLECT_VIS','  WTRANS_VIS','WREFLECT_VIS'         &
+                                     ,'  LTRANS_NIR','LREFLECT_NIR','  WTRANS_NIR'         &
+                                     ,'WREFLECT_NIR','  LEMISS_TIR','  WEMISS_TIR'         &
+                                     ,' ORIENT_FACT','   LSCAT_VIS','  LBSCAT_VIS'         &
+                                     ,'   WSCAT_VIS','  WBSCAT_VIS','   LSCAT_NIR'         &
+                                     ,'  LBSCAT_NIR','   WSCAT_NIR','  WBSCAT_NIR'         &
+                                     ,'  LBSCAT_TIR','  WBSCAT_TIR','        PHI1'         &
+                                     ,'        PHI2','      MU_BAR','       CLEAF'         &
+                                     ,'       CWOOD','       CBARK'
       do ipft=1,n_pft
-         write (unit=19,fmt='(8x,i5,5(12x,l1),55(1x,f12.6))')                              &
+         write (unit=19,fmt='(8x,i5,5(12x,l1),59(1x,f12.6))')                              &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),SLA(ipft),Vm0(ipft)     &
                        ,dark_respiration_factor(ipft),growth_resp_factor(ipft)             &
@@ -6889,12 +6933,14 @@ subroutine init_derived_params_after_xml()
                        ,mort2(ipft),mort3(ipft),seedling_mortality(ipft)                   &
                        ,treefall_s_ltht(ipft),felling_s_gtharv(ipft)                       &
                        ,felling_s_ltharv(ipft),skid_s_gtharv(ipft),skid_s_ltharv(ipft)     &
-                       ,st_fract(ipft),r_fract(ipft),nonlocal_dispersal(ipft)              &
-                       ,seed_rain(ipft),effarea_heat,effarea_evap,effarea_transp(ipft)     &
-                       ,leaf_trans_vis(ipft),leaf_reflect_vis(ipft)                        &
-                       ,wood_trans_vis(ipft),wood_reflect_vis(ipft),leaf_trans_nir(ipft)   &
-                       ,leaf_reflect_nir(ipft),wood_trans_nir(ipft),wood_reflect_nir(ipft) &
-                       ,leaf_emiss_tir(ipft),wood_emiss_tir(ipft),orient_factor(ipft)      &
+                       ,fire_s_min(ipft),fire_s_max(ipft),fire_s_inter(ipft)               &
+                       ,fire_s_slope(ipft),st_fract(ipft),r_fract(ipft)                    &
+                       ,nonlocal_dispersal(ipft),seed_rain(ipft)                           &
+                       ,effarea_heat,effarea_evap,effarea_transp(ipft)                     &
+                       ,leaf_trans_vis(ipft),leaf_reflect_vis(ipft),wood_trans_vis(ipft)   &
+                       ,wood_reflect_vis(ipft),leaf_trans_nir(ipft),leaf_reflect_nir(ipft) &
+                       ,wood_trans_nir(ipft),wood_reflect_nir(ipft),leaf_emiss_tir(ipft)   &
+                       ,wood_emiss_tir(ipft),orient_factor(ipft)                           &
                        ,leaf_scatter_vis(ipft),leaf_backscatter_vis(ipft)                  &
                        ,wood_scatter_vis(ipft),wood_backscatter_vis(ipft)                  &
                        ,leaf_scatter_nir(ipft),leaf_backscatter_nir(ipft)                  &

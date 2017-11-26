@@ -500,10 +500,14 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) skid_s_gtharv(myPFT) = real(rval)
            call getConfigREAL  ('skid_s_ltharv','pft',i,rval,texist)
            if(texist) skid_s_ltharv(myPFT) = real(rval)
-           call getConfigREAL  ('fire_s_gtht','pft',i,rval,texist)
-           if(texist) fire_s_gtht(myPFT) = real(rval)
-           call getConfigREAL  ('fire_s_ltht','pft',i,rval,texist)
-           if(texist) fire_s_ltht(myPFT) = real(rval)
+           call getConfigREAL  ('fire_s_min','pft',i,rval,texist)
+           if(texist) fire_s_min(myPFT) = real(rval)
+           call getConfigREAL  ('fire_s_max','pft',i,rval,texist)
+           if(texist) fire_s_max(myPFT) = real(rval)
+           call getConfigREAL  ('fire_s_inter','pft',i,rval,texist)
+           if(texist) fire_s_inter(myPFT) = real(rval)
+           call getConfigREAL  ('fire_s_slope','pft',i,rval,texist)
+           if(texist) fire_s_slope(myPFT) = real(rval)
 
            call getConfigREAL  ('plant_min_temp','pft',i,rval,texist)
            if(texist) plant_min_temp(myPFT) = real(rval)	   
@@ -1145,6 +1149,18 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) fire_dryness_threshold = real(rval)
         call getConfigREAL  ('fire_parameter','disturbance',i,rval,texist)
         if(texist) fire_parameter = real(rval)
+        call getConfigREAL  ('fire_smoist_depth','disturbance',i,rval,texist)
+        if(texist) fire_smoist_depth = real(rval)
+        call getConfigREAL  ('fuel_height_max','disturbance',i,rval,texist)
+        if(texist) fuel_height_max = real(rval)
+        call getConfigREAL  ('f_combusted_fast','disturbance',i,rval,texist)
+        if(texist) f_combusted_fast = real(rval)
+        call getConfigREAL  ('f_combusted_struct','disturbance',i,rval,texist)
+        if(texist) f_combusted_struct = real(rval)
+        call getConfigREAL  ('agf_fsc','disturbance',i,rval,texist)
+        if(texist) agf_fsc = real(rval)
+        call getConfigREAL  ('agf_stsc','disturbance',i,rval,texist)
+        if(texist) agf_stsc = real(rval)
 
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -1634,9 +1650,11 @@ subroutine write_ed_xml_config
         call putConfigREAL("skid_s_gtharv"   ,skid_s_gtharv   (i))
         call putConfigREAL("skid_s_ltharv"   ,skid_s_ltharv   (i))
 
-        call putConfigREAL("fire_s_gtht",fire_s_gtht(i))
-        call putConfigREAL("fire_s_ltht",fire_s_ltht(i))
-
+        call putConfigREAL("fire_s_min"        ,fire_s_min   (i))
+        call putConfigREAL("fire_s_max"        ,fire_s_max   (i))
+        call putConfigREAL("fire_s_inter"      ,fire_s_inter (i))
+        call putConfigREAL("fire_s_slope"      ,fire_s_slope (i))
+ 
         call putConfigREAL("plant_min_temp",plant_min_temp(i))
 
 !! ALLOCATION
@@ -1903,9 +1921,15 @@ subroutine write_ed_xml_config
      call putConfigREAL("min_harvest_biomass",min_harvest_biomass)
      call putConfigREAL("mature_harvest_age",mature_harvest_age)
      ! --- Fire
-     call putConfigINT("include_fire",include_fire)
+     call putConfigINT("include_fire"           ,include_fire          )
      call putConfigREAL("fire_dryness_threshold",fire_dryness_threshold)
-     call putConfigREAL("fire_parameter",fire_parameter)
+     call putConfigREAL("fire_parameter"        ,fire_parameter        )
+     call putConfigREAL("fire_smoist_depth"     ,fire_smoist_depth     )
+     call putConfigREAL("fuel_height_max"       ,fuel_height_max       )
+     call putConfigREAL("f_combusted_fast"      ,f_combusted_fast      )
+     call putConfigREAL("f_combusted_struct"    ,f_combusted_struct    )
+     call putConfigREAL("agf_fsc"               ,agf_fsc               )
+     call putConfigREAL("agf_stsc"              ,agf_stsc              )
   call libxml2f90_ll_closetag("disturbance")
 
   !************   PHENOLOGY  *****************

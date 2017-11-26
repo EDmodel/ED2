@@ -191,7 +191,7 @@ ed_opspec.o : $(ED_IO)/ed_opspec.F90
 ed_params.o : $(ED_INIT)/ed_params.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
+	$(F90_LOWO_COMMAND) -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check $(<F:.f90=.f90)
 
 ed_para_coms.o : $(ED_MPI)/ed_para_coms.f90
 	/bin/rm -f $(<F:.f90=.f90) 
@@ -231,7 +231,7 @@ ed_therm_lib.o : $(ED_UTILS)/ed_therm_lib.f90
 ed_type_init.o : $(ED_INIT)/ed_type_init.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
+	$(F90_LOWO_COMMAND) $(<F:.f90=.f90)
 
 ed_var_tables.o : $(ED_MEMORY)/ed_var_tables.f90 
 	/bin/rm -f $(<F:.f90=.f90)

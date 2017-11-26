@@ -213,18 +213,21 @@ module mortality
    real function survivorship(new_lu,old_lu,mindbh_harvest,cpatch,ico)
       use ed_state_vars, only : patchtype                ! ! structure
       use disturb_coms , only : treefall_hite_threshold  & ! intent(in)
-                              , fire_hite_threshold      & ! intent(in)
                               , min_oldgrowth            ! ! intent(in)
       use pft_coms     , only : treefall_s_ltht          & ! intent(in)
                               , treefall_s_gtht          & ! intent(in)
-                              , fire_s_ltht              & ! intent(in)
-                              , fire_s_gtht              & ! intent(in)
+                              , fire_s_min               & ! intent(in)
+                              , fire_s_max               & ! intent(in)
+                              , fire_s_inter             & ! intent(in)
+                              , fire_s_slope             & ! intent(in)
                               , felling_s_gtharv         & ! intent(in)
                               , felling_s_ltharv         & ! intent(in)
                               , skid_s_ltharv            & ! intent(in)
                               , skid_s_gtharv            ! ! intent(in)
       use ed_max_dims  , only : n_pft                    ! ! intent(in)
-      
+      use ed_misc_coms , only : iallom                   ! ! intent(in)
+      use consts_coms  , only : lnexp_min                & ! intent(in)
+                              , lnexp_max                ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)                 , target     :: cpatch
@@ -234,6 +237,7 @@ module mortality
       integer                         , intent(in) :: old_lu
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: ipft
+      real                                         :: lnexp
       !------------------------------------------------------------------------------------!
 
 
@@ -266,13 +270,16 @@ module mortality
 
       case (4)
          !---------------------------------------------------------------------------------!
-         !     Fire.  For now fire mortality depends on the cohort height and PFT.         !
+         !     Fire.  Currently the fire survival rates are not dependent upon fire        !
+         ! intensity or flame height.  Survival rates are a function of bark thickness     !
+         ! (and size as BT depends on DBH and height).   The original scheme kills all     !
+         ! individuals and this is maintained by setting both fire_s_min and fire_s_max    !
+         ! to 1.                                                                           !
          !---------------------------------------------------------------------------------!
-         if (cpatch%hite(ico) < fire_hite_threshold) then
-            survivorship = fire_s_ltht(ipft)
-         else
-            survivorship = fire_s_gtht(ipft)
-         end if
+         lnexp        = fire_s_inter(ipft) + fire_s_slope(ipft) * cpatch%thbark(ico)
+         lnexp        = max(lnexp_min,min(lnexp_max,lnexp))
+         survivorship = fire_s_min(ipft)                                                   &
+                      + (fire_s_max(ipft) - fire_s_min(ipft)) / (1. + exp(lnexp))
          !---------------------------------------------------------------------------------!
 
       case (5)
@@ -287,13 +294,13 @@ module mortality
             !------------------------------------------------------------------------------!
          case (2)
             !------------------------------------------------------------------------------!
-            !     Forest plantation.  Assume fire causes abandonment.                      !
+            !     Forest plantation.  Assume fire causes abandonment.   See fire           !
+            ! explanation above.                                                           !
             !------------------------------------------------------------------------------!
-            if (cpatch%hite(ico) < fire_hite_threshold) then
-               survivorship = fire_s_ltht(ipft)
-            else
-               survivorship = fire_s_ltht(ipft)
-            end if
+            lnexp        = fire_s_inter(ipft) + fire_s_slope(ipft) * cpatch%thbark(ico)
+            lnexp        = max(lnexp_min,min(lnexp_max,lnexp))
+            survivorship = fire_s_min(ipft)                                                &
+                         + (fire_s_max(ipft) - fire_s_min(ipft)) / (1. + exp(lnexp))
             !------------------------------------------------------------------------------!
          case default
             !------------------------------------------------------------------------------!

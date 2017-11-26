@@ -1894,8 +1894,10 @@ module ed_state_vars
       real, pointer, dimension(:,:) :: crop_yield
       !----- Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ------!
       real, pointer, dimension(:) :: crop_harvest
-      !----- Logging harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ---!
+      !----- Logging harvest (timber), kgC/m2, patch dynamics. ----------------------------!
       real, pointer, dimension(:) :: logging_harvest
+      !----- Carbon lost through combustion of fuels, kgC/m2, patch dynamics. -------------!
+      real, pointer, dimension(:) :: combusted_fuel
       !------------------------------------------------------------------------------------!
 
 
@@ -2102,9 +2104,11 @@ module ed_state_vars
       real, pointer, dimension(:,:) :: crop_yield
       !----- Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ------!
       real, pointer, dimension(:) :: crop_harvest
-      !----- Logging harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ---!
+      !----- Logging harvest (timber), kgC/m2, patch dynamics. ----------------------------!
       real, pointer, dimension(:) :: logging_harvest
-      !------------------------------------------------------------------------------------!
+      !----- Carbon lost through combustion of fuels, kgC/m2, patch dynamics. -------------!
+      real, pointer, dimension(:) :: combusted_fuel
+       !------------------------------------------------------------------------------------!
 
 
       ! Polygon AGB (kgC/m2)
@@ -3130,6 +3134,7 @@ module ed_state_vars
       allocate(cgrid%crop_yield                 (                 12,npolygons))
       allocate(cgrid%crop_harvest               (                    npolygons))
       allocate(cgrid%logging_harvest            (                    npolygons))
+      allocate(cgrid%combusted_fuel             (                    npolygons))
       allocate(cgrid%total_agb                  (                    npolygons))
       allocate(cgrid%total_basal_area           (                    npolygons))
       allocate(cgrid%total_agb_growth           (                    npolygons))
@@ -3984,6 +3989,7 @@ module ed_state_vars
       allocate(cpoly%crop_yield                    (                       12,nsites))
       allocate(cpoly%crop_harvest                  (                          nsites))
       allocate(cpoly%logging_harvest               (                          nsites))
+      allocate(cpoly%combusted_fuel                (                          nsites))
 
       allocate(cpoly%cosaoi                        (                          nsites))
       allocate(cpoly%daylight                      (                          nsites))
@@ -5128,6 +5134,7 @@ module ed_state_vars
       nullify(cgrid%crop_yield              )
       nullify(cgrid%crop_harvest            )
       nullify(cgrid%logging_harvest         )
+      nullify(cgrid%combusted_fuel          )
       nullify(cgrid%total_agb               )
       nullify(cgrid%total_basal_area        )
       nullify(cgrid%total_agb_growth        )
@@ -5924,6 +5931,7 @@ module ed_state_vars
       nullify(cpoly%crop_yield                 )
       nullify(cpoly%crop_harvest               )
       nullify(cpoly%logging_harvest            )
+      nullify(cpoly%combusted_fuel             )
       nullify(cpoly%cosaoi                     )
       nullify(cpoly%daylight                   )
       nullify(cpoly%nighttime                  )
@@ -11757,6 +11765,14 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'LOGGING_HARVEST_PY    :11:hist:mont:dcyc')
          call metadata_edio(nvar,igr,'Logging harvest output (timber)'                     &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%combusted_fuel)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%combusted_fuel                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'COMBUSTED_FUEL_PY     :11:hist:mont:dcyc')
+         call metadata_edio(nvar,igr,'Carbon lost through fuel combustion'                 &
                            ,'[kgC/m2]','(ipoly)')
       end if
       !------------------------------------------------------------------------------------!
@@ -18715,6 +18731,15 @@ module ed_state_vars
                            ,'LOGGING_HARVEST_SI :21:hist:mont:dcyc') 
          call metadata_edio(nvar,igr                                                       &
                            ,'Logging harvest output (timber)','[kgC/m2]','(isite)') 
+      end if
+
+      if (associated(cpoly%combusted_fuel)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cpoly%combusted_fuel                                      &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'COMBUSTED_FUEL_SI :21:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon loss through fuel combustion','[kgC/m2]','(isite)') 
       end if
 
       if (associated(cpoly%rad_avg)) then

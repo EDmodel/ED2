@@ -1196,6 +1196,7 @@ module ed_type_init
       cpoly%crop_yield     (:,:) = 0.0
       cpoly%crop_harvest     (:) = 0.0
       cpoly%logging_harvest  (:) = 0.0
+      cpoly%combusted_fuel   (:) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -1473,6 +1474,7 @@ module ed_type_init
          cgrid%crop_yield                (:,ipy) = 0.0
          cgrid%crop_harvest                (ipy) = 0.0
          cgrid%logging_harvest             (ipy) = 0.0
+         cgrid%combusted_fuel              (ipy) = 0.0
          cgrid%nplant                  (:,:,ipy) = 0.0
          cgrid%agb                     (:,:,ipy) = 0.0
          cgrid%lai                     (:,:,ipy) = 0.0

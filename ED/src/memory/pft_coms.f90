@@ -363,17 +363,17 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: treefall_s_ltht
 
-   !---------------------------------------------------------------------------------------!
-   !     Survivorship fraction for trees with heights greater than fire_hite_threshold     !
-   ! (see disturbance_coms.f90).                                                           !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: fire_s_gtht
+
 
    !---------------------------------------------------------------------------------------!
-   !     Survivorship fraction for trees with heights less than fire_hite_threshold        !
-   ! (see disturbance_coms.f90).                                                           !
+   !    Temporary parameters to predict fire survivorship from bark thickness.  In the     !
+   ! future survivorship should also depend on fire intensity.                             !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: fire_s_ltht
+   real, dimension(n_pft) :: fire_s_min
+   real, dimension(n_pft) :: fire_s_max
+   real, dimension(n_pft) :: fire_s_inter
+   real, dimension(n_pft) :: fire_s_slope
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Survivorship fraction for plants near felled trees.                               !

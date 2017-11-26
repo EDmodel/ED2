@@ -663,6 +663,8 @@ module ed_init_history
                         ,'CROP_HARVEST_PY '          ,dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%logging_harvest         (ipy:ipy)                           &
                         ,'LOGGING_HARVEST_PY '       ,dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%combusted_fuel          (ipy:ipy)                           &
+                        ,'COMBUSTED_FUEL_PY '        ,dsetrank,iparallel,.false.,foundvar)
       !------------------------------------------------------------------------------------!
       return
    end subroutine fill_history_grid_p11
@@ -2832,6 +2834,8 @@ module ed_init_history
                      ,'CROP_HARVEST_SI              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%logging_harvest                                             &
                      ,'LOGGING_HARVEST_SI           ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%combusted_fuel                                              &
+                     ,'COMBUSTED_FUEL_SI            ',dsetrank,iparallel,.true. ,foundvar)
       !------ Daily means. -------------------------------------------------------------------!
       if (writing_long) then
          call hdf_getslab_r(cpoly%dmean_atm_theiv                                          &

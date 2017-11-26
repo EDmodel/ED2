@@ -14,11 +14,15 @@ subroutine fire_frequency(cgrid)
    use grid_coms     , only : nzg                    ! ! intent(in)
    use soil_coms     , only : soil                   & ! intent(in)
                             , dslz                   ! ! intent(in)
+   use pft_coms      , only : is_grass               ! ! intent(in)
    use disturb_coms  , only : include_fire           & ! intent(in)
                             , sm_fire                & ! intent(in)
                             , fire_dryness_threshold & ! intent(in)
                             , k_fire_first           & ! intent(in)
-                            , fire_parameter         ! ! intent(in)
+                            , fire_parameter         & ! intent(in)
+                            , fuel_height_max        & ! intent(in)
+                            , agf_fsc                & ! intent(in)
+                            , agf_stsc               ! ! intent(in)
    use consts_coms   , only : wdns                   & ! intent(in)
                             , wdnsi                  & ! intent(in)
                             , day_sec                ! ! intent(in)
@@ -35,6 +39,7 @@ subroutine fire_frequency(cgrid)
    integer                        :: ipa
    integer                        :: ico
    integer                        :: imon
+   integer                        :: ipft
    integer                        :: k
    integer                        :: nsoil
    real                           :: ndaysi
@@ -102,21 +107,29 @@ subroutine fire_frequency(cgrid)
             !------------------------------------------------------------------------------!
 
 
-            !----- Initialize patch fuel. -------------------------------------------------!
-            fuel = 0.0
-            !------------------------------------------------------------------------------!
-
-
 
             !------------------------------------------------------------------------------!
-            !    Loop through all cohorts in this patch, and compute the fuel.  Fuel will  !
-            ! be defined as the above-ground biomass per unit area.                        !
+            !     Obtain fuel stocks.  The original fire model would consider all above-   !
+            ! -ground biomass and no litter.  When include_fire is set to 3, fuel is the   !
+            ! sum of all above-ground fast soil C, and biomass from grasses and small      !
+            ! individuals (up to fuel_max_height).                                         !
             !------------------------------------------------------------------------------!
-            cohortloop: do ico = 1,cpatch%ncohorts
-
-               fuel = fuel + cpatch%nplant(ico) * cpatch%agb(ico)
-
-            end do cohortloop
+            select case (include_fire)
+            case (3)
+               fuel = agf_fsc  * csite%fast_soil_C      (ipa)                              &
+                    + agf_stsc * csite%structural_soil_C(ipa)
+               fuelcohloop_3: do ico = 1,cpatch%ncohorts
+                  ipft = cpatch%pft(ico)
+                  if (is_grass(ipft) .or. cpatch%hite(ico) <= fuel_height_max) then
+                     fuel = fuel + cpatch%nplant(ico) * cpatch%agb(ico)
+                  end if
+               end do fuelcohloop_3
+            case default
+               fuel = 0.0
+               fuelcohloop_d: do ico = 1,cpatch%ncohorts
+                  fuel = fuel + cpatch%nplant(ico) * cpatch%agb(ico)
+               end do fuelcohloop_d
+            end select
             !------------------------------------------------------------------------------!
 
 
@@ -148,7 +161,7 @@ subroutine fire_frequency(cgrid)
                end if
                !---------------------------------------------------------------------------!
 
-            case (2)
+            case (2,3)
                !---------------------------------------------------------------------------!
                !     We now compute the minimum amount of water in kg/m2 that the soil     !
                ! must have to avoid fires, using the soil properties and the soil moisture !
@@ -161,20 +174,6 @@ subroutine fire_frequency(cgrid)
                                        + soil(nsoil)%soilfr * dslz(k) * wdns
                end do
                if (csite%avg_monthly_gndwater(ipa) < fire_wmass_threshold) then
-                  fire_intensity      = fire_parameter
-                  mean_fire_intensity = mean_fire_intensity                                &
-                                      + fire_intensity * csite%area(ipa)
-               else
-                  fire_intensity      = 0.0
-               end if
-               !---------------------------------------------------------------------------!
-
-            case (3)
-               !---------------------------------------------------------------------------!
-               !     The threshold is independent on soil moisture.  We use climatological !
-               ! water deficit instead.                                                    !
-               !---------------------------------------------------------------------------!
-               if (csite%avg_monthly_waterdef(ipa) >= sm_fire * sum_pcpg) then
                   fire_intensity      = fire_parameter
                   mean_fire_intensity = mean_fire_intensity                                &
                                       + fire_intensity * csite%area(ipa)

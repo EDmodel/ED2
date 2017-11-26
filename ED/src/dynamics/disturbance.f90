@@ -177,6 +177,7 @@ module disturbance_utils
          !----- Reset site-level harvest variables. ---------------------------------------!
          cgrid%crop_harvest   (ipy) = 0.0
          cgrid%logging_harvest(ipy) = 0.0
+         cgrid%combusted_fuel (ipy) = 0.0
          !---------------------------------------------------------------------------------!
 
 
@@ -197,6 +198,7 @@ module disturbance_utils
             !----- Reset site-level harvest variables. ------------------------------------!
             cpoly%crop_harvest   (isi) = 0.0
             cpoly%logging_harvest(isi) = 0.0
+            cpoly%combusted_fuel (isi) = 0.0
             !------------------------------------------------------------------------------!
 
             !----- Copy mindbh for harvesting to a local variable. ------------------------!
@@ -1163,6 +1165,8 @@ module disturbance_utils
                                        + cpoly%crop_harvest   (isi) * cpoly%area(isi)
             cgrid%logging_harvest(ipy) = cgrid%logging_harvest(ipy)                        &
                                        + cpoly%logging_harvest(isi) * cpoly%area(isi)
+            cgrid%combusted_fuel (ipy) = cgrid%combusted_fuel (ipy)                        &
+                                       + cpoly%combusted_fuel (isi) * cpoly%area(isi)
             !------------------------------------------------------------------------------!
 
 
@@ -2897,8 +2901,13 @@ module disturbance_utils
       use ed_state_vars, only : sitetype            & ! structure
                               , patchtype           & ! structure
                               , polygontype         ! ! structure
-      use disturb_coms , only : cl_fleaf_harvest    & ! intent(in)
-                              , cl_fstorage_harvest ! ! intent(in)
+      use disturb_coms , only : include_fire        & ! intent(in)
+                              , cl_fleaf_harvest    & ! intent(in)
+                              , cl_fstorage_harvest & ! intent(in)
+                              , f_combusted_fast    & ! intent(in)
+                              , f_combusted_struct  & ! intent(in)
+                              , agf_fsc             & ! intent(in)
+                              , agf_stsc            ! ! intent(in)
       use ed_max_dims  , only : n_pft               ! ! intent(in)
       use pft_coms     , only : c2n_storage         & ! intent(in)
                               , c2n_leaf            & ! intent(in)
@@ -2937,6 +2946,7 @@ module disturbance_utils
       real                                            :: bstorage_remain
       real                                            :: bcrop_harvest
       real                                            :: blogging_harvest
+      real                                            :: bcombusted_fuel
       real                                            :: agb_cut
       real                                            :: agb_mort
       real                                            :: ba_cut
@@ -2947,6 +2957,10 @@ module disturbance_utils
       real                                            :: fast_litter_n
       real                                            :: struct_cohort
       real                                            :: survival_fac
+      real                                            :: fast_combusted
+      real                                            :: fast_combusted_n
+      real                                            :: struct_combusted
+      real                                            :: lignin_combusted
       !------------------------------------------------------------------------------------!
 
 
@@ -3006,23 +3020,45 @@ module disturbance_utils
             bstorage_remove  = cl_fstorage_harvest * cpatch%bstorage(ico)
             bcrop_harvest    = cl_fleaf_harvest    * cpatch%bleaf   (ico)                  & 
                              + cl_fstorage_harvest * cpatch%bstorage(ico)
-            blogging_harvest = 0.
+            blogging_harvest = 0.0
+            bcombusted_fuel  = 0.0
             !------------------------------------------------------------------------------!
          case (2,6)
             !------ Felling / forest plantation.  Harvest commercial timber. --------------!
             bfast_remove     =         f_labile_stem(ipft)   * cpatch%btimber(ico)
             bstruct_remove   = ( 1.0 - f_labile_stem(ipft) ) * cpatch%btimber(ico)
             bstorage_remove  = 0.0
-            bcrop_harvest    = 0.
+            bcrop_harvest    = 0.0
             blogging_harvest = cpatch%btimber(ico)
+            bcombusted_fuel  = 0.0
             !------------------------------------------------------------------------------!
+         case (4)
+            !------------------------------------------------------------------------------!
+            !    Fire.  For the time being, assume all "fast" AG biomass is lost, and      !
+            ! that a fraction of the structural biomass is lost through combustion.        !
+            !------------------------------------------------------------------------------!
+            bfast_remove   = ( f_labile_leaf(ipft) * cpatch%bleaf(ico)                     &
+                             + f_labile_stem(ipft)                                         &
+                             * ( cpatch%bsapwooda(ico)                                     &
+                               + agf_bs(ipft) * (cpatch%bbark(ico) +cpatch%bdead(ico)) ))  &
+                             * f_combusted_fast
+            bstruct_remove = ( (1.0-f_labile_leaf(ipft)) * cpatch%bleaf(ico)               &
+                             + (1.0-f_labile_stem(ipft))                                   &
+                             * ( cpatch%bsapwooda(ico)                                     &
+                               + agf_bs(ipft) * (cpatch%bbark(ico) + cpatch%bdead(ico)) )) &
+                             * f_combusted_struct
+            bstorage_remove  = agf_bs(ipft) * cpatch%bstorage(ico)
+            bcrop_harvest    = 0.0
+            blogging_harvest = 0.0
+            bcombusted_fuel  = bfast_remove + bstruct_remove + bstorage_remove
          case default
             !------ Other types.  Everything remains in. ----------------------------------!
             bfast_remove     = 0.0
             bstruct_remove   = 0.0
             bstorage_remove  = 0.0
-            bcrop_harvest    = 0.
-            blogging_harvest = 0.
+            bcrop_harvest    = 0.0
+            blogging_harvest = 0.0
+            bcombusted_fuel  = 0.0
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3091,7 +3127,10 @@ module disturbance_utils
                                     * bcrop_harvest * area_fac * csite%area(np)
          cpoly%logging_harvest(isi) = cpoly%logging_harvest(isi)                           &
                                     + (1.-survival_fac) * cpatch%nplant(ico)               &
-                                    * blogging_harvest * area_fac * csite%area(np)
+                                    * blogging_harvest  * area_fac * csite%area(np)
+         cpoly%combusted_fuel (isi) = cpoly%combusted_fuel (isi)                           &
+                                    + (1.-survival_fac) * cpatch%nplant(ico)               &
+                                    * bcombusted_fuel   * area_fac * csite%area(np)
          !---------------------------------------------------------------------------------!
 
 
@@ -3132,13 +3171,37 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !    Check whether to remove carbon from the pools as combusted fuels.  This is only !
+      ! done if this is a burnt patch and if we are using the new fire scheme.  For the    !
+      ! time being, we fix a fraction of fast and structural soil carbon that is above     !
+      ! ground.  In the future we may split the soil pools into above- and below-ground    !
+      ! to make estimates consistent with the contribution of individuals that do not      !
+      ! follow the standard tropical allometric parameters.                                !
+      !------------------------------------------------------------------------------------!
+      if (new_lu == 4 .and. include_fire == 3) then
+         fast_combusted   = agf_fsc  * f_combusted_fast   * csite%fast_soil_C      (np)
+         fast_combusted_n = agf_fsc  * f_combusted_fast   * csite%fast_soil_N      (np)
+         struct_combusted = agf_stsc * f_combusted_struct * csite%structural_soil_C(np)
+         lignin_combusted = agf_stsc * f_combusted_struct * csite%structural_soil_L(np)
+      else
+         fast_combusted    = 0.0
+         fast_combusted_n  = 0.0
+         struct_combusted  = 0.0
+         lignin_combusted  = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
 
 
       !----- Load disturbance litter directly into carbon and N pools. --------------------!
-      csite%fast_soil_C(np)       = csite%fast_soil_C(np)       + fast_litter   * area_fac
-      csite%structural_soil_C(np) = csite%structural_soil_C(np) + struct_litter * area_fac
-      csite%structural_soil_L(np) = csite%structural_soil_L(np) + struct_lignin * area_fac
-      csite%fast_soil_N(np)       = csite%fast_soil_N(np)       + fast_litter_n * area_fac
+      csite%fast_soil_C      (np) = csite%fast_soil_C      (np)                            &
+                                  + ( fast_litter   - fast_combusted   ) * area_fac
+      csite%structural_soil_C(np) = csite%structural_soil_C(np)                            &
+                                  + ( struct_litter - struct_combusted ) * area_fac
+      csite%structural_soil_L(np) = csite%structural_soil_L(np)                            &
+                                  + ( struct_lignin - struct_combusted ) * area_fac
+      csite%fast_soil_N      (np) = csite%fast_soil_N      (np)                            &
+                                  + ( fast_litter_n - fast_combusted_n ) * area_fac
       !------------------------------------------------------------------------------------!
 
       return
