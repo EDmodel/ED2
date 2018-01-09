@@ -75,7 +75,10 @@ dbh2bl <<- function(dbh,ipft){
    }#end if
 
    dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
-   bleaf  = pft$b1Bl[zpft] /C2B * dbhuse ^ pft$b2Bl[zpft]
+   bleaf  = ifelse( test = dbhuse < pft$dbh.adult[zpft]
+                  , yes  = pft$b1Bl.small[zpft] / C2B * dbhuse ^ pft$b2Bl.small[zpft]
+                  , no   = pft$b1Bl.large[zpft] / C2B * dbhuse ^ pft$b2Bl.large[zpft]
+                  )#end ifelse
 
    return(bleaf)
 }# end function dbh2bl

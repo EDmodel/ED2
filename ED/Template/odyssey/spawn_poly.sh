@@ -56,6 +56,9 @@ toldef="0.01"
 execname="ed_2.1-opt"             # Normal executable, for most queues
 #----- Initialisation scripts. ------------------------------------------------------------#
 initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
+#----- Initialisation scripts. ------------------------------------------------------------#
+optsrc="-n"                   # Option for .bashrc (for special submission settings)
+                              #   In case none is needed, leave it blank ("").
 #----- Submit job automatically? (It may become false if something prevents submission). --#
 submit=false
 #----- Settings for this group of polygons. -----------------------------------------------#
@@ -140,14 +143,44 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#   Change parameters for first and last polygons.                                         #
+#------------------------------------------------------------------------------------------#
+while [[ ${#} > 0 ]]
+do
+   key="${1}"
+   case ${key} in
+   -a)
+      polya=${2}
+      shift 2
+      ;;
+   -n)
+      npartial=${2}
+      shift 2
+      ;;
+   -p)
+      partial=true
+      shift 1
+      ;;
+   -f)
+      partial=false
+      shift 1
+      ;;
+   *)
+      echo "Nothing" > /dev/null
+      shift 1
+      ;;
+   esac
+done
 
 #------------------------------------------------------------------------------------------#
 #   Check whether the executable is copied.  If not, let the user know and stop the        #
 # script.                                                                                  #
 #------------------------------------------------------------------------------------------#
-if [ ! -s ${here}/executable/${execname} ]
+exec_full="${here}/executable/${execname}"
+if [ ! -s ${exec_full} ]
 then
-   echo "Executable file : ${execname} is not in the executable directory"
+   echo "Executable file : ${exec_full} is not in the executable directory"
    echo "Copy the executable to the file before running this script!"
    exit 99
 fi
@@ -162,49 +195,49 @@ case ${global_queue} in
    bigmem)
       n_nodes_max=6
       n_cpt_max=16
-      n_tpn=64
+      n_cpn=64
       runtime="31-00:00:00"
       node_memory=514842
       ;;
    general)
       n_nodes_max=141
       n_cpt_max=16
-      n_tpn=32
+      n_cpn=32
       runtime="7-00:00:00"
       node_memory=262499
       ;;
    moorcroft_amd)
       n_nodes_max=8
       n_cpt_max=16
-      n_tpn=64
+      n_cpn=64
       runtime="Infinite"
       node_memory=256302
       ;;
    moorcroft_6100)
       n_nodes_max=33
       n_cpt_max=6
-      n_tpn=12
+      n_cpn=12
       runtime="Infinite"
       node_memory=22150
       ;;
    shared)
       n_nodes_max=456
       n_cpt_max=16
-      n_tpn=32
+      n_cpn=32
       runtime="7-00:00:00"
       node_memory=129072
       ;;
    unrestricted)
       n_nodes_max=8
       n_cpt_max=16
-      n_tpn=64
+      n_cpn=64
       runtime="Infinite"
       node_memory=262499
       ;;
    wofsy)
       n_nodes_max=2
       n_cpt_max=8
-      n_tpn=32
+      n_cpn=32
       runtime="Infinite"
       node_memory=262499
       ;;
@@ -221,10 +254,11 @@ then
    echo " Requested CPUs per task = ${n_cpt}"
    exit 99
 else
-   let n_tasks_max=${n_nodes_max}*${n_tpn}
+   let n_tasks_max=${n_nodes_max}*${n_cpn}
    let n_tasks_max=${n_tasks_max}/${n_cpt}
 fi
 #------------------------------------------------------------------------------------------#
+
 
 
 
@@ -233,21 +267,21 @@ fi
 #------------------------------------------------------------------------------------------#
 if [ ${sim_memory} -eq 0 ]
 then
-   let sim_memory=${node_memory}/${n_tpn}
-   let node_memory=${n_tpn}*${sim_memory}
+   let sim_memory=${node_memory}/${n_cpn}
+   let node_memory=${n_cpn}*${sim_memory}
 elif [ ${sim_memory} -gt ${node_memory} ]
 then 
    echo "Simulation memory ${sim_memory} cannot exceed node memory ${node_memory}!"
    exit 99
 else
    #------ Set memory and number of CPUs per task. ----------------------------------------#
-   let n_tpn_try=${node_memory}/${sim_memory}
-   if [ ${n_tpn_try} -le ${n_tpn} ]
+   let n_cpn_try=${node_memory}/${sim_memory}
+   if [ ${n_cpn_try} -le ${n_cpn} ]
    then
-      n_tpn=${n_tpn_try}
-      let sim_memory=${node_memory}/${n_tpn}
+      n_cpn=${n_cpn_try}
+      let sim_memory=${node_memory}/${n_cpn}
    else
-      let node_memory=${n_tpn}*${sim_memory}
+      let node_memory=${n_cpn}*${sim_memory}
    fi
    #---------------------------------------------------------------------------------------#
 fi
@@ -288,7 +322,7 @@ echo "------------------------------------------------"
 echo "  Submission summary: "
 echo ""
 echo "  Memory per cpu:      ${sim_memory}"
-echo "  Tasks per node:      ${n_tpn}"
+echo "  CPUs per node:       ${n_cpn}"
 echo "  CPUs per task:       ${n_cpt}"
 echo "  Queue:               ${global_queue}"
 echo "  First polygon:       ${polya}"
@@ -335,12 +369,9 @@ echo "#SBATCH --time=${runtime}               # Time for job"                  >
 echo "#SBATCH --output=${obatch}              # Standard output path"          >> ${sbatch}
 echo "#SBATCH --error=${ebatch}               # Standard error path"           >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
-echo "#--- Get plenty of memory."                                              >> ${sbatch}
-echo "ulimit -s unlimited"                                                     >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
 echo "#--- Initial settings."                                                  >> ${sbatch}
 echo "here=\"${here}\"                            # Main path"                 >> ${sbatch}
-echo "exec=\"\${here}/executable/${execname}\"    # Executable"                >> ${sbatch}
+echo "exec=\"${exec_full}\"                       # Executable"                >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo "#--- Print information about this job."                                  >> ${sbatch}
 echo "echo \"\""                                                               >> ${sbatch}
@@ -369,9 +400,19 @@ echo "echo \"\""                                                               >
 echo "echo \"\""                                                               >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo "#--- Load modules and settings."                                         >> ${sbatch}
-echo ". \${HOME}/.bashrc"                                                      >> ${sbatch}
+echo ". \${HOME}/.bashrc ${optsrc}"                                            >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
+echo "#--- Get plenty of memory."                                              >> ${sbatch}
+echo "ulimit -s unlimited"                                                     >> ${sbatch}
+echo "ulimit -u unlimited"                                                     >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
+echo "#--- Set OpenMP parameters"                                              >> ${sbatch}
+echo "if [ \"\${SLURM_CPUS_PER_TASK}\" == \"\" ]"                              >> ${sbatch}
+echo "then"                                                                    >> ${sbatch}
+echo "   export OMP_NUM_THREADS=1"                                             >> ${sbatch}
+echo "else"                                                                    >> ${sbatch}
+echo "   export OMP_NUM_THREADS=\${SLURM_CPUS_PER_TASK}"                       >> ${sbatch}
+echo "fi"                                                                      >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo "#----- Task list."                                                       >> ${sbatch}
 #------------------------------------------------------------------------------------------#
@@ -1937,6 +1978,18 @@ do
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #   In case this is a multithreaded run, copy executables to each directory.            #
+   #---------------------------------------------------------------------------------------#
+   case ${n_cpt} in
+   1)
+      exec_sub="${here}/${polyname}/${execname}"
+      cp ${exec_full} ${exec_sub}
+      ;;
+   *)
+      exec_sub=${exec_full}
+      ;;
+   esac
 
    #----- Change the callserial.sh file. --------------------------------------------------#
    callserial="${here}/${polyname}/callserial.sh"
@@ -1945,12 +1998,13 @@ do
    sed -i s@thisroot@${here}@g          ${callserial}
    sed -i s@thispoly@${polyname}@g      ${callserial}
    sed -i s@myname@${moi}@g             ${callserial}
-   sed -i s@myexec@${execname}@g        ${callserial}
+   sed -i s@myexec@${exec_sub}@g        ${callserial}
    sed -i s@mypackdata@${packdatasrc}@g ${callserial}
    sed -i s@myscenario@${iscenario}@g   ${callserial}
    sed -i s@myscenmain@${scentype}@g    ${callserial}
    sed -i s@mycopy@${copy2scratch}@g    ${callserial}
    sed -i s@mycpus@${n_cpt}@g           ${callserial}
+   sed -i s@myoptsrc@${optsrc}@g        ${callserial}
    #---------------------------------------------------------------------------------------#
 
 
@@ -1986,7 +2040,7 @@ do
 
 
       #----- Append job to submission list. -----------------------------------------------#
-      srun="srun --nodes=1 --ntasks=1"
+      srun="srun --nodes=1 --ntasks=1 --cpu_bind=cores"
       srun="${srun} --cpus-per-task=\${SLURM_CPUS_PER_TASK}"
       srun="${srun} --mem-per-cpu=\${SLURM_MEM_PER_CPU}"
       srun="${srun} --job-name=${polyname}"
@@ -2019,7 +2073,7 @@ then
    exit 99
 else
    #----- Find the right number of nodes to submit. ---------------------------------------#
-   let n_nodes=(${n_submit}+${n_tpn}-1)/${n_tpn}
+   let n_nodes=(${n_submit}+${n_cpn}-1)*${n_cpt}/${n_cpn}
    let n_tasks=(${n_submit}+${n_nodes}-1)/${n_nodes}
    sed -i~ s@mynnodes@${n_nodes}@g ${sbatch}
    sed -i~ s@myntasks@${n_tasks}@g ${sbatch}

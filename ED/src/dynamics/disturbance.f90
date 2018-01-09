@@ -13,7 +13,8 @@ module disturbance_utils
                               , deallocate_sitetype   & ! subroutine
                               , copy_sitetype_mask    & ! subroutine
                               , copy_sitetype         ! ! subroutine
-   use fuse_fiss_utils , only : old_fuse_cohorts      & ! subroutine
+   use fuse_fiss_utils , only : sort_cohorts          & ! subroutine
+                              , old_fuse_cohorts      & ! subroutine
                               , new_fuse_cohorts      & ! subroutine
                               , terminate_cohorts     & ! subroutine
                               , split_cohorts         & ! subroutine
@@ -43,7 +44,8 @@ module disturbance_utils
                                      , sitetype                   & ! structure
                                      , patchtype                  ! ! structure
       use ed_misc_coms        , only : current_time               & ! intent(in)
-                                     , ibigleaf                   ! ! intent(in)
+                                     , ibigleaf                   & ! intent(in)
+                                     , lianas_included            ! ! intent(in)
       use disturb_coms        , only : min_patch_area             & ! intent(in)
                                      , mature_harvest_age         & ! intent(in)
                                      , plantation_year            & ! intent(in)
@@ -96,6 +98,7 @@ module disturbance_utils
       integer                                       :: nnsp_ble
       integer                                       :: old_lu
       integer                                       :: new_lu
+      integer                                       :: bfus_ncoh
       integer, dimension(:)           , allocatable :: pfts
       logical, dimension(:)           , allocatable :: disturb_mask
       real   , dimension(:)           , allocatable :: original_area
@@ -834,7 +837,9 @@ module disturbance_utils
                   ! -and-age structure.                                                    !
                   !------------------------------------------------------------------------!
                   qpatch => csite%patch(onsp+new_lu)
+                  bfus_ncoh = qpatch%ncohorts
                   if (ibigleaf == 0 .and. qpatch%ncohorts > 0 .and. maxcohort >= 0) then
+                     call sort_cohorts(qpatch)
                      select case (ifusion)
                      case (0)
                         call old_fuse_cohorts(csite,onsp+new_lu,cpoly%lsl(isi),.false.)
@@ -937,13 +942,18 @@ module disturbance_utils
             end do old_lu_l4th
             !------------------------------------------------------------------------------!
 
-            if (include_pft(17)) then
-            prune_loop: do new_lu=1,n_dist_types
-            !----------------------- Prune the lianas -------------------------------------!
-               call prune_lianas(csite, onsp + new_lu, cpoly%lsl(isi))
+
             !------------------------------------------------------------------------------!
-            end do prune_loop
+            !     Prune lianas in case they are included in the simulation.                !
+            !------------------------------------------------------------------------------!
+            if (lianas_included) then
+               prune_loop: do new_lu=1,n_dist_types
+               !----------------------- Prune the lianas ----------------------------------!
+               call prune_lianas(csite, onsp + new_lu, cpoly%lsl(isi))
+               !---------------------------------------------------------------------------!
+               end do prune_loop
             end if
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -2779,6 +2789,7 @@ module disturbance_utils
       use ed_max_dims         , only : n_pft                         ! ! intent(in)
       use mortality           , only : survivorship                  ! ! function
       use update_derived_utils, only : update_cohort_extensive_props ! ! subroutine
+      use pft_coms            , only : negligible_nplant             ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target      :: csite
@@ -2793,6 +2804,7 @@ module disturbance_utils
       type(patchtype)                 , pointer     :: tpatch
       logical        , dimension(:)   , allocatable :: mask
       real           , dimension(:)   , allocatable :: survival_fac
+      integer                                       :: ipft
       integer                                       :: ico
       integer                                       :: nco
       integer                                       :: addco
@@ -2817,12 +2829,17 @@ module disturbance_utils
          survival_fac(:) = 0.
 
          survivalloop: do ico = 1,cpatch%ncohorts
+            ipft              = cpatch%pft(ico)
             survival_fac(ico) = survivorship(new_lu,csite%dist_type(cp),mindbh_harvest     &
                                             ,cpatch,ico) * area_fac
             n_survivors       = cpatch%nplant(ico) * survival_fac(ico)
 
             !----- If something survived, make a new cohort. ------------------------------!
-            mask(ico) = n_survivors > 0.0
+            if ( n_survivors >= negligible_nplant(ipft) ) then
+               mask(ico)         = .true.
+            else 
+               survival_fac(ico) = 0.0
+            end if
             !------------------------------------------------------------------------------!
          end do survivalloop
          addco = count(mask)

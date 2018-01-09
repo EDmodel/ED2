@@ -203,7 +203,7 @@ module mortality
    !     4. Fire.                                                                          !
    !     5. Forest regrowth.                                                               !
    !     6. Logging (tree felling).                                                        !
-   !     7. Logging (collateral damage).                                                   !
+   !     7. Logging (mechanical damage).                                                   !
    !     8. Cropland.                                                                      !
    !  -- mindbh_harvest: minimum DBH for selective logging.  All trees above threshold     !
    !                     will be logged in the tree felling patch.                         !

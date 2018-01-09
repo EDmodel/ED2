@@ -317,7 +317,7 @@ try(unlockBinding("pspline",envir),silent=TRUE)
 #     Organise the files so we load them in the right order.                               #
 #------------------------------------------------------------------------------------------#
 at.first      = c("colour.utils.r","rconstants.r","globdims.r","unitlist.r")
-at.end        = c("iso3166.r","pft.coms.r","pmonthly_varlist.r")
+at.end        = c("iso3166.r","pft.coms.r","pmonthly_varlist.r","pcomp_varlist.r")
 myself        = c("load.everything.r")
 all.scripts   = sort(list.files(path=srcdir,pattern="\\.[RrSsQq]$"))
 back.up       = sort(list.files(path=srcdir,pattern="^[~]"))

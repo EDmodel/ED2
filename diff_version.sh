@@ -22,8 +22,8 @@ subdirs="ED BRAMS Ramspost R-utils"
 #------ Editor to use (I've only tested with nedit, use others at your own risk). ---------#
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
-our="/prj/bramsolam/marcos.longo/EDBRAMS"
-their="/prj/bramsolam/marcos.longo/Last_EDBRAMS"
+our="${HOME}/EDBRAMS"
+their="${HOME}/Previous_EDBRAMS"
 ournew=true
 #------------------------------------------------------------------------------------------#
 

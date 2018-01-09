@@ -23,6 +23,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "can.depth"
@@ -40,6 +43,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "can.area"
@@ -57,6 +63,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "agb"
@@ -74,6 +83,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_ # 0
+                      , psupr    = NA_real_ # 25
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "biomass"
@@ -91,6 +103,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "lai"
@@ -108,6 +123,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nplant"
@@ -125,6 +143,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "gpp"
@@ -142,6 +163,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.gpp"
@@ -159,6 +183,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.gpp"
@@ -176,6 +203,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.gpp"
@@ -193,6 +223,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "mco"
@@ -210,6 +243,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "cba"
@@ -227,6 +263,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_ # 0.05
+                      , psupr    = NA_real_ # 0.25
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.cba"
@@ -244,6 +283,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.cba"
@@ -261,6 +303,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.cba"
@@ -278,6 +323,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "ldrop"
@@ -295,6 +343,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "bstorage"
@@ -312,6 +363,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = FALSE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "bseeds"
@@ -329,6 +383,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = FALSE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "ba"
@@ -346,6 +403,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "sm.stress"
@@ -363,6 +423,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "phap.sms"
@@ -380,6 +443,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.sms"
@@ -397,6 +463,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.sms"
@@ -414,6 +483,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.sms"
@@ -431,6 +503,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "mort"
@@ -448,6 +523,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "ncbmort"
@@ -465,6 +543,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "dimort"
@@ -482,6 +563,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "recr"
@@ -499,6 +583,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "growth"
@@ -516,6 +603,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "change"
@@ -533,6 +623,9 @@
                       , plog     = TRUE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "agb.mort"
@@ -550,6 +643,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.mort"
@@ -567,6 +663,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.mort"
@@ -584,6 +683,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.mort"
@@ -601,6 +703,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "agb.ncbmort"
@@ -618,6 +723,9 @@
                       , plog     = TRUE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.ncbmort"
@@ -635,6 +743,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.ncbmort"
@@ -652,6 +763,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.ncbmort"
@@ -669,6 +783,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "agb.dimort"
@@ -686,6 +803,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.dimort"
@@ -703,6 +823,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.dimort"
@@ -720,6 +843,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.dimort"
@@ -737,6 +863,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "agb.recr"
@@ -754,6 +883,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.recr"
@@ -771,6 +903,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.recr"
@@ -788,6 +923,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.recr"
@@ -805,6 +943,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "agb.growth"
@@ -822,6 +963,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.growth"
@@ -839,6 +983,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.growth"
@@ -856,6 +1003,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.growth"
@@ -873,6 +1023,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "bsa.mort"
@@ -890,6 +1043,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "bsa.ncbmort"
@@ -907,6 +1063,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "bsa.dimort"
@@ -924,6 +1083,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "bsa.recr"
@@ -941,6 +1103,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "bsa.growth"
@@ -958,6 +1123,9 @@
                       , plog     = FALSE
                       , plog.dbh = TRUE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "cbamax"
@@ -975,6 +1143,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "cbarel"
@@ -992,6 +1163,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "demand"
@@ -1009,6 +1183,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "supply"
@@ -1026,6 +1203,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "rain"
@@ -1043,6 +1223,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "runoff"
@@ -1060,6 +1243,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "intercepted"
@@ -1077,6 +1263,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.rain"
@@ -1094,6 +1283,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.rain"
@@ -1111,6 +1303,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.rain"
@@ -1128,6 +1323,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nmon.lt.090"
@@ -1145,6 +1343,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nmon.lt.100"
@@ -1162,6 +1363,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nmon.lt.110"
@@ -1179,6 +1383,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nmon.lt.120"
@@ -1196,6 +1403,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nmon.wdef"
@@ -1213,6 +1423,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nmon.mdef"
@@ -1230,6 +1443,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "npp"
@@ -1247,6 +1463,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.npp"
@@ -1264,6 +1483,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.npp"
@@ -1281,6 +1503,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.npp"
@@ -1298,6 +1523,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "dcbadt"
@@ -1315,6 +1543,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.dcbadt"
@@ -1332,6 +1563,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.dcbadt"
@@ -1349,6 +1583,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.dcbadt"
@@ -1366,6 +1603,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "rue"
@@ -1383,6 +1623,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.rue"
@@ -1400,6 +1643,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.rue"
@@ -1417,6 +1663,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.rue"
@@ -1434,6 +1683,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "water.deficit"
@@ -1451,6 +1703,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.mwd"
@@ -1468,6 +1723,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.mwd"
@@ -1485,6 +1743,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.mwd"
@@ -1502,6 +1763,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "malhi.deficit"
@@ -1519,6 +1783,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "atm.temp"
@@ -1536,6 +1803,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.temp"
@@ -1553,6 +1823,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "phap.ltemp"
@@ -1570,6 +1843,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.ltemp"
@@ -1587,6 +1863,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.ltemp"
@@ -1604,6 +1883,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.ltemp"
@@ -1621,6 +1903,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.water"
@@ -1638,6 +1923,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "phap.lwater"
@@ -1655,6 +1943,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.lwater"
@@ -1672,6 +1963,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.lwater"
@@ -1689,6 +1983,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.lwater"
@@ -1706,6 +2003,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "rshort"
@@ -1723,6 +2023,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.rshort"
@@ -1740,6 +2043,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.rshort"
@@ -1757,6 +2063,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.rshort"
@@ -1774,6 +2083,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "rlong"
@@ -1791,6 +2103,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "atm.vpd"
@@ -1808,6 +2123,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.vpd"
@@ -1825,6 +2143,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "phap.lvpd"
@@ -1842,6 +2163,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.lvpd"
@@ -1859,6 +2183,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.lvpd"
@@ -1876,6 +2203,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.lvpd"
@@ -1893,6 +2223,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "paw"
@@ -1910,6 +2243,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "smpot"
@@ -1927,6 +2263,9 @@
                       , plog     = TRUE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.smpot"
@@ -1944,6 +2283,9 @@
                       , plog     = TRUE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.smpot"
@@ -1961,6 +2303,9 @@
                       , plog     = TRUE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.smpot"
@@ -1978,6 +2323,9 @@
                       , plog     = TRUE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "nep"
@@ -1995,6 +2343,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "reco"
@@ -2012,6 +2363,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "fast.soil.c"
@@ -2029,6 +2383,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "struct.soil.c"
@@ -2046,6 +2403,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "slow.soil.c"
@@ -2063,6 +2423,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "het.resp"
@@ -2080,6 +2443,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "plant.resp"
@@ -2097,6 +2463,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.plresp"
@@ -2114,6 +2483,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.plresp"
@@ -2131,6 +2503,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.plresp"
@@ -2148,6 +2523,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "hflxlc"
@@ -2165,6 +2543,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "wflxlc"
@@ -2182,6 +2563,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "transp"
@@ -2199,6 +2583,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.transp"
@@ -2216,6 +2603,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.transp"
@@ -2233,6 +2623,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.transp"
@@ -2250,6 +2643,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "et"
@@ -2267,6 +2663,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.et"
@@ -2284,6 +2683,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.et"
@@ -2301,6 +2703,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.et"
@@ -2318,6 +2723,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "evap"
@@ -2335,6 +2743,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.evap"
@@ -2352,6 +2763,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.evap"
@@ -2369,6 +2783,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.evap"
@@ -2386,6 +2803,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.gpp"
@@ -2403,6 +2823,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.npp"
@@ -2420,6 +2843,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.plant.resp"
@@ -2437,6 +2863,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.cba"
@@ -2454,6 +2883,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.mco"
@@ -2471,6 +2903,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.hflxlc"
@@ -2488,6 +2923,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.wflxlc"
@@ -2505,6 +2943,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.transp"
@@ -2522,6 +2963,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "hflxgc"
@@ -2539,6 +2983,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "hflxca"
@@ -2556,6 +3003,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "wflxgc"
@@ -2573,6 +3023,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "wflxca"
@@ -2590,6 +3043,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_ # 2.5
+                      , psupr    = NA_real_ # 3.8
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "cue"
@@ -2607,6 +3063,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.cue"
@@ -2624,6 +3083,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.cue"
@@ -2641,6 +3103,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.cue"
@@ -2658,6 +3123,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "ecue"
@@ -2675,6 +3143,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.ecue"
@@ -2692,6 +3163,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.ecue"
@@ -2709,6 +3183,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.ecue"
@@ -2726,6 +3203,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "wue"
@@ -2743,6 +3223,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.wue"
@@ -2760,6 +3243,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.wue"
@@ -2777,6 +3263,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.wue"
@@ -2794,6 +3283,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "etue"
@@ -2811,6 +3303,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.etue"
@@ -2828,6 +3323,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.etue"
@@ -2845,6 +3343,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.etue"
@@ -2862,6 +3363,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.gbw"
@@ -2879,6 +3383,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "phap.lgbw"
@@ -2896,6 +3403,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.gsw"
@@ -2913,6 +3423,29 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.gpp"
+                      , desc     = "Leaf-level Gross Primary Productivity"
+                      , lname    = "Leaf GPP."
+                      , short    = "G*P*P[L*e*a*f]"
+                      , unit     = untab$kgcom2loyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      , qf.miss  = "ifelse(lai$ts %>% 0, gpp$ts/lai$ts, 0.)"
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "phap.lgsw"
@@ -2930,6 +3463,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.lgsw"
@@ -2947,6 +3483,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.lgsw"
@@ -2964,6 +3503,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.lgsw"
@@ -2981,6 +3523,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.gpp"
@@ -2998,6 +3543,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.plant.resp"
@@ -3015,6 +3563,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.npp"
@@ -3032,6 +3583,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.dcbadt"
@@ -3049,6 +3603,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.mco"
@@ -3066,6 +3623,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.cba"
@@ -3083,6 +3643,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.bstorage"
@@ -3100,6 +3663,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.bleaf"
@@ -3117,6 +3683,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
 #   n            = n + 1
 #   scen.ts[[n]] = list( vname    = "f.bstem"
@@ -3134,6 +3703,9 @@
 #                      , plog     = FALSE
 #                      , plog.dbh = FALSE
 #                      , plt      = TRUE
+#                      , qf.miss  = NA_character_
+#                      , pslwr    = NA_real_
+#                      , psupr    = NA_real_
 #                      )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.broot"
@@ -3151,6 +3723,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.bseeds"
@@ -3168,6 +3743,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.par"
@@ -3185,6 +3763,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "phap.lpar"
@@ -3202,6 +3783,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.lpar"
@@ -3219,6 +3803,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.lpar"
@@ -3236,6 +3823,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.lpar"
@@ -3253,6 +3843,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.rshort"
@@ -3270,6 +3863,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "leaf.rlong"
@@ -3287,6 +3883,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "agb.change"
@@ -3304,6 +3903,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.1yr.change"
@@ -3321,6 +3923,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.2yr.change"
@@ -3338,6 +3943,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "last.3yr.change"
@@ -3355,6 +3963,9 @@
                       , plog     = FALSE
                       , plog.dbh = FALSE
                       , plt      = TRUE
+                      , qf.miss  = NA_character_
+                      , pslwr    = NA_real_
+                      , psupr    = NA_real_
                       )#end list
    #---------------------------------------------------------------------------------------#
 
@@ -3363,15 +3974,7 @@
    #---------------------------------------------------------------------------------------#
    #     Replace the list by a data frame.                                                 #
    #---------------------------------------------------------------------------------------#
-   scen.ts = data.frame( apply( X = sapply(X=scen.ts,FUN=c), MARGIN = 1, FUN = unlist )
-                       , stringsAsFactors = FALSE
-                       )#end data.frame
-   for (nl in c("pftvar","dbhvar","mort","recr","plog","plog.dbh","plt")){
-      scen.ts[[nl]] = as.logical(scen.ts[[nl]])
-   }#end for
-   for (nl in c("add","mult")){
-      scen.ts[[nl]] = as.numeric(scen.ts[[nl]])
-   }#end for
+   scen.ts = list.2.data.frame(scen.ts)
    #---------------------------------------------------------------------------------------#
 #==========================================================================================#
 #==========================================================================================#
@@ -3420,7 +4023,11 @@
    scen.szpft = data.frame( vname = c(            "agb",            "lai",             "ba"
                                      ,    "agb.ncbmort",     "agb.growth",     "agb.change"
                                      ,      "sm.stress",       "leaf.gsw",       "leaf.vpd"
-                                     ,       "leaf.par")
+                                     ,       "leaf.par",         "runoff",            "gpp"
+                                     ,       "leaf.gpp")
+                          , stringsAsFactors = FALSE
+                          )#end vname
+   scen.szpft = data.frame( vname = c(            "gpp",       "leaf.gpp")
                           , stringsAsFactors = FALSE
                           )#end vname
    #---------------------------------------------------------------------------------------#
@@ -3881,7 +4488,7 @@
                                      ,         "mort",      "ncbmort",       "dimort"
                                      ,         "recr",       "growth",     "agb.mort"
                                      ,  "agb.ncbmort",   "agb.dimort",     "agb.recr"
-                                     ,   "agb.growth",         "rain","water.deficit"
+                                     ,   "agb.growth",         "rain"
                                      ,       "runoff",     "atm.temp",    "leaf.temp"
                                      ,   "phap.ltemp",       "rshort",        "rlong"
                                      ,      "atm.vpd",     "leaf.vpd",    "phap.lvpd"

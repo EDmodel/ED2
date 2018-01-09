@@ -5,15 +5,29 @@
 # default settings.  Otherwise, if las = 5, it will rotate the labels 45 degrees, and if   #
 # las is 6, it will rotate the labels -45 degrees.                                         #
 #------------------------------------------------------------------------------------------#
-axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
+axis.rt <<- function( side
+                    , at        = NULL
+                    , labels    = TRUE
+                    , las       = NULL
+                    , off       = 0.15
+                    , tick      = TRUE
+                    , line      = NA
+                    , pos       = NA
+                    , outer     = FALSE
+                    , font      = NA
+                    , lty       = "solid"
+                    , lwd       = 1
+                    , lwd.ticks = lwd
+                    , col       = NULL
+                    , col.ticks = NULL
+                    , hadj      = NA
+                    , padj      = NA
+                    , ...
+                    ){
+
 
    #----- Make sure side is correct. ------------------------------------------------------#
    stopifnot(side %in% c(1,2,3,4))
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- Save the "dots" argument to a list. ---------------------------------------------#
-   dots = list(...)
    #---------------------------------------------------------------------------------------#
 
 
@@ -22,11 +36,27 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Get the list of default arguments to be passed to axis (excluding ...). ---------#
+   defarg          = as.list(match.call(expand.dots=FALSE))
+   axisarg         = names(formals(axis))
+   axisarg         = axisarg[! axisarg %in% "..."]
+   defarg          = defarg[axisarg]
+   defarg          = lapply(X=defarg,FUN=eval)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Save the "dots" argument to a list. ---------------------------------------------#
+   dots = list(...)
+   #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #     Grab las from par.orig in case it hasn't been passed.                             #
    #---------------------------------------------------------------------------------------#
-   if (is.null(las) || (is.logical(labels) && ! labels)) las = par.orig$las
+   if (is.null(las) || (is.logical(labels) && ! labels)){
+      las = par.orig$las
+      defarg$las = las
+   }#end if (is.null(las) || (is.logical(labels) && ! labels))
    #---------------------------------------------------------------------------------------#
 
 
@@ -36,7 +66,7 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
       #      Normal las, or labels aren't to be displayed.  Keep it simple and use         #
       # the default axis function.                                                         #
       #------------------------------------------------------------------------------------#
-      arguments = modifyList(x=dots,val=list(side=side,at=at,labels=labels,las=las))
+      arguments = modifyList(x=defarg,val=dots)
       do.call(what="axis",args=arguments)
       #------------------------------------------------------------------------------------#
 
@@ -45,7 +75,8 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
       #     las is either 5 or 6, and labels is not FALSE.  We first plot the axis ticks,  #
       # using the default axis function, then add the labels using rotation.               #
       #------------------------------------------------------------------------------------#
-
+      defarg$las = NULL
+      #------------------------------------------------------------------------------------#
 
       
       #------ In case "at" is NULL, find where to place the tick marks. -------------------#
@@ -72,7 +103,8 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
    
 
       #------ Plot the tick marks. --------------------------------------------------------#
-      arguments = modifyList(x=dots,val=list(side=side,at=at,labels=FALSE))
+      arguments = modifyList(x=defarg,val=dots)
+      arguments = modifyList(x=arguments,val=list(at=at,labels=FALSE))
       do.call(what="axis",args=arguments)
       #------------------------------------------------------------------------------------#
 

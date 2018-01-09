@@ -230,6 +230,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$crop.yield      [m] =   mymont$CROP.YIELD.PY[thismonth]
       emean$crop.harvest    [m] =   mymont$CROP.HARVEST.PY
       emean$logging.harvest [m] =   mymont$LOGGING.HARVEST.PY
+      emean$combusted.fuel  [m] =   mymont$COMBUSTED.FUEL.PY
       emean$het.resp        [m] =   mymont$MMEAN.RH.PY
       emean$cwd.resp        [m] =   mymont$MMEAN.CWD.RH.PY
       emean$gpp             [m] =   mymont$MMEAN.GPP.PY
@@ -2711,19 +2712,21 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             #                     class, or if it didn't have much living biomass.         #
             #------------------------------------------------------------------------------#
             balive.szpft              = szpft$balive[m,d,p]
-            balive.szpft              = ifelse(balive.szpft > 1.e-7,balive.szpft,NA)
-            szpft$f.gpp       [m,d,p] = 100. * szpft$gpp       [m,d,p] / balive.szpft
-            szpft$f.plant.resp[m,d,p] = 100. * szpft$plant.resp[m,d,p] / balive.szpft
-            szpft$f.npp       [m,d,p] = 100. * szpft$npp       [m,d,p] / balive.szpft
-            szpft$f.mco       [m,d,p] = 100. * szpft$mco       [m,d,p] / balive.szpft
-            szpft$f.dcbadt    [m,d,p] = 100. * szpft$dcbadt    [m,d,p] / balive.szpft
-            szpft$f.cba       [m,d,p] =        szpft$cba       [m,d,p] / balive.szpft
-            szpft$f.bstorage  [m,d,p] =        szpft$bstorage  [m,d,p] / balive.szpft
-            szpft$f.bleaf     [m,d,p] =        szpft$bleaf     [m,d,p] / balive.szpft
-            szpft$f.bstem     [m,d,p] =        szpft$bstem     [m,d,p] / balive.szpft
-            szpft$f.broot     [m,d,p] =        szpft$broot     [m,d,p] / balive.szpft
-            szpft$f.bbark     [m,d,p] =        szpft$bbark     [m,d,p] / balive.szpft
-            szpft$f.bseeds    [m,d,p] =        szpft$bseeds    [m,d,p] / balive.szpft
+            balive.szpft              = ifelse(balive.szpft  > 1.e-7,balive.szpft,NA)
+            biomass.szpft             = szpft$biomass[m,d,p]
+            biomass.szpft             = ifelse(biomass.szpft > 1.e-7,biomass.szpft,NA)
+            szpft$f.gpp       [m,d,p] = 100.  * szpft$gpp       [m,d,p] / balive.szpft
+            szpft$f.plant.resp[m,d,p] = 100.  * szpft$plant.resp[m,d,p] / balive.szpft
+            szpft$f.npp       [m,d,p] = 100.  * szpft$npp       [m,d,p] / balive.szpft
+            szpft$f.mco       [m,d,p] = 100.  * szpft$mco       [m,d,p] / balive.szpft
+            szpft$f.dcbadt    [m,d,p] = 100.  * szpft$dcbadt    [m,d,p] / balive.szpft
+            szpft$f.cba       [m,d,p] = 1000. * szpft$cba       [m,d,p] / balive.szpft
+            szpft$f.bstorage  [m,d,p] = 1000. * szpft$bstorage  [m,d,p] / biomass.szpft
+            szpft$f.bleaf     [m,d,p] = 1000. * szpft$bleaf     [m,d,p] / biomass.szpft
+            szpft$f.bstem     [m,d,p] = 1000. * szpft$bstem     [m,d,p] / biomass.szpft
+            szpft$f.broot     [m,d,p] = 1000. * szpft$broot     [m,d,p] / biomass.szpft
+            szpft$f.bbark     [m,d,p] = 1000. * szpft$bbark     [m,d,p] / biomass.szpft
+            szpft$f.bseeds    [m,d,p] = 1000. * szpft$bseeds    [m,d,p] / biomass.szpft
             #------------------------------------------------------------------------------#
 
 

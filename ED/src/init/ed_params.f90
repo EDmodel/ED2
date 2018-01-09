@@ -671,8 +671,8 @@ subroutine init_disturb_params
       f_combusted_fast   = 0.8
       f_combusted_struct = 0.5
    case default
-      f_combusted_fast   = 1.0
-      f_combusted_struct = 1.0
+      f_combusted_fast   = 0.0
+      f_combusted_struct = 0.0
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -2142,9 +2142,11 @@ subroutine init_pft_alloc_params()
                              , hgt_max               & ! intent(out)
                              , min_dbh               & ! intent(out)
                              , dbh_crit              & ! intent(out)
+                             , dbh_adult             & ! intent(out)
                              , dbh_bigleaf           & ! intent(out)
                              , min_bdead             & ! intent(out)
                              , bdead_crit            & ! intent(out)
+                             , bleaf_adult           & ! intent(out)
                              , b1Ht                  & ! intent(out)
                              , b2Ht                  & ! intent(out)
                              , b1Bs_small            & ! intent(out)
@@ -2159,10 +2161,14 @@ subroutine init_pft_alloc_params()
                              , b2Rd                  & ! intent(out)
                              , b1Vol                 & ! intent(out)
                              , b2Vol                 & ! intent(out)
-                             , b1Bl                  & ! intent(out)
-                             , b2Bl                  & ! intent(out)
-                             , b1WAI                 & ! intent(out)
-                             , b2WAI                 & ! intent(out)
+                             , b1Bl_small            & ! intent(out)
+                             , b2Bl_small            & ! intent(out)
+                             , b1Bl_large            & ! intent(out)
+                             , b2Bl_large            & ! intent(out)
+                             , b1WAI_small           & ! intent(out)
+                             , b2WAI_small           & ! intent(out)
+                             , b1WAI_large           & ! intent(out)
+                             , b2WAI_large           & ! intent(out)
                              , b1Xs                  & ! intent(out)
                              , b1Xb                  & ! intent(out)
                              , C2B                   & ! intent(out)
@@ -2247,10 +2253,8 @@ subroutine init_pft_alloc_params()
    real, dimension(3)    , parameter :: nleaf       = (/ 0.0192512, 0.9749494, 2.5858509 /)
    real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
    !----- Lower and upper bounds for local LAI. -------------------------------------------!
-   real                  , parameter :: llmin_grass = 0.5
-   real                  , parameter :: llmax_grass = 2.0
-   real                  , parameter :: llmin_tree  = 1.0
-   real                  , parameter :: llmax_tree  = 7.0
+   real                  , parameter :: llmin_grass = 1.0
+   real                  , parameter :: llmax_grass = 3.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -2797,7 +2801,7 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      hgt_min(:) = merge( merge(0.15,       0.75,is_grass(:))                              &
+      hgt_min(:) = merge( merge(0.20,       0.70,is_grass(:))                              &
                         , merge(0.15,hgt_ref+0.2,is_grass(:))                              &
                         , is_tropical(:) )
       hgt_max(:) = merge( merge(1.00,42.0,is_grass(:))                                     &
@@ -2992,15 +2996,19 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !     Parameters for DBH -> Bleaf allometry.                                            !
    !                                                                                       !
-   !   Bleaf = b1Bl * dbh^b2Bl                                                                          !
+   !           { b1Bl_small * DBH^b2Bl_small  , if dbh < dbh_adult                         !
+   !   Bleaf = {                                                                           !
+   !           { b1Bl_large * DBH^b2Bl_large  , if dbh > dbh_adult                         !
    !                                                                                       !
    !   The coefficients and thresholds depend on the PFT and allometric equations.         !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       if (is_liana(ipft)) then
           !----- Liana leaf Biomass (Putz, 1983) ------------------------------------------!
-          b1Bl  (ipft) = 0.0856
-          b2Bl  (ipft) = 2.0
+          b1Bl_small(ipft) = 0.0856
+          b2Bl_small(ipft) = 2.0
+          b1Bl_large(ipft) = b1Bl_small(ipft)
+          b2Bl_large(ipft) = b2Bl_small(ipft)
           !--------------------------------------------------------------------------------!
       elseif (is_tropical(ipft)) then
          select case(iallom)
@@ -3012,10 +3020,12 @@ subroutine init_pft_alloc_params()
             !      chronosequence of forest succession in the upper Rio Negro of Colombia  !
             !      and Venezuela.  J. Ecol., 76, 4, 938-958, 1988.                         !
             !------------------------------------------------------------------------------!
-            b1Bl(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
-            aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))          &
-                         * (d2l - d1l) ) * (1.0/log(dcrit))
-            b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+            b1Bl_small(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
+            aux              = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))    &
+                             * (d2l - d1l) ) * (1.0/log(dcrit))
+            b2Bl_small(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+            b1Bl_large(ipft) = b1Bl_small(ipft)
+            b2Bl_large(ipft) = b2Bl_small(ipft)
             !------------------------------------------------------------------------------!
          case (2)
             !------------------------------------------------------------------------------!
@@ -3027,50 +3037,91 @@ subroutine init_pft_alloc_params()
             !   Cole, T. G., J. J. Ewel.  Allometric equations for four valuable tropical  !
             !      tree species.  Forest Ecol. Manag., 229, 1--3, 351-360, 2006.           !
             !------------------------------------------------------------------------------!
-            b1Bl(ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
-            b2Bl(ipft) = nleaf(2)
+            b1Bl_small(ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
+            b2Bl_small(ipft) = nleaf(2)
+            b1Bl_large(ipft) = b1Bl_small(ipft)
+            b2Bl_large(ipft) = b2Bl_small(ipft)
             !------------------------------------------------------------------------------!
          case (3)
             !------------------------------------------------------------------------------!
-            !    Define Bleaf based on local LAI.  Although a few bleaf allometric models  !
-            ! exist (e.g L83, K09, X16), if they are not constrained together with crown   !
-            ! area they may yield to unrealistic local leaf area.  We define the Bleaf     !
-            ! based on crown area allometry (more widely available) and limit local LAI    !
-            ! to be close to the compensation point.  Exponent is about 1.5, which may be  !
-            ! somewhat low, but could indicate that small plants have different exponents, !
-            ! as most crown area and leaf biomass allometric equation have a high dbh      !
-            ! threshold.                                                                   !
-            !                                                                              !
-            ! References:                                                                  !
-            !                                                                              !
-            ! Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and               !
-            !    A. Beneteau.  La phytomasse epigee d'une foret dense en Guyane            !
-            !    Francaise.  Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                   !
-            !    http://www.documentation.ird.fr/hor/fdi:010005089 (L83)                   !
-            !                                                                              !
-            ! Kenzo, T., T. Ichie, D. Hattori, T. Itioka, C. Handa, T. Ohkubo,             !
-            !    J. J. Kendawang, M. Nakamura, M. Sakaguchi, N. Takahashi, M. Okamoto,     !
-            !    A. Tanaka-Oda, K. Sakurai, and I. Ninomiya. Development of allometric     !
-            !    relationships for accurate estimation of above- and below-ground          !
-            !    biomass in tropical secondary forests in Sarawak, Malaysia.               !
-            !    J. Trop. Ecol., 25(4):371-386, Jul 2009.                                  !
-            !    doi:10.1017/S0266467409006129. (K09)                                      !
-            !                                                                              !
-            ! Xu, X., D. Medvigy, J. S. Powers, J. M. Becknell, and K. Guan. Diversity     !
-            !    in plant hydraulic traits explains seasonal and inter-annual              !
-            !    variations of vegetation dynamics in seasonally dry tropical forests.     !
-            !    New Phytol., 212(1):80-95, Oct 2016. doi:10.1111/nph.14009. (X16).        !
+            !    Select allometry based on life form.                                      !
             !------------------------------------------------------------------------------!
             if (is_grass(ipft)) then
-               llmin   = llmin_grass
-               llmax   = llmax_grass
+               !---------------------------------------------------------------------------!
+               !     Grasses: assume local LAI varies from 1 for individuals at minimum    !
+               ! size to 3.0 for individuals at maximum size.  This fit makes tropical     !
+               ! grasses similar to the temperate ones.
+               !---------------------------------------------------------------------------!
+               llmin            = llmin_grass
+               llmax            = llmax_grass
+               b2Bl_small(ipft) = b2Ca(ipft)                                               &
+                                + log(llmax/llmin) / log(dbh_crit(ipft)/min_dbh(ipft))
+               b1Bl_small(ipft) = llmin * C2B * b1Ca(ipft) / SLA(ipft)                     &
+                                * min_dbh(ipft) ** (b2Ca(ipft)-b2Bl_small(ipft))
+               b2Bl_large(ipft) = b2Bl_small(ipft)
+               b1Bl_large(ipft) = b1Bl_small(ipft)
+               !---------------------------------------------------------------------------!
             else
-               llmin   = llmin_tree
-               llmax   = llmax_tree
+               !---------------------------------------------------------------------------!
+               !    Trees: coefficients will depend on the tree size.                      !
+               !    Large trees: use an allometric equation derived from K09a and K09b.    !
+               !       The individual data were available from their appendices, and a     !
+               !       single model was fitted for all data points, using a model of type  !
+               !       y = a*x^b and assuming heteroscedastic distribution of residuals    !
+               !       (L16).  This model gives a fitting that mostly lies between the     !
+               !       predicted curves by L83 using DBH only and DBH and height.          !
+               !       This equation also gives the most reasonable agreement when the     !
+               !       model is initialised with airborne lidar.  The model was further    !
+               !       modified to account for different SLA amongst PFTs, using the same  !
+               !       rationale used by B04 to adjust the biomass equations using wood    !
+               !       density.                                                            !
+               !    Small trees: we assume that local LAI should not be less than 1.  Once !
+               !       the leaf biomass directly from allometry becomes too low to keep    !
+               !       LAI at least 1.0, we use the crown area allometry to estimate leaf  !
+               !       biomass.                                                            !
+               !                                                                           !
+               ! References:                                                               !
+               !                                                                           !
+               !                                                                           !
+               ! Baker, T. R., O. L. Phillips, Y. Malhi, S. Almeida, L. Arroyo,            !
+               !    A. Di Fiore, T. Erwin, T. J. Killeen, S. G. Laurance, W. F. Laurance,  !
+               !    S. L. Lewis, J. Lloyd, A. Monteagudo, D. A. Neill, S. Patino,          !
+               !    N. C. A. Pitman, J. N. M. Silva, and R. Vasquez Martinez. Variation in !
+               !    wood density determines spatial patterns in Amazonian forest biomass.  !
+               !    Glob. Change Biol., 10(5):545-562, May 2004.                           !
+               !    doi:10.1111/j.1365-2486.2004.00751.x (B04).                            !
+               !                                                                           !
+               ! Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and            !
+               !    A. Beneteau.  La phytomasse epigee d'une foret dense en Guyane         !
+               !    Francaise.  Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                !
+               !    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).               !
+               !                                                                           !
+               ! Longo, M., M. Keller, M. N. dos-Santos, V. Leitold, E. R. Pinage,         !
+               !    A. Baccini, S. Saatchi, E. M. Nogueira, M. Batistella, and             !
+               !    D. C. Morton. Aboveground biomass variability across intact and        !
+               !    degraded forests in the Brazilian Amazon. Global Biogeochem. Cycles,   !
+               !    30(11):1639-1660, Nov 2016. doi:10.1002/2016GB005465 (L16).            !
+               !                                                                           !
+               ! Kenzo, T., T. Ichie, D. Hattori, T. Itioka, C. Handa, T. Ohkubo,          !
+               !    J. J. Kendawang, M. Nakamura, M. Sakaguchi, N. Takahashi, M. Okamoto,  !
+               !    A. Tanaka-Oda, K. Sakurai, and I. Ninomiya. Development of allometric  !
+               !    relationships for accurate estimation of above- and below-ground       !
+               !    biomass in tropical secondary forests in Sarawak, Malaysia.            !
+               !    J. Trop. Ecol., 25(4):371-386, Jul 2009.                               !
+               !    doi:10.1017/S0266467409006129. (K09a)                                  !
+               !                                                                           !
+               ! Kenzo, T., R. Furutani, D. Hattori, J. J. Kendawang, S. Tanaka,           !
+               !    K. Sakurai, and I. Ninomiya. Allometric equations for accurate         !
+               !    estimation of above-ground biomass in logged-over tropical rainforests !
+               !    in Sarawak, Malaysia. J. For. Res., 14(6):365, Sep 2009.               !
+               !    doi:10.1007/s10310-009-0149-1. (K09b)                                  !
+               !---------------------------------------------------------------------------!
+               b1Bl_small(ipft) = C2B * b1Ca(ipft) / SLA(ipft)
+               b2Bl_small(ipft) = b2Ca(ipft)
+               b1Bl_large(ipft) = 0.02439842 * SLA(3) / SLA(ipft)
+               b2Bl_large(ipft) = 1.86467176
+               !---------------------------------------------------------------------------!
             end if
-            b2Bl(ipft) = b2Ca(ipft) + log(llmax/llmin) / log(dbh_crit(ipft)/min_dbh(ipft))
-            b1Bl(ipft) = llmin * C2B * b1Ca(ipft) / SLA(ipft)                              &
-                       * min_dbh(ipft) ** (b2Ca(ipft)-b2Bl(ipft))
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3081,29 +3132,57 @@ subroutine init_pft_alloc_params()
          !---------------------------------------------------------------------------------!
          select case (ipft)
          case (5)   ! Temperate C3 grass. 
-            b1Bl(ipft) = 0.08
-            b2Bl(ipft) = 1.0
+            b1Bl_small(ipft) = 0.08
+            b2Bl_small(ipft) = 1.0
          case (6,7) ! Northern and Southern Pines. 
-            b1Bl(ipft) = 0.024
-            b2Bl(ipft) = 1.899
+            b1Bl_small(ipft) = 0.024
+            b2Bl_small(ipft) = 1.899
          case (8)   ! Late conifers. 
-            b1Bl(ipft) = 0.0454
-            b2Bl(ipft) = 1.6829
+            b1Bl_small(ipft) = 0.0454
+            b2Bl_small(ipft) = 1.6829
          case (9)   ! Early hardwood. 
-            b1Bl(ipft) = 0.0129
-            b2Bl(ipft) = 1.7477
+            b1Bl_small(ipft) = 0.0129
+            b2Bl_small(ipft) = 1.7477
          case (10) ! Mid hardwood. 
-            b1Bl(ipft) = 0.048
-            b2Bl(ipft) = 1.455
+            b1Bl_small(ipft) = 0.048
+            b2Bl_small(ipft) = 1.455
          case (11) ! Late hardwood. 
-            b1Bl(ipft) = 0.017
-            b2Bl(ipft) = 1.731
+            b1Bl_small(ipft) = 0.017
+            b2Bl_small(ipft) = 1.731
          case default ! Just in case
-            b1Bl(ipft) = 0.046
-            b2Bl(ipft) = 1.930
+            b1Bl_small(ipft) = 0.046
+            b2Bl_small(ipft) = 1.930
          end select
+         b1Bl_large(ipft) = b1Bl_small(ipft)
+         b2Bl_large(ipft) = b2Bl_small(ipft)
          !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fill in variables that are derived from bleaf allometry.                          !
+   !---------------------------------------------------------------------------------------!
+   do ipft = 1, n_pft
+      !------------------------------------------------------------------------------------!
+      ! -- DBH_ADULT is the DBH when both sapling and adult allometric equations give the  !
+      !    same leaf biomass.  We define this number based on the coefficients to ensure   !
+      !    the size->bleaf function is continuous.  This is not needed when using the same !
+      !    equation for all sizes, in which case we assume that dbh_adult = dbh_crit.      !
+      ! -- BLEAF_ADULT is BLEAF when DBH is exactly at DBH_ADULT.  This is used when size  !
+      !    must be determined from leaf biomass.                                           !
+      !------------------------------------------------------------------------------------!
+      if ( (b1Bl_small(ipft) == b1Bl_large(ipft)) .and.                                    &
+           (b2Bl_small(ipft) == b2Bl_large(ipft))       ) then
+         dbh_adult(ipft) = dbh_crit(ipft)
+      else
+         dbh_adult(ipft) =  (b1Bl_small(ipft) / b1Bl_large(ipft))                          &
+                         ** ( 1.0 / (b2Bl_large(ipft) - b2Bl_small(ipft)) )
+      end if
+      bleaf_adult(ipft) = b1Bl_small(ipft) / C2B * dbh_adult(ipft) ** b2Bl_small(ipft)
       !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
@@ -3115,7 +3194,7 @@ subroutine init_pft_alloc_params()
    !                                                                                       !
    !           { b1Bs_small * DBH^b2Bs_small  , if dbh < dbh_crit                          !
    !   Bdead = {                                                                           !
-   !           { b1Bs_large * dbh)^b2Bl_large, if dbh > dbh_crit                           !
+   !           { b1Bs_large * DBH^b2Bl_large  , if dbh > dbh_crit                          !
    !                                                                                       !
    !   The coefficients and thresholds depend on the PFT and allometric equations.         !
    !---------------------------------------------------------------------------------------!
@@ -3199,9 +3278,9 @@ subroutine init_pft_alloc_params()
                !    to estimate the aboveground biomass of tropical trees. Glob. Change    !
                !    Biol., 20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.              !
                !----------------------------------------------------------------- ---------!
-               b1Bs_small(ipft) = C2B * 0.1549521 * rho(ipft)
-               b2Bs_small(ipft) = 2.4818755
-               b2Bs_large(ipft) = 1.9657980
+               b1Bs_small(ipft) = C2B * 0.1684545 * rho(ipft)
+               b2Bs_small(ipft) = 2.4629283
+               b2Bs_large(ipft) = 1.9670750
                b1Bs_large(ipft) = b1Bs_small(ipft)                                         &
                                 * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
                !---------------------------------------------------------------------------!
@@ -3255,27 +3334,27 @@ subroutine init_pft_alloc_params()
    ! the allometric parameters.                                                            !
    !---------------------------------------------------------------------------------------!
    if (ibigleaf == 1 .and. (iallom == 0 .or. iallom == 1)) then
-      b1Bl( 1) = 0.04538826
-      b1Bl( 2) = 0.07322115
-      b1Bl( 3) = 0.07583497
-      b1Bl( 4) = 0.08915847
-      b1Bl(12) = b1Bl(2)
-      b1Bl(13) = b1Bl(3)
-      b1Bl(14) = b1Bl(4)
-      b1Bl(15) = 0.07322115
-      b1Bl(16) = 0.04538826
-      b1Bl(17) = 0.07322115
+      b1Bl_small( 1) = 0.04538826
+      b1Bl_small( 2) = 0.07322115
+      b1Bl_small( 3) = 0.07583497
+      b1Bl_small( 4) = 0.08915847
+      b1Bl_small(12) = b1Bl_small(2)
+      b1Bl_small(13) = b1Bl_small(3)
+      b1Bl_small(14) = b1Bl_small(4)
+      b1Bl_small(15) = 0.07322115
+      b1Bl_small(16) = 0.04538826
+      b1Bl_small(17) = 0.07322115
       
-      b2Bl( 1) = 1.316338
-      b2Bl( 2) = 1.509083
-      b2Bl( 3) = 1.646576
-      b2Bl( 4) = 1.663773
-      b2Bl(12) = b2Bl(2)
-      b2Bl(13) = b2Bl(3)
-      b2Bl(14) = b2Bl(4)
-      b2Bl(15) = 1.509083
-      b2Bl(16) = 1.316338
-      b2Bl(17) = 1.509083
+      b2Bl_small( 1) = 1.316338
+      b2Bl_small( 2) = 1.509083
+      b2Bl_small( 3) = 1.646576
+      b2Bl_small( 4) = 1.663773
+      b2Bl_small(12) = b2Bl_small(2)
+      b2Bl_small(13) = b2Bl_small(3)
+      b2Bl_small(14) = b2Bl_small(4)
+      b2Bl_small(15) = 1.509083
+      b2Bl_small(16) = 1.316338
+      b2Bl_small(17) = 1.509083
       
       b1Bs_small( 1) = 0.05291854
       b1Bs_small( 2) = 0.15940854
@@ -3298,6 +3377,11 @@ subroutine init_pft_alloc_params()
       b2Bs_small(15) = 2.342587
       b2Bs_small(16) = 3.706955
       b2Bs_small(17) = 2.342587
+
+      b1Bl_large(:)  = b1Bl_small(:)
+      b2Bl_large(:)  = b2Bl_small(:)
+      b1Bs_large(:)  = b1Bs_small(:)
+      b2Bs_large(:)  = b2Bs_small(:)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -3338,8 +3422,10 @@ subroutine init_pft_alloc_params()
       !    Agric. For. Meteorol., 177:110-116, Aug 2013.                                   !
       !    doi:10.1016/j.agrformet.2013.04.010.                                            !
       !------------------------------------------------------------------------------------!
-      b1WAI(:) = merge(0.0,0.11*SLA(:)*b1Bl(:),is_grass(:))
-      b2WAI(:) = merge(1.0,            b2Bl(:),is_grass(:))
+      b1WAI_small(:) = merge(0.0,0.11*SLA(:)*b1Bl_small(:),is_grass(:))
+      b2WAI_small(:) = merge(1.0,            b2Bl_small(:),is_grass(:))
+      b1WAI_large(:) = merge(0.0,0.11*SLA(:)*b1Bl_large(:),is_grass(:))
+      b2WAI_large(:) = merge(1.0,            b2Bl_large(:),is_grass(:))
       !------------------------------------------------------------------------------------!
    case default
       !------------------------------------------------------------------------------------!
@@ -3356,20 +3442,26 @@ subroutine init_pft_alloc_params()
       do ipft=1,n_pft
          if (is_grass(ipft) .and. (.not. is_tropical(ipft))) then
             !------ Grasses don't have WAI. -----------------------------------------------!
-            b1WAI(ipft) = 0.0
-            b2WAI(ipft) = 1.0
+            b1WAI_small(ipft) = 0.0
+            b2WAI_small(ipft) = 1.0
             !------------------------------------------------------------------------------!
          elseif (is_conifer(ipft)) then
             !------ Conifers. -------------------------------------------------------------!
-            b1WAI(ipft) = 0.0553 * 0.5
-            b2WAI(ipft) = 1.9769
+            b1WAI_small(ipft) = 0.0553 * 0.5
+            b2WAI_small(ipft) = 1.9769
             !------------------------------------------------------------------------------!
          else
             !------ Tropical grasses and broadleaf trees. ---------------------------------!
-            b1WAI(ipft) = 0.0192 * 0.5
-            b2WAI(ipft) = 2.0947
+            b1WAI_small(ipft) = 0.0192 * 0.5
+            b2WAI_small(ipft) = 2.0947
             !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
+
+         !----- WAI coefficients are the same for small and large trees. ------------------!
+         b1WAI_large(ipft) = b1WAI_small(ipft)
+         b2WAI_large(ipft) = b2WAI_small(ipft)
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
    end select
@@ -3454,10 +3546,8 @@ subroutine init_pft_alloc_params()
       select case (iallom)
       case (0,1)
          init_density(:) = merge(1.0,0.1,is_grass(:))
-      case (2)
+      case default
          init_density(:) = 0.1
-      case (3)
-         init_density(:) = 0.25
       end select
       !------------------------------------------------------------------------------------!
 
@@ -3972,16 +4062,9 @@ subroutine init_pft_resp_params()
    !    Storage turnover rate.  Number for tropical trees is based on tuning for the time  !
    ! being.                                                                                !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      storage_turnover_rate(:) = merge( onethird                                           &
-                                      , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))   &
-                                      , is_tropical(:) )
-   case default
-      storage_turnover_rate(:) = merge( merge(onethird,onesixth,is_grass(:))               &
-                                      , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))   &
-                                      , is_tropical(:) )
-   end select
+   storage_turnover_rate(:) = merge( merge(onethird,onesixth,is_grass(:))                  &
+                                   , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))      &
+                                   , is_tropical(:) )
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -4380,8 +4463,8 @@ subroutine init_pft_mort_params()
       fire_s_inter(:) =  1.5
       fire_s_slope(:) = -1.0
    case default
-      fire_s_min  (:) = 0.0
-      fire_s_max  (:) = 0.0
+      fire_s_min  (:) =  0.0
+      fire_s_max  (:) =  0.0
       fire_s_inter(:) =  1.5
       fire_s_slope(:) = -1.0
    end select
@@ -6030,7 +6113,8 @@ end subroutine overwrite_with_xml_config
 subroutine init_derived_params_after_xml()
    use detailed_coms        , only : idetailed               ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf                & ! intent(in)
-                                   , iallom                  ! ! intent(in)
+                                   , iallom                  & ! intent(in)
+                                   , lianas_included         ! ! intent(out)
    use ed_max_dims          , only : n_pft                   & ! intent(in)
                                    , str_len                 & ! intent(in)
                                    , undef_real              ! ! intent(in)
@@ -6039,13 +6123,15 @@ subroutine init_derived_params_after_xml()
                                    , cliq                    & ! intent(in)
                                    , yr_sec                  & ! intent(in)
                                    , almost_zero             & ! intent(in)
-                                   , tiny_num                ! ! intent(in)
+                                   , tiny_num8               ! ! intent(in)
    use physiology_coms      , only : iphysiol                ! ! intent(in)
-   use pft_coms             , only : is_tropical             & ! intent(in)
+   use pft_coms             , only : include_pft             & ! intent(in)
+                                   , is_tropical             & ! intent(in)
                                    , is_grass                & ! intent(in)
                                    , is_savannah             & ! intent(in)
                                    , is_conifer              & ! intent(in)
                                    , is_liana                & ! intent(in)
+                                   , C2B                     & ! intent(in)
                                    , nbt_lut                 & ! intent(in)
                                    , init_density            & ! intent(in)
                                    , init_laimax             & ! intent(in)
@@ -6056,16 +6142,20 @@ subroutine init_derived_params_after_xml()
                                    , b2Ht                    & ! intent(in)
                                    , hgt_min                 & ! intent(in)
                                    , hgt_ref                 & ! intent(in)
-                                   , b1Bl                    & ! intent(in)
-                                   , b2Bl                    & ! intent(in)
+                                   , b1Bl_small              & ! intent(in)
+                                   , b2Bl_small              & ! intent(in)
+                                   , b1Bl_large              & ! intent(in)
+                                   , b2Bl_large              & ! intent(in)
                                    , b1Bs_small              & ! intent(in)
                                    , b2Bs_small              & ! intent(in)
                                    , b1Bs_large              & ! intent(in)
                                    , b2Bs_large              & ! intent(in)
                                    , b1Ca                    & ! intent(in)
                                    , b2Ca                    & ! intent(in)
-                                   , b1WAI                   & ! intent(in)
-                                   , b2WAI                   & ! intent(in)
+                                   , b1WAI_small             & ! intent(in)
+                                   , b2WAI_small             & ! intent(in)
+                                   , b1WAI_large             & ! intent(in)
+                                   , b2WAI_large             & ! intent(in)
                                    , b1Xs                    & ! intent(in)
                                    , b1Xb                    & ! intent(in)
                                    , min_dbh                 & ! intent(in)
@@ -6129,7 +6219,9 @@ subroutine init_derived_params_after_xml()
                                    , hgt_max                 & ! intent(inout)
                                    , repro_min_h             & ! intent(inout)
                                    , dbh_crit                & ! intent(inout)
+                                   , dbh_adult               & ! intent(inout)
                                    , bdead_crit              & ! intent(inout)
+                                   , bleaf_adult             & ! intent(inout)
                                    , seed_rain               & ! intent(inout)
                                    , Rd_low_temp             & ! intent(inout)
                                    , Rd_high_temp            & ! intent(inout)
@@ -6304,7 +6396,7 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(37(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(38(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BROOT_MIN'               &
                                               ,'BSAPWOOD_MIN','   BBARK_MIN'               &
@@ -6321,13 +6413,18 @@ subroutine init_derived_params_after_xml()
                                               ,'MIN_COH_SIZE','         SLA'               &
                                               ,'VEG_HCAP_MIN','     LAI_MIN'               &
                                               ,' REPRO_MIN_H','     HGT_MAX'               &
-                                              ,'    DBH_CRIT',' ONE_PLANT_C'               &
-                                              ,' NEGL_NPLANT'
+                                              ,'    DBH_CRIT','   DBH_ADULT'               &
+                                              ,' ONE_PLANT_C',' NEGL_NPLANT'
                                               
    end if
    !---------------------------------------------------------------------------------------!
 
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Derive additional parameters.                                                      !
+   !---------------------------------------------------------------------------------------!
    do ipft = 1,n_pft
       !----- Re-define the "critical" parameters as the numbers may have changed. ---------!
       dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
@@ -6337,6 +6434,14 @@ subroutine init_derived_params_after_xml()
       bwood_crit (ipft) = qsw(ipft) * hgt_max(ipft)                                        &
                         * size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)                       &
                         + bdead_crit(ipft)
+      if ( (b1Bl_small(ipft) == b1Bl_large(ipft)) .and.                                    &
+           (b2Bl_small(ipft) == b2Bl_large(ipft))       ) then
+         dbh_adult(ipft) = dbh_crit(ipft)
+      else
+         dbh_adult(ipft) =  (b1Bl_small(ipft) / b1Bl_large(ipft))                          &
+                         ** ( 1.0 / (b2Bl_large(ipft) - b2Bl_small(ipft)) )
+      end if
+      bleaf_adult(ipft) = b1Bl_small(ipft) / C2B * dbh_adult(ipft) ** b2Bl_small(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -6533,7 +6638,7 @@ subroutine init_derived_params_after_xml()
       !     Add PFT parameters to the reference table.                                     !
       !------------------------------------------------------------------------------------! 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,9(f12.8,1x),25(f12.5,1x),1(es12.5,1x))')        &
+         write (unit=61,fmt='(i5,1x,a16,1x,9(f12.8,1x),26(f12.5,1x),1(es12.5,1x))')        &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,broot_min,bsapwood_min  &
                                                     ,bbark_min,balive_min,bdead_min        &
@@ -6549,7 +6654,7 @@ subroutine init_derived_params_after_xml()
                                                     ,sla(ipft),veg_hcap_min(ipft)          &
                                                     ,lai_min,repro_min_h(ipft)             &
                                                     ,hgt_max(ipft),dbh_crit(ipft)          &
-                                                    ,one_plant_c(ipft)                     &
+                                                    ,dbh_adult(ipft),one_plant_c(ipft)     &
                                                     ,negligible_nplant(ipft)
       end if
       !------------------------------------------------------------------------------------!
@@ -6785,7 +6890,7 @@ subroutine init_derived_params_after_xml()
          dbh_mult8 = (dble(dbh_crit(ipft))/dble(min_dbh(ipft))) **exp_dbh8
          do ilut = 1, nbt_lut
             dbh_now8              = dble(min_dbh(ipft)) * dbh_mult8 ** (ilut-1)
-            dbh_now               = sngloff(dbh_now8,tiny_num)
+            dbh_now               = sngloff(dbh_now8,tiny_num8)
             height_now            = dbh2h(ipft, dbh_now)
             bleaf_now             = size2bl(dbh_now,height_now,ipft)
             bsapwood_now          = bleaf_now * qsw(ipft)   * height_now
@@ -6799,6 +6904,16 @@ subroutine init_derived_params_after_xml()
       end do
       !------------------------------------------------------------------------------------!
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether lianas were included in this simulation.                            !
+   !---------------------------------------------------------------------------------------!
+   lianas_included = .false.
+   do ipft=1,n_pft
+      lianas_included = lianas_included .or. (include_pft(ipft) .and. is_liana(ipft))
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -6867,29 +6982,33 @@ subroutine init_derived_params_after_xml()
    !----- Print allometric coefficients. --------------------------------------------------!
    if (print_zero_table) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(38(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=18,fmt='(43(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
                                      ,'         RHO','        B1HT','        B2HT'         &
-                                     ,'     HGT_REF','        B1BL','        B2BL'         &
-                                     ,'  B1BS_SMALL','  B2BS_SMALL','  B1BS_LARGE'         &
-                                     ,'  B1BS_LARGE','        B1CA','        B2CA'         &
-                                     ,'       B1WAI','       B2WAI','        B1XS'         &
-                                     ,'        B1XB','     HGT_MIN','     HGT_MAX'         &
-                                     ,'     MIN_DBH','    DBH_CRIT',' DBH_BIGLEAF'         &
-                                     ,'  BDEAD_CRIT',' BALIVE_CRIT','  BWOOD_CRIT'         &
-                                     ,'   INIT_DENS','         SLA','F_BSTOR_INIT'         &
-                                     ,'           Q','         QSW','       QBARK'         &
-                                     ,'       QRHOB',' INIT_LAIMAX'
+                                     ,'     HGT_REF','  B1BL_SMALL','  B2BL_SMALL'         &
+                                     ,'  B1BL_LARGE','  B2BL_LARGE','  B1BS_SMALL'         &
+                                     ,'  B2BS_SMALL','  B1BS_LARGE','  B1BS_LARGE'         &
+                                     ,'        B1CA','        B2CA',' B1WAI_SMALL'         &
+                                     ,' B2WAI_SMALL',' B1WAI_LARGE',' B2WAI_LARGE'         &
+                                     ,'        B1XS','        B1XB','     HGT_MIN'         &
+                                     ,'     HGT_MAX','     MIN_DBH','    DBH_CRIT'         &
+                                     ,' DBH_BIGLEAF','  BDEAD_CRIT',' BALIVE_CRIT'         &
+                                     ,'  BWOOD_CRIT',' BLEAF_ADULT','   INIT_DENS'         &
+                                     ,'         SLA','F_BSTOR_INIT','           Q'         &
+                                     ,'         QSW','       QBARK','       QRHOB'         &
+                                     ,' INIT_LAIMAX'
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,5(12x,l1),31(1x,f12.6),1(1x,es12.5))')                 &
+         write (unit=18,fmt='(8x,i5,5(12x,l1),36(1x,f12.6),1(1x,es12.5))')                 &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft)   &
-                       ,hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)               &
-                       ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
-                       ,b2Ca(ipft),b1WAI(ipft),b2WAI(ipft),b1Xs(ipft),b1Xb(ipft)           &
-                       ,hgt_min(ipft),hgt_max(ipft),min_dbh(ipft),dbh_crit(ipft)           &
-                       ,dbh_bigleaf(ipft),bdead_crit(ipft),balive_crit(ipft)               &
-                       ,bwood_crit(ipft),init_density(ipft),sla(ipft)                      &
+                       ,hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft),b1Bl_large(ipft)   &
+                       ,b2Bl_large(ipft),b1Bs_small(ipft),b2Bs_small(ipft)                 &
+                       ,b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft),b2Ca(ipft)            &
+                       ,b1WAI_small(ipft),b2WAI_small(ipft),b1WAI_large(ipft)              &
+                       ,b2WAI_large(ipft),b1Xs(ipft),b1Xb(ipft),hgt_min(ipft)              &
+                       ,hgt_max(ipft),min_dbh(ipft),dbh_crit(ipft),dbh_bigleaf(ipft)       &
+                       ,bdead_crit(ipft),balive_crit(ipft),bwood_crit(ipft)                &
+                       ,bleaf_adult(ipft),init_density(ipft),sla(ipft)                     &
                        ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)    &
                        ,init_laimax(ipft)
       end do
@@ -6951,6 +7070,7 @@ subroutine init_derived_params_after_xml()
       end do
       close(unit=19,status='keep')
    end if
+
 
 
    return

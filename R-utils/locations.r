@@ -937,6 +937,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Secondary and burned twice"
                                                    )#end c
                                        )#end list
+   flagvar[["sl.scale"     ]]    = list( descr  = "Logging scale"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("Working unit","Landscape")
+                                       )#end list
    flagvar[["logging.type" ]]    = list( descr  = "Logging type"
                                        , numeric = FALSE
                                        , values = c("ril","cvl","scl")
@@ -1370,6 +1375,14 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
          na     = c(            7,           13,           23,            31,          40)
          nz     = c(           10,           16,           24,            33,          41)
+      }else if (lenici == 50 && grepl(pattern="bharv",x=ici)){
+         nparms = 6
+         param  = c("ianth.disturb","logging.type",    "sl.scale"
+                   ,"logging.cycle",    "bharvest","include.fire")
+         na     = c(             11,            14,            23
+                   ,             30,            39,            49)
+         nz     = c(             12,            16,            24
+                   ,             32,            42,            50)
       }else if (lenici == 50){
          nparms = 5
          param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","struct")

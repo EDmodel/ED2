@@ -4041,9 +4041,9 @@ module rk4_misc
       character(len=10), parameter :: phfmt='(86(a,1x))'
       character(len=48), parameter ::                                                      &
                                    pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),76(es13.6,1x))'
-      character(len=10), parameter :: chfmt='(62(a,1x))'
+      character(len=10), parameter :: chfmt='(64(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),54(es13.6,1x))'
+                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),56(es13.6,1x))'
       !------------------------------------------------------------------------------------!
 
 

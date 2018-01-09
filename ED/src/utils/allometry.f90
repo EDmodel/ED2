@@ -213,9 +213,12 @@ module allometry
    !---------------------------------------------------------------------------------------!
    real function size2bl(dbh,hite,ipft)
       use pft_coms     , only : dbh_crit       & ! intent(in)
+                              , dbh_adult      & ! intent(in)
                               , C2B            & ! intent(in)
-                              , b1Bl           & ! intent(in)
-                              , b2Bl           & ! intent(in)
+                              , b1Bl_small     & ! intent(in)
+                              , b2Bl_small     & ! intent(in)
+                              , b1Bl_large     & ! intent(in)
+                              , b2Bl_large     & ! intent(in)
                               , is_liana       & ! intent(in)
                               , is_grass       & ! intent(in)
                               , liana_dbh_crit ! ! intent(in)
@@ -248,7 +251,11 @@ module allometry
       !------------------------------------------------------------------------------------!
       !     Find leaf biomass depending on the tree size.                                  !
       !------------------------------------------------------------------------------------!
-      size2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
+      if (mdbh < dbh_adult(ipft)) then
+         size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
+      else
+         size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -368,7 +375,7 @@ module allometry
          !---------------------------------------------------------------------------------!
       elseif (bwood <= bwood_lut(1,ipft)) then
          !----- In case bwood is less than the minimum, linearly scale it. ----------------!
-         bw2dbh      = dbh_lut(1,ipft) * bdead / bwood
+         bw2dbh      = dbh_lut(1,ipft) * bwood / bwood_lut(1,ipft)
          !---------------------------------------------------------------------------------!
       else
          !----- Use the look-up table to find the best dbh. -------------------------------!
@@ -484,17 +491,20 @@ module allometry
    ! DBH has no real meaning for grasses with the new allometry.                           !
    !---------------------------------------------------------------------------------------!
    real function bl2dbh(bleaf,ipft)
-      use pft_coms,     only : dbh_crit    & ! intent(in), lookup table
-                             , hgt_max     & ! intent(in), lookup table
+      use pft_coms,     only : dbh_crit    & ! intent(in)
+                             , hgt_max     & ! intent(in)
                              , is_grass    & ! intent(in)
                              , C2B         & ! intent(in)
-                             , b1Bl        & ! intent(in), lookup table
-                             , b2Bl        ! ! intent(in), lookup table
+                             , bleaf_adult & ! intent(in)
+                             , b1Bl_small  & ! intent(in)
+                             , b2Bl_small  & ! intent(in)
+                             , b1Bl_large  & ! intent(in)
+                             , b2Bl_large  ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in)      :: bleaf
-      integer, intent(in)      :: ipft
+      real   , intent(in) :: bleaf
+      integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
       !------------------------------------------------------------------------------------!
@@ -502,7 +512,11 @@ module allometry
 
 
          !----- Find out whether this is an adult tree or a sapling/grass. ----------------!
-         mdbh = (bleaf * C2B / b1Bl(ipft) ) ** (1./b2Bl(ipft))
+         if (bleaf < bleaf_adult(ipft)) then
+            mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
+         else
+            mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
+         end if
          !---------------------------------------------------------------------------------!
 
 
@@ -910,11 +924,14 @@ module allometry
    subroutine area_indices(cpatch, ico)
       use ed_state_vars, only : patchtype       ! ! Structure
       use pft_coms     , only : dbh_crit        & ! intent(in)
+                              , dbh_adult       & ! intent(in)
                               , is_liana        & ! intent(in)
                               , is_grass        & ! intent(in)
                               , SLA             & ! intent(in)
-                              , b1WAI           & ! intent(in)
-                              , b2WAI           & ! intent(in)
+                              , b1WAI_small     & ! intent(in)
+                              , b2WAI_small     & ! intent(in)
+                              , b1WAI_large     & ! intent(in)
+                              , b2WAI_large     & ! intent(in)
                               , liana_dbh_crit  ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
       use ed_misc_coms , only : igrass          ! ! intent(in)
@@ -974,7 +991,13 @@ module allometry
 
 
          !-----Find WAI. ------------------------------------------------------------------!
-         cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI(ipft) * mdbh ** b2WAI(ipft)
+         if (mdbh < dbh_adult(ipft)) then
+            cpatch%wai(ico) = cpatch%nplant(ico)                                           &
+                            * b1WAI_small(ipft) * mdbh ** b2WAI_small(ipft)
+         else
+            cpatch%wai(ico) = cpatch%nplant(ico)                                           &
+                            * b1WAI_large(ipft) * mdbh ** b2WAI_large(ipft)
+         end if
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

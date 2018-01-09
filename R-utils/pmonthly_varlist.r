@@ -2047,14 +2047,18 @@ theme[[n]] = list( vnam      = c("fast.soil.c","slow.soil.c","struct.soil.c")
                  , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c(   "crop.yield","crop.harvest","logging.harvest")
-                 , desc      = c( "Crop (Seeds)","Crop (Other)","Logging Harvest")
-                 , colour    = c(  "chartreuse3", "dodgerblue3",      "orangered")
-                 , lwd       = c(            2.5,           2.5,              2.5)
+theme[[n]] = list( vnam      = c(       "crop.yield",     "crop.harvest"
+                                ,  "logging.harvest",   "combusted.fuel")
+                 , desc      = c(     "Crop (Seeds)",     "Crop (Other)"
+                                ,  "Logging Harvest","Combusted Biomass")
+                 , colour    = c(      "chartreuse3",      "dodgerblue3"
+                                ,        "orangered",        "firebrick")
+                 , lwd       = c(                2.5,                2.5
+                                ,                2.5,                2.5)
                  , type      = "o"
                  , plog      = FALSE
-                 , prefix    = "yield_harvest"
-                 , title     = "Crop and Logging yield"
+                 , prefix    = "output_carbon"
+                 , title     = "Carbon output"
                  , unit      = untab$kgcom2
                  , legpos    = "topleft"
                  , emean     = TRUE

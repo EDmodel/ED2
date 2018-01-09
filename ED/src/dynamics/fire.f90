@@ -50,6 +50,7 @@ subroutine fire_frequency(cgrid)
    real                           :: ignition_rate
    real                           :: mean_fire_intensity
    real                           :: sum_pcpg
+   logical                        :: people_around
    !---------------------------------------------------------------------------------------!
 
 
@@ -93,6 +94,21 @@ subroutine fire_frequency(cgrid)
          ignition_rate       = 0.0
          mean_fire_intensity = 0.0
          !---------------------------------------------------------------------------------!
+
+
+
+         !----- Temporary check for human activities. -------------------------------------!
+         people_around = .false.
+         humanloop: do ipa=1,csite%npatches
+            select case (csite%dist_type(ipa))
+            case (3,5)
+               continue
+            case default
+               people_around = .true.
+            end select
+         end do humanloop
+         !---------------------------------------------------------------------------------!
+
 
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
@@ -161,7 +177,7 @@ subroutine fire_frequency(cgrid)
                end if
                !---------------------------------------------------------------------------!
 
-            case (2,3)
+            case (2)
                !---------------------------------------------------------------------------!
                !     We now compute the minimum amount of water in kg/m2 that the soil     !
                ! must have to avoid fires, using the soil properties and the soil moisture !
@@ -179,6 +195,34 @@ subroutine fire_frequency(cgrid)
                                       + fire_intensity * csite%area(ipa)
                else
                   fire_intensity      = 0.0
+               end if
+               !---------------------------------------------------------------------------!
+
+            case (3)
+               !---------------------------------------------------------------------------!
+               !     Set fire intensity the same as method 2, except that we prevent fires !
+               ! until the site has any anthropogenic disturbance.  This will change in    !
+               ! the future to allow natural fires.                                        !
+               !---------------------------------------------------------------------------!
+               if (people_around) then
+                  fire_wmass_threshold = 0.
+                  do k = k_fire_first, nzg
+                     nsoil                = cpoly%ntext_soil(k,isi)
+                     fire_wmass_threshold = fire_wmass_threshold                           &
+                                          + soil(nsoil)%soilfr * dslz(k) * wdns
+                  end do
+                  if (csite%avg_monthly_gndwater(ipa) < fire_wmass_threshold) then
+                     fire_intensity      = fire_parameter
+                     mean_fire_intensity = mean_fire_intensity                             &
+                                         + fire_intensity * csite%area(ipa)
+                  else
+                     fire_intensity      = 0.0
+                  end if
+               else
+                  !------ Set water mass threshold to infinity, so fires won't happen. ----!
+                  fire_wmass_threshold = huge(1.)
+                  fire_intensity       = 0.
+                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
             end select

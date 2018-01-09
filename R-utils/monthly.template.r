@@ -143,6 +143,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$crop.yield              = rep(NA,times=ntimes)
    emean$crop.harvest            = rep(NA,times=ntimes)
    emean$logging.harvest         = rep(NA,times=ntimes)
+   emean$combusted.fuel          = rep(NA,times=ntimes)
    emean$het.resp                = rep(NA,times=ntimes)
    emean$cwd.resp                = rep(NA,times=ntimes)
    emean$soil.resp               = rep(NA,times=ntimes)
@@ -1072,6 +1073,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$crop.yield        [idx ] = old.datum$emean$crop.yield          [sel ]
    new.datum$emean$crop.harvest      [idx ] = old.datum$emean$crop.harvest        [sel ]
    new.datum$emean$logging.harvest   [idx ] = old.datum$emean$logging.harvest     [sel ]
+   new.datum$emean$combusted.fuel    [idx ] = old.datum$emean$combusted.fuel      [sel ]
    new.datum$emean$het.resp          [idx ] = old.datum$emean$het.resp            [sel ]
    new.datum$emean$cwd.resp          [idx ] = old.datum$emean$cwd.resp            [sel ]
    new.datum$emean$soil.resp         [idx ] = old.datum$emean$soil.resp           [sel ]

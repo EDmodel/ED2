@@ -282,4 +282,8 @@ Module ed_misc_coms
    real :: radfrq_o_frqsum
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Flag to tell whether lianas are included in this simulation. --------------------!
+   logical :: lianas_included
+   !---------------------------------------------------------------------------------------!
 end module ed_misc_coms

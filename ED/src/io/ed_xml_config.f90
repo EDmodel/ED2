@@ -317,6 +317,30 @@ recursive subroutine read_ed_xml_config(filename)
                  is_grass(myPFT) = .true.
               end if
            end if
+           call getConfigINT('is_conifer','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_conifer(myPFT) = .false.
+              else
+                 is_conifer(myPFT) = .true.
+              end if
+           end if
+           call getConfigINT('is_savannah','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_savannah(myPFT) = .false.
+              else
+                 is_savannah(myPFT) = .true.
+              end if
+           end if
+           call getConfigINT('is_liana','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_liana(myPFT) = .false.
+              else
+                 is_liana(myPFT) = .true.
+              end if
+           end if
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
               include_pft(myPFT) = ival == 1
@@ -550,10 +574,23 @@ recursive subroutine read_ed_xml_config(filename)
 
      ! Leaf
            call getConfigREAL  ('b1Bl','pft',i,rval,texist)
-           if (texist) b1Bl(myPFT) = real(rval)
+           if (texist) then
+              b1Bl_small(myPFT) = real(rval)
+              b1Bl_large(myPFT) = real(rval)
+           end if
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
-           if (texist) b2Bl(myPFT) = real(rval)
-
+           if (texist) then
+              b2Bl_small(myPFT) = real(rval)
+              b2Bl_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b1Bl_small','pft',i,rval,texist)
+           if (texist) b1Bl_small(myPFT) = real(rval)
+           call getConfigREAL  ('b2Bl_small','pft',i,rval,texist)
+           if (texist) b2Bl_small(myPFT) = real(rval)
+           call getConfigREAL  ('b1Bl_large','pft',i,rval,texist)
+           if (texist) b1Bl_large(myPFT) = real(rval)
+           call getConfigREAL  ('b2Bl_large','pft',i,rval,texist)
+           if (texist) b2Bl_large(myPFT) = real(rval)
 
      ! Stem
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
@@ -595,10 +632,24 @@ recursive subroutine read_ed_xml_config(filename)
 
      ! branches
            call getConfigREAL  ('b1WAI','pft',i,rval,texist)
-           if (texist) b1WAI(myPFT) = real(rval)
+           if (texist) then
+              b1WAI_small(myPFT) = real(rval)
+              b1WAI_large(myPFT) = real(rval)
+           end if
            call getConfigREAL  ('b2WAI','pft',i,rval,texist)
-           if (texist) b2WAI(myPFT) = real(rval)
-	   call getConfigREAL  ('brf_wd','pft',i,rval,texist)
+           if (texist) then
+              b2WAI_small(myPFT) = real(rval)
+              b2WAI_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b1WAI_small','pft',i,rval,texist)
+           if (texist) b1WAI_small(myPFT) = real(rval)
+           call getConfigREAL  ('b2WAI_small','pft',i,rval,texist)
+           if (texist) b2WAI_small(myPFT) = real(rval)
+           call getConfigREAL  ('b1WAI_large','pft',i,rval,texist)
+           if (texist) b1WAI_large(myPFT) = real(rval)
+           call getConfigREAL  ('b2WAI_large','pft',i,rval,texist)
+           if (texist) b2WAI_large(myPFT) = real(rval)
+           call getConfigREAL  ('brf_wd','pft',i,rval,texist)
            if(texist) brf_wd(myPFT) = real(rval)
 
      ! bark/sapwood thickness
@@ -1538,6 +1589,24 @@ subroutine write_ed_xml_config
            ival = 0
         end if
         call putConfigINT("is_grass",ival)
+        if (is_conifer(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("is_conifer",ival)
+        if (is_savannah(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("is_savannah",ival)
+        if (is_liana(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("is_liana",ival)
         if (include_pft(i)) then
            ival = 1
         else
@@ -1678,8 +1747,10 @@ subroutine write_ed_xml_config
         call putConfigREAL("dbh_bigleaf",dbh_bigleaf(i))
 
      !! LEAF
-        call putConfigREAL("b1Bl", b1Bl(i))
-        call putConfigREAL("b2Bl", b2Bl(i))
+        call putConfigREAL("b1Bl_small", b1Bl_small(i))
+        call putConfigREAL("b2Bl_small", b2Bl_small(i))
+        call putConfigREAL("b1Bl_large", b1Bl_large(i))
+        call putConfigREAL("b2Bl_large", b2Bl_large(i))
 
      !! STEM
         call putConfigREAL("b1Bs_small",b1Bs_small(i))
@@ -1694,9 +1765,11 @@ subroutine write_ed_xml_config
         call putConfigREAL("b2Ca",      b2Ca(i))
 
      !! BRANCHES
-        call putConfigREAL("b1WAI" , b1WAI (i))
-        call putConfigREAL("b2WAI" , b2WAI (i))
-        call putConfigREAL("brf_wd", brf_wd(i))
+        call putConfigREAL("b1WAI_small", b1WAI_small(i))
+        call putConfigREAL("b2WAI_small", b2WAI_small(i))
+        call putConfigREAL("b1WAI_large", b1WAI_large(i))
+        call putConfigREAL("b2WAI_large", b2WAI_large(i))
+        call putConfigREAL("brf_wd"     , brf_wd     (i))
 
      !! BARK/SAPWOOD THICKNESS
         call putConfigREAL("qrhob",   qrhob(i))

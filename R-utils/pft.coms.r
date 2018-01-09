@@ -656,8 +656,10 @@ pft01 = list( name               = "C4 grass"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -724,8 +726,10 @@ pft02 = list( name               = "Early tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -792,8 +796,10 @@ pft03 = list( name               = "Mid tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -860,8 +866,10 @@ pft04 = list( name               = "Late tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -928,8 +936,10 @@ pft05 = list( name               = "Temperate C3 Grass"
             , hgt.ref            = 0.0
             , b1Ht               = 0.4778
             , b2Ht               = -0.750
-            , b1Bl               = 0.08
-            , b2Bl               = 1.00
+            , b1Bl.small         = 0.08
+            , b2Bl.small         = 1.00
+            , b1Bl.large         = 0.08
+            , b2Bl.large         = 1.00
             , b1Bs.small         = 1.e-5
             , b2Bs.small         = 1.0
             , b1Bs.large         = 1.e-5
@@ -996,8 +1006,10 @@ pft06 = list( name               = "North Pine"
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
             , b2Ht               = -0.03884
-            , b1Bl               = 0.024
-            , b2Bl               = 1.899
+            , b1Bl.small         = 0.024
+            , b2Bl.small         = 1.899
+            , b1Bl.large         = 0.024
+            , b2Bl.large         = 1.899
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -1064,8 +1076,10 @@ pft07 = list( name               = "South Pine"
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
             , b2Ht               = -0.03884
-            , b1Bl               = 0.024
-            , b2Bl               = 1.899
+            , b1Bl.small         = 0.024
+            , b2Bl.small         = 1.899
+            , b1Bl.large         = 0.024
+            , b2Bl.large         = 1.899
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -1132,8 +1146,10 @@ pft08 = list( name               = "Late conifer"
             , hgt.ref            = 1.3
             , b1Ht               = 22.79
             , b2Ht               = -0.04445
-            , b1Bl               = 0.0454
-            , b2Bl               = 1.6829
+            , b1Bl.small         = 0.0454
+            , b2Bl.small         = 1.6829
+            , b1Bl.large         = 0.0454
+            , b2Bl.large         = 1.6829
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.1536
             , b1Bs.large         = 0.1617
@@ -1200,8 +1216,10 @@ pft09 = list( name               = "Early hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 22.6799
             , b2Ht               = -0.06534
-            , b1Bl               = 0.0129
-            , b2Bl               = 1.7477
+            , b1Bl.small         = 0.0129
+            , b2Bl.small         = 1.7477
+            , b1Bl.large         = 0.0129
+            , b2Bl.large         = 1.7477
             , b1Bs.small         = 0.02648
             , b2Bs.small         = 2.95954
             , b1Bs.large         = 0.02648
@@ -1268,8 +1286,10 @@ pft10 = list( name               = "Mid hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 25.18
             , b2Ht               = -0.04964
-            , b1Bl               = 0.048
-            , b2Bl               = 1.455
+            , b1Bl.small         = 0.048
+            , b2Bl.small         = 1.455
+            , b1Bl.large         = 0.048
+            , b2Bl.large         = 1.455
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.4572
             , b1Bs.large         = 0.1617
@@ -1336,8 +1356,10 @@ pft11 = list( name               = "Late hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 23.3874
             , b2Ht               = -0.05404
-            , b1Bl               = 0.017
-            , b2Bl               = 1.731
+            , b1Bl.small         = 0.017
+            , b2Bl.small         = 1.731
+            , b1Bl.large         = 0.017
+            , b2Bl.large         = 1.731
             , b1Bs.small         = 0.235
             , b2Bs.small         = 2.2518
             , b1Bs.large         = 0.235
@@ -1404,8 +1426,10 @@ pft15 = list( name               = "Araucaria"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1472,8 +1496,10 @@ pft16 = list( name               = "C3 grass"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1540,8 +1566,10 @@ pft17 = list( name               = "Liana"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1868,8 +1896,8 @@ pft$dbh.crit  = rep(NA,times=npft+1)
 for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
       if (iallom %in% c(0,1)){
-         pft$dbh.min [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
-         pft$dbh.crit[ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
+         pft$dbh.min  [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
+         pft$dbh.crit [ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
       }else if (iallom %in% c(2,3)){
          pft$dbh.min [ipft] = ( log(   pft$hgt.ref[ipft]
                                    / ( pft$hgt.ref[ipft] - pft$hgt.min[ipft]) )
@@ -1885,6 +1913,8 @@ for (ipft in sequence(npft)){
                                        / pft$b1Ht[ipft]) / pft$b2Ht[ipft] )
    }#end if
 }#end for
+#----- Initialise dbh.adult to be the same as dbh.crit.  This will change for iallom=3. ---#
+pft$dbh.adult = pft$dbh.crit
 #------------------------------------------------------------------------------------------#
 
 
@@ -1950,9 +1980,9 @@ for (ipft in sequence(npft)){
             #------------------------------------------------------------------------------#
          }else{
             #---- Based on a re-fit of the Chave et al. (2014) allometry. -----------------#
-            pft$b1Bs.small[ipft] = C2B * 0.1549521 * pft$rho[ipft]
-            pft$b2Bs.small[ipft] = 2.4818755
-            pft$b2Bs.large[ipft] = 1.9657980
+            pft$b1Bs.small[ipft] = C2B * 0.1684545 * pft$rho[ipft]
+            pft$b2Bs.small[ipft] = 2.4629283
+            pft$b2Bs.large[ipft] = 1.9670750
             pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
                                    ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
             #------------------------------------------------------------------------------#
@@ -2027,28 +2057,63 @@ for (ipft in sequence(npft)){
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(0,1)){
          #---- ED-2.1 allometry. ----------------------------------------------------------#
-         pft$b1Bl [ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
-         aux                   = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
+         pft$b1Bl.small[ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
+         aux                  = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
                                  + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
-         pft$b2Bl [ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
+         pft$b2Bl.small[ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
+         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
       }else if(iallom %in% c(2)){
-         pft$b1Bl [ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
-         pft$b2Bl [ipft] = nleaf[2]
+         pft$b1Bl.small[ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
+         pft$b2Bl.small[ipft] = nleaf[2]
+         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
       }else if(iallom %in% c(3)){
          #---------------------------------------------------------------------------------#
-         #    Use Xu et al. (2016) for trees, and a parameterised ratio for grasses that   #
-         # will make the individual-level LAI to go from 0.5 at minimum height to 3.5 at   #
-         # maximum height, which is similar to the numbers for temperate grasses.          #
+         #    Use L83 DBH-only equation for large trees, and a more modest exponential     #
+         # slope for seedlings to avoid tiny leaf biomass at shorter classes.  For 
+         # grasses, we apply a parameterised ratio for grasses that makes the individual-
+         # level LAI to go from 0.5 at minimum height to 3.5 at maximum height, which is 
+         # similar to the numbers for temperate grasses.                                   #
+         #                                                                                 #
+         # As a side note, these allometric equations diverge considerably at larger DBH   #
+         # values.                                                                         #
+         #                                                                                 #
+         # References:                                                                     #
+         #                                                                                 #
+         # Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau.     #
+         #    La phytomasse epigee d'une foret dense en Guyane Francaise.                  #
+         #    Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                                  #
+         #    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).                     #
+         #                                                                                 #
+         # Kenzo, T., R. Furutani, D. Hattori, J. J. Kendawang, S. Tanaka, K. Sakurai, and #
+         #    I. Ninomiya. Allometric equations for accurate estimation of above-ground    #
+         #    biomass in logged-over tropical rainforests in Sarawak, Malaysia.            #
+         #    J. For. Res., 14(6):365, Sep 2009. doi:10.1007/s10310-009-0149-1 (K09).      #
          #---------------------------------------------------------------------------------#
-         lclai.max       = ifelse(test=pft$grass[ipft],yes=2.0,no=7.0)
-         lclai.min       = 1.0
-         pft$b2Bl [ipft] = ( pft$b2Ca[ipft]
-                           + log(lclai.max/lclai.min)
-                           / log(pft$dbh.crit[ipft] / pft$dbh.min[ipft])
-                           )#end pft$b2Bl
-         pft$b1Bl [ipft] = ( lclai.min * C2B * pft$b1Ca[ipft] /pft$SLA[ipft]
-                           * pft$dbh.min[ipft]^(pft$b2Ca[ipft]-pft$b2Bl[ipft])
-                           )#end pft$b1Bl
+         if (pft$grass[ipft]){
+            lclai.max            = 3.0
+            lclai.min            = 1.0
+            pft$b2Bl.small[ipft] = ( pft$b2Ca[ipft]
+                                    + log(lclai.max/lclai.min)
+                                    / log(pft$dbh.crit[ipft] / pft$dbh.min[ipft])
+                                    )#end pft$b2Bl.small
+            pft$b1Bl.small[ipft] = ( lclai.min * C2B * pft$b1Ca[ipft] /pft$SLA[ipft]
+                                   * pft$dbh.min[ipft]
+                                   ^ (pft$b2Ca[ipft]-pft$b2Bl.small[ipft])
+                                   )#end pft$b1Bl
+            pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
+            pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
+         }else{
+            pft$b1Bl.large[ipft] = 0.02439842 * pft$SLA[3] / pft$SLA[ipft]
+            pft$b2Bl.large[ipft] = 1.86467176
+            pft$dbh.adult [ipft] = ( ( C2B * pft$b1Ca[ipft] 
+                                     / ( pft$SLA[ipft] * pft$b1Bl.large[ipft] ) )
+                                     ^ ( 1.0 / ( pft$b2Bl.large[ipft] - pft$b2Ca[ipft] ) ) )
+            pft$b1Bl.small[ipft] = C2B * pft$b1Ca[ipft] / pft$SLA[ipft]
+            pft$b2Bl.small[ipft] = pft$b2Ca[ipft]
+         }#end if
+         #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
    }#end if (pft$tropical[ipft]

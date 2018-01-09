@@ -20,22 +20,22 @@ desc.unit <<- function(desc,unit,bracket=TRUE,dxpr=FALSE){
       }#end if
    }else if (is.null(desc)){
       if (bracket){
-         answer = parse(text=paste("paste(\"[\",",unit,",\"]\")",sep=""))
+         answer = parse(text=paste0("paste(\"[\",",unit,",\"]\")"))
       }else{
-         answer = parse(text=paste("paste(\"\",",unit,",\"\")",sep=""))
+         answer = parse(text=paste0("paste(\"\",",unit,",\"\")"))
       }#end if
    }else{
       if (dxpr){
          if (bracket){
-            answer = parse(text=paste("paste(",desc,",\" [\",",unit,",\"]\")",sep=""))
+            answer = parse(text=paste0("paste(",desc,",\" [\",",unit,",\"]\")"))
          }else{
-            answer = parse(text=paste("paste(",desc,",\" \",",unit,",\"\")",sep=""))
+            answer = parse(text=paste0("paste(",desc,",\" \",",unit,",\"\")"))
          }#end if
       }else{
          if (bracket){
-            answer = parse(text=paste("paste(\"",desc,"\",\" [\",",unit,",\"]\")",sep=""))
+            answer = parse(text=paste0("paste(\"",desc,"\",\" [\",",unit,",\"]\")"))
          }else{
-            answer = parse(text=paste("paste(\"",desc,"\",\" \",",unit,",\"\")",sep=""))
+            answer = parse(text=paste0("paste(\"",desc,"\",\" \",",unit,",\"\")"))
          }#end if
       }#end if
    }#end if

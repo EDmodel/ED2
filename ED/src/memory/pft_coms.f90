@@ -477,18 +477,26 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Bs_large
    !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
    real   , dimension(n_pft)    :: b2Bs_large
-   !----- DBH-leaf allometry intercept. All PFTs ------------------------------------------!
-   real   , dimension(n_pft)    :: b1Bl
-   !----- DBH-leaf allometry slope for. All PFTs ------------------------------------------!
-   real   , dimension(n_pft)    :: b2Bl
+   !----- DBH-leaf allometry intercept for small-DBH cohorts. All PFTs. -------------------!
+   real   , dimension(n_pft)    :: b1Bl_small
+   !----- DBH-leaf allometry slope for small-DBH cohorts. All PFTs. -----------------------!
+   real   , dimension(n_pft)    :: b2Bl_small
+   !----- DBH-leaf allometry intercept for large-DBH cohorts. All PFTs. -------------------!
+   real   , dimension(n_pft)    :: b1Bl_large
+   !----- DBH-leaf allometry slope for large-DBH cohorts. All PFTs. -----------------------!
+   real   , dimension(n_pft)    :: b2Bl_large
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
    real   , dimension(n_pft)    :: b2Ca
-   !----- DBH-WAI allometry intercept. All PFTs -------------------------------------------!
-   real   , dimension(n_pft)    :: b1WAI
-   !----- DBH-WAI allometry slope. All PFTs -----------------------------------------------!
-   real   , dimension(n_pft)    :: b2WAI
+   !----- DBH-WAI allometry intercept for small-DBH cohorts. All PFTs. --------------------!
+   real   , dimension(n_pft)    :: b1WAI_small
+   !----- DBH-WAI allometry slope for small-DBH cohorts. All PFTs. ------------------------!
+   real   , dimension(n_pft)    :: b2WAI_small
+   !----- DBH-WAI allometry intercept for large-DBH cohorts. All PFTs. --------------------!
+   real   , dimension(n_pft)    :: b1WAI_large
+   !----- DBH-WAI allometry slope for large-DBH cohorts. All PFTs. ------------------------!
+   real   , dimension(n_pft)    :: b2WAI_large
    !----- DBH-bark thickness slope.  All PFTs. --------------------------------------------!
    real   , dimension(n_pft)    :: b1Xb
    !----- DBH-sapwood thickness slope.  All PFTs. -----------------------------------------!
@@ -497,12 +505,16 @@ module pft_coms
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
    real   , dimension(n_pft)    :: dbh_crit
+   !----- Critical DBH for height/bleaf, when plants switch from sapling to adult allom. --!
+   real   , dimension(n_pft)    :: dbh_adult
    !----- Prescribed DBH for the big leaf model, that allows a reasonable LAI/biomass. ----!
    real   , dimension(n_pft)    :: dbh_bigleaf
    !----- Minimum Bdead attainable by this PFT. -------------------------------------------!
    real   , dimension(n_pft)    :: min_bdead
    !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
    real   , dimension(n_pft)    :: bdead_crit
+   !----- Critical Bleaf, when plants switch from sapling to adult allom. -----------------!
+   real   , dimension(n_pft)    :: bleaf_adult
    !----- Critical Bwood, maximum allocation to woody tissues. ----------------------------!
    real   , dimension(n_pft)    :: bwood_crit
    !----- Critical balive, maximum allocation to living tissues. --------------------------!

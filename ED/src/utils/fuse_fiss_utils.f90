@@ -882,6 +882,7 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
 
 
+
          !---------------------------------------------------------------------------------!
          !      In case we met maxcohort goals or in case tolerance exceeded the maximum,  !
          ! interrupt cohort fusion.                                                        !
@@ -1638,7 +1639,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !      Find DBH and height.  Make sure that carbon is conserved.                     !
       !------------------------------------------------------------------------------------!
-      if (is_grass(cpatch%pft(donc)) .and. igrass == 1) then
+      if (is_grass(cpatch%pft(recc)) .and. igrass == 1) then
           !----- New grass scheme, use bleaf then find DBH and height. --------------------!
           cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
           cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
