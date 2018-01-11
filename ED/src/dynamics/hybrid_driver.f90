@@ -405,6 +405,7 @@ module hybrid_driver
                                 , t3ple8                    & ! intent(in)
                                 , tsupercool_liq8               & ! intent(in)
                                 , wdnsi8                    ! ! intent(in)
+      use bdf2_solver    , only : bdf2_integ                ! ! sub-routine
       implicit none
       !----- Arguments ----------------------------------------------------------!
       type(sitetype)            , target      :: csite   ! Current site
@@ -542,7 +543,7 @@ module hybrid_driver
             !--------------------------------------------------------------------!
             !   Integrate the implicit/backwards step                            !
             !--------------------------------------------------------------------!
-            call bdf2_solver(ibuff,cpatch,yprev,initp,ytemp,dinitp,h, &
+            call bdf2_integ(ibuff,cpatch,yprev,initp,ytemp,dinitp,h, &
                  dble(csite%hprev(ipa)))
 
             !----- Perform a sanity check on canopy,leaf and wood stuff ---------!

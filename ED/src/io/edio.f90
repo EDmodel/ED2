@@ -30,6 +30,7 @@ module edio
                               , zero_ed_qmean_vars      & ! sub-routine
                               , zero_ed_qmean_vars      & ! sub-routine
                               , zero_ed_yearly_vars     ! ! sub-routine
+      use ed_print     , only : print_fields            ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       logical, intent(in)  :: analysis_time

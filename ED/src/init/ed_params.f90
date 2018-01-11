@@ -5185,9 +5185,12 @@ subroutine init_can_air_params()
 
 
    !----- Parameters for the z0m:z0h ratio, following Zeng and Dickinson (1998). ----------!
-   zd98_a    = 0.13 * tprandtl
-   zd98_b    = 0.45
-   zd98_emax = 10.
+   zd98_a     = 0.13 * tprandtl
+   zd98_b     = 0.45
+   zd98_emax  = 10.
+   zd98_a8    = dble(zd98_a   )
+   zd98_b8    = dble(zd98_b   )
+   zd98_emax8 = dble(zd98_emax)
    !---------------------------------------------------------------------------------------!
 
 

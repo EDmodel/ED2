@@ -4027,9 +4027,6 @@
                                      ,       "leaf.gpp")
                           , stringsAsFactors = FALSE
                           )#end vname
-   scen.szpft = data.frame( vname = c(            "gpp",       "leaf.gpp")
-                          , stringsAsFactors = FALSE
-                          )#end vname
    #---------------------------------------------------------------------------------------#
 
 

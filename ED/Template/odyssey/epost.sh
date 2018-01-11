@@ -59,6 +59,9 @@ rscpath="${HOME}/EDBRAMS/R-utils"
 rlibs="${HOME}/R"
 #----- bashrc (usually ${HOME}/.bashrc). --------------------------------------------------#
 initrc="${HOME}/.bashrc"
+#----- Initialisation scripts. ------------------------------------------------------------#
+optsrc="-n"                   # Option for .bashrc (for special submission settings)
+                              #   In case none is needed, leave it blank ("").
 #----- Settings for this group of polygons. -----------------------------------------------#
 global_queue=""               # Queue
 partial=false                 # Partial submission (false will ignore polya and npartial
@@ -483,7 +486,7 @@ echo "echo \"\""                                                               >
 echo "echo \"\""                                                               >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo "#--- Load modules and settings."                                         >> ${sbatch}
-echo ". \${HOME}/.bashrc"                                                      >> ${sbatch}
+echo ". \${HOME}/.bashrc ${optsrc}"                                            >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo "#----- Task list."                                                       >> ${sbatch}
 #------------------------------------------------------------------------------------------#

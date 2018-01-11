@@ -48,6 +48,7 @@ module vegetation_dynamics
       use update_derived_utils , only : update_workload               & ! sub-routine
                                       , update_polygon_derived_props  ! ! sub-routine
       use fusion_fission_coms  , only : ifusion                       ! ! intent(in)
+      use fire                 , only : fire_frequency                ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       logical          , intent(in)   :: new_month    !< First dtlsm of a new month?

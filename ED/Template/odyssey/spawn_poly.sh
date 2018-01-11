@@ -11,7 +11,8 @@ moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
 #----- Original and scratch main data paths. ----------------------------------------------#
-d_path="/n/regal/moorcroft_lab/mlongo/data"
+#d_path="/n/home00/mlongo/data"
+d_path="/n/moorcroftfs5/mlongo/data"
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit="${d_path}/ed2_data/site_bio_data"
 alsinit="${d_path}/ed2_data/lidar_bio_data"
@@ -35,7 +36,7 @@ packdatasrc="${d_path}/to_scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
 lumain="${d_path}/ed2_data/land_use"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
-copy2scratch=true
+copy2scratch=false
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#

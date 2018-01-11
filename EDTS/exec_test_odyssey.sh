@@ -74,6 +74,27 @@ DATAPATH="/n/regal/moorcroft_lab/mlongo/data/edts_datasets"
 
 
 
+#------------------------------------------------------------------------------------------#
+#  RC_OPTS -- Optional argument to pass to .bashrc.  This only matters if you based your   #
+#             .bashrc on MLO's file.  It allows the job to load different modules on       #
+#             odyssey.  Otherwise, you can leave it blank, then the jobs will load the     #
+#             default configuration.                                                       #
+#------------------------------------------------------------------------------------------#
+RC_OPTS="-n"
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#  MPI_TYPE -- Type of mpi that the code should use.  For a list of options type           #
+#              srun --mpi=list in the terminal prompt, and pick the one that is consistent #
+#              with you compilation instructions.                                          #
+#------------------------------------------------------------------------------------------#
+MPI_TYPE="pmi2"
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------------------------------------------------------------------------------------------#
 #     The following flags are switches to decide which sites to run.  You should           #
@@ -637,8 +658,8 @@ fi
 subbatch="${HERE}/${VERSION}/submit_batch.sh"
 /bin/rm -f ${subbatch}
 touch ${subbatch}
-echo "#!/bin/bash"       >> ${subbatch}
-echo ". ${HOME}/.bashrc" >> ${subbatch}
+echo "#!/bin/bash"                  >> ${subbatch}
+echo ". ${HOME}/.bashrc ${RC_OPTS}" >> ${subbatch}
 #------------------------------------------------------------------------------------------#
 
 
@@ -889,9 +910,9 @@ do
          jobname=${VERSION}_${SITEID[i]}_main
          jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
          jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
-         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+         jobwrap="${jobwrap}; ${LNK_MAIN_EXE} -f ${FILEMAIN}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -914,9 +935,9 @@ do
          jobname=${VERSION}_${SITEID[i]}_test
          jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
          jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
-         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
+         jobwrap="${jobwrap}; ${LNK_TEST_EXE} -f ${FILETEST}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -939,9 +960,9 @@ do
          jobname=${VERSION}_${SITEID[i]}_dbug
          jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
          jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
-         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+         jobwrap="${jobwrap}; ${LNK_DBUG_EXE} -f ${FILEDBUG}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -1192,9 +1213,9 @@ do
          jobname=${VERSION}_${HIFRID[i]}_main
          jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
          jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
-         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+         jobwrap="${jobwrap}; ${LNK_MAIN_EXE} -f ${FILEMAIN}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -1217,9 +1238,9 @@ do
          jobname=${VERSION}_${HIFRID[i]}_test
          jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
          jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
-         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
+         jobwrap="${jobwrap}; ${LNK_TEST_EXE} -f ${FILETEST}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -1242,9 +1263,9 @@ do
          jobname=${VERSION}_${HIFRID[i]}_dbug
          jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
          jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
-         jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+         jobwrap="${jobwrap}; ${LNK_DBUG_EXE} -f ${FILEDBUG}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -1496,6 +1517,26 @@ do
 
 
       #------------------------------------------------------------------------------------#
+      #    Define the MPI command based on the MPI Type.                                   #
+      #------------------------------------------------------------------------------------#
+      case ${MPI_TYPE} in
+      none)
+         MPI_COMM="mpirun -np ${GRIDCPU[i]}"
+         ;;
+      mpichmx|pmi2|mpich1_shmem|mpichgm|lam|mpich1_p4|mvapic|openmpi)
+         MPI_COMM=""
+         ;;
+      *)
+         echo " Invalid mpi type: ${MPI_TYPE}."
+         echo " Please check options using srun --mpi=type"
+         exit 1
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
       case ${SUBMIT_MAIN} in
@@ -1504,10 +1545,10 @@ do
          joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_main
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} --mpi=${MPI_TYPE}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
-         jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+         jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -1529,10 +1570,10 @@ do
          joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_test
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} --mpi=${MPI_TYPE}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
-         jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_TEST_EXE} -f ${FILETEST}"
+         jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_TEST_EXE} -f ${FILETEST}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -1554,10 +1595,10 @@ do
          joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_dbug
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
-         jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} --mpi=${MPI_TYPE}"
+         jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
-         jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+         jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_DBUG_EXE} -f ${FILEDBUG}"
          jobwrap="\"(${jobwrap})\""
          jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
          jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
