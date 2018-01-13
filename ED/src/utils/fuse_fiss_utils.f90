@@ -581,6 +581,7 @@ module fuse_fiss_utils
       use fusion_fission_coms , only : niter_cohfus        & ! intent(in)
                                      , coh_size_tol_min    & ! intent(in)
                                      , coh_size_tol_mult   & ! intent(in)
+                                     , coh_size_tol_max    & ! intent(in)
                                      , lai_tol             ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
@@ -774,11 +775,11 @@ module fuse_fiss_utils
 
                !---------------------------------------------------------------------------!
                !      In case this is the initialisation, we also check whether the donor  !
-               ! LAI is so small that it would be turned off.  In case so, we ignore the   !
-               ! size requirement and fuse them.  This reduces the number of initial       !
-               ! cohorts that would be killed otherwise just because of small population.  !
-               ! This situation frequently occurs when large plots or airborne lidar are   !
-               ! used to initialise the model.                                             !
+               ! LAI is so small that it would be turned off.  In case so, we relax the    !
+               ! size requirement to the maximum acceptable and fuse them.  This reduces   !
+               ! the number of initial cohorts that would be killed otherwise just because !
+               ! of small population.  This situation frequently occurs when large plots   !
+               ! or airborne lidar are used to initialise the model.                       !
                !---------------------------------------------------------------------------!
                if (fuse_initial .and. (.not. dr_may_fuse)) then
                   !------------------------------------------------------------------------!
@@ -803,7 +804,7 @@ module fuse_fiss_utils
                   donc_bleaf_max = size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)
                   donc_bsapa_max = agf_bs(dpft)                                            &
                                  * donc_bleaf_max * qsw  (dpft) * cpatch%hite(donc)
-                  recc_bbark_max = donc_bleaf_max * qbark(dpft) * cpatch%hite(donc)
+                  donc_bbark_max = donc_bleaf_max * qbark(dpft) * cpatch%hite(donc)
                   call calc_veg_hcap(donc_bleaf_max,cpatch%bdead(donc),donc_bsapa_max      &
                                     ,donc_bbark_max,cpatch%nplant(donc),dpft               &
                                     ,donc_lhcap_max,donc_whcap_max)
@@ -814,8 +815,12 @@ module fuse_fiss_utils
                   !     In case heat capacity is less than minimum, ignore the size        !
                   ! similarity and fuse the cohort.                                        !
                   !------------------------------------------------------------------------!
-                  dr_may_fuse = ( recc_lhcap_max < veg_hcap_min(rpft) ) .or.               &
-                                ( donc_lhcap_max < veg_hcap_min(dpft) )
+                  diff_dbh    = abs ( cpatch%dbh (donc) - cpatch%dbh (recc) )
+                  diff_hgt    = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
+                  dr_may_fuse = ( ( recc_lhcap_max < veg_hcap_min(rpft) ) .or.             &
+                                  ( donc_lhcap_max < veg_hcap_min(dpft) )         ) .and.  &
+                                ( diff_dbh < (dbh_crit(dpft)  * coh_size_tol_max) ) .and.  &
+                                ( diff_hgt < (hgt_max (dpft)  * coh_size_tol_max) )
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
