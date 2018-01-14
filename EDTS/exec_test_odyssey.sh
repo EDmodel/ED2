@@ -85,16 +85,6 @@ RC_OPTS="-n"
 
 
 
-#------------------------------------------------------------------------------------------#
-#  MPI_TYPE -- Type of mpi that the code should use.  For a list of options type           #
-#              srun --mpi=list in the terminal prompt, and pick the one that is consistent #
-#              with you compilation instructions.                                          #
-#------------------------------------------------------------------------------------------#
-MPI_TYPE="pmi2"
-#------------------------------------------------------------------------------------------#
-
-
-
 
 #------------------------------------------------------------------------------------------#
 #     The following flags are switches to decide which sites to run.  You should           #
@@ -1519,19 +1509,7 @@ do
       #------------------------------------------------------------------------------------#
       #    Define the MPI command based on the MPI Type.                                   #
       #------------------------------------------------------------------------------------#
-      case ${MPI_TYPE} in
-      none)
-         MPI_COMM="mpirun -np ${GRIDCPU[i]}"
-         ;;
-      mpichmx|pmi2|mpich1_shmem|mpichgm|lam|mpich1_p4|mvapic|openmpi)
-         MPI_COMM=""
-         ;;
-      *)
-         echo " Invalid mpi type: ${MPI_TYPE}."
-         echo " Please check options using srun --mpi=type"
-         exit 1
-         ;;
-      esac
+      MPI_COMM="mpirun -np ${GRIDCPU[i]}"
       #------------------------------------------------------------------------------------#
 
 
@@ -1545,7 +1523,7 @@ do
          joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_main
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} --mpi=${MPI_TYPE}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
          jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
          jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
@@ -1570,7 +1548,7 @@ do
          joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_test
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} --mpi=${MPI_TYPE}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
          jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
          jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_TEST_EXE} -f ${FILETEST}"
@@ -1595,7 +1573,7 @@ do
          joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_dbug
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} --mpi=${MPI_TYPE}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
          jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
          jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_DBUG_EXE} -f ${FILEDBUG}"

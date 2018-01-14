@@ -1120,6 +1120,7 @@ module farq_leuning
             !------------------------------------------------------------------------------!
             if (ciz < cimin .or. ciz > cimax) then
                !----- This guess went off-bounds, we give up on Newton's. -----------------!
+               converged = .false.
                exit newloop
             elseif (converged) then
                !----- Converged, find the root as the mid-point. --------------------------!
@@ -1486,7 +1487,7 @@ module farq_leuning
                                                        ,co2_demand,co2_demand_prime)
          !----- Function components. ------------------------------------------------------!
          eprime1 = ( stom_cond_h2o_prime * co2_demand                                      &
-                   - co2_demand_prime * (stom_cond_h2o - thispft(ib)%b) )                      &
+                   - co2_demand_prime * (stom_cond_h2o - thispft(ib)%b) )                  &
                  / (thispft(ib)%m * co2_demand * co2_demand)
 
          eprime2 = - co2_demand_prime / met(ib)%blyr_cond_co2
