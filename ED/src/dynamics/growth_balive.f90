@@ -192,8 +192,12 @@ module growth_balive
                      cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
                                             - cpatch%sapa_storage_resp(ico)
                   case(1)
-                     storage_resp_int = cpatch%bstorage(ico) / cpatch%balive(ico)          &
+                     if (cpatch%balive(ico) >= tiny_num) then
+                        storage_resp_int = cpatch%bstorage(ico) / cpatch%balive(ico)       &
                                       * storage_turnover_rate(ipft) * tfact * temp_dep
+                     else
+                        storage_resp_int = 0.0
+                     end if
 
                      cpatch%leaf_storage_resp(ico) = storage_resp_int *cpatch%bleaf(ico)
                      cpatch%root_storage_resp(ico) = storage_resp_int *cpatch%broot(ico)
@@ -242,9 +246,12 @@ module growth_balive
                      cpatch%sapb_growth_resp(ico) = 0.0
                      cpatch%bark_growth_resp(ico) = 0.0
                   case(1)
-                     growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft)    &
+                     if (cpatch%balive(ico) >= tiny_num) then
+                        growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft) &
                                                              / cpatch%balive(ico))
-
+                     else
+                        growth_resp_int = 0.0
+                     end if
                      cpatch%leaf_growth_resp(ico) = growth_resp_int * cpatch%bleaf    (ico)
                      cpatch%root_growth_resp(ico) = growth_resp_int * cpatch%broot    (ico)
                      cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%bsapwooda(ico)
@@ -1077,11 +1084,19 @@ module growth_balive
             !------------------------------------------------------------------------------!
             bloss_max   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bbark(ico)        &
                         + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)
-            f_bleaf     = cpatch%bleaf    (ico) / bloss_max
-            f_broot     = cpatch%broot    (ico) / bloss_max
-            f_bbark     = cpatch%bbark    (ico) / bloss_max
-            f_bsapwooda = cpatch%bsapwooda(ico) / bloss_max
-            f_bsapwoodb = cpatch%bsapwoodb(ico) / bloss_max
+            if (bloss_max >= tiny_num) then
+               f_bleaf     = cpatch%bleaf    (ico) / bloss_max
+               f_broot     = cpatch%broot    (ico) / bloss_max
+               f_bbark     = cpatch%bbark    (ico) / bloss_max
+               f_bsapwooda = cpatch%bsapwooda(ico) / bloss_max
+               f_bsapwoodb = cpatch%bsapwoodb(ico) / bloss_max
+            else
+               f_bleaf     = 0.
+               f_broot     = 0.
+               f_bbark     = 0.
+               f_bsapwooda = 0.
+               f_bsapwoodb = 0.
+            end if
 
             if (bloss_max > carbon_debt) then
                !----- Remove biomass accordingly. -----------------------------------------!
