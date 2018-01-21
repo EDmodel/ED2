@@ -31,7 +31,6 @@ notifications:
 
 ## install packages needed
 before_install:
-  sudo apt-get -qq update
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get -qq update; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get install gfortran-${FORTRAN} ibopenmpi-dev libhdf5-openmpi-dev; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
