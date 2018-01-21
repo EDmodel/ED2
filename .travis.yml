@@ -4,7 +4,7 @@ language: c
 ## OS to be used when compiling
 dist: 
   - linux
-  - osx
+#  - osx
 
 ## notifications should go to gitter
 notifications:
@@ -12,13 +12,17 @@ notifications:
     on_success: always
     on_failure: always
 
-## list packages needed to be installed
+## list packages needed to be installed (linux/ubuntu)
 addons:
   apt:
     - gfortran
     - hdf5-tools 
     - libopenmpi-dev 
     - libhdf5-openmpi-dev 
+
+## install packages needed using brew on osx
+install:
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gfortran hdf5 openmpi; fi
 
 ## actually build ED2
 script:
