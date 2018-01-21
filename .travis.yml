@@ -1,14 +1,27 @@
+## Use C environment
 language: c
-sudo: required
 
-before_install:
-    - sudo apt-get clean && sudo apt-get update
-    - sudo apt-get install gcc gfortran hdf5-tools libopenmpi-dev libhdf5-openmpi-dev 
-    - which gfortran
-    - which gcc
-    - which h5dump
+## OS to be used when compiling
+dist: 
+  - linux
+  - osx
 
+## notifications should go to gitter
+notifications:
+  email:
+    on_success: always
+    on_failure: always
+
+## list packages needed to be installed
+addons:
+  apt:
+    - gfortran
+    - hdf5-tools 
+    - libopenmpi-dev 
+    - libhdf5-openmpi-dev 
+
+## actually build ED2
 script:
-    - pwd
-    - cd ED/build/
-    - ./install.sh -k C -p travisci -g
+  - set -e
+  - cd ED/build/
+  - ./install.sh -k C -p travisci -g
