@@ -3,8 +3,20 @@ language: c
 
 ## OS to be used when compiling
 dist: 
-  - linux
+  - trusty
 #  - osx
+
+## No need for root
+#sudo: false
+
+## Different builds
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+#      sudo: required
+#    - os: osx
+#      osx_image: xcode7.2
 
 ## notifications should go to gitter
 notifications:
@@ -12,13 +24,14 @@ notifications:
     on_success: always
     on_failure: always
 
-## list packages needed to be installed (linux/ubuntu)
+## list packages needed to be installed (trusty)
 addons:
   apt:
-    - gfortran
-    - hdf5-tools 
-    - libopenmpi-dev 
-    - libhdf5-openmpi-dev 
+    packages:
+      - gfortran
+      - hdf5-tools 
+      - libopenmpi-dev 
+      - libhdf5-openmpi-dev 
 
 ## install packages needed using brew on osx
 #install:
