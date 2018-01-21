@@ -1,41 +1,41 @@
 ## Use C environment
 language: c
 
-## OS to be used when compiling
-dist: 
-  - trusty
-#  - osx
-
-## No need for root
-#sudo: false
-
 ## Different builds
 matrix:
   include:
     - os: linux
       dist: trusty
-#      sudo: required
+      env: FORTRAN=4.7
+      sudo: required
+    - os: linux
+      dist: trusty
+      env: FORTRAN=4.8
+      sudo: required
+    - os: linux
+      dist: trusty
+      env: FORTRAN=4.9
+      sudo: required
+    - os: linux
+      dist: trusty
+      env: FORTRAN=5
+      sudo: required
 #    - os: osx
 #      osx_image: xcode7.2
 
-## notifications should go to gitter
+## notifications on build success/failure
 notifications:
   email:
     on_success: always
     on_failure: always
 
-## list packages needed to be installed (trusty)
-addons:
-  apt:
-    packages:
-      - gfortran
-      - hdf5-tools 
-      - libopenmpi-dev 
-      - libhdf5-openmpi-dev 
-
-## install packages needed using brew on osx
-#install:
-#  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gfortran hdf5 openmpi; fi
+## install packages needed
+before_install:
+  sudo apt-get -qq update
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get -qq update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then apt-get install gfortran-${FORTRAN} ibopenmpi-dev libhdf5-openmpi-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gfortran hdf5 openmpi; fi
 
 ## actually build ED2
 script:
