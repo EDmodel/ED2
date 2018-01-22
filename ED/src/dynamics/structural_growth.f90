@@ -113,6 +113,7 @@ subroutine structural_growth(cgrid, month)
    end if
    !---------------------------------------------------------------------------------------!
 
+   h_edge = 0.5
 
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
