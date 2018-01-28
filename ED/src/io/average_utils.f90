@@ -1,6 +1,7 @@
 !==========================================================================================!
 !==========================================================================================!
-!     This module contains sub-routines used to create the averaged output variables.      !
+! MODULE: AVERAGE_UTILS
+!> \brief This module contains sub-routines used to create the averaged output variables.
 !------------------------------------------------------------------------------------------!
 module average_utils
 
@@ -19,8 +20,9 @@ module average_utils
    !                           |----------------------------------|                        !
    !=======================================================================================!
    !=======================================================================================!
-   !     The following subroutine finds the polygon averages from site-, patch-, and       !
-   ! cohort-level properties that have fmean variables associated.                         !
+   !  SUBROUTINE: AGGREGATE_POLYGON_FMEAN
+   !> \brief The following subroutine finds the polygon averages from site-, patch-, and
+   !> cohort-level properties that have fmean variables associated.
    !---------------------------------------------------------------------------------------!
    subroutine aggregate_polygon_fmean(cgrid)
       use ed_state_vars         , only : edtype             & ! structure
@@ -768,8 +770,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine increments the time averaged site met-forcing variables.  The     !
-   ! polygon-level averages are found after the site-level are normalised.                 !
+   !  SUBROUTINE: INTEGRATE_ED_FMEAN_MET_VARS
+   !> \brief This subroutine increments the time averaged site met-forcing variables.  The
+   !> polygon-level averages are found after the site-level are normalised.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_fmean_met_vars(cgrid)
       use ed_state_vars  , only : edtype          & ! structure
@@ -865,8 +868,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !       The following sub-routine scales several variables that are integrated during   !
-   ! one output step (frqsum) to actual rates, and find derived properties.                !
+   !  SUBROUTINE: NORMALIZE_ED_FMEAN_VARS 
+   !> \brief The following sub-routine scales several variables that are integrated during
+   !> one output step (frqsum) to actual rates, and find derived properties.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_fmean_vars(cgrid)
       use grid_coms    , only : nzg                ! ! intent(in)
@@ -1621,14 +1625,15 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine integrates most of the daily averages.  This is called after the   !
-   ! "fmean" variables are normalised, so we take advantage of these "fmean" variables.    !
+   !  SUBROUTINE: INTEGRATE_ED_DMEAN_VARS 
+   !> \brief This subroutine integrates most of the daily averages.  This is called after
+   !> the "fmean" variables are normalised, so we take advantage of these "fmean" variables.    
    !                                                                                       !
-   !    A few variables are _NOT_ integrated here:                                         !
-   ! 1. Variables that should be integrated only during daylight hours                     !
-   ! 2. The NPP breakdown variables are integrated in a separate routine                   !
-   ! 3. Variables such as temperature and liquid fraction, which are found after the daily !
-   !    means are normalised.                                                              !
+   !> \details A few variables are _NOT_ integrated here:\n
+   !> 1. Variables that should be integrated only during daylight hours\n
+   !> 2. The NPP breakdown variables are integrated in a separate routine\n
+   !> 3. Variables such as temperature and liquid fraction, which are found after the daily
+   !>    means are normalised.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_dmean_vars(cgrid)
       use ed_state_vars        , only : edtype              & ! structure
@@ -2442,11 +2447,12 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will scale the daily averages of GPP and some respiration vari-   !
-   ! ables to normal units.  These variables are not for output, so they are done          !
-   ! separatedly.  There are also some output variables here, because these depend on the  !
-   ! average of the gpp, and leaf and root respiration and would need to be calculated     !
-   ! again otherwise.                                                                      !
+   !  SUBROUTINE: NORMALIZE_ED_TODAY_VARS 
+   !> \brief This subroutine will scale the daily averages of GPP and some respiration
+   !> variables to normal units.  These variables are not for output, so they are done
+   !> separatedly.  There are also some output variables here, because these depend on the
+   !> average of the gpp, and leaf and root respiration and would need to be calculated
+   !> again otherwise.                                                                      !
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_today_vars(cgrid)
       use ed_state_vars , only : edtype        & ! structure
@@ -2540,7 +2546,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will scale the daily NPP allocation terms                         !
+   !  SUBROUTINE: NORMALIZE_ED_TODAYNPP_VARS
+   !> \brief This subroutine will scale the daily NPP allocation terms
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_todayNPP_vars(cgrid)
       use ed_state_vars , only : edtype        & ! structure
@@ -2609,9 +2616,10 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine normalises the daily mean variables of those variables that could  !
-   ! not be integrated directly.  This includes temperatures, polygon-level budget vari-   !
-   ! ables, and variables that are defined during daytime only.                            !
+   !  SUBROUTINE: NORMALIZE_ED_DMEAN_VARS   
+   !> \brief This subroutine normalises the daily mean variables of those variables that
+   !> could not be integrated directly.  This includes temperatures, polygon-level budget
+   !> variables, and variables that are defined during daytime only.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_dmean_vars(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
@@ -3102,8 +3110,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the daily_averages for variables actually used in the       !
-   ! integration.                                                                          !
+   !  SUBROUTINE: ZERO_ED_TODAY_VARS        
+   !> \brief This subroutine resets the daily_averages for variables actually used in the
+   !> integration.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_today_vars(cgrid)
       use ed_state_vars, only : edtype       & ! structure
@@ -3173,8 +3182,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the daily averages once the daily average file has been     !
-   ! written and used to compute the monthly mean (in case the latter was requested).      !
+   !  SUBROUTINE: ZERO_ED_DMEAN_VARS        
+   !> \brief This subroutine resets the daily averages once the daily average file has been
+   !> written and used to compute the monthly mean (in case the latter was requested).
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_dmean_vars(cgrid)
       use ed_state_vars, only : edtype        & ! structure
@@ -3563,14 +3573,15 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine integrates most of the monthly mean variables.  This sub-routine   !
-   ! is called after the dmean variables have been normalised, so we can take advantage of !
-   ! their values.                                                                         !
-   !    A few variables are _NOT_ integrated here: quantities such as temperature and      !
-   ! liquid fraction are found after the monthly mean of the extensive quantities have     !
-   ! been normalised. Also, polygon-level variables that were not integrated to the daily  !
-   ! means are not integrated here, they are found after the monthly mean at the native    !
-   ! level has been found.                                                                 !
+   !  SUBROUTINE: INTEGRATE_ED_MMEAN_VARS   
+   !> \brief This subroutine integrates most of the monthly mean variables. This sub-routine   
+   !> is called after the dmean variables have been normalised, so we can take advantage of
+   !> their values.\n
+   !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the monthly mean of the extensive quantities have
+   !> been normalised. Also, polygon-level variables that were not integrated to the daily
+   !> means are not integrated here, they are found after the monthly mean at the native
+   !> level has been found.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_mmean_vars(cgrid)
       use ed_state_vars, only : edtype        & ! structure
@@ -4811,9 +4822,10 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine normalises the daily mean variables of those variables that could  !
-   ! not be integrated directly.  This includes temperatures, liquid fraction, and soil    !
-   ! matric potential.                                                                     !
+   !  SUBROUTINE: NORMALIZE_ED_MMEAN_VARS   
+   !> \brief This subroutine normalises the daily mean variables of those variables that
+   !> could not be integrated directly.  This includes temperatures, liquid fraction, and
+   !> soil matric potential.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_mmean_vars(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
@@ -5140,8 +5152,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the monthly averages for variables actually used in the     !
-   ! integration.                                                                          !
+   !  SUBROUTINE: ZERO_ED_MMEAN_VARS        
+   !> \brief This subroutine resets the monthly averages for variables actually used in the
+   !> integration.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_mmean_vars(cgrid)
       use ed_state_vars  , only : edtype         & ! structure
@@ -5626,13 +5639,14 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine integrates most of the mean diel variables.  This subroutine is    !
-   ! called after the fmean variables have been normalised, so we can take advantage of    !
-   ! their values.                                                                         !
+   !  SUBROUTINE: INTEGRATE_ED_QMEAN_VARS   
+   !> \brief This subroutine integrates most of the mean diel variables.  This subroutine is
+   !> called after the fmean variables have been normalised, so we can take advantage of
+   !> their values.
    !                                                                                       !
-   !    A few variables are _NOT_ integrated here: quantities such as temperature and      !
-   ! liquid fraction are found after the mean diel of the extensive variables have been    !
-   ! normalised.                                                                           !
+   !> \brief A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the mean diel of the extensive variables have been
+   !> normalised.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_qmean_vars(cgrid)
       use ed_state_vars, only : edtype              & ! structure
@@ -6625,9 +6639,10 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine normalises the daily mean variables of those variables that could  !
-   ! not be integrated directly.  These are pretty much just temperature, density, and     !
-   ! liquid water fraction.                                                                !
+   !  SUBROUTINE: NORMALIZE_ED_QMEAN_VARS   
+   !> \brief This subroutine normalises the daily mean variables of those variables that could
+   !> not be integrated directly.  These are pretty much just temperature, density, and
+   !> liquid water fraction.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_qmean_vars(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
@@ -6971,7 +6986,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the mean diel once the "Q" file has been written.           !
+   !  SUBROUTINE: ZERO_ED_QMEAN_VARS        
+   !> \brief This subroutine resets the mean diel once the "Q" file has been written.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_qmean_vars(cgrid)
       use ed_state_vars, only : edtype        & ! structure
@@ -7386,7 +7402,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This sub-routine updates the yearly variables.                                   !
+   !  SUBROUTINE: UPDATE_ED_YEARLY_VARS     
+   !> \brief This sub-routine updates the yearly variables.
    !---------------------------------------------------------------------------------------!
    subroutine update_ed_yearly_vars(cgrid)
 
@@ -7541,7 +7558,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This sub-routine re-sets the yearly variables.                                   !
+   !  SUBROUTINE: ZERO_ED_YEARLY_VARS       
+   !> \brief This sub-routine re-sets the yearly variables.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_yearly_vars(cgrid)
 

@@ -423,6 +423,11 @@ photosyn_driv.o : $(ED_DYNAMICS)/photosyn_driv.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+plant_hydro.o : $(ED_DYNAMICS)/plant_hydro.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 physiology_coms.o : $(ED_MEMORY)/physiology_coms.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)

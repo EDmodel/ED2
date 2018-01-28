@@ -19,6 +19,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
                             , vm0_amp             & ! intent(in)
                             , vm0_min             & ! intent(in)
                             , llspan_inf          ! ! intent(in)
+   use plant_hydro   , only : psi2rwc             & ! subroutine
+                            , rwc2tw              ! ! subroutine 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -67,6 +69,28 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%sla(ico) = sla(cpatch%pft(ico))
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Start variables related with plant hydraulics                                     !
+   !---------------------------------------------------------------------------------------!
+   ! start the water potential with ~-0.1MPa, assuming the plant is under
+   ! well-watered conditions
+   cpatch%leaf_psi      (  ico) = -10. ! in m
+   cpatch%wood_psi      (  ico) = -10. ! in m
+
+   ! convert water potential to relative water content
+   call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)                  &
+               ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+   ! convert relative water content to total water content
+   call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                                   &
+              ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico),cpatch%pft(ico)       &
+              ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+
+   ! start the fluxes to be 0.
+   cpatch%wflux_gw      (  ico) = 0.
+   cpatch%wflux_wl      (  ico) = 0.
+   cpatch%wflux_gw_layer(:,ico) = 0.
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Start the fraction of open stomata with 1., since this is the most likely value   !
@@ -301,6 +325,18 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
    cpatch%fmean_lai               (ico) = 0.0
    cpatch%fmean_bdead             (ico) = 0.0
+   
+   cpatch%fmean_leaf_psi          (ico) = 0.0
+   cpatch%fmean_wood_psi          (ico) = 0.0
+   cpatch%fmean_leaf_water_int    (ico) = 0.0
+   cpatch%fmean_wood_water_int    (ico) = 0.0
+   cpatch%fmean_wflux_gw          (ico) = 0.0
+   cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
+   cpatch%fmean_wflux_wl          (ico) = 0.0
+   cpatch%dmax_leaf_psi           (ico) = 0.0
+   cpatch%dmin_leaf_psi           (ico) = 0.0
+   cpatch%dmax_wood_psi           (ico) = 0.0
+   cpatch%dmin_wood_psi           (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -381,6 +417,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_vapor_wc          (ico) = 0.0
       cpatch%dmean_intercepted_aw    (ico) = 0.0
       cpatch%dmean_wshed_wg          (ico) = 0.0
+
+      cpatch%dmean_leaf_water_int    (ico) = 0.0
+      cpatch%dmean_wood_water_int    (ico) = 0.0
+      cpatch%dmean_wflux_gw          (ico) = 0.0
+      cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
+      cpatch%dmean_wflux_wl          (ico) = 0.0
+
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -470,6 +513,17 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_nppseeds            (ico) = 0.0
       cpatch%mmean_nppwood             (ico) = 0.0
       cpatch%mmean_nppdaily            (ico) = 0.0
+
+      cpatch%mmean_dmax_leaf_psi       (ico) = 0.0
+      cpatch%mmean_dmin_leaf_psi       (ico) = 0.0
+      cpatch%mmean_dmax_wood_psi       (ico) = 0.0
+      cpatch%mmean_dmin_wood_psi       (ico) = 0.0
+      cpatch%mmean_leaf_water_int      (ico) = 0.0
+      cpatch%mmean_wood_water_int      (ico) = 0.0
+      cpatch%mmean_wflux_gw            (ico) = 0.0
+      cpatch%mmean_wflux_gw_layer    (:,ico) = 0.0
+      cpatch%mmean_wflux_wl            (ico) = 0.0
+
       cpatch%mmsqu_gpp                 (ico) = 0.0
       cpatch%mmsqu_npp                 (ico) = 0.0
       cpatch%mmsqu_plresp              (ico) = 0.0
@@ -552,6 +606,14 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%qmean_vapor_wc          (:,ico) = 0.0
       cpatch%qmean_intercepted_aw    (:,ico) = 0.0
       cpatch%qmean_wshed_wg          (:,ico) = 0.0
+
+      cpatch%qmean_leaf_psi          (:,ico) = 0.0
+      cpatch%qmean_wood_psi          (:,ico) = 0.0
+      cpatch%qmean_leaf_water_int    (:,ico) = 0.0
+      cpatch%qmean_wood_water_int    (:,ico) = 0.0
+      cpatch%qmean_wflux_gw          (:,ico) = 0.0
+      cpatch%qmean_wflux_wl          (:,ico) = 0.0
+
       cpatch%qmsqu_gpp               (:,ico) = 0.0
       cpatch%qmsqu_npp               (:,ico) = 0.0
       cpatch%qmsqu_plresp            (:,ico) = 0.0

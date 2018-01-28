@@ -545,9 +545,9 @@ module ed_state_vars
       real, pointer, dimension(:) :: wood_rwc
       !<Wood relative water content [0-1]
       real, pointer, dimension(:) :: leaf_water_int
-      !<Leaf internal water content per ground area [kg/m2g]
+      !<Leaf internal water content per plant [kg/plant]
       real, pointer, dimension(:) :: wood_water_int
-      !<Wood internal water content per ground area [kg/m2g]
+      !<Wood internal water content per plant [kg/plant]
       real, pointer, dimension(:) :: wflux_gw
       !<Water flux from ground to wood/stem [kg H2O/s], root is assumed to be
       !!super-connected with stem and shares the same water potential and rwc
@@ -639,8 +639,8 @@ module ed_state_vars
       real,pointer,dimension(:)	  :: fmean_bdead            !<Bdead		        [    kgC/pl]
       real,pointer,dimension(:)	  :: fmean_leaf_psi         !<&Psi; leaf        [         m]
       real,pointer,dimension(:)	  :: fmean_wood_psi         !<&Psi; wood        [         m]
-      real,pointer,dimension(:)	  :: fmean_leaf_water_int   !<Water conc. leaf  [    kg/m2g]
-      real,pointer,dimension(:)	  :: fmean_wood_water_int   !<Water conc. wood  [    kg/m2g]
+      real,pointer,dimension(:)	  :: fmean_leaf_water_int   !<Water conc. leaf  [     kg/pl]
+      real,pointer,dimension(:)	  :: fmean_wood_water_int   !<Water conc. wood  [     kg/pl]
       real,pointer,dimension(:)	  :: fmean_wflux_gw         !<Water Abs.        [      kg/s]
       real,pointer,dimension(:,:) :: fmean_wflux_gw_layer   !<Water Abs. Layer  [      kg/s]
       real,pointer,dimension(:)	  :: fmean_wflux_wl         !<sapflow           [      kg/s]
@@ -24904,16 +24904,16 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%leaf_water_int,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'LEAF_WATER_INT :41:hist') 
-         call metadata_edio(nvar,igr,'Leaf internal water content per ground area',     &
-                                    '[kg/m2g]','icohort') 
+         call metadata_edio(nvar,igr,'Leaf internal water content per plant'      ,     &
+                                     '[kg/pl]','icohort') 
       end if
 
       if (associated(cpatch%wood_water_int)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%wood_water_int,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'WOOD_WATER_INT :41:hist') 
-         call metadata_edio(nvar,igr,'Wood internal water content per ground area',     &
-                                    '[kg/m2g]','icohort') 
+         call metadata_edio(nvar,igr,'Wood internal water content per plant'      ,     &
+                                     '[kg/pl]','icohort') 
       end if
 
       if (associated(cpatch%wflux_gw)) then
@@ -25568,8 +25568,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'FMEAN_LEAF_WATER_INT_CO    :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Leaf internal water content per ground area' &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Sub-daily mean - Leaf internal water content per plnat'       &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_wood_water_int        )) then
          nvar = nvar+1
@@ -25577,8 +25577,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'FMEAN_WOOD_WATER_INT_CO    :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Wood internal water content per ground area' &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Sub-daily mean - Wood internal water content per plant'       &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_wflux_gw        )) then
          nvar = nvar+1
@@ -26326,8 +26326,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'DMEAN_LEAF_WATER_INT_CO    :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Leaf internal water content per ground area'     &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Daily mean - Leaf internal water content per plant'           &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_wood_water_int  )) then
          nvar = nvar+1
@@ -26335,8 +26335,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'DMEAN_WOOD_WATER_INT_CO    :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Wood internal water content per ground area'     &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Daily mean - Wood internal water content per plant'           &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_wflux_gw        )) then
          nvar = nvar+1
@@ -27160,8 +27160,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'MMEAN_LEAF_WATER_INT_CO    :41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Leaf internal water content per ground area'    &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Monthly mean - Leaf internal water content per plant'          &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_wood_water_int  )) then
          nvar = nvar+1
@@ -27169,8 +27169,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'MMEAN_WOOD_WATER_INT_CO    :41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Wood internal water content per ground area'    &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Monthly mean - Wood internal water content per plant'          &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_wflux_gw        )) then
          nvar = nvar+1
@@ -27904,8 +27904,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'QMEAN_LEAF_WATER_INT_CO    :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Leaf internal water content per ground area'      &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Mean diel - Leaf internal water content per plant'            &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%qmean_wood_water_int  )) then
          nvar = nvar+1
@@ -27913,8 +27913,8 @@ module ed_state_vars
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'QMEAN_WOOD_WATER_INT_CO    :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Wood internal water content per ground area'      &
-                           ,'[     kg/m2g]','(icohort)'            )
+                           ,'Mean diel - Wood internal water content per plant'            &
+                           ,'[      kg/pl]','(icohort)'            )
       end if
       if (associated(cpatch%qmean_wflux_gw        )) then
          nvar = nvar+1
@@ -28100,7 +28100,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wflux_gw_layer                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(fast_keys)     )
+                           ,'DMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water flux from ground to wood'                  &
                            ,'[       kg/s]','(nzg,icohort)'        )
@@ -28109,7 +28109,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wflux_gw_layer                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(fast_keys)     )
+                           ,'MMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water flux from ground to wood'                &
                            ,'[       kg/s]','(nzg,icohort)'        )

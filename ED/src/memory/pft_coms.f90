@@ -1,10 +1,10 @@
 !==========================================================================================!
 !==========================================================================================!
-!   This module contains a list of plant-functional type dependent properties.             !
-!                                                                                          !
-! IMPORTANT: DO NOT INITIALIZE PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL        !
-!            ACTUALLY INITIALIZE THEM.  See "init_pft_*_coms" (ed_params.f90) to check     !
-!            the default values.                                                           !
+! MODULE: PFT_COMS
+!> \brief This module contains a list of plant-functional type dependent properties.
+!> \waring IMPORTANT: DO NOT INITIALIZE PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL
+!> ACTUALLY INITIALIZE THEM.  See "init_pft_*_coms" (ed_params.f90) to check the default
+!> values.                                                           !
 !==========================================================================================!
 !==========================================================================================!
 module pft_coms
@@ -40,11 +40,10 @@ module pft_coms
    ! as which PFT should be used for agriculture, which one goes for forest plantation.    !
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     This variable is provided by the user through namelist, and contains the list of  !
-   ! PFTs he or she wants to use.                                                          !
-   !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: include_these_pft
+   !<This variable is provided by the user through namelist, and contains the list of
+   !< PFTs he or she wants to use.                                                          !
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     This flag determines what to do at the PFT initialization.  This option is        !
@@ -405,6 +404,36 @@ module pft_coms
    !=======================================================================================!
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   ! Plant hydrodynamics -- see "initialize_pft_hydro_params".                             !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: leaf_hydro_cap
+   !< Leaf hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< constants for now
+
+   real, dimension(n_pft) :: wood_hydro_cap
+   !< Wood hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< constants for now
+
+   real, dimension(n_pft) :: leaf_water_sat
+   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]       
+   
+   real, dimension(n_pft) :: wood_water_sat
+   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]       
+   
+   real, dimension(n_pft) :: leaf_rwc_min  
+   !< Leaf minimum relative water content or leaf residual fraction [-]
+
+   real, dimension(n_pft) :: wood_rwc_min  
+   !< Sapwood minimum relative water content or Sapwood residual fraction [-]
+
+   real, dimension(n_pft) :: xylem_fraction
+   !< Fraction of xylem over the whole stem biomass/basal area [-]. This
+   !< variable is assume as constants for now
+
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 

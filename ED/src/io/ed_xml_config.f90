@@ -434,6 +434,22 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('init_density','pft',i,rval,texist)
            if(texist) init_density(myPFT) = real(rval)
 
+! plant hydraulic variables
+           call getConfigREAL  ('xylem_fraction','pft',i,rval,texist)
+           if(texist) xylem_fraction(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_water_sat','pft',i,rval,texist)
+           if(texist) leaf_water_sat(myPFT) = real(rval)
+           call getConfigREAL  ('wood_water_sat','pft',i,rval,texist)
+           if(texist) wood_water_sat(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_hydro_cap','pft',i,rval,texist)
+           if(texist) leaf_hydro_cap(myPFT) = real(rval)
+           call getConfigREAL  ('wood_hydro_cap','pft',i,rval,texist)
+           if(texist) wood_hydro_cap(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_rwc_min','pft',i,rval,texist)
+           if(texist) leaf_rwc_min(myPFT) = real(rval)
+           call getConfigREAL  ('wood_rwc_min','pft',i,rval,texist)
+           if(texist) wood_rwc_min(myPFT) = real(rval)
+
      ! Height
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
            if(texist) b1Ht(myPFT) = real(rval)
@@ -1437,7 +1453,14 @@ subroutine write_ed_xml_config
         call putConfigREAL("sapwood_ratio",sapwood_ratio(i))
         call putConfigREAL("qsw",qsw(i))
         call putConfigREAL("init_density",init_density(i))
-
+!! PLANT HYDRAULICS
+        call putConfigREAL("xylem_fraction",xylem_fraction(i))
+        call putConfigREAL("leaf_water_sat",leaf_water_sat(i))
+        call putConfigREAL("wood_water_sat",wood_water_sat(i))
+        call putConfigREAL("leaf_hydro_cap",leaf_hydro_cap(i))
+        call putConfigREAL("wood_hydro_cap",wood_hydro_cap(i))
+        call putConfigREAL("leaf_rwc_min",leaf_rwc_min(i))
+        call putConfigREAL("wood_rwc_min",wood_rwc_min(i))
      !! HEIGHT
         call putConfigREAL("b1Ht",       b1Ht(i))
         call putConfigREAL("b2Ht",       b2Ht(i))

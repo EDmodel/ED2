@@ -1,9 +1,11 @@
 !==========================================================================================!
 !==========================================================================================!
-!     This is the main loader of ecosystem parameters.  Since some compilers do not under- !
-! stand the assignment in the modules when the variable is not a constant (parameter),     !
-! this is the safest way to guarantee it will read something (not to mention that makes    !
-! compilation much faster when you want to test the sensitivity of one number).            !
+!  SUBROUTINE: LOAD_ED_ECOSYSTEM_PARAMS
+!> \brief This is the main loader of ecosystem parameters.  
+!> \details Since some compilers do not understand the assignment in the modules
+!> when the variable is not a constant (parameter), this is the safest way to guarantee
+!> it will read something (not to mention that makes compilation much faster when you
+!> want to test the sensitivity of one number).
 !------------------------------------------------------------------------------------------!
 subroutine load_ed_ecosystem_params()
 
@@ -189,6 +191,8 @@ subroutine load_ed_ecosystem_params()
    call init_pft_mort_params()
    !----- Nitrogen. -----------------------------------------------------------------------!
    call init_pft_nitro_params()
+   !----- Hydraulics ----------------------------------------------------------------------!
+   call init_pft_hydro_params()
    !----- Miscellaneous leaf properties. --------------------------------------------------!
    call init_pft_leaf_params()
    !----- Reproduction. -------------------------------------------------------------------!
@@ -3247,6 +3251,61 @@ end subroutine init_pft_nitro_params
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!  SUBROUTINE: INIT_PFT_HYDRO_PARAMS   
+!> \brief This subroutine initializes plant hydraulic parameters.
+!> \warning Some plant hydraulic paramters are depedent on SLA and LMA. So this
+!> subroutine should always be after init_pft_alloc_params
+!> \author Xiangtao Xu, Jan. 27 2018
+!==========================================================================================!
+subroutine init_pft_hydro_params()
+
+   use pft_coms,        only : xylem_fraction               & ! intent(out)
+                             , leaf_hydro_cap               & ! intent(out)
+                             , wood_hydro_cap               & ! intent(out)
+                             , leaf_water_sat               & ! intent(out)
+                             , wood_water_sat               & ! intent(out)
+                             , leaf_rwc_min                 & ! intent(out)
+                             , wood_rwc_min                 ! ! intent(out)
+
+   implicit none
+
+   !---------------------------------------------------------------------------------------!
+   !    Fraction of xylem area over the whole cross-section area of plant.                 !
+   !    This parameter used when allometric relationship for sapwood is not available.     !
+   !    10% for grasses                                                                    !
+   !    50% for temperate angiosperms                                                      !
+   !    75% for tropical angiosperms                                                       !
+   !    References:                                                                        !  
+   !      F. C. Meinzer, G. Goldstein, J. L. Andrade; Regulation of water flux through     ! 
+   !         tropical forest canopy trees: Do universal rules apply?, Tree Physiology,     !
+   !         Volume 21, Issue 1, 1 January 2001, Pages 19–26,                              !
+   !---------------------------------------------------------------------------------------!
+   xylem_fraction(1)      =  1.0
+   xylem_fraction(2:4)    =  0.75
+   xylem_fraction(5)      =  1.0
+   xylem_fraction(6:8)    =  0.1
+   xylem_fraction(9:11)   =  0.5
+   xylem_fraction(12:16)  =  1.0
+   xylem_fraction(17)     =  0.1
+
+
+   ! Hold the place for now
+   leaf_water_sat(1:17)   =  1.
+   wood_water_sat(1:17)   =  1.
+   leaf_hydro_cap(1:17)   =  1.
+   wood_hydro_cap(1:17)   =  1.
+   leaf_rwc_min  (1:17)   =  0.2
+   wood_rwc_min  (1:17)   =  0.2
+
+   return
+end subroutine init_pft_hydro_params
+!==========================================================================================!
+!==========================================================================================!
 
 
 

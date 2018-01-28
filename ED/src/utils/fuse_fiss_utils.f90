@@ -1,7 +1,8 @@
 !==========================================================================================!
 !==========================================================================================!
-!  Module fuse_fiss_utils.                                                                 !
-!  Routines to terminate and fuse patches, and to terminate, fuse and split cohorts.       !
+! MODULE: FUSE_FISS_UTILS
+!> \brief Routines to terminate and fuse patches, and to terminate, fuse and split cohorts.
+!> \author  Translated from ED1 by David Medivgy, Ryan Knox and Marcos Longo
 !------------------------------------------------------------------------------------------!
 module fuse_fiss_utils
 
@@ -17,11 +18,12 @@ module fuse_fiss_utils
    contains
    !=======================================================================================!
    !=======================================================================================!
-   !      This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)  !
-   ! In case there is a tie (for example, when 2 cohorts have reached the maximum possible !
-   ! height, then we use DBH for tie breaking, and if they have the exact same DBH, then   !
-   ! we simply pick the lowest index (as they are exactly the same).  This could cause     !
-   ! some problems when the new grass allometry is implemented, though.                    !
+   !  SUBROUTINE: SORT_COHORTS      
+   !> \brief This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)
+   !> \details In case there is a tie (for example, when 2 cohorts have reached the
+   !> maximum possible height, then we use DBH for tie breaking, and if they have the
+   !> exact same DBH, then we simply pick the lowest index (as they are exactly the same).
+   !> This could cause some problems when the new grass allometry is implemented, though.       
    !---------------------------------------------------------------------------------------!
    subroutine sort_cohorts(cpatch)
 
@@ -110,8 +112,10 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine will eliminate cohorts based on their sizes. This is intended to   !
-   ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
+   !  SUBROUTINE: TERMINATE_COHORTS 
+   !> \brief This subroutine will eliminate cohorts based on their sizes.
+   !> This is intended to eliminate cohorts that have little contribution
+   !> and thus we can speed up the run.
    !---------------------------------------------------------------------------------------!
    subroutine terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
       use pft_coms           , only : min_cohort_size  & ! intent(in)
@@ -218,8 +222,9 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine will eliminate tiny or empty patches. This is intended to          !
-   ! eliminate patches that have little contribution and thus we can speed up the run.     !
+   !  SUBROUTINE: TERMINATE_PATCHES 
+   !> \brief This subroutine will eliminate tiny or empty patches. This is intended to
+   !> eliminate patches that have little contribution and thus we can speed up the run.
    !---------------------------------------------------------------------------------------!
    subroutine terminate_patches(csite)
 
@@ -304,8 +309,10 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will rescale the area of the patches.  This is almost the same as !
-   ! the terminate_patches subroutine, except that no patch is removed.                    !
+   !  SUBROUTINE: RESCALE_PATCHES   
+   !> \brief This subroutine will rescale the area of the patches.
+   !> This is almost the same as the terminate_patches subroutine,
+   !> except that no patch is removed.
    !---------------------------------------------------------------------------------------!
    subroutine rescale_patches(csite)
       use update_derived_props_module
@@ -545,12 +552,14 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will perform cohort fusion based on various similarity criteria to  !
-   ! determine whether they can be fused with no significant loss of information. The user !
-   ! is welcome to set up a benchmark, but should be aware that no miracles will happen    !
-   ! here. If there are more very distinct cohorts than maxcohort, then the user will need !
-   ! to live with that and accept life is not always fair with those with limited          !
-   ! computational resources.                                                              !
+   !  SUBROUTINE: FUSE_COHORTS
+   !> \brief This subroutine will perform cohort fusion based on various
+   !> similarity criteria to determine whether they can be fused with no 
+   !> significant loss of information. 
+   !> \details The user is welcome to set up a benchmark, but should be 
+   !> aware that no miracles will happen here. If there are more very distinct
+   !> cohorts than maxcohort, then the user will need to live with that and
+   !> accept life is not always fair with those with limited computational resources.           
    !---------------------------------------------------------------------------------------!
    subroutine fuse_cohorts(csite,ipa, lsl, fuse_initial)
 
@@ -831,8 +840,10 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will split two cohorts if its LAI has become too large.  This is    !
-   ! only necessary when we solve radiation cohort by cohort rather than layer by layer.   !
+   !  SUBROUTINE: SPLIT_COHORTS
+   !> \brief This subroutine will split two cohorts if its LAI has become too large.
+   !> \details This is only necessary when we solve radiation cohort by cohort rather
+   !> than layer by layer.
    !---------------------------------------------------------------------------------------!
    subroutine split_cohorts(cpatch, green_leaf_factor)
       use update_derived_props_module
@@ -1003,10 +1014,10 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will merge two cohorts into 1. The donating cohort (donc) is the  !
-   ! one that will be deallocated, while the receptor cohort (recc) will contain the       !
-   !  information from both cohorts.                                                       !
-   !                                                                                       !
+   !  SUBROUTINE: FUSE_2_COHORTS
+   !> \brief This subroutine will merge two cohorts into 1.
+   !> \details The donating cohort (donc) is the one that will be deallocated,
+   !> while the receptor cohort (recc) will contain the information from both cohorts.
    !---------------------------------------------------------------------------------------!
    subroutine fuse_2_cohorts(cpatch,donc,recc,can_prss,can_shv,lsl &
                             ,fuse_initial)
@@ -1030,6 +1041,11 @@ module fuse_fiss_utils
                                     , lnexp_max              & ! intent(in)
                                     , tiny_num               ! ! intent(in)
       use fusion_fission_coms, only : corr_cohort
+      use grid_coms          , only : nzg                    ! ! intent(in)
+      use plant_hydro        , only : rwc2psi                & ! subroutine
+                                    , tw2rwc                 & ! subroutine 
+                                    , psi2tw                 & ! subroutine
+                                    , tw2psi                 ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
@@ -1043,6 +1059,7 @@ module fuse_fiss_utils
       integer                      :: imon              ! Month for cb loop
       integer                      :: t                 ! Time of day for dcycle loop
       integer                      :: imty              ! Mortality type
+      integer                      :: isl               ! Soil layer
       real                         :: newni             ! Inverse of new nplants
       real                         :: exp_mort_donc     ! Exp(mortality) donor
       real                         :: exp_mort_recc     ! Exp(mortality) receptor
@@ -1052,6 +1069,8 @@ module fuse_fiss_utils
       real                         :: dwai              ! WAI of donor
       real                         :: rnplant           ! nplant of receiver
       real                         :: dnplant           ! nplant of donor
+      real                         :: rbdead            ! bdead  of receiver
+      real                         :: dbdead            ! bdead  of donor
       !------------------------------------------------------------------------------------!
 
 
@@ -1066,6 +1085,10 @@ module fuse_fiss_utils
       newni   = 1.0 / (cpatch%nplant(recc) + cpatch%nplant(donc))
       rnplant = cpatch%nplant(recc) / (cpatch%nplant(recc) + cpatch%nplant(donc))
       dnplant = 1.d0 - dble(rnplant)
+      rbdead  = ( cpatch%bdead(recc) * cpatch%nplant(recc) )                           &
+              / ( cpatch%bdead(recc) * cpatch%nplant(recc)                             &
+                + cpatch%bdead(donc) * cpatch%nplant(donc) )
+      dbdead  = 1.d0 - dble(rbdead)
       !------------------------------------------------------------------------------------!
 
 
@@ -1502,8 +1525,35 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !    Plant hydrodynamics characteristics (XXT)                                       !
+      !------------------------------------------------------------------------------------!
+      ! Internal water content and water fluxes are weighted by nplant
+      cpatch%leaf_water_int(recc) = cpatch%leaf_water_int(recc) * rnplant                  &
+                                  + cpatch%leaf_water_int(donc) * dnplant
+      cpatch%wood_water_int(recc) = cpatch%wood_water_int(recc) * rnplant                  &
+                                  + cpatch%wood_water_int(donc) * dnplant
+
+      cpatch%wflux_gw      (recc) = cpatch%wflux_gw     (recc) * rnplant                   &
+                                  + cpatch%wflux_gw     (donc) * dnplant
+      cpatch%wflux_wl      (recc) = cpatch%wflux_wl     (recc) * rnplant                   &
+                                  + cpatch%wflux_wl     (donc) * dnplant
+      do isl = 1,nzg
+         cpatch%wflux_gw_layer(isl,recc) = cpatch%wflux_gw_layer(isl,recc) * rnplant       &
+                                         + cpatch%wflux_gw_layer(isl,donc) * dnplant
+      enddo
+
+      ! Now, we recalculate rwc and psi from water_int
+      ! This ensures that psi, rwc, and total water are consistent with each
+      ! other
+      call tw2rwc(cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc)                  &
+                 ,cpatch%bleaf(recc),cpatch%bdead(recc),cpatch%broot(recc),cpatch%pft(recc)&
+                 ,cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc))
+      call rwc2psi(cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc),cpatch%pft(recc)            &
+                  ,cpatch%leaf_psi(recc),cpatch%wood_psi(recc))
 
       !------------------------------------------------------------------------------------!
+
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !    Fast averages.                                                                  !
@@ -1690,6 +1740,44 @@ module fuse_fiss_utils
                                              + cpatch%fmean_wshed_wg        (donc)
          !---------------------------------------------------------------------------------!
 
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%fmean_leaf_water_int(recc) = cpatch%fmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%fmean_leaf_water_int(donc) * dnplant
+         cpatch%fmean_wood_water_int(recc) = cpatch%fmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%fmean_wood_water_int(donc) * dnplant
+         cpatch%fmean_wflux_gw      (recc) = cpatch%fmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%fmean_wflux_gw      (donc) * dnplant
+         cpatch%fmean_wflux_wl      (recc) = cpatch%fmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%fmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%fmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%fmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%fmean_wflux_gw_layer(isl,donc) * dnplant
+         enddo
+
+         ! for daily maximum and minimum psi, we simply calculate the
+         ! LAI-weighted/Bdead-weighted average since the corresponding leaf_int is not
+         ! tracked... This should not yield much bias since we assume a constant
+         ! capacitance
+         cpatch%dmax_leaf_psi(recc) = cpatch%dmax_leaf_psi(recc) * rlai +                  &
+                                      cpatch%dmax_leaf_psi(donc) * dlai
+         cpatch%dmin_leaf_psi(recc) = cpatch%dmin_leaf_psi(recc) * rlai +                  &
+                                      cpatch%dmin_leaf_psi(donc) * dlai
+         cpatch%dmax_wood_psi(recc) = cpatch%dmax_wood_psi(recc) * rbdead +                &
+                                      cpatch%dmax_wood_psi(donc) * dbdead
+         cpatch%dmin_wood_psi(recc) = cpatch%dmin_wood_psi(recc) * rbdead +                &
+                                      cpatch%dmin_wood_psi(donc) * dbdead
+
+         ! Now, we recalculate psi from water_int
+         call tw2psi(cpatch%fmean_leaf_water_int(recc),cpatch%fmean_wood_water_int(recc)   &
+                    ,cpatch%bleaf(recc),cpatch%bdead(recc),cpatch%broot(recc)              &
+                    ,cpatch%pft(recc)                                                      &
+                    ,cpatch%fmean_leaf_psi(recc),cpatch%fmean_wood_psi(recc))
+
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -1953,6 +2041,25 @@ module fuse_fiss_utils
                                              + cpatch%dmean_intercepted_aw  (donc)
          cpatch%dmean_wshed_wg        (recc) = cpatch%dmean_wshed_wg        (recc)         &
                                              + cpatch%dmean_wshed_wg        (donc)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%dmean_leaf_water_int(recc) = cpatch%dmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%dmean_leaf_water_int(donc) * dnplant
+         cpatch%dmean_wood_water_int(recc) = cpatch%dmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%dmean_wood_water_int(donc) * dnplant
+         cpatch%dmean_wflux_gw      (recc) = cpatch%dmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%dmean_wflux_gw      (donc) * dnplant
+         cpatch%dmean_wflux_wl      (recc) = cpatch%dmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%dmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%dmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%dmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%dmean_wflux_gw_layer(isl,donc) * dnplant
+         enddo
          !---------------------------------------------------------------------------------!
 
 
@@ -2315,6 +2422,24 @@ module fuse_fiss_utils
                                              + cpatch%mmean_wshed_wg        (donc)
          !---------------------------------------------------------------------------------!
 
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%mmean_leaf_water_int(recc) = cpatch%mmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%mmean_leaf_water_int(donc) * dnplant
+         cpatch%mmean_wood_water_int(recc) = cpatch%mmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%mmean_wood_water_int(donc) * dnplant
+         cpatch%mmean_wflux_gw      (recc) = cpatch%mmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%mmean_wflux_gw      (donc) * dnplant
+         cpatch%mmean_wflux_wl      (recc) = cpatch%mmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%mmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%mmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%mmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%mmean_wflux_gw_layer(isl,donc) * dnplant
+         enddo
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -2657,6 +2782,29 @@ module fuse_fiss_utils
                                              + cpatch%qmean_wshed_wg      (:,donc)
          !---------------------------------------------------------------------------------!
 
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%qmean_leaf_water_int(:,recc) = cpatch%qmean_leaf_water_int(:,recc) * rnplant &
+                                             + cpatch%qmean_leaf_water_int(:,donc) * dnplant
+         cpatch%qmean_wood_water_int(:,recc) = cpatch%qmean_wood_water_int(:,recc) * rnplant &
+                                             + cpatch%qmean_wood_water_int(:,donc) * dnplant
+        
+         ! Water fluxes are weighted by nplant since they are kg H2O/s/plant
+         cpatch%qmean_wflux_gw      (:,recc) = cpatch%qmean_wflux_gw   (:,recc) * rnplant  &
+                                             + cpatch%qmean_wflux_gw   (:,donc) * dnplant
+         cpatch%qmean_wflux_wl      (:,recc) = cpatch%qmean_wflux_wl   (:,recc) * rnplant  &
+                                             + cpatch%qmean_wflux_wl   (:,donc) * dnplant
+
+         ! For psi, we simply use lai-weighted average for leaves and
+         ! bdead-weighted average for wood because at this time point we don't
+         ! know qmean biomass values
+         cpatch%qmean_leaf_psi      (:,recc) = cpatch%qmean_leaf_psi   (:,recc) * rlai     &
+                                             + cpatch%qmean_leaf_psi   (:,donc) * dlai
+         cpatch%qmean_wood_psi      (:,recc) = cpatch%qmean_wood_psi   (:,recc) * rlai     &
+                                             + cpatch%qmean_wood_psi   (:,donc) * dlai
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -2737,7 +2885,8 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will sort the patches by age (1st = oldest, last = youngest.)       !
+   !  SUBROUTINE: SORT_PATCHES  
+   !> \brief This subroutine will sort the patches by age (1st = oldest, last = youngest.)
    !---------------------------------------------------------------------------------------!
    subroutine sort_patches(csite)
 
@@ -2812,12 +2961,14 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will perform patch fusion based on some similarity criteria to      !
-   ! determine whether they can be fused with no significant loss of information. The user !
-   ! is welcome to set up a benchmark, but they should be aware that no miracles will      !
-   ! happen here. If there are more very distinct patches than maxpatch, then the user     !
-   ! will need to live with that and accept life is not always fair with those with        !
-   ! limited computational resources.                                                      !
+   !  SUBROUTINE: FUSE_PATCHES  
+   !> \brief This subroutine will perform patch fusion based on some similarity
+   !> criteria to determine whether they can be fused with no significant loss of
+   !> information.
+   !> \details The user is welcome to set up a benchmark, but they should be aware
+   !> that no miracles will happen here. If there are more very distinct patches
+   !> than maxpatch, then the user will need to live with that and accept life is
+   !> not always fair with those with limited computational resources.
    !---------------------------------------------------------------------------------------!
    subroutine fuse_patches(cgrid,ifm,fuse_initial)
       use patch_pft_size_profile_mod
@@ -3939,7 +4090,8 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will merge two patches into 1.                                      !
+   !  SUBROUTINE: FUSE_2_PATCHES  
+   !> \brief This subroutine will merge two patches into 1.
    !---------------------------------------------------------------------------------------!
    subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,lsl,ntext_soil,green_leaf_factor &
                             ,fuse_initial,elim_nplant,elim_lai)
@@ -6012,7 +6164,8 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine combines the mean sum of squares of two quantities (x and y).     !
+   !  SUBROUTINE: FUSE_MSQU       
+   !> \brief This subroutine combines the mean sum of squares of two quantities (x and y).
    !                                                                                       !
    ! xmean, ymean -- the mean values of x and y                                            !
    ! xmsqu, ymsqu -- the mean sum of squares of x and y                                    !
