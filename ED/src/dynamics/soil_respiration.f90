@@ -578,12 +578,12 @@ real function het_resp_weight(soil_tempk,rel_soil_moist)
    !     Find the temperature dependence.                                                  !
    !---------------------------------------------------------------------------------------!
    select case(decomp_scheme)
-   case (0)
+   case (0,3)
       !----- Use original ED-2.1 exponential temperature dependence. ----------------------!
       temperature_limitation = min( 1.0                                                    &
                                   , exp( resp_temperature_increase * (soil_tempk-318.15)))
       !------------------------------------------------------------------------------------!
-   case (1) 
+   case (1,4) 
       !----- Use Lloyd and Taylor (1994) temperature dependence. --------------------------!
       lnexplloyd             = rh_lloyd_1 * ( rh_lloyd_2 - 1. / (soil_tempk - rh_lloyd_3))
       lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
