@@ -634,6 +634,11 @@ real function het_resp_weight(soil_tempk,rel_soil_moist)
       !----- Soil moisture limitation is a combination of both. ---------------------------!
       water_limitation = 1.0 / (smdry_fun * smwet_fun)
       !------------------------------------------------------------------------------------!
+   case (3,4)
+      !----- From Jaclyn Matthes:
+      !----- Empirical equation from meta-analysis in Moyano et al., Biogeosciences,2012 --!
+      water_limitation = rel_soil_moist * 4.0893 - rel_soil_moist**2 * 3.1681 - 0.3195897
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
