@@ -48,7 +48,7 @@ include objects.mk
 #----- Define targets. --------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
-#     MLO.  The six "make $(EXE) below may look like a typo, but it is actually a rather   #
+#     MLO.  The six "make $(EXE)" below may look like a typo, but it is actually a rather  #
 #           ugly solution for a problem with make. When someone changes a fortran file     #
 #           that is a module, all files that use the module must be recompiled too. Some   #
 #           files are updated in the first pass, but not all of them are recompiled, and   #
@@ -56,7 +56,7 @@ include objects.mk
 #           compilations so the final executable is consistent.  Failing to do so may      #
 #           cause the executable to be inconsistent, with dangerous results.  If anyone    #
 #           knows a better way to ensure all dependencies are recompiled, feel free to     #
-#           implement, but for the time being please keep the five make calls.             #
+#           implement, but for the time being please keep all the "make $(EXE)" calls.     #
 #------------------------------------------------------------------------------------------#
 all:
 	make gendep

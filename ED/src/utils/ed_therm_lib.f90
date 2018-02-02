@@ -159,6 +159,7 @@ module ed_therm_lib
             cpatch%leaf_temp(ico) = csite%can_temp(ipa)
          else
             !----- Find the snow layer that is the closest to where the leaves would be. --!
+            kclosest = 1
             do k = csite%nlev_sfcwater(ipa), 1, -1
                if (sum(csite%sfcwater_depth(1:k,ipa)) >= cpatch%hite(ico)) then
                   kclosest = k
@@ -224,6 +225,7 @@ module ed_therm_lib
             cpatch%wood_temp(ico) = csite%can_temp(ipa)
          else
             !----- Find the snow layer that is the closest to where the leaves would be. --!
+            kclosest = 1
             do k = csite%nlev_sfcwater(ipa), 1, -1
                if (sum(csite%sfcwater_depth(1:k,ipa)) >= cpatch%hite(ico)) then
                   kclosest = k
@@ -292,8 +294,8 @@ module ed_therm_lib
    ! References:                                                                           !
    !                                                                                       !
    ! P86  - Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol    !
-   !        stratifi� soumis � une excitation amtosph�rique naturelle. Comparaison:        !
-   !        Mod�les-exp�rience. Thesis, Institut National Polytechnique de Grenoble.       !
+   !        stratifie soumis a une excitation amtospherique naturelle. Comparaison:        !
+   !        Modeles-experience. Thesis, Institut National Polytechnique de Grenoble.       !
    !                                                                                       !
    ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
    !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
@@ -329,7 +331,7 @@ module ed_therm_lib
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
       integer     , intent(in)  :: nsoil         ! Soil type                    [     ----]
-      real(kind=4), intent(in)  :: topsoil_water ! Top soil water               [m�_h2o/m�]
+      real(kind=4), intent(in)  :: topsoil_water ! Top soil water               [m2_h2o/m2]
       real(kind=4), intent(in)  :: topsoil_temp  ! Top soil temperature         [        K]
       real(kind=4), intent(in)  :: topsoil_fliq  ! Top soil liquid water frac.  [       --]
       real(kind=4), intent(in)  :: sfcwater_temp ! Snow/water temperature       [        K]
@@ -487,8 +489,8 @@ module ed_therm_lib
    ! References:                                                                           !
    !                                                                                       !
    ! P86  - Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol    !
-   !        stratifi� soumis � une excitation amtosph�rique naturelle. Comparaison:        !
-   !        Mod�les-exp�rience. Thesis, Institut National Polytechnique de Grenoble.       !
+   !        stratifie soumis a une excitation amtospherique naturelle. Comparaison:        !
+   !        Modeles-experience. Thesis, Institut National Polytechnique de Grenoble.       !
    !                                                                                       !
    ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
    !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
@@ -524,7 +526,7 @@ module ed_therm_lib
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
-      real(kind=8), intent(in)  :: topsoil_water ! Top soil water               [m�_h2o/m�]
+      real(kind=8), intent(in)  :: topsoil_water ! Top soil water               [m2_h2o/m2]
       real(kind=8), intent(in)  :: topsoil_temp  ! Top soil temperature         [        K]
       real(kind=8), intent(in)  :: topsoil_fliq  ! Top soil liquid water frac.  [       --]
       real(kind=8), intent(in)  :: sfcwater_temp ! Snow/water temperature       [        K]

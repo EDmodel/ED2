@@ -33,7 +33,6 @@ module landuse_init
                                , n_pft             & ! intent(in)
                                , maxlist           ! ! intent(in)
       use detailed_coms , only : idetailed         ! ! intent(in)
-      use pft_coms      , only : is_grass          ! ! intent(in)
 
       implicit none
       !----- Local variables --------------------------------------------------------------!

@@ -37,23 +37,23 @@ module rk4_integ_utils
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)            , target      :: csite   ! Current site
-      integer                   , intent(in)  :: ipa     ! Current patch ID
-      integer                   , intent(in)  :: isi     ! Current site ID
-      integer                   , intent(in)  :: ibuff   ! Current thread ID
-      integer                   , intent(out) :: nsteps  ! Number of steps taken.
+      type(sitetype)            , target      :: csite   !< Current site
+      integer                   , intent(in)  :: ipa     !< Current patch ID
+      integer                   , intent(in)  :: isi     !< Current site ID
+      integer                   , intent(in)  :: ibuff   !< Current thread ID
+      integer                   , intent(out) :: nsteps  !< Number of steps taken.
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)           , pointer     :: cpatch  ! Current patch
-      integer                                 :: i       ! Step counter
-      integer                                 :: ksn     ! # of snow/water layers
-      real(kind=8)                            :: x       ! Elapsed time
-      real(kind=8)                            :: hgoal   ! Current delta-t attempt
-      real(kind=8)                            :: hbeg    ! Initial delta-t
-      real(kind=8)                            :: h       ! Current delta-t attempt
-      real(kind=8)                            :: hnext   ! Next delta-t
-      real(kind=8)                            :: hdid    ! delta-t that worked (???)
-      real(kind=8)                            :: qwfree  ! Free water internal energy
-      real(kind=8)                            :: wfreeb  ! Free water 
+      type(patchtype)           , pointer     :: cpatch  !< Current patch
+      integer                                 :: i       !< Step counter
+      integer                                 :: ksn     !< # of snow/water layers
+      real(kind=8)                            :: x       !< Elapsed time
+      real(kind=8)                            :: hgoal   !< Current delta-t attempt
+      real(kind=8)                            :: hbeg    !< Initial delta-t
+      real(kind=8)                            :: h       !< Current delta-t attempt
+      real(kind=8)                            :: hnext   !< Next delta-t
+      real(kind=8)                            :: hdid    !< delta-t that worked (???)
+      real(kind=8)                            :: qwfree  !< Free water internal energy
+      real(kind=8)                            :: wfreeb  !< Free water 
       !----- External function. -----------------------------------------------------------!
       real                      , external    :: sngloff
       !------------------------------------------------------------------------------------!
@@ -1664,7 +1664,6 @@ module rk4_integ_utils
                                , safety                    & ! intent(in)
                                , pgrow                     & ! intent(in)
                                , pshrnk                    & ! intent(in)
-                               , print_diags               & ! intent(in)
                                , print_detailed            & ! intent(in)
                                , norm_rk4_fluxes           & ! intent(in)
                                , reset_rk4_fluxes          ! ! intent(in)
@@ -1937,7 +1936,6 @@ module rk4_integ_utils
                                 , zero_rk4_patch         & ! intent(in)
                                 , zero_rk4_cohort        ! ! intent(in)
       use rk4_copy_patch , only : copy_rk4_patch         ! ! sub-routine
-      use rk4_copy_patch , only : copy_rk4_patch         ! ! sub-routine
       use rk4_derivs     , only : leaf_derivs            ! ! sub-routine
       use rk4_misc       , only : update_diagnostic_vars & ! sub-routine
                                 , print_rk4patch         ! ! sub-routine
@@ -2162,7 +2160,7 @@ module rk4_integ_utils
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      integer                          :: ibuff
+      integer            , intent(in)  :: ibuff
       type(rk4patchtype) , target      :: y
       type(rk4patchtype) , target      :: dydx
       type(sitetype)     , target      :: csite

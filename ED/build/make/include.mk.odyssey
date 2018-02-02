@@ -86,12 +86,12 @@ ifeq ($(KIND_COMP),A)
    F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
            -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
            -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -gen-interfaces -qopenmp -static
+           -gen-interfaces -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp  -static
    LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
                -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
                -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -gen-interfaces -qopenmp
+               -gen-interfaces -qopenmp -diag-error=all
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
@@ -99,32 +99,34 @@ ifeq ($(KIND_COMP),B)
    F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
            -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
            -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn interfaces -qopenmp -static
+           -warn interfaces -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
    LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
                -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
                -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn interfaces -qopenmp
+               -warn interfaces -qopenmp -diag-error=all 
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
    USE_INTERF=1
    F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
            -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
-           -implicitnone -assume byterecl -qopenmp -static
+           -implicitnone -assume byterecl -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
    LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
                -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -qopenmp
+               -implicitnone -assume byterecl -qopenmp -diag-error=all 
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
    F_OPTS= -FR -O0 -recursive -check all,noarg_temp_created -fpe0 -no-ftz -traceback       \
-           -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp -static
+           -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp                \
+           -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
    LOADER_OPTS=-FR -O0 -recursive -check all,noarg_temp_created -fpe0 -no-ftz -traceback   \
-               -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp
+               -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp            \
+               -diag-error=all
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)

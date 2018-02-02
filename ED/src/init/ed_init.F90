@@ -317,11 +317,7 @@ module ed_init
       use ed_bigleaf_init  , only : sas_to_bigleaf                 ! ! sub-routine
 #if defined(RAMS_MPI)
       use ed_node_coms      , only : mynum                          & ! intent(in)
-                                   , nmachs                         & ! intent(in)
                                    , nnodetot                       & ! intent(in)
-                                   , mchnum                         & ! intent(in)
-                                   , machs                          & ! intent(in)
-                                   , master_num                     & ! intent(in)
                                    , sendnum                        & ! intent(in)
                                    , recvnum                        ! ! intent(in)
 #else

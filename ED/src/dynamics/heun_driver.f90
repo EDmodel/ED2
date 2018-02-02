@@ -12,8 +12,7 @@ module heun_driver
                                        , rk4patchtype               & ! structure
                                        , zero_rk4_patch             & ! subroutine
                                        , zero_rk4_cohort            & ! subroutine
-                                       , integration_buff           & ! intent(out)
-                                       , rk4site                    ! ! intent(out)
+                                       , integration_buff           ! ! intent(out)
       use ed_para_coms          , only : nthreads                   ! ! intent(in)
       use ed_state_vars         , only : edtype                     & ! structure
                                        , polygontype                & ! structure
@@ -25,8 +24,6 @@ module heun_driver
       use ed_misc_coms          , only : current_time               & ! intent(in)
                                        , dtlsm                      ! ! intent(in)
       use ed_max_dims           , only : n_dbh                      ! ! intent(in)
-      use soil_coms             , only : soil_rough                 & ! intent(in)
-                                       , snow_rough                 ! ! intent(in)
       use therm_lib             , only : tq2enthalpy                ! ! function
       use budget_utils          , only : update_budget              & ! function
                                        , compute_budget             ! ! function
@@ -311,18 +308,12 @@ module heun_driver
                                   ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
-      use ed_misc_coms    , only : dtlsm                ! ! intent(in)
-      use soil_coms       , only : soil_rough           & ! intent(in)
-                                 , snow_rough           ! ! intent(in)
-      use canopy_air_coms , only : exar8                ! ! intent(in)
       use rk4_coms        , only : integration_vars     & ! structure
                                  , integration_buff     & ! structure
-                                 , rk4site              & ! intent(inout)
                                  , zero_rk4_patch       & ! subroutine
                                  , zero_rk4_cohort      & ! subroutine
                                  , tbeg                 & ! intent(inout)
                                  , tend                 & ! intent(inout)
-                                 , dtrk4                & ! intent(inout)
                                  , dtrk4i               ! ! intent(inout)
       use rk4_driver      , only : initp2modelp         ! ! subroutine
 
@@ -413,7 +404,6 @@ module heun_driver
       use rk4_coms       , only : integration_vars          & ! structure
                                 , integration_buff          & ! structure
                                 , rk4site                   & ! intent(in)
-                                , print_diags               & ! intent(in)
                                 , print_detailed            & ! intent(in)
                                 , maxstp                    & ! intent(in)
                                 , tbeg                      & ! intent(in)
@@ -448,13 +438,10 @@ module heun_driver
                                 , print_rk4_state           ! ! sub-routine
       use ed_misc_coms   , only : fast_diagnostics          & ! intent(in)
                                 , dtlsm                     ! ! intent(in)
-      use hydrology_coms , only : useRUNOFF                 ! ! intent(in)
       use grid_coms      , only : nzg                       & ! intent(in)
                                 , nzs                       & ! intent(in)
                                 , time                      ! ! intent(in)
-      use soil_coms      , only : dslz8                     & ! intent(in)
-                                , runoff_time               & ! intent(in)
-                                , runoff_time_i             & ! intent(in)
+      use soil_coms      , only : runoff_time_i             & ! intent(in)
                                 , simplerunoff              ! ! intent(in)
       use consts_coms    , only : t3ple8                    & ! intent(in)
                                 , wdnsi8                    ! ! intent(in)
@@ -548,7 +535,7 @@ module heun_driver
             !------------------------------------------------------------------------------!
             ! 1. Try a step of varying size.                                               !
             !------------------------------------------------------------------------------!
-            call heun_stepper(x,h,csite,ipa,ibuff,reject_step,reject_result)
+            call heun_stepper(h,csite,ipa,ibuff,reject_step,reject_result)
 
             !------------------------------------------------------------------------------!
             !     Here we check the error of this step.  Three outcomes are possible:      !
@@ -839,12 +826,11 @@ module heun_driver
    !                                      ye(t+h) = y(t) + K1 * h                          !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine heun_stepper(x,h,csite,ipa,ibuff,reject_step,reject_result)
+   subroutine heun_stepper(h,csite,ipa,ibuff,reject_step,reject_result)
       use rk4_coms       , only : integration_buff       & ! structure
                                 , integration_vars       & ! structure
                                 , zero_rk4_patch         & ! subroutine
                                 , zero_rk4_cohort        & ! subroutine
-                                , rk4site                & ! intent(in)
                                 , print_diags            & ! intent(in)
                                 , heun_a2                & ! intent(in)
                                 , heun_b21               & ! intent(in)
@@ -854,8 +840,6 @@ module heun_driver
                                 , heun_dc2               ! ! intent(in)
       use ed_state_vars  , only : sitetype               & ! structure
                                 , patchtype              ! ! structure
-      use grid_coms      , only : nzg                    & ! intent(in)
-                                , nzs                    ! ! structure
       use rk4_copy_patch , only : copy_rk4_patch         ! ! sub-routine
       use rk4_derivs     , only : leaf_derivs            ! ! sub-routine
       use rk4_integ_utils, only : inc_rk4_patch          & ! sub-routine
@@ -872,7 +856,6 @@ module heun_driver
       integer           , intent(in)  :: ibuff
       logical           , intent(out) :: reject_step
       logical           , intent(out) :: reject_result
-      real(kind=8)      , intent(in)  :: x
       real(kind=8)      , intent(in)  :: h
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch

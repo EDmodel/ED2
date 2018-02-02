@@ -126,12 +126,6 @@ subroutine ed_masterput_nl(par_run)
                                    , iedcnfgf                  & ! intent(in)
                                    , outfast                   & ! intent(in)
                                    , outstate                  & ! intent(in)
-                                   , out_time_fast             & ! intent(in)
-                                   , out_time_state            & ! intent(in)
-                                   , nrec_fast                 & ! intent(in)
-                                   , nrec_state                & ! intent(in)
-                                   , irec_fast                 & ! intent(in)
-                                   , irec_state                & ! intent(in)
                                    , unitfast                  & ! intent(in)
                                    , unitstate                 & ! intent(in)
                                    , event_file                & ! intent(in)
@@ -656,7 +650,6 @@ subroutine ed_masterput_met_header(par_run)
                              , met_vars          & ! intent(in)
                              , met_frq           & ! intent(in)
                              , met_interp        & ! intent(in)
-                             , ed_met_driver_db  & ! intent(in)
                              , met_ll_header     & ! intent(in)
                              , met_land_mask     & ! intent(in)
                              , metname_len       & ! intent(in)
@@ -738,9 +731,7 @@ end subroutine ed_masterput_met_header
 subroutine ed_masterput_poly_dims(par_run,masterworks)
    use ed_state_vars , only : gdpy         & ! intent(in)
                             , py_off       ! ! intent(in)
-   use grid_coms     , only : nnxp         & ! intent(in)
-                            , nnyp         & ! intent(in)
-                            , ngrids       ! ! intent(in)
+   use grid_coms     , only : ngrids       ! ! intent(in)
    use ed_work_vars  , only : work_v       & ! intent(in)
                             , npolys_run   ! ! intent(in)
    use ed_para_coms  , only : mainnum      & ! intent(in)
@@ -1051,13 +1042,7 @@ subroutine ed_masterput_worklist_info(par_run)
                            , ed_nullify_work_vec   & ! subroutine
                            , ed_dealloc_work_vec   ! ! subroutine
    use ed_para_coms , only : nmachs                & ! intent(in)
-                           , mainnum               & ! intent(in)
                            , machnum               ! ! intent(in)
-   use soil_coms    , only : isoilflg              ! ! intent(in)
-   use ed_node_coms , only : mxp                   & ! intent(in)
-                           , myp                   & ! intent(in)
-                           , i0                    & ! intent(in)
-                           , j0                    ! ! intent(in)
    use ed_state_vars, only : gdpy                  & ! intent(in)
                            , py_off                ! ! intent(in)
    use mem_polygons , only : maxsite               ! ! intent(in)
@@ -1286,8 +1271,7 @@ end subroutine ed_nodeget_processid
 !------------------------------------------------------------------------------------------!
 subroutine ed_nodeget_nl
 
-   use ed_node_coms         , only : master_num                & ! intent(in)
-                                   , mynum                     ! ! intent(in)
+   use ed_node_coms         , only : master_num                ! ! intent(in)
    use ed_max_dims          , only : str_len                   & ! intent(in)
                                    , max_poi                   & ! intent(in)
                                    , max_ed_regions            & ! intent(in)
@@ -1338,12 +1322,6 @@ subroutine ed_nodeget_nl
                                    , iedcnfgf                  & ! intent(out)
                                    , outfast                   & ! intent(out)
                                    , outstate                  & ! intent(out)
-                                   , out_time_fast             & ! intent(out)
-                                   , out_time_state            & ! intent(out)
-                                   , nrec_fast                 & ! intent(out)
-                                   , nrec_state                & ! intent(out)
-                                   , irec_fast                 & ! intent(out)
-                                   , irec_state                & ! intent(out)
                                    , unitfast                  & ! intent(out)
                                    , unitstate                 & ! intent(out)
                                    , event_file                & ! intent(out)
@@ -1860,8 +1838,7 @@ end subroutine ed_nodeget_nl
 ! the hdf5 in parallel                                                                     !
 !------------------------------------------------------------------------------------------!
 subroutine ed_nodeget_met_header()
-   use ed_node_coms   , only : master_num    & ! intent(in)
-                             , mynum         ! ! intent(in)
+   use ed_node_coms   , only : master_num    ! ! intent(in)
    use ed_max_dims    , only : max_met_vars  & ! intent(in)
                              , str_len       ! ! intent(in)
    use met_driver_coms, only : metname_len   & ! intent(in)
@@ -1956,15 +1933,18 @@ end subroutine ed_nodeget_met_header
 !==========================================================================================!
 !==========================================================================================!
 subroutine ed_nodeget_poly_dims
-   use ed_state_vars, only: gdpy,py_off
-   use ed_node_coms, only: master_num,nmachs,mynum
-   use grid_coms, only: ngrids
+   use ed_state_vars, only : gdpy       & ! intent(out)
+                           , py_off     ! ! intent(out)
+   use ed_node_coms , only : master_num & ! intent(in)
+                           , nmachs     ! ! intent(in)
+   use grid_coms    , only : ngrids     ! ! intent(in)
    implicit none
 #if defined(RAMS_MPI)
    include 'mpif.h'
 #endif
    integer :: ierr
-   integer :: ifm,nm
+   integer :: ifm
+   integer :: nm
 
 #if defined(RAMS_MPI)
    do ifm=1,ngrids
@@ -1995,7 +1975,6 @@ subroutine ed_nodeget_worklist_info
                            , ed_alloc_work_vec   & ! subroutine
                            , ed_nullify_work_vec ! ! subroutine
    use ed_node_coms ,  only: mynum               & ! intent(in)
-                           , nmachs              & ! intent(in)
                            , master_num          ! ! intent(in)
    use ed_state_vars, only : gdpy                ! ! intent(in)
    use mem_polygons , only : maxsite             ! ! intent(in)

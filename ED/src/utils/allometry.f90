@@ -275,7 +275,6 @@ module allometry
    real function size2bw(dbh,hite,ipft)
 
       use pft_coms    , only : qsw         ! ! intent(in), lookup table
-      use ed_misc_coms, only : igrass      ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
@@ -314,7 +313,6 @@ module allometry
       use pft_coms    , only : is_grass    & ! intent(in)
                              , qsw         & ! intent(in)
                              , dbh_crit    & ! intent(in)
-                             , bdead_crit  & ! intent(in)
                              , nbt_lut     & ! intent(in)
                              , dbh_lut     & ! intent(in)
                              , bwood_lut   & ! intent(in)
@@ -417,11 +415,9 @@ module allometry
    ! minimum sapwood biomass given DBH.                                                    !
    !---------------------------------------------------------------------------------------!
    real function ba2h(balive,ipft)
-      use pft_coms    , only : qsw         & ! intent(in)
-                             , hgt_min     & ! intent(in)
+      use pft_coms    , only : hgt_min     & ! intent(in)
                              , hgt_max     & ! intent(in)
                              , balive_crit & ! intent(in)
-                             , nbt_lut     & ! intent(in)
                              , dbh_lut     & ! intent(in)
                              , balive_lut  & ! intent(in)
                              , le_mask_lut & ! intent(out)
@@ -436,7 +432,6 @@ module allometry
       integer             :: ilwr        ! Lower index of the lookup table
       integer             :: iupr        ! Upper index of the lookup table
       real                :: dbh         ! Best guess for DBH.
-      real                :: height_crit ! Height at DBH_crit
       real                :: finterp     ! Interpolation factor
       !------------------------------------------------------------------------------------!
 
@@ -511,22 +506,22 @@ module allometry
 
 
 
-         !----- Find out whether this is an adult tree or a sapling/grass. ----------------!
-         if (bleaf < bleaf_adult(ipft)) then
-            mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
-         else
-            mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
-         end if
-         !---------------------------------------------------------------------------------!
+      !----- Find out whether this is an adult tree or a sapling/grass. -------------------!
+      if (bleaf < bleaf_adult(ipft)) then
+         mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
+      else
+         mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
+      end if
+      !------------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !     For grasses, limit maximum effective dbh by maximum height.                 !
-         !---------------------------------------------------------------------------------!
-         if (is_grass(ipft) .and. igrass == 1) then
-            bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
-         else
-            bl2dbh = min(mdbh, dbh_crit(ipft))
+      !------------------------------------------------------------------------------------!
+      !     For grasses, limit maximum effective dbh by maximum height.                    !
+      !------------------------------------------------------------------------------------!
+      if (is_grass(ipft) .and. igrass == 1) then
+         bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
+      else
+         bl2dbh = min(mdbh, dbh_crit(ipft))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -570,14 +565,13 @@ module allometry
       use ed_misc_coms, only : iallom         ! ! intent(in)
       use pft_coms    , only : dbh_crit       & ! intent(in)
                              , hgt_max        & ! intent(in)
-                             , is_tropical    & ! intent(in)
                              , is_grass       & ! intent(in)
                              , is_liana       & ! intent(in)
                              , b1Ca           & ! intent(in)
                              , b2Ca           & ! intent(in)
                              , liana_dbh_crit ! ! intent(in)
-      use ed_misc_coms, only : igrass      ! ! intent(in)
-      use ed_state_vars, only: patchtype  ! ! structure
+      use ed_misc_coms, only : igrass         ! ! intent(in)
+      use ed_state_vars, only: patchtype      ! ! structure
 
       !----- Arguments --------------------------------------------------------------------!
       real          , intent(in) :: dbh
@@ -824,6 +818,7 @@ module allometry
          !---------------------------------------------------------------------------------!
          root_depth = b1Rd(ipft) * hite ** b2Rd(ipft)
       end select
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -927,7 +922,6 @@ module allometry
                               , dbh_adult       & ! intent(in)
                               , is_liana        & ! intent(in)
                               , is_grass        & ! intent(in)
-                              , SLA             & ! intent(in)
                               , b1WAI_small     & ! intent(in)
                               , b2WAI_small     & ! intent(in)
                               , b1WAI_large     & ! intent(in)
@@ -940,7 +934,6 @@ module allometry
       type(patchtype), target :: cpatch
       integer, intent(in)     :: ico
       !----- Local variables --------------------------------------------------------------!
-      real                    :: bleaf_max
       real                    :: loccai
       real                    :: mdbh
       integer                 :: ipft

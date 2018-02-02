@@ -4,10 +4,10 @@
 !
 !> \brief This module contains routines to obtain fire disturbance rates
 !> \details These subroutines are intended to calculate fire intensity and burned area
-!>          which are or can be used to obtain fire disturbance rate and survivorship
+!!          which are or can be used to obtain fire disturbance rate and survivorship
 !> \author  Paul Moorcroft, converted to fortran by David Medvigy
 !> \author  10 Jan 2018.  MLO converted it into module so the code compiles with ifort 17.
-!>          Also implementing process-based model, step by step.  This
+!!          Also implementing process-based model, step by step.
 !------------------------------------------------------------------------------------------!
 module fire
 
@@ -15,8 +15,9 @@ module fire
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine will evaluate whether fire conditions exist, and if that is the    !
-   ! case, it will calculate the disturbance rate due to fire.                             !
+   ! SUB-ROUTINE FIRE_FREQUENCY
+   !> This subroutine will evaluate whether fire conditions exist, and if that is the
+   !! case, it will calculate the disturbance rate due to fire.
    !---------------------------------------------------------------------------------------!
    subroutine fire_frequency(cgrid)
       use ed_state_vars , only : edtype                 & ! structure
@@ -31,7 +32,6 @@ module fire
                                , dslz                   ! ! intent(in)
       use pft_coms      , only : is_grass               ! ! intent(in)
       use disturb_coms  , only : include_fire           & ! intent(in)
-                               , sm_fire                & ! intent(in)
                                , fire_dryness_threshold & ! intent(in)
                                , k_fire_first           & ! intent(in)
                                , fire_parameter         & ! intent(in)

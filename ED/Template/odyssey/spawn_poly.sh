@@ -1187,14 +1187,16 @@ do
    #---------------------------------------------------------------------------------------#
    #     Correct years so it is not tower-based or Sheffield.                              #
    #---------------------------------------------------------------------------------------#
-   if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
-      [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ] &&
-      [ ${iscenario} != "WFDEI"     ]
-   then
+   case ${iscenario} in
+   default|eft|shr|sheffield|WFDEI*)
+      echo "Nothing" > /dev/null
+      ;;
+   *)
       metcyc1=1972
       metcycf=2012
       imetavg=1
-   fi
+      ;;
+   esac
    #---------------------------------------------------------------------------------------#
 
 

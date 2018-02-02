@@ -239,7 +239,6 @@ module hrzshade_utils
                                        , copy_sitetype_mask  & ! subroutine
                                        , copy_sitetype       ! ! subroutine
       use canopy_radiation_coms , only : ihrzrad             & ! intent(in)
-                                       , cci_radius          & ! intent(in)
                                        , cci_pixres          & ! intent(in)
                                        , cci_gapsize         & ! intent(in)
                                        , cci_gapmin          & ! intent(in)
@@ -249,14 +248,12 @@ module hrzshade_utils
                                        , rls_npixel          & ! intent(in)
                                        , rls_ngap            & ! intent(in)
                                        , rls_length          & ! intent(in)
-                                       , rls_area            & ! intent(in)
                                        , rls_x               & ! intent(in)
                                        , rls_y               & ! intent(in)
                                        , rls_igp0            & ! intent(in)
                                        , gap_x0              & ! intent(in)
                                        , gap_y0              & ! intent(in)
                                        , cci_gaparea         & ! intent(in)
-                                       , gap_npixel          & ! intent(in)
                                        , rls_igp             & ! intent(out)
                                        , rls_ipa             & ! intent(out)
                                        , rls_ztch            & ! intent(out)

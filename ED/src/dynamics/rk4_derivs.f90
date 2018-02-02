@@ -1,6 +1,16 @@
 !==========================================================================================!
 !==========================================================================================!
-!    Module rk4_derivs.  This routine contains the derivatives of most short-term fluxes.  !
+!    MODULE RK4_DERIVS.F90  
+!
+!> \brief This module contains the derivatives of most short-term fluxes.
+!> \details Three subroutines live in this module.  leaf_derivs is a wrapper; 
+!!          leaftw_derivs solves mostly the ground derivatives (soils and temporary surface
+!!          water), and canopy_derivs_two solves derivatives at the cohort scale and the 
+!!          canopy air space at patch  level.  These routines are largely based on BRAMS
+!!          LEAF-2/LEAF-3 model.
+!> \author  Adapted from LEAF-2 by David Medvigy.  Further updates to make it compatible
+!!          with LEAF-3 and to conserve energy and water by Ryan Knox and Marcos Longo.
+!> \author  Converted to module to eliminate interfaces by Marcos Longo
 !------------------------------------------------------------------------------------------!
 module rk4_derivs
    contains
@@ -131,7 +141,6 @@ module rk4_derivs
       real(kind=8)                :: wloss_tot        ! Total water loss amongst cohorts
       real(kind=8)                :: wvlmeloss_tot    ! Total water loss amongst cohorts
       real(kind=8)                :: qloss            ! Energy loss due to transpiration
-      real(kind=8)                :: qloss_tot        ! Total energy loss amongst cohorts
       real(kind=8)                :: qvlmeloss_tot    ! Total energy loss amongst cohorts
       real(kind=8)                :: infilt           ! Surface infiltration rate
       real(kind=8)                :: qinfilt          ! Surface infiltration heat rate

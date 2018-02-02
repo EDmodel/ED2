@@ -121,7 +121,6 @@ module mortality
                               , patchtype     ! ! structure
       use ed_max_dims  , only : n_pft         & ! intent(in)
                               , n_dist_types  ! ! intent(in)
-      use disturb_coms , only : min_oldgrowth ! ! intent(in)
       use consts_coms  , only : lnexp_max     & ! intent(in)
                               , tiny_num      ! ! intent(in)
       implicit none
@@ -134,7 +133,6 @@ module mortality
       type(patchtype)                        , pointer     :: cpatch
       integer                                              :: ico
       integer                                              :: new_lu
-      integer                                              :: dist_path
       real                                                 :: f_survival
       real           , dimension(:)          , allocatable :: a_factor
       !------------------------------------------------------------------------------------!
@@ -212,8 +210,7 @@ module mortality
    !---------------------------------------------------------------------------------------!
    real function survivorship(new_lu,old_lu,mindbh_harvest,cpatch,ico)
       use ed_state_vars, only : patchtype                ! ! structure
-      use disturb_coms , only : treefall_hite_threshold  & ! intent(in)
-                              , min_oldgrowth            ! ! intent(in)
+      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
       use pft_coms     , only : treefall_s_ltht          & ! intent(in)
                               , treefall_s_gtht          & ! intent(in)
                               , fire_s_min               & ! intent(in)
@@ -225,7 +222,6 @@ module mortality
                               , skid_s_ltharv            & ! intent(in)
                               , skid_s_gtharv            ! ! intent(in)
       use ed_max_dims  , only : n_pft                    ! ! intent(in)
-      use ed_misc_coms , only : iallom                   ! ! intent(in)
       use consts_coms  , only : lnexp_min                & ! intent(in)
                               , lnexp_max                ! ! intent(in)
       implicit none

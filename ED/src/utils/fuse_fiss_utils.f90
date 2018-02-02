@@ -983,7 +983,7 @@ module fuse_fiss_utils
                                      , coh_tolerance_max   ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
-      use allometry           , only : size2bl         ! ! function
+      use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -3313,7 +3313,7 @@ module fuse_fiss_utils
 
       !------------------------------------------------------------------------------------!
       !     Lastly, we update nplant, LAI, WAI, and crown area.  They may be used as       !
-      ! weighting factors so we leave them to the end.                                     !
+      ! weighting factors so we leave them in the end.                                     !
       !------------------------------------------------------------------------------------!
       cpatch%nplant     (recc) = cpatch%nplant(recc) + cpatch%nplant(donc)
       cpatch%lai        (recc) = cpatch%lai   (recc) + cpatch%lai   (donc)
@@ -5778,9 +5778,11 @@ module fuse_fiss_utils
       csite%age(recp)                = newareai *                                          &
                                      ( csite%age(donp)                * csite%area(donp)   &
                                      + csite%age(recp)                * csite%area(recp) )
+
       csite%htry(recp)               = newareai *                                          &
                                      ( csite%htry(donp)               * csite%area(donp)   &
                                      + csite%htry(recp)               * csite%area(recp) )
+
       csite%hprev(recp)              = newareai *                                          &
                                      ( csite%hprev(donp)              * csite%area(donp)   &
                                      + csite%hprev(recp)              * csite%area(recp) )
@@ -5800,7 +5802,6 @@ module fuse_fiss_utils
       csite%structural_soil_C(recp)  = newareai *                                          &
                                      ( csite%structural_soil_C(donp)  * csite%area(donp)   &
                                      + csite%structural_soil_C(recp)  * csite%area(recp) )
-                                     
 
       csite%structural_soil_L(recp)  = newareai *                                          &
                                      ( csite%structural_soil_L(donp)  * csite%area(donp)   &

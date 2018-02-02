@@ -1319,6 +1319,11 @@ vtab_fill.o : $(MEMORY)/vtab_fill.f90
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 
+ed_mem_grid_dim_defs.o : $(ED_MIXED)/ed_mem_grid_dim_defs.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 edcp_driver.o : $(ED_MIXED)/edcp_driver.F90
 	/bin/rm -f $(<F:.f90=.F90) 
 	/bin/cp -f $< $(<F:.f90=.F90)
@@ -1508,11 +1513,6 @@ ed_max_dims.o : $(ED_MEMORY)/ed_max_dims.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
-
-ed_mem_grid_dim_defs.o : $(ED_MEMORY)/ed_mem_grid_dim_defs.f90
-	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
 
 ed_misc_coms.o : $(ED_MEMORY)/ed_misc_coms.f90
 	/bin/rm -f $(<F:.f90=.f90)

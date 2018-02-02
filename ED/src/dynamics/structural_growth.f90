@@ -101,7 +101,6 @@ module structural_growth
       real                          :: f_bstorage
       real                          :: f_bsapw
       real                          :: f_bdead
-      real                          :: dbtot_i
       real                          :: bfast_mort_litter
       real                          :: bstruct_mort_litter
       real                          :: bstorage_mort_litter
@@ -946,10 +945,7 @@ module structural_growth
                               , dbh2h              & ! function
                               , bd2dbh             & ! function
                               , bw2dbh             ! ! function
-      use pft_coms     , only : q                  & ! intent(in)
-                              , qsw                & ! intent(in)
-                              , qbark              & ! intent(in)
-                              , sapw_turnover_rate & ! intent(in)
+      use pft_coms     , only : sapw_turnover_rate & ! intent(in)
                               , bwood_crit         & ! intent(in)
                               , bdead_crit         & ! intent(in)
                               , agf_bs             & ! intent(in)
@@ -982,7 +978,6 @@ module structural_growth
       real(kind=4)                     :: bsapw_b     ! Sapwood biomass before growth
       real(kind=4)                     :: bwood_b     ! Wood biomass before growth
       real(kind=4)                     :: bdead_b     ! Heartwood biomass after turnover
-      real(kind=4)                     :: bdead_a     ! Heartwood biomass before turnover
       real(kind=4)                     :: bsapa_loss  ! AG Sapwood loss through turnover
       real(kind=4)                     :: bsapb_loss  ! BG Sapwood loss through turnover
       real(kind=4)                     :: bdead_gain  ! Heartwood gain through turnover

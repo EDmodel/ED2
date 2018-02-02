@@ -7,8 +7,6 @@ subroutine h5_output(vtype)
 #if USE_HDF5
    use hdf5
 #endif
-   use an_header
-  
    use ed_var_tables, only : vt_info               & ! intent(in)
                            , var_table             & ! intent(in)
                            , var_table_vector      & ! intent(in)
@@ -88,9 +86,6 @@ subroutine h5_output(vtype)
    real(kind=8)                                                  :: dsec
    !------ Local variables (MPI only). ----------------------------------------------------!
 #if defined(RAMS_MPI)
-   integer                                                       :: mpierror
-   integer                                                       :: mpi_size
-   integer                                                       :: mpi_rank
    integer                                                       :: ierr
 #endif
    !------ HDF specific data types. -------------------------------------------------------!

@@ -7539,7 +7539,6 @@ module average_utils
       use ed_max_dims  , only : n_pft        & ! intent(in)
                               , n_dbh        ! ! intent(in)
       use consts_coms  , only : pi1          ! ! intent(in)
-      use ed_misc_coms , only : current_time ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       type(edtype)     , target  :: cgrid

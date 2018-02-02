@@ -4,7 +4,7 @@
 ! patches.  This is usually done once a year, and the main disturbance driver will decide  !
 ! which kind of disturbance should be applied.                                             !
 !------------------------------------------------------------------------------------------!
-module disturbance_utils
+module disturbance
 
    use ed_state_vars   , only : allocate_patchtype    & ! subroutine
                               , copy_patchtype        & ! subroutine
@@ -47,9 +47,7 @@ module disturbance_utils
                                      , ibigleaf                   & ! intent(in)
                                      , lianas_included            ! ! intent(in)
       use disturb_coms        , only : min_patch_area             & ! intent(in)
-                                     , mature_harvest_age         & ! intent(in)
                                      , plantation_year            & ! intent(in)
-                                     , plantation_rotation        & ! intent(in)
                                      , treefall_hite_threshold    & ! intent(in)
                                      , min_oldgrowth              & ! intent(in)
                                      , sl_skid_rel_area           ! ! intent(in)
@@ -1648,9 +1646,6 @@ module disturbance_utils
 
       use ed_state_vars, only : sitetype           & ! structure
                               , patchtype          ! ! structure
-      use consts_coms  , only : t3ple              ! ! intent(in)
-      use grid_coms    , only : nzs                & ! intent(in)
-                              , nzg                ! ! intent(in)
       use ed_max_dims  , only : n_pft              ! ! intent(in)
       use ed_type_init , only : init_ed_patch_vars ! ! sub-routine
       implicit none
@@ -3609,6 +3604,6 @@ module disturbance_utils
 
    end subroutine prune_lianas
 
-end module disturbance_utils
+end module disturbance
 !==========================================================================================!
 !==========================================================================================!

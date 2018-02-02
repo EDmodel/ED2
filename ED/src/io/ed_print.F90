@@ -34,7 +34,6 @@ module ed_print
                               , nnodetot      & ! intent(in)
                               , sendnum       & ! intent(in)
                               , recvnum       & ! intent(in)
-                              , master_num    & ! intent(in)
                               , machs         ! ! intent(in)
 #else
       use ed_node_coms , only : mynum         & ! intent(in)

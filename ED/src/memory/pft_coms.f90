@@ -29,7 +29,7 @@ module pft_coms
    !  14 | Late tropical savannah          |    no |    no |      yes |      yes |      no !
    !  15 | Araucaria                       |    no |    no |      yes |       no |     yes !
    !  16 | Tropical C3 grass               |   yes |    no |      yes |       no |      no !
-   !  17 | Liana                           |    no |   yes |      yes |       no |     yes !
+   !  17 | Liana                           |    no |   yes |      yes |       no |      no !
    !---------------------------------------------------------------------------------------!
 
 

@@ -32,7 +32,6 @@ module ed_type_init
                                 , vm0_amp             & ! intent(in)
                                 , vm0_min             & ! intent(in)
                                 , llspan_inf          ! ! intent(in)
-      use physiology_coms, only : iddmort_scheme      ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target     :: cpatch     ! Current patch

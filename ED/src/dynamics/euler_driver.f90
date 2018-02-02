@@ -10,21 +10,17 @@ module euler_driver
                                        , rk4patchtype               & ! structure
                                        , zero_rk4_patch             & ! subroutine
                                        , zero_rk4_cohort            & ! subroutine
-                                       , integration_buff           & ! intent(out)
-                                       , rk4site                    ! ! intent(out)
+                                       , integration_buff           ! ! intent(out)
       use ed_para_coms          , only : nthreads                   ! ! intent(in)
       use ed_state_vars         , only : edtype                     & ! structure
                                        , polygontype                & ! structure
-                                       , sitetype                   & ! structure
-                                       , patchtype                  ! ! structure
+                                       , sitetype                   ! ! structure
       use met_driver_coms       , only : met_driv_state             ! ! structure
       use grid_coms             , only : nzg                        & ! intent(in)
                                        , nzs                        ! ! intent(in)
       use ed_misc_coms          , only : current_time               & ! intent(in)
                                        , dtlsm                      ! ! intent(in)
       use ed_max_dims           , only : n_dbh                      ! ! intent(in)
-      use soil_coms             , only : soil_rough                 & ! intent(in)
-                                       , snow_rough                 ! ! intent(in)
       use therm_lib             , only : tq2enthalpy                ! ! function
       use budget_utils          , only : update_budget              & ! function
                                        , compute_budget             ! ! function
@@ -44,7 +40,6 @@ module euler_driver
       !----- Local variables --------------------------------------------------------------!
       type(polygontype)        , pointer     :: cpoly
       type(sitetype)           , pointer     :: csite
-      type(patchtype)          , pointer     :: cpatch
       type(met_driv_state)     , pointer     :: cmet
       type(rk4patchtype)       , pointer     :: initp
       type(rk4patchtype)       , pointer     :: dinitp
@@ -327,12 +322,8 @@ module euler_driver
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
-      use soil_coms       , only : soil_rough           & ! intent(in)
-                                 , snow_rough           ! ! intent(in)
-      use canopy_air_coms , only : exar8                ! ! intent(in)
       use rk4_coms        , only : integration_vars     & ! structure
                                  , rk4patchtype         & ! structure
-                                 , rk4site              & ! intent(inout)
                                  , zero_rk4_patch       & ! subroutine
                                  , zero_rk4_cohort      & ! subroutine
                                  , tbeg                 & ! intent(inout)
@@ -449,8 +440,6 @@ module euler_driver
                                 , zero_rk4_patch            & ! subroutine
                                 , zero_rk4_cohort           & ! subroutine
                                 , hmin                      & ! intent(in)
-                                , rk4eps                    & ! intent(in)
-                                , rk4epsi                   & ! intent(in)
                                 , safety                    & ! intent(in)
                                 , pgrow                     & ! intent(in)
                                 , pshrnk                    & ! intent(in)
@@ -471,13 +460,10 @@ module euler_driver
                                 , print_rk4_state           ! ! sub-routine
       use ed_misc_coms   , only : fast_diagnostics          & ! intent(in)
                                 , dteuler                   ! ! intent(in)
-      use hydrology_coms , only : useRUNOFF                 ! ! intent(in)
       use grid_coms      , only : nzg                       & ! intent(in)
                                 , nzs                       & ! intent(in)
                                 , time                      ! ! intent(in)
-      use soil_coms      , only : dslz8                     & ! intent(in)
-                                , runoff_time               & ! intent(in)
-                                , runoff_time_i             & ! intent(in)
+      use soil_coms      , only : runoff_time_i             & ! intent(in)
                                 , simplerunoff              ! ! intent(in)
       use consts_coms    , only : t3ple8                    & ! intent(in)
                                 , wdnsi8                    ! ! intent(in)

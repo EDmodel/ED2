@@ -340,7 +340,6 @@ module phenology_aux
    ! the phenology, so we assign fully flushed leaves.                                     !
    !---------------------------------------------------------------------------------------!
    subroutine first_phenology(cgrid)
-      use stable_cohorts
       use ed_state_vars , only : edtype           & ! structure
                                , polygontype      & ! structure
                                , sitetype         & ! structure
@@ -351,6 +350,7 @@ module phenology_aux
                                , area_indices     ! ! subroutine
       use grid_coms     , only : nzg              ! ! intent(in)
       use therm_lib     , only : cmtl2uext        ! ! function
+      use stable_cohorts, only : is_resolvable    ! ! sub-routine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid       ! Current grid

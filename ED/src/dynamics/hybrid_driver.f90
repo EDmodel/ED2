@@ -13,12 +13,10 @@ module hybrid_driver
                                       , zero_rk4_cohort    & ! subroutine
                                       , zero_bdf2_patch    &
                                       , integration_buff   & ! intent(out)
-                                      , rk4site            & ! intent(out)
                                       , bdf2patchtype      &
                                       , tbeg               &
                                       , tend               &
-                                      , dtrk4              &
-                                      , dtrk4i
+                                      , dtrk4i             !
      use ed_para_coms          , only : nthreads           ! ! intent(in)
      use rk4_driver            , only : initp2modelp
      use ed_state_vars         , only : edtype             & ! structure
@@ -59,16 +57,9 @@ module hybrid_driver
      integer                                :: ipy
      integer                                :: isi
      integer                                :: ipa
-     integer                                :: ico
      integer                                :: imon
      integer                                :: nsteps
      real                                   :: patch_vels
-     real                                   :: thetaatm
-     real                                   :: thetacan
-     real                                   :: rasveg
-     real                                   :: storage_decay
-     real                                   :: leaf_flux
-     real                                   :: veg_tai
      real                                   :: wcurr_loss2atm
      real                                   :: ecurr_loss2atm
      real                                   :: co2curr_loss2atm
@@ -77,14 +68,12 @@ module hybrid_driver
      real                                   :: ecurr_loss2drainage
      real                                   :: wcurr_loss2runoff
      real                                   :: ecurr_loss2runoff
-     real                                   :: old_can_theiv
      real                                   :: old_can_shv
      real                                   :: old_can_co2
      real                                   :: old_can_rhos
      real                                   :: old_can_temp
      real                                   :: old_can_prss
      real                                   :: old_can_enthalpy
-     real                                   :: fm
      real                                   :: wtime0
      real(kind=8)                           :: hbeg
      integer                                :: ibuff
@@ -373,8 +362,6 @@ module hybrid_driver
                                 , zero_rk4_patch            & ! subroutine
                                 , zero_rk4_cohort           & ! subroutine
                                 , hmin                      & ! intent(in)
-                                , rk4eps                    & ! intent(in)
-                                , rk4epsi                   & ! intent(in)
                                 , safety                    & ! intent(in)
                                 , pgrow                     & ! intent(in)
                                 , pshrnk                    & ! intent(in)
@@ -393,13 +380,10 @@ module hybrid_driver
                                 , print_rk4_state           ! ! sub-routine
       use ed_misc_coms   , only : fast_diagnostics          & ! intent(in)
                                 , dtlsm                     ! ! intent(in)
-      use hydrology_coms , only : useRUNOFF                 ! ! intent(in)
       use grid_coms      , only : nzg                       & ! intent(in)
                                 , nzs                       & ! intent(in)
                                 , time                      ! ! intent(in)
-      use soil_coms      , only : dslz8                     & ! intent(in)
-                                , runoff_time               & ! intent(in)
-                                , runoff_time_i             & ! intent(in)
+      use soil_coms      , only : runoff_time_i             & ! intent(in)
                                 , simplerunoff              ! ! intent(in)
       use consts_coms    , only : cliq8                     & ! intent(in)
                                 , t3ple8                    & ! intent(in)
@@ -443,8 +427,6 @@ module hybrid_driver
       real(kind=8)                            :: fgrow        ! Delta-t increase factor
       real(kind=8)                            :: hgoal        ! Delta-t ignoring overstep
       real(kind=8)                            :: hnext        ! Next delta-t
-      real(kind=8)                            :: hdid         ! delta-t that
-                                                              ! worked (???)
       real(kind=8)                            :: qwfree       ! Free water
                                                               ! internal energy
       real(kind=8)                            :: wfreeb       ! Free water
@@ -452,7 +434,6 @@ module hybrid_driver
                                                               ! of this step
       real(kind=8)                            :: elaptime     ! Absolute elapsed
                                                               ! time.
-      integer                                 :: nsolve       ! Size of a badger
 
       !----- External function. -------------------------------------------------!
       real                      , external    :: sngloff
@@ -490,7 +471,7 @@ module hybrid_driver
             ! Very simple analysis of derivative.  ie try to reduce drastic
             ! changes in key state variables.
             !---------------------------------------------------------------------!
-            call fb_dy_step_trunc(initp,restart_step,csite,ipa,dinitp,h,htrunc)
+            call fb_dy_step_trunc(initp,restart_step,csite,dinitp,h,htrunc)
 
             if (restart_step) then
 
@@ -1129,8 +1110,7 @@ module hybrid_driver
                                , rk4site            & ! intent(in)
                                , checkbudget        & ! intent(in)
                                , print_detailed     ! ! intent(in)
-      use grid_coms     , only : nzg                & ! intent(in)
-                               , nzs                ! ! intent(in)
+      use grid_coms     , only : nzg                ! ! intent(in)
       use ed_misc_coms  , only : fast_diagnostics   ! ! intent(in)
 
       implicit none
@@ -1321,45 +1301,15 @@ module hybrid_driver
 
     ! ========================================================================= !
 
-    subroutine fb_dy_step_trunc(y,restart_step,csite,ipa,dydx,h,hmin)
+    subroutine fb_dy_step_trunc(y,restart_step,csite,dydx,h,hmin)
 
-      use rk4_coms              , only : rk4patchtype          & ! structure
-           , integration_vars      & ! structure
-           , rk4site               & ! intent(in)
-           , rk4aux                & ! intent(in)
-           , rk4eps                & ! intent(in)
-           , toocold               & ! intent(in)
-           , rk4max_can_shv        & ! intent(in)
-           , rk4min_can_shv        & ! intent(in)
-           , rk4min_can_rhv        & ! intent(in)
-           , rk4max_can_rhv        & ! intent(in)
-           , rk4min_can_temp       & ! intent(in)
-           , rk4max_can_temp       & ! intent(in)
-           , rk4min_can_co2        & ! intent(in)
-           , rk4max_can_co2        & ! intent(in)
-           , rk4max_veg_temp       & ! intent(in)
-           , rk4min_veg_temp       & ! intent(in)
-           , rk4min_veg_lwater     & ! intent(in)
-           , rk4min_sfcw_temp      & ! intent(in)
-           , rk4max_sfcw_temp      & ! intent(in)
-           , rk4max_soil_temp      & ! intent(in)
-           , rk4min_soil_temp      & ! intent(in)
-           , rk4min_sfcw_mass      & ! intent(in)
-           , rk4min_virt_water     & ! intent(in)
-           , rk4tiny_sfcw_mass     & ! intent(in)
-           , rk4water_stab_thresh  & ! intent(in)
-           , integ_err             & ! intent(inout)
-           , record_err            & ! intent(in)
-           , osow                  & ! intent(in)
-           , osoe                  & ! intent(in)
-           , oswe                  & ! intent(in)
-           , oswm                  ! ! intent(in)
-      use ed_state_vars         , only : sitetype              & ! structure
-           , patchtype             ! ! structure
-      use grid_coms             , only : nzg                   ! ! intent(in)
+      use rk4_coms               , only : rk4patchtype          & ! structure
+                                        , integration_vars      & ! structure
+                                        , integ_err             & ! intent(inout)
+                                        , record_err            ! ! intent(in)
+      use ed_state_vars          , only : sitetype              ! ! structure
       use therm_lib8             , only : eslif8
       use consts_coms            , only : ep8
-      use soil_coms              , only : soil8
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1369,26 +1319,7 @@ module hybrid_driver
       real(kind=8)       , intent(in)  :: h
       real(kind=8)       , intent(out) :: hmin
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)    , pointer     :: cpatch
-      integer                          :: k
-      integer                          :: ksn
-      real(kind=8)                     :: rk4min_leaf_water
-      real(kind=8)                     :: rk4min_wood_water
-      real(kind=8)                     :: fbmax_can_shv
-      real(kind=8)                     :: max_dco2_can
       real(kind=8)                     :: max_dshv_can
-      real(kind=8)                     :: max_dtheta_can
-      real(kind=8)                     :: max_dwater_soil
-      real(kind=8)                     :: max_denergy_soil
-      real(kind=8)                     :: hmin_tmp
-      integer                          :: ipa
-      integer                          :: ico
-      integer                          :: section ! either 1 or 2 or 3
-
-      logical                          :: cflag7
-      logical                          :: cflag8
-      logical                          :: cflag9
-      logical                          :: cflag10
       logical                          :: restart_step
       !------------------------------------------------------------------------------------!
 
@@ -1439,41 +1370,35 @@ module hybrid_driver
     subroutine fb_sanity_check(y,reject_step, csite,ipa,dydx,h, &
          print_problems)
       use rk4_coms              , only : rk4patchtype          & ! structure
-           , integration_vars      & ! structure
-           , rk4site               & ! intent(in)
-           , rk4aux                & ! intent(in)
-           , rk4eps                & ! intent(in)
-           , toocold               & ! intent(in)
-           , rk4max_can_shv        & ! intent(in)
-           , rk4min_can_shv        & ! intent(in)
-           , rk4min_can_rhv        & ! intent(in)
-           , rk4max_can_rhv        & ! intent(in)
-           , rk4min_can_temp       & ! intent(in)
-           , rk4max_can_temp       & ! intent(in)
-           , rk4min_can_co2        & ! intent(in)
-           , rk4max_can_co2        & ! intent(in)
-           , rk4max_veg_temp       & ! intent(in)
-           , rk4min_veg_temp       & ! intent(in)
-           , rk4min_veg_lwater     & ! intent(in)
-           , rk4min_sfcw_temp      & ! intent(in)
-           , rk4max_sfcw_temp      & ! intent(in)
-           , rk4max_soil_temp      & ! intent(in)
-           , rk4min_soil_temp      & ! intent(in)
-           , rk4min_sfcw_mass      & ! intent(in)
-           , rk4min_virt_water     & ! intent(in)
-           , rk4tiny_sfcw_mass     & ! intent(in)
-           , rk4water_stab_thresh  & ! intent(in)
-           , integ_err             & ! intent(inout)
-           , record_err            & ! intent(in)
-           , osow                  & ! intent(in)
-           , osoe                  & ! intent(in)
-           , oswe                  & ! intent(in)
-           , oswm                  ! ! intent(in)
+                                       , integration_vars      & ! structure
+                                       , rk4site               & ! intent(in)
+                                       , rk4aux                & ! intent(in)
+                                       , rk4min_can_shv        & ! intent(in)
+                                       , rk4min_can_temp       & ! intent(in)
+                                       , rk4max_can_temp       & ! intent(in)
+                                       , rk4min_can_co2        & ! intent(in)
+                                       , rk4max_can_co2        & ! intent(in)
+                                       , rk4max_veg_temp       & ! intent(in)
+                                       , rk4min_veg_temp       & ! intent(in)
+                                       , rk4min_veg_lwater     & ! intent(in)
+                                       , rk4min_sfcw_temp      & ! intent(in)
+                                       , rk4max_sfcw_temp      & ! intent(in)
+                                       , rk4max_soil_temp      & ! intent(in)
+                                       , rk4min_soil_temp      & ! intent(in)
+                                       , rk4min_sfcw_mass      & ! intent(in)
+                                       , rk4min_virt_water     & ! intent(in)
+                                       , rk4water_stab_thresh  & ! intent(in)
+                                       , integ_err             & ! intent(inout)
+                                       , record_err            & ! intent(in)
+                                       , osow                  & ! intent(in)
+                                       , osoe                  & ! intent(in)
+                                       , oswe                  & ! intent(in)
+                                       , oswm                  ! ! intent(in)
       use ed_state_vars         , only : sitetype              & ! structure
-           , patchtype             ! ! structure
+                                       , patchtype             ! ! structure
       use grid_coms             , only : nzg                   ! ! intent(in)
-      use therm_lib8             , only : eslif8
-      use consts_coms            , only : ep8
+      use therm_lib8            , only : eslif8
+      use consts_coms           , only : ep8
       !$ use omp_lib
 
       implicit none
@@ -1491,12 +1416,8 @@ module hybrid_driver
       real(kind=8)                     :: rk4min_leaf_water
       real(kind=8)                     :: rk4min_wood_water
       real(kind=8)                     :: fbmax_can_shv
-      real(kind=8)                     :: max_dco2
-      real(kind=8)                     :: max_dshv
-      real(kind=8)                     :: max_dtheta
       integer                          :: ipa
       integer                          :: ico
-      integer                          :: section ! either 1 or 2 or 3
       logical                          :: cflag7
       logical                          :: cflag8
       logical                          :: cflag9

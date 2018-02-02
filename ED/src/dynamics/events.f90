@@ -471,7 +471,7 @@ subroutine event_planting(pft,density8)
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
        filltab_alltypes
-  use disturbance_utils,only: plant_patch
+  use disturbance      , only : plant_patch
   use budget_utils     , only : update_budget
   use ed_type_init     , only : new_patch_sfc_props
   implicit none

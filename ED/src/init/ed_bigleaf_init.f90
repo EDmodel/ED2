@@ -32,7 +32,6 @@ module ed_bigleaf_init
                                 , qbark                & ! intent(in)
                                 , agf_bs               & ! intent(in)
                                 , f_bstorage_init      ! ! intent(in)
-      use ed_misc_coms   , only : igrass               ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts         & ! subroutine
                                 , sort_patches         ! ! subroutine
       use consts_coms    , only : pio4                 & ! intent(in)

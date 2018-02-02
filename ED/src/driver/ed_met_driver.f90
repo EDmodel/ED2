@@ -142,19 +142,10 @@ module ed_met_driver
    subroutine init_met_drivers
       use ed_max_dims     , only : max_met_vars
       use met_driver_coms , only : nformats          & ! intent(in)
-                                 , met_names         & ! intent(out)
-                                 , met_nlon          & ! intent(out)
-                                 , met_nlat          & ! intent(out)
-                                 , met_dx            & ! intent(out)
-                                 , met_dy            & ! intent(out)
-                                 , met_xmin          & ! intent(out)
-                                 , met_ymin          & ! intent(out)
                                  , met_nv            & ! intent(out)
                                  , met_vars          & ! intent(out)
                                  , met_frq           & ! intent(out)
                                  , met_interp        & ! intent(out)
-                                 , met_ll_header     & ! intent(out)
-                                 , met_land_mask     & ! intent(out)
                                  , has_co2           & ! intent(out)
                                  , has_ustar         ! ! intent(out)
       use canopy_air_coms , only : isfclyrm          ! ! intent(in)
@@ -325,28 +316,28 @@ module ed_met_driver
    !     This subroutine will control the HDF5 file reading.                               !
    !---------------------------------------------------------------------------------------!
    subroutine read_met_drivers_init
-      use ed_max_dims       , only : str_len        ! ! intent(in)
-      use ed_state_vars     , only : edgrid_g       & ! structure
-                                   , edtype         & ! structure
-                                   , polygontype    ! ! structure
-      use hdf5_utils        , only : shdf5_open_f   & ! subroutine
-                                   , shdf5_close_f  ! ! subroutine
-      use met_driver_coms   , only : nformats       & ! intent(in)
-                                   , ishuffle       & ! intent(in)
-                                   , met_names      & ! intent(in)
-                                   , met_nv         & ! intent(in)
-                                   , met_interp     & ! intent(in)
-                                   , met_frq        & ! intent(in)
-                                   , metcyc1        & ! intent(in)
-                                   , metcycf        & ! intent(in)
-                                   , metyears       ! ! intent(inout)
-      use ed_misc_coms      , only : current_time   & ! intent(in)
-                                   , iyeara         & ! intent(in)
-                                   , iyearz         & ! intent(in)
-                                   , imonthz        ! ! intent(in)
-      use grid_coms         , only : ngrids         ! ! intent(in)
-      use consts_coms       , only : day_sec        ! ! intent(in)
-      use ed_node_coms      , only : mynum          ! ! intent(in)
+      use ed_max_dims       , only : str_len          ! ! intent(in)
+      use ed_state_vars     , only : edgrid_g         & ! structure
+                                   , edtype           & ! structure
+                                   , polygontype      ! ! structure
+      use hdf5_utils        , only : shdf5_open_f     & ! subroutine
+                                   , shdf5_close_f    ! ! subroutine
+      use met_driver_coms   , only : nformats         & ! intent(in)
+                                   , ishuffle         & ! intent(in)
+                                   , met_names        & ! intent(in)
+                                   , met_nv           & ! intent(in)
+                                   , met_interp       & ! intent(in)
+                                   , met_frq          & ! intent(in)
+                                   , metcyc1          & ! intent(in)
+                                   , metcycf          & ! intent(in)
+                                   , metyears         ! ! intent(inout)
+      use ed_misc_coms      , only : current_time     & ! intent(in)
+                                   , iyeara           & ! intent(in)
+                                   , iyearz           & ! intent(in)
+                                   , imonthz          ! ! intent(in)
+      use grid_coms         , only : ngrids           ! ! intent(in)
+      use consts_coms       , only : day_sec          ! ! intent(in)
+      use ed_node_coms      , only : mynum            ! ! intent(in)
       use random_utils      , only : init_random_seed ! ! subroutine
       implicit none
       !----- Local variables --------------------------------------------------------------!
@@ -2572,10 +2563,6 @@ module ed_met_driver
                                 , met_nlon      & ! intent(in)
                                 , met_nlat      & ! intent(in)
                                 , met_vars      & ! intent(in)
-                                , met_xmin      & ! intent(in)
-                                , met_dx        & ! intent(in)
-                                , met_ymin      & ! intent(in)
-                                , met_dy        & ! intent(in)
                                 , met_interp    ! ! intent(in)
       use hdf5_utils     , only : shdf5_irec_f  & ! subroutine
                                 , shdf5_info_f  ! ! subroutine

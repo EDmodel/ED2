@@ -183,7 +183,7 @@ subroutine load_ed_ecosystem_params()
    !---------------------------------------------------------------------------------------!
    include_pft_fp                   = .false.
    include_pft_fp(plantation_stock) = ( .not. is_grass(plantation_stock) ) .and.           &
-      include_pft(plantation_stock)
+                                      include_pft(plantation_stock)
    !---------------------------------------------------------------------------------------!
 
 
@@ -285,8 +285,7 @@ subroutine init_decomp_params()
    use grid_coms   , only : nzg                         ! ! intent(in)
    use consts_coms , only : yr_day                      & ! intent(in)
                           , t00                         ! ! intent(in)
-   use decomp_coms , only : n_decomp_lim                & ! intent(in)
-                          , decomp_scheme               & ! intent(in)
+   use decomp_coms , only : decomp_scheme               & ! intent(in)
                           , resp_opt_water              & ! intent(out)
                           , resp_water_below_opt        & ! intent(out)
                           , resp_water_above_opt        & ! intent(out)
@@ -903,79 +902,79 @@ subroutine init_physiology_params()
    ko2_hor  = 1400.  ! "Activation energy" for O2 Michaelis-Mentel constants     [       K]
    ko2_q10  = 1.2    ! Q10 term for O2 Michaelis-Mentel constant                 [     ---]
    select case (iphysiol)
-      case (0)
-         !----- Use default CO2 and O2 reference values from F96. ----------------------------!
-         kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
-         ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
-         !------------------------------------------------------------------------------------!
+   case (0)
+      !----- Use default CO2 and O2 reference values from F96. ----------------------------!
+      kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
+      ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
+      !------------------------------------------------------------------------------------!
 
 
-         !------------------------------------------------------------------------------------!
-         !   Use the default CO2 compensation point values from F96/M01, based on tau.        !
-         !   Gamma* = [O2] / (2. * tau)                                                       !
-         !------------------------------------------------------------------------------------!
-         compp_refval  = o2_ref / (2. * tau_refval_f96) ! Reference value           [ mol/mol]
-         compp_hor     = -tau_hor                       ! "Activation energy"       [       K]
-         compp_q10     = 1. / tau_q10                   ! "Q10" term                [     ---]
-         !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !   Use the default CO2 compensation point values from F96/M01, based on tau.        !
+      !   Gamma* = [O2] / (2. * tau)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = o2_ref / (2. * tau_refval_f96) ! Reference value           [ mol/mol]
+      compp_hor     = -tau_hor                       ! "Activation energy"       [       K]
+      compp_q10     = 1. / tau_q10                   ! "Q10" term                [     ---]
+      !------------------------------------------------------------------------------------!
 
-      case (1)
-         !----- Use default CO2 and O2 reference values from F96. ----------------------------!
-         kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
-         ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
-         !------------------------------------------------------------------------------------!
-
-
-         !------------------------------------------------------------------------------------!
-         !   Find the CO2 compensation point values using an approach similar to F80 and CLM. !
-         !   Gamma* = (ko/kc) * [O2] * KCO2 / (2. * KO2)                                                       !
-         !------------------------------------------------------------------------------------!
-         compp_refval  = kookc * o2_ref * kco2_refval / ko2_refval ! Ref. value     [ mol/mol]
-         compp_hor     = kco2_hor - ko2_hor                        ! "Act. energy"  [       K]
-         compp_q10     = kco2_q10 / ko2_q10                        ! "Q10" term     [     ---]
-         !------------------------------------------------------------------------------------!
-
-      case (2)
-         !------------------------------------------------------------------------------------!
-         !    Use default CO2 and O2 reference values from C91.  Here we must convert the     !
-         ! reference values from Pa to mol/mol, and the reference must be set to 15 C.        !
-         !------------------------------------------------------------------------------------!
-         !------ Reference Michaelis-Mentel CO2 coefficient [mol/mol]. -----------------------!
-         kco2_refval   = 30. * mmcod / prefsea / kco2_q10
-         !------ Reference Michaelis-Mentel O2 coefficient [mol/mol]. ------------------------!
-         ko2_refval    = 3.e4 * mmo2 * mmdryi / prefsea / ko2_q10
-         !------------------------------------------------------------------------------------!
+   case (1)
+      !----- Use default CO2 and O2 reference values from F96. ----------------------------!
+      kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
+      ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
+      !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !   Find the CO2 compensation point values using an approach similar to F80 and CLM. !
+      !   Gamma* = (ko/kc) * [O2] * KCO2 / (2. * KO2)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = kookc * o2_ref * kco2_refval / ko2_refval ! Ref. value     [ mol/mol]
+      compp_hor     = kco2_hor - ko2_hor                        ! "Act. energy"  [       K]
+      compp_q10     = kco2_q10 / ko2_q10                        ! "Q10" term     [     ---]
+      !------------------------------------------------------------------------------------!
 
-         !------------------------------------------------------------------------------------!
-         !   Use the default CO2 compensation point values from C91, based on tau.            !
-         !   Gamma* = [O2] / (2. * tau)                                                       !
-         !------------------------------------------------------------------------------------!
-         compp_refval  = o2_ref * tau_q10 / (2. * tau_refval_c91) ! Reference value [ mol/mol]
-         compp_hor     = - tau_hor                                ! "Activation en. [       K]
-         compp_q10     = 1. / tau_q10                             ! "Q10" term      [     ---]
-         !------------------------------------------------------------------------------------!
-      case (3)
-         !------------------------------------------------------------------------------------!
-         !    Use default CO2 and O2 reference values from C91.  Here we must convert the     !
-         ! reference values from Pa to mol/mol, and the reference must be set to 15 C.        !
-         !------------------------------------------------------------------------------------!
-         !------ Reference Michaelis-Mentel CO2 coefficient [mol/mol]. -----------------------!
-         kco2_refval   = 30. * mmcod / prefsea / kco2_q10
-         !------ Reference Michaelis-Mentel O2 coefficient [mol/mol]. ------------------------!
-         ko2_refval    = 3.e4 * mmo2 * mmdryi / prefsea / ko2_q10
-         !------------------------------------------------------------------------------------!
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !    Use default CO2 and O2 reference values from C91.  Here we must convert the     !
+      ! reference values from Pa to mol/mol, and the reference must be set to 15 C.        !
+      !------------------------------------------------------------------------------------!
+      !------ Reference Michaelis-Mentel CO2 coefficient [mol/mol]. -----------------------!
+      kco2_refval   = 30. * mmcod / prefsea / kco2_q10
+      !------ Reference Michaelis-Mentel O2 coefficient [mol/mol]. ------------------------!
+      ko2_refval    = 3.e4 * mmo2 * mmdryi / prefsea / ko2_q10
+      !------------------------------------------------------------------------------------!
 
 
 
-         !------------------------------------------------------------------------------------!
-         !   Use the default CO2 compensation point values from C91, based on tau.            !
-         !   Gamma* = [O2] / (2. * tau)                                                       !
-         !------------------------------------------------------------------------------------!
-         compp_refval  = kookc * o2_ref * kco2_refval / ko2_refval ! Ref. value     [ mol/mol]
-         compp_hor     = kco2_hor - ko2_hor                        ! "Act. energy"  [       K]
-         compp_q10     = kco2_q10 / ko2_q10                        ! "Q10" term     [     ---]
+      !------------------------------------------------------------------------------------!
+      !   Use the default CO2 compensation point values from C91, based on tau.            !
+      !   Gamma* = [O2] / (2. * tau)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = o2_ref * tau_q10 / (2. * tau_refval_c91) ! Reference value [ mol/mol]
+      compp_hor     = - tau_hor                                ! "Activation en. [       K]
+      compp_q10     = 1. / tau_q10                             ! "Q10" term      [     ---]
+      !------------------------------------------------------------------------------------!
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !    Use default CO2 and O2 reference values from C91.  Here we must convert the     !
+      ! reference values from Pa to mol/mol, and the reference must be set to 15 C.        !
+      !------------------------------------------------------------------------------------!
+      !------ Reference Michaelis-Mentel CO2 coefficient [mol/mol]. -----------------------!
+      kco2_refval   = 30. * mmcod / prefsea / kco2_q10
+      !------ Reference Michaelis-Mentel O2 coefficient [mol/mol]. ------------------------!
+      ko2_refval    = 3.e4 * mmo2 * mmdryi / prefsea / ko2_q10
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Use the default CO2 compensation point values from C91, based on tau.            !
+      !   Gamma* = [O2] / (2. * tau)                                                       !
+      !------------------------------------------------------------------------------------!
+      compp_refval  = kookc * o2_ref * kco2_refval / ko2_refval ! Ref. value     [ mol/mol]
+      compp_hor     = kco2_hor - ko2_hor                        ! "Act. energy"  [       K]
+      compp_q10     = kco2_q10 / ko2_q10                        ! "Q10" term     [     ---]
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -1123,13 +1122,13 @@ subroutine init_met_params()
    rshort_max  = 1500.
    !----- Minimum and maximum acceptable longwave radiation [W/m2]. -----------------------!
    rlong_min   = 40.
-   rlong_max   = 600.
+   rlong_max   = 850.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
    atm_tmp_max = 350.     ! About 78degC, or > 20degC higher than Death Valley's record
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.0e-6   ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 5.0e-2   ! That corresponds to a dew point of 41degC at 1000hPa.
+   atm_shv_max = 8.0e-2   ! That corresponds to a dew point of 41degC at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [umol/mol]. ---------------------!
    atm_co2_min =   10.    ! Very low limit to allow Tonzi TS to run.  Plants may find it 
                           ! hard to thrive with such low CO2.
@@ -1197,11 +1196,11 @@ end subroutine init_met_params
 subroutine init_lapse_params()
 
    use met_driver_coms, only : lapse             & ! intent(out)
-      , atm_tmp_intercept & ! intent(out)
-      , atm_tmp_slope     & ! intent(out)
-      , prec_intercept    & ! intent(out)
-      , prec_slope        & ! intent(out)
-      , humid_scenario    ! ! intent(out)
+                             , atm_tmp_intercept & ! intent(out)
+                             , atm_tmp_slope     & ! intent(out)
+                             , prec_intercept    & ! intent(out)
+                             , prec_slope        & ! intent(out)
+                             , humid_scenario    ! ! intent(out)
 
    lapse%geoht        = 0.0
    lapse%atm_ustar    = 0.0
@@ -1542,7 +1541,7 @@ subroutine init_soil_coms
 
          !----- Hydraulic conductivity at saturation [ m/s ]. -----------------------------!
          soil(nslcon)%slcons  = (10.**(-0.60 + 1.26*slxsand - 0.64*slxclay))               &
-            * 0.0254/hr_sec
+                              * 0.0254/hr_sec
          !----- Hydraulic conductivity at saturation at top [ m/s ], for TOPMODEL style. --!
 
          !----- Soil moisture at saturation [ m^3/m^3 ]. ----------------------------------!
@@ -1597,8 +1596,8 @@ subroutine init_soil_coms
          !---- The conductivity coefficients. ---------------------------------------------!
          soil(nslcon)%thcond0 = (1. - soil(nslcon)%slmsts )                                &
                               * ( ksand * slxsand * sand_thcond                            &
-                              + ksilt * slxsilt * silt_thcond                              &
-                              + kclay * slxclay * clay_thcond )                            &
+                                + ksilt * slxsilt * silt_thcond                            &
+                                + kclay * slxclay * clay_thcond )                          &
                               + soil(nslcon)%slmsts * kair * air_thcond
          soil(nslcon)%thcond1 = h2o_thcond - kair * air_thcond
          soil(nslcon)%thcond2 = (1. - soil(nslcon)%slmsts )                                &
@@ -2193,9 +2192,7 @@ subroutine init_pft_alloc_params()
                              , str_len               & ! intent(in)
                              , undef_real            ! ! intent(in)
    use ed_misc_coms   , only : iallom                & ! intent(in)
-                             , igrass                & ! intent(in)
                              , ibigleaf              ! ! intent(in)
-   use detailed_coms  , only : idetailed             ! ! intent(in)
    use canopy_air_coms, only : lwidth_grass          & ! intent(in)
                              , lwidth_bltree         & ! intent(in)
                              , lwidth_nltree         ! ! intent(in)
@@ -2203,12 +2200,9 @@ subroutine init_pft_alloc_params()
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                   :: ipft
-   integer                   :: n
    real   , dimension(n_pft) :: abas
    real                      :: aux
-   real                      :: init_density_grass
    real                      :: init_bleaf
-   real                      :: bleaf_sapling
    real                      :: eta_f16
    real                      :: eta_c_f16
    real                      :: asal_bar
@@ -2393,17 +2387,9 @@ subroutine init_pft_alloc_params()
             sla_s0(ipft) = SLA(ipft)
             sla_s1(ipft) = 0.0
          else ! Tropical trees
-            select case (iallom)
-            case (3)
-               sla_s0(ipft) = 19.41946059
-               sla_s1(ipft) =  0.60550954
-            case default
-               sla_s0(ipft) = exp(log(0.1*C2B)+2.4*log(10.)-0.46*log(12.))
-               sla_s1(ipft) = 0.46
-            end select
             sla_s0(ipft) = exp(log(0.1*C2B)+2.4*log(10.)-0.46*log(12.))
             sla_s1(ipft) = 0.46
-            SLA(ipft) = sla_s0(ipft) * leaf_turnover_rate(ipft) ** sla_s1(ipft)
+            SLA   (ipft) = sla_s0(ipft) * leaf_turnover_rate(ipft) ** sla_s1(ipft)
          end if
          !---------------------------------------------------------------------------------!
       else
@@ -3064,15 +3050,8 @@ subroutine init_pft_alloc_params()
             else
                !---------------------------------------------------------------------------!
                !    Trees: coefficients will depend on the tree size.                      !
-               !    Large trees: use an allometric equation derived from K09a and K09b.    !
-               !       The individual data were available from their appendices, and a     !
-               !       single model was fitted for all data points, using a model of type  !
-               !       y = a*x^b and assuming heteroscedastic distribution of residuals    !
-               !       (L16).  This model gives a fitting that mostly lies between the     !
-               !       predicted curves by L83 using DBH only and DBH and height.          !
-               !       This equation also gives the most reasonable agreement when the     !
-               !       model is initialised with airborne lidar.  The model was further    !
-               !       modified to account for different SLA amongst PFTs, using the same  !
+               !    Large trees: use the L83 allometric equation, with a further           !
+               !       modification to scale leaf biomass with SLA, using the same         !
                !       rationale used by B04 to adjust the biomass equations using wood    !
                !       density.                                                            !
                !    Small trees: we assume that local LAI should not be less than 1.  Once !
@@ -3095,31 +3074,11 @@ subroutine init_pft_alloc_params()
                !    A. Beneteau.  La phytomasse epigee d'une foret dense en Guyane         !
                !    Francaise.  Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                !
                !    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).               !
-               !                                                                           !
-               ! Longo, M., M. Keller, M. N. dos-Santos, V. Leitold, E. R. Pinage,         !
-               !    A. Baccini, S. Saatchi, E. M. Nogueira, M. Batistella, and             !
-               !    D. C. Morton. Aboveground biomass variability across intact and        !
-               !    degraded forests in the Brazilian Amazon. Global Biogeochem. Cycles,   !
-               !    30(11):1639-1660, Nov 2016. doi:10.1002/2016GB005465 (L16).            !
-               !                                                                           !
-               ! Kenzo, T., T. Ichie, D. Hattori, T. Itioka, C. Handa, T. Ohkubo,          !
-               !    J. J. Kendawang, M. Nakamura, M. Sakaguchi, N. Takahashi, M. Okamoto,  !
-               !    A. Tanaka-Oda, K. Sakurai, and I. Ninomiya. Development of allometric  !
-               !    relationships for accurate estimation of above- and below-ground       !
-               !    biomass in tropical secondary forests in Sarawak, Malaysia.            !
-               !    J. Trop. Ecol., 25(4):371-386, Jul 2009.                               !
-               !    doi:10.1017/S0266467409006129. (K09a)                                  !
-               !                                                                           !
-               ! Kenzo, T., R. Furutani, D. Hattori, J. J. Kendawang, S. Tanaka,           !
-               !    K. Sakurai, and I. Ninomiya. Allometric equations for accurate         !
-               !    estimation of above-ground biomass in logged-over tropical rainforests !
-               !    in Sarawak, Malaysia. J. For. Res., 14(6):365, Sep 2009.               !
-               !    doi:10.1007/s10310-009-0149-1. (K09b)                                  !
                !---------------------------------------------------------------------------!
                b1Bl_small(ipft) = C2B * b1Ca(ipft) / SLA(ipft)
                b2Bl_small(ipft) = b2Ca(ipft)
-               b1Bl_large(ipft) = 0.02439842 * SLA(3) / SLA(ipft)
-               b2Bl_large(ipft) = 1.86467176
+               b1Bl_large(ipft) = 0.00873 * SLA(3) / SLA(ipft)
+               b2Bl_large(ipft) = 2.1360
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -3278,9 +3237,9 @@ subroutine init_pft_alloc_params()
                !    to estimate the aboveground biomass of tropical trees. Glob. Change    !
                !    Biol., 20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.              !
                !----------------------------------------------------------------- ---------!
-               b1Bs_small(ipft) = C2B * 0.1684545 * rho(ipft)
-               b2Bs_small(ipft) = 2.4629283
-               b2Bs_large(ipft) = 1.9670750
+               b1Bs_small(ipft) = C2B * 0.1726991 * rho(ipft)
+               b2Bs_small(ipft) = 2.4566895
+               b2Bs_large(ipft) = 1.9723290
                b1Bs_large(ipft) = b1Bs_small(ipft)                                         &
                                 * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
                !---------------------------------------------------------------------------!
@@ -3616,11 +3575,9 @@ subroutine init_pft_photo_params()
                              , iallom                  ! ! intent(in)
    use pft_coms       , only : is_tropical             & ! intent(in)
                              , is_conifer              & ! intent(in)
-                             , is_liana                & ! intent(in)
                              , is_grass                & ! intent(in)
                              , SLA                     & ! intent(in)
                              , C2B                     & ! intent(in)
-                             , rho                     & ! intent(in)
                              , D0                      & ! intent(out)
                              , Vm_low_temp             & ! intent(out)
                              , Vm_high_temp            & ! intent(out)
@@ -3940,8 +3897,6 @@ subroutine init_pft_resp_params()
    use pft_coms       , only : is_tropical               & ! intent(in)
                              , is_grass                  & ! intent(in)
                              , is_conifer                & ! intent(in)
-                             , is_liana                  & ! intent(in)
-                             , rho                       & ! intent(in)
                              , leaf_turnover_rate        & ! intent(in)
                              , growth_resp_factor        & ! intent(out)
                              , root_turnover_rate        & ! intent(out)
@@ -4485,10 +4440,6 @@ end subroutine init_pft_mort_params
 subroutine init_pft_nitro_params()
    use pft_coms   , only : Vm0                  & ! intent(in)
                          , SLA                  & ! intent(in)
-                         , is_tropical          & ! intent(in)
-                         , is_savannah          & ! intent(in)
-                         , is_conifer           & ! intent(in)
-                         , is_grass             & ! intent(in)
                          , c2n_leaf             & ! intent(out)
                          , c2n_slow             & ! intent(out)
                          , c2n_structural       & ! intent(out)
@@ -4588,7 +4539,7 @@ subroutine init_pft_leaf_params()
    !    Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI, 2010.   !
    !    doi:10.2737/FPL-GTR-190 (FPL10)                                                    !
    !---------------------------------------------------------------------------------------!
-   real   , parameter :: tref = t00 + 15.
+   real   , parameter :: tref   = t00 + 15.
    real   , parameter :: wdr_fs = 0.30
    !---------------------------------------------------------------------------------------!
 
@@ -4770,7 +4721,6 @@ subroutine init_pft_repro_params()
                             , st_fract           & ! intent(out)
                             , nonlocal_dispersal & ! intent(out)
                             , repro_min_h        ! ! intent(out)
-   use phenology_coms, only : repro_scheme       ! ! intent(in)
    use ed_max_dims   , only : n_pft              & ! intent(in)
                             , undef_real         ! ! intent(in)
    use ed_misc_coms  , only : iallom             ! ! intent(in)
@@ -4971,7 +4921,6 @@ subroutine init_can_air_params()
                              , nu_mw99_8             & ! intent(out)
                              , infunc_8              & ! intent(out)
                              , cs_dense08            & ! intent(out)
-                             , gamma_clm48           & ! intent(out)
                              , bl79                  & ! intent(out)
                              , csm                   & ! intent(out)
                              , csh                   & ! intent(out)
@@ -5760,8 +5709,6 @@ subroutine init_dt_thermo_params()
                              , ffilout                & ! intent(in)
                              , nsub_euler             & ! intent(in)
                              , dteuler                ! ! intent(out)
-   use met_driver_coms, only : prss_min               & ! intent(in)
-                             , prss_max               ! ! intent(in)
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
    use detailed_coms  , only : idetailed              ! ! intent(in)
    use pft_coms       , only : is_conifer             ! ! intent(in)
@@ -6253,8 +6200,6 @@ subroutine init_derived_params_after_xml()
                                    , bwood_lut               & ! intent(out)
                                    , le_mask_lut             & ! intent(out)
                                    , ge_mask_lut             ! ! intent(out)
-   use phenology_coms       , only : elongf_min              & ! intent(in)
-                                   , elongf_flush            ! ! intent(in)
    use fusion_fission_coms  , only : ifusion                 & ! intent(in)
                                    , ff_nhgt                 & ! intent(in)
                                    , hgt_class               ! ! intent(out)
@@ -6298,7 +6243,6 @@ subroutine init_derived_params_after_xml()
    integer                           :: ipft
    integer                           :: ihgt
    integer                           :: ilut
-   integer                           :: n
    logical                           :: print_zero_table
    real(kind=8)                      :: exp_dbh8
    real(kind=8)                      :: dbh_mult8
@@ -6310,7 +6254,6 @@ subroutine init_derived_params_after_xml()
    real                              :: height_now
    real                              :: bleaf_now
    real                              :: bsapwood_now
-   real                              :: bbark_now
    real                              :: bdead_now
    real                              :: bleaf_min
    real                              :: broot_min

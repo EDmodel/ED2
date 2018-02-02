@@ -271,6 +271,7 @@ OBJ_MODEL =                         \
 	varutils.o                  \
 	vformat.o                   \
 	vtab_fill.o                 \
+	ed_mem_grid_dim_defs.o      \
 	edcp_driver.o               \
 	edcp_init.o                 \
 	edcp_lake_driver.o          \
@@ -306,7 +307,6 @@ OBJ_MODEL =                         \
 	ed_init.o                   \
 	ed_init_atm.o               \
 	ed_max_dims.o               \
-	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
 	ed_nbg_init.o               \
 	ed_node_coms.o              \

@@ -23,7 +23,7 @@ subdirs="ED BRAMS Ramspost R-utils"
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
 our="${HOME}/EDBRAMS"
-their="${HOME}/Previous_EDBRAMS"
+their="${HOME}/MainLine/pr_EDBRAMS"
 ournew=true
 #------------------------------------------------------------------------------------------#
 
@@ -69,6 +69,34 @@ do
      do
        file=$(basename ${fileour})
        newpath=$(dirname ${fileour} | sed s@${our}@${their}@g)
+       case ${ext} in
+       ".f90")
+          alt_file=$(echo ${file} | sed s@"\\.f90"@".F90"@g)
+          if [ -s "${newpath}/${alt_file}" ]
+          then
+             filetheir="${newpath}/${alt_file}"
+             alt=".F90"
+          else
+             filetheir="${newpath}/${file}"
+             alt=""
+          fi
+          ;;
+       ".F90")
+          alt_file=$(echo ${file} | sed s@"\\.F90"@".f90"@g)
+          if [ -s "${newpath}/${alt_file}" ]
+          then
+             filetheir="${newpath}/${alt_file}"
+             alt=".f90"
+          else
+             filetheir="${newpath}/${file}"
+             alt=""
+          fi
+          ;;
+       *)
+          filetheir="${newpath}/${file}"
+          alt=""
+          ;;
+       esac
        filetheir="${newpath}/${file}"
        if [ -s ${filetheir} ] 
        then
@@ -76,7 +104,14 @@ do
          if [ ${ldif} -gt 0 ]
          then
             woroot=$(echo ${fileour} | sed s@"${srcour}/"@""@g)
-            echo "${woroot} has changed..."
+            case "${alt}" in
+            .f90|.F90)
+               echo "${woroot} has changed.  New extension is ${alt}."
+               ;;
+            *)
+               echo "${woroot} has changed."
+               ;;
+            esac
             if ${ournew}
             then
                diff -uibB <(grep -vE "^\s*!" ${filetheir}) <(grep -vE "^\s*!" ${fileour})  \
@@ -89,7 +124,7 @@ do
          fi
        else
            woroot=$(echo ${fileour} | sed s@"${srcour}/"@""@g)
-           echo "${woroot} is exclusive to ${our} version..."
+           echo "${woroot} is exclusive to ${our} version."
        fi #if [ -s ${filetheir} ]
      done #for fileour in ${lookuptable}
      #-------------------------------------------------------------------------------------#
@@ -108,7 +143,7 @@ do
        if [ ! -s ${fileour} ] 
        then
            woroot=$(echo ${filetheir} | sed s@"${srctheir}/"@""@g)
-           echo "${woroot} is exclusive to ${their} version..."
+           echo "${woroot} is exclusive to ${their} version."
        fi #if [ -s ${filetheir} ]
      done #for fileour in ${lookuptable}
      #-------------------------------------------------------------------------------------#

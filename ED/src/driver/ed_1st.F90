@@ -45,7 +45,6 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, max_threads,
    real                         :: wtime_start 
    !----- Local parameters, this sub-routine shan't ever be called by coupled runs. -------!
    logical         , parameter  :: masterworks = .true. ! Master should solve polygons
-   logical         , parameter  :: standalone  = .true. ! ED will be run on its own.
    !----- External functions. -------------------------------------------------------------!
    real            , external   :: walltime             ! wall time
    !---------------------------------------------------------------------------------------!
@@ -136,7 +135,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, max_threads,
    !     The following subroutine does node decomposition, but it also does the initial    !
    ! read-in of the land-sea mask and soil textural class.                                 !
    !---------------------------------------------------------------------------------------!
-   call ed_node_decomp(1,standalone,masterworks)
+   call ed_node_decomp(masterworks)
 #if defined(RAMS_MPI)
    if (iparallel == 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
@@ -169,17 +168,13 @@ end subroutine ed_1st_master
 ! polygons and parameters for the nodes.  This sub-routine won't be called if this is a    !
 ! serial run.                                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine ed_1st_node(init)
+subroutine ed_1st_node()
    use ed_mem_alloc, only : ed_memory_allocation ! ! subroutine
    implicit none
    !----- Pre-compiled variables from MPI. ------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'mpif.h'
-#endif
-   !----- Arguments. ----------------------------------------------------------------------!
-   integer, intent(in) :: init
    !----- Local variable (MPI only). ------------------------------------------------------!
-#if defined(RAMS_MPI)
    integer             :: ierr
 #endif
    !---------------------------------------------------------------------------------------!

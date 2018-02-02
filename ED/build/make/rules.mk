@@ -3,11 +3,6 @@ allometry.o : $(ED_UTILS)/allometry.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
-an_header.o: $(ED_IO)/an_header.f90
-	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-
 average_utils.o : $(ED_IO)/average_utils.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
@@ -145,11 +140,6 @@ ed_max_dims.o : $(ED_MEMORY)/ed_max_dims.F90
 
 ed_mem_alloc.o : $(ED_MEMORY)/ed_mem_alloc.f90
 	/bin/rm -f $(<F:.f90=.f90) 
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-
-ed_mem_grid_dim_defs.o : $(ED_MEMORY)/ed_mem_grid_dim_defs.f90
-	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 

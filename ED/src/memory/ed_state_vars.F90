@@ -1,8 +1,20 @@
 !==========================================================================================!
 !==========================================================================================!
-!     This module contains the main variable structures in ED, and several important sub-  !
-! routines for allocation, de-allocation.                                                  !
+! MODULE: ED_STATE_VARS
+!
+!> \brief   Definitions of the main variable structures in ED
+!> \details The definitions of patchtype, sitetype, polygontype, and ed-
+!!          type, which stores the key state variables and all diagnostic
+!!          variables of ED.
+!!
+!!          Important subroutines handling allocation, de-allocation, copying of
+!!          the state/diagnostic variables.
+!!
+!!          Subroutines filling variable tables, defining the output option for
+!!          each variable
+!> \author  Translated from ED1 by David Medivgy, Ryan Knox and Marcos Longo
 !------------------------------------------------------------------------------------------!
+
 module ed_state_vars
 
    use grid_coms          , only : nzg               & ! intent(in)
@@ -43,22 +55,30 @@ module ed_state_vars
 
 
 
-
    !=======================================================================================!
    !=======================================================================================!
-   ! PATCH TYPE: The following are arrays of cohorts that populate the current patch.      !
-   !             This is the lowest (most nested) part of the memory structure.            !
-   !---------------------------------------------------------------------------------------!  
+   ! TYPE: PATCH TYPE
+   !
+   !> \brief   Contains arrays of cohorts that populate the current patch.      
+   !!          This is the lowest (most nested) part of the memory structure.           
+   !> \details Diagnostic variables averaged over various time scales bear the naming 
+   !!          pattern as follows: \n
+   !! FMEAN -- averaged over FRQSUM (the least between FRQFAST, FRQSTATE and one day).\n
+   !! DMEAN -- daily averages\n
+   !! MMEAN -- monthly averages\n
+   !! MMSQU -- monthly mean sum of squares\n
+   !! QMEAN -- mean diel\n
+   !! QMSQU -- mean diel (mean sum of squares)\n\n
+   !! pl means plant              (intensive variable)\n
+   !! m2l means m2 of leaf area   (intensive variable)\n
+   !! m2g means m2 of ground area (extensive variable)\n
+   !---------------------------------------------------------------------------------------!
    type patchtype
-      !----- Number of cohorts in this patch.   This number can be zero (empty patch). ----!
       integer :: ncohorts
-      !------------------------------------------------------------------------------------!  
+      !<Number of cohorts in this patch.   This number can be zero (empty patch).
 
-
-      !----- Global index of the first cohort across all cohorts. -------------------------!
       integer :: coglob_id
-      !------------------------------------------------------------------------------------!
-
+      !<Global index of the first cohort across all cohorts.
 
 
       !------------------------------------------------------------------------------------!
@@ -80,224 +100,257 @@ module ed_state_vars
       !  14 | C4 pasture                          |    yes |      yes |      no |      yes !
       !  15 | C4 crop (e.g.,corn/maize)           |    yes |      yes |      no |      yes !
       !  16 | Tropical C3 grass                   |    yes |      yes |      no |      yes !
-      !  17 | Araucaria                           |     no |      yes |     yes |       no !
+      !  17 | Liana                               |     no |      yes |      no |       no !
       !------------------------------------------------------------------------------------!
       integer ,pointer,dimension(:) :: pft
+      !<Plant functional type, refer to ed_params.f90 for default values\n
+      !< <table>
+      !! <caption id="multi_row">Default Plant Functional Types</caption>
+      !! <tr><th>PFT    <th>Name                    <th>Grass   <th>Tropical    <th>Conifer   <th>Agriculture
+      !! <tr><td>1      <td>C4 grass                <td>yes     <td>yes         <td>no      <td>yes
+      !! <tr><td>2      <td>Early Tropical          <td>no      <td>yes         <td>no      <td>no
+      !! <tr><td>3      <td>Mid Tropical            <td>no      <td>yes         <td>no      <td>no
+      !! <tr><td>4      <td>Late Tropical           <td>no      <td>yes         <td>no      <td>no
+      !! <tr><td>5      <td>Temperate C3 Grass      <td>yes     <td>no          <td>no      <td>yes
+      !! <tr><td>6      <td>Northern Pines          <td>no      <td>no          <td>yes     <td>no 
+      !! <tr><td>7      <td>Southern Pines          <td>no      <td>no          <td>yes     <td>no 
+      !! <tr><td>8      <td>Late Conifers           <td>no      <td>no          <td>yes     <td>no 
+      !! <tr><td>9      <td>Early Temperate Decid.  <td>no      <td>no          <td>no      <td>no 
+      !! <tr><td>10     <td>Mid Temperate Decid.    <td>no      <td>no          <td>no      <td>no 
+      !! <tr><td>11     <td>Late Temperate Decid.   <td>no      <td>no          <td>no      <td>no 
+      !! <tr><td>12     <td>C3 Pasture              <td>yes     <td>no          <td>no      <td>yes
+      !! <tr><td>13     <td>C3 Crop                 <td>yes     <td>no          <td>no      <td>yes
+      !! <tr><td>14     <td>C4 Pasture              <td>yes     <td>yes         <td>no      <td>yes
+      !! <tr><td>15     <td>C4 Crop                 <td>yes     <td>yes         <td>no      <td>yes
+      !! <tr><td>16     <td>Tropical C3 Grass       <td>yes     <td>yes         <td>no      <td>yes
+      !! <tr><td>17     <td>Tropical Lianas         <td>no      <td>yes         <td>no      <td>no 
+      !! </table>
 
-      ! Density of plants (number/m2)
+
       real ,pointer,dimension(:) :: nplant
+      !<Density of plants (number/m2)
 
-      ! phenology_status codes:
-      !  0 - plant has the maximum LAI, given its size
-      !  1 - plant is growing leaves
-      ! -1 - plant is actively dropping leaves
-      !  2 - plant has no leaves
       integer ,pointer,dimension(:) :: phenology_status
+      !<phenology_status codes: \n
+      !! 0 - plant has the maximum LAI given its size \n
+      !! 1 - plant is growing leaves \n
+      !!-1 - plant is actively dropping leaves \n
+      !! 2 - plant has no leaves \n
+      !------------------------------------------------------------------------------------!
 
-      ! recruit_dbh codes (updated every month):
-      ! 0 - new plant
-      ! 1 - first month with DBH > 10cm
-      ! 2 - established as DBH > 10cm
       integer, pointer, dimension(:) :: recruit_dbh
+      !<recruit_dbh codes (updated every month): \n
+      !!0 - new plant \n
+      !!1 - first month with DBH > 10cm \n
+      !!2 - established as DBH > 10cm \n
+      !------------------------------------------------------------------------------------!
 
-      ! census_status codes (updated every census):
-      ! 0 - this cohort has never been with DBH > 10 cm at census times
-      ! 1 - New recruit (DBH > 10 cm for the first census)
-      ! 2 - Established (DBH > 10 cm for at least two censuses
       integer, pointer, dimension(:) :: census_status
+      !<census_status codes (updated every census): \n
+      !!0 - this cohort has never been with DBH > 10 cm at census times \n
+      !!1 - New recruit (DBH > 10 cm for the first census) \n
+      !!2 - Established (DBH > 10 cm for at least two censuses \n
+      !------------------------------------------------------------------------------------!
 
-      ! Plant height (m)
       real ,pointer,dimension(:) :: hite
+      !<Plant height (m)
 
-      ! Above-ground biomass (kgC/plant)
       real, pointer, dimension(:) :: agb
+      !<Above-ground biomass (kgC/plant)
 
-      ! Basal area (cm2)
       real, pointer, dimension(:) :: basarea
+      !<Basal area (cm2)
      
-      ! Rate of change in agb (kgC/plant/yr)
       real, pointer, dimension(:) :: dagb_dt
+      !<Rate of change in agb (kgC/plant/yr)
      
-      ! Rate of change in agb (1/yr)
       real, pointer, dimension(:) :: dlnagb_dt
+      !<Rate of change in agb (1/yr)
      
-      ! Rate of change in basal area (cm2/yr)
       real, pointer, dimension(:) :: dba_dt
+      !<Rate of change in basal area (cm2/yr)
      
-      ! Rate of change in basal area (1/yr)
       real, pointer, dimension(:) :: dlnba_dt
+      !<Rate of change in basal area (1/yr)
      
-      ! Rate of change in dbh (cm/yr)
       real, pointer, dimension(:) :: ddbh_dt
+      !<Rate of change in dbh (cm/yr)
      
-      ! Rate of change in dbh ( 1/yr)
       real, pointer, dimension(:) :: dlndbh_dt
+      !<Rate of change in dbh ( 1/yr)
 
-      ! Plant diameter at breast height (cm)
       real ,pointer,dimension(:) :: dbh
+      !<Plant diameter at breast height (cm)
 
-      ! Plant bark thickness (cm)
       real ,pointer,dimension(:) :: thbark
+      !< Plant bark thickness (cm)
 
-      ! Biomass of the structural wood (kgC/plant)
       real ,pointer,dimension(:) :: bdead
+      !<Biomass of the structural wood (kgC/plant)
 
-      ! Biomass of commercial timber wood (kgC/plant)
       real ,pointer,dimension(:) :: btimber
+      !< Biomass of commercial timber wood (kgC/plant)
 
-      ! Biomass of leaves (kgC/plant)
       real ,pointer,dimension(:) :: bleaf
+      !<Biomass of leaves (kgC/plant)
 
-      ! Biomass of live tissue (kgC/plant)
       real ,pointer,dimension(:) :: balive
+      !<Biomass of live tissue (kgC/plant)
 
-      ! Biomass of fine roots (kgC/plant)
       real, pointer, dimension(:) :: broot
+      !<Biomass of fine roots (kgC/plant)
 
-      ! Biomass of sapwood above ground (kgC/plant)
       real, pointer, dimension(:) :: bsapwooda
+      !<Biomass of sapwood above ground (kgC/plant)
 
-      ! Biomass of sapwood below ground (kgC/plant)
       real, pointer, dimension(:) :: bsapwoodb
+      !<Biomass of sapwood below ground (kgC/plant)
 
-      ! Bark biomass (kgC/plant)
       real, pointer, dimension(:) :: bbark
+      !< Bark biomass (kgC/plant)
 
-      ! Plant storage pool of carbon [kgC/plant]
       real ,pointer,dimension(:) :: bstorage
+      !<Plant storage pool of carbon [kgC/plant]
 
-      ! Amount of seeds produced for dispersal [kgC/plant]
       real ,pointer,dimension(:) :: bseeds
+      !<Amount of seeds produced for dispersal [kgC/plant]
 
-      ! Amount of seeds harvested -- yield [kgC/plant]
       real ,pointer,dimension(:) :: byield
+      !< Amount of seeds harvested -- yield [kgC/plant]
 
-      ! Leaf area index (m2 leaf / m2 ground)
       real ,pointer,dimension(:) :: lai
+      !<Leaf area index (m2 leaf / m2 ground)
 
-      ! Wood area index (m2 wood / m2 ground)
       real ,pointer,dimension(:) :: wai
+      !<Wood area index (m2 wood / m2 ground)
 
-      ! Crown area (m2 crown / m2 ground)
       real ,pointer,dimension(:) :: crown_area
+      !<Crown area (m2 crown / m2 ground)
 
-      ! Logical test to check whether the cohort leaves can be resolved...
       logical, pointer, dimension(:) :: leaf_resolvable
+      !<Logical test to check whether the cohort leaves can be resolved...
       logical, pointer, dimension(:) :: wood_resolvable
+      !<Logical test to check whether the cohort wood can be resolved...
      
-      ! Monthly carbon balance for past 12 months and the current month
-      ! (kgC/plant) - 13th column holds the partial month integration
       real, pointer,dimension(:,:) :: cb           !(13,ncohorts)
+      !<Monthly carbon balance for past 12 months and the current month
+      !!(kgC/plant) - 13th column holds the partial month integration
 
-      ! Maximum monthly carbon balance for past 12 months and the current 
-      ! month  if cohort were at the top of the canopy (maximum light).
-      ! (kgC/plant) - 13th column holds the partial month integration.
       real, pointer,dimension(:,:) :: cb_lightmax  !(13,ncohorts)
+      !<Maximum monthly carbon balance for past 12 months and the current 
+      !!month  if cohort were at the top of the canopy (maximum light).
+      !!(kgC/plant) - 13th column holds the partial month integration.
 
-      ! Maximum monthly carbon balance for past 12 months and the current 
-      ! month  if cohort had access to all soil moisture needed (maximum moisture/fsw).
-      ! (kgC/plant) - 13th column holds the partial month integration.
       real, pointer,dimension(:,:) :: cb_moistmax  !(13,ncohorts)
+      !<Maximum monthly carbon balance for past 12 months and the current 
+      !!month  if cohort had access to all soil moisture needed (maximum moisture/fsw).
+      !!(kgC/plant) - 13th column holds the partial month integration.
 
-      ! Maximum monthly carbon balance for past 12 months and the current 
-      ! month  if cohort had access to all soil moisture needed (maximum moisture/fsw)
-      ! AND the cohort was at the top of the canopy (maximum light).
-      ! (kgC/plant) - 13th column holds the partial month integration.
       real, pointer,dimension(:,:) :: cb_mlmax  !(13,ncohorts)
+      !<Maximum monthly carbon balance for past 12 months and the current 
+      !!month  if cohort had access to all soil moisture needed (maximum moisture/fsw)
+      !!AND the cohort was at the top of the canopy (maximum light).
+      !!(kgC/plant) - 13th column holds the partial month integration.
 
-      ! Relative carbon balance:
-      !                    1         CB_lightmax             CB_watermax 
-      !                  ----   = k ------------- + (1 - k) -------------
-      !                   CR             CB                      CB      
-      ! k is the ddmort_const given on the namelist
       real ,pointer,dimension(:) :: cbr_bar
+      !<Relative carbon balance:\n
+      !! \f[
+      !!   \frac{1}{cbr\_bar} = k * \frac{cb\_lightmax}{cb} + (1 - k) *
+      !!   \frac{cb\_moistmax}{cb}
+      !! \f]\n
+      !!k is the ddmort_const given on the namelist
 
-      ! Leaf internal energy (J/m2 ground)
+      !                   1         CB_lightmax             CB_watermax 
+      !                 ----   = k ------------- + (1 - k) -------------
+      !                  CR             CB                      CB      
+
       real ,pointer,dimension(:) :: leaf_energy
+      !<Leaf internal energy (J/m2 ground)
 
-      ! Leaf temperature (K)
       real ,pointer,dimension(:) :: leaf_temp
+      !<Leaf temperature (K)
 
-      ! Leaf vapour pressure deficit (Pa)
       real ,pointer,dimension(:) :: leaf_vpdef
+      !<Leaf vapour pressure deficit (Pa)
 
-      ! Leaf temperature of the previous step (K)
       real, pointer,dimension(:) :: leaf_temp_pv
+      !<Leaf temperature of the previous step (K)
 
-      ! Fraction of liquid water on top of leaves (dimensionless)
       real ,pointer,dimension(:) :: leaf_fliq
+      !<Fraction of liquid water on top of leaves (dimensionless)
 
-      ! Leaf surface water (kg/m2 ground)
       real ,pointer,dimension(:) :: leaf_water
+      !<Leaf surface water (kg/m2 ground)
 
-      ! Leaf heat capacity [ J/m2/K]
       real, pointer,dimension(:) :: leaf_hcap
+      !<Leaf heat capacity ( J/m2/K)
 
-      ! Wood internal energy (J/m2 ground)
       real ,pointer,dimension(:) :: wood_energy
+      !<Wood internal energy (J/m2 ground)
 
-      ! Wood temperature (K)
       real ,pointer,dimension(:) :: wood_temp
+      !<Wood temperature (K)
 
-      ! Wood temperature at previous step(K)
       real ,pointer,dimension(:) :: wood_temp_pv
+      !<Wood temperature at previous step(K)
 
-      ! Fraction of liquid water on top of wood (dimensionless)
       real ,pointer,dimension(:) :: wood_fliq
+      !<Fraction of liquid water on top of wood (dimensionless)
 
-      ! Wood surface water (kg/m2 ground)
       real ,pointer,dimension(:) :: wood_water
+      !<Wood surface water (kg/m2 ground)
 
-      ! Wood heat capacity [ J/m2/K]
       real, pointer,dimension(:) :: wood_hcap
+      !<Wood heat capacity ( J/m2/K)
 
-      ! Reduced wind at the cohort level (m/s)
       real ,pointer,dimension(:) :: veg_wind
+      !<Reduced wind at the cohort level (m/s)
 
-      ! Leaf surface specific humidity for open stomata (kg/kg)
       real ,pointer,dimension(:) :: lsfc_shv_open
+      !<Leaf surface specific humidity for open stomata (kg/kg)
 
-      ! Leaf surface specific humidity for closed stomata (kg/kg)
       real ,pointer,dimension(:) :: lsfc_shv_closed
+      !<Leaf surface specific humidity for closed stomata (kg/kg)
 
-      ! Leaf surface CO2 for open stomata (�mol/mol)
       real ,pointer,dimension(:) :: lsfc_co2_open
+      !<Leaf surface CO2 for open stomata (&mu;mol/mol)
 
-      ! Leaf surface CO2 for closed stomata (�mol/mol)
       real ,pointer,dimension(:) :: lsfc_co2_closed
+      !<Leaf surface CO2 for closed stomata (&mu;mol/mol)
 
-      ! Leaf interecellular specific humidity (kg/kg)
       real ,pointer,dimension(:) :: lint_shv
+      !<Leaf interecellular specific humidity (kg/kg)
 
-      ! Leaf intercellular CO2 for open stomata (�mol/mol)
       real ,pointer,dimension(:) :: lint_co2_open
+      !<Leaf intercellular CO2 for open stomata (&mu;mol/mol)
 
-      ! Leaf intercellular CO2 for closed stomata (�mol/mol)
       real ,pointer,dimension(:) :: lint_co2_closed
+      !<Leaf intercellular CO2 for closed stomata (&mu;mol/mol)
 
 
       !------------------------------------------------------------------------------------!
       !     The following variables are used for growth rates.  They are for internal use  !
       ! only and are meaningless in the output files (they saved only in HISTORY).         !
       !------------------------------------------------------------------------------------!
-      ! Mean leaf respiration rate (umol/m2 ground/s), averaged over 1 day
       real ,pointer,dimension(:) :: today_leaf_resp
-      ! Mean root respiration rate (umol/m2 ground/s), averaged over 1 day
+      !<Mean leaf respiration rate (&mu;mol/m2 ground/s), averaged over 1 day
       real ,pointer,dimension(:) :: today_root_resp
-      ! Gross primary productivity (GPP) [umol/m2 ground/s], averaged over 1 day
+      !<Mean root respiration rate (&mu;mol/m2 ground/s), averaged over 1 day
       real,pointer,dimension(:) :: today_gpp
-      ! Potential GPP in the absence of N limitation [umol/m2 ground/s],
-      ! averaged over 1 day
+      !<Gross primary productivity (GPP) (&mu;mol/m2 ground/s), averaged over 1 day
       real ,pointer,dimension(:) :: today_gpp_pot
-      ! Maximum GPP if cohort were at the top of the canopy (maximum light)
-      ! [umol/m2 ground/s], averaged over 1 day
+      !<Potential GPP in the absence of N limitation [&mu;mol/m2 ground/s],
+      !!averaged over 1 day
+
       real ,pointer,dimension(:) :: today_gpp_lightmax
-      ! Maximum GPP if cohort had all soil moisture needed (maximum soil moisture)
-      ! [umol/m2 ground/s], averaged over 1 day
+      !<Maximum GPP if cohort were at the top of the canopy (maximum light)
+      !!(&mu;mol/m2 ground/s), averaged over 1 day
       real ,pointer,dimension(:) :: today_gpp_moistmax
-      ! Maximum GPP if cohort had maximum soil moisture and maximum light
-      ! [umol/m2 ground/s], averaged over 1 day
+      !<Maximum GPP if cohort had all soil moisture needed (maximum soil moisture)
+      !!(&mu;mol/m2 ground/s), averaged over 1 day
       real ,pointer,dimension(:) :: today_gpp_mlmax
+      !<Maximum GPP if cohort had maximum soil moisture and maximum light
+      !!(&mu;mol/m2 ground/s), averaged over 1 day
 
 
       real,pointer,dimension(:) :: today_nppleaf
@@ -312,41 +365,58 @@ module ed_state_vars
 
 
 
-      ! Plant growth respiration (kgC/plant/day)
       real ,pointer,dimension(:) :: leaf_growth_resp
+      !< Leaf growth respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: root_growth_resp
+      !< Fine root growth respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: sapa_growth_resp
+      !< Above-ground sapwood growth respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: sapb_growth_resp
+      !< Below-ground sapwood  growth respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: bark_growth_resp
-      ! Plant storage respiration (kgC/plant/day)
+      !< Bark growth respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: leaf_storage_resp
+      !< Leaf storage respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: root_storage_resp
+      !< Fine root storage respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: sapa_storage_resp
+      !< Above-ground sapwood storage respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: sapb_storage_resp
+      !< Below-ground sapwood  storage respiration (kgC/plant/day)
+
       real ,pointer,dimension(:) :: bark_storage_resp
+      !< Bark storage respiration (kgC/plant/day)
 
-      ! Plant density tendency [plants/m2/month]
       real ,pointer,dimension(:) :: monthly_dndt
+      !<Plant density change rate (plants/m2/month)
 
-      ! Plant density tendency [1/month]
       real ,pointer,dimension(:) :: monthly_dlnndt
+      !<Plant density relative change rate (1/month)
 
-      ! Mortality rate [yr-1]
       real , pointer, dimension(:,:) :: mort_rate
+      !<Mortality rate (yr-1)
 
-      ! This specifies the index of the deepest soil layer of which the 
-      ! cohort can access water.
       integer ,pointer,dimension(:) :: krdepth
+      !<This specifies the index of the deepest soil layer of which the 
+      !!cohort can access water.
 
-      ! The model reports annual growth, mortality, cut and recruitment.  
-      ! These rates are calculated with respect to two censuses.  This 
-      ! is the flag specifying if a cohort was present at the first
-      ! census.
       integer ,pointer,dimension(:) :: first_census
+      !<The model reports annual growth, mortality, cut and recruitment.  
+      !!These rates are calculated with respect to two censuses.  This 
+      !!is the flag specifying if a cohort was present at the first
+      !!census.
 
-      ! Flag specifying if this cohort is a new recruit with respect
-      ! to the first census.
       integer ,pointer,dimension(:) :: new_recruit_flag
+      !<Flag specifying if this cohort is a new recruit with respect
+      !!to the first census.
 
       ! Light level received by this cohort, its diurnal and monthly means
       real, pointer, dimension(:) :: light_level
@@ -358,45 +428,45 @@ module ed_state_vars
       real, pointer, dimension(:) :: par_level_diffu   ! diffuse down
       real, pointer, dimension(:) :: par_level_diffd   ! diffuse up
 
-      ! Photosynthetically active radiation (PAR) absorbed by the 
-      ! cohort leaves(units are W/m2)
       real ,pointer,dimension(:)   :: par_l
+      !<Photosynthetically active radiation (PAR) absorbed by the 
+      !!cohort leaves(units are W/m2)
 
-      ! Photosynthetically active radiation (PAR) absorbed by the 
-      ! cohort leaves (units are W/m2), beam component
       real ,pointer,dimension(:)   :: par_l_beam
+      !<Photosynthetically active radiation (PAR) absorbed by the 
+      !!cohort leaves (units are W/m2), beam component
 
-      ! Photosynthetically active radiation (PAR) absorbed by the 
-      ! cohort leaves (units are W/m2), diffuse component
       real ,pointer,dimension(:)   :: par_l_diffuse
+      !<Photosynthetically active radiation (PAR) absorbed by the 
+      !!cohort leaves (units are W/m2), diffuse component
 
-      ! Total short wave radiation absorbed by the cohort leaves, W/m2
       real ,pointer,dimension(:) :: rshort_l
+      !<Total short wave radiation absorbed by the cohort leaves, W/m2
 
-      ! Total short wave radiation absorbed by the cohort leaves, W/m2, beam component
       real ,pointer,dimension(:) :: rshort_l_beam
+      !<Total short wave radiation absorbed by the cohort leaves, W/m2, beam component
 
-      ! Total short wave radiation absorbed by the cohort leaves, W/m2, diffuse 
-      ! component
       real ,pointer,dimension(:) :: rshort_l_diffuse
+      !<Total short wave radiation absorbed by the cohort leaves, W/m2, diffuse 
+      !!component
 
-      ! Total long wave radiation absorbed by the cohort leaves (W/m2)
       real ,pointer,dimension(:) :: rlong_l
+      !<Total long wave radiation absorbed by the cohort leaves (W/m2)
 
-      ! Total short wave radiation absorbed by the cohort wood, W/m2
       real ,pointer,dimension(:) :: rshort_w
+      !<Total short wave radiation absorbed by the cohort wood, W/m2
 
-      ! Total short wave radiation absorbed by the cohort wood, W/m2, beam component
       real ,pointer,dimension(:) :: rshort_w_beam
+      !<Total short wave radiation absorbed by the cohort wood, W/m2, beam component
 
-      ! Total short wave radiation absorbed by the cohort wood, W/m2, diffuse 
-      ! component
       real ,pointer,dimension(:) :: rshort_w_diffuse
+      !<Total short wave radiation absorbed by the cohort wood, W/m2, diffuse 
+      !!component
 
-      ! Total long wave radiation absorbed by the cohort wood (W/m2)
       real ,pointer,dimension(:) :: rlong_w
+      !<Total long wave radiation absorbed by the cohort wood (W/m2)
 
-      !----- Radiation profile for this patch, at thhe cohort interfaces (W/m2). ----------!
+      !----- Radiation profile for this patch, at the cohort interfaces (W/m2).  ----------!
       !  1. PAR, Beam, Down                                                                !
       !  2. PAR, Beam, Up (only Medvigy's radiation, zero for others).                     !
       !  3. PAR, Diff, Down                                                                !
@@ -409,82 +479,85 @@ module ed_state_vars
       ! 10. TIR. Diff, Up                                                                  !
       !------------------------------------------------------------------------------------!
       real ,pointer,dimension(:,:) :: rad_profile
+      !< Radiation profile for this patch, at the cohort interfaces (W/m2).
 
-      ! Leaf boundary layer conductance for heat/entropy  [J/K/m2leaf/s]
       real ,pointer,dimension(:) :: leaf_gbh
+      !<Leaf boundary layer conductance for heat/entropy  [J/K/m2leaf/s]
 
-      ! Leaf boundary layer conductance for water [kg/m2leaf/s]
       real ,pointer,dimension(:) :: leaf_gbw
+      !<Leaf boundary layer conductance for water [kg/m2leaf/s]
 
-      ! Wood boundary layer conductance for heat/entropy  [J/K/m2wood/s]
       real ,pointer,dimension(:) :: wood_gbh
+      !<Wood boundary layer conductance for heat/entropy  [J/K/m2wood/s]
 
-      ! Wood boundary layer conductance for water [kg/m2wood/s]
       real ,pointer,dimension(:) :: wood_gbw
+      !<Wood boundary layer conductance for water [kg/m2wood/s]
 
-      ! Photosynthesis rate, open stomata (umol/m2 leaf/s)
       real ,pointer,dimension(:) :: A_open
+      !<Photosynthesis rate, open stomata (umolmu;mol/m2 leaf/s)
 
-      ! Photosynthesis rate, closed stomata (umol/m2 leaf/s)
       real ,pointer,dimension(:) :: A_closed
+      !<Photosynthesis rate, closed stomata (umolmu;mol/m2 leaf/s)
 
-      ! Photosynthesis rate, light limited (umol/m2 leaf/s)
       real ,pointer,dimension(:) :: A_light
+      !<Photosynthesis rate, light limited (umolmu;mol/m2 leaf/s)
 
-      ! Photosynthesis rate, rubisco limited (umol/m2 leaf/s)
       real ,pointer,dimension(:) :: A_rubp
+      !<Photosynthesis rate, rubisco limited (umolmu;mol/m2 leaf/s)
 
-      ! Photosynthesis rate, CO2 limited (umol/m2 leaf/s)
       real ,pointer,dimension(:) :: A_co2
+      !<Photosynthesis rate, CO2 limited (umolmu;mol/m2 leaf/s)
 
-      ! Transpiration rate, open stomata (kg/m2_leaf/s)
       real ,pointer,dimension(:) :: psi_open
+      !<Transpiration rate, open stomata (kg/m2_leaf/s)
 
-      ! Transpiration rate, closed stomata (kg/m2_leaf/s)
       real ,pointer,dimension(:) :: psi_closed
+      !<Transpiration rate, closed stomata (kg/m2_leaf/s)
 
-      ! Stomatal conductance for water, open stomata [kg/m2leaf/s]
       real ,pointer,dimension(:) :: gsw_open
+      !<Stomatal conductance for water, open stomata [kg/m2leaf/s]
 
-      ! Stomatal conductance for water, closed stomata [kg/m2leaf/s]
       real ,pointer,dimension(:) :: gsw_closed
+      !<Stomatal conductance for water, closed stomata [kg/m2leaf/s]
 
-      ! Net stomatal conductance [kg/m2leaf/s]
       real ,pointer,dimension(:) :: leaf_gsw
+      !<Net stomatal conductance [kg/m2leaf/s]
 
-      ! Weighting factor for open and closed stomata (fsw=1 => fully open)
       real ,pointer,dimension(:) :: fsw
+      !<Weighting factor for open and closed stomata (fsw=1 => fully open)
 
-      ! Weighting factor for open and closed stomata due to N limitation
       real ,pointer,dimension(:) :: fsn
+      !<Weighting factor for open and closed stomata due to N limitation
 
-      ! Product of fsw and fsn
       real ,pointer,dimension(:) :: fs_open
+      !<Product of fsw and fsn
 
-      ! Water supply (kg_H2O/m2/s)
       real , pointer, dimension(:) :: water_supply
+      !<Water supply (kg_H2O/m2/s)
 
-      ! Plant maintenance costs due to turnover of leaves and fine 
-      ! roots [kgC/plant]
       real ,pointer,dimension(:) :: leaf_maintenance
+      !<Plant maintenance costs due to turnover of leaves [kgC/plant/day]
       real ,pointer,dimension(:) :: root_maintenance
+      !<Plant maintenance costs due to turnover of fine roots [kgC/plant/day]
       real ,pointer,dimension(:) :: bark_maintenance
+      !<Plant maintenance costs due to turnover of bark [kgC/plant/day]
      
-      ! Leaf loss to litter layer due to phenology [kgC/plant]
       real , pointer, dimension(:) :: leaf_drop
+      !<Leaf loss to litter layer due to phenology [kgC/plant]
 
-      ! Instantaneous values of leaf and root respiration [umol/m2/s]
       real ,pointer,dimension(:) :: leaf_respiration
+      !<Instantaneous values of leaf respiration [umolmu;mol/m2/s]
       real ,pointer,dimension(:) :: root_respiration
+      !<Instantaneous values of fine root respiration [umolmu;mol/m2/s]
 
-      ! Gross Primary Productivity [umol/m2/s]
       real, pointer,dimension(:) :: gpp
+      !<Gross Primary Productivity [umolmu;mol/m2/s]
 
-      ! Plant available water, (stress function)  0 to 1 [unitless]
       real, pointer, dimension(:) :: paw_avg
+      !<Plant available water, (stress function)  0 to 1 [unitless]
 
-      ! Elongation factor (0 - 1), factor to scale bleaf under drought.
       real, pointer, dimension(:) :: elongf
+      !<Elongation factor (0 - 1), factor to scale bleaf under drought.
 
       ! Phenology-related
       real, pointer, dimension(:) :: turnover_amp
@@ -506,95 +579,95 @@ module ed_state_vars
       ! m2g means m2 of ground area (extensive variable)                                   !
       !------------------------------------------------------------------------------------!
       !----- Fast averages. ---------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_gpp              ! Gross prim. prod. [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_npp              ! Net primary prod. [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_leaf_resp        ! Leaf respiration  [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_root_resp        ! Root respiration  [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_leaf_growth_resp ! Growth resp.      [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_root_growth_resp ! Growth resp.      [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_sapa_growth_resp ! Growth resp.      [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_sapb_growth_resp ! Growth resp.      [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_bark_growth_resp ! Growth resp.      [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_leaf_storage_resp! Storage resp.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_root_storage_resp! Storage resp.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_sapa_storage_resp! Storage resp.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_sapb_storage_resp! Storage resp.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_bark_storage_resp! Storage resp.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_plresp           ! Plant resp.       [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_leaf_energy      ! Leaf int. energy  [     J/m2g]
-      real,pointer,dimension(:)   :: fmean_leaf_water       ! Leaf sfc. water   [    kg/m2g]
-      real,pointer,dimension(:)   :: fmean_leaf_hcap        ! Leaf heat cap.    [   J/m2g/K]
-      real,pointer,dimension(:)   :: fmean_leaf_vpdef       ! Leaf VPD          [        Pa]
-      real,pointer,dimension(:)   :: fmean_leaf_temp        ! Leaf temperature  [         K]
-      real,pointer,dimension(:)   :: fmean_leaf_fliq        ! Liquid fraction   [        --]
-      real,pointer,dimension(:)   :: fmean_leaf_gsw         ! Stomatal conduct. [       m/s]
-      real,pointer,dimension(:)   :: fmean_leaf_gbw         ! Leaf BL conduct.  [       m/s]
-      real,pointer,dimension(:)   :: fmean_wood_energy      ! Wood int. energy  [     J/m2g]
-      real,pointer,dimension(:)   :: fmean_wood_water       ! Wood sfc. water   [    kg/m2g]
-      real,pointer,dimension(:)   :: fmean_wood_hcap        ! Wood heat cap.    [   J/m2g/K]
-      real,pointer,dimension(:)   :: fmean_wood_temp        ! Wood temperature  [         K]
-      real,pointer,dimension(:)   :: fmean_wood_fliq        ! Liquid fraction   [        --]
-      real,pointer,dimension(:)   :: fmean_wood_gbw         ! Wood BL conduct.  [       m/s]
-      real,pointer,dimension(:)   :: fmean_fs_open          ! Net stress factor [        --]
-      real,pointer,dimension(:)   :: fmean_fsw              ! Moisture stress   [        --]
-      real,pointer,dimension(:)   :: fmean_fsn              ! Nitrogen stress   [        --]
-      real,pointer,dimension(:)   :: fmean_a_open           ! Assim. (no stress)[umol/m2l/s]
-      real,pointer,dimension(:)   :: fmean_a_closed         ! Minimum assim.    [umol/m2l/s]
-      real,pointer,dimension(:)   :: fmean_a_net            ! Assim. (actual)   [umol/m2l/s]
-      real,pointer,dimension(:)   :: fmean_a_light          ! Assim. (light)    [umol/m2l/s]
-      real,pointer,dimension(:)   :: fmean_a_rubp           ! Assim. (RuBP)     [umol/m2l/s]
-      real,pointer,dimension(:)   :: fmean_a_co2            ! Assim. (CO2)      [umol/m2l/s]
-      real,pointer,dimension(:)   :: fmean_psi_open         ! Transp. no stress [  kg/m2l/s]
-      real,pointer,dimension(:)   :: fmean_psi_closed       ! Transp. max st.   [  kg/m2l/s]
-      real,pointer,dimension(:)   :: fmean_water_supply     ! Water supply      [        --]
-      real,pointer,dimension(:)   :: fmean_light_level      ! Light lev. (Tot.) [        --]
-      real,pointer,dimension(:)   :: fmean_light_level_beam ! Light lev. (Beam) [        --]
-      real,pointer,dimension(:)   :: fmean_light_level_diff ! Lighy lev. (Diff) [        --]
-      real,pointer,dimension(:)   :: fmean_par_level_beam   ! Par lev. (beam)   [- or W/m2?]
-      real,pointer,dimension(:)   :: fmean_par_level_diffu  ! Par lev. (Diff Up)[- or W/m2?]
-      real,pointer,dimension(:)   :: fmean_par_level_diffd  ! Par lev. (Diff Dn)[- or W/m2?]
-      real,pointer,dimension(:)   :: fmean_par_l            ! Abs. PAR (Leaf)   [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_par_l_beam       ! Abs. Dir. PAR     [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_par_l_diff       ! Abs. Diffuse PAR  [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_rshort_l         ! Abs. SW (leaf)    [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_rlong_l          ! Abs. LW (leaf)    [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_sensible_lc      ! Sensible heat     [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_vapor_lc         ! Leaf evaporation  [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_transp           ! Leaf transp.      [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_intercepted_al   ! Leaf interception [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_wshed_lg         ! Leaf shedding     [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_rshort_w         ! Abs. SW (Wood)    [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_rlong_w          ! Abs. LW (Wood)    [     W/m2g]
-      real,pointer,dimension(:,:) :: fmean_rad_profile      ! Rad. profile      [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_sensible_wc      ! Sensible heat     [     W/m2g]
-      real,pointer,dimension(:)   :: fmean_vapor_wc         ! Wood evaporation  [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_intercepted_aw   ! Wood interception [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_wshed_wg         ! Wood shedding     [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_lai              ! LAI               [     m2/m2]
-      real,pointer,dimension(:)	  :: fmean_bdead            ! Bdead             [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_gpp              !<Gross prim. prod. [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_npp              !<Net primary prod. [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_resp        !<Leaf respiration  [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_root_resp        !<Root respiration  [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_growth_resp !<Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_root_growth_resp !<Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_sapa_growth_resp !<Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_sapb_growth_resp !<Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_bark_growth_resp !< Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_storage_resp!<Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_root_storage_resp!<Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_sapa_storage_resp!<Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_sapb_storage_resp!<Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_bark_storage_resp!<Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_plresp           !<Plant resp.       [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_energy      !<Leaf int. energy  [     J/m2g]
+      real,pointer,dimension(:)   :: fmean_leaf_water       !<Leaf sfc. water   [    kg/m2g]
+      real,pointer,dimension(:)   :: fmean_leaf_hcap        !<Leaf heat cap.    [   J/m2g/K]
+      real,pointer,dimension(:)   :: fmean_leaf_vpdef       !<Leaf VPD          [        Pa]
+      real,pointer,dimension(:)   :: fmean_leaf_temp        !<Leaf temperature  [         K]
+      real,pointer,dimension(:)   :: fmean_leaf_fliq        !<Liquid fraction   [        --]
+      real,pointer,dimension(:)   :: fmean_leaf_gsw         !<Stomatal conduct. [       m/s]
+      real,pointer,dimension(:)   :: fmean_leaf_gbw         !<Leaf BL conduct.  [       m/s]
+      real,pointer,dimension(:)   :: fmean_wood_energy      !<Wood int. energy  [     J/m2g]
+      real,pointer,dimension(:)   :: fmean_wood_water       !<Wood sfc. water   [    kg/m2g]
+      real,pointer,dimension(:)   :: fmean_wood_hcap        !<Wood heat cap.    [   J/m2g/K]
+      real,pointer,dimension(:)   :: fmean_wood_temp        !<Wood temperature  [         K]
+      real,pointer,dimension(:)   :: fmean_wood_fliq        !<Liquid fraction   [        --]
+      real,pointer,dimension(:)   :: fmean_wood_gbw         !<Wood BL conduct.  [       m/s]
+      real,pointer,dimension(:)   :: fmean_fs_open          !<Net stress factor [        --]
+      real,pointer,dimension(:)   :: fmean_fsw              !<Moisture stress   [        --]
+      real,pointer,dimension(:)   :: fmean_fsn              !<Nitrogen stress   [        --]
+      real,pointer,dimension(:)   :: fmean_a_open           !<Assim. (no stress)[umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_closed         !<Minimum assim.    [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_net            !<Assim. (actual)   [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_light          !<Assim. (light)    [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_rubp           !<Assim. (RuBP)     [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_co2            !<Assim. (CO2)      [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_psi_open         !<Transp. no stress [  kg/m2l/s]
+      real,pointer,dimension(:)   :: fmean_psi_closed       !<Transp. max st.   [  kg/m2l/s]
+      real,pointer,dimension(:)   :: fmean_water_supply     !<Water supply      [        --]
+      real,pointer,dimension(:)   :: fmean_light_level      !<Light lev. (Tot.) [        --]
+      real,pointer,dimension(:)   :: fmean_light_level_beam !<Light lev. (Beam) [        --]
+      real,pointer,dimension(:)   :: fmean_light_level_diff !<Lighy lev. (Diff) [        --]
+      real,pointer,dimension(:)   :: fmean_par_level_beam   !<Par lev. (beam)   [- or W/m2?]
+      real,pointer,dimension(:)   :: fmean_par_level_diffu  !<Par lev. (Diff Up)[- or W/m2?]
+      real,pointer,dimension(:)   :: fmean_par_level_diffd  !<Par lev. (Diff Dn)[- or W/m2?]
+      real,pointer,dimension(:)   :: fmean_par_l            !<Abs. PAR (Leaf)   [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_par_l_beam       !<Abs. Dir. PAR     [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_par_l_diff       !<Abs. Diffuse PAR  [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_rshort_l         !<Abs. SW (leaf)    [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_rlong_l          !<Abs. LW (leaf)    [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_sensible_lc      !<Sensible heat     [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_vapor_lc         !<Leaf evaporation  [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_transp           !<Leaf transp.      [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_intercepted_al   !<Leaf interception [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_wshed_lg         !<Leaf shedding     [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_rshort_w         !<Abs. SW (Wood)    [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_rlong_w          !<Abs. LW (Wood)    [     W/m2g]
+      real,pointer,dimension(:,:) :: fmean_rad_profile      !<Rad. profile      [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_sensible_wc      !<Sensible heat     [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_vapor_wc         !<Wood evaporation  [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_intercepted_aw   !<Wood interception [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_wshed_wg         !<Wood shedding     [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_lai              !<LAI               [     m2/m2]
+      real,pointer,dimension(:)	  :: fmean_bdead            !<Bdead             [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
-      real,pointer,dimension(:)   :: dmean_nppleaf          ! Leaf NPP          [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppfroot         ! Fine root NPP     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppsapwood       ! Sapwood NPP       [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppbark          ! Bark NPP          [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppcroot         ! Coarse root NPP   [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppseeds         ! Seed NPP          [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppwood          ! Wood NPP          [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppdaily         ! Daily NPP         [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppleaf          !<Leaf NPP          [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppfroot         !<Fine root NPP     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppsapwood       !<Sapwood NPP       [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppbark          !<Bark NPP          [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppcroot         !<Coarse root NPP   [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppseeds         !<Seed NPP          [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppwood          !<Wood NPP          [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppdaily         !<Daily NPP         [ kgC/pl/yr]
       !----- Monthly means of variables that are integrated daily. ------------------------!
-      real,pointer,dimension(:)   :: mmean_thbark           ! Bark thickness    [        cm]
-      real,pointer,dimension(:)   :: mmean_lai              ! Leaf area index   [   m2l/m2g]
-      real,pointer,dimension(:)   :: mmean_bleaf            ! Leaf biomass      [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_broot            ! Root biomass      [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_bbark            ! Bark biomass      [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_bstorage         ! Storage biomass   [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_balive           ! Live biomass      [    kgC/pl]
-      real,pointer,dimension(:,:) :: mmean_mort_rate        ! Mortality rate    [      1/yr]
-      real,pointer,dimension(:)   :: mmean_leaf_maintenance ! Leaf maintenance  [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_root_maintenance ! Root mainten.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_bark_maintenance ! Bark mainten.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_leaf_drop        ! Leaf drop         [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_cb               ! 12-mon C balance  [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_thbark           !<Bark thickness    [        cm]
+      real,pointer,dimension(:)   :: mmean_lai              !<Leaf area index   [   m2l/m2g]
+      real,pointer,dimension(:)   :: mmean_bleaf            !<Leaf biomass      [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_broot            !<Root biomass      [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_bbark            !<Bark biomass      [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_balive           !<Live biomass      [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_bstorage         !<Storage biomass   [    kgC/pl]
+      real,pointer,dimension(:,:) :: mmean_mort_rate        !<Mortality rate    [      1/yr]
+      real,pointer,dimension(:)   :: mmean_leaf_maintenance !<Leaf maintenance  [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_root_maintenance !<Root mainten.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_bark_maintenance !<Bark mainten.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_leaf_drop        !<Leaf drop         [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_cb               !<12-mon C balance  [    kgC/pl]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -832,14 +905,16 @@ module ed_state_vars
 
 
 
-
    !=======================================================================================!
    !=======================================================================================!
-   ! SITE TYPE:  The following are the patch level arrays that populate the current site.  !
+   ! TYPE: SITE TYPE 
+   !
+   !> \brief   Contains arrays of patches that populate the current site.      
    !---------------------------------------------------------------------------------------!
+
    type sitetype
-      !----- Number of patches in this site. ----------------------------------------------!
       integer :: npatches
+      !< Number of patches in this site. 
       !------------------------------------------------------------------------------------!
 
 
@@ -850,26 +925,27 @@ module ed_state_vars
       !  PACO_N  -- The number of cohorts in each patch                                    !
       !  PAGLOB_ID -- Global index of the first patch in this vector, across all patches.  !
       !------------------------------------------------------------------------------------!
-      integer,pointer,dimension(:) :: paco_id
+      integer,pointer,dimension(:) :: paco_id 
+      !< The global index of the first cohort in all patches
       integer,pointer,dimension(:) :: paco_n
+      !< The number of cohorts in each patch
       integer :: paglob_id
+      !< Global index of the first patch in this vector, across all patches
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !      This structure contains all cohorts in each patch.                            !
-      !------------------------------------------------------------------------------------!
       type(patchtype),pointer,dimension(:) :: patch
+      !< Structure that contains all cohorts in each patch
       !------------------------------------------------------------------------------------!
 
 
-      !----- Number of cohorts in the patch. ----------------------------------------------!
       integer, pointer,dimension(:) :: cohort_count
+      !< Number of cohorts in each patch
       !------------------------------------------------------------------------------------!
 
 
-      !----- Patch name (used only when restarting from ED1). -----------------------------!
       character(len=str_len), pointer,dimension(:) :: pname
+      !< Patch name (used only when restarting from ED1). 
       !------------------------------------------------------------------------------------!
 
 
@@ -885,179 +961,195 @@ module ed_state_vars
       !               4.  Fire.                                                            !
       !               5.  Forest regrowth.                                                 !
       !               6.  Logged forest.                                                   !
-      !  FBEAM     -- correction term to account for neighbouring shaded                   !
-      !               (1.0 unless ihrzrad /= 0)                                            !
-      !  LIGHT_TYPE -- diagnostic variable supposed to tell which light environment is     !
-      !                represented by the site (1 - bright, 2 - intermediate, 3 - dark)    !
-      !                This is only assigned in case ihrzrad /= 0, otherwise all patches   !
-      !                will be flagged as 1.                                               !
       !------------------------------------------------------------------------------------!
-      real   , pointer,dimension(:) :: area
-      real   , pointer,dimension(:) :: age
+      real   , pointer,dimension(:) :: area 
+      !< Patch area relative to the total SITE area (dimensionless)
+      real   , pointer,dimension(:) :: age  
+      !< Patch age, time since last disturbance (years)
       integer, pointer,dimension(:) :: dist_type
+      !< Patch type:\n
+      !!1.  Pasture.\n
+      !!2.  Forest plantation.\n
+      !!3.  Tree fall.\n
+      !!4.  Fire.\n
+      !!5.  Forest regrowth.\n
+      !!6.  Logged forest.\n
+      !!7.  Skid trails and roads.\n
+      !!8.  Croplands.\n
+
       real   , pointer,dimension(:) :: fbeam
+      !< Correction term to account for neighbouring shaded (1.0 unless ihrzrad /= 0)
+
       integer, pointer,dimension(:) :: light_type
-      !------------------------------------------------------------------------------------!
+      !< Diagnostic variable supposed to tell which light environment is represented by 
+      !! the site (1 - bright, 2 - intermediate, 3 - dark).  This is only assigned in case
+      !! ihrzrad /= 0, otherwise all patches will be flagged as 1.
 
-      ! Soil carbon concentration, fast pool (kg/m2)
       real , pointer,dimension(:) :: fast_soil_C 
+      !<Soil carbon concentration, fast pool (kg/m2)
 
-      ! Soil carbon concentration, slow pool (kg/m2)
       real , pointer,dimension(:) :: slow_soil_C 
+      !<Soil carbon concentration, slow pool (kg/m2)
 
-      ! Soil carbon concentration, structural pool (kg/m2)
       real , pointer,dimension(:) :: structural_soil_C
+      !<Soil carbon concentration, structural pool (kg/m2)
 
-      ! Soil lignin concentration, structural pool (kg/m2)
       real , pointer,dimension(:) :: structural_soil_L
+      !<Soil lignin concentration, structural pool (kg/m2)
 
-      ! Soil nitrogen concentration, mineralized pool (kg/m2)
       real , pointer,dimension(:) :: mineralized_soil_N  
+      !<Soil nitrogen concentration, mineralized pool (kg/m2)
 
-      ! Soil nitrogen concentration, fast pool (kg/m2)
       real , pointer,dimension(:) :: fast_soil_N 
+      !<Soil nitrogen concentration, fast pool (kg/m2)
 
-      ! Number of degree days
-      ! Degree days --- sum of daily average temperatures above 278.15 K 
       real , pointer,dimension(:) :: sum_dgd
+      !<Number of degree days
+      !<Degree days --- sum of daily average temperatures above 278.15 K 
 
-      ! Chill days --- number of days with average temperatures below 278.15 K
       real , pointer,dimension(:) :: sum_chd  
+      !<Chill days --- number of days with average temperatures below 278.15 K
 
-      ! Ice-vapour equivalent potential temperature of canopy air space [K]
       real , pointer,dimension(:) :: can_theiv
+      !<Ice-vapour equivalent potential temperature of canopy air space [K]
 
-      ! Vapour pressure deficit [Pa]
       real , pointer,dimension(:) :: can_vpdef
+      !<Vapour pressure deficit [Pa]
 
-      ! Temperature (K) of canopy air
       real , pointer,dimension(:) :: can_temp
+      !<Temperature (K) of canopy air
 
-      ! Previous step's canopy air temperature
       real , pointer,dimension(:) :: can_temp_pv
+      !<Previous step's canopy air temperature
 
 
-      ! Water vapor specific humidity (kg/kg) of canopy air
       real , pointer,dimension(:) :: can_shv
+      !<Water vapor specific humidity (kg/kg) of canopy air
 
-      ! CO2 mixing ratio [umol/mol] of canopy air
       real , pointer,dimension(:) :: can_co2
+      !<CO2 mixing ratio [&mu;mol/mol] of canopy air
 
-      ! Density [kg/m3] of canopy air
       real , pointer,dimension(:) :: can_rhos
+      !<Density [kg/m3] of canopy air
 
-      ! Canopy air pressure.
       real , pointer,dimension(:) :: can_prss
+      !<Canopy air pressure.
 
-      ! Canopy air potential temperature
       real , pointer,dimension(:) :: can_theta
+      !<Canopy air potential temperature
 
-      ! Canopy depth (m)
       real , pointer,dimension(:) :: can_depth
+      !<Canopy depth (m)
 
-      ! Fraction of canopy that is open (---)
       real , pointer,dimension(:) :: opencan_frac
+      !<Fraction of canopy that is open (---)
       
       ! Ground to canopy conductances
       real , pointer, dimension(:) :: ggbare
+      !<Need edits
       real , pointer, dimension(:) :: ggveg
+      !<Need edits
       real , pointer, dimension(:) :: ggnet
+      !<Need edits
       real , pointer, dimension(:) :: ggsoil
+      !<Need edits
 
       
-      ! Number of surface water layers
       integer,pointer,dimension(:) :: nlev_sfcwater
+      !<Number of surface water layers
 
-      ! Surface water mass (kg/m2)
       real, pointer,dimension(:,:) :: sfcwater_mass
+      !<Surface water mass (kg/m2)
 
-      ! Surface water internal energy (J/kg)
       real, pointer,dimension(:,:) :: sfcwater_energy
+      !<Surface water internal energy (J/kg)
 
-      ! Depth of surface water (m)
       real, pointer,dimension(:,:) :: sfcwater_depth
+      !<Depth of surface water (m)
 
-      ! Temperature of surface water (K)
       real, pointer,dimension(:,:) :: sfcwater_tempk
+      !<Temperature of surface water (K)
      
-      ! Liquid fraction of surface water
       real, pointer,dimension(:,:) :: sfcwater_fracliq
+      !<Liquid fraction of surface water
 
-      ! Short wave radiation absorbed by the surface water (W/m2)
       real, pointer,dimension(:,:) :: rshort_s
+      !<Short wave radiation absorbed by the surface water (W/m2)
 
-      ! Short wave radiation absorbed by the surface water, 
-      ! beam component (W/m2)
       real, pointer,dimension(:,:) :: rshort_s_beam
+      !<Short wave radiation absorbed by the surface water, 
+      !<beam component (W/m2)
 
-      ! Short wave radiation absorbed by the surface water, 
-      ! diffuse component (W/m2)
       real, pointer,dimension(:,:) :: rshort_s_diffuse
+      !<Short wave radiation absorbed by the surface water, 
+      !<diffuse component (W/m2)
 
-      ! PAR absorbed by the surface water (W/m2)
       real, pointer,dimension(:,:) :: par_s
+      !<PAR absorbed by the surface water (W/m2)
 
-      ! PAR absorbed by the surface water, 
-      ! beam component (W/m2)
       real, pointer,dimension(:,:) :: par_s_beam
+      !<PAR absorbed by the surface water, 
+      !<beam component (W/m2)
 
-      ! PAR absorbed by the surface water, 
-      ! diffuse component (W/m2)
       real, pointer,dimension(:,:) :: par_s_diffuse
+      !<PAR absorbed by the surface water, 
+      !<diffuse component (W/m2)
       
-      ! Soil internal energy (J/m3)
       real,    pointer,dimension(:,:) :: soil_energy
+      !<Soil internal energy (J/m3)
       
-      ! Soil matric potential (m)
       real,    pointer,dimension(:,:) :: soil_mstpot
+      !<Soil matric potential (m)
       
-      ! Soil water (m3 water / m3 soil)
       real,    pointer,dimension(:,:) :: soil_water
+      !<Soil water (m3 water / m3 soil)
            
-      ! Temperature of soil (K)
       real,    pointer,dimension(:,:) :: soil_tempk
+      !<Temperature of soil (K)
       
-      ! Liquid fraction of soil
       real,    pointer,dimension(:,:) :: soil_fracliq
+      !<Liquid fraction of soil
 
-      ! Root density [kg/m3] over the profile
-      ! Typically diagnosed for history or monthly output
       real, pointer, dimension (:,:) :: rootdense
+      !<Root density [kg/m3] over the profile
+      !<Typically diagnosed for history or monthly output
       
-      ! Effective specific humidity (kg/kg) just above soil
       real,    pointer,dimension(:) :: ground_shv
+      !<Effective specific humidity (kg/kg) just above soil
       
-      ! Surface saturation specific humidity (kg/kg)
       real,    pointer,dimension(:) :: ground_ssh
+      !<Surface saturation specific humidity (kg/kg)
 
-      ! Ground temperature (either the top soil or top surface snow/water) (K)
       real, pointer, dimension (:) :: ground_temp
+      !<Ground temperature (either the top soil or top surface snow/water) (K)
 
-      ! Ground temperature (either the top soil or top surface snow/water) (K)
       real, pointer, dimension (:) :: ground_fliq
+      !<Ground temperature (either the top soil or top surface snow/water) (K)
 
-      ! Net roughness length (m)
       real,    pointer,dimension(:)  :: rough
+      !<Net roughness length (m)
 
-      ! Maximum PAR possibly attained in this patch.  This is found by calling the radiation
-      ! scheme for a single cohort (the tallest that can be solved).
       real,    pointer, dimension(:) :: par_l_max
+      !<Maximum PAR possibly attained in this patch.  This is found by calling the radiation
+      !<scheme for a single cohort (the tallest that can be solved).
       real,    pointer, dimension(:) :: par_l_beam_max
       real,    pointer, dimension(:) :: par_l_diffuse_max
 
-      ! Photosynthetic rates for different PFTs, if they were at the top 
-      ! of the canopy (umol/m2 leaf/s).  Used by mortality function.
       real, pointer,dimension(:,:) :: A_o_max  ! open stomata
+      !<Photosynthetic rates for different PFTs at fully open stomata,
+      !< if they were at the top of the canopy (&mu;mol/m2 leaf/s).  Used by mortality function.
       real, pointer,dimension(:,:) :: A_c_max  ! closed stomata
+      !<Photosynthetic rates for different PFTs at fully closed stomata,
+      !< if they were at the top of the canopy (&mu;mol/m2 leaf/s).  Used by mortality function.
 
-      ! Average daily temperature [K]
       real , pointer,dimension(:) :: avg_daily_temp  
+      !<Average daily temperature [K]
 
-      ! Average monthly ground water [kg/m2], used for fire ignition
       real , pointer,dimension(:) :: avg_monthly_gndwater
+      !<Average monthly ground water [kg/m2], used for fire ignition
 
-      ! Average monthly water deficit [kg/m2], used for fire ignition
       real , pointer,dimension(:) :: avg_monthly_waterdef
+      !<Average monthly water deficit [kg/m2], used for fire ignition
 
 
       !=======================================================================!
@@ -1068,255 +1160,257 @@ module ed_state_vars
       ! next time step (or the final storage between the previous analysis    !
       ! and this one).                                                        !
       !=======================================================================!
-      ! Mean moisture transfer from the canopy air to the atmosphere 
-      ! (kg_H2O/m2/s)
       real , pointer,dimension(:) :: wbudget_loss2atm
+      !<Mean moisture transfer from the canopy air to the atmosphere 
+      !<(kg_H2O/m2/s)
 
-      ! Contribution of density change on change in the final storage
-      ! (kg_H2O/m2/s)
       real , pointer,dimension(:) :: wbudget_denseffect
+      !<Contribution of density change on change in the final storage
+      !<(kg_H2O/m2/s)
 
-      ! Precipitation [kg_H2O/m2/s]
       real , pointer,dimension(:) :: wbudget_precipgain
+      !<Precipitation [kg_H2O/m2/s]
 
-      ! Mean runoff (kg_H2O/m2/s)
       real , pointer,dimension(:) :: wbudget_loss2runoff
+      !<Mean runoff (kg_H2O/m2/s)
 
-      ! Mean drainage (kg_H2O/m2/s)
       real , pointer,dimension(:) :: wbudget_loss2drainage
+      !<Mean drainage (kg_H2O/m2/s)
 
-      ! Total water (soil, sfcwater, can_shv, veg_water) at the beginning
-      ! of budget-averaging time. [kg_H2O/m2]
       real , pointer,dimension(:) :: wbudget_initialstorage
+      !<Total water (soil, sfcwater, can_shv, veg_water) at the beginning
+      !<of budget-averaging time. [kg_H2O/m2]
 
-      ! Residual of the water budget (kg_H2O/m2/s)
       real , pointer,dimension(:) :: wbudget_residual
+      !<Residual of the water budget (kg_H2O/m2/s)
 
-      ! Mean sensible heat transfer from the canopy air to the atmosphere
-      ! (J/m2/s)
       real , pointer,dimension(:) :: ebudget_loss2atm
+      !<Mean sensible heat transfer from the canopy air to the atmosphere
+      !<(J/m2/s)
 
-      ! Mean change in storage due to change in density
-      ! (J/m2/s)
       real , pointer,dimension(:) :: ebudget_denseffect
+      !<Mean change in storage due to change in density
+      !<(J/m2/s)
 
-      ! Mean change in storage due to pressure change
-      ! (J/m2/s)
       real , pointer,dimension(:) :: ebudget_prsseffect
+      !<Mean change in storage due to pressure change
+      !<(J/m2/s)
 
-      ! Energy associated with runoff (J/m2/s)
       real , pointer,dimension(:) :: ebudget_loss2runoff
+      !<Energy associated with runoff (J/m2/s)
 
-      ! Energy associated with drainage (J/m2/s)
       real , pointer,dimension(:) :: ebudget_loss2drainage
+      !<Energy associated with drainage (J/m2/s)
 
-      ! Net absorbed radiation by soil, sfcwater, vegetation [J/m2/s]
       real , pointer,dimension(:) :: ebudget_netrad
+      !<Net absorbed radiation by soil, sfcwater, vegetation [J/m2/s]
 
-      ! Energy associated with precipitation (J/m2/s)
       real , pointer,dimension(:) :: ebudget_precipgain
+      !<Energy associated with precipitation (J/m2/s)
 
-      ! Total energy (soil, sfcwater, can_shv, veg_water) at the beginning
-      ! of budget-averaging time. [J/m2]
       real , pointer,dimension(:) :: ebudget_initialstorage
+      !<Total energy (soil, sfcwater, can_shv, veg_water) at the beginning
+      !<of budget-averaging time. [J/m2]
 
-      ! Residual of the energy budget [J/m2/s]
       real, pointer, dimension(:) :: ebudget_residual
+      !<Residual of the energy budget [J/m2/s]
 
-      ! Total CO2 (can_shv) at the beginning of budget-averaging 
-      ! time. [umol_CO2/m2]
       real , pointer,dimension(:) :: co2budget_initialstorage
+      !<Total CO2 (can_shv) at the beginning of budget-averaging 
+      !<time. [&mu;mol_CO2/m2]
 
-      ! Residual of the CO2 budget [umol_CO2/m2/s]
       real , pointer,dimension(:) :: co2budget_residual
+      !<Residual of the CO2 budget [&mu;mol_CO2/m2/s]
 
-      ! Flux of CO2 from the canopy air to the atmosphere [umol_CO2/m2/s]
       real , pointer,dimension(:) :: co2budget_loss2atm
+      !<Flux of CO2 from the canopy air to the atmosphere [&mu;mol_CO2/m2/s]
 
-      ! Change in CO2 total storage due to change in density [umol_CO2/m2/s]
       real , pointer,dimension(:) :: co2budget_denseffect
+      !<Change in CO2 total storage due to change in density [&mu;mol_CO2/m2/s]
 
-      ! Average GPP [umol_CO2/m2/s]
       real , pointer,dimension(:) :: co2budget_gpp
+      !<Average GPP [&mu;mol_CO2/m2/s]
 
-      ! Average plant respiration [umol_CO2/m2/s]
       real , pointer,dimension(:) :: co2budget_plresp
+      !<Average plant respiration [&mu;mol_CO2/m2/s]
 
-      ! Average heterotrophic respiration [umol_CO2/m2/s]
       real , pointer,dimension(:) :: co2budget_rh
+      !<Average heterotrophic respiration [&mu;mol_CO2/m2/s]
 
-      ! Daily average of A_decomp, the temperature and moisture dependence
-      ! of heterotrophic respiration.  The "today" variable is used in the
-      ! model, whereas dmean and mmean are for output only.
       real , pointer,dimension(:) :: today_A_decomp
+      !<Daily average of A_decomp, the temperature and moisture dependence
+      !<of heterotrophic respiration.  The "today" variable is used in the
+      !<model, whereas dmean and mmean are for output only.
 
-      ! Daily average of the product A_decomp * f_decomp, which incorporates
-      ! temperature, moisture, and N dependence of decomposition.  The "today" 
-      ! variable is used in the model, whereas dmean and mmean are for output only.
       real , pointer,dimension(:) :: today_Af_decomp
+      !<Daily average of the product A_decomp * f_decomp, which incorporates
+      !<temperature, moisture, and N dependence of decomposition.  The "today" 
+      !<variable is used in the model, whereas dmean and mmean are for output only.
 
-      ! Carbon available to establish recruits [kgC/m2]
       real, pointer,dimension(:,:) :: repro    !(n_pft,npatches)  
+      !<Carbon available to establish recruits [kgC/m2]
 
-      ! Vegetation roughness length (m)
       real , pointer,dimension(:) :: veg_rough
+      !<Vegetation roughness length (m)
 
-      ! Vegetation height (m)
       real , pointer,dimension(:) :: veg_height
+      !<Vegetation height (m)
 
-      ! 0-plane displacement height (m)
       real , pointer,dimension(:) :: veg_displace
+      !<0-plane displacement height (m)
 
-      ! Input to fast soil carbon pool [kgC/m2/day]
       real , pointer,dimension(:) :: fsc_in
+      !<Input to fast soil carbon pool [kgC/m2/day]
 
-      ! Input to structural soil carbon pool [kgC/m2/day]
       real , pointer,dimension(:) :: ssc_in
+      !<Input to structural soil carbon pool [kgC/m2/day]
 
-      ! Input to soil lignin pool [kgC/m2/day]
       real , pointer,dimension(:) :: ssl_in  
+      !<Input to soil lignin pool [kgC/m2/day]
 
-      ! Input to fast soil nitrogen pool [kgN/m2/day]
       real , pointer,dimension(:) :: fsn_in  
+      !<Input to fast soil nitrogen pool [kgN/m2/day]
 
-      ! Plant nitrogen update summed over all cohorts [kgN/m2/day]
       real , pointer,dimension(:) :: total_plant_nitrogen_uptake
+      !<Plant nitrogen update summed over all cohorts [kgN/m2/day]
 
       !real, pointer,dimension(:) :: Nnet_min
       !real, pointer,dimension(:) :: Ngross_min
       real, pointer,dimension(:) :: mineralized_N_input
+      !<Input to mineralized soil nitrogen pool [kgN/m2/day]
       real, pointer,dimension(:) :: mineralized_N_loss
+      !<Loss of mineralized soil nitrogen pool [kgN/m2/day]
 
-      ! Short wave radiation absorbed by the ground (W/m2)
       real , pointer,dimension(:) :: rshort_g
+      !<Short wave radiation absorbed by the ground (W/m2)
       
-      ! Short wave radiation absorbed by the ground, beam component (W/m2)
       real , pointer,dimension(:) :: rshort_g_beam
+      !<Short wave radiation absorbed by the ground, beam component (W/m2)
       
-      ! Short wave radiation absorbed by the ground, diffuse component (W/m2)
       real , pointer,dimension(:) :: rshort_g_diffuse
+      !<Short wave radiation absorbed by the ground, diffuse component (W/m2)
 
-      ! PAR absorbed by the ground (W/m2)
       real , pointer,dimension(:) :: par_g
+      !<PAR absorbed by the ground (W/m2)
       
-      ! PAR absorbed by the ground, beam component (W/m2)
       real , pointer,dimension(:) :: par_g_beam
+      !<PAR absorbed by the ground, beam component (W/m2)
       
-      ! PAR absorbed by the ground, diffuse component (W/m2)
       real , pointer,dimension(:) :: par_g_diffuse
+      !<PAR absorbed by the ground, diffuse component (W/m2)
 
-      ! Photosynthetically active radiation incident at the ground(W/m2)
       real , pointer,dimension(:) :: par_b
+      !<Photosynthetically active radiation incident at the ground(W/m2)
 
-      ! Photosynthetically active radiation incident at the ground, beam component (W/m2)
       real , pointer,dimension(:) :: par_b_beam
+      !<Photosynthetically active radiation incident at the ground, beam component (W/m2)
 
-      ! Photosynthetically active radiation incident at the ground, diffuse component (W/m2)
       real , pointer,dimension(:) :: par_b_diffuse
+      !<Photosynthetically active radiation incident at the ground, diffuse component (W/m2)
 
-      ! Near infrared radiation incident at the ground(W/m2)
       real , pointer,dimension(:) :: nir_b
+      !<Near infrared radiation incident at the ground(W/m2)
 
-      ! Near infrared radiation incident at the ground, beam component (W/m2)
       real , pointer,dimension(:) :: nir_b_beam
+      !<Near infrared radiation incident at the ground, beam component (W/m2)
 
-      ! Near infrared radiation incident at the ground, diffuse component (W/m2)
       real , pointer,dimension(:) :: nir_b_diffuse
+      !<Near infrared radiation incident at the ground, diffuse component (W/m2)
 
-      ! Long wave radiation absorbed by the ground (W/m2)
       real , pointer,dimension(:) :: rlong_g
+      !<Long wave radiation absorbed by the ground (W/m2)
 
-      ! Long wave radiation absorbed by the surface water (W/m2)
       real , pointer,dimension(:) :: rlong_s
+      !<Long wave radiation absorbed by the surface water (W/m2)
 
-      ! Patch albedo
       real , pointer,dimension(:) :: albedo
+      !<Patch albedo
 
-      ! Patch albedo, PAR component
       real , pointer,dimension(:) :: albedo_par
+      !<Patch albedo, PAR component
 
-      ! Patch albedo, NIR component
       real , pointer,dimension(:) :: albedo_nir
+      !<Patch albedo, NIR component
 
-      ! Albedo for long wave radiation (whatever it means...)
       real , pointer,dimension(:) :: rlong_albedo
+      !<Albedo for long wave radiation (whatever it means...)
 
-      ! Net radiation at the top of the canopy (W/m2)
       real , pointer,dimension(:) :: rnet
+      !<Net radiation at the top of the canopy (W/m2)
 
-      ! Upward long wave radiation at the top of the canopy (W/m2)
       real , pointer,dimension(:) :: rlongup
+      !<Upward long wave radiation at the top of the canopy (W/m2)
 
-      ! Upward PAR radiation at the top of the canopy (W/m2)
       real , pointer,dimension(:) :: parup
+      !<Upward PAR radiation at the top of the canopy (W/m2)
 
-      ! Upward NIR radiation at the top of the canopy (W/m2)
       real , pointer,dimension(:) :: nirup
+      !<Upward NIR radiation at the top of the canopy (W/m2)
 
-      ! Upward short wave radiation at the top of the canopy (W/m2)
       real , pointer,dimension(:) :: rshortup
+      !<Upward short wave radiation at the top of the canopy (W/m2)
 
-      ! Total snow depth as calculated in the radiation scheme.  Used for 
-      ! checking if cohorts are buried.  [m]
       real , pointer,dimension(:) :: total_sfcw_depth
+      !<Total snow depth as calculated in the radiation scheme.  Used for 
+      !<checking if cohorts are buried.  [m]
 
-      ! Fraction of vegetation covered with snow.  Used for computing 
-      ! surface roughness.
       real , pointer,dimension(:) :: snowfac
+      !<Fraction of vegetation covered with snow.  Used for computing 
+      !<surface roughness.
 
-      ! limitation of heterotrophic respiration due to physical 
-      ! environmental factors (0-1 coefficient)
       real , pointer,dimension(:) :: A_decomp
+      !<limitation of heterotrophic respiration due to physical 
+      !<environmental factors (0-1 coefficient)
 
-      ! damping of decomposition due to nitrogen immobilization 
-      ! (0-1 coefficient)
       real , pointer,dimension(:) :: f_decomp
+      !<damping of decomposition due to nitrogen immobilization 
+      !<(0-1 coefficient)
 
-      ! total heterotrophic respiration (umol/m2/s)
       real , pointer,dimension(:) :: rh
+      !<total heterotrophic respiration (&mu;mol/m2/s)
 
-      ! coarse woody debris contribution to rh (umol/m2/s)
       real , pointer,dimension(:) :: cwd_rh
+      !<coarse woody debris contribution to rh (&mu;mol/m2/s)
 
-      ! Plant density broken down into size and PFT bins.  Used in patch fusion
       real, pointer,dimension(:,:,:) :: cumlai_profile !(n_pft,ff_nhgt,npatches)
+      !<Plant density broken down into size and PFT bins.  Used in patch fusion
 
-      ! Above ground biomass in this patch [kgC/m2]
       real , pointer,dimension(:) :: plant_ag_biomass
+      !<Above ground biomass in this patch [kgC/m2]
 
-      ! Last time step successfully completed by integrator.
       real, pointer,dimension(:)  :: htry
+      !<Last time step successfully completed by integrator.
 
-      ! Last previous time step successfully completed by the integrator
       real, pointer,dimension(:)  :: hprev
+      !<Last previous time step successfully completed by the integrator
 
-      ! Friction velocity [m/s]
       real, pointer,dimension(:)  :: ustar 
+      !<Friction velocity [m/s]
 
-      ! Characteristic temperature gradient [K]
       real, pointer,dimension(:)  :: tstar 
+      !<Characteristic temperature gradient [K]
 
-      ! Characteristic specific humidity gradient [kg/kg]
       real, pointer,dimension(:)  :: qstar 
+      !<Characteristic specific humidity gradient [kg/kg]
 
-      ! Characteristic CO2 mixing ratio gradient [umol/mol]
       real, pointer,dimension(:)  :: cstar 
+      !<Characteristic CO2 mixing ratio gradient [&mu;mol/mol]
 
-      ! Height / Obukhov length
       real, pointer,dimension(:)  :: zeta
+      !<Height / Obukhov length
 
-      ! Bulk Richardson number
       real, pointer,dimension(:)  :: ribulk 
+      !<Bulk Richardson number
 
-      real, pointer,dimension(:)  :: upwp !eddy mom. flux u-prime w-prime
+      real, pointer,dimension(:)  :: upwp !<eddy mom. flux u-prime w-prime
 
-      real, pointer,dimension(:)  :: tpwp !eddy heat flux t-prime w-prime
+      real, pointer,dimension(:)  :: tpwp !<eddy heat flux t-prime w-prime
 
-      real, pointer,dimension(:)  :: qpwp !eddy moist. flux q-prime w-prime
+      real, pointer,dimension(:)  :: qpwp !<eddy moist. flux q-prime w-prime
 
-      real, pointer,dimension(:)  :: cpwp !eddy CO2 flux flux c-prime w-prime
+      real, pointer,dimension(:)  :: cpwp !<eddy CO2 flux flux c-prime w-prime
 
-      real, pointer,dimension(:)  :: wpwp !eddy v. mom. flux w-prime w-prime
+      real, pointer,dimension(:)  :: wpwp !<eddy v. mom. flux w-prime w-prime
 
       !----- Hydrology variables ----------------------------------------------------------!
       real,pointer,dimension(:)   :: watertable
@@ -1325,7 +1419,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: soil_sat_energy
       real,pointer,dimension(:)   :: soil_sat_water
       real,pointer,dimension(:)   :: soil_sat_heat
-      real,pointer,dimension(:,:) :: runoff_A ! Runoff parameters, 1st dimension is 3.
+      real,pointer,dimension(:,:) :: runoff_A !<Runoff parameters, 1st dimension is 3.
       real,pointer,dimension(:)   :: runoff_rate
       real,pointer,dimension(:)   :: runoff
       real,pointer,dimension(:)   :: qrunoff
@@ -1354,82 +1448,82 @@ module ed_state_vars
       !   Theta_Eiv -- ice vapour equivalent potential temperature                         !
       !------------------------------------------------------------------------------------!
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rh              ! Heterotr. resp.    [umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_cwd_rh          ! CWD respiration    [umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_nep             ! Net Ecosyst. Prod. [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_rh              !<Heterotr. resp.    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_cwd_rh          !<CWD respiration    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [umol/m2/s]
       !----- State variables. -------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rk4step         ! RK4 time step      [        s]
-      real,pointer,dimension(:)   :: fmean_available_water ! Available water    [    kg/m2]
-      real,pointer,dimension(:)   :: fmean_veg_displace    ! Displacement hgt   [        m]
-      real,pointer,dimension(:)   :: fmean_rough           ! Roughness          [        m]
-      real,pointer,dimension(:)   :: fmean_can_theiv       ! CAS Theta_Eiv      [        K]
-      real,pointer,dimension(:)   :: fmean_can_theta       ! CAS Potential temp.[        K]
-      real,pointer,dimension(:)   :: fmean_can_vpdef       ! CAS Vap. Pres. Def.[       Pa]
-      real,pointer,dimension(:)   :: fmean_can_temp        ! CAS Temperature    [        K]
-      real,pointer,dimension(:)   :: fmean_can_shv         ! CAS Specific hum.  [    kg/kg]
-      real,pointer,dimension(:)   :: fmean_can_co2         ! CAS CO2 mix. ratio [ umol/mol]
-      real,pointer,dimension(:)   :: fmean_can_rhos        ! CAS air density    [    kg/m3]
-      real,pointer,dimension(:)   :: fmean_can_prss        ! CAS pressure       [       Pa]
-      real,pointer,dimension(:)   :: fmean_gnd_temp        ! Ground temperature [        K]
-      real,pointer,dimension(:)   :: fmean_gnd_shv         ! Ground spec. hum.  [    kg/kg]
-      real,pointer,dimension(:)   :: fmean_can_ggnd        ! Net canopy conduct.[      m/2]
-      real,pointer,dimension(:)   :: fmean_sfcw_depth      ! TPSL depth         [        m]
-      real,pointer,dimension(:)   :: fmean_sfcw_energy     ! TPSL int. energy   [     J/kg]
-      real,pointer,dimension(:)   :: fmean_sfcw_mass       ! TPSL water mass    [    kg/m2]
-      real,pointer,dimension(:)   :: fmean_sfcw_temp       ! TPSL temperature   [        K]
-      real,pointer,dimension(:)   :: fmean_sfcw_fliq       ! TPSL liquid frac.  [       --]
-      real,pointer,dimension(:,:) :: fmean_soil_energy     ! Soil int. energy   [     J/m3]
-      real,pointer,dimension(:,:) :: fmean_soil_mstpot     ! Soil matric potl.  [        m]
-      real,pointer,dimension(:,:) :: fmean_soil_water      ! Soil water content [    m3/m3]
-      real,pointer,dimension(:,:) :: fmean_soil_temp       ! Soil temperature   [        K]
-      real,pointer,dimension(:,:) :: fmean_soil_fliq       ! Soil liquid frac.  [       --]
+      real,pointer,dimension(:)   :: fmean_rk4step         !<RK4 time step      [        s]
+      real,pointer,dimension(:)   :: fmean_available_water !<Available water    [    kg/m2]
+      real,pointer,dimension(:)   :: fmean_veg_displace    !<Displacement hgt   [        m]
+      real,pointer,dimension(:)   :: fmean_rough           !<Roughness          [        m]
+      real,pointer,dimension(:)   :: fmean_can_theiv       !<CAS Theta_Eiv      [        K]
+      real,pointer,dimension(:)   :: fmean_can_theta       !<CAS Potential temp.[        K]
+      real,pointer,dimension(:)   :: fmean_can_vpdef       !<CAS Vap. Pres. Def.[       Pa]
+      real,pointer,dimension(:)   :: fmean_can_temp        !<CAS Temperature    [        K]
+      real,pointer,dimension(:)   :: fmean_can_shv         !<CAS Specific hum.  [    kg/kg]
+      real,pointer,dimension(:)   :: fmean_can_co2         !<CAS CO2 mix. ratio [ umol/mol]
+      real,pointer,dimension(:)   :: fmean_can_rhos        !<CAS air density    [    kg/m3]
+      real,pointer,dimension(:)   :: fmean_can_prss        !<CAS pressure       [       Pa]
+      real,pointer,dimension(:)   :: fmean_gnd_temp        !<Ground temperature [        K]
+      real,pointer,dimension(:)   :: fmean_gnd_shv         !<Ground spec. hum.  [    kg/kg]
+      real,pointer,dimension(:)   :: fmean_can_ggnd        !<Net canopy conduct.[      m/2]
+      real,pointer,dimension(:)   :: fmean_sfcw_depth      !<TPSL depth         [        m]
+      real,pointer,dimension(:)   :: fmean_sfcw_energy     !<TPSL int. energy   [     J/kg]
+      real,pointer,dimension(:)   :: fmean_sfcw_mass       !<TPSL water mass    [    kg/m2]
+      real,pointer,dimension(:)   :: fmean_sfcw_temp       !<TPSL temperature   [        K]
+      real,pointer,dimension(:)   :: fmean_sfcw_fliq       !<TPSL liquid frac.  [       --]
+      real,pointer,dimension(:,:) :: fmean_soil_energy     !<Soil int. energy   [     J/m3]
+      real,pointer,dimension(:,:) :: fmean_soil_mstpot     !<Soil matric potl.  [        m]
+      real,pointer,dimension(:,:) :: fmean_soil_water      !<Soil water content [    m3/m3]
+      real,pointer,dimension(:,:) :: fmean_soil_temp       !<Soil temperature   [        K]
+      real,pointer,dimension(:,:) :: fmean_soil_fliq       !<Soil liquid frac.  [       --]
       !----- Radiation --------------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rshort_gnd   ! Gnd. absp. SW Rad.    [     W/m2]
-      real,pointer,dimension(:)   :: fmean_par_gnd      ! Absorbed PAR          [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rlong_gnd    ! Gnd. absp. LW Rad.    [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rlongup      ! Outgoing LW Rad.      [     W/m2]
-      real,pointer,dimension(:)   :: fmean_parup        ! Outgoing PAR          [     W/m2]
-      real,pointer,dimension(:)   :: fmean_nirup        ! Outgoing NIR          [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rshortup     ! Outgoing SW Rad.      [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rnet         ! Net radiation         [     W/m2]
-      real,pointer,dimension(:)   :: fmean_albedo       ! Albedo                [     ----]
-      real,pointer,dimension(:)   :: fmean_albedo_par   ! Direct Albedo         [     ----]
-      real,pointer,dimension(:)   :: fmean_albedo_nir   ! Diffuse Albedo        [     ----]
-      real,pointer,dimension(:)   :: fmean_rlong_albedo ! Longwave Albedo       [     ----]
+      real,pointer,dimension(:)   :: fmean_rshort_gnd   !<Gnd. absp. SW Rad.    [     W/m2]
+      real,pointer,dimension(:)   :: fmean_par_gnd      !<Absorbed PAR          [     W/m2]
+      real,pointer,dimension(:)   :: fmean_rlong_gnd    !<Gnd. absp. LW Rad.    [     W/m2]
+      real,pointer,dimension(:)   :: fmean_rlongup      !<Outgoing LW Rad.      [     W/m2]
+      real,pointer,dimension(:)   :: fmean_parup        !<Outgoing PAR          [     W/m2]
+      real,pointer,dimension(:)   :: fmean_nirup        !<Outgoing NIR          [     W/m2]
+      real,pointer,dimension(:)   :: fmean_rshortup     !<Outgoing SW Rad.      [     W/m2]
+      real,pointer,dimension(:)   :: fmean_rnet         !<Net radiation         [     W/m2]
+      real,pointer,dimension(:)   :: fmean_albedo       !<Albedo                [     ----]
+      real,pointer,dimension(:)   :: fmean_albedo_par   !<Direct Albedo         [     ----]
+      real,pointer,dimension(:)   :: fmean_albedo_nir   !<Diffuse Albedo        [     ----]
+      real,pointer,dimension(:)   :: fmean_rlong_albedo !<Longwave Albedo       [     ----]
       !----- Characteristic variables. ----------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_ustar        ! Friction velocity     [      m/s]
-      real,pointer,dimension(:)   :: fmean_tstar        ! Pot. temp. scale      [        K]
-      real,pointer,dimension(:)   :: fmean_qstar        ! Water vapour scale    [    kg/kg]
-      real,pointer,dimension(:)   :: fmean_cstar        ! CO2 scale             [ umol/mol]
-      real,pointer,dimension(:)   :: fmean_carbon_ac    ! CO2 flux, ATM->CAS    [umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_carbon_st    ! CO2 storage           [umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_vapor_gc     ! Water flux, Gnd->CAS  [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_vapor_ac     ! Water flux, Atm->CAS  [  kg/m2/s]
-      real,pointer,dimension(:,:) :: fmean_smoist_gg    ! Soil water flux       [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_throughfall  ! Throughfall rate      [  kg/m2/s]
-      real,pointer,dimension(:,:) :: fmean_transloss    ! Water loss (transp.)  [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_runoff       ! Water runoff          [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_drainage     ! Water drainage        [  kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_ustar        !<Friction velocity     [      m/s]
+      real,pointer,dimension(:)   :: fmean_tstar        !<Pot. temp. scale      [        K]
+      real,pointer,dimension(:)   :: fmean_qstar        !<Water vapour scale    [    kg/kg]
+      real,pointer,dimension(:)   :: fmean_cstar        !<CO2 scale             [ umol/mol]
+      real,pointer,dimension(:)   :: fmean_carbon_ac    !<CO2 flux, ATM->CAS    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_carbon_st    !<CO2 storage           [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_vapor_gc     !<Water flux, Gnd->CAS  [  kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_vapor_ac     !<Water flux, Atm->CAS  [  kg/m2/s]
+      real,pointer,dimension(:,:) :: fmean_smoist_gg    !<Soil water flux       [  kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_throughfall  !<Throughfall rate      [  kg/m2/s]
+      real,pointer,dimension(:,:) :: fmean_transloss    !<Water loss (transp.)  [  kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_runoff       !<Water runoff          [  kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_drainage     !<Water drainage        [  kg/m2/s]
       !----- Sensible heat ----------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_sensible_gc  ! Sens. heat, GND->CAS  [     W/m2]
-      real,pointer,dimension(:)   :: fmean_sensible_ac  ! Sens. heat, ATM->CAS  [     W/m2]
-      real,pointer,dimension(:,:) :: fmean_sensible_gg  ! Soil heat flux        [     W/m2]
-      real,pointer,dimension(:)   :: fmean_qthroughfall ! Throughfall rate      [     W/m2]
-      real,pointer,dimension(:)   :: fmean_qrunoff      ! Surface runoff        [     W/m2]
-      real,pointer,dimension(:)   :: fmean_qdrainage    ! Drainage energy loss  [     W/m2]
+      real,pointer,dimension(:)   :: fmean_sensible_gc  !<Sens. heat, GND->CAS  [     W/m2]
+      real,pointer,dimension(:)   :: fmean_sensible_ac  !<Sens. heat, ATM->CAS  [     W/m2]
+      real,pointer,dimension(:,:) :: fmean_sensible_gg  !<Soil heat flux        [     W/m2]
+      real,pointer,dimension(:)   :: fmean_qthroughfall !<Throughfall rate      [     W/m2]
+      real,pointer,dimension(:)   :: fmean_qrunoff      !<Surface runoff        [     W/m2]
+      real,pointer,dimension(:)   :: fmean_qdrainage    !<Drainage energy loss  [     W/m2]
       !----- Variables with no sub-daily means. -------------------------------------------!
-      real,pointer,dimension(:) :: dmean_A_decomp         ! Decomposition fact. [       --]
-      real,pointer,dimension(:) :: dmean_Af_decomp        ! A with N immobil.   [       --]
-      real,pointer,dimension(:) :: dmean_co2_residual     ! CO2 residual        [  umol/m2]
-      real,pointer,dimension(:) :: dmean_energy_residual  ! Enthalpy residual   [     J/m2]
-      real,pointer,dimension(:) :: dmean_water_residual   ! Water residual      [    kg/m2]
+      real,pointer,dimension(:) :: dmean_A_decomp         !<Decomposition fact. [       --]
+      real,pointer,dimension(:) :: dmean_Af_decomp        !<A with N immobil.   [       --]
+      real,pointer,dimension(:) :: dmean_co2_residual     !<CO2 residual        [  umol/m2]
+      real,pointer,dimension(:) :: dmean_energy_residual  !<Enthalpy residual   [     J/m2]
+      real,pointer,dimension(:) :: dmean_water_residual   !<Water residual      [    kg/m2]
       !----- Variables that are updated once a day. ---------------------------------------!
-      real,pointer,dimension(:) :: mmean_fast_soil_c    ! Fast soil carbon      [   kgC/m2]
-      real,pointer,dimension(:) :: mmean_slow_soil_c    ! Slow soil carbon      [   kgC/m2]
-      real,pointer,dimension(:) :: mmean_struct_soil_c  ! Struct. soil carbon   [   kgC/m2]
-      real,pointer,dimension(:) :: mmean_struct_soil_l  ! Struct. soil lignin   [   kgL/m2]
-      real,pointer,dimension(:) :: mmean_fast_soil_n    ! Fast soil nitrogen    [   kgN/m2]
-      real,pointer,dimension(:) :: mmean_mineral_soil_n ! Mineralised soil N    [   kgN/m2]
+      real,pointer,dimension(:) :: mmean_fast_soil_c    !<Fast soil carbon      [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_slow_soil_c    !<Slow soil carbon      [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_struct_soil_c  !<Struct. soil carbon   [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_struct_soil_l  !<Struct. soil lignin   [   kgL/m2]
+      real,pointer,dimension(:) :: mmean_fast_soil_n    !<Fast soil nitrogen    [   kgN/m2]
+      real,pointer,dimension(:) :: mmean_mineral_soil_n !<Mineralised soil N    [   kgN/m2]
       !----- Daily means.  Units are the same as the "avg" variables. ---------------------!
       real,pointer,dimension(:)     :: dmean_rh
       real,pointer,dimension(:)     :: dmean_cwd_rh
@@ -1664,36 +1758,39 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   ! POLYGON TYPE: The following are the arrays of site level variables that populate the  !
-   !               current polygon.                                                        !
+   ! TYPE: POLYGON TYPE 
+   !
+   !> \brief   Contains arrays of sites that populate the current polygon.      
    !---------------------------------------------------------------------------------------!
    type polygontype
-      !----- Number of sites in this polygon. ---------------------------------------------!
       integer :: nsites
+      !< Number of sites in this polygon.
       !------------------------------------------------------------------------------------!
 
-      ! Global index of the first site in this vector across all sites
-      ! on the grid
-      integer :: siglob_id     ! Global index of the first patch across all cohorts
+      integer :: siglob_id     
+      !<Global index of the first site across all sites on the grid
 
-      ! Pointer to the patch vectors
       type(sitetype),pointer,dimension(:) :: site
+      !<Pointer to the patch vectors
 
-      !  The global index of the first patch in all each site
       integer,pointer,dimension(:) :: sipa_id
+      !<The global index of the first patch in all each site
 
-      ! The number of patches in each site
       integer,pointer,dimension(:) :: sipa_n
+      !<The number of patches in each site
 
-      integer,pointer,dimension(:) :: patch_count    ! number of patches per site
+      integer,pointer,dimension(:) :: patch_count    
+      !<number of patches per site
 
       integer,pointer,dimension(:) :: sitenum
+      !<Need edits
 
 
       !------------------------------------------------------------------------------------!
       !     METEOROLOGICAL INFORMATION.                                                    !
       !------------------------------------------------------------------------------------!
       type(met_driv_state),pointer,dimension(:) :: met
+      !<Structure that contains meteorological information
       !------------------------------------------------------------------------------------!
 
 
@@ -1702,11 +1799,11 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       ! BASIC INFO
       !------------------------------------------------------------------------------------!
-      real,pointer,dimension(:) :: area       ! Relative area occupied by the site
-      real,pointer,dimension(:) :: patch_area ! Un-normalized sum of patch areas
-      real,pointer,dimension(:) :: elevation  ! mean site elevation (meters)
-      real,pointer,dimension(:) :: slope      ! mean site slope (degrees)
-      real,pointer,dimension(:) :: aspect     ! mean site aspect (degrees)
+      real,pointer,dimension(:) :: area       !<Relative area occupied by the site
+      real,pointer,dimension(:) :: patch_area !<Un-normalized sum of patch areas
+      real,pointer,dimension(:) :: elevation  !<mean site elevation (meters)
+      real,pointer,dimension(:) :: slope      !<mean site slope (degrees)
+      real,pointer,dimension(:) :: aspect     !<mean site aspect (degrees)
       !------------------------------------------------------------------------------------!
 
 
@@ -1748,8 +1845,34 @@ module ed_state_vars
       !   6 -- sandy clay loam     |  12 -- peat                                           !
       !------------------------------------------------------------------------------------!
       integer,pointer,dimension(:)   :: lsl
+      !<Index of the lowest soil layer (simulation dependent)
       integer,pointer,dimension(:)   :: ncol_soil
+      !<Index of the soil colour class (used to find the ground albedo)
       integer,pointer,dimension(:,:) :: ntext_soil
+      !<Index of the soil texture class, similar to the USDA classification
+      !<except that clay is split into four classes (11,15,16,17)
+      !< <table>
+      !! <caption id="multi_row">Built-in Soil Texture Classes</caption>
+      !! <tr><th>Index    <th>Soil Class
+      !! <tr><td>1      <td>sand                    
+      !! <tr><td>2      <td>loamy sand              
+      !! <tr><td>3      <td>sandy loam              
+      !! <tr><td>4      <td>silt loam               
+      !! <tr><td>5      <td>loam                    
+      !! <tr><td>6      <td>sandy clay loam         
+      !! <tr><td>7      <td>silty clay loam         
+      !! <tr><td>8      <td>clayey loam             
+      !! <tr><td>9      <td>sandy clay              
+      !! <tr><td>10     <td>silty clay              
+      !! <tr><td>11     <td>clay                    
+      !! <tr><td>12     <td>peat                    
+      !! <tr><td>13     <td>bedrock                 
+      !! <tr><td>14     <td>silt                    
+      !! <tr><td>15     <td>heavy clay              
+      !! <tr><td>16     <td>clayey sand             
+      !! <tr><td>17     <td>clayey silt             
+      !! </table>
+
       !------------------------------------------------------------------------------------!
 
 
@@ -1758,109 +1881,113 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !  hydrologic routing info
       !------------------------------------------------------------------------------------!
-      real,pointer,dimension(:) :: TCI             ! topographic convergence index
+      real,pointer,dimension(:) :: TCI             !<topographic convergence index
 
-      real,pointer,dimension(:) :: pptweight       ! lapse weight for precip
+      real,pointer,dimension(:) :: pptweight       !<lapse weight for precip
 
       ! The Following variables used to point to structures
       ! Now they point to the array index of the site
       !   type(site), pointer :: hydro_next  !site run-off goes to
       !   type(site), pointer :: hydro_prev  !site run-on comes from
-      integer, pointer,dimension(:) :: hydro_next  !site run-off goes to
-      integer, pointer,dimension(:) :: hydro_prev  !site run-on comes from
+      integer, pointer,dimension(:) :: hydro_next  !<site run-off goes to
+      integer, pointer,dimension(:) :: hydro_prev  !<site run-on comes from
      
-      real,pointer,dimension(:)  :: moist_W   !Wetness index
-      real,pointer,dimension(:)  :: moist_f   ! decay of soil conductance w/ depth
-      real,pointer,dimension(:)  :: moist_tau ! tau characteristic time scale for water redistribution
-      real,pointer,dimension(:)  :: moist_zi  ! TOPMODEL "equilibrium" water table depth 
-      real,pointer,dimension(:)  :: baseflow  ! loss of water from site to watershed discharge (kg/m2/s)
+      real,pointer,dimension(:)  :: moist_W   !<Wetness index
+      real,pointer,dimension(:)  :: moist_f   !<decay of soil conductance w/ depth
+      real,pointer,dimension(:)  :: moist_tau 
+      !<tau characteristic time scale for water redistribution
+      real,pointer,dimension(:)  :: moist_zi  
+      !<TOPMODEL "equilibrium" water table depth 
+      real,pointer,dimension(:)  :: baseflow  
+      !<loss of water from site to watershed discharge (kg/m2/s)
 
-      real,pointer,dimension(:) :: runoff
-      real,pointer,dimension(:) :: qrunoff
+      real,pointer,dimension(:) :: runoff !<Need edits
+      real,pointer,dimension(:) :: qrunoff !<Need edits
 
 
 
 
-      !------------------------------------------------------------------------------------!
-      ! Minimum daily-averaged temperature in this month -- determines whether
-      ! or not recruits come up this month.
-      !------------------------------------------------------------------------------------!
       real,pointer,dimension(:)  :: min_monthly_temp
+      !<Minimum daily-averaged temperature in this month -- determines whether
+      !<or not recruits come up this month.
       !------------------------------------------------------------------------------------!
 
 
 
-      !------------------------------------------------------------------------------------!
-      !     The number of years of landuse data calculated at read-in of data during       !
-      ! landuse_init.                                                                      !
       !------------------------------------------------------------------------------------!
       integer     ,pointer ,dimension(:)    :: num_landuse_years
-      !----- The vectorized landuse matrix is allocated in landuse_init. ------------------!
+      !<    The number of years of landuse data calculated at read-in of data during       !
+      !<landuse_init.                                                                      !
+
       type(lutime), pointer,dimension(:,:)  :: clutimes !(luyears,nsites)
-      !----- Minimum DBH and probability of being harvest when selective logging happens. -!
+      !<The vectorized landuse matrix is allocated in landuse_init.
+
       real        , pointer, dimension(:,:) :: mindbh_harvest
       real        , pointer, dimension(:,:) :: prob_harvest
+      !<Minimum DBH and probability of being harvest when selective logging happens.
       !------------------------------------------------------------------------------------!
 
 
       !-----------------------------------
       ! FORESTRY
       !-----------------------------------
-      ! is the site under plantation management? (1=yes, 0=no)
-      integer,pointer,dimension(:) :: plantation  ! initialized to zero in site creation
+      integer,pointer,dimension(:) :: plantation  
+      !<is the site under plantation management? (1=yes, 0=no)
+      !<initialized to zero in site creation
 
-      ! Upon creating a pasture patch in this site, stock it with this 
-      ! PFT.  Set, along with the other stocking parameters, in 
-      ! init_ed_site_vars().
+
       integer,pointer,dimension(:) :: pasture_stocking_pft
+      !< Upon creating a pasture patch in this site, stock it with this 
+      !< PFT.  Set, along with the other stocking parameters, in 
+      !< init_ed_site_vars().
      
-      ! Upon creating a pasture patch in this site, stock it with 
-      ! this density of plants [plants/m2]
       real,pointer,dimension(:) :: pasture_stocking_density
+      !< Upon creating a pasture patch in this site, stock it with 
+      !< this density of plants [plants/m2]
 
-      ! Upon creating an agriculture patch in this site, stock it with this 
-      ! PFT.  Set, along with the other stocking parameters, in 
-      ! init_ed_site_vars().
       integer,pointer,dimension(:) :: agri_stocking_pft
+      !<Upon creating an agriculture patch in this site, stock it with this 
+      !<PFT.  Set, along with the other stocking parameters, in 
+      !<init_ed_site_vars().
      
-      ! Upon creating an agriculture patch in this site, stock it with 
-      ! this density of plants [plants/m2]
       real,pointer,dimension(:) :: agri_stocking_density
+      !<Upon creating an agriculture patch in this site, stock it with 
+      !<this density of plants [plants/m2]
      
-      ! Upon creating a plantation patch in this site, stock it with this PFT
       integer,pointer,dimension(:) :: plantation_stocking_pft
+      !<Upon creating a plantation patch in this site, stock it with this PFT
      
-      ! Upon creating an plantation patch in this site, stock it with 
-      ! this density of plants [plants/m2]
       real,pointer,dimension(:) :: plantation_stocking_density
+      !<Upon creating an plantation patch in this site, stock it with 
+      !<this density of plants [plants/m2]
 
-      ! Target primary forest harvest for the current simulation year [kgC/m2].  
-      ! Initialized together with secondary memory in init_ed_site_vars().
       real,pointer,dimension(:) :: primary_harvest_target
+      !<Target primary forest harvest for the current simulation year [kgC/m2].  
+      !<Initialized together with secondary memory in init_ed_site_vars().
      
-      ! Target secondary forest harvest for the current simulation year [kgC/m2].  
-      ! Initialized together with secondary memory in init_ed_site_vars().
       real ,pointer,dimension(:):: secondary_harvest_target
+      !<Target secondary forest harvest for the current simulation year [kgC/m2].  
+      !<Initialized together with secondary memory in init_ed_site_vars().
 
-      ! Unapplied primary forest harvest from previous years (save until 
-      ! harvest is above minimum threshold.) [kgC/m2].  Initialized 
-      ! together with secondary memory in init_ed_site_vars().
       real,pointer,dimension(:) :: primary_harvest_memory
+      !<Unapplied primary forest harvest from previous years (save until 
+      !<harvest is above minimum threshold.) [kgC/m2].  Initialized 
+      !<together with secondary memory in init_ed_site_vars().
      
-      ! Unapplied secondary forest harvest from previous years (save until 
-      ! harvest is above minimum threshold.) [kgC/m2]
       real ,pointer,dimension(:):: secondary_harvest_memory
+      !<Unapplied secondary forest harvest from previous years (save until 
+      !<harvest is above minimum threshold.) [kgC/m2]
 
 
       !-----------------------------------
       ! FIRE
       !-----------------------------------
-      ! total fuel in the dry patches
       real,pointer,dimension(:) :: ignition_rate
+      !<total fuel in the dry patches
 
       real,pointer, dimension(:,:) :: lambda_fire ! initialized in create_site !(12,nsites)
-      ! Monthly rainfall [mm/month] for each month over the past 12 months.
       real,pointer,dimension(:,:)  :: avg_monthly_pcpg
+      !<Monthly rainfall [mm/month] for each month over the past 12 months.
 
       type(prescribed_phen),pointer, dimension(:) :: phen_pars
 
@@ -1868,41 +1995,42 @@ module ed_state_vars
       ! DISTURBANCE
       !-----------------------------------
 
-      ! if new patch is less than min size, store information in the memory
       real,pointer, dimension(:,:,:) :: disturbance_memory !(n_dist_types,n_dist_types,nsites)
+      ! if new patch is less than min size, store information in the memory
 
-      ! the disturbance matrix (to,from)
       real,pointer,dimension(:,:,:) :: disturbance_rates !(n_dist_types,n_dist_types,nsites)
+      !<the disturbance matrix (to,from)
 
       real,pointer,dimension(:,:) :: green_leaf_factor ! (n_pft,nsites)
       real,pointer,dimension(:,:) :: leaf_aging_factor ! (n_pft,nsites)
 
-      real,pointer, dimension(:,:,:) :: basal_area        ! cm2/m2
-      real,pointer, dimension(:,:,:) :: basal_area_growth ! cm2/m2/yr
-      real,pointer, dimension(:,:,:) :: basal_area_mort   ! c2/m2/yr
-      real,pointer, dimension(:,:,:) :: basal_area_cut    ! c2/m2/yr
+      real,pointer, dimension(:,:,:) :: basal_area        !<cm2/m2
+      real,pointer, dimension(:,:,:) :: basal_area_growth !<cm2/m2/yr
+      real,pointer, dimension(:,:,:) :: basal_area_mort   !<c2/m2/yr
+      real,pointer, dimension(:,:,:) :: basal_area_cut    !<c2/m2/yr
 
-      real,pointer, dimension(:,:,:) :: agb               ! kgC/m2
-      real,pointer, dimension(:,:,:) :: agb_growth        ! kgC/m2/yr
-      real,pointer, dimension(:,:,:) :: agb_mort          ! kgC/m2/yr
-      real,pointer, dimension(:,:,:) :: agb_cut           ! kgC/m2/yr
+      real,pointer, dimension(:,:,:) :: agb               !<kgC/m2
+      real,pointer, dimension(:,:,:) :: agb_growth        !<kgC/m2/yr
+      real,pointer, dimension(:,:,:) :: agb_mort          !<kgC/m2/yr
+      real,pointer, dimension(:,:,:) :: agb_cut           !<kgC/m2/yr
 
       !------------------------------------------------------------------------------------!
       !      Crop and logging output.                                                      !
       !------------------------------------------------------------------------------------!
-      !----- Crop yield (specifically, seeds), kgC/m2, one value for each month. ----------!
       real, pointer, dimension(:,:) :: crop_yield
-      !----- Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ------!
+      !< Crop yield (specifically, seeds), kgC/m2, one value for each month.
+
       real, pointer, dimension(:) :: crop_harvest
-      !----- Logging harvest (timber), kgC/m2, patch dynamics. ----------------------------!
+      !< Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics.
+
       real, pointer, dimension(:) :: logging_harvest
-      !----- Carbon lost through combustion of fuels, kgC/m2, patch dynamics. -------------!
+      !< Logging harvest (timber), kgC/m2, patch dynamics.
+
       real, pointer, dimension(:) :: combusted_fuel
+      !< Carbon lost through combustion of fuels, kgC/m2, patch dynamics.
       !------------------------------------------------------------------------------------!
 
 
-
-      !---- Angle of incidence. 
       real,pointer,dimension(:) :: cosaoi
 
       !----- Length of day light, used to average light levels properly. -------------------!
@@ -1927,23 +2055,23 @@ module ed_state_vars
       !                                                                                    !
       !------------------------------------------------------------------------------------!
       !------ Fast mean. ------------------------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_atm_theiv       ! IV Equiv. Pot. Temp   [       K]
-      real,pointer,dimension(:) :: fmean_atm_theta       ! Potential temperature [       K]
-      real,pointer,dimension(:) :: fmean_atm_temp        ! Temperature           [       K]
-      real,pointer,dimension(:) :: fmean_atm_vpdef       ! Vapour pres. deficit  [      Pa]
-      real,pointer,dimension(:) :: fmean_atm_shv         ! Specific humidity     [   kg/kg]
-      real,pointer,dimension(:) :: fmean_atm_rshort      ! Shortwave radiation   [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_rshort_diff ! Diffuse SW radiation  [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_par         ! Photosyn. Active Rad. [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_par_diff    ! Diffuse PAR           [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_rlong       ! Longwave radiation    [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_vels        ! Wind speed            [     m/s]
-      real,pointer,dimension(:) :: fmean_atm_rhos        ! Air density           [   kg/m3]
-      real,pointer,dimension(:) :: fmean_atm_prss        ! Air pressure          [      Pa]
-      real,pointer,dimension(:) :: fmean_atm_co2         ! Air CO2               [umol/mol]
-      real,pointer,dimension(:) :: fmean_pcpg            ! Precipitation rate    [ kg/m2/s]
-      real,pointer,dimension(:) :: fmean_qpcpg           ! Energy gain - rain    [    W/m2]
-      real,pointer,dimension(:) :: fmean_dpcpg           ! Precipitation depth   [       m]
+      real,pointer,dimension(:) :: fmean_atm_theiv       !<IV Equiv. Pot. Temp   [       K]
+      real,pointer,dimension(:) :: fmean_atm_theta       !<Potential temperature [       K]
+      real,pointer,dimension(:) :: fmean_atm_temp        !<Temperature           [       K]
+      real,pointer,dimension(:) :: fmean_atm_vpdef       !<Vapour pres. deficit  [      Pa]
+      real,pointer,dimension(:) :: fmean_atm_shv         !<Specific humidity     [   kg/kg]
+      real,pointer,dimension(:) :: fmean_atm_rshort      !<Shortwave radiation   [    W/m2]
+      real,pointer,dimension(:) :: fmean_atm_rshort_diff !<Diffuse SW radiation  [    W/m2]
+      real,pointer,dimension(:) :: fmean_atm_par         !<Photosyn. Active Rad. [    W/m2]
+      real,pointer,dimension(:) :: fmean_atm_par_diff    !<Diffuse PAR           [    W/m2]
+      real,pointer,dimension(:) :: fmean_atm_rlong       !<Longwave radiation    [    W/m2]
+      real,pointer,dimension(:) :: fmean_atm_vels        !<Wind speed            [     m/s]
+      real,pointer,dimension(:) :: fmean_atm_rhos        !<Air density           [   kg/m3]
+      real,pointer,dimension(:) :: fmean_atm_prss        !<Air pressure          [      Pa]
+      real,pointer,dimension(:) :: fmean_atm_co2         !<Air CO2               [umol/mol]
+      real,pointer,dimension(:) :: fmean_pcpg            !<Precipitation rate    [ kg/m2/s]
+      real,pointer,dimension(:) :: fmean_qpcpg           !<Energy gain - rain    [    W/m2]
+      real,pointer,dimension(:) :: fmean_dpcpg           !<Precipitation depth   [       m]
       !------ Daily mean. -----------------------------------------------------------------!
       real,pointer,dimension(:) :: dmean_atm_theiv
       real,pointer,dimension(:) :: dmean_atm_theta
@@ -2009,8 +2137,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   ! ED TYPE: These are the arrays of polygon level variables that populate the current    !
-   !          grid.  This is the most averaged and least nested dimension.                 !
+   ! TYPE: ED TYPE 
+   !
+   !> \brief   Contains arrays of polygons that populate the current grid. This
+   !!          is the most averaged and least nested dimension.
    !---------------------------------------------------------------------------------------!
    type edtype
 
@@ -2022,10 +2152,10 @@ module ed_state_vars
       ! These values are mostly needed for output
       ! dataspace dimensioning.
 
-      integer :: npolygons_global
-      integer :: nsites_global
-      integer :: npatches_global
-      integer :: ncohorts_global
+      integer :: npolygons_global !< total number of polygons
+      integer :: nsites_global !< total number of sites
+      integer :: npatches_global !< total number of patches
+      integer :: ncohorts_global !< total number of cohorts
 
       ! Index offsets for total counts of cohorts, patches
       ! and sites.  If this is the nth machine writing to
@@ -2042,33 +2172,34 @@ module ed_state_vars
       !---------------------------------------------------
 
 
-      integer :: npolygons
+      integer :: npolygons !< number of polygons
 
-      integer :: pyglob_id
+      integer :: pyglob_id !< Global index of the first polygon
 
       type(polygontype),pointer,dimension(:) :: polygon
+      !< Structure that contains all the polygons within the grid
 
 
-      !  The global index of the first site in each polygon
       integer,pointer,dimension(:) :: pysi_id
+      !< The global index of the first site in each polygon
 
-      ! The number of sites in each polygon
       integer,pointer,dimension(:) :: pysi_n
+      !<The number of sites in each polygon
 
       real(kind=8),pointer,dimension(:) :: walltime_py
 
-      ! Longitude at the middle point of this polygon
       real,pointer,dimension(:) :: lon
+      !<Longitude at the middle point of this polygon
 
-      ! Latitude at the middle point of this polygon
       real,pointer,dimension(:) :: lat
+      !<Latitude at the middle point of this polygon
 
       integer,pointer,dimension(:) :: xatm
       
       integer,pointer,dimension(:) :: yatm
       
-      ! matrix of site hydrologic adjacency
       real,pointer,dimension(:,:,:) :: site_adjacency
+      !<matrix of site hydrologic adjacency
 
       real,pointer,dimension(:) :: wbar
       real,pointer,dimension(:) :: Te
@@ -2080,8 +2211,8 @@ module ed_state_vars
       real,pointer,dimension(:) :: qrunoff
       real,pointer,dimension(:) :: swliq
 
-      integer,pointer,dimension(:) :: ilon   ! index for matching met. data
-      integer,pointer,dimension(:) :: ilat   ! index for matching met. data
+      integer,pointer,dimension(:) :: ilon   !<index for matching met. data
+      integer,pointer,dimension(:) :: ilat   !<index for matching met. data
 
 
       !------------------------------------------------------------------------------------!
@@ -2100,73 +2231,78 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Crop and logging output.                                                      !
       !------------------------------------------------------------------------------------!
-      !----- Crop yield (specifically, seeds), kgC/m2, one value for each month. ----------!
+
       real, pointer, dimension(:,:) :: crop_yield
-      !----- Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ------!
+      !< Crop yield (specifically, seeds), kgC/m2, one value for each month.
+
       real, pointer, dimension(:) :: crop_harvest
-      !----- Logging harvest (timber), kgC/m2, patch dynamics. ----------------------------!
+      !< Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics.
+
       real, pointer, dimension(:) :: logging_harvest
-      !----- Carbon lost through combustion of fuels, kgC/m2, patch dynamics. -------------!
+      !< Logging harvest (timber), kgC/m2, patch dynamics.
+
       real, pointer, dimension(:) :: combusted_fuel
-       !------------------------------------------------------------------------------------!
+      !< Carbon lost through combustion of fuels, kgC/m2, patch dynamics.
+      !------------------------------------------------------------------------------------!
 
 
-      ! Polygon AGB (kgC/m2)
+
       real,pointer,dimension(:) :: total_agb
+      !<Polygon AGB (kgC/m2)
 
-      ! Polygon basal area (cm2/m2)
       real,pointer,dimension(:) :: total_basal_area
+      !<Polygon basal area (cm2/m2)
 
-      ! AGB accruing due to growth (kgC/m2/yr)
       real,pointer,dimension(:) :: total_agb_growth
+      !<AGB accruing due to growth (kgC/m2/yr)
 
-      ! AGB lost due to mortality (kgC/m2/yr)
       real,pointer,dimension(:) :: total_agb_mort
+      !<AGB lost due to mortality (kgC/m2/yr)
 
-      ! AGB used to generate recruits (kgC/m2/yr)
       real,pointer,dimension(:) :: total_agb_recruit
+      !<AGB used to generate recruits (kgC/m2/yr)
 
 
 
       ! CHANGED THE FOLLOWING UNIT DESCRIPTORS: FROM (cm2/m2/yr) RGK 6-13-08
       !------------
-      ! BASAL_AREA accruing due to growth (cm2/m2/yr)
       real,pointer,dimension(:) :: total_basal_area_growth
+      !<BASAL_AREA accruing due to growth (cm2/m2/yr)
 
-      ! BASAL_AREA lost due to mortality (cm2/m2/yr)
       real,pointer,dimension(:) :: total_basal_area_mort
+      !<BASAL_AREA lost due to mortality (cm2/m2/yr)
 
-      ! BASAL_AREA used to generate recruits (cm2/m2/yr)
       real,pointer,dimension(:) :: total_basal_area_recruit
+      !<BASAL_AREA used to generate recruits (cm2/m2/yr)
       !------------
 
 
       integer,pointer,dimension(:) :: nsites
-      ! list of site numbers
       integer,pointer,dimension(:,:) :: sitenums !(max_site,npolygons)
+      !<list of site numbers
  
-      ! specification if the adjacency table was loaded from a file
       integer,pointer,dimension(:) :: load_adjacency
+      !<specification if the adjacency table was loaded from a file
 
-      !! Meteorological driver data
       type(met_driv_data),pointer,dimension(:) :: metinput
+      !<Meteorological driver data
       
-      !! Lapse rate transfer data
       type(met_driv_state),pointer,dimension(:) :: met, lapse
+      !<Lapse rate transfer data
 
       real,pointer,dimension(:) :: cosz
 
-      ! Total carbon (vegetation plus soil) at the beginning of budget-averaging
-      ! time [kgC/m2]
       real,pointer,dimension(:) :: cbudget_initialstorage
+      !<Total carbon (vegetation plus soil) at the beginning of budget-averaging
+      !<time [kgC/m2]
 
-      ! Average NEP (GPP - plant respiration - heterotrophic respiration)
-      ! [kgC/m2/day], used for evaluating daily carbon budget.
       real,pointer,dimension(:) :: cbudget_nep
+      !<Average NEP (GPP - plant respiration - heterotrophic respiration)
+      !<[kgC/m2/day], used for evaluating daily carbon budget.
 
-      ! Total nitrogen (vegetation plus soil) at the beginning of  
-      ! budget-averaging time [kgN/m2]
       real,pointer,dimension(:) :: nbudget_initialstorage
+      !<Total nitrogen (vegetation plus soil) at the beginning of  
+      !<budget-averaging time [kgN/m2]
 
       !----- Mass and Energy --------------------------------------------------!
       ! New variables for testing the model stability
@@ -2283,190 +2419,190 @@ module ed_state_vars
 
 
       !----- Fast averages. ---------------------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_gpp              ! Gross primary prod. [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_npp              ! Net primary prod.   [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_leaf_resp        ! Leaf respiration    [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_root_resp        ! Root respiration    [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_leaf_growth_resp ! Growth resp.        [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_root_growth_resp ! Growth resp.        [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_sapa_growth_resp ! Growth resp.        [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_sapb_growth_resp ! Growth resp.        [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_bark_growth_resp ! Growth resp.        [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_leaf_storage_resp! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_root_storage_resp! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_sapa_storage_resp! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_sapb_storage_resp! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_bark_storage_resp! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_plresp           ! Plant respiration.  [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_leaf_energy      ! Leaf int. energy    [      J/m2]
-      real,pointer,dimension(:) :: fmean_leaf_water       ! Leaf sfc. water     [     kg/m2]
-      real,pointer,dimension(:) :: fmean_leaf_hcap        ! Leaf heat capacity  [    J/m2/K]
-      real,pointer,dimension(:) :: fmean_leaf_vpdef       ! Leaf VPD            [        Pa]
-      real,pointer,dimension(:) :: fmean_leaf_temp        ! Leaf temperature    [         K]
-      real,pointer,dimension(:) :: fmean_leaf_fliq        ! Liquid fraction     [        --]
-      real,pointer,dimension(:) :: fmean_leaf_gsw         ! Stomatal conduct.   [       m/s]
-      real,pointer,dimension(:) :: fmean_leaf_gbw         ! Leaf BL conduct.    [       m/s]
-      real,pointer,dimension(:) :: fmean_wood_energy      ! Wood int. energy    [      J/m2]
-      real,pointer,dimension(:) :: fmean_wood_water       ! Wood sfc. water     [     kg/m2]
-      real,pointer,dimension(:) :: fmean_wood_hcap        ! Wood heat capacity  [    J/m2/K]
-      real,pointer,dimension(:) :: fmean_wood_temp        ! Wood temperature    [         K]
-      real,pointer,dimension(:) :: fmean_wood_fliq        ! Liquid fraction     [        --]
-      real,pointer,dimension(:) :: fmean_wood_gbw         ! Wood BL conduct.    [       m/s]
-      real,pointer,dimension(:) :: fmean_fs_open          ! Net stress factor   [        --]
-      real,pointer,dimension(:) :: fmean_fsw              ! Moisture stress     [        --]
-      real,pointer,dimension(:) :: fmean_fsn              ! Nitrogen stress     [        --]
-      real,pointer,dimension(:) :: fmean_a_open           ! Assim. (no stress)  [umol/m2l/s]
-      real,pointer,dimension(:) :: fmean_a_closed         ! Min. Assim.         [umol/m2l/s]
-      real,pointer,dimension(:) :: fmean_a_net            ! Assim. actual       [umol/m2l/s]
-      real,pointer,dimension(:) :: fmean_a_light          ! Assim. (light)      [umol/m2l/s]
-      real,pointer,dimension(:) :: fmean_a_rubp           ! Assim. (RuBP)       [umol/m2l/s]
-      real,pointer,dimension(:) :: fmean_a_co2            ! Assim. (CO2)        [umol/m2l/s]
-      real,pointer,dimension(:) :: fmean_psi_open         ! Transp. no stress   [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_psi_closed       ! Transp. max stress  [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_water_supply     ! Water supply        [        --]
-      real,pointer,dimension(:) :: fmean_par_l            ! Absorbed PAR (Leaf) [      W/m2]
-      real,pointer,dimension(:) :: fmean_par_l_beam       ! Abs. Dir. PAR       [      W/m2]
-      real,pointer,dimension(:) :: fmean_par_l_diff       ! Abs. Diffuse PAR    [      W/m2]
-      real,pointer,dimension(:) :: fmean_rshort_l         ! Abs. SW (leaf)      [      W/m2]
-      real,pointer,dimension(:) :: fmean_rlong_l          ! Abs. LW (leaf)      [      W/m2]
-      real,pointer,dimension(:) :: fmean_sensible_lc      ! Sensible heat       [      W/m2]
-      real,pointer,dimension(:) :: fmean_vapor_lc         ! Leaf evaporation    [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_transp           ! Leaf transpiration  [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_intercepted_al   ! Leaf interception   [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_wshed_lg         ! Leaf shedding       [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_rshort_w         ! Abs. SW (Wood)      [      W/m2]
-      real,pointer,dimension(:) :: fmean_rlong_w          ! Abs. LW (Wood)      [      W/m2]
-      real,pointer,dimension(:) :: fmean_sensible_wc      ! Sensible heat       [      W/m2]
-      real,pointer,dimension(:) :: fmean_vapor_wc         ! Wood evaporation    [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_intercepted_aw   ! Wood interception   [   kg/m2/s]
-      real,pointer,dimension(:) :: fmean_wshed_wg         ! Wood shedding       [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_gpp              !<Gross primary prod. [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_npp              !<Net primary prod.   [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_leaf_resp        !<Leaf respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_root_resp        !<Root respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_leaf_growth_resp !<Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_root_growth_resp !<Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_sapa_growth_resp !<Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_sapb_growth_resp !<Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_bark_growth_resp !<Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_leaf_storage_resp !<Storage resp.      [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_root_storage_resp !<Storage resp.      [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_sapa_storage_resp !<Storage resp.      [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_sapb_storage_resp !<Storage resp.      [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_bark_storage_resp !<Storage resp.      [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_plresp           !<Plant respiration.  [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_leaf_energy      !<Leaf int. energy    [      J/m2]
+      real,pointer,dimension(:) :: fmean_leaf_water       !<Leaf sfc. water     [     kg/m2]
+      real,pointer,dimension(:) :: fmean_leaf_hcap        !<Leaf heat capacity  [    J/m2/K]
+      real,pointer,dimension(:) :: fmean_leaf_vpdef       !<Leaf VPD            [        Pa]
+      real,pointer,dimension(:) :: fmean_leaf_temp        !<Leaf temperature    [         K]
+      real,pointer,dimension(:) :: fmean_leaf_fliq        !<Liquid fraction     [        --]
+      real,pointer,dimension(:) :: fmean_leaf_gsw         !<Stomatal conduct.   [       m/s]
+      real,pointer,dimension(:) :: fmean_leaf_gbw         !<Leaf BL conduct.    [       m/s]
+      real,pointer,dimension(:) :: fmean_wood_energy      !<Wood int. energy    [      J/m2]
+      real,pointer,dimension(:) :: fmean_wood_water       !<Wood sfc. water     [     kg/m2]
+      real,pointer,dimension(:) :: fmean_wood_hcap        !<Wood heat capacity  [    J/m2/K]
+      real,pointer,dimension(:) :: fmean_wood_temp        !<Wood temperature    [         K]
+      real,pointer,dimension(:) :: fmean_wood_fliq        !<Liquid fraction     [        --]
+      real,pointer,dimension(:) :: fmean_wood_gbw         !<Wood BL conduct.    [       m/s]
+      real,pointer,dimension(:) :: fmean_fs_open          !<Net stress factor   [        --]
+      real,pointer,dimension(:) :: fmean_fsw              !<Moisture stress     [        --]
+      real,pointer,dimension(:) :: fmean_fsn              !<Nitrogen stress     [        --]
+      real,pointer,dimension(:) :: fmean_a_open           !<Assim. (no stress)  [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_closed         !<Min. Assim.         [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_net            !<Assim. actual       [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_light          !<Assim. (light)      [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_rubp           !<Assim. (RuBP)       [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_co2            !<Assim. (CO2)        [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_psi_open         !<Transp. no stress   [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_psi_closed       !<Transp. max stress  [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_water_supply     !<Water supply        [        --]
+      real,pointer,dimension(:) :: fmean_par_l            !<Absorbed PAR (Leaf) [      W/m2]
+      real,pointer,dimension(:) :: fmean_par_l_beam       !<Abs. Dir. PAR       [      W/m2]
+      real,pointer,dimension(:) :: fmean_par_l_diff       !<Abs. Diffuse PAR    [      W/m2]
+      real,pointer,dimension(:) :: fmean_rshort_l         !<Abs. SW (leaf)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_rlong_l          !<Abs. LW (leaf)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_sensible_lc      !<Sensible heat       [      W/m2]
+      real,pointer,dimension(:) :: fmean_vapor_lc         !<Leaf evaporation    [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_transp           !<Leaf transpiration  [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_intercepted_al   !<Leaf interception   [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_wshed_lg         !<Leaf shedding       [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_rshort_w         !<Abs. SW (Wood)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_rlong_w          !<Abs. LW (Wood)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_sensible_wc      !<Sensible heat       [      W/m2]
+      real,pointer,dimension(:) :: fmean_vapor_wc         !<Wood evaporation    [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_intercepted_aw   !<Wood interception   [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_wshed_wg         !<Wood shedding       [   kg/m2/s]
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rh              ! Heterotr. resp.    [ kgC/m2/yr]
-      real,pointer,dimension(:)   :: fmean_cwd_rh          ! CWD respiration    [ kgC/m2/yr]
-      real,pointer,dimension(:)   :: fmean_nep             ! Net Ecosyst. Prod. [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_rh              !<Heterotr. resp.    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_cwd_rh          !<CWD respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [ kgC/m2/yr]
       !----- State variables. -------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rk4step         ! RK4 time step      [         s]
-      real,pointer,dimension(:)   :: fmean_available_water ! Available water    [     kg/m2]
-      real,pointer,dimension(:)   :: fmean_veg_displace    ! Displacement hgt   [         m]
-      real,pointer,dimension(:)   :: fmean_rough           ! Roughness          [         m]
-      real,pointer,dimension(:)   :: fmean_can_theiv       ! CAS Theta_Eiv      [         K]
-      real,pointer,dimension(:)   :: fmean_can_theta       ! CAS Potential temp.[         K]
-      real,pointer,dimension(:)   :: fmean_can_vpdef       ! CAS Vap. Pres. Def.[        Pa]
-      real,pointer,dimension(:)   :: fmean_can_temp        ! CAS Temperature    [         K]
-      real,pointer,dimension(:)   :: fmean_can_shv         ! CAS Specific hum.  [     kg/kg]
-      real,pointer,dimension(:)   :: fmean_can_co2         ! CAS CO2 mix. ratio [  umol/mol]
-      real,pointer,dimension(:)   :: fmean_can_rhos        ! CAS air density    [     kg/m3]
-      real,pointer,dimension(:)   :: fmean_can_prss        ! CAS pressure       [        Pa]
-      real,pointer,dimension(:)   :: fmean_gnd_temp        ! Ground temperature [         K]
-      real,pointer,dimension(:)   :: fmean_gnd_shv         ! Ground spec. hum.  [     kg/kg]
-      real,pointer,dimension(:)   :: fmean_can_ggnd        ! Net canopy conduct.[       m/2]
-      real,pointer,dimension(:)   :: fmean_sfcw_depth      ! TPSL depth         [         m]
-      real,pointer,dimension(:)   :: fmean_sfcw_energy     ! TPSL int. energy   [      J/kg]
-      real,pointer,dimension(:)   :: fmean_sfcw_mass       ! TPSL water mass    [     kg/m2]
-      real,pointer,dimension(:)   :: fmean_sfcw_temp       ! TPSL temperature   [         K]
-      real,pointer,dimension(:)   :: fmean_sfcw_fliq       ! TPSL liquid frac.  [        --]
-      real,pointer,dimension(:,:) :: fmean_soil_energy     ! Soil int. energy   [      J/m3]
-      real,pointer,dimension(:,:) :: fmean_soil_mstpot     ! Soil matric potl.  [         m]
-      real,pointer,dimension(:,:) :: fmean_soil_water      ! Soil water content [     m3/m3]
-      real,pointer,dimension(:,:) :: fmean_soil_temp       ! Soil temperature   [         K]
-      real,pointer,dimension(:,:) :: fmean_soil_fliq       ! Soil liquid frac.  [        --]
+      real,pointer,dimension(:)   :: fmean_rk4step         !<RK4 time step      [         s]
+      real,pointer,dimension(:)   :: fmean_available_water !<Available water    [     kg/m2]
+      real,pointer,dimension(:)   :: fmean_veg_displace    !<Displacement hgt   [         m]
+      real,pointer,dimension(:)   :: fmean_rough           !<Roughness          [         m]
+      real,pointer,dimension(:)   :: fmean_can_theiv       !<CAS Theta_Eiv      [         K]
+      real,pointer,dimension(:)   :: fmean_can_theta       !<CAS Potential temp.[         K]
+      real,pointer,dimension(:)   :: fmean_can_vpdef       !<CAS Vap. Pres. Def.[        Pa]
+      real,pointer,dimension(:)   :: fmean_can_temp        !<CAS Temperature    [         K]
+      real,pointer,dimension(:)   :: fmean_can_shv         !<CAS Specific hum.  [     kg/kg]
+      real,pointer,dimension(:)   :: fmean_can_co2         !<CAS CO2 mix. ratio [  umol/mol]
+      real,pointer,dimension(:)   :: fmean_can_rhos        !<CAS air density    [     kg/m3]
+      real,pointer,dimension(:)   :: fmean_can_prss        !<CAS pressure       [        Pa]
+      real,pointer,dimension(:)   :: fmean_gnd_temp        !<Ground temperature [         K]
+      real,pointer,dimension(:)   :: fmean_gnd_shv         !<Ground spec. hum.  [     kg/kg]
+      real,pointer,dimension(:)   :: fmean_can_ggnd        !<Net canopy conduct.[       m/2]
+      real,pointer,dimension(:)   :: fmean_sfcw_depth      !<TPSL depth         [         m]
+      real,pointer,dimension(:)   :: fmean_sfcw_energy     !<TPSL int. energy   [      J/kg]
+      real,pointer,dimension(:)   :: fmean_sfcw_mass       !<TPSL water mass    [     kg/m2]
+      real,pointer,dimension(:)   :: fmean_sfcw_temp       !<TPSL temperature   [         K]
+      real,pointer,dimension(:)   :: fmean_sfcw_fliq       !<TPSL liquid frac.  [        --]
+      real,pointer,dimension(:,:) :: fmean_soil_energy     !<Soil int. energy   [      J/m3]
+      real,pointer,dimension(:,:) :: fmean_soil_mstpot     !<Soil matric potl.  [         m]
+      real,pointer,dimension(:,:) :: fmean_soil_water      !<Soil water content [     m3/m3]
+      real,pointer,dimension(:,:) :: fmean_soil_temp       !<Soil temperature   [         K]
+      real,pointer,dimension(:,:) :: fmean_soil_fliq       !<Soil liquid frac.  [        --]
       !----- Radiation --------------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rshort_gnd   ! Gnd. absp. SW Rad.    [      W/m2]
-      real,pointer,dimension(:)   :: fmean_par_gnd      ! Absorbed PAR          [      W/m2]
-      real,pointer,dimension(:)   :: fmean_rlong_gnd    ! Gnd. absp. LW Rad.    [      W/m2]
-      real,pointer,dimension(:)   :: fmean_rlongup      ! Outgoing LW Rad.      [      W/m2]
-      real,pointer,dimension(:)   :: fmean_parup        ! Outgoing PAR          [      W/m2]
-      real,pointer,dimension(:)   :: fmean_nirup        ! Outgoing NIR          [      W/m2]
-      real,pointer,dimension(:)   :: fmean_rshortup     ! Outgoing SW Rad.      [      W/m2]
-      real,pointer,dimension(:)   :: fmean_rnet         ! Net radiation         [      W/m2]
-      real,pointer,dimension(:)   :: fmean_albedo       ! Albedo                [      ----]
-      real,pointer,dimension(:)   :: fmean_albedo_par   ! Direct Albedo         [      ----]
-      real,pointer,dimension(:)   :: fmean_albedo_nir   ! Diffuse Albedo        [      ----]
-      real,pointer,dimension(:)   :: fmean_rlong_albedo ! Longwave Albedo       [      ----]
+      real,pointer,dimension(:)   :: fmean_rshort_gnd   !<Gnd. absp. SW Rad.    [      W/m2]
+      real,pointer,dimension(:)   :: fmean_par_gnd      !<Absorbed PAR          [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rlong_gnd    !<Gnd. absp. LW Rad.    [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rlongup      !<Outgoing LW Rad.      [      W/m2]
+      real,pointer,dimension(:)   :: fmean_parup        !<Outgoing PAR          [      W/m2]
+      real,pointer,dimension(:)   :: fmean_nirup        !<Outgoing NIR          [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rshortup     !<Outgoing SW Rad.      [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rnet         !<Net radiation         [      W/m2]
+      real,pointer,dimension(:)   :: fmean_albedo       !<Albedo                [      ----]
+      real,pointer,dimension(:)   :: fmean_albedo_par   !<Direct Albedo         [      ----]
+      real,pointer,dimension(:)   :: fmean_albedo_nir   !<Diffuse Albedo        [      ----]
+      real,pointer,dimension(:)   :: fmean_rlong_albedo !<Longwave Albedo       [      ----]
       !----- Characteristic variables. ----------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_ustar        ! Friction velocity     [       m/s]
-      real,pointer,dimension(:)   :: fmean_tstar        ! Pot. temp. scale      [         K]
-      real,pointer,dimension(:)   :: fmean_qstar        ! Water vapour scale    [     kg/kg]
-      real,pointer,dimension(:)   :: fmean_cstar        ! CO2 scale             [  umol/mol]
-      real,pointer,dimension(:)   :: fmean_carbon_ac    ! CO2 flux, ATM->CAS    [ umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_carbon_st    ! CO2 storage           [ umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_vapor_gc     ! Water flux, Gnd->CAS  [   kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_vapor_ac     ! Water flux, Atm->CAS  [   kg/m2/s]
-      real,pointer,dimension(:,:) :: fmean_smoist_gg    ! Soil water flux       [   kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_throughfall  ! Throughfall rate      [   kg/m2/s]
-      real,pointer,dimension(:,:) :: fmean_transloss    ! Water loss (transp.)  [   kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_runoff       ! Water runoff          [   kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_drainage     ! Water drainage        [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_ustar        !<Friction velocity     [       m/s]
+      real,pointer,dimension(:)   :: fmean_tstar        !<Pot. temp. scale      [         K]
+      real,pointer,dimension(:)   :: fmean_qstar        !<Water vapour scale    [     kg/kg]
+      real,pointer,dimension(:)   :: fmean_cstar        !<CO2 scale             [  umol/mol]
+      real,pointer,dimension(:)   :: fmean_carbon_ac    !<CO2 flux, ATM->CAS    [ umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_carbon_st    !<CO2 storage           [ umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_vapor_gc     !<Water flux, Gnd->CAS  [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_vapor_ac     !<Water flux, Atm->CAS  [   kg/m2/s]
+      real,pointer,dimension(:,:) :: fmean_smoist_gg    !<Soil water flux       [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_throughfall  !<Throughfall rate      [   kg/m2/s]
+      real,pointer,dimension(:,:) :: fmean_transloss    !<Water loss (transp.)  [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_runoff       !<Water runoff          [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_drainage     !<Water drainage        [   kg/m2/s]
       !----- Sensible heat ----------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_sensible_gc  ! Sens. heat, GND->CAS  [      W/m2]
-      real,pointer,dimension(:)   :: fmean_sensible_ac  ! Sens. heat, ATM->CAS  [      W/m2]
-      real,pointer,dimension(:,:) :: fmean_sensible_gg  ! Soil heat flux        [      W/m2]
-      real,pointer,dimension(:)   :: fmean_qthroughfall ! Throughfall rate      [      W/m2]
-      real,pointer,dimension(:)   :: fmean_qrunoff      ! Surface runoff        [      W/m2]
-      real,pointer,dimension(:)   :: fmean_qdrainage    ! Drainage energy loss  [      W/m2]
+      real,pointer,dimension(:)   :: fmean_sensible_gc  !<Sens. heat, GND->CAS  [      W/m2]
+      real,pointer,dimension(:)   :: fmean_sensible_ac  !<Sens. heat, ATM->CAS  [      W/m2]
+      real,pointer,dimension(:,:) :: fmean_sensible_gg  !<Soil heat flux        [      W/m2]
+      real,pointer,dimension(:)   :: fmean_qthroughfall !<Throughfall rate      [      W/m2]
+      real,pointer,dimension(:)   :: fmean_qrunoff      !<Surface runoff        [      W/m2]
+      real,pointer,dimension(:)   :: fmean_qdrainage    !<Drainage energy loss  [      W/m2]
       !------ Met driver. -----------------------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_atm_theiv       ! IV Equiv. Pot. Temp   [        K]
-      real,pointer,dimension(:) :: fmean_atm_theta       ! Potential temperature [        K]
-      real,pointer,dimension(:) :: fmean_atm_temp        ! Temperature           [        K]
-      real,pointer,dimension(:) :: fmean_atm_vpdef       ! Vapour pres. deficit  [       Pa]
-      real,pointer,dimension(:) :: fmean_atm_shv         ! Specific humidity     [    kg/kg]
-      real,pointer,dimension(:) :: fmean_atm_rshort      ! Shortwave radiation   [     W/m2]
-      real,pointer,dimension(:) :: fmean_atm_rshort_diff ! Diffuse SW radiation  [     W/m2]
-      real,pointer,dimension(:) :: fmean_atm_par         ! Photosyn. Active Rad. [     W/m2]
-      real,pointer,dimension(:) :: fmean_atm_par_diff    ! Diffuse PAR           [     W/m2]
-      real,pointer,dimension(:) :: fmean_atm_rlong       ! Longwave radiation    [     W/m2]
-      real,pointer,dimension(:) :: fmean_atm_vels        ! Wind speed            [      m/s]
-      real,pointer,dimension(:) :: fmean_atm_rhos        ! Air density           [    kg/m3]
-      real,pointer,dimension(:) :: fmean_atm_prss        ! Air pressure          [       Pa]
-      real,pointer,dimension(:) :: fmean_atm_co2         ! Air CO2               [ umol/mol]
-      real,pointer,dimension(:) :: fmean_pcpg            ! Precipitation rate    [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_qpcpg           ! Energy gain - rain    [     W/m2]
-      real,pointer,dimension(:) :: fmean_dpcpg           ! Precipitation depth   [        m]
+      real,pointer,dimension(:) :: fmean_atm_theiv       !<IV Equiv. Pot. Temp   [        K]
+      real,pointer,dimension(:) :: fmean_atm_theta       !<Potential temperature [        K]
+      real,pointer,dimension(:) :: fmean_atm_temp        !<Temperature           [        K]
+      real,pointer,dimension(:) :: fmean_atm_vpdef       !<Vapour pres. deficit  [       Pa]
+      real,pointer,dimension(:) :: fmean_atm_shv         !<Specific humidity     [    kg/kg]
+      real,pointer,dimension(:) :: fmean_atm_rshort      !<Shortwave radiation   [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_rshort_diff !<Diffuse SW radiation  [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_par         !<Photosyn. Active Rad. [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_par_diff    !<Diffuse PAR           [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_rlong       !<Longwave radiation    [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_vels        !<Wind speed            [      m/s]
+      real,pointer,dimension(:) :: fmean_atm_rhos        !<Air density           [    kg/m3]
+      real,pointer,dimension(:) :: fmean_atm_prss        !<Air pressure          [       Pa]
+      real,pointer,dimension(:) :: fmean_atm_co2         !<Air CO2               [ umol/mol]
+      real,pointer,dimension(:) :: fmean_pcpg            !<Precipitation rate    [  kg/m2/s]
+      real,pointer,dimension(:) :: fmean_qpcpg           !<Energy gain - rain    [     W/m2]
+      real,pointer,dimension(:) :: fmean_dpcpg           !<Precipitation depth   [        m]
       !----- Moore Foundation variables. --------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_soil_wetness     ! Soil wetness index  [        --]
-      real,pointer,dimension(:) :: fmean_skin_temp        ! Skin temperature    [         K]
+      real,pointer,dimension(:) :: fmean_soil_wetness     !<Soil wetness index  [        --]
+      real,pointer,dimension(:) :: fmean_skin_temp        !<Skin temperature    [         K]
       !--------Variables required by PEcAn.  ----------------------------------------------!
-      real,pointer,dimension(:) :: fmean_lai              ! LAI                 [     m2/m2]
-      real,pointer,dimension(:)	:: fmean_bdead            ! Bdead               [     kg/pl]
+      real,pointer,dimension(:) :: fmean_lai              !<LAI                 [     m2/m2]
+      real,pointer,dimension(:)	:: fmean_bdead            !<Bdead               [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
-      real,pointer,dimension(:) :: dmean_nppleaf          ! Leaf NPP            [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppfroot         ! Fine root NPP       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppsapwood       ! Sapwood NPP         [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppbark          ! Bark NPP            [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppcroot         ! Coarse root NPP     [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppseeds         ! Seed NPP            [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppwood          ! Wood NPP            [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppdaily         ! Daily NPP           [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_A_decomp         ! Decomposition fact. [        --]
-      real,pointer,dimension(:) :: dmean_Af_decomp        ! A with N immobil.   [        --]
-      real,pointer,dimension(:) :: dmean_co2_residual     ! CO2 residual        [   umol/m2]
-      real,pointer,dimension(:) :: dmean_energy_residual  ! Enthalpy residual   [      J/m2]
-      real,pointer,dimension(:) :: dmean_water_residual   ! Water residual      [     kg/m2]
+      real,pointer,dimension(:) :: dmean_nppleaf          !<Leaf NPP            [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppfroot         !<Fine root NPP       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppsapwood       !<Sapwood NPP         [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppbark          !<Bark NPP            [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppcroot         !<Coarse root NPP     [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppseeds         !<Seed NPP            [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppwood          !<Wood NPP            [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppdaily         !<Daily NPP           [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_A_decomp         !<Decomposition fact. [        --]
+      real,pointer,dimension(:) :: dmean_Af_decomp        !<A with N immobil.   [        --]
+      real,pointer,dimension(:) :: dmean_co2_residual     !<CO2 residual        [   umol/m2]
+      real,pointer,dimension(:) :: dmean_energy_residual  !<Enthalpy residual   [      J/m2]
+      real,pointer,dimension(:) :: dmean_water_residual   !<Water residual      [     kg/m2]
       !----- Variables that are updated once a day. ---------------------------------------!
-      real,pointer,dimension(:,:,:) :: mmean_thbark           ! Bark thickness  [        cm]
-      real,pointer,dimension(:,:,:) :: mmean_lai              ! Leaf area index [     m2/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bleaf            ! Leaf biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_broot            ! Root biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bbark            ! Bark biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_balive           ! Live biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bstorage         ! Storage         [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bleaf_n          ! Leaf N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_broot_n          ! Root N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bbark_n          ! Root N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_balive_n         ! Live N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bstorage_n       ! Storage N       [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_leaf_maintenance ! Leaf maintenance[ kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_root_maintenance ! Root maintenance[ kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_bark_maintenance ! Bark maintenance[ kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_leaf_drop        ! Leaf shedding   [ kgC/m2/yr]
-      real,pointer,dimension(:)     :: mmean_fast_soil_c      ! Fast soil C     [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_slow_soil_c      ! Slow soil C     [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_struct_soil_c    ! Struct. soil C  [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_struct_soil_l    ! Struct. soil L  [    kgL/m2]
-      real,pointer,dimension(:)     :: mmean_cwd_c            ! CWD carbon      [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_fast_soil_n      ! Fast soil N     [    kgN/m2]
-      real,pointer,dimension(:)     :: mmean_mineral_soil_n   ! Mineral. soil N [    kgN/m2]
-      real,pointer,dimension(:)     :: mmean_cwd_n            ! CWD nitrogen    [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_thbark           !<Bark thickness  [        cm]
+      real,pointer,dimension(:,:,:) :: mmean_lai              !<Leaf area index [     m2/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bleaf            !<Leaf biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_broot            !<Root biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbark            !<Bark biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_balive           !<Live biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bstorage         !<Storage         [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bleaf_n          !<Leaf N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_broot_n          !<Root N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbark_n          !<Root N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bstorage_n       !<Storage N       [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_balive_n         !<Live N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_leaf_maintenance !<Leaf maintenance[ kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_root_maintenance !<Root maintenance[ kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_bark_maintenance !<Bark maintenance[ kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_leaf_drop        !<Leaf shedding   [ kgC/m2/yr]
+      real,pointer,dimension(:)     :: mmean_fast_soil_c      !<Fast soil C     [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_slow_soil_c      !<Slow soil C     [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_struct_soil_c    !<Struct. soil C  [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_struct_soil_l    !<Struct. soil L  [    kgL/m2]
+      real,pointer,dimension(:)     :: mmean_cwd_c            !<CWD carbon      [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_fast_soil_n      !<Fast soil N     [    kgN/m2]
+      real,pointer,dimension(:)     :: mmean_mineral_soil_n   !<Mineral. soil N [    kgN/m2]
+      real,pointer,dimension(:)     :: mmean_cwd_n            !<CWD nitrogen    [    kgN/m2]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -2952,30 +3088,30 @@ module ed_state_vars
    !                      node, but then must keep track of the actual polygon "ID" to     !
    !                      write the output correctly.                                      !
    !---------------------------------------------------------------------------------------!
-   ! Number of polygons in each grid, for each machine. so this has a ngrids size. 
    integer, dimension(maxmach,maxgrds) :: gdpy
+   !<Number of polygons in each grid, for each machine. so this has a ngrids size. 
 
-   ! Number of sites in each grid, for each machine.
    integer, dimension(maxmach,maxgrds) :: gdsi
+   !<Number of sites in each grid, for each machine.
 
-   ! Number of patches in each grid, for each machine.
    integer, dimension(maxmach,maxgrds) :: gdpa
+   !<Number of patches in each grid, for each machine.
 
-   ! Number of cohorts in each grid, for each machine.
    integer, dimension(maxmach,maxgrds) :: gdco
+   !<Number of cohorts in each grid, for each machine.
   
 
-   ! Offset for each machine, so this has a nmachs size.
    integer, dimension(maxmach,maxgrds) :: py_off 
+   !<Offset for each machine, so this has a nmachs size.
   
-   ! Offset for each machine, so this has a nmachs size.
    integer, dimension(maxmach,maxgrds) :: si_off 
+   !<Offset for each machine, so this has a nmachs size.
 
-   ! Offset for each machine, so this has a nmachs size.
    integer, dimension(maxmach,maxgrds) :: pa_off 
+   !<Offset for each machine, so this has a nmachs size.
 
-   ! Offset for each machine, so this has a nmachs size.
    integer, dimension(maxmach,maxgrds) :: co_off 
+   !<Offset for each machine, so this has a nmachs size.
 
 
    type(edtype),pointer,dimension(:) :: edgrid_g
@@ -2997,12 +3133,11 @@ module ed_state_vars
    !---------------------------------------------------------------------------------------!
    integer :: nioglobal, niogrid, niopoly, niosite
 
-   !---------------------------------------------------------------------------------------!
-   ! Logical switch that decides if the pointer tables for IO need to be updated
-   ! The number and allocation of cohorts and patches dictates this, and they 
-   ! change at a monthly frequency typically.
-   !---------------------------------------------------------------------------------------!
    logical :: filltables
+   !<Logical switch that decides if the pointer tables for IO need to be updated
+   !<The number and allocation of cohorts and patches dictates this, and they 
+   !<change at a monthly frequency typically.
+   !---------------------------------------------------------------------------------------!
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3013,7 +3148,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This sub-routine allocates the global dimensions (outside the structure).        !
+   !  SUBROUTINE: ALLOCATE_EDGLOBALS
+   !
+   !> \brief   Allocates the global dimensions (outside the structure). 
    !---------------------------------------------------------------------------------------!
    subroutine allocate_edglobals(ngrids)
 
@@ -3073,7 +3210,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine allocates the polygon-level variables.                            !
+   !  SUBROUTINE: ALLOCATE_EDTYPE
+   !
+   !> \brief   Allocates the polygon-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine allocate_edtype(cgrid,npolygons)
       implicit none
@@ -3352,8 +3491,8 @@ module ed_state_vars
       allocate(cgrid%fmean_dpcpg                (                    npolygons))
       allocate(cgrid%fmean_soil_wetness         (                    npolygons))
       allocate(cgrid%fmean_skin_temp            (                    npolygons))
-      allocate(cgrid%fmean_lai			(                    npolygons))
-      allocate(cgrid%fmean_bdead 		(                    npolygons))
+      allocate(cgrid%fmean_lai                  (                    npolygons))
+      allocate(cgrid%fmean_bdead                (                    npolygons))
 
 
 
@@ -3893,7 +4032,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine allocates the site-level variables.                               !
+   !  SUBROUTINE: ALLOCATE_POLYGONTYPE
+   !
+   !> \brief   Allocates the site-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine allocate_polygontype(cpoly,nsites)
 
@@ -4086,7 +4227,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine allocates the patch-level variables.                              !
+   !  SUBROUTINE: ALLOCATE_SITETYPE
+   !
+   !> \brief   Allocates the patch-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine allocate_sitetype(csite,npatches)
 
@@ -4592,9 +4735,11 @@ module ed_state_vars
 
 
 
-   !=======================================================================================! 
-   !=======================================================================================! 
-   !     This subroutine allocates the cohort-level variables.                             !
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ALLOCATE_PATCHTYPE
+   !
+   !> \brief   Allocates the cohort-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine allocate_patchtype(cpatch,ncohorts)
 
@@ -5100,7 +5245,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine nullifies all polygon pointers.                                  !
+   !  SUBROUTINE: NULLIFY_EDTYPE
+   !
+   !> \brief   Nullifies all polygon pointers.
    !---------------------------------------------------------------------------------------!
    subroutine nullify_edtype(cgrid)
 
@@ -5861,7 +6008,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine nullifies all site pointers.                                     !
+   !  SUBROUTINE: NULLIFY_POLYGONTYPE
+   !
+   !> \brief   Nullifies all site pointers.
    !---------------------------------------------------------------------------------------!
    subroutine nullify_polygontype(cpoly)
 
@@ -6016,7 +6165,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine nullifies all patch pointers.                                    !
+   !  SUBROUTINE: NULLIFY_SITETYPE
+   !
+   !> \brief   Nullifies all patch pointers.
    !---------------------------------------------------------------------------------------!
    subroutine nullify_sitetype(csite)
 
@@ -6481,7 +6632,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine nullifies all cohort pointers.                                   !
+   !  SUBROUTINE: NULLIFY_PATCHTYPE
+   !
+   !> \brief   Nullifies all cohort pointers.
    !---------------------------------------------------------------------------------------!
    subroutine nullify_patchtype(cpatch)
 
@@ -6952,7 +7105,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine de-allocates all patch pointers.                                 !
+   !  SUBROUTINE: DEALLOCATE_SITETYPE
+   !
+   !> \brief   De-allocates all patch pointers
    !---------------------------------------------------------------------------------------!
    subroutine deallocate_sitetype(csite)
       implicit none
@@ -7431,7 +7586,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine de-allocates all patch pointers.                                 !
+   !  SUBROUTINE: DEALLOCATE_PATCHTYPE
+   !
+   !> \brief   De-allocates all cohort pointers
    !---------------------------------------------------------------------------------------!
    subroutine deallocate_patchtype(cpatch)
 
@@ -7919,11 +8076,14 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine copies a continuous chunk of patches from one place to another.   !
-   ! The number of patches to be copied must match between the input and output, and every !
-   ! single variable, including the cohorts, will be copied.                               !
-   ! IMPORTANT.  This subroutine assumes that the output patches still don't have cohorts  !
-   !             allocated, so this should be never used in a previously allocated patch.  !
+   !  SUBROUTINE: COPY_SITETYPE
+   !
+   !> \brief   Copies a continuous chunk of patches from one place to another.
+   !> \details The number of patches to be copied must match between the input and output, 
+   !>          and every single variable, including the cohorts, will be copied.\n
+   !> \warning IMPORTANT.  
+   !>          This subroutine assumes that the output patches still don't have cohorts
+   !>          allocated, so this should be never used in a previously allocated patch.
    !---------------------------------------------------------------------------------------!
    subroutine copy_sitetype(isite,osite,ipaa,ipaz,opaa,opaz)
       implicit none
@@ -8510,21 +8670,23 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This subroutine copies part of one patch to another (only the ones where mask    !
-   ! is .true.).  Please notice the following requirements.                                !
-   !                                                                                       !
-   !      1. ISITE and LMASK must have dimension MASKSZ                                    !
-   !      2. OSITE must have dimension NEWSZ                                               !
-   !      3. The number of .true. elements of LMASK must be NEWSZ                          !
-   !      This subroutine assumes that the size of vectors in osite is the number of true  !
-   ! elements in mask, whilst the size of the vectors in isite must be the size of the     !
-   ! mask itself.                                                                          !
-   !                                                                                       !
-   ! IMPORTANT:  This routine currently assumes that the output site has not allocated     !
-   !             any cohort yet, because the length of these nested vectors depend on the  !
-   !             donor patch vector sizes.  Never call this sub-routine if osite has been  !
-   !             allocated before.                                                         !
+   !  SUBROUTINE: COPY_SITETYPE_MASK
+   !
+   !> \brief   Copies part of one site from one place to another 
+   !>          (only the ones where mask is .true.)
+   !> \details 1. ISITE and LMASK must have dimension MASKSZ\n
+   !>          2. OSITE must have dimension NEWSZ\n
+   !>          3. The number of .true. elements of LMASK must be NEWSZ\n
+   !>          This subroutine assumes that the size of vectors in osite is the number 
+   !>          of true elements in mask, whilst the size of the vectors in isite must 
+   !>          be the size of the mask itself.
+   !> \warning IMPORTANT.\n
+   !>          This routine currently assumes that the output site has not allocated 
+   !>          any cohort yet, because the length of these nested vectors depend on the 
+   !>          donor patch vector sizes.  Never call this sub-routine if osite has been 
+   !>         allocated before. 
    !---------------------------------------------------------------------------------------!
+
    subroutine copy_sitetype_mask(isite,osite,lmask,isize,osize)
 
 
@@ -8595,9 +8757,13 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the variables that are not fmean, dmean, mmean, mmsqu,    !
-   ! qmean, and qmsqu.  This sub-routine should be called only from copy_sitetype_mask!!!  !
+   !  SUBROUTINE: COPY_SITETYPE_MASK_INST
+   !
+   !> \brief   Copies the variables that are not fmean, dmean, mmean, mmsqu, qmean,
+   !>          and qmsqu. 
+   !> \warning This sub-routine should be called only from copy_sitetype_mask!!
    !---------------------------------------------------------------------------------------!
+
    subroutine copy_sitetype_mask_inst (isite,osite,z,lmask,isize)
 
       implicit none
@@ -8809,8 +8975,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the variables that are fmean.  This sub-routine should be !
-   ! called only from copy_sitetype_mask!!!                                                !
+   !  SUBROUTINE: COPY_SITETYPE_MASK_FMEAN
+   !
+   !> \brief   Copies the variables that are fmean
+   !> \warning This subroutine should be called only from copy_sitetype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_sitetype_mask_fmean(isite,osite,z,lmask,isize)
 
@@ -8905,8 +9073,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the variables that are dmean.  This sub-routine should be !
-   ! called only from copy_sitetype_mask!!!                                                !
+   !  SUBROUTINE: COPY_SITETYPE_MASK_DMEAN
+   !
+   !> \brief   Copies the variables that are dmean
+   !> \warning This subroutine should be called only from copy_sitetype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_sitetype_mask_dmean(isite,osite,z,lmask,isize)
 
@@ -9010,8 +9180,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the variables that are mmean.  This sub-routine should be !
-   ! called only from copy_sitetype_mask!!!                                                !
+   !  SUBROUTINE: COPY_SITETYPE_MASK_MMEAN
+   !
+   !> \brief   Copies the variables that are mmean
+   !> \warning This subroutine should be called only from copy_sitetype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_sitetype_mask_mmean(isite,osite,z,lmask,isize)
 
@@ -9142,8 +9314,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the variables that are qmean.  This sub-routine should be !
-   ! called only from copy_sitetype_mask!!!                                                !
+   !  SUBROUTINE: COPY_SITETYPE_MASK_QMEAN
+   !
+   !> \brief   Copies the variables that are qmean
+   !> \warning This subroutine should be called only from copy_sitetype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_sitetype_mask_qmean(isite,osite,z,lmask,isize)
 
@@ -9261,11 +9435,13 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine copies a continuous chunk of patches from one place to another.   !
-   ! The number of patches to be copied must match between the input and output, and every !
-   ! single variable, including the cohorts, will be copied.                               !
-   ! IMPORTANT.  This subroutine assumes that the output patches still don't have cohorts  !
-   !             allocated, so this should be never used in a previously allocated patch.  !
+   !  SUBROUTINE: COPY_PATCHTYPE
+   !
+   !> \brief   Copies a continuous chunk of cohorts from one place to another.
+   !> \details The number of cohorts to be copied must match between the input and output,
+   !>          and every single variable, including the cohorts, will be copied.
+   !> \warning This subroutine assumes that the output patches still don't have cohorts 
+   !>          allocated, so this should be never used in a previously allocated patch.
    !---------------------------------------------------------------------------------------!
    subroutine copy_patchtype(ipatch,opatch,icoa,icoz,ocoa,ocoz)
       implicit none
@@ -9843,19 +10019,21 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This subroutine copies part of one cohort to another (only the ones where mask   !
-   ! is .true.).  Please notice the following requirements.                                !
-   !                                                                                       !
-   !      1. IPATCH and LMASK must have dimension MASKSZ                                   !
-   !      2. OPATCH must have dimension NEWSZ                                              !
-   !      3. The number of .true. elements of LMASK must be NEWSZ                          !
-   !                                                                                       !
-   !      In case these conditions aren't met, then the code will crash due to             !
-   ! segmentation violation.                                                               !
-   !                                                                                       !
-   !      Also, NEVER use this sub-routine for a pre-allocated OPATCH.  This will try to   !
-   ! allocate cohorts and you may experience horrible memory leaks.                        !
+   !  SUBROUTINE: COPY_PATCHTYPE_MASK
+   !
+   !> \brief   Copies part of cohorts from one place to another.
+   !>          (only the ones where mask is .true.)
+   !> \details Please notice\n
+   !>          1. IPATCH and LMASK must have dimension MASKSZ\n
+   !>          2. OPATCH must have dimension NEWSZ\n
+   !>          3. The number of .true. elements of LMASK must be NEWSZ\n
+   !>           In case these conditions aren't met, then the code will crash due to 
+   !>           segmentat on violation.
+   !> \warning NEVER use this sub-routine for a pre-allocated OPATCH.
+   !>          This will try to allocate cohorts and you may experience 
+   !>          horrible memory leaks.
    !---------------------------------------------------------------------------------------!
+
    subroutine copy_patchtype_mask(ipatch,opatch,lmask,isize,osize)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -9909,9 +10087,11 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the cohort-level variables that are not fmean, mmean,     !
-   ! mmsqu, qmean, qmsqu.  The only sub-routine that should ever call this one is          !
-   ! copy_patchtype_mask.                                                                  !
+   !  SUBROUTINE: COPY_PATCHTYPE_MASK_INST
+   !
+   !> \brief   Copies the cohort-level variables that are not 
+   !>          fmean, dmean, mmean, mmsqu, qmean, and qmsqu. 
+   !> \warning This sub-routine should be called only from copy_patchtype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_patchtype_mask_inst(ipatch,opatch,z,lmask,isize)
       implicit none
@@ -10099,9 +10279,12 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the cohort-level variables that are fmean.                !
-   ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
+   !  SUBROUTINE: COPY_PATCHTYPE_MASK_FMEAN
+   !
+   !> \brief   Copies the cohort-level variables that are fmean
+   !> \warning This sub-routine should be called only from copy_patchtype_mask!!
    !---------------------------------------------------------------------------------------!
+
    subroutine copy_patchtype_mask_fmean(ipatch,opatch,z,lmask,isize)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -10203,8 +10386,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the cohort-level variables that are dmean.                !
-   ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
+   !  SUBROUTINE: COPY_PATCHTYPE_MASK_DMEAN
+   !
+   !> \brief   Copies the cohort-level variables that are dmean
+   !> \warning This sub-routine should be called only from copy_patchtype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_patchtype_mask_dmean(ipatch,opatch,z,lmask,isize)
       implicit none
@@ -10314,8 +10499,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the cohort-level variables that are mmean or mmsqu.       !
-   ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
+   !  SUBROUTINE: COPY_PATCHTYPE_MASK_MMEAN
+   !
+   !> \brief   Copies the cohort-level variables that are mmean or mmsqu
+   !> \warning This sub-routine should be called only from copy_patchtype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_patchtype_mask_mmean(ipatch,opatch,z,lmask,isize)
       implicit none
@@ -10454,8 +10641,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine copies the cohort-level variables that are qmean or qmsqu.       !
-   ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
+   !  SUBROUTINE: COPY_PATCHTYPE_MASK_QMEAN
+   !
+   !> \brief   Copies the cohort-level variables that are qmean or qmsqu
+   !> \warning This sub-routine should be called only from copy_patchtype_mask!!
    !---------------------------------------------------------------------------------------!
    subroutine copy_patchtype_mask_qmean(ipatch,opatch,z,lmask,isize)
       implicit none
@@ -10602,16 +10791,17 @@ module ed_state_vars
    !    9. Scalar                                                                          !
    !                                                                                       !
    ! The other numbers correspond to the kind of dimension and variable.                   !
-   !    0. Main vector ordinate only, integer.                                             !
-   !    1. Main vector ordinate only, real.                                                !
-   !    2. Soil layer                                                                      !
-   !    3. Surface water layer                                                             !
-   !    4. PFT                                                                             !
-   !    5. Disturbance Type                                                                !
-   !    6. DBH class                                                                       !
-   !    7. FF_DBH class                                                                    !
-   !    8. Mortality                                                                       !
-   !    9. Month/13 months                                                                 !
+   !    0.  Main vector ordinate only, integer.                                            !
+   !    1.  Main vector ordinate only, real.                                               !
+   !    2.  Soil layer                                                                     !
+   !    3.  Surface water layer                                                            !
+   !    4.  PFT                                                                            !
+   !    5.  Disturbance Type                                                               !
+   !    6.  DBH class                                                                      !
+   !    7.  FF_DBH class                                                                   !
+   !    8.  Mortality                                                                      !
+   !    9.  Month                                                                          !
+   !    91. 13 months                                                                      !
    !                                                                                       !
    ! The negative sign means that the variable has an extra dimension, for the diurnal     !
    !    cycle output.                                                                      !
@@ -10638,7 +10828,8 @@ module ed_state_vars
    !  16    : rank 2 : polygon, dbh                                                        !
    !  17    : rank 2 : polygon, age                                                        !
    !  18    : rank 2 : polygon, mort                                                       !
-   !  19    : rank 2 : polygon, month+1                                                    !
+   !  19    : rank 2 : polygon, month                                                      !
+   !  191   : rank 2 : polygon, month+1                                                    !
    !                                                                                       !
    !  20    : rank 1 : site, integer                                                       !
    !  21    : rank 1 : site                                                                !
@@ -10652,6 +10843,7 @@ module ed_state_vars
    !  27    : rank 2 : site, age                                                           !
    !  28    : rank 2 : site, mort                                                          !
    !  29    : rank 2 : site, month                                                         !
+   !  291   : rank 2 : site, month+1                                                         !
    !                                                                                       !
    !  30    : rank 1 : patch, integer                                                      !
    !  31    : rank 1 : patch                                                               !
@@ -10672,9 +10864,10 @@ module ed_state_vars
    !  46    : rank 2 : cohort, dbh                                                         !
    !  47    : rank 2 : cohort, age                                                         !
    !  48    : rank 2 : cohort, mort                                                        !
-   !  49    : rank 2 : cohort, month+1                                                     !
+   !  491   : rank 2 : cohort, month+1                                                     !
    !  411   : rank 2 : cohort, radiation                                                   !
    ! -411   : rank 2 : cohort, diurnal cycle , radiation                                   !
+   !                                                                                       !
    !  90    : rank 0 : integer scalar                                                      !
    !  92    : rank 1 : s-layer                                                             !
    !---------------------------------------------------------------------------------------!
@@ -10687,12 +10880,9 @@ module ed_state_vars
 #if defined(RAMS_MPI)
       use ed_node_coms , only : mynum                    & ! intent(in)
                               , nnodetot                 & ! intent(in)
-                              , mchnum                   & ! intent(in)
                               , machs                    & ! intent(in)
-                              , nmachs                   & ! intent(in)
                               , sendnum                  & ! intent(in)
-                              , recvnum                  & ! intent(in)
-                              , master_num               ! ! intent(in)                              
+                              , recvnum                  ! ! intent(in)
 #else
       use ed_node_coms , only : mynum                    & ! intent(in)
                               , nnodetot                 ! ! intent(in)
@@ -17745,7 +17935,7 @@ module ed_state_vars
    !=======================================================================================!
    !=======================================================================================!
    !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (13 months,npolygons) and are real (type 191).      !
+   ! (edtype) that have two dimensions (13 months,npolygons) and are real (type 19).       !
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p191(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -18503,7 +18693,7 @@ module ed_state_vars
                            ,'PLANTATION_STOCKING_PFT :20:hist') 
          call metadata_edio(nvar,igr,'Forest Plantation PFT','[pft #]','(isite)') 
       end if
-     !-------------------------------------------------------------------------------------!
+     !------------------------------------------------------------------------------------!
 
       return
    end subroutine filltab_polygontype_p20
@@ -18552,8 +18742,8 @@ module ed_state_vars
       if (associated(cpoly%area)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpoly%area,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'AREA_SI:21:hist:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+           var_len,var_len_global,max_ptrs,'AREA_SI:21:hist:anal:dail:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Site area relative to polygon area','[0-1]','isite') 
       end if
 
       if (associated(cpoly%patch_area)) then
@@ -19488,6 +19678,7 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'LEAF_AGING_FACTOR :24:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+      !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
       return
@@ -24623,7 +24814,7 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs                                           &
            ,'CROWN_AREA_CO :41:hist:anal:dail:mont:year:dcyc') 
          call metadata_edio(nvar,igr,'Relative crown area','[m2crown/m2]','icohort') 
-      end if
+       end if
 
       if (associated(cpatch%bstorage)) then
          nvar=nvar+1
@@ -27707,7 +27898,7 @@ module ed_state_vars
                            ,'Mean diel - Bark growth respiration'                          &
                            ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
-      if (associated(cpatch%qmean_leaf_storage_resp    )) then
+       if (associated(cpatch%qmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_storage_resp                            &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
@@ -28371,7 +28562,7 @@ module ed_state_vars
    !=======================================================================================!
    !=======================================================================================!
    !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 491).    !
+   ! (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 49).     !
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p491(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -28398,7 +28589,7 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !       This part should have only 2-D vectors, with dimension ncohorts and 13       !
       ! months.  Notice that they all use the same npts.  Here you should only add vari-   !
-      ! ables of type 491.                                                                 !
+      ! ables of type 49.                                                                  !
       !------------------------------------------------------------------------------------!
       npts = cpatch%ncohorts * 13
 

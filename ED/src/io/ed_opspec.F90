@@ -1306,7 +1306,7 @@ subroutine ed_opspec_misc
    logical                :: plantation_ok
    logical                :: patch_detailed
    logical                :: lu_detailed
-   !---------------------------------------------------------------------------------------!
+  !---------------------------------------------------------------------------------------!
 
    !----- IFATERR will count the number of bad set ups. -----------------------------------!
    ifaterr=0
@@ -2284,45 +2284,13 @@ end do
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Checking whether the user choice for agriculture and plantation make sense. -----!
+   !---------------------------------------------------------------------------------------!
+   !     Check whether the user choice for agriculture and plantation make sense.          !
+   ! (This is consistent with the default PFTs, this check may need to be moved after the  !
+   ! PFT parameters are initialised).                                                      !
+   !---------------------------------------------------------------------------------------!
    select case (ianth_disturb)
    case (1,2)
-   
-      !------ Check the pasture PFT. It must be a grass. ----------------------------------!
-      select case (pasture_stock)
-      case (1,5,12,13,14,15,16)
-         continue
-      case default
-         write(reason,fmt='(a,1x,i5,a)')                                                   &
-             'Invalid PASTURE_STOCK , it can''t be a tree and yours is set to'             &
-            ,pasture_stock,'...'
-         ifaterr = ifaterr +1
-         call opspec_fatal(reason,'opspec_misc')
-      end select
-   
-      !------ Check the cropland PFT. It must be a grass PFT. -----------------------------!
-      select case (agri_stock)
-      case (1,5,12,13,14,15,16)
-         continue
-      case default
-         write(reason,fmt='(a,1x,i5,a)')                                                   &
-            'Invalid AGRI_STOCK , it can''t be a tree and yours is set to',agri_stock,'...'
-         ifaterr = ifaterr +1
-         call opspec_fatal(reason,'opspec_misc')
-      end select
-
-      !------ Check the plantation PFT.  It must be a tree PFT. ---------------------------!
-      select case (plantation_stock)
-      case (2,3,4,6,7,8,9,10,11,17)
-         continue
-      case default
-         write(reason,fmt='(a,1x,i5,a)')                                                   &
-                      'Invalid plantation_stock , it can''t be grass and yours is set to'  &
-                      ,plantation_stock,'...'
-         ifaterr = ifaterr +1
-         call opspec_fatal(reason,'opspec_misc')
-      end select
-
       pasture_ok    = .false.
       agri_ok       = .false.
       plantation_ok = .false.

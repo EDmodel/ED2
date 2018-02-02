@@ -255,7 +255,7 @@ program main
    if (icall == 0) then
       call ed_1st_master(ipara,machsize,nslaves,machnum,max_threads,name_name)
    else
-      call ed_1st_node(1)
+      call ed_1st_node()
    endif
    !---------------------------------------------------------------------------------------!
 

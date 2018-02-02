@@ -35,10 +35,7 @@ module growth_balive
                                      , polygontype                & ! structure
                                      , sitetype                   & ! structure
                                      , patchtype                  ! ! structure
-      use pft_coms            , only : q                          & ! intent(in)
-                                     , qsw                        & ! intent(in)
-                                     , qbark                      & ! intent(in)
-                                     , plant_N_supply_scale       & ! intent(in)
+      use pft_coms            , only : plant_N_supply_scale       & ! intent(in)
                                      , c2n_storage                & ! intent(in)
                                      , growth_resp_factor         & ! intent(in)
                                      , storage_turnover_rate      & ! intent(in)
@@ -821,8 +818,8 @@ module growth_balive
       real                           :: bsapwooda_aim
       real                           :: bsapwoodb_aim
       real                           :: bbark_aim
-      real                           :: bleaf_max
       real                           :: balive_max
+      real                           :: bleaf_max
       real                           :: bloss_max
       real                           :: height_aim
       real                           :: delta_bleaf

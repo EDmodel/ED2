@@ -5,20 +5,13 @@
 ! the polygon will fall on land or water. The water ones will be removed, so this should   !
 ! be taken into account for the standalone version.                                        !
 !------------------------------------------------------------------------------------------!
-subroutine ed_node_decomp(init,standalone,masterworks)
+subroutine ed_node_decomp(masterworks)
 
    use grid_coms   , only : ngrids            & ! intent(in)
                           , nnxp              & ! intent(in)
                           , nnyp              ! ! intent(in)
    use ed_node_coms, only : mmxp              & ! intent(out)
-                          , mmyp              & ! intent(out)
-                          , mia               & ! intent(in)
-                          , miz               & ! intent(in)
-                          , mja               & ! intent(in)
-                          , mjz               & ! intent(in)
-                          , mi0               & ! intent(in)
-                          , mj0               & ! intent(in)
-                          , mibcon            ! ! intent(in)
+                          , mmyp              ! ! intent(in)
    use ed_para_coms, only : nmachs            ! ! intent(in)
    use mem_polygons, only : n_ed_region       & ! intent(in)
                           , maxsite           ! ! intent(in)
@@ -26,15 +19,11 @@ subroutine ed_node_decomp(init,standalone,masterworks)
                           , work_v            & ! intent(in)
                           , ed_alloc_work     & ! subroutine
                           , ed_nullify_work   ! ! subroutine
-   use soil_coms   , only : isoilflg          ! ! subroutine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer, intent(in) :: init
-   logical, intent(in) :: standalone
    logical, intent(in) :: masterworks
    !----- Local variables. ----------------------------------------------------------------!
    integer             :: ngr
-   integer             :: nsiz
    integer             :: ntotmachs
    !---------------------------------------------------------------------------------------!
 
@@ -206,7 +195,6 @@ subroutine get_work(ifm,nxp,nyp)
    integer, dimension(:,:), allocatable :: ncol_soil_list
    real   , dimension(:,:), allocatable :: ipcent_land
    real   , dimension(:,:), allocatable :: ipcent_soil
-   integer                              :: datsoil
    integer                              :: ipy
    integer                              :: i
    integer                              :: j
@@ -452,8 +440,7 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
                            , npolys_run          & ! intent(out)
                            , ed_alloc_work_vec   & ! subroutine
                            , ed_nullify_work_vec ! ! subroutine
-   use soil_coms    , only : nslcon              & ! intent(in)
-                           , ed_nstyp            ! ! intent(in)
+   use soil_coms    , only : ed_nstyp            ! ! intent(in)
    use mem_polygons , only : maxsite             ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -540,7 +527,6 @@ subroutine ed_load_work_from_history()
                              , ied_init_mode       & ! intent(in)
                              , sfilin              & ! intent(in)
                              , current_time        ! ! intent(in)
-   use grid_coms      , only : ngrids              ! ! intent(in)
    use ed_work_vars   , only : work_v              & ! intent(inout)
                              , ed_alloc_work_vec   & ! subroutine
                              , ed_nullify_work_vec & ! subroutine
@@ -549,16 +535,12 @@ subroutine ed_load_work_from_history()
    use hdf5_coms      , only : file_id             & ! intent(inout)
                              , dset_id             & ! intent(inout)
                              , dspace_id           & ! intent(inout)
-                             , plist_id            & ! intent(inout)
                              , globdims            & ! intent(inout)
                              , chnkdims            & ! intent(inout)
                              , chnkoffs            & ! intent(inout)
-                             , cnt                 & ! intent(inout)
-                             , stride              & ! intent(inout)
                              , memdims             & ! intent(inout)
                              , memoffs             & ! intent(inout)
-                             , memsize             & ! intent(inout)
-                             , datatype_id         ! ! intent(inout)
+                             , memsize             ! ! intent(inout)
    use ed_init_history, only : hdf_getslab_r       ! ! sub-routine
 
 #if USE_HDF5
@@ -574,8 +556,6 @@ subroutine ed_load_work_from_history()
    character(len=str_len), dimension(maxfiles)              :: histo_list
    character(len=str_len)                                   :: hnamel
    character(len=3)                                         :: cgr
-   integer, dimension(:)                      , allocatable :: pclosest
-   integer, dimension(:)                      , allocatable :: psrcfile
    integer                                                  :: hdferr
    integer                                                  :: npolys_histo
    integer                                                  :: nflist
@@ -584,7 +564,6 @@ subroutine ed_load_work_from_history()
    integer                                                  :: ifm
    integer                                                  :: ipr
    integer                                                  :: iph
-   integer                                                  :: inn
    integer                                                  :: dsetrank
    integer                                                  :: ipya
    integer                                                  :: ipyz

@@ -114,6 +114,16 @@ subroutine ed_coup_driver()
 
 
    !---------------------------------------------------------------------------------------!
+   !      Initialise any variable that should be initialised after the xml parameters have !
+   ! been read.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_params_after_xml...'
+   call init_derived_params_after_xml()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      In case this simulation will use horizontal shading, initialise the landscape    !
    ! arrays.                                                                               !
    !---------------------------------------------------------------------------------------!
@@ -122,15 +132,6 @@ subroutine ed_coup_driver()
       if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
       call init_cci_variables()
    end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Initialise derived radiation parameters.                                         !
-   !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_rad_variables...'
-   call init_derived_rad_params()
    !---------------------------------------------------------------------------------------!
 
 
@@ -168,8 +169,8 @@ subroutine ed_coup_driver()
                                    ,MPI_STATUS_IGNORE,ierr)
 #endif
 
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
-      call init_full_history_restart()
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Resume_From_History...'
+      call resume_from_history()
 #if defined(RAMS_MPI)
       if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,90,MPI_COMM_WORLD    &
                                           ,ierr)

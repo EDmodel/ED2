@@ -1,7 +1,10 @@
 !==========================================================================================!
 !==========================================================================================!
-!   MLO - Module rk4_copy_patch. This subroutine was moved by MdPeB to a separate module   !
-!         make all RK4 routines inside modules and to avoid circularities.                 !
+! MODULE: RK4_COPY_PATCH
+!
+!> \brief   Routine that copies contents of rk4 structures 
+!> \details This subroutine copies the content from one RK4 structure to another.  This
+!!          has been moved to a separate module to avoid circularities.
 !------------------------------------------------------------------------------------------!
 module rk4_copy_patch
    contains

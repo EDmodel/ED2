@@ -122,7 +122,7 @@ module canopy_struct_dynamics
                                   , zzbot                & ! intent(in)
                                   , zzmid                & ! intent(in)
                                   , zero_canopy_layer    & ! subroutine
-                                  , canstr
+                                  , canstr               ! ! intent(inout)
       use consts_coms      , only : vonk                 & ! intent(in)
                                   , grav                 & ! intent(in)
                                   , t00                  & ! intent(in)

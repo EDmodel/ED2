@@ -2169,30 +2169,18 @@ module ed_init_history
    subroutine fill_history_grid_p191(cgrid,ipy,py_index)
       use ed_state_vars, only : edtype        & ! structure
                               , polygontype   ! ! structure
-      use grid_coms    , only : nzg           ! ! intent(in)
       use ed_max_dims  , only : n_pft         & ! intent(in)
                               , n_dbh         & ! intent(in)
                               , n_age         & ! intent(in)
                               , max_site      & ! intent(in)
                               , n_dist_types  ! ! intent(in)
       use hdf5
-      use hdf5_coms    , only : file_id       & ! intent(inout)
-                              , dset_id       & ! intent(inout)
-                              , dspace_id     & ! intent(inout)
-                              , plist_id      & ! intent(inout)
-                              , globdims      & ! intent(inout)
+      use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
                               , chnkoffs      & ! intent(inout)
-                              , cnt           & ! intent(inout)
-                              , stride        & ! intent(inout)
                               , memdims       & ! intent(inout)
                               , memoffs       & ! intent(inout)
-                              , memsize       & ! intent(inout)
-                              , datatype_id   ! ! intent(inout)
-      use ed_misc_coms , only : ndcycle       & ! intent(in)
-                              , writing_long  & ! intent(in)
-                              , writing_eorq  & ! intent(in)
-                              , writing_dcyc  ! ! intent(in)
+                              , memsize       ! ! intent(inout)
       implicit none
 
 

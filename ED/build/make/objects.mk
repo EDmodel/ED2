@@ -10,7 +10,6 @@ MAINOBJ = edmain.o
 
 OBJ_MODEL =                        \
 	allometry.o                \
-	an_header.o                \
 	average_utils.o            \
 	bdf2_solver.o              \
 	budget_utils.o             \
@@ -39,7 +38,6 @@ OBJ_MODEL =                        \
 	ed_load_namelist.o         \
 	ed_max_dims.o              \
 	ed_mem_alloc.o             \
-	ed_mem_grid_dim_defs.o     \
 	ed_met_driver.o            \
 	ed_misc_coms.o             \
 	ed_model.o                 \

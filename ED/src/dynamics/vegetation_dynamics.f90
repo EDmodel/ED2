@@ -19,9 +19,8 @@ module vegetation_dynamics
       use grid_coms            , only : ngrids
       use ed_misc_coms         , only : current_time                  & ! intent(in)
                                       , dtlsm                         & ! intent(in)
-                                      , frqsum                        & ! intent(in)
                                       , ibigleaf                      ! ! intent(in)
-      use disturbance_utils    , only : apply_disturbances            & ! subroutine
+      use disturbance          , only : apply_disturbances            & ! subroutine
                                       , site_disturbance_rates        ! ! subroutine
       use fuse_fiss_utils      , only : old_fuse_patches              & ! subroutine
                                       , new_fuse_patches              & ! subroutine

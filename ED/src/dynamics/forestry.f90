@@ -41,8 +41,6 @@ module forestry
       use fuse_fiss_utils      , only : terminate_patches          ! ! subroutine
       use ed_max_dims          , only : n_pft                      & ! intent(in)
                                       , n_dbh                      ! ! intent(in)
-      use grid_coms            , only : nzg                        & ! intent(in)
-                                      , nzs                        ! ! intent(in)
       use detailed_coms        , only : idetailed                  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!

@@ -381,36 +381,6 @@ recursive subroutine read_ed_xml_config(filename)
 	   call getConfigREAL  ('wood_trans_nir','pft',i,rval,texist)
            if(texist) wood_trans_nir(myPFT) = real(rval)
 
-	   call getConfigREAL  ('leaf_backscatter_vis','pft',i,rval,texist)
-           if(texist) leaf_backscatter_vis(myPFT) = real(rval)
-	   call getConfigREAL  ('leaf_backscatter_nir','pft',i,rval,texist)
-           if(texist) leaf_backscatter_nir(myPFT) = real(rval)
-	   call getConfigREAL  ('leaf_backscatter_tir','pft',i,rval,texist)
-           if(texist) leaf_backscatter_tir(myPFT) = real(rval)
- 
-	   call getConfigREAL  ('wood_backscatter_vis','pft',i,rval,texist)
-           if(texist) wood_backscatter_vis(myPFT) = real(rval)
-	   call getConfigREAL  ('wood_backscatter_nir','pft',i,rval,texist)
-           if(texist) wood_backscatter_nir(myPFT) = real(rval)
-	   call getConfigREAL  ('wood_backscatter_tir','pft',i,rval,texist)
-           if(texist) wood_backscatter_vis(myPFT) = real(rval)
-
-	   call getConfigREAL  ('leaf_scatter_vis','pft',i,rval,texist)
-           if(texist) leaf_scatter_vis(myPFT) = real(rval)
-	   call getConfigREAL  ('leaf_scatter_nir','pft',i,rval,texist)
-           if(texist) leaf_scatter_nir(myPFT) = real(rval)
-	   call getConfigREAL  ('wood_scatter_vis','pft',i,rval,texist)
-           if(texist) wood_scatter_vis(myPFT) = real(rval)
-	   call getConfigREAL  ('wood_scatter_nir','pft',i,rval,texist)
-           if(texist) wood_scatter_nir(myPFT) = real(rval)
-
-	   call getConfigREAL  ('phi1','pft',i,rval,texist)
-           if(texist) phi1(myPFT) = real(rval)
-	   call getConfigREAL  ('phi2','pft',i,rval,texist)
-           if(texist) phi2(myPFT) = real(rval)
-	   call getConfigREAL  ('mu_bar','pft',i,rval,texist)
-           if(texist) mu_bar(myPFT) = real(rval)
-
 ! photosynthesis variables
            call getConfigINT  ('photosyn_pathway','pft',i,ival,texist)
            if(texist) photosyn_pathway(myPFT) = ival
@@ -895,16 +865,10 @@ recursive subroutine read_ed_xml_config(filename)
 !        if(texist) visible_fraction_dir = real(rval)
 !        call getConfigREAL  ('visible_fraction_dif','radiation',i,rval,texist)
 !        if(texist) visible_fraction_dif = real(rval)
-        call getConfigREAL  ('leaf_scatter_nir','radiation',i,rval,texist)
-        if(texist) leaf_scatter_nir = real(rval)
         call getConfigREAL  ('leaf_reflect_nir','radiation',i,rval,texist)
         if(texist) leaf_reflect_nir = real(rval)
         call getConfigREAL  ('leaf_trans_nir','radiation',i,rval,texist)
         if(texist) leaf_trans_nir = real(rval)
-        call getConfigREAL  ('diffuse_backscatter_vis','radiation',i,rval,texist)
-        if(texist) leaf_backscatter_vis = real(rval)
-        call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
-        if(texist) leaf_backscatter_nir = real(rval)
 
         !----- Crown closure index variables. ---------------------------------------------!
         call getConfigREAL  ('cci_radius','radiation',i,rval,texist)
@@ -1633,31 +1597,14 @@ subroutine write_ed_xml_config
         call putConfigREAL8("wood_emiss_tir",wood_emiss_tir(i))
 
         call putConfigREAL8("leaf_reflect_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("leaf_reflect_nir",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_reflect_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_reflect_nir",leaf_reflect_vis(i))
+        call putConfigREAL8("leaf_reflect_nir",leaf_reflect_nir(i))
+        call putConfigREAL8("wood_reflect_vis",wood_reflect_vis(i))
+        call putConfigREAL8("wood_reflect_nir",wood_reflect_nir(i))
 
-        call putConfigREAL8("leaf_trans_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("leaf_trans_nir",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_trans_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_trans_nir",leaf_reflect_vis(i))
-
-        call putConfigREAL8("leaf_backscatter_vis",leaf_backscatter_vis(i))
-        call putConfigREAL8("leaf_backscatter_nir",leaf_backscatter_nir(i))
-        call putConfigREAL8("leaf_backscatter_tir",leaf_backscatter_tir(i))
-
-        call putConfigREAL8("wood_backscatter_vis",leaf_backscatter_vis(i))
-        call putConfigREAL8("wood_backscatter_nir",leaf_backscatter_nir(i))
-        call putConfigREAL8("wood_backscatter_tir",leaf_backscatter_tir(i))
-
-        call putConfigREAL8("leaf_scatter_vis",leaf_scatter_vis(i))
-        call putConfigREAL8("leaf_scatter_nir",leaf_scatter_vis(i))
-        call putConfigREAL8("wood_scatter_vis",leaf_scatter_vis(i))
-        call putConfigREAL8("wood_scatter_nir",leaf_scatter_vis(i))
-
-        call putConfigREAL8("phi1",phi1(i))
-        call putConfigREAL8("phi2",phi2(i))
-        call putConfigREAL8("mu_bar",mu_bar(i))
+        call putConfigREAL8("leaf_trans_vis",leaf_trans_vis(i))
+        call putConfigREAL8("leaf_trans_nir",leaf_trans_nir(i))
+        call putConfigREAL8("wood_trans_vis",wood_trans_vis(i))
+        call putConfigREAL8("wood_trans_nir",wood_trans_nir(i))
 
 !! PHOTOSYNTHESIS
         call putConfigINT("photosyn_pathway",photosyn_pathway(i))
