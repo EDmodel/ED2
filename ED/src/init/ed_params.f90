@@ -1788,7 +1788,7 @@ subroutine init_decomp_params()
    !       decide.                                                                         !
    !---------------------------------------------------------------------------------------!
    select case (decomp_scheme)
-      case (0,1)
+      case (0,1,3,4)
          decay_rate_fsc  =  11.0 / yr_day    ! former K2
          decay_rate_stsc =   4.5 / yr_day    ! former K1
          decay_rate_ssc  = 100.2 / yr_day    ! former K3
@@ -1831,7 +1831,7 @@ subroutine init_decomp_params()
 
    !----- Determine the top layer to consider for heterotrophic respiration. --------------!
    select case (decomp_scheme)
-      case (0,1)
+      case (0,1,3,4)
          rh_active_depth = slz(nzg)
          k_rh_active     = nzg
       case (2)

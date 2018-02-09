@@ -1964,9 +1964,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (decomp_scheme < 0 .or. decomp_scheme > 2) then
+   if (decomp_scheme < 0 .or. decomp_scheme > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid DECOMP_SCHEME, it must be between 0 and 2. Yours is set to'   &
+                    'Invalid DECOMP_SCHEME, it must be between 0 and 4. Yours is set to'   &
                     ,decomp_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
