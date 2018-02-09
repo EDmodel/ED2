@@ -6,7 +6,8 @@
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    use ed_state_vars , only : patchtype           ! ! structure
-   use allometry     , only : dbh2krdepth         ! ! function
+   use allometry     , only : dbh2krdepth         & ! function
+                            , dbh2sf              ! ! function
    use pft_coms      , only : phenology           & ! intent(in)
                             , leaf_turnover_rate  & ! intent(in)
                             , Vm0                 & ! intent(in)
@@ -21,6 +22,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
                             , llspan_inf          ! ! intent(in)
    use plant_hydro   , only : psi2rwc             & ! subroutine
                             , rwc2tw              ! ! subroutine 
+   use physiology_coms,only : plant_hydro_scheme  ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -73,17 +75,26 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
    !     Start variables related with plant hydraulics                                     !
    !---------------------------------------------------------------------------------------!
-   ! start the water potential with ~-0.1MPa, assuming the plant is under
-   ! well-watered conditions
-   cpatch%leaf_psi      (  ico) = -10. ! in m
-   cpatch%wood_psi      (  ico) = -10. ! in m
+   select case (plant_hydro_scheme)
+   case (0)
+       ! set psi to 0
+       cpatch%leaf_psi      (  ico) = 0.
+       cpatch%wood_psi      (  ico) = 0.
 
+   case (1,2)
+       ! start the water potential with ~-0.1MPa, assuming the plant is under
+       ! well-watered conditions
+       cpatch%leaf_psi      (  ico) = -10. - cpatch%hite(ico) ! in m
+       cpatch%wood_psi      (  ico) = -10. ! in m
+   end select
+   
    ! convert water potential to relative water content
    call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)                  &
                ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
    ! convert relative water content to total water content
    call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                                   &
-              ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico),cpatch%pft(ico)       &
+              ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                       &
+              ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)                     &
               ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
 
    ! start the fluxes to be 0.
@@ -335,7 +346,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%fmean_wflux_wl          (ico) = 0.0
    cpatch%dmax_leaf_psi           (ico) = 0.0
    cpatch%dmin_leaf_psi           (ico) = 0.0
-   cpatch%dmax_wood_psi           (ico) = 0.0
+   cpatch%dmax_wood_psi           (ico) = 0.0 
    cpatch%dmin_wood_psi           (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 

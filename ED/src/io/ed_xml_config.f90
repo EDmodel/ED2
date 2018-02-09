@@ -147,6 +147,7 @@ recursive subroutine read_ed_xml_config(filename)
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
          if(texist) integration_scheme = ival
 
+
          call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
 
       enddo
@@ -431,24 +432,50 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) sapwood_ratio(myPFT) = real(rval)
            call getConfigREAL  ('qsw','pft',i,rval,texist)
            if(texist) qsw(myPFT) = real(rval)
+           call getConfigREAL  ('SRA','pft',i,rval,texist)
+           if(texist) SRA(myPFT) = real(rval)
+           call getConfigREAL  ('root_beta','pft',i,rval,texist)
+           if(texist) root_beta(myPFT) = real(rval)
            call getConfigREAL  ('init_density','pft',i,rval,texist)
            if(texist) init_density(myPFT) = real(rval)
 
 ! plant hydraulic variables
-           call getConfigREAL  ('xylem_fraction','pft',i,rval,texist)
-           if(texist) xylem_fraction(myPFT) = real(rval)
            call getConfigREAL  ('leaf_water_sat','pft',i,rval,texist)
            if(texist) leaf_water_sat(myPFT) = real(rval)
            call getConfigREAL  ('wood_water_sat','pft',i,rval,texist)
            if(texist) wood_water_sat(myPFT) = real(rval)
-           call getConfigREAL  ('leaf_hydro_cap','pft',i,rval,texist)
-           if(texist) leaf_hydro_cap(myPFT) = real(rval)
-           call getConfigREAL  ('wood_hydro_cap','pft',i,rval,texist)
-           if(texist) wood_hydro_cap(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_water_cap','pft',i,rval,texist)
+           if(texist) leaf_water_cap(myPFT) = real(rval)
+           call getConfigREAL  ('wood_water_cap','pft',i,rval,texist)
+           if(texist) wood_water_cap(myPFT) = real(rval)
            call getConfigREAL  ('leaf_rwc_min','pft',i,rval,texist)
            if(texist) leaf_rwc_min(myPFT) = real(rval)
            call getConfigREAL  ('wood_rwc_min','pft',i,rval,texist)
            if(texist) wood_rwc_min(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_psi_min','pft',i,rval,texist)
+           if(texist) leaf_psi_min(myPFT) = real(rval)
+           call getConfigREAL  ('wood_psi_min','pft',i,rval,texist)
+           if(texist) wood_psi_min(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_psi_tlp','pft',i,rval,texist)
+           if(texist) leaf_psi_tlp(myPFT) = real(rval)
+           call getConfigREAL  ('wood_psi_tlp','pft',i,rval,texist)
+           if(texist) wood_psi_tlp(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_psi_osmotic','pft',i,rval,texist)
+           if(texist) leaf_psi_osmotic(myPFT) = real(rval)
+           call getConfigREAL  ('wood_psi_osmotic','pft',i,rval,texist)
+           if(texist) wood_psi_osmotic(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_elastic_mod','pft',i,rval,texist)
+           if(texist) leaf_elastic_mod(myPFT) = real(rval)
+           call getConfigREAL  ('wood_elastic_mod','pft',i,rval,texist)
+           if(texist) wood_elastic_mod(myPFT) = real(rval)
+           call getConfigREAL  ('wood_Kmax','pft',i,rval,texist)
+           if(texist) wood_Kmax(myPFT) = real(rval)
+           call getConfigREAL  ('wood_Kexp','pft',i,rval,texist)
+           if(texist) wood_Kexp(myPFT) = real(rval)
+           call getConfigREAL  ('wood_psi50','pft',i,rval,texist)
+           if(texist) wood_psi50(myPFT) = real(rval)
+           call getConfigREAL  ('vessel_curl_factor','pft',i,rval,texist)
+           if(texist) vessel_curl_factor(myPFT) = real(rval)
 
      ! Height
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
@@ -529,6 +556,14 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('b2Bs_large','pft',i,rval,texist)
            if (texist) then
               b2Bs_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b1SA','pft',i,rval,texist)
+           if (texist) then
+              b1SA(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b2SA','pft',i,rval,texist)
+           if (texist) then
+              b2SA(myPFT) = real(rval)
            end if
 	   call getConfigREAL  ('min_bdead','pft',i,rval,texist)
            if(texist) min_bdead(myPFT) = real(rval)
@@ -1059,6 +1094,9 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigINT  ('n_plant_lim','physiology',i,ival,texist)
         if(texist) n_plant_lim = ival
         
+         call getConfigINT  ('plant_hydro_scheme','physiology',i,ival,texist)
+         if(texist) plant_hydro_scheme = ival
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
@@ -1452,15 +1490,28 @@ subroutine write_ed_xml_config
         call putConfigREAL("q",q(i))
         call putConfigREAL("sapwood_ratio",sapwood_ratio(i))
         call putConfigREAL("qsw",qsw(i))
+        call putConfigREAL("SRA",SRA(i))
+        call putConfigREAL("root_beta",root_beta(i))
         call putConfigREAL("init_density",init_density(i))
 !! PLANT HYDRAULICS
-        call putConfigREAL("xylem_fraction",xylem_fraction(i))
         call putConfigREAL("leaf_water_sat",leaf_water_sat(i))
         call putConfigREAL("wood_water_sat",wood_water_sat(i))
-        call putConfigREAL("leaf_hydro_cap",leaf_hydro_cap(i))
-        call putConfigREAL("wood_hydro_cap",wood_hydro_cap(i))
+        call putConfigREAL("leaf_water_cap",leaf_water_cap(i))
+        call putConfigREAL("wood_water_cap",wood_water_cap(i))
         call putConfigREAL("leaf_rwc_min",leaf_rwc_min(i))
         call putConfigREAL("wood_rwc_min",wood_rwc_min(i))
+        call putConfigREAL("leaf_psi_min",leaf_psi_min(i))
+        call putConfigREAL("wood_psi_min",wood_psi_min(i))
+        call putConfigREAL("leaf_psi_tlp",leaf_psi_tlp(i))
+        call putConfigREAL("wood_psi_tlp",wood_psi_tlp(i))
+        call putConfigREAL("leaf_psi_osmotic",leaf_psi_osmotic(i))
+        call putConfigREAL("wood_psi_osmotic",wood_psi_osmotic(i))
+        call putConfigREAL("leaf_elastic_mod",leaf_elastic_mod(i))
+        call putConfigREAL("wood_elastic_mod",wood_elastic_mod(i))
+        call putConfigREAL("wood_Kmax",wood_Kmax(i))
+        call putConfigREAL("wood_Kexp",wood_Kexp(i))
+        call putConfigREAL("wood_psi50",wood_psi50(i))
+        call putConfigREAL("vessel_curl_factor",vessel_curl_factor(i))
      !! HEIGHT
         call putConfigREAL("b1Ht",       b1Ht(i))
         call putConfigREAL("b2Ht",       b2Ht(i))
@@ -1484,6 +1535,8 @@ subroutine write_ed_xml_config
         call putConfigREAL("b1Bs_large",b1Bs_large(i))
         call putConfigREAL("b2Bs_small",b2Bs_small(i))
         call putConfigREAL("b2Bs_large",b2Bs_large(i))
+        call putConfigREAL("b1SA",b1SA(i))
+        call putConfigREAL("b2SA",b2SA(i))
         call putConfigREAL("min_bdead", min_bdead(i))
         call putConfigREAL("bdead_crit",bdead_crit(i))
 
@@ -1697,6 +1750,7 @@ subroutine write_ed_xml_config
   !************   PHYSIOLOGY  *****************
   call libxml2f90_ll_opentag("physiology")
      call putConfigINT("n_plant_lim",n_plant_lim)
+     call putConfigINT("plant_hydro_scheme",plant_hydro_scheme)
   call libxml2f90_ll_closetag("physiology")
 
   !************   INITIAL CONDITIONS  *****************

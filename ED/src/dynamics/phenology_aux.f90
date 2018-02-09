@@ -350,9 +350,11 @@ module phenology_aux
                                , patchtype        ! ! structure
       use ed_therm_lib  , only : calc_veg_hcap    ! ! function
       use ed_max_dims   , only : n_pft            ! ! intent(in)
-      use allometry     , only : area_indices     ! ! subroutine
+      use allometry     , only : area_indices     & ! subroutine
+                               , dbh2sf           ! ! function
       use grid_coms     , only : nzg              ! ! intent(in)
       use therm_lib     , only : cmtl2uext        ! ! function
+      use plant_hydro   , only : rwc2tw                   ! ! sub-routine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid       ! Current grid
@@ -411,8 +413,14 @@ module phenology_aux
                   !----- Find heat capacity and vegetation internal energy. ---------------!
                   call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
                                     ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
-                                    ,cpatch%pft(ico)                                       &
+                                    ,cpatch%pft(ico),cpatch%broot(ico),cpatch%dbh(ico)     &
+                                    ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)             &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+                  ! also need to update water_int from rwc
+                  call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                    &
+                             ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)        &
+                             ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)      &
+                             ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
                   cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)               &
                                                      ,cpatch%leaf_water(ico)               &
                                                      ,cpatch%leaf_temp (ico)               &

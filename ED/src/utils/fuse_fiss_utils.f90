@@ -1030,7 +1030,8 @@ module fuse_fiss_utils
                                     , bd2dbh                 & ! function
                                     , bl2dbh                 & ! function
                                     , bl2h                   & ! function
-                                    , dbh2h                  ! ! function
+                                    , dbh2h                  & ! function
+                                    , dbh2sf                 ! ! function
       use ed_max_dims        , only : n_mort                 ! ! intent(in)
       use ed_misc_coms       , only : writing_long           & ! intent(in)
                                     , writing_eorq           & ! intent(in)
@@ -1547,7 +1548,8 @@ module fuse_fiss_utils
       ! This ensures that psi, rwc, and total water are consistent with each
       ! other
       call tw2rwc(cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc)                  &
-                 ,cpatch%bleaf(recc),cpatch%bdead(recc),cpatch%broot(recc),cpatch%pft(recc)&
+                 ,cpatch%bleaf(recc),cpatch%bdead(recc),cpatch%broot(recc)                 &
+                 ,dbh2sf(cpatch%dbh(recc),cpatch%pft(recc)),cpatch%pft(recc)               &
                  ,cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc))
       call rwc2psi(cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc),cpatch%pft(recc)            &
                   ,cpatch%leaf_psi(recc),cpatch%wood_psi(recc))
@@ -1774,7 +1776,7 @@ module fuse_fiss_utils
          ! Now, we recalculate psi from water_int
          call tw2psi(cpatch%fmean_leaf_water_int(recc),cpatch%fmean_wood_water_int(recc)   &
                     ,cpatch%bleaf(recc),cpatch%bdead(recc),cpatch%broot(recc)              &
-                    ,cpatch%pft(recc)                                                      &
+                    ,dbh2sf(cpatch%dbh(recc),cpatch%pft(recc)),cpatch%pft(recc)            &
                     ,cpatch%fmean_leaf_psi(recc),cpatch%fmean_wood_psi(recc))
 
          !---------------------------------------------------------------------------------!

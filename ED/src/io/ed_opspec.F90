@@ -1183,6 +1183,7 @@ subroutine ed_opspec_misc
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
+                                    , plant_hydro_scheme           & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
                                     , cbr_scheme                   & ! intent(in)
                                     , ddmort_const                 & ! intent(in)
@@ -1636,6 +1637,14 @@ end do
       ifaterr = ifaterr +1
    end select
    !---------------------------------------------------------------------------------------!
+
+   if (plant_hydro_scheme < 0 .or. plant_hydro_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid PLANT_HYDRO_SCHEME, it must be 0, 1, or 2. Yours is set to'   &
+                    ,plant_hydro_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
 
    if (iphysiol < 0 .or. iphysiol > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &

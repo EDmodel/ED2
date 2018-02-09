@@ -98,6 +98,17 @@ module physiology_coms
 
 
 
+   integer :: plant_hydro_scheme
+   !---------------------------------------------------------------------------------------!
+   !< PLANT_HYDRO_SCHEME -- Whether to track plant hydrodynamics.\n
+   !<                       0. No hydraulics (leaf and wood are always saturated)\n
+   !<                       1. Track plant hydrodynamics using parameters from
+   !<  Christofferson et al. 2016 GMD
+   !<                       2. Track plant hydrodynamics using parameters from
+   !<  Xu et al. 2016 New Phytologist
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !  IDDMORT_SCHEME -- This flag determines whether storage should be accounted in the    !
    !                    carbon balance.                                                    !

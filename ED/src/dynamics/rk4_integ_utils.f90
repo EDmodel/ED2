@@ -404,8 +404,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    do ico = 1,cpatch%ncohorts
       rkp%leaf_water (ico) = rkp%leaf_water (ico) + fac * inc%leaf_water (ico)
       rkp%leaf_energy(ico) = rkp%leaf_energy(ico) + fac * inc%leaf_energy(ico)
+      rkp%leaf_hcap  (ico) = rkp%leaf_hcap  (ico) + fac * inc%leaf_hcap  (ico)
       rkp%wood_water (ico) = rkp%wood_water (ico) + fac * inc%wood_water (ico)
       rkp%wood_energy(ico) = rkp%wood_energy(ico) + fac * inc%wood_energy(ico)
+      rkp%wood_hcap  (ico) = rkp%wood_hcap  (ico) + fac * inc%wood_hcap  (ico)
       rkp%veg_water (ico)  = rkp%veg_water  (ico) + fac * inc%veg_water  (ico)
       rkp%veg_energy(ico)  = rkp%veg_energy (ico) + fac * inc%veg_energy (ico)
 

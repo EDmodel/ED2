@@ -14,7 +14,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
    use pft_coms       , only : water_conductance  & ! intent(in)
                              , include_pft        & ! intent(in)
                              , vm0                & ! intent(in)
-                             , leaf_turnover_rate ! ! intent(in)
+                             , leaf_turnover_rate & ! intent(in)
+                             , leaf_psi_tlp       ! ! intent(in)
    use soil_coms      , only : soil               & ! intent(in)
                              , slzt               & ! intent(in)
                              , dslz               ! ! intent(in)
@@ -468,6 +469,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
                   cpatch%fsw(ico) = 1.0 / (1.0 + water_demand / cpatch%water_supply(ico))
                end if
             end select
+            ! For test XXT
+            !cpatch%fsw(ico) = exp(-(cpatch%leaf_psi(ico) / leaf_psi_tlp(ipft)) ** 3.)
             !------------------------------------------------------------------------------!
 
 

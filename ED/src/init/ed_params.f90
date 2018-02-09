@@ -2324,6 +2324,8 @@ subroutine init_pft_alloc_params()
       , horiz_branch          & ! intent(out)
       , q                     & ! intent(out)
       , qsw                   & ! intent(out)
+      , SRA                   & ! intent(out)
+      , root_beta             & ! intent(out)
       , init_density          & ! intent(out)
       , init_laimax           & ! intent(out)
       , agf_bs                & ! intent(out)
@@ -2356,6 +2358,8 @@ subroutine init_pft_alloc_params()
       , b2Bl_large            & ! intent(out)
       , b1WAI                 & ! intent(out)
       , b2WAI                 & ! intent(out)
+      , b1SA                  & ! intent(out)
+      , b2SA                  & ! intent(out)
       , C2B                   & ! intent(out)
       , sla_scale             & ! intent(out)
       , sla_inter             & ! intent(out)
@@ -2367,6 +2371,7 @@ subroutine init_pft_alloc_params()
    use consts_coms  , only : onethird              & ! intent(in)
       , twothirds             & ! intent(in)
       , huge_num              & ! intent(in)
+      , pio4                  & ! intent(in)
       , pi1                   ! ! intent(in)
    use ed_max_dims  , only : n_pft                 & ! intent(in)
       , str_len               ! ! intent(in)
@@ -2447,7 +2452,12 @@ subroutine init_pft_alloc_params()
    rho(3)     = 0.71   ! 0.60
    rho(4)     = 0.90   ! 0.87
    rho(5)     = 0.20   ! Copied from C4 grass
-   rho(6:11)  = 0.00   ! Currently not used
+   rho(6)     = 0.45   ! white pine - ponderosa pine
+   rho(7)     = 0.57   ! Loblolly pine               
+   rho(8)     = 0.45   ! Black Spruce
+   rho(9)     = 0.42   ! Aspen
+   rho(10)    = 0.74   ! Red Oak
+   rho(11)    = 0.70   ! Sugar Maple
    rho(12:16) = 0.20
    rho(17)    = 0.46   ! BCI Traits
    !---------------------------------------------------------------------------------------!
@@ -2539,6 +2549,39 @@ subroutine init_pft_alloc_params()
    qsw(16)     = SLA(16)    / sapwood_ratio(16)
    qsw(17)     = SLA(17)    / sapwood_ratio(17)
    !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   ! Specific Root Area
+   ! Based on Metcalfe, D. B., P. Meir, et al. (2008). 
+   ! "The effectsof water availability on root growth and morphology   !
+   ! in an Amazon rainforest." Plant and Soil 311(1-2):189-199.                                 
+   !---------------------------------------------------------------------------------------!
+   SRA(1:17)   = 24. * 2. ! m2/kgC --> this is from Amazon
+
+   !---------------------------------------------------------------------------------------!
+   ! Root vertical distribution shape factor
+   ! Base on Jackson, R. B., J. Canadell, et al. (1996). 
+   !         "A global analysis of root distributions for terrestrial
+   !         biomes." Oecologia 108(3): 389-411.    
+   ! The reference only reports for ecosystem level root profile but shows that
+   ! root cumulative biomass generally follows an exponential distribution
+   !
+   ! Here, we are applying this pattern to cohort level, ignoring the potential
+   ! root niche separation that results in smaller fraction of roots in top
+   ! layers relative to deeper layers
+   !
+   ! It is assumed that the root has an exponential distribution, with only
+   ! ROOT_BETA fraction of roots below maximum rooting depth. Increasing
+   ! the ROOT_BETA will make the root profile toward bottom
+   !
+   ! The root fraction (Y) above depth D cm for a cohort with max rooting depth as
+   ! D_max (cm) can be calculated as
+   !  Y = 1. - (root_beta) ** (D / D_max)
+   !
+   ! Suggested values range from 0.0001 to 0.01.
+   ! 
+   !---------------------------------------------------------------------------------------!
+   root_beta(1:17)   =   0.001
 
 
 
@@ -3067,6 +3110,38 @@ subroutine init_pft_alloc_params()
    b2WAI(17)    = 2.0947       ! Broadleaf
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !    Sapwood area allometry for plants                                                  !
+   !    All grass PFTs have 100% of sapwood area over basal area but it's actually not     !
+   !    used for them.                                                                     !
+   !    Temperate angiosperms are assumed to have 30% of sapwood (oaks)
+   !    Tropical angiosperms are assumed to have 75% of sapwood
+   !    Gymnosperms are assumed to have 30% of sapwood. (loblolly pine)           
+   !    Users are welcome to update those numbuers based on literatures or measurements
+   !---------------------------------------------------------------------------------------!
+   b1SA(1)      = pio4 * 1.0
+   b1SA(2:4)    = pio4 * 0.75
+   b1SA(5)      = pio4 * 1.0
+   b1SA(6:8)    = pio4 * 0.3
+   b1SA(9:11)   = pio4 * 0.3
+   b1SA(12:16)  = pio4 * 1.0
+   b1SA(17)     = pio4 * 0.75
+
+   b2SA(1:17)   = 2.
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Overwrite tropical angiosperms with observations from Barro Colorado Island          !  
+   !      F. C. Meinzer, G. Goldstein, J. L. Andrade; Regulation of water flux through     ! 
+   !         tropical forest canopy trees: Do universal rules apply?, Tree Physiology,     !
+   !         Volume 21, Issue 1, 1 January 2001, Pages 19–26,                              !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
+          b1SA(ipft)    = 1.582
+          b2SA(ipft)    = 1.764
+      end if
+   end do
 
 
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
@@ -3264,43 +3339,225 @@ end subroutine init_pft_nitro_params
 !==========================================================================================!
 subroutine init_pft_hydro_params()
 
-   use pft_coms,        only : xylem_fraction               & ! intent(out)
-                             , leaf_hydro_cap               & ! intent(out)
-                             , wood_hydro_cap               & ! intent(out)
+   use consts_coms    , only : grav                         & ! intent(in)
+                             , wdns                         ! ! intent(in)
+   use ed_max_dims    , only : n_pft                        ! ! intent(in)
+   use physiology_coms, only : plant_hydro_scheme           ! ! intent(in)
+   use plant_hydro    , only : rwc2psi                      ! ! subroutine 
+   use pft_coms       , only : SLA                          & ! intent(in)
+                             , rho                          & ! intent(in)
+                             , Vm0                          & ! intent(in)
+                             , C2B                          & ! intent(in)
+                             , vessel_curl_factor           & ! intent(out)
+                             , leaf_water_cap               & ! intent(out)
+                             , wood_water_cap               & ! intent(out)
                              , leaf_water_sat               & ! intent(out)
                              , wood_water_sat               & ! intent(out)
                              , leaf_rwc_min                 & ! intent(out)
-                             , wood_rwc_min                 ! ! intent(out)
+                             , wood_rwc_min                 & ! intent(out)
+                             , leaf_psi_min                 & ! intent(out)
+                             , wood_psi_min                 & ! intent(out)
+                             , leaf_psi_osmotic             & ! intent(out)
+                             , wood_psi_osmotic             & ! intent(out)
+                             , leaf_elastic_mod             & ! intent(out)
+                             , wood_elastic_mod             & ! intent(out)
+                             , leaf_psi_tlp                 & ! intent(out)
+                             , wood_psi_tlp                 & ! intent(out)
+                             , wood_Kmax                    & ! intent(out)
+                             , wood_Kexp                    & ! intent(out)
+                             , wood_psi50                   ! ! intent(out)
 
    implicit none
+   !- Local Variables  ---------------------------------------!
+   integer                  :: ipft
+   real    ,parameter       :: MPa2m = wdns / grav
+   real                     :: rwc_tlp_wood ! RWC at turgor loss point for sapwood
+   real                     :: leaf_density ! density of leaf tissue [kg/m3]
+   real                     :: LMA          ! leaf mass per area [g/m2]
+   real                     :: Amax_25      ! estimated maximum photosynthetic rates at 25 degC
 
-   !---------------------------------------------------------------------------------------!
-   !    Fraction of xylem area over the whole cross-section area of plant.                 !
-   !    This parameter used when allometric relationship for sapwood is not available.     !
-   !    10% for grasses                                                                    !
-   !    50% for temperate angiosperms                                                      !
-   !    75% for tropical angiosperms                                                       !
-   !    References:                                                                        !  
-   !      F. C. Meinzer, G. Goldstein, J. L. Andrade; Regulation of water flux through     ! 
-   !         tropical forest canopy trees: Do universal rules apply?, Tree Physiology,     !
-   !         Volume 21, Issue 1, 1 January 2001, Pages 19–26,                              !
-   !---------------------------------------------------------------------------------------!
-   xylem_fraction(1)      =  1.0
-   xylem_fraction(2:4)    =  0.75
-   xylem_fraction(5)      =  1.0
-   xylem_fraction(6:8)    =  0.1
-   xylem_fraction(9:11)   =  0.5
-   xylem_fraction(12:16)  =  1.0
-   xylem_fraction(17)     =  0.1
+   vessel_curl_factor(1:17)  = 1.5 
+   ! This is kind of arbitrary, total hydraulic path is 50% more than tree height
+
+   !----------------------------------------------------------!
+   !----------------------------------------------------------!
+   ! Plant hydraulic traits are from Christofferson et al.    !
+   ! 2016 GMD. These data come from tropical species. Need to !
+   ! update for temperate PFTs                                !
+   !
+   ! Don't Panic on the number of parameters here
+   ! A large fraction of them are used to calcualte the few
+   ! traits that control the plant hydaulic calculations
+   ! Those traits are listed in the next section
+   !----------------------------------------------------------!
+   do ipft = 1, n_pft
+        LMA = 1.e3 * C2B / SLA(ipft)
+
+        ! leaf osmotic potential at saturation
+        ! m
+        leaf_psi_osmotic(ipft) = MPa2m                              &
+            * (-0.04 - 1.51 * rho(ipft) - 0.0067 * LMA)
+
+        ! leaf bulk elastic modulus [MPa]
+        leaf_elastic_mod(ipft) = 2.5 + 37.5                     &
+            / (1. + exp(-8. * rho(ipft) + 5.7))
+
+        ! leaf minimum relative water content, or residual fraction
+        leaf_rwc_min(ipft) = 0.01 * leaf_elastic_mod(ipft) + 0.17
+
+        ! Leaf turgor loss point [m]
+        leaf_psi_tlp(ipft) = leaf_elastic_mod(ipft)                                    &
+                           * (leaf_psi_osmotic(ipft) / MPa2m)                          &
+                           / (leaf_elastic_mod(ipft) + leaf_psi_osmotic(ipft) / MPa2m) &
+                           * MPa2m
+
+        ! Leaf water content at saturation (rwc = 1.) [kg H2O / kg biomass]
+        ! first calculate leaf_density from Fig. 4 in Niinemets (2001)
+        ! Ecology 82: 453–469
+        ! The calculated leaf_water_sat is comparable to measurements from
+        ! Kursar et al., 2009: Functional Ecology, 23, 93-102.
+        leaf_density = max(0.1 * 1.e3,                                      &
+                           (leaf_elastic_mod(ipft) - 2.03) / 25.4 * 1.e3)
+        leaf_water_sat(ipft) = (-2.32e4 / LMA + 782.)                       &
+                             * (1. / (-0.21 * log(1.e4 / LMA) + 1.43) - 1.) &
+                             / leaf_density
+
+        !----------------
+        ! Sapwood traits
+        !----------------
+
+        ! Sapwood osmotic potential at saturation [m]
+        wood_psi_osmotic(ipft) = (0.52 - 4.16 * rho(ipft)) * MPa2m
+
+        ! Sapwood bulk elastic modulus [MPa]
+        wood_elastic_mod(ipft) = sqrt(1.02 * exp(8.5 * rho(ipft)) - 2.89)
+
+        ! Sapwood minimum relative water content, or residual fraction
+        rwc_tlp_wood = 1. - (1. - 0.75 * rho(ipft)) / (2.74 + 2.01 * rho(ipft))
+        wood_rwc_min(ipft) = wood_elastic_mod(ipft) * (1. - rwc_tlp_wood) &
+                           / (wood_psi_osmotic(ipft) / MPa2M) + 1.  
+        ! note that we set fcap to 0. in the original equation
+
+        ! Wood water content at saturation (rwc = 1.) [kg H2O / kg biomass]
+        wood_water_sat(ipft) = (1. - rho(ipft) / 1.53)                      &
+                             * wdns / (rho(ipft) * 1.e3)
+    
+        ! Wood turgor loss point
+        wood_psi_tlp(ipft) = wood_elastic_mod(ipft) * (wood_psi_osmotic(ipft) / MPa2m)  &
+                           / (wood_elastic_mod(ipft) + wood_psi_osmotic(ipft) / MPa2m)  &
+                           * MPa2m
+   enddo
+   !----------------------------------------------------------!
+   
+   !----------------------------------------------------------!
+   !----------------------------------------------------------!
+   ! Key traits that drive plant hydrodynamics                 
+   ! Again Based on Christofferson et al. 2016 GMD
+   !----------------------------------------------------------!
+   do ipft = 1, n_pft
+       ! Calculate capacitance based on linearizing the water retention curve
+       ! from Bartlett et al. (2012) Ecology Letters
+       ! Assume water retention curve is linear from 0. to 4 * turgor loss point
+       ! [kg H2O / kg biomass / m]
+       leaf_water_cap(ipft) = (1. - leaf_psi_osmotic(ipft) / (4. * leaf_psi_tlp(ipft))) &
+                            * leaf_water_sat(ipft) / (4. * abs(leaf_psi_tlp(ipft)))
+
+       wood_water_cap(ipft) = (1. - wood_psi_osmotic(ipft) / (4. * wood_psi_tlp(ipft))) &
+                            * wood_water_sat(ipft) / (4. * abs(wood_psi_tlp(ipft)))
+
+       ! Wood P50 [m]
+       wood_psi50(ipft) = (-1.09-(3.57 * rho(ipft)) ** 1.73) * MPa2m 
+       
+       Amax_25 = Vm0(ipft) * 2.4 / 4.1 ! umol/m2/s
+       ! This is only an estimate. 2.4 is Q10, converting to Vcmax_25, 4.1
+       ! is conversion factor from Vcmax to Amax at ~25degC
+
+       ! Sapwood maximum conductivity [kg/m/s/m]
+       wood_Kmax(ipft)  = exp(2.11 - 20.05 * rho(ipft) / Amax_25) / MPa2m 
+       ! This is estimated from Figure S2.2 in Christofferson et al. 2016 GMD
+
+       wood_Kexp(ipft)  = 0.544 * 4. * (-wood_psi50(ipft) / MPa2m) ** -0.17
+       ! Christofferson et al. 2016 GMD only reports the slope of PLC at psi50,
+       ! the slope = - wood_Kexp / (4 * wood_psi50) by calculating the
+       ! derivatives of the PLC function. Thus, we back-calculate wood_Kexp from
+       ! the slope here
+   enddo
 
 
-   ! Hold the place for now
-   leaf_water_sat(1:17)   =  1.
-   wood_water_sat(1:17)   =  1.
-   leaf_hydro_cap(1:17)   =  1.
-   wood_hydro_cap(1:17)   =  1.
-   leaf_rwc_min  (1:17)   =  0.2
-   wood_rwc_min  (1:17)   =  0.2
+   ! overwrite some parameters if PLANT_HYDRO_SCHEME is 2
+   ! Using meta-analysis from Xu et al. 2016 New Phytologist
+   ! Again this is also for tropical PFTs
+   select case (plant_hydro_scheme)
+   case(2)
+      do ipft = 1, n_pft
+
+        !----------------------------------------------------------!
+        !  Capacitance is estimated from Scholz et al. 2011        !
+        !  Since the capacitance is treated as a constant in the   !
+        !  model, it should be way smaller than lab/field measured !
+        !  capacitance [Sack et al. 2003 PCE;Steppe et al. 2006    !
+        !  Tree Physiology]. Thus, here Cap_leaf is multiplied by  !
+        !  1/2 and Cap_stem is multipled by 1/3                    !
+        !                                                          !
+        !  Scholz, F. G., N. G. Phillips, et al. (2011). Hydraulic !
+        !  Capacitance: Biophysics and Functional Significance of  !
+        !  Internal Water Sources in Relation to Tree Size.        !
+        !----------------------------------------------------------!
+        leaf_water_cap(ipft) = 3.e-3 * SLA(ipft) / C2B / MPa2m / 2.
+        wood_water_cap(ipft) = min(400.,max(50.,                         &
+                               -700. * (rho(ipft) - 0.3) + 400.))        &
+                             / (rho(ipft) * 1.e3) / MPa2m / 3.
+
+        ! Copied from wat_dry_ratio_grn and wat_dry_ratio_ngrn
+        leaf_water_sat(ipft) = 1.85
+        wood_water_sat(ipft) = 0.7
+
+        ! Set some rwc_min so that psi_min makes sense
+        leaf_rwc_min(ipft) = 0.5
+        wood_rwc_min(ipft) = 0.05
+
+
+        leaf_psi_tlp(ipft)   = (-4.59 + 0.62 * log(SLA(ipft))            &
+                             - 1.15 * log(rho(ipft))) * MPa2m
+
+        wood_psi50(ipft)     = (-3. * rho(ipft) - 0.599) * MPa2m
+        wood_Kmax(ipft)      = exp(-2.455 * rho(ipft)                    &
+                             + 2.348 + 0.5 * 0.6186) / MPa2m
+
+        wood_Kexp(ipft)      = 4.
+
+      enddo
+       
+
+
+   end select
+
+   ! Equivalent leaf/wood minimum water potential calculated from leaf_rwc
+   ! with the assumption of constant capacitance [m]
+   do ipft = 1, n_pft
+      leaf_psi_min(ipft) = (leaf_rwc_min(ipft) - 1.)                              &
+                         * leaf_water_sat(ipft) / leaf_water_cap(ipft)
+      wood_psi_min(ipft) = (wood_rwc_min(ipft) - 1.)                              &
+                         * wood_water_sat(ipft) / wood_water_cap(ipft)
+   enddo
+
+
+    ! Print trait values for test
+    print*,'MPa2m',MPa2m
+    print*,'leaf_rwc_min',leaf_rwc_min(1:4)
+    print*,'leaf_psi_min',leaf_psi_min(1:4) / MPa2m
+    print*,'leaf_psi_tlp',leaf_psi_tlp(1:4) / MPa2m
+    print*,'leaf_water_sat',leaf_water_sat(1:4)
+    print*,'leaf_water_cap',leaf_water_cap(1:4) * MPa2m
+ 
+    print*,'wood_rwc_min',wood_rwc_min(1:4)
+    print*,'wood_psi_min',wood_psi_min(1:4) / MPa2m
+    print*,'wood_water_cap',wood_water_cap(1:4) * MPa2m
+    print*,'wood_psi50',wood_psi50(1:4) / MPa2m
+    print*,'wood_Kmax',wood_Kmax(1:4) * MPa2m
+    print*,'wood_Kexp',wood_Kexp(1:4)
+   
+    
 
    return
 end subroutine init_pft_hydro_params
@@ -3579,6 +3836,8 @@ subroutine init_pft_derived_params()
       , hgt_max              & ! intent(in)
       , dbh_crit             & ! intent(in)
       , dbh_bigleaf          & ! intent(in)
+      , leaf_rwc_min         & ! intent(in)
+      , wood_rwc_min         & ! intent(in)
       , one_plant_c          & ! intent(out)
       , min_recruit_size     & ! intent(out)
       , min_cohort_size      & ! intent(out)
@@ -3755,6 +4014,7 @@ subroutine init_pft_derived_params()
       ! only for the minimum value.                                                        !
       !------------------------------------------------------------------------------------!
       call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,init_density(ipft),ipft          &
+         ,broot_min,dbh,leaf_rwc_min(ipft),wood_rwc_min(ipft)                              &
          ,leaf_hcap_min,wood_hcap_min)
       veg_hcap_min(ipft) = onesixth * leaf_hcap_min
       lai_min            = onesixth * init_density(ipft) * bleaf_min * sla(ipft)

@@ -1,6 +1,7 @@
 !==========================================================================================!
 !==========================================================================================!
-!    This module is a library with several allometric relationships.                       !
+! MODULE: ALLOMETRY  
+!> \brief This module is a library with several allometric relationships.
 !------------------------------------------------------------------------------------------!
 module allometry
 
@@ -135,6 +136,42 @@ contains
       end if
       return
    end function dbh2bd
+   !=======================================================================================!
+   !=======================================================================================!
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! FUNCTION DBH2SF             
+   !< \brief Calculate sapwood fraction from DBH
+   !< \author Xiangtao Xu, 31 Jan. 2018
+   !---------------------------------------------------------------------------------------!
+   real function dbh2sf(dbh,ipft)
+
+      use consts_coms   , only : pio4               ! ! intent(in)
+      use pft_coms      , only : is_grass           & ! intent(in)
+                               , b1SA               & ! intent(in)
+                               , b2SA               ! ! intent(in)
+
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: dbh
+      integer, intent(in) :: ipft
+      !------------------------------------------------------------------------------------!
+
+      if (is_grass(ipft)) then
+          ! All of the 'stem' of grass is sapwood
+          ! But we actually not use the sapwood area for grass
+          ! This is just to keep consistency across species
+          dbh2sf = 1.
+      else
+          ! For trees
+          dbh2sf = min(1.0,                             &
+                       (b1SA(ipft) * dbh ** b2SA(ipft)) & ! sapwood area cm2
+                    /  (pio4 * dbh ** 2 )               & ! total basal area
+                      )
+      endif
+
+      return 
+   end function dbh2sf
    !=======================================================================================!
    !=======================================================================================!
 

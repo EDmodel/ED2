@@ -39,6 +39,8 @@ subroutine structural_growth(cgrid, month)
                              , iddmort_scheme         & ! intent(in)
                              , cbr_scheme             ! ! intent(in)
    use fuse_fiss_utils, only : sort_cohorts           ! ! subroutine
+   use plant_hydro,     only : rwc2tw                 ! ! sub-routine
+   use allometry,       only : dbh2sf                 ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -462,7 +464,14 @@ subroutine structural_growth(cgrid, month)
                old_wood_hcap = cpatch%wood_hcap(ico)
                call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)&
                                  ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%broot(ico),cpatch%dbh(ico)                        &
+                                 ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                &
                                  ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               ! also need to update water_int from rwc
+               call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                         &
+                          ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)             &
+                          ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)           &
+                          ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
                call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
                call is_resolvable(csite,ipa,ico)
                !---------------------------------------------------------------------------!
@@ -540,6 +549,8 @@ subroutine structural_growth_eq_0(cgrid, month)
    use physiology_coms, only : ddmort_const           & ! intent(in)
                              , iddmort_scheme         & ! intent(in)
                              , cbr_scheme             ! ! intent(in)
+   use plant_hydro,     only : rwc2tw                 ! ! sub-routine
+   use allometry,       only : dbh2sf                 ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -899,7 +910,14 @@ subroutine structural_growth_eq_0(cgrid, month)
                old_wood_hcap = cpatch%wood_hcap(ico)
                call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)&
                                  ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%broot(ico),cpatch%dbh(ico)                        &
+                                 ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                &
                                  ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               ! also need to update water_int from rwc
+               call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                         &
+                          ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)             &
+                          ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)           &
+                          ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
                call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
                call is_resolvable(csite,ipa,ico)
                !---------------------------------------------------------------------------!

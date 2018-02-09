@@ -1574,6 +1574,14 @@ module average_utils
                   cpatch%fmean_wshed_wg          (ico) = 0.0
                   cpatch%fmean_lai               (ico) = 0.0
                   cpatch%fmean_bdead             (ico) = 0.0
+
+                  cpatch%fmean_leaf_psi          (ico) = 0.0
+                  cpatch%fmean_wood_psi          (ico) = 0.0
+                  cpatch%fmean_leaf_water_int    (ico) = 0.0
+                  cpatch%fmean_wood_water_int    (ico) = 0.0
+                  cpatch%fmean_wflux_gw          (ico) = 0.0
+                  cpatch%fmean_wflux_wl          (ico) = 0.0
+                  cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -2422,6 +2430,22 @@ module average_utils
                   cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico)      &
                                                    + cpatch%fmean_wshed_wg      (ico)      &
                                                    * frqsum_o_daysec
+                  cpatch%dmean_leaf_water_int(ico) = cpatch%dmean_leaf_water_int(ico)      &
+                                                   + cpatch%fmean_leaf_water_int(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wood_water_int(ico) = cpatch%dmean_wood_water_int(ico)      &
+                                                   + cpatch%fmean_wood_water_int(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_gw      (ico) = cpatch%dmean_wflux_gw      (ico)      &
+                                                   + cpatch%fmean_wflux_gw      (ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_gw_layer(:,ico)=cpatch%dmean_wflux_gw_layer(:,ico)    &
+                                                   + cpatch%fmean_wflux_gw_layer(:,ico)    &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_wl      (ico) = cpatch%dmean_wflux_wl      (ico)      &
+                                                   + cpatch%fmean_wflux_wl      (ico)      &
+                                                   * frqsum_o_daysec
+
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -3177,6 +3201,69 @@ module average_utils
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_DX_VARS        
+   !> \brief This subroutine resets the daily eXtreme (maximum,minimum) variables, once the
+   !> variables have been used. Current only dmin/dmax water potentials are included. 
+   !> \author Xiangtao Xu
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_dx_vars(cgrid)
+      use ed_state_vars, only : edtype        & ! structure
+                              , polygontype   & ! structure
+                              , sitetype      & ! structure
+                              , patchtype     ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target  :: cgrid
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer :: cpoly
+      type(sitetype)   , pointer :: csite
+      type(patchtype)  , pointer :: cpatch
+      integer                    :: ipy
+      integer                    :: isi
+      integer                    :: ipa
+      integer                    :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !       Loop over polygons.                                                          !
+      !------------------------------------------------------------------------------------!
+      polyloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         
+         !---------------------------------------------------------------------------------!
+         !       Loop over sites.                                                          !
+         !---------------------------------------------------------------------------------!
+         siteloop: do isi=1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+            !------------------------------------------------------------------------------!
+            !       Loop over patches.                                                     !
+            !------------------------------------------------------------------------------!
+            patchloop: do ipa=1,csite%npatches
+               cpatch => csite%patch(ipa)
+
+               !---------------------------------------------------------------------------!
+               !       Loop over cohorts.                                                  !
+               !---------------------------------------------------------------------------!
+               cohortloop: do ico=1, cpatch%ncohorts
+                    cpatch%dmax_leaf_psi(ico) = 0.0
+                    cpatch%dmin_leaf_psi(ico) = 0.0
+                    cpatch%dmax_wood_psi(ico) = 0.0
+                    cpatch%dmin_wood_psi(ico) = 0.0
+               end do cohortloop
+               !---------------------------------------------------------------------------!
+            end do patchloop
+            !------------------------------------------------------------------------------!
+         end do siteloop
+         !---------------------------------------------------------------------------------!
+      end do polyloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_dx_vars
 
 
 
@@ -3525,6 +3612,13 @@ module average_utils
                   cpatch%dmean_vapor_wc          (ico) = 0.0
                   cpatch%dmean_intercepted_aw    (ico) = 0.0
                   cpatch%dmean_wshed_wg          (ico) = 0.0
+
+                  cpatch%dmean_leaf_water_int    (ico) = 0.0
+                  cpatch%dmean_wood_water_int    (ico) = 0.0
+                  cpatch%dmean_wflux_gw          (ico) = 0.0
+                  cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
+                  cpatch%dmean_wflux_wl          (ico) = 0.0
+
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -4775,6 +4869,35 @@ module average_utils
                   cpatch%mmean_nppdaily        (ico) = cpatch%mmean_nppdaily        (ico)  &
                                                      + cpatch%dmean_nppdaily        (ico)  &
                                                      * ndaysi
+
+                  cpatch%mmean_dmax_leaf_psi   (ico) = cpatch%mmean_dmax_leaf_psi   (ico)  &
+                                                     + cpatch%dmax_leaf_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmin_leaf_psi   (ico) = cpatch%mmean_dmin_leaf_psi   (ico)  &
+                                                     + cpatch%dmin_leaf_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmax_wood_psi   (ico) = cpatch%mmean_dmax_wood_psi   (ico)  &
+                                                     + cpatch%dmax_wood_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmin_wood_psi   (ico) = cpatch%mmean_dmin_wood_psi   (ico)  &
+                                                     + cpatch%dmin_wood_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_leaf_water_int  (ico) = cpatch%mmean_leaf_water_int  (ico)  &
+                                                     + cpatch%dmean_leaf_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wood_water_int  (ico) = cpatch%mmean_wood_water_int  (ico)  &
+                                                     + cpatch%dmean_wood_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_gw        (ico) = cpatch%mmean_wflux_gw        (ico)  &
+                                                     + cpatch%dmean_wflux_gw        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_wl        (ico) = cpatch%mmean_wflux_wl        (ico)  &
+                                                     + cpatch%dmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_gw_layer(:,ico) = cpatch%mmean_wflux_gw_layer(:,ico)  &
+                                                     + cpatch%dmean_wflux_gw_layer(:,ico)  &
+                                                     * ndaysi
+
                   !----- Integrate mean sum of squares. -----------------------------------!
                   cpatch%mmsqu_gpp        (ico) = cpatch%mmsqu_gpp                  (ico)  &
                                                 + isqu_ftz(cpatch%dmean_gpp         (ico)) &
@@ -5585,6 +5708,17 @@ module average_utils
                   cpatch%mmean_nppseeds          (ico) = 0.0
                   cpatch%mmean_nppwood           (ico) = 0.0
                   cpatch%mmean_nppdaily          (ico) = 0.0
+
+                  cpatch%mmean_dmax_leaf_psi     (ico) = 0.0
+                  cpatch%mmean_dmax_wood_psi     (ico) = 0.0
+                  cpatch%mmean_dmin_leaf_psi     (ico) = 0.0
+                  cpatch%mmean_dmin_wood_psi     (ico) = 0.0
+                  cpatch%mmean_leaf_water_int    (ico) = 0.0
+                  cpatch%mmean_wood_water_int    (ico) = 0.0
+                  cpatch%mmean_wflux_gw          (ico) = 0.0
+                  cpatch%mmean_wflux_wl          (ico) = 0.0
+                  cpatch%mmean_wflux_gw_layer  (:,ico) = 0.0
+
                   cpatch%mmsqu_gpp               (ico) = 0.0
                   cpatch%mmsqu_npp               (ico) = 0.0
                   cpatch%mmsqu_plresp            (ico) = 0.0
@@ -6593,6 +6727,26 @@ module average_utils
                   cpatch%qmean_wshed_wg      (t,ico) = cpatch%qmean_wshed_wg      (t,ico)  &
                                                      + cpatch%fmean_wshed_wg        (ico)  &
                                                      * ndaysi
+
+                  cpatch%qmean_leaf_psi      (t,ico) = cpatch%qmean_leaf_psi      (t,ico)  &
+                                                     + cpatch%fmean_leaf_psi        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wood_psi      (t,ico) = cpatch%qmean_wood_psi      (t,ico)  &
+                                                     + cpatch%fmean_wood_psi        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_leaf_water_int(t,ico) = cpatch%qmean_leaf_water_int(t,ico)  &
+                                                     + cpatch%fmean_leaf_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wood_water_int(t,ico) = cpatch%qmean_wood_water_int(t,ico)  &
+                                                     + cpatch%fmean_wood_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wflux_gw      (t,ico) = cpatch%qmean_wflux_gw      (t,ico)  &
+                                                     + cpatch%fmean_wflux_gw        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wflux_wl      (t,ico) = cpatch%qmean_wflux_wl      (t,ico)  &
+                                                     + cpatch%fmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+
                   !------ Mean sum of squares. --------------------------------------------!
                   cpatch%qmsqu_gpp        (t,ico) = cpatch%qmsqu_gpp              (t,ico)  &
                                                   + isqu_ftz(cpatch%fmean_gpp       (ico)) &
@@ -7342,6 +7496,14 @@ module average_utils
                   cpatch%qmean_vapor_wc            (:,ico) = 0.0
                   cpatch%qmean_intercepted_aw      (:,ico) = 0.0
                   cpatch%qmean_wshed_wg            (:,ico) = 0.0
+
+                  cpatch%qmean_leaf_psi            (:,ico) = 0.0
+                  cpatch%qmean_wood_psi            (:,ico) = 0.0
+                  cpatch%qmean_leaf_water_int      (:,ico) = 0.0
+                  cpatch%qmean_wood_water_int      (:,ico) = 0.0
+                  cpatch%qmean_wflux_gw            (:,ico) = 0.0
+                  cpatch%qmean_wflux_wl            (:,ico) = 0.0
+
                   cpatch%qmsqu_gpp                 (:,ico) = 0.0
                   cpatch%qmsqu_npp                 (:,ico) = 0.0
                   cpatch%qmsqu_plresp              (:,ico) = 0.0

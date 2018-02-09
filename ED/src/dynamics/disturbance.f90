@@ -3082,7 +3082,8 @@ module disturbance_utils
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
       call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)            &
-                        ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
+                        ,cpatch%nplant(nc),cpatch%pft(nc),cpatch%broot(nc),cpatch%dbh(nc)  &
+                        ,cpatch%leaf_rwc(nc),cpatch%wood_rwc(nc)                           &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
       cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc),cpatch%leaf_water(nc)       &
@@ -3124,7 +3125,8 @@ module disturbance_utils
                                 , h2dbh                    & ! function
                                 , size2bl                  & ! function
                                 , dbh2bd                   & ! function
-                                , dbh2krdepth              ! ! function
+                                , dbh2krdepth              & ! function
+                                , dbh2sf                   ! ! function
       use pft_coms,        only : qsw                      & ! intent(in)
                                 , hgt_max                  & ! intent(in)
                                 , l2n_stem                 & ! intent(in)
@@ -3137,6 +3139,7 @@ module disturbance_utils
       use budget_utils,    only : update_budget            ! ! sub-routine
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
       use update_derived_props_module, only : update_patch_derived_props !
+      use plant_hydro,     only : rwc2tw                   ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3235,7 +3238,14 @@ module disturbance_utils
             ! vegetation energy and heat capacity.                                   !
             !------------------------------------------------------------------------!
             call calc_veg_hcap(cpatch%bleaf(ico), cpatch%bdead(ico), cpatch%bsapwooda(ico),   &
-               cpatch%nplant(ico), cpatch%pft(ico), cpatch%leaf_hcap(ico), cpatch%wood_hcap(ico))
+               cpatch%nplant(ico), cpatch%pft(ico), cpatch%broot(ico), cpatch%dbh(ico),       &
+               cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),                                     &
+               cpatch%leaf_hcap(ico), cpatch%wood_hcap(ico))
+            ! also need to update water_int from rwc
+            call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                             &
+                       ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                 &
+                       ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)               &
+                       ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
             call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap)
             !----- Update the stability status. -------------------------------------!
             call is_resolvable(csite,np,ico)

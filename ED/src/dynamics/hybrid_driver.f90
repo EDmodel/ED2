@@ -10,6 +10,7 @@ subroutine hybrid_timestep(cgrid)
   use rk4_integ_utils
   use soil_respiration_module
   use photosyn_driv
+  use plant_hydro
   use rk4_misc
   use update_derived_props_module
   use rk4_coms              , only : integration_vars   & ! structure
@@ -224,6 +225,11 @@ subroutine hybrid_timestep(cgrid)
            call canopy_photosynthesis(csite,cmet,nzg,ipa,                     &
                 cpoly%ntext_soil(:,isi),cpoly%leaf_aging_factor(:,isi),       &
                 cpoly%green_leaf_factor(:,isi))
+
+
+           !----- Get plant water flow driven by plant hydraulics ------------!
+            call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
+           !------------------------------------------------------------------!
 
             !----- Compute root and heterotrophic respiration. ----------------!
            call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))

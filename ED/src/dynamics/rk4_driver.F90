@@ -15,6 +15,7 @@ module rk4_driver
       use rk4_integ_utils
       use soil_respiration_module
       use photosyn_driv
+      use plant_hydro
       use rk4_misc
       use update_derived_props_module
       use rk4_coms               , only : integration_vars     & ! structure
@@ -228,6 +229,10 @@ module rk4_driver
                                          ,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
+               !----- Get plant water flow driven by plant hydraulics ---------------------!
+               call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
+               !---------------------------------------------------------------------------!
+
 
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
@@ -404,7 +409,8 @@ module rk4_driver
       use consts_coms          , only : day_sec              & ! intent(in)
                                       , t3ple                & ! intent(in)
                                       , t3ple8               & ! intent(in)
-                                      , wdns8                ! ! intent(in)
+                                      , wdns8                & ! intent(in)
+                                      , cliq8                ! ! intent(in)
       use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
                                       , writing_long         & ! intent(in)
                                       , dtlsm                & ! intent(in)
@@ -421,9 +427,13 @@ module rk4_driver
                                       , cmtl2uext            & ! subroutine
                                       , qslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
-      use allometry            , only : h2crownbh            ! ! function
+      use allometry            , only : h2crownbh            & ! function
+                                      , dbh2sf               ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
                                       , k_fire_first         ! ! intent(in)
+      use plant_hydro          , only : tw2rwc               & ! subroutine
+                                      , rwc2psi              ! ! subroutine
+      use physiology_coms      , only : plant_hydro_scheme
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -760,6 +770,51 @@ module rk4_driver
       ! snow.                                                                              !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+         !---------------------------------------------------------------------------------!
+         ! First, update variables related with plant hydrodynamics because it can 
+         ! change leaf/wood heat capacity, which will be used later 
+         !---------------------------------------------------------------------------------!
+         if (plant_hydro_scheme > 0) then
+             ! Need to update leaf_water_int and wood_water_int diagnostically
+             ! from changes in heat capacity
+             cpatch%leaf_water_int(ico) = cpatch%leaf_water_int(ico)                    &
+                                        + sngloff((initp%leaf_hcap(ico)                 &
+                                        - dble(cpatch%leaf_hcap(ico))) / cliq8          &
+                                        / dble(cpatch%nplant(ico))                      &
+                                        , tiny_offset)
+             cpatch%wood_water_int(ico) = cpatch%wood_water_int(ico)                    &
+                                        + sngloff((initp%wood_hcap(ico)                 &
+                                        - dble(cpatch%wood_hcap(ico))) / cliq8          &
+                                        / dble(cpatch%nplant(ico))                      &
+                                        , tiny_offset)
+
+             ! update rwc
+             call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)          &
+                     ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)          &
+                     ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)        &
+                     ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+
+             ! update psi
+             ! leaf and wood psi are updated in plant_hydro_driver of 
+             ! dynamics/plant_hydro.f90 for consistency reasons, see the file
+             ! for details
+             ! 
+
+             
+             ! always safe to copy heat capacity
+             ! update wood_hcap only when ibranch_thermo > 0.
+
+             cpatch%leaf_hcap(ico) = sngloff(initp%leaf_hcap(ico),tiny_offset)
+
+             if (ibranch_thermo > 0) then
+                 cpatch%wood_hcap(ico) = sngloff(initp%wood_hcap(ico),tiny_offset)
+             endif
+
+         endif
+
+
+
+
          select case (ibranch_thermo)
          case (1)
             !------------------------------------------------------------------------------!

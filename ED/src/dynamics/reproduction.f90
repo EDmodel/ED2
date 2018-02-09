@@ -49,12 +49,14 @@ subroutine reproduction(cgrid,month)
                                  , h2dbh                    & ! function
                                  , ed_biomass               & ! function
                                  , area_indices             & ! subroutine
-                                 , dbh2krdepth              ! ! function
+                                 , dbh2krdepth              & ! function
+                                 , dbh2sf                   ! ! function
    use grid_coms          , only : nzg                      ! ! intent(in)
    use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
    use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
    use budget_utils       , only : update_budget            ! ! sub-routine
    use therm_lib          , only : cmtl2uext                ! ! function
+   use plant_hydro        , only : rwc2tw                ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -429,8 +431,15 @@ subroutine reproduction(cgrid,month)
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
-                                       ,cpatch%pft(ico)                                    &
+                                       ,cpatch%pft(ico),cpatch%broot(ico),cpatch%dbh(ico)  &
+                                       ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)          &
                                        ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+
+                    ! also need to update water_int from rwc
+                     call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                 &
+                       ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)              &
+                       ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)            &
+                       ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
 
                      cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)            &
                                                         ,cpatch%leaf_water(ico)            &
@@ -651,8 +660,16 @@ subroutine reproduction(cgrid,month)
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
-                                       ,cpatch%pft(ico)                                    &
+                                       ,cpatch%pft(ico),cpatch%broot(ico),cpatch%dbh(ico)  &
+                                       ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)          &
                                        ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+
+                     ! also need to update water_int from rwc
+                     call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                 &
+                       ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)              &
+                       ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)            &
+                       ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+
                      cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)            &
                                                         ,cpatch%leaf_water(ico)            &
                                                         ,cpatch%leaf_temp (ico)            &

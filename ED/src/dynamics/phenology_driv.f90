@@ -187,8 +187,10 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
-                             , size2bl                  ! ! function
+                             , size2bl                  & ! function
+                             , dbh2sf                   ! ! function
    use phenology_aux  , only : daylength                ! ! function
+   use plant_hydro    , only : rwc2tw                   ! ! sub-routine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)        , target     :: cpoly
@@ -607,7 +609,15 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          old_wood_hcap       = cpatch%wood_hcap(ico)
          call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
                            ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%broot(ico),cpatch%dbh(ico)                              &
+                           ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                      &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+         ! also need to update water_int from rwc
+         call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                             &
+                    ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                 &
+                    ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)               &
+                    ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
          call is_resolvable(csite,ipa,ico)
          !---------------------------------------------------------------------------------!
@@ -663,8 +673,10 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use ed_max_dims    , only : n_pft                    ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
-                             , size2bl                  ! ! function
+                             , size2bl                  & ! function
+                             , dbh2sf                   ! ! function
    use phenology_aux  , only : daylength                ! ! function
+   use plant_hydro    , only : rwc2tw                   ! ! sub-routine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -1002,7 +1014,15 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          old_wood_hcap       = cpatch%wood_hcap(ico)
          call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
                            ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%broot(ico),cpatch%dbh(ico)                              &
+                           ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                      &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+            
+         ! also need to update water_int from rwc
+         call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                             &
+                    ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                 &
+                    ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)               &
+                    ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
          call is_resolvable(csite,ipa,ico)
       end do cohortloop

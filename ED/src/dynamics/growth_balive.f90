@@ -47,7 +47,8 @@ module growth_balive
       use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           & ! subroutine
-                                 , ed_biomass             ! ! function
+                                 , ed_biomass             & ! function
+                                 , dbh2sf                 ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
       use ed_misc_coms    , only : igrass                 & ! intent(in)
@@ -55,6 +56,7 @@ module growth_balive
                                  , storage_resp_scheme    ! ! intent(in)
       use budget_utils    , only : update_budget          ! ! sub-routine
       use consts_coms   , only : tiny_num     ! ! intent(in)
+      use plant_hydro,     only : rwc2tw                   ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -333,9 +335,16 @@ module growth_balive
                   old_leaf_hcap         = cpatch%leaf_hcap(ico)
                   old_wood_hcap         = cpatch%wood_hcap(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdead(ico)                  &
-                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)               &
-                                    ,cpatch%pft(ico)                                       &
+                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
+                                    ,cpatch%pft(ico),cpatch%broot(ico),cpatch%dbh(ico)     &
+                                    ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)             &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                  ! also need to update water_int from rwc
+                  call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                 &
+                       ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)           &
+                       ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)         &
+                       ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico)
