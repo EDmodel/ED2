@@ -34,6 +34,8 @@ Module decomp_coms
    !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
    !                      reaches a maximum at around 38C (using the default parameters),  !
    !                      then quickly falls to zero at around 50C.                        !
+   !                  3.  Similar to option 0. Uses empirical moisture limit equation.     !
+   !                  4.  Similar to option 1. Uses empirical moisture limit equation.     !           
    !---------------------------------------------------------------------------------------!
    integer :: decomp_scheme
    !---------------------------------------------------------------------------------------!

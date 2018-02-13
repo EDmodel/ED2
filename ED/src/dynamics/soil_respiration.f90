@@ -578,12 +578,12 @@ real function het_resp_weight(soil_tempk,rel_soil_moist)
    !     Find the temperature dependence.                                                  !
    !---------------------------------------------------------------------------------------!
    select case(decomp_scheme)
-   case (0)
+   case (0,3)
       !----- Use original ED-2.1 exponential temperature dependence. ----------------------!
       temperature_limitation = min( 1.0                                                    &
                                   , exp( resp_temperature_increase * (soil_tempk-318.15)))
       !------------------------------------------------------------------------------------!
-   case (1) 
+   case (1,4) 
       !----- Use Lloyd and Taylor (1994) temperature dependence. --------------------------!
       lnexplloyd             = rh_lloyd_1 * ( rh_lloyd_2 - 1. / (soil_tempk - rh_lloyd_3))
       lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
@@ -633,6 +633,11 @@ real function het_resp_weight(soil_tempk,rel_soil_moist)
       smwet_fun        = 1.0 + exp(lnexpwet)
       !----- Soil moisture limitation is a combination of both. ---------------------------!
       water_limitation = 1.0 / (smdry_fun * smwet_fun)
+      !------------------------------------------------------------------------------------!
+   case (3,4)
+      !----- From Jaclyn Matthes:
+      !----- Empirical equation from meta-analysis in Moyano et al., Biogeosciences,2012 --!
+      water_limitation = rel_soil_moist * 4.0893 - rel_soil_moist**2 * 3.1681 - 0.3195897
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
