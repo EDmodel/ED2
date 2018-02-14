@@ -58,7 +58,6 @@ module plant_hydro
       real                                    :: bsap       ! sapwood biomass         [kgC]
       real                                    :: crown_area ! crown area              [m2]
       real                                    :: transp     ! transpiration rate      [kg/s]
-      real                                    :: leaf_psi_last ! leaf psi from last timestep
       !----- Locally saved variables. -----------------------------------------------------!
       real        , save                      :: dtlsm_o_frqsum
       logical     , save                      :: first_time = .true.
@@ -87,7 +86,7 @@ module plant_hydro
             cpatch%leaf_psi        (ico)    = 0.
             cpatch%wood_psi        (ico)    = 0.
         enddo
-      case (1,2)
+      case (-2,-1,1,2)
         ! track plant hydraulics
 
         !--------------------------------------------------------------------------

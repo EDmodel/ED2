@@ -141,6 +141,36 @@ module ed_therm_lib
           leaf_hcap = nplant * C2B * bleaf * spheat_leaf * (1. + leaf_water_sat(pft) * leaf_rwc)
           wood_hcap = nplant * C2B * bwood * spheat_wood * (1. + wood_water_sat(pft) * wood_rwc)
           !------------------------------------------------------------------------------------!
+      case (-1,-2)
+          ! with plant hydraulics but fix the hcap to the value for saturated
+          ! tissues
+          !------------------------------------------------------------------------------------!
+          !    Here we decide whether we compute the branch heat capacity or not.              !
+          !------------------------------------------------------------------------------------!
+          select case (ibranch_thermo)
+          case (0)
+             !----- Skip it, the user doesn't want to solve for branches. ---------------------!
+             spheat_wood = 0.
+             bwood       = 0.
+          case default
+             !----- Find branch/twig specific heat and biomass. -------------------------------!
+             !Here we consider the relative water content of wood
+             spheat_wood = (c_ngrn_biom_dry(pft) + wood_water_sat(pft) * cliq)      &
+                         / (1. + wood_water_sat(pft)) + delta_c(pft)
+             bwood       = bdead * dbh2sf(dbh,pft) + broot
+          end select
+
+          !----- Find the leaf specific heat. -------------------------------------------------!
+          spheat_leaf = (c_grn_leaf_dry(pft) + leaf_water_sat(pft) * cliq)       &
+                      / (1. + leaf_water_sat(pft))
+
+          !------------------------------------------------------------------------------------!
+          !     The heat capacity is specific heat times the plant density times the leaf/wood !
+          ! biomass.                                                                           !
+          !------------------------------------------------------------------------------------!
+          leaf_hcap = nplant * C2B * bleaf * spheat_leaf * (1. + leaf_water_sat(pft))
+          wood_hcap = nplant * C2B * bwood * spheat_wood * (1. + wood_water_sat(pft))
+          !------------------------------------------------------------------------------------!
 
       end select
 

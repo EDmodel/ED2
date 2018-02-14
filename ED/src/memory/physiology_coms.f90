@@ -103,9 +103,13 @@ module physiology_coms
    !< PLANT_HYDRO_SCHEME -- Whether to track plant hydrodynamics.\n
    !<                       0. No hydraulics (leaf and wood are always saturated)\n
    !<                       1. Track plant hydrodynamics using parameters from
-   !<  Christofferson et al. 2016 GMD
+   !<  Christofferson et al. 2016 GMD\n
    !<                       2. Track plant hydrodynamics using parameters from
-   !<  Xu et al. 2016 New Phytologist
+   !<  Xu et al. 2016 New Phytologist\n
+   !<                      -1. Same as 1 but leaf/wood heat capacity does not
+   !< change with internal water content.
+   !<                      -2. Same as 2 but leaf/wood heat capacity does not
+   !< change with internal water content.
    !---------------------------------------------------------------------------------------!
 
 

@@ -3488,7 +3488,7 @@ subroutine init_pft_hydro_params()
    ! Using meta-analysis from Xu et al. 2016 New Phytologist
    ! Again this is also for tropical PFTs
    select case (plant_hydro_scheme)
-   case(2)
+   case(-2,2)
       do ipft = 1, n_pft
 
         !----------------------------------------------------------!
