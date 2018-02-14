@@ -532,6 +532,12 @@ module ed_state_vars
       real, pointer, dimension(:) :: vm_bar
       real, pointer, dimension(:) :: sla
 
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for tracking within-canopy trait plasticity.  !
+      ! sla defined above is also used for plasticity calculation.                         !
+      !------------------------------------------------------------------------------------!
+      real, pointer, dimension(:) :: vm0
+      !<The maximum rate of carboxylation at reference temperature (15 degC) [umol/m2l/s]
 
       !------------------------------------------------------------------------------------!
       !     The following variables are used for plant hydraulic calculations              !
@@ -556,8 +562,34 @@ module ed_state_vars
       !! For each cohort, the sum of wflux_gw_layer should equal wflux_gw
       real, pointer, dimension(:) :: wflux_wl
       !<Water flux from wood to leaf [kg H2O/s], corresponding to sapflow in field
-      !!measurement
+      !! measurement
 
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for new drought phenology driven by plant     !
+      ! leaf water potential.                                                              !
+      !------------------------------------------------------------------------------------!
+      integer, pointer, dimension(:) :: high_leaf_psi_days
+      !<Consecutive days with daily maximum leaf water potential higher than
+      !< half of leaf turgor loss point [days]
+
+      integer, pointer, dimension(:) :: low_leaf_psi_days
+      !<Consecutive days with daily maximum leaf water potential lower than
+      !< leaf turgor loss point [days]
+
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for Katul's stomatal model.                   !
+      !------------------------------------------------------------------------------------!
+      real, pointer, dimension(:) :: last_gV
+      !< Optimized stomatal conductance under Rubisco-limited scenario using
+      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
+      !< optimization calculations
+      
+      real, pointer, dimension(:) :: last_gJ
+      !< Optimized stomatal conductance under Light-limited scenario using
+      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
+      !< optimization calculations
 
       !------------------------------------------------------------------------------------!
       ! These are diagnostic variables, averaged over various time scales.                 !
@@ -4789,6 +4821,7 @@ module ed_state_vars
       allocate(cpatch%llspan                       (                    ncohorts))
       allocate(cpatch%vm_bar                       (                    ncohorts))
       allocate(cpatch%sla                          (                    ncohorts))
+      allocate(cpatch%vm0                          (                    ncohorts))
 
       allocate(cpatch%leaf_psi                     (                    ncohorts))
       allocate(cpatch%wood_psi                     (                    ncohorts))
@@ -4799,6 +4832,12 @@ module ed_state_vars
       allocate(cpatch%wflux_gw                     (                    ncohorts))
       allocate(cpatch%wflux_gw_layer               (                nzg,ncohorts))
       allocate(cpatch%wflux_wl                     (                    ncohorts))
+
+      allocate(cpatch%high_leaf_psi_days           (                    ncohorts))
+      allocate(cpatch%low_leaf_psi_days            (                    ncohorts))
+
+      allocate(cpatch%last_gV                      (                    ncohorts))
+      allocate(cpatch%last_gJ                      (                    ncohorts))
 
       allocate(cpatch%fmean_gpp                    (                    ncohorts))
       allocate(cpatch%fmean_npp                    (                    ncohorts))
@@ -6643,6 +6682,7 @@ module ed_state_vars
       nullify(cpatch%llspan                )
       nullify(cpatch%vm_bar                )
       nullify(cpatch%sla                   )
+      nullify(cpatch%vm0                   )
       nullify(cpatch%leaf_psi              )
       nullify(cpatch%wood_psi              )
       nullify(cpatch%leaf_rwc              )
@@ -6652,6 +6692,10 @@ module ed_state_vars
       nullify(cpatch%wflux_gw              )
       nullify(cpatch%wflux_gw_layer        )
       nullify(cpatch%wflux_wl              )
+      nullify(cpatch%high_leaf_psi_days    )
+      nullify(cpatch%low_leaf_psi_days     )
+      nullify(cpatch%last_gV               )
+      nullify(cpatch%last_gJ               )
       nullify(cpatch%fmean_gpp             )
       nullify(cpatch%fmean_npp             )
       nullify(cpatch%fmean_leaf_resp       )
@@ -7616,6 +7660,7 @@ module ed_state_vars
       if(associated(cpatch%llspan              )) deallocate(cpatch%llspan              )
       if(associated(cpatch%vm_bar              )) deallocate(cpatch%vm_bar              )
       if(associated(cpatch%sla                 )) deallocate(cpatch%sla                 )
+      if(associated(cpatch%vm0                 )) deallocate(cpatch%vm0                 )
 
       if(associated(cpatch%leaf_psi            )) deallocate(cpatch%leaf_psi            )
       if(associated(cpatch%wood_psi            )) deallocate(cpatch%wood_psi            )
@@ -7626,6 +7671,11 @@ module ed_state_vars
       if(associated(cpatch%wflux_gw            )) deallocate(cpatch%wflux_gw            )
       if(associated(cpatch%wflux_gw_layer      )) deallocate(cpatch%wflux_gw_layer      )
       if(associated(cpatch%wflux_wl            )) deallocate(cpatch%wflux_wl            )
+
+      if(associated(cpatch%high_leaf_psi_days  )) deallocate(cpatch%high_leaf_psi_days  )
+      if(associated(cpatch%low_leaf_psi_days   )) deallocate(cpatch%low_leaf_psi_days   )
+      if(associated(cpatch%last_gV             )) deallocate(cpatch%last_gV             )
+      if(associated(cpatch%last_gJ             )) deallocate(cpatch%last_gJ             )
 
       if(associated(cpatch%fmean_gpp           )) deallocate(cpatch%fmean_gpp           )
       if(associated(cpatch%fmean_npp           )) deallocate(cpatch%fmean_npp           )
@@ -9499,6 +9549,7 @@ module ed_state_vars
          opatch%llspan                (oco) = ipatch%llspan                (ico)
          opatch%vm_bar                (oco) = ipatch%vm_bar                (ico)
          opatch%sla                   (oco) = ipatch%sla                   (ico)
+         opatch%vm0                   (oco) = ipatch%vm0                   (ico)
 
          opatch%leaf_psi              (oco) = ipatch%leaf_psi              (ico)
          opatch%wood_psi              (oco) = ipatch%wood_psi              (ico)
@@ -9508,6 +9559,11 @@ module ed_state_vars
          opatch%wood_rwc              (oco) = ipatch%wood_rwc              (ico)
          opatch%wflux_gw              (oco) = ipatch%wflux_gw              (ico)
          opatch%wflux_wl              (oco) = ipatch%wflux_wl              (ico)
+
+         opatch%high_leaf_psi_days    (oco) = ipatch%high_leaf_psi_days    (ico)
+         opatch%low_leaf_psi_days     (oco) = ipatch%low_leaf_psi_days     (ico)
+         opatch%last_gV               (oco) = ipatch%last_gV               (ico)
+         opatch%last_gJ               (oco) = ipatch%last_gJ               (ico)
 
          opatch%fmean_gpp             (oco) = ipatch%fmean_gpp             (ico)
          opatch%fmean_npp             (oco) = ipatch%fmean_npp             (ico)
@@ -10168,6 +10224,7 @@ module ed_state_vars
       opatch%llspan                (1:z) = pack(ipatch%llspan                    ,lmask)
       opatch%vm_bar                (1:z) = pack(ipatch%vm_bar                    ,lmask)
       opatch%sla                   (1:z) = pack(ipatch%sla                       ,lmask)
+      opatch%vm0                   (1:z) = pack(ipatch%vm0                       ,lmask)
 
       opatch%leaf_psi              (1:z) = pack(ipatch%leaf_psi                  ,lmask)
       opatch%wood_psi              (1:z) = pack(ipatch%wood_psi                  ,lmask)
@@ -10178,6 +10235,10 @@ module ed_state_vars
       opatch%wflux_gw              (1:z) = pack(ipatch%wflux_gw                  ,lmask)
       opatch%wflux_wl              (1:z) = pack(ipatch%wflux_wl                  ,lmask)
 
+      opatch%high_leaf_psi_days    (1:z) = pack(ipatch%high_leaf_psi_days        ,lmask)
+      opatch%low_leaf_psi_days     (1:z) = pack(ipatch%low_leaf_psi_days         ,lmask)
+      opatch%last_gV               (1:z) = pack(ipatch%last_gV                   ,lmask)
+      opatch%last_gJ               (1:z) = pack(ipatch%last_gJ                   ,lmask)
 
       !------------------------------------------------------------------------------------!
 
@@ -24015,6 +24076,21 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'NEW_RECRUIT_FLAG :40:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+
+      if (associated(cpatch%high_leaf_psi_days)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%high_leaf_psi_days,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'HIGH_LEAF_PSI_DAYS :40:hist:dail')
+         call metadata_edio(nvar,igr,'Consecutive days with high DMAX leaf psi','[day]','NA') 
+      end if
+
+      if (associated(cpatch%low_leaf_psi_days)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%low_leaf_psi_days,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LOW_LEAF_PSI_DAYS :40:hist:dail')
+         call metadata_edio(nvar,igr,'Consecutive days with low DMAX leaf psi','[day]','NA') 
+      end if
+
       !------------------------------------------------------------------------------------!
 
       return
@@ -24872,6 +24948,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpatch%vm0)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%vm0,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'VM0 :41:hist') 
+         call metadata_edio(nvar,igr,'Vcmax at ref. temperature for each cohort',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
       if (associated(cpatch%leaf_psi)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%leaf_psi,nvar,igr,init,cpatch%coglob_id, &
@@ -24931,6 +25015,23 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Water flow from wood to leaf = sapflow',     &
                                     '[kg/s]','icohort') 
       end if
+
+      if (associated(cpatch%last_gV)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%last_gV,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LAST_GV :41:hist') 
+         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Vcmax',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
+      if (associated(cpatch%last_gJ)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%last_gJ,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LAST_GJ :41:hist') 
+         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Jmax',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
       !------------------------------------------------------------------------------------!
 
       return

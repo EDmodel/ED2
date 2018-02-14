@@ -820,12 +820,14 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
             qloss = wloss * uint_here                    ! J/m2g/s
             
             ! Now we add water absorption to wood and vegetation
-            dinitp%wood_energy(ico)    = dinitp%wood_energy(ico)       + qloss
             dinitp%veg_energy(ico)     = dinitp%veg_energy(ico)        + qloss
             initp%hflx_lrsti(ico)      = initp%hflx_lrsti(ico)         + qloss
 
-            !Also need to change wood hcap in this case
-            dinitp%wood_hcap(ico) = dinitp%wood_hcap(ico) + wloss * cliq8 !J/m2g/s
+            !Only update wood_energy and wood_hcap when wood is resolvable...
+            if (initp%wood_resolvable(ico)) then
+                dinitp%wood_energy(ico)  = dinitp%wood_energy(ico)       + qloss
+                dinitp%wood_hcap(ico)    = dinitp%wood_hcap(ico) + wloss * cliq8 !J/m2g/s
+            endif
 
             !Count the total loss from the layer
             wloss_tot = wloss_tot + wloss

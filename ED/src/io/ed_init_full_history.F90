@@ -4329,6 +4329,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'FIRST_CENSUS              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpatch%new_recruit_flag                                              &
                      ,'NEW_RECRUIT_FLAG          ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_i(cpatch%high_leaf_psi_days                                            &
+                     ,'HIGH_LEAF_PSI_DAYS        ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_i(cpatch%low_leaf_psi_days                                             &
+                     ,'LOW_LEAF_PSI_DAYS         ',dsetrank,iparallel,.true. ,foundvar)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -4587,6 +4591,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'VM_BAR                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%sla                                                           &
                      ,'SLA                       ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%vm0                                                           &
+                     ,'VM0                       ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%leaf_psi                                                      &
                      ,'LEAF_PSI                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%wood_psi                                                      &
@@ -4603,6 +4609,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'WFLUX_GW                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%wflux_wl                                                      &
                      ,'WFLUX_WL                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%last_gV                                                       &
+                     ,'LAST_GV                   ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%last_gJ                                                       &
+                     ,'LAST_GJ                   ',dsetrank,iparallel,.true. ,foundvar)
    !----- Daily means. --------------------------------------------------------------------!
    if (writing_long) then
       call hdf_getslab_r(cpatch%dmean_nppleaf                                              &

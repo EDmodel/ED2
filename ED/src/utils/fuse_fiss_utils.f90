@@ -1523,6 +1523,8 @@ module fuse_fiss_utils
                                 + cpatch%vm_bar      (donc) * dnplant
       cpatch%sla         (recc) = cpatch%sla         (recc) * rnplant                      &
                                 + cpatch%sla         (donc) * dnplant
+      cpatch%vm0         (recc) = cpatch%vm0         (recc) * rnplant                      &
+                                + cpatch%vm0         (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1555,6 +1557,22 @@ module fuse_fiss_utils
                   ,cpatch%leaf_psi(recc),cpatch%wood_psi(recc))
 
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Phenology/Stomatal variabels associated with plant hydraulics                   !
+      !------------------------------------------------------------------------------------!
+      cpatch%high_leaf_psi_days(recc) = nint(                                              &
+                                        cpatch%high_leaf_psi_days(recc) * rnplant          &
+                                      + cpatch%high_leaf_psi_days(donc) * dnplant)
+      cpatch%low_leaf_psi_days(recc)  = nint(                                              &
+                                        cpatch%low_leaf_psi_days(recc) * rnplant           &
+                                      + cpatch%low_leaf_psi_days(donc) * dnplant)
+      cpatch%last_gJ(recc)  =   cpatch%last_gJ(recc) * rnplant                             &
+                            +   cpatch%last_gJ(recc) * dnplant
+      cpatch%last_gV(recc)  =   cpatch%last_gV(recc) * rnplant                             &
+                            +   cpatch%last_gV(recc) * dnplant
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!

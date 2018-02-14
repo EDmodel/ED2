@@ -68,7 +68,10 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    case default
       cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
    end select
+
+   ! SLA and Vm0 can change if within canopy trait plasticity is enabled
    cpatch%sla(ico) = sla(cpatch%pft(ico))
+   cpatch%vm0(ico) = Vm0(cpatch%pft(ico))
    !---------------------------------------------------------------------------------------!
 
 
@@ -81,7 +84,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
        cpatch%leaf_psi      (  ico) = 0.
        cpatch%wood_psi      (  ico) = 0.
 
-   case (1,2)
+   case (-1,-2,1,2)
        ! start the water potential with ~-0.1MPa, assuming the plant is under
        ! well-watered conditions
        cpatch%leaf_psi      (  ico) = -10. - cpatch%hite(ico) ! in m
@@ -101,6 +104,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%wflux_gw      (  ico) = 0.
    cpatch%wflux_wl      (  ico) = 0.
    cpatch%wflux_gw_layer(:,ico) = 0.
+
+   cpatch%high_leaf_psi_days    (ico)   = 0
+   cpatch%low_leaf_psi_days     (ico)   = 0
+   cpatch%last_gV(ico)  =   0.
+   cpatch%last_gJ(ico)  =   0.
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

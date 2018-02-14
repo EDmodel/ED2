@@ -786,22 +786,12 @@ module rk4_driver
                           )
 
                 cpatch%leaf_water_int(ico) = sngloff(dble(cpatch%leaf_water_int(ico))   &
-                                                + (dble(cpatch%wflux_wl(ico)) - transp) &
-                                                * dble(dtlsm) ,tiny_offset)
+                                                + (dble(cpatch%wflux_wl(ico)) * hdid    &
+                                                  - transp) ,tiny_offset)
                 cpatch%wood_water_int(ico) = sngloff(dble(cpatch%wood_water_int(ico))   &
                                                 + ( dble(cpatch%wflux_gw(ico))          &
                                                   - dble(cpatch%wflux_wl(ico))) &
-                                                * dble(dtlsm) ,tiny_offset)
-!             cpatch%leaf_water_int(ico) = cpatch%leaf_water_int(ico)                    &
-!                                        + sngloff((initp%leaf_hcap(ico)                 &
-!                                        - dble(cpatch%leaf_hcap(ico))) / cliq8          &
-!                                        / dble(cpatch%nplant(ico))                      &
-!                                        , tiny_offset)
-!             cpatch%wood_water_int(ico) = cpatch%wood_water_int(ico)                    &
-!                                        + sngloff((initp%wood_hcap(ico)                 &
-!                                        - dble(cpatch%wood_hcap(ico))) / cliq8          &
-!                                        / dble(cpatch%nplant(ico))                      &
-!                                        , tiny_offset)
+                                                * hdid ,tiny_offset)
 
                 ! update leaf heat capacity only when plant_hydro_scheme > 0
                 if (plant_hydro_scheme > 0) then
