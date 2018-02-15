@@ -93,6 +93,7 @@ subroutine copy_nl(copy_type)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
                                    , plant_hydro_scheme        & ! intent(out)
+                                   , trait_plasticity_scheme   & ! intent(out)
                                    , iddmort_scheme            & ! intent(out)
                                    , cbr_scheme                & ! intent(out)
                                    , ddmort_const              & ! intent(out)
@@ -368,6 +369,7 @@ subroutine copy_nl(copy_type)
       ibigleaf                  = nl%ibigleaf
       integration_scheme        = nl%integration_scheme
       plant_hydro_scheme        = nl%plant_hydro_scheme
+      trait_plasticity_scheme   = nl%trait_plasticity_scheme
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol

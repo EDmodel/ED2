@@ -1184,6 +1184,7 @@ subroutine ed_opspec_misc
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
                                     , plant_hydro_scheme           & ! intent(in)
+                                    , trait_plasticity_scheme      & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
                                     , cbr_scheme                   & ! intent(in)
                                     , ddmort_const                 & ! intent(in)
@@ -1642,6 +1643,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid PLANT_HYDRO_SCHEME, it must be between -2 and 2. Yours is set to'   &
                     ,plant_hydro_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (trait_plasticity_scheme < 0 .or. trait_plasticity_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid TRAIT_PLASTICITY_SCHEME, it must be between 0 and 2. Yours is set to'   &
+                    ,trait_plasticity_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

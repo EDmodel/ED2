@@ -112,6 +112,19 @@ module physiology_coms
    !< change with internal water content.
    !---------------------------------------------------------------------------------------!
 
+   integer :: trait_plasticity_scheme
+   !---------------------------------------------------------------------------------------!
+   !< TRAIT_PLASTICITY_SCHEME -- Whether/How plant traits vary with local environment.\n
+   !<                            0. No trait plasticity. Trait parameters for
+   !< each PFT is fixed. (ED2.2 and before).\n
+   !<                            1. Vm0 and SLA change with cohort light environment based
+   !< on Lloyld et al. 2010 Biogeosciences. For each cohort, Vm0 decreases and SLA increases
+   !< under shading. The magnitude of changes is calcualted using overtopping
+   !< LAI and corresponding extinction facotrs for each trait. The traits for
+   !< each cohort are updated every year.\n
+   !<                            2. Same as 1 but the traits are updated every month.
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !  IDDMORT_SCHEME -- This flag determines whether storage should be accounted in the    !

@@ -464,11 +464,49 @@ module pft_coms
 
    real, dimension(n_pft) :: vessel_curl_factor
    !< Ratio of actual vessel length (water conducting length) to tree height [-]
+
+   real, dimension(n_pft) :: stoma_lambda
+   !< Marginal water use efficiency under well-watered conditions
+   !< in the optimization based stomatal model [umol/mol/kPa]
+   !< (Katul et al. 2010 Annals of Botany, Manoni et al. 2011 Functional Ecology)
+
+   real, dimension(n_pft) :: stoma_beta
+   !< Sensitivity of stoma_lambda to leaf water potential [m-1]
+
+   real, dimension(n_pft) :: stoma_psi_b  
+   !< Water potential scaler to modify stomatal conductance under water stress from 
+   !< Powell et al. 2017  [ m]
+   real, dimension(n_pft) :: stoma_psi_c  
+   !< Exponent to modify stomatal conductance under water stress from 
+   !< Powell et al. 2017  [ unitless]
+
+   ! Parameters for new drought phenology
+   integer, dimension(n_pft) :: high_psi_threshold
+   !< Threshold of consecutive wet days to grow new leaves   [# of days]
+
+   integer, dimension(n_pft) :: low_psi_threshold
+   !< Threshold of consecutive dry days to grow new leaves   [# of days]
+
+   real, dimension(n_pft) :: leaf_shed_rate
+   !< Rate of leaf shedding if low_psi_threshold is crossed  [unitless]
+
+   real, dimension(n_pft) :: leaf_grow_rate
+   !< Rate of leaf growing if high_psi_threshold is crossed  [unitless]
+
    !=======================================================================================!
    !=======================================================================================!
 
 
-
+   !=======================================================================================!
+   !=======================================================================================!
+   ! Trait plasticity parameters                                                           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: vm0_ext_coef
+   !< Extinction coefficient for Vm0 with increasing overtopping LAI [m2g/m2l]
+   real, dimension(n_pft) :: sla_ext_coef
+   !< Extinction coefficient for SLA with increasing overtopping LAI [m2g/m2l]
+   !=======================================================================================!
+   !=======================================================================================!
 
    !=======================================================================================!
    !=======================================================================================!
