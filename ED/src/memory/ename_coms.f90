@@ -138,6 +138,8 @@ module ename_coms
       integer                                           :: ibigleaf
       integer                                           :: integration_scheme
       integer                                           :: plant_hydro_scheme
+      integer                                           :: istomata_scheme
+      integer                                           :: istruct_growth_scheme
       integer                                           :: trait_plasticity_scheme
       integer                                           :: growth_resp_scheme
       integer                                           :: storage_resp_scheme
@@ -406,6 +408,8 @@ module ename_coms
       enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
       enl%plant_hydro_scheme        = undef_integer
+      enl%istomata_scheme           = undef_integer
+      enl%istruct_growth_scheme     = undef_integer
       enl%trait_plasticity_scheme   = undef_integer
       enl%growth_resp_scheme        = undef_integer
       enl%storage_resp_scheme       = undef_integer

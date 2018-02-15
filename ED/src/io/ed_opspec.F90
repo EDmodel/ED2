@@ -1184,6 +1184,8 @@ subroutine ed_opspec_misc
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
                                     , plant_hydro_scheme           & ! intent(in)
+                                    , istomata_scheme              & ! intent(in)
+                                    , istruct_growth_scheme        & ! intent(in)
                                     , trait_plasticity_scheme      & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
                                     , cbr_scheme                   & ! intent(in)
@@ -1647,7 +1649,23 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (trait_plasticity_scheme < 0 .or. trait_plasticity_scheme > 2) then
+   if (istomata_scheme < 0 .or. istomata_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISTOMATA_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    ,istomata_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (istruct_growth_scheme < 0 .or. istruct_growth_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISTRUCT_GROWTH_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    ,istruct_growth_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (trait_plasticity_scheme < -2 .or. trait_plasticity_scheme > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid TRAIT_PLASTICITY_SCHEME, it must be between 0 and 2. Yours is set to'   &
                     ,trait_plasticity_scheme,'...'
@@ -1655,12 +1673,19 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iphysiol < 0 .or. iphysiol > 3) then
+   if (iphysiol < 0 .or. iphysiol > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHYSIOL, it must be between 0 and 3. Yours is set to'        &
+                    'Invalid IPHYSIOL, it must be between 0 and 4. Yours is set to'        &
                     ,iphysiol,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   else if (iphysiol == 4 .and. (istomata_scheme /= 1)) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'ISTOMATA_SCHEME must be set to 1, when IPHYSIOL is set to 4. Yours is set to'        &
+                    ,istomata_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+
    end if
 
    if (iallom < 0 .or. iallom > 3) then
@@ -1686,9 +1711,9 @@ end do
    
    end if
 
-   if (iphen_scheme < -1 .or. iphen_scheme > 3) then
+   if (iphen_scheme < -1 .or. iphen_scheme > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
+                    'Invalid IPHEN_SCHEME, it must be between -1 and 4. Yours is set to'   &
                     ,iphen_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1717,12 +1742,24 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
+
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 4.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   else if (h2o_plant_lim > 2 .and. (plant_hydro_scheme == 0)) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'PLANT_HYDRO_SCHEME must be set to non-zero, when H2O_PLANT_LIM is set to 3 or 4. Yours is set to'        &
+                    ,plant_hydro_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   else if (h2o_plant_lim == 4 .and. (istomata_scheme == 0))
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'ISTOMATA_SCHEME must be set to 1, when H2O_PLANT_LIM is set to 4. Yours is set to'        &
+                    ,istomata_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
    end if
 
    if (iddmort_scheme < 0 .or. iddmort_scheme > 1) then

@@ -263,6 +263,11 @@ farq_leuning.o : $(ED_DYNAMICS)/farq_leuning.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+farq_katul.o : $(ED_DYNAMICS)/farq_katul.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 fatal_error.o : $(ED_UTILS)/fatal_error.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)

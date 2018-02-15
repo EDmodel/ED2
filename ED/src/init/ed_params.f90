@@ -3365,7 +3365,11 @@ subroutine init_pft_hydro_params()
                              , wood_psi_tlp                 & ! intent(out)
                              , wood_Kmax                    & ! intent(out)
                              , wood_Kexp                    & ! intent(out)
-                             , wood_psi50                   ! ! intent(out)
+                             , wood_psi50                   & ! intent(out)
+                             , stoma_lambda                 & ! intent(out)
+                             , stoma_beta                   & ! intent(out)
+                             , stoma_psi_b                  & ! intent(out)
+                             , stoma_psi_c                  ! ! intent(out)
 
    implicit none
    !- Local Variables  ---------------------------------------!
@@ -3541,22 +3545,17 @@ subroutine init_pft_hydro_params()
                          * wood_water_sat(ipft) / wood_water_cap(ipft)
    enddo
 
-
-    ! Print trait values for test
-    print*,'MPa2m',MPa2m
-    print*,'leaf_rwc_min',leaf_rwc_min(1:4)
-    print*,'leaf_psi_min',leaf_psi_min(1:4) / MPa2m
-    print*,'leaf_psi_tlp',leaf_psi_tlp(1:4) / MPa2m
-    print*,'leaf_water_sat',leaf_water_sat(1:4)
-    print*,'leaf_water_cap',leaf_water_cap(1:4) * MPa2m
- 
-    print*,'wood_rwc_min',wood_rwc_min(1:4)
-    print*,'wood_psi_min',wood_psi_min(1:4) / MPa2m
-    print*,'wood_water_cap',wood_water_cap(1:4) * MPa2m
-    print*,'wood_psi50',wood_psi50(1:4) / MPa2m
-    print*,'wood_Kmax',wood_Kmax(1:4) * MPa2m
-    print*,'wood_Kexp',wood_Kexp(1:4)
+   ! Parameters related with stomata conductance
    
+   stoma_lambda(1:n_pft)         = max(3.,(rho(1:n_pft) - 0.25) * 15. + 3.)
+   stoma_beta(1:n_pft)           = min(-0.1,(rho(1:n_pft) - 0.25) * 1.5 - 1.0) / MPa2m
+   ! Estimated from Manzoni et al. 2011
+
+   stoma_psi_b(1:n_pft)          = leaf_psi_tlp(1:n_pft)   ! default
+   stoma_psi_c(1:n_pft)          = 3.
+   ! for tropical intolerant, use -1.67 * MPa2m, 3.
+   ! for tropical tolerant, use -2.83 * MPa2m, 3.5
+   ! Powell et al. 2017
     
 
    return
@@ -3576,6 +3575,10 @@ subroutine init_pft_leaf_params()
    use phenology_coms , only : iphen_scheme         ! ! intent(in)
    use ed_misc_coms   , only : igrass               ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
+      , high_psi_threshold   & ! intent(out)
+      , low_psi_threshold    & ! intent(out)
+      , leaf_shed_rate       & ! intent(out)
+      , leaf_grow_rate       & ! intent(out)
       , b1Cl                 & ! intent(out)
       , b2Cl                 & ! intent(out)
       , c_grn_leaf_dry       & ! intent(out)
@@ -3631,6 +3634,15 @@ subroutine init_pft_leaf_params()
                phenology(12:15) = 4
                phenology(16)    = 4
                phenology(17)    = 3
+            case (4)
+               phenology(1)     = 5
+               phenology(2:4)   = 5
+               phenology(5)     = 5
+               phenology(6:8)   = 0
+               phenology(9:11)  = 2
+               phenology(12:15) = 5
+               phenology(16)    = 5
+               phenology(17)    = 3
          end select
          !------------------------------------------------------------------------------------!
       case (1)
@@ -3667,10 +3679,26 @@ subroutine init_pft_leaf_params()
                phenology(12:15) = 0
                phenology(16)    = 0
                phenology(17)    = 3
+            case (4)
+               phenology(1)     = 0
+               phenology(2:4)   = 5
+               phenology(5)     = 0
+               phenology(6:8)   = 0
+               phenology(9:11)  = 2
+               phenology(12:15) = 0
+               phenology(16)    = 0
+               phenology(17)    = 5
+
          end select
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
+
+   ! Other phenology-related parameters
+   high_psi_threshold(1:n_pft)   = 10    ! somewhat arbitrary
+   low_psi_threshold(1:n_pft)    = 10    ! somewhat arbitrary
+   leaf_shed_rate(1:n_pft)       = 1./20.    ! somewhat arbitrary
+   leaf_grow_rate(1:n_pft)       = 1./20.    ! somewhat arbitrary
 
 
 

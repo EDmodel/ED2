@@ -62,6 +62,7 @@ OBJ_MODEL =                        \
 	euler_driver.o             \
 	events.o                   \
 	farq_leuning.o             \
+	farq_katul.o               \
 	fatal_error.o              \
 	fire.o                     \
 	forestry.o                 \

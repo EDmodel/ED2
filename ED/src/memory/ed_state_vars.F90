@@ -571,11 +571,11 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       integer, pointer, dimension(:) :: high_leaf_psi_days
       !<Consecutive days with daily maximum leaf water potential higher than
-      !< high_psi_threshold [days]
+      !< leaf_psi_tlp * 0.5 [days]
 
       integer, pointer, dimension(:) :: low_leaf_psi_days
       !<Consecutive days with daily maximum leaf water potential lower than
-      !< low_psi_threshold [days]
+      !< leaf_psi_tlp [days]
 
 
       !------------------------------------------------------------------------------------!

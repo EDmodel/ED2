@@ -493,12 +493,6 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('leaf_grow_rate','pft',i,rval,texist)
            if(texist) leaf_grow_rate(myPFT) = real(rval)
 
-     ! Trait plasticity
-           call getConfigREAL  ('vm0_ext_coef','pft',i,rval,texist)
-           if(texist) vm0_ext_coef(myPFT) = real(rval)
-           call getConfigREAL  ('sla_ext_coef','pft',i,rval,texist)
-           if(texist) sla_ext_coef(myPFT) = real(rval)
-
      ! Height
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
            if(texist) b1Ht(myPFT) = real(rval)
@@ -1119,6 +1113,12 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigINT  ('plant_hydro_scheme','physiology',i,ival,texist)
         if(texist) plant_hydro_scheme = ival
 
+        call getConfigINT  ('istomata_scheme','physiology',i,ival,texist)
+        if(texist) istomata_scheme = ival
+
+        call getConfigINT  ('istruct_growth_scheme','physiology',i,ival,texist)
+        if(texist) istruct_growth_scheme = ival
+
         call getConfigINT  ('trait_plasticity_scheme','physiology',i,ival,texist)
         if(texist) trait_plasticity_scheme = ival
 
@@ -1546,10 +1546,6 @@ subroutine write_ed_xml_config
         call putConfigREAL("leaf_grow_rate",leaf_grow_rate(i))
         call putConfigREAL("leaf_shed_rate",leaf_shed_rate(i))
 
-     !! TRAIT PLASTICITY
-        call putConfigREAL("vm0_ext_coef",vm0_ext_coef(i))
-        call putConfigREAL("sla_ext_coef",sla_ext_coef(i))
-
      !! HEIGHT
         call putConfigREAL("b1Ht",       b1Ht(i))
         call putConfigREAL("b2Ht",       b2Ht(i))
@@ -1789,6 +1785,8 @@ subroutine write_ed_xml_config
   call libxml2f90_ll_opentag("physiology")
      call putConfigINT("n_plant_lim",n_plant_lim)
      call putConfigINT("plant_hydro_scheme",plant_hydro_scheme)
+     call putConfigINT("istomata_scheme",istomata_scheme)
+     call putConfigINT("istruct_growth_scheme",istruct_growth_scheme)
      call putConfigINT("trait_plasticity_scheme",trait_plasticity_scheme)
   call libxml2f90_ll_closetag("physiology")
 
