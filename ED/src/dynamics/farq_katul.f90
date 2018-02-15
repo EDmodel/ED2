@@ -38,7 +38,7 @@ Contains
    !> \author Xiangtao Xu, 15 Feb. 2018
    !---------------------------------------------------------------------------------------!
 
-  subroutine katul_lphys(can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp        &
+  subroutine katul_lphys(can_prss,can_shv,can_co2,ipft,leaf_par,leaf_temp                 &
                         ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm0in        &
                         ,leaf_gbw,leaf_psi,last_gV,last_gJ,A_open,A_closed,gsw_open       &
                         ,gsw_closed,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open           &
@@ -101,7 +101,6 @@ Contains
 
       !------ Arguments. ------------------------------------------------------------------!
       real(kind=4), intent(in)    :: can_prss          ! Canopy air pressure    [       Pa]
-      real(kind=4), intent(in)    :: can_rhos          ! Canopy air density     [    kg/m³]
       real(kind=4), intent(in)    :: can_shv           ! Canopy air sp. hum.    [    kg/kg]
       real(kind=4), intent(in)    :: can_co2           ! Canopy air CO2         [ µmol/mol]
       integer     , intent(in)    :: ipft              ! Plant functional type  [      ---]
@@ -141,7 +140,6 @@ Contains
       real(kind=4)                :: par                ! PAR          micromol/m2/s
       real(kind=4)                :: leaf_temp_degC     ! leaf_temperature in degree C
       real(kind=4)                :: can_vpr_prss       ! canopy vapor pressure in kPa
-      real(kind=4)                :: temp_coef          ! temperautre coefficient
       real(kind=4)                :: Vcmax              ! current Vcmax  umol/m2/s
       real(kind=4)                :: Vcmax25            ! current Vcmax at 25 degC umol/m2/s
       real(kind=4)                :: Vcmax15            ! current Vcmax at 15 degC umol/m2/s
@@ -168,7 +166,7 @@ Contains
       real(kind=4)                :: delta_g            ! variables used in optimization scheme
       real(kind=4)                :: a1gk,a2gk          ! variables used in optimization scheme
       real(kind=4)                :: k1ci,k2ci,k3ci,k4ci! variables used in optimization scheme
-      real(kind=4)                :: resid,test_gsc     ! variables used in optimization scheme
+      real(kind=4)                :: test_gsc           ! variables used in optimization scheme
       real(kind=4)                :: test_gV            ! variables used in optimization scheme
       real(kind=4)                :: test_fcV           ! variables used in optimization scheme
       real(kind=4)                :: test_ciV           ! variables used in optimization scheme
@@ -176,13 +174,13 @@ Contains
       real(kind=4)                :: test_fcJ           ! variables used in optimization scheme
       real(kind=4)                :: test_ciJ           ! variables used in optimization scheme
       integer                     :: iter               ! variables used in optimization scheme
-      real(kind=4)                :: testfc1,testfc2    ! variables used in optimization scheme
+      real(kind=4)                :: testfc             ! variables used in optimization scheme
       real(kind=4)                :: testci             ! variables used in optimization scheme
+      real(kind=4)                :: greeness           ! Leaf "Greeness"           [   0 to 1]
       real           ,parameter   :: Jmax_vmhor_coef = 5./7.  ! fraction of Jmax  vmhor to Vcmax vmhor estimated from Kattge et al. 2007
       integer                     :: k
       logical                     :: is_resolvable
       logical, parameter          :: quality_check = .false.
-      integer                     :: temp_flag          ! flag for temperature dependence
     
 
       !-------------------    Define some constants....
@@ -245,7 +243,7 @@ Contains
 
           Jmax = Jmax15                                &
                * mod_arrhenius(leaf_temp,              &
-                     vm_hor(ipft) * Jmax_vmhor_coef    &
+                     vm_hor(ipft) * Jmax_vmhor_coef,   &
                      vm_low_temp(ipft),                &
                      vm_high_temp(ipft),               &
                      vm_decay_e(ipft),                 &
@@ -297,7 +295,7 @@ Contains
 
           Jmax = Jmax15                                &
                * mod_collatz(leaf_temp,                &
-                     vm_q10(ipft)                      &
+                     vm_q10(ipft),                     &
                      vm_low_temp(ipft),                &
                      vm_high_temp(ipft),               &
                      vm_decay_e(ipft),                 &
@@ -356,9 +354,14 @@ Contains
 
       end select
     
-      !print*,'Vcmax',Vcmax15,Vcmax25,Vcmax,'leafTemp',leaf_temp,'cp',cp,'kc',kc,'ko',ko
-
       !------------------------------------------------------------------------------------!
+
+      ! calculate greeness
+      if (leaf_aging_factor > 0.01 .and. green_leaf_factor > 0.0001) then
+         greeness = leaf_aging_factor / green_leaf_factor
+      else
+         greeness = 1.0
+      end if
 
       !------------------------------------------------------------------------------------!
       ! correcting for water stress impact on realized Vcmax
@@ -373,10 +376,11 @@ Contains
           ! parameters are kind of arbitrary from Xu et al. 2016 New Phyt.
       	  down_factor   = max(1e-6,min(1.0,1. / (1. + (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
           lambda =  stoma_lambda(ipft) * can_co2 / 400. * exp(stoma_beta(ipft) * leaf_psi)
+      end select
 
-      Jmax      = Jmax * down_factor
-      Vcmax     = Vcmax * down_factor
-      cuticular_gsc = cuticular_cond(ipft) * 1.0e-6 ! convert to umol/m2/s
+      Jmax      = Jmax * down_factor * greeness
+      Vcmax     = Vcmax * down_factor * greeness
+
 
       !              max(0.0,min(1.0, (leaf_psi - leaf_psi_min(ipft)) &
       !              / (TLP(ipft) - leaf_psi_min(ipft))))
@@ -390,6 +394,7 @@ Contains
       !------------------------------------------------------------------------------------!
       ! Solve the optimization
       !------------------------------------------------------------------------------------!
+      cuticular_gsc = cuticular_cond(ipft) * 1.0e-6 ! convert to umol/m2/s
 
       ! initialize limit_flag as 0
       limit_flag      = 0
@@ -433,7 +438,7 @@ Contains
            
             do iter = 1, 500
                 ! calculate dfcdg - dfedg
-                call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc1)
+                call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
                 call deriv_fc(test_gsc, aero_resistance, k1ci, k2ci, k3ci, k4ci, can_co2, testci, dfcdg)
             
                 dfedg = lambda / gsw_2_gsc * (leaf_vpr_prss - can_vpr_prss) / &
@@ -481,12 +486,12 @@ Contains
                endif
             endif
 
-            call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc1)
+            call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
 
             last_gV = test_gsc
             
             test_gV = test_gsc
-            test_fcV = testfc1
+            test_fcV = testfc
             test_ciV = testci
           
         else
@@ -517,7 +522,7 @@ Contains
 
             do iter = 1, 500
                 ! calculate dfcdg - dfedg
-                call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc1)
+                call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
                 call deriv_fc(test_gsc, aero_resistance, k1ci, k2ci, k3ci, k4ci, can_co2, testci, dfcdg)
             
                 dfedg = lambda / gsw_2_gsc * (leaf_vpr_prss - can_vpr_prss) / &
@@ -563,10 +568,10 @@ Contains
                 endif
             endif
 
-            call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc1)
+            call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
             last_gJ = test_gsc
             test_gJ = test_gsc
-            test_fcJ = testfc1
+            test_fcJ = testfc
             test_ciJ = testci
 
         else
@@ -726,14 +731,13 @@ Contains
   !> on Harley et al. 1991
   !> \details This function does not consider low temperature cut-off... 
   !---------------------------------------------------------------------------------------!
-  real(kind==4) harley_arrhenius(Tleaf,Tref,Hv,Sv,Hd)
+  real(kind=4) function harley_arrhenius(Tleaf,Tref,Hv,Sv,Hd)
   implicit none
       real, intent(in) :: Tleaf  ! K
       real, intent(in) :: Tref   ! K
       real, intent(in) :: Hv     ! kJ/mol
       real, intent(in) :: Sv     ! kJ/mol/K
       real, intent(in) :: Hd     ! kJ/mol
-      real, intent(out) :: T_coef  ! unitless
 
       real,  parameter :: R = 8.314e-3 !kJ/mol/K
 

@@ -604,27 +604,27 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !    have crossed some threshold                                               !
             !------------------------------------------------------------------------------!
             !----- Update consecutive wet/dry days ----------!
-            if (cpatch%dmax_psi_leaf(ico) < leaf_psi_tlp(ipft)) then
-                cpatch%low_psi_days(ico) = cpatch%low_psi_days(ico) + 1
+            if (cpatch%dmax_leaf_psi(ico) < leaf_psi_tlp(ipft)) then
+                cpatch%low_leaf_psi_days(ico) = cpatch%low_leaf_psi_days(ico) + 1
             else
                 ! reset the number of dry days
-                cpatch%low_psi_days(ico) = 0
+                cpatch%low_leaf_psi_days(ico) = 0
             endif
 
 
-            if (cpatch%dmax_psi_leaf(ico) >= 0.5 * leaf_psi_tlp(ipft)) then
-                cpatch%high_psi_days(ico) = cpatch%high_psi_days(ico) + 1
+            if (cpatch%dmax_leaf_psi(ico) >= 0.5 * leaf_psi_tlp(ipft)) then
+                cpatch%high_leaf_psi_days(ico) = cpatch%high_leaf_psi_days(ico) + 1
             else
                 ! reset the number of wet days
-                cpatch%high_psi_days(ico) = 0
+                cpatch%high_leaf_psi_days(ico) = 0
             endif
 
 
             !----- modify elongf and phenology_status if necessary------!
-            if (cpatch%low_psi_days(ico) >= low_psi_threshold(ipft)) then
+            if (cpatch%low_leaf_psi_days(ico) >= low_psi_threshold(ipft)) then
                 ! need to reduce elongf
                 elongf_try = max(0., cpatch%elongf(ico) - leaf_shed_rate(ipft))
-            elseif (cpatch%high_psi_days(ico) >= high_psi_threshold(ipft)) then
+            elseif (cpatch%high_leaf_psi_days(ico) >= high_psi_threshold(ipft)) then
                 ! need to increase elongf
                 elongf_try = min(1.0, cpatch%elongf(ico) + leaf_grow_rate(ipft))
             else

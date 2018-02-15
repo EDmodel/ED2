@@ -569,7 +569,8 @@ subroutine structural_growth_eq_0(cgrid, month)
                              , istruct_growth_scheme  & ! intent(in)
                              , cbr_scheme             ! ! intent(in)
    use plant_hydro,     only : rwc2tw                 ! ! sub-routine
-   use allometry,       only : dbh2sf                 ! ! function
+   use allometry,       only : dbh2sf                 & ! function
+                             , size2bl                ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -1427,7 +1428,7 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
 
        ! 3. update traits
        ! Vm0 should be defined at the top of canopy [sun-lit leaves]
-       cpatch%vm0(ico) = Vm0(ipft) * exp(-kv * max_cum_lai)
+       cpatch%vm0(ico) = Vm0(ipft) * exp(-kvm0 * max_cum_lai)
 
        ! SLA should be defined at the bottom of canopy [shaded leaves]
        select case (trait_plasticity_scheme)

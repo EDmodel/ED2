@@ -3574,6 +3574,7 @@ end subroutine init_pft_hydro_params
 subroutine init_pft_leaf_params()
    use phenology_coms , only : iphen_scheme         ! ! intent(in)
    use ed_misc_coms   , only : igrass               ! ! intent(in)
+   use ed_max_dims    , only : n_pft                ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
       , high_psi_threshold   & ! intent(out)
       , low_psi_threshold    & ! intent(out)

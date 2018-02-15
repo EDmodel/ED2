@@ -13,6 +13,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
    use ed_max_dims    , only : n_pft              ! ! intent(in)
    use pft_coms       , only : water_conductance  & ! intent(in)
                              , include_pft        & ! intent(in)
+                             , Vm0                & ! intent(in)
                              , leaf_turnover_rate & ! intent(in)
                              , phenology          & ! intent(in)
                              , stoma_psi_b        & ! intent(in)
@@ -321,7 +322,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
             !    Notice that the units that are per unit area are per m� of leaf, not the  !
             ! patch area.                                                                  !
             !------------------------------------------------------------------------------!
-            select case (istomata)
+            select case (istomata_scheme)
             case (0)
             call lphysiol_full(            & !
                csite%can_prss(ipa)         & ! Canopy air pressure              [       Pa]
@@ -358,7 +359,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
              case (1)
              call katul_lphys(             & !
                csite%can_prss(ipa)         & ! Canopy air pressure              [       Pa]
-             , csite%can_rhos(ipa)         & ! Canopy air density               [    kg/m�]
              , can_ssh                     & ! Canopy air sp. humidity          [    kg/kg]
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ �mol/mol]
              , ipft                        & ! Plant functional type            [      ---]
@@ -488,7 +488,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
             case (1)
             call katul_lphys(              & !
                csite%can_prss(ipa)         & ! Canopy air pressure              [       Pa]
-             , csite%can_rhos(ipa)         & ! Canopy air density               [    kg/m�]
              , csite%can_shv(ipa)          & ! Canopy air sp. humidity          [    kg/kg]
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ �mol/mol]
              , ipft                        & ! Plant functional type            [      ---]
