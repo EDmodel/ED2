@@ -235,15 +235,15 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                               + cpatch%bsapwooda(ico)                      &
                                               + cpatch%bsapwoodb(ico))
 
-         !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
-         call area_indices(cpatch, ico)
-
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch, ico)
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
+
+         !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
+         call area_indices(cpatch, ico)
 
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &

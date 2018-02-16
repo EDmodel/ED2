@@ -814,9 +814,6 @@ subroutine read_ed10_ed20_history_file
 
 
 
-                        !----- Assign LAI, WAI, and CAI -----------------------------------!
-                        call area_indices(cpatch, ic2)
-
                         !------------------------------------------------------------------!
                         !     Initialise the carbon balance.  We ignore the carbon balance !
                         ! even for ED-1.0, the models are so different that there is no    !
@@ -890,6 +887,9 @@ subroutine read_ed10_ed20_history_file
                cpatch => csite%patch(ipa)
                do ico = 1,cpatch%ncohorts
                   call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+
+                  !----- Assign LAI, WAI, and CAI -----------------------------------!
+                  call area_indices(cpatch, ico)
                end do
 
                !----- Make sure that cohorts are organised from tallest to shortest. ------!

@@ -101,8 +101,6 @@ module physiology_coms
    !<                      to non-zero values and set ISTOMATA_SCHEME to 1.                \n
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-
    integer               :: istruct_growth_scheme
    !---------------------------------------------------------------------------------------!
    !< ISTRUCT_GROWTH_SCHEME -- Different methods to perform structural growth.\n

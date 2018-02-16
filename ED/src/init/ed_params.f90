@@ -4359,7 +4359,7 @@ subroutine init_physiology_params()
          compp_q10     = 1. / tau_q10                   ! "Q10" term                [     ---]
          !------------------------------------------------------------------------------------!
 
-      case (1)
+      case (1,4)
          !----- Use default CO2 and O2 reference values from F96. ----------------------------!
          kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
          ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
