@@ -1325,7 +1325,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 
 
       ! sapflow and the associated energy flow for this cohort
-      wflux_wl  = dble(cpatch%wflux_wl(ico) * cpatch%nplant(ico))
+      wflux_wl  = dble(cpatch%wflux_wl(ico)) * dble(cpatch%nplant(ico))
       qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
       !------------------------------------------------------------------------------------!
       ! LEAF BUDGET - Check whether the leaves of this cohort haven't been flagged as non- !
@@ -1537,7 +1537,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          select case (plant_hydro_scheme)
          case (0)
              ! no plant hydraulics, leaf_hcap does not change
-             dinitp%leaf_hcap(ico)   = 0.
+             dinitp%leaf_hcap(ico)   = 0.d0
          case (1,2)
              ! with plant hydraulics, leaf_hcap changes
              dinitp%leaf_hcap(ico)   = (wflux_wl - transp) * cliq8 ! J/m2g/s
@@ -1547,7 +1547,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
              ! wflux_wl to be the same as transp in this case....
              wflux_wl = transp
              qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
-             dinitp%leaf_hcap(ico)   = 0.
+             dinitp%leaf_hcap(ico)   = 0.d0
          end select
          !---------------------------------------------------------------------------------!
 
@@ -1636,13 +1636,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          ! in this case, both transp and wflux are 0. No need to change wflux
          ! and qwflux
          dinitp%leaf_hcap(ico)   = 0.d0
-
-         ! DELETABLE
-         ! still need to update leaf_hcap as normal if plant hydro is tracked
-         !if (plant_hydro_scheme > 0) then
-         !    dinitp%leaf_hcap(ico)   = wflux_wl * cliq8
-         !    dinitp%leaf_energy(ico) = qwflux_wl
-         !endif
 
 
 
@@ -1842,7 +1835,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          select case (plant_hydro_scheme)
          case (0)
              ! no plant hydraulics, wood_hcap does not change
-             dinitp%wood_hcap(ico)   = 0.
+             dinitp%wood_hcap(ico)   = 0.d0
          case (1,2)
              ! with plant hydraulics, wood_hcap changes
              dinitp%wood_hcap(ico)   = -wflux_wl * cliq8 ! J/m2g/s
@@ -1852,7 +1845,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
              ! wflux_wl to be the same as transp in this case....
              wflux_wl = dble(cpatch%wflux_gw(ico) * cpatch%nplant(ico))
              qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
-             dinitp%wood_hcap(ico)   = 0.
+             dinitp%wood_hcap(ico)   = 0.d0
          end select
          !---------------------------------------------------------------------------------!
 
@@ -1869,12 +1862,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                                  - qwshed               & ! Water shedding
                                  - qwflux_wl            & ! Sapflow
                                  + wood_qintercepted    ! ! Intercepted water energy
-        ! DEL
-!         if (plant_hydro_scheme > 0) then
-!             dinitp%wood_hcap(ico)   = -wflux_wl * cliq8    ! J/m2/s
-!         else
-!             dinitp%wood_hcap(ico)   = 0.
-!         endif
          !---------------------------------------------------------------------------------!
 
          initp%wflxwc(ico) = wflxwc
@@ -1940,12 +1927,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          dinitp%wood_water(ico)  = 0.d0
          ! no need to track wood_hcap in this case
          dinitp%wood_hcap(ico)   = 0.d0
-!DEL
-!         if (plant_hydro_scheme > 0) then
-!             ! Still need to update wood_hcap
-!             dinitp%wood_hcap(ico)     = -wflux_wl * cliq8
-!             dinitp%wood_energy(ico)   = -qwflux_wl
-!         endif
          !---------------------------------------------------------------------------------!
 
 

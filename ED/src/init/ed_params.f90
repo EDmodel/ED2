@@ -3643,7 +3643,7 @@ subroutine init_pft_leaf_params()
                phenology(9:11)  = 2
                phenology(12:15) = 5
                phenology(16)    = 5
-               phenology(17)    = 3
+               phenology(17)    = 5
          end select
          !------------------------------------------------------------------------------------!
       case (1)

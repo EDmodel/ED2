@@ -180,7 +180,7 @@ Contains
       real           ,parameter   :: Jmax_vmhor_coef = 5./7.  ! fraction of Jmax  vmhor to Vcmax vmhor estimated from Kattge et al. 2007
       integer                     :: k
       logical                     :: is_resolvable
-      logical, parameter          :: quality_check = .false.
+      logical, parameter          :: debug_flag = .false.
     
 
       !-------------------    Define some constants....
@@ -394,7 +394,7 @@ Contains
       !------------------------------------------------------------------------------------!
       ! Solve the optimization
       !------------------------------------------------------------------------------------!
-      cuticular_gsc = cuticular_cond(ipft) * 1.0e-6 ! convert to umol/m2/s
+      cuticular_gsc = cuticular_cond(ipft) * gsw_2_gsc * 1.0e-6 ! convert to umol/m2/s
 
       ! initialize limit_flag as 0
       limit_flag      = 0
@@ -600,7 +600,7 @@ Contains
 
     endif
 
-    if (quality_check) then
+    if (debug_flag) then
        write (unit=*,fmt='(80a)')         ('=',k=1,80)
        write (unit=*,fmt='(a)')           'Katul Stomatal Scheme Quality Check:'
        write (unit=*,fmt='(a,1x,i9)')   ' + HOUR:                ',current_time%hour

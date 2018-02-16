@@ -775,6 +775,11 @@ $ED_NL
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
    !                                                                                       !
+   !  4: grasses   - drought-deciduous (plant hydraulics);                                 !
+   !     tropical  - drought-deciduous (plant hydraulics;                                  !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
    !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
    !              becomes less than a critical value.                                      !
    !  New scheme: plants shed their leaves once a 10-day running average of available      !

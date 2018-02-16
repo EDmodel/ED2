@@ -422,6 +422,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                    ,cpatch%pft(ico),cpatch%broot(ico),cpatch%dbh(ico)      &
                                    ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)              &
                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                ! also need to update water_int from rwc
+                 call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                       &
+                       ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                 &
+                       ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)               &
+                       ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!

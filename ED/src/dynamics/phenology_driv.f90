@@ -43,11 +43,12 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (-1,0,2)
+         case (-1,0,2,4)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !
             !------------------------------------------------------------------------------!
+            !----- OR XU Plant Hydraulics driven drought phenology.  ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
             
@@ -60,9 +61,8 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
             call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
 
 
-         case (3,4)
+         case (3)
             !----- KIM light-controlled predictive phenology scheme. ----------------------!
-            !----- OR XU Plant Hydraulics driven drought phenology.  ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_turnover(cpoly,isi)
             call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
@@ -123,11 +123,12 @@ subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (-1,0,2)
+         case (-1,0,2,4)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !
             !------------------------------------------------------------------------------!
+            !----- OR XU Plant Hydraulics driven drought phenology.  ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_phenology_eq_0(doy,cpoly,isi,cgrid%lat(ipy))
             
@@ -139,9 +140,8 @@ subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
                                       ,cpoly%leaf_aging_factor(:,isi),cpoly%phen_pars(isi)) 
             call update_phenology_eq_0(doy,cpoly,isi,cgrid%lat(ipy))
 
-         case (3,4)
+         case (3)
             !----- KIM light-controlled predictive phenology scheme. ----------------------!
-            !----- OR XU Plant Hydraulics driven drought phenology.  ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_turnover(cpoly,isi)
             call update_phenology_eq_0(doy,cpoly,isi,cgrid%lat(ipy))
