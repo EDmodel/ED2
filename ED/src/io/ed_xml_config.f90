@@ -241,6 +241,14 @@ recursive subroutine read_ed_xml_config(filename)
                  is_grass(myPFT) = .true.
               end if
            end if
+           call getConfigINT('is_liana','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_liana(myPFT) = .false.
+              else
+                 is_liana(myPFT) = .true.
+              end if
+           end if
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
               include_pft(myPFT) = ival == 1
@@ -1397,6 +1405,12 @@ subroutine write_ed_xml_config
            ival = 0
         end if
         call putConfigINT("is_grass",ival)
+        if (is_liana(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("is_liana",ival)
         if (include_pft(i)) then
            ival = 1
         else
