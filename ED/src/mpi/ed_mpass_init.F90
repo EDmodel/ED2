@@ -1628,6 +1628,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(clump_tree,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(clump_grass,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(h2o_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plant_hydro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istomata_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istruct_growth_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(trait_plasticity_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
