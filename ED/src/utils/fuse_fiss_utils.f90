@@ -1070,8 +1070,6 @@ module fuse_fiss_utils
       real                         :: dwai              ! WAI of donor
       real                         :: rnplant           ! nplant of receiver
       real                         :: dnplant           ! nplant of donor
-      real                         :: rbdead            ! bdead  of receiver
-      real                         :: dbdead            ! bdead  of donor
       !------------------------------------------------------------------------------------!
 
 
@@ -1086,10 +1084,6 @@ module fuse_fiss_utils
       newni   = 1.0 / (cpatch%nplant(recc) + cpatch%nplant(donc))
       rnplant = cpatch%nplant(recc) / (cpatch%nplant(recc) + cpatch%nplant(donc))
       dnplant = 1.d0 - dble(rnplant)
-      rbdead  = ( cpatch%bdead(recc) * cpatch%nplant(recc) )                           &
-              / ( cpatch%bdead(recc) * cpatch%nplant(recc)                             &
-                + cpatch%bdead(donc) * cpatch%nplant(donc) )
-      dbdead  = 1.d0 - dble(rbdead)
       !------------------------------------------------------------------------------------!
 
 
@@ -1778,18 +1772,15 @@ module fuse_fiss_utils
               + cpatch%fmean_wflux_gw_layer(isl,donc) * dnplant
          enddo
 
-         ! for daily maximum and minimum psi, we simply calculate the
-         ! LAI-weighted/Bdead-weighted average since the corresponding leaf_int is not
-         ! tracked... This should not yield much bias since we assume a constant
-         ! capacitance
-         cpatch%dmax_leaf_psi(recc) = cpatch%dmax_leaf_psi(recc) * rlai +                  &
-                                      cpatch%dmax_leaf_psi(donc) * dlai
-         cpatch%dmin_leaf_psi(recc) = cpatch%dmin_leaf_psi(recc) * rlai +                  &
-                                      cpatch%dmin_leaf_psi(donc) * dlai
-         cpatch%dmax_wood_psi(recc) = cpatch%dmax_wood_psi(recc) * rbdead +                &
-                                      cpatch%dmax_wood_psi(donc) * dbdead
-         cpatch%dmin_wood_psi(recc) = cpatch%dmin_wood_psi(recc) * rbdead +                &
-                                      cpatch%dmin_wood_psi(donc) * dbdead
+         ! for daily maximum and minimum psi, we simply use NPLANT as weight 
+         cpatch%dmax_leaf_psi(recc) = cpatch%dmax_leaf_psi(recc) * rnplant +               &
+                                      cpatch%dmax_leaf_psi(donc) * dnplant
+         cpatch%dmin_leaf_psi(recc) = cpatch%dmin_leaf_psi(recc) * rnplant +               &
+                                      cpatch%dmin_leaf_psi(donc) * dnplant
+         cpatch%dmax_wood_psi(recc) = cpatch%dmax_wood_psi(recc) * rnplant +               &
+                                      cpatch%dmax_wood_psi(donc) * dnplant
+         cpatch%dmin_wood_psi(recc) = cpatch%dmin_wood_psi(recc) * rnplant +               &
+                                      cpatch%dmin_wood_psi(donc) * dnplant
 
          ! Now, we recalculate psi from water_int
          call tw2psi(cpatch%fmean_leaf_water_int(recc),cpatch%fmean_wood_water_int(recc)   &

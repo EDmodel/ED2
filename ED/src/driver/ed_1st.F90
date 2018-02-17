@@ -164,13 +164,15 @@ end subroutine ed_1st_master
 ! polygons and parameters for the nodes.  This sub-routine won't be called if this is a    !
 ! serial run.                                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine ed_1st_node()
+subroutine ed_1st_node(init)
    use ed_mem_alloc, only : ed_memory_allocation ! ! subroutine
    implicit none
    !----- Pre-compiled variables from MPI. ------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'mpif.h'
 #endif
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: init
    !----- Local variable (MPI only). ------------------------------------------------------!
 #if defined(RAMS_MPI)
    integer             :: ierr

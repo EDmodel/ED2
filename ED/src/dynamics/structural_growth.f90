@@ -1290,9 +1290,6 @@ subroutine update_derived_cohort_props(cpatch,ico,lsl,month)
    case (-2,2)
        ! update trait every month
        call update_cohort_plastic_trait(cpatch,ico)
-   case (0)
-       ! No plasticity
-       continue
    end select
    !---------------------------------------------------------------------------------------!
        

@@ -1324,9 +1324,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
       !------------------------------------------------------------------------------------!
 
 
-      ! sapflow and the associated energy flow for this cohort
-      wflux_wl  = dble(cpatch%wflux_wl(ico)) * dble(cpatch%nplant(ico))
-      qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
       !------------------------------------------------------------------------------------!
       ! LEAF BUDGET - Check whether the leaves of this cohort haven't been flagged as non- !
       !               resolvable, i.e., it has leaves, belongs to a patch that is not too  !
@@ -1537,9 +1534,13 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          select case (plant_hydro_scheme)
          case (0)
              ! no plant hydraulics, leaf_hcap does not change
+             wflux_wl = 0.d0
+             qwflux_wl = 0.d0
              dinitp%leaf_hcap(ico)   = 0.d0
          case (1,2)
              ! with plant hydraulics, leaf_hcap changes
+             wflux_wl  = dble(cpatch%wflux_wl(ico)) * dble(cpatch%nplant(ico))
+             qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
              dinitp%leaf_hcap(ico)   = (wflux_wl - transp) * cliq8 ! J/m2g/s
          case (-1,-2)
              ! decouple plant hydraulics and tissue energy, track changes in
@@ -1835,15 +1836,19 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          select case (plant_hydro_scheme)
          case (0)
              ! no plant hydraulics, wood_hcap does not change
+             wflux_wl  = 0.d0
+             qwflux_wl = 0.d0
              dinitp%wood_hcap(ico)   = 0.d0
          case (1,2)
+             wflux_wl  = dble(cpatch%wflux_wl(ico)) * dble(cpatch%nplant(ico))
+             qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
              ! with plant hydraulics, wood_hcap changes
              dinitp%wood_hcap(ico)   = -wflux_wl * cliq8 ! J/m2g/s
          case (-1,-2)
              ! decouple plant hydraulics and tissue energy, track changes in
              ! leaf water but wood_hcap does not change. We have to force
              ! wflux_wl to be the same as transp in this case....
-             wflux_wl = dble(cpatch%wflux_gw(ico) * cpatch%nplant(ico))
+             wflux_wl = dble(cpatch%wflux_gw(ico)) * dble(cpatch%nplant(ico))
              qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
              dinitp%wood_hcap(ico)   = 0.d0
          end select
