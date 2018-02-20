@@ -626,7 +626,14 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                 elongf_try = max(0., cpatch%elongf(ico) - leaf_shed_rate(ipft))
             elseif (cpatch%high_leaf_psi_days(ico) >= high_psi_threshold(ipft)) then
                 ! need to increase elongf
-                elongf_try = min(1.0, cpatch%elongf(ico) + leaf_grow_rate(ipft))
+                if (cpatch%phenology_status(ico) == -2) then
+                    ! currently without any leaves,
+                    ! we let the tree grow a small fraction of leaves to check
+                    ! whether the condition has indeed become better.
+                    elongf_try = elongf_min + 0.01
+                else
+                    elongf_try = min(1.0, cpatch%elongf(ico) + leaf_grow_rate(ipft))
+                endif
             else
                 ! no need to change elongf
                 elongf_try = cpatch%elongf(ico)
@@ -721,33 +728,21 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
             elseif (cpatch%phenology_status(ico) /= 0) then
                !---------------------------------------------------------------------------!
-               !       Elongation factor could increase, but we first check whether it is  !
-               ! safe to do so based on the phenology status.                              !
+               !       Elongation factor could increase. Here we do not need to check the  !
+               ! safety for flushing leaves, since it is done during the calculation of    !
+               ! high_leaf_psi_days.                                                       !
+               !       However, we now need to check whether we need to                    !
                !---------------------------------------------------------------------------!
-               select case(cpatch%phenology_status(ico))
-               case (1)
-                  !----- Leaves were already growing, keep growing. -----------------------!
-                  cpatch%elongf          (ico) = elongf_try
-                  !------------------------------------------------------------------------!
-               case (-1,-2)
-                  !------------------------------------------------------------------------!
-                  !     Leaves were dropping or gone, we first check that conditions are   !
-                  ! really improving before we turn on leaf production.                    !
-                  !------------------------------------------------------------------------!
-                  elongf_grow = min(1.0,max(elongf_flush,cpatch%elongf(ico)+0.02))
-                  if (elongf_try >= elongf_grow) then
-                     cpatch%elongf          (ico) = elongf_try
-                     cpatch%phenology_status(ico) = 1
-                  end if
-                  !------------------------------------------------------------------------!
-               end select
+               cpatch%elongf          (ico) = elongf_try
+               ! only modify phenology_status when delta_bleaf < 0. This avoids
+               ! changing phenology_status = 1 while elongf = 0.
+               if (delta_bleaf < 0.) cpatch%phenology_status(ico) = 1
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
 
          end select
          !---------------------------------------------------------------------------------!
-
 
 
 
@@ -822,6 +817,11 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                              , patchtype                ! ! structure
    use grid_coms      , only : nzg                      ! ! intent(in)
    use pft_coms       , only : phenology                & ! intent(in)
+                             , leaf_psi_tlp             & ! intent(in)
+                             , high_psi_threshold       & ! intent(in)
+                             , low_psi_threshold        & ! intent(in)
+                             , leaf_shed_rate           & ! intent(in)
+                             , leaf_grow_rate           & ! intent(in)
                              , q                        & ! intent(in)
                              , qsw                      ! ! intent(in)
    use phenology_coms , only : retained_carbon_fraction & ! intent(in)
@@ -1154,6 +1154,115 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
+         case (5) 
+
+            !------------------------------------------------------------------------------!
+            !    Drought deciduous driven by plant hydrodyanics:                           !
+            !                                                                              !
+            !    Here, we track the number of consecutive wet days and dry days.           !
+            !    We then modify the phenology status and elongf if these numbers           !
+            !    have crossed some threshold                                               !
+            !------------------------------------------------------------------------------!
+            !----- Update consecutive wet/dry days ----------!
+            if (cpatch%dmax_leaf_psi(ico) < leaf_psi_tlp(ipft)) then
+                cpatch%low_leaf_psi_days(ico) = cpatch%low_leaf_psi_days(ico) + 1
+            else
+                ! reset the number of dry days
+                cpatch%low_leaf_psi_days(ico) = 0
+            endif
+
+
+            if (cpatch%dmax_leaf_psi(ico) >= 0.5 * leaf_psi_tlp(ipft)) then
+                cpatch%high_leaf_psi_days(ico) = cpatch%high_leaf_psi_days(ico) + 1
+            else
+                ! reset the number of wet days
+                cpatch%high_leaf_psi_days(ico) = 0
+            endif
+
+
+            !----- modify elongf and phenology_status if necessary------!
+            if (cpatch%low_leaf_psi_days(ico) >= low_psi_threshold(ipft)) then
+                ! need to reduce elongf
+                elongf_try = max(0., cpatch%elongf(ico) - leaf_shed_rate(ipft))
+            elseif (cpatch%high_leaf_psi_days(ico) >= high_psi_threshold(ipft)) then
+                ! need to increase elongf
+                elongf_try = min(1.0, cpatch%elongf(ico) + leaf_grow_rate(ipft))
+            else
+                ! no need to change elongf
+                elongf_try = cpatch%elongf(ico)
+            endif
+
+
+            !----- If extremely dry, force the cohort to shed all leaves... ---------------!
+            if (elongf_try < elongf_min) elongf_try = 0.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Find the maximum allowed leaf biomass. ---------------------------------!
+            bleaf_new = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Delta_bleaf is the difference between the current leaf biomass and the   !
+            ! maximum permitted given the soil moisture conditions.  If delta_bleaf is     !
+            ! positive, it means that the plant has more leaves than it should.            !
+            !------------------------------------------------------------------------------!
+            delta_bleaf = cpatch%bleaf(ico) - bleaf_new
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Check whether drought is becoming more or less severe.                   !
+            !------------------------------------------------------------------------------!
+            if (delta_bleaf > 0.0) then
+               !---------------------------------------------------------------------------!
+               !    Drought conditions are becoming more severe, drop leaves.              !
+               !---------------------------------------------------------------------------!
+               if (elongf_try >= elongf_min) then
+                  cpatch%phenology_status(ico) = -1
+               else
+                  cpatch%phenology_status(ico) = -2
+               end if
+               cpatch%leaf_drop (ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+               cpatch%elongf    (ico) = elongf_try
+               !----- Adjust plant carbon pools. ------------------------------------------!
+               cpatch%bleaf     (ico) = bleaf_new
+               cpatch%balive    (ico) = cpatch%balive(ico)   - delta_bleaf
+               cpatch%bstorage  (ico) = cpatch%bstorage(ico)                               &
+                                      + retained_carbon_fraction * delta_bleaf
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !      Deduct the leaf drop from the carbon balance.                        !
+               !---------------------------------------------------------------------------!
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+
+               !---------------------------------------------------------------------------!
+            elseif (cpatch%phenology_status(ico) /= 0) then
+               !---------------------------------------------------------------------------!
+               !       Elongation factor could increase. Here we do not need to check the  !
+               ! safety for flushing leaves, since it is done during the calculation of    !
+               ! high_leaf_psi_days.                                                       !
+               !---------------------------------------------------------------------------!
+               cpatch%elongf          (ico) = elongf_try
+               cpatch%phenology_status(ico) = 1
+               !---------------------------------------------------------------------------!
+               cpatch%bleaf           (ico) = bleaf_new
+               cpatch%balive          (ico) = cpatch%balive(ico) - delta_bleaf
+            end if
+            !------------------------------------------------------------------------------!
+
          end select
          !---------------------------------------------------------------------------------!
 

@@ -216,10 +216,11 @@ module rk4_driver
                end if
                !---------------------------------------------------------------------------!
 
-               !---------------------------------------------------------------------------!
-               !     Set up the integration patch.                                         !
-               !---------------------------------------------------------------------------!
-               call copy_patch_init(csite,ipa,initp,patch_vels)
+
+               !----- Get plant water flow driven by plant hydraulics ---------------------!
+               !     This must be placed before canopy_photosynthesis because              !
+               !  plant_hydro_driver needs fs_open from last timestep                      !
+               call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
                !---------------------------------------------------------------------------!
 
 
@@ -229,15 +230,16 @@ module rk4_driver
                                          ,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
 
-               !----- Get plant water flow driven by plant hydraulics ---------------------!
-               call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
-               !---------------------------------------------------------------------------!
-
 
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
                !---------------------------------------------------------------------------!
 
+               !---------------------------------------------------------------------------!
+               !     Set up the integration patch.                                         !
+               !---------------------------------------------------------------------------!
+               call copy_patch_init(csite,ipa,initp,patch_vels)
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
@@ -784,41 +786,42 @@ module rk4_driver
                         * ( initp%fs_open(ico) * initp%psi_open(ico)            & ! open stomata
                           + (1.d0 - initp%fs_open(ico)) * initp%psi_closed(ico) & ! closed
                           )
-
-                cpatch%leaf_water_int(ico) = sngloff(dble(cpatch%leaf_water_int(ico))   &
-                                                + (dble(cpatch%wflux_wl(ico)) * hdid    &
-                                                  - transp) ,tiny_offset)
-                cpatch%wood_water_int(ico) = sngloff(dble(cpatch%wood_water_int(ico))   &
-                                                + ( dble(cpatch%wflux_gw(ico))          &
-                                                  - dble(cpatch%wflux_wl(ico))) &
-                                                * hdid ,tiny_offset)
-
-                ! update leaf heat capacity only when plant_hydro_scheme > 0
-                if (plant_hydro_scheme > 0) then
-                    cpatch%leaf_hcap(ico) = sngloff(initp%leaf_hcap(ico),tiny_offset)
-
-                    ! only update wood hcap when wood is resolved
-                    if (initp%wood_resolvable(ico)) then
-                        cpatch%wood_hcap(ico) = sngloff(initp%wood_hcap(ico),tiny_offset)
-                    endif
-                endif
-
-                !----------------------------------------------------------------------!
-                ! update rwc
-                !----------------------------------------------------------------------!
-
-                call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
-                           ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)       &
-                           ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)     &
-                           ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
-
-                
-                ! leaf and wood psi are updated in plant_hydro_driver of 
-                ! dynamics/plant_hydro.f90 for consistency reasons, see the file
-                ! for details
-                ! 
+             else
+                transp = 0.d0
              endif
 
+             cpatch%leaf_water_int(ico) = sngloff(dble(cpatch%leaf_water_int(ico))   &
+                                             + (dble(cpatch%wflux_wl(ico)) * hdid    &
+                                               - transp) ,tiny_offset)
+             cpatch%wood_water_int(ico) = sngloff(dble(cpatch%wood_water_int(ico))   &
+                                             + ( dble(cpatch%wflux_gw(ico))          &
+                                               - dble(cpatch%wflux_wl(ico))) &
+                                             * hdid ,tiny_offset)
+
+             ! update heat capacity only when plant_hydro_scheme > 0
+             if (plant_hydro_scheme > 0) then
+                 cpatch%leaf_hcap(ico) = sngloff(initp%leaf_hcap(ico),tiny_offset)
+
+                 ! only update wood hcap when wood is resolved
+                 if (initp%wood_resolvable(ico)) then
+                     cpatch%wood_hcap(ico) = sngloff(initp%wood_hcap(ico),tiny_offset)
+                 endif
+             endif
+
+             !----------------------------------------------------------------------!
+             ! update rwc
+             !----------------------------------------------------------------------!
+
+             call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
+                        ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)       &
+                        ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)     &
+                        ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+
+             
+             ! leaf and wood psi are updated in plant_hydro_driver of 
+             ! dynamics/plant_hydro.f90 for consistency reasons, see the file
+             ! for details
+             ! 
 
          end select
 

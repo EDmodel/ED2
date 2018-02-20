@@ -1031,7 +1031,7 @@ module growth_balive
       bsapwoodb_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * (1. - agf_bs(ipft))
       balive_aim     = bleaf_aim + broot_aim + bsapwooda_aim + bsapwoodb_aim
       !------------------------------------------------------------------------------------!
-
+      
 
       !------------------------------------------------------------------------------------!
       !      Check whether to increase living tissue biomass or not.                       !
@@ -1082,8 +1082,16 @@ module growth_balive
                !------------------------------------------------------------------------------!
                f_bleaf     = delta_bleaf     / bleaf_aim
                f_broot     = delta_broot     / broot_aim
-               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+               if (bsapwooda_aim == 0.) then
+                   f_bsapwooda = 0.
+               else
+                   f_bsapwooda = delta_bsapwooda / bsapwooda_aim
+               endif
+               if (bsapwoodb_aim == 0.) then
+                   f_bsapwoodb = 0.
+               else
+                   f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+               endif
                f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb
                !------------------------------------------------------------------------------!
             end if

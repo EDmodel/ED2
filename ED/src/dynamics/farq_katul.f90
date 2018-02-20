@@ -40,10 +40,10 @@ Contains
 
   subroutine katul_lphys(can_prss,can_shv,can_co2,ipft,leaf_par,leaf_temp                 &
                         ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm0in        &
-                        ,leaf_gbw,leaf_psi,last_gV,last_gJ,A_open,A_closed,gsw_open       &
-                        ,gsw_closed,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open           &
-                        ,lsfc_co2_closed,lint_co2_open,lint_co2_closed,leaf_resp          &
-                        ,vmout,comppout,limit_flag)
+                        ,leaf_gbw,leaf_psi,last_gV,last_gJ,A_open,A_closed,A_light        &
+                        ,A_rubp,A_co2,gsw_open,gsw_closed,lsfc_shv_open,lsfc_shv_closed   &
+                        ,lsfc_co2_open,lsfc_co2_closed,lint_co2_open,lint_co2_closed      &
+                        ,leaf_resp,vmout,comppout,limit_flag)
       
     use rk4_coms       , only : tiny_offset              & ! intent(in)
                               , effarea_transp           ! ! intent(in)
@@ -117,6 +117,9 @@ Contains
       real(kind=4), intent(inout) :: last_gJ           ! gs for last timestep   [  kg/m²/s]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [µmol/m²/s]
+      real(kind=4), intent(out)   :: A_light           ! Photosyn. rate (cl.)   [µmol/m²/s]
+      real(kind=4), intent(out)   :: A_rubp            ! Photosyn. rate (cl.)   [µmol/m²/s]
+      real(kind=4), intent(out)   :: A_co2             ! Photosyn. rate (cl.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/m²/s]
       real(kind=4), intent(out)   :: gsw_closed        ! St. cnd. of H2O  (cl.) [  kg/m²/s]
       real(kind=4), intent(out)   :: lsfc_shv_open     ! Leaf sfc. sp.hum.(op.) [    kg/kg] 
@@ -409,7 +412,7 @@ Contains
 
       ! calcualte aerodynamic resistance
       if (leaf_gbw > 0.) then
-          aero_resistance = mmdry / (leaf_gbw / gbw_2_gbc)
+          aero_resistance = mmdry / (leaf_gbw * gbw_2_gbc)
       else
           aero_resistance = 1e10
       endif
@@ -593,10 +596,17 @@ Contains
             limit_flag = 1 ! limited by light
         endif
 
+        ! record output
+        A_rubp = test_fcV
+        A_light = test_fcJ
+        A_co2 = min(A_rubp,A_light)
     else  ! not resolvable
         accepted_gsc     = cuticular_gsc
         accepted_fc      = -Rdark
         accepted_ci      = can_co2
+        A_rubp = -Rdark
+        A_light = -Rdark
+        A_co2 = -Rdark
 
     endif
 
@@ -609,11 +619,15 @@ Contains
        write (unit=*,fmt='(a,1x,es12.4)')   ' + PSI_LEAF:            ',leaf_psi
        write (unit=*,fmt='(a,1x,es12.4)')   ' + PAR:                 ',par
        write (unit=*,fmt='(a,1x,es12.4)')   ' + Vcmax25:             ',Vcmax25
+       write (unit=*,fmt='(a,1x,es12.4)')   ' + Vcmax:               ',Vcmax
        write (unit=*,fmt='(a,1x,es12.4)')   ' + Jmax25:              ',Jmax25
+       write (unit=*,fmt='(a,1x,es12.4)')   ' + Jmax:                ',Jmax
+       write (unit=*,fmt='(a,1x,es12.4)')   ' + lambda:              ',lambda
        write (unit=*,fmt='(a,1x,es12.4)')   ' + test_gV:             ',test_gV
        write (unit=*,fmt='(a,1x,es12.4)')   ' + test_gJ:             ',test_gJ
        write (unit=*,fmt='(a,1x,es12.4)')   ' + test_fcV:            ',test_fcV
        write (unit=*,fmt='(a,1x,es12.4)')   ' + test_fcJ:            ',test_fcJ
+       write (unit=*,fmt='(a,1x,es12.4)')   ' + Rdark:               ',Rdark
        write (unit=*,fmt='(a,1x,es12.4)')   ' + aero_resistance      ',aero_resistance
        write (unit=*,fmt='(a,1x,es12.4)')   ' + cuticular_gsc        ',cuticular_gsc
     endif

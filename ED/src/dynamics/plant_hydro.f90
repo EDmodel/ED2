@@ -123,7 +123,13 @@ module plant_hydro
         cohortloop: do ico = 1, cpatch%ncohorts
 
             ! track the plant hydraulics only when leaf is resolvable
-            if (cpatch%leaf_resolvable(ico)) then
+            ! also need to track plant hydro when leaf is not resolvable
+            ! When plants shed all the leaves during the dry season, leaf_hcap
+            ! becomes 0 and the cohort becomes non-resolvable. But if we do not
+            ! track water potential in this case, we can never allow soil water
+            ! to refill wood
+
+            !if (cpatch%leaf_resolvable(ico)) then
                 !---- prepare input for plant water flux calculations
                 sap_frac    = dbh2sf(cpatch%dbh(ico),cpatch%pft(ico))         ! m2
                 sap_area    = sap_frac * pio4 * (cpatch%dbh(ico) / 100.) ** 2 ! m2
@@ -132,6 +138,7 @@ module plant_hydro
                 transp      = ( cpatch%fs_open(ico) * cpatch%psi_open(ico)               &
                               + (1. - cpatch%fs_open(ico)) * cpatch%psi_closed(ico)      &
                               ) * cpatch%lai(ico) / cpatch%nplant(ico)     ! kg / s
+
 
                 ! Please notice that the current leaf_water_int has included the
                 ! transpirational lost of this time step but not the sapflow. So
@@ -143,12 +150,17 @@ module plant_hydro
                 ! START of the timestep.
                 call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)     &
                             ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
+                if (cpatch%bleaf(ico) > 0.) then
             
-                cpatch%leaf_psi(ico) = cpatch%leaf_psi(ico)                  &
-                                     + transp * dtlsm                        &  ! kg/H2O
-                                     / ( leaf_water_cap(cpatch%pft(ico))     &
-                                       * C2B * cpatch%bleaf(ico))               ! kgH2O/m
-
+                    cpatch%leaf_psi(ico) = cpatch%leaf_psi(ico)                  &
+                                         + transp * dtlsm                        &  ! kg/H2O
+                                         / ( leaf_water_cap(cpatch%pft(ico))     &
+                                           * C2B * cpatch%bleaf(ico))               ! kgH2O/m
+                else
+                    ! no leaves, set leaf_psi the same as wood_psi - hite
+                    cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%hite(ico)
+                endif
+                
 
                 ! note here, transp is from last timestep's psi_open and psi_closed
                 call calc_plant_water_flux(                           &
@@ -161,11 +173,11 @@ module plant_hydro
                        ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)     &!output
                        ,cpatch%wflux_gw_layer(:,ico))                 !!output
 
-            else
-                cpatch%wflux_wl(ico) = 0.
-                cpatch%wflux_gw(ico) = 0.
-                cpatch%wflux_gw_layer(:,ico)  = 0.
-            endif
+            !else
+            !    cpatch%wflux_wl(ico) = 0.
+            !    cpatch%wflux_gw(ico) = 0.
+            !    cpatch%wflux_gw_layer(:,ico)  = 0.
+            !endif
 
         enddo cohortloop
 
@@ -349,8 +361,9 @@ module plant_hydro
       character(len=9)  , parameter         :: lfmt       = '(a,1x,l1)'
       !----- variables for loops
       integer                               :: k
+      integer,parameter                     :: dco        = 0
       !--------------- Flags
-      logical,parameter                     :: debug_flag = .False.
+      logical,parameter                     :: debug_flag = .false.
       logical                               :: small_tree_flag
       logical                               :: zero_flow_flag
       logical                               :: error_flag
@@ -631,7 +644,7 @@ module plant_hydro
                .or.(leaf_psi_d > 0. .or. wood_psi_d > 0.)
 
       ! I copy the error printing from rk4_misc.f90
-      if(debug_flag .or. error_flag) then
+      if((debug_flag .and. (dco == 0 .or. ico == dco)) .or. error_flag) then
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(92a)') ('=',k=1,92)
          write (unit=*,fmt='(92a)') ('=',k=1,92)
@@ -835,11 +848,19 @@ module plant_hydro
       real      , intent(out)   ::  wood_rwc    ! Relative water content of wood       [0-1]
 
       ! leaf
-      leaf_rwc          =   leaf_water_int / (leaf_water_sat(ipft) * bleaf * C2B)
+      if (bleaf > 0.) then
+          leaf_rwc          =   leaf_water_int / (leaf_water_sat(ipft) * bleaf * C2B)
+      else
+          leaf_rwc          =   0.
+      endif
       
       ! wood
-      wood_rwc          =   wood_water_int / wood_water_sat(ipft)                         &
-                        /   ((broot + bdead * sap_frac) * C2B)            
+      if (broot + bdead * sap_frac > 0.) then
+          wood_rwc          =   wood_water_int / wood_water_sat(ipft)                         &
+                            /   ((broot + bdead * sap_frac) * C2B)            
+      else
+          wood_rwc          =   0.
+      endif
 
       return
    end subroutine tw2rwc
