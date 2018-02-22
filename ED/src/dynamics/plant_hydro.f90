@@ -150,6 +150,7 @@ module plant_hydro
                 ! START of the timestep.
                 call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)     &
                             ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
+
                 if (cpatch%bleaf(ico) > 0.) then
             
                     cpatch%leaf_psi(ico) = cpatch%leaf_psi(ico)                  &
@@ -190,11 +191,6 @@ module plant_hydro
       
       ! Update Fast timescale output
       do ico = 1, cpatch%ncohorts
-         !print*,'ico',ico,'pft',cpatch%pft(ico)
-         !print*,'leaf_psi',cpatch%leaf_psi(ico),'wood_psi',cpatch%wood_psi(ico)
-         !print*,'leaf_temp',cpatch%leaf_temp(ico),'wood_temp',cpatch%wood_temp(ico)
-         !print*,'leaf_resolvable',cpatch%leaf_resolvable(ico),'wood_resolvable',cpatch%wood_resolvable(ico)
-
          cpatch%fmean_leaf_psi   (ico) = cpatch%fmean_leaf_psi   (ico)                     &
                                        + cpatch%leaf_psi         (ico) * dtlsm_o_frqsum
          cpatch%fmean_wood_psi   (ico) = cpatch%fmean_wood_psi   (ico)                     &
@@ -477,9 +473,17 @@ module plant_hydro
           if (zero_flow_flag) then
               ! 1.2.1 Special case. No need to calculate sapflow
               wflux_wl_d = 0.d0
+
+              ! proj_leaf_psi is only depdent on transp
+              if (c_leaf > 0.) then
+                  proj_leaf_psi = leaf_psi_d - transp_d * dt_d / c_leaf
+              else
+                  proj_leaf_psi = leaf_psi_d
+              endif
   
           else
               ! We do need to calculate sapflow
+
               ! calculate plant loss of conductivity [dimensionless]
               plc = 1.d0 / (1.d0 +                                                  &
                     (wood_psi_d / dble(wood_psi50(ipft))) ** dble(wood_Kexp(ipft)))
@@ -575,9 +579,13 @@ module plant_hydro
 
         if (zero_flow_flag) then
             ! no need to calculate water flow
-            ! wood psi should not change
+            ! wood psi is only dependent on sapflow
             wflux_gw_d    = 0.d0
-            proj_wood_psi = wood_psi_d
+            if (c_stem > 0.) then
+                proj_wood_psi = wood_psi_d - wflux_wl_d * dt_d / c_stem
+            else
+                proj_wood_psi = wood_psi_d
+            endif
         else
             ! calculate the average soil water uptake
             ap = - weighted_gw_cond  / c_stem 
@@ -605,20 +613,6 @@ module plant_hydro
 
         endif
 
-        !----------------------------------------------------------------------
-        ! Exception handling                                    
-        !   Special Case: projected leaf/wood psi is lower than leaf/wood
-        !   psi_min. This can be the case if stomatal conductance model does not
-        !   represent water stress correctly. In this case, we will make
-        !   wflux_wl equal to transp and wflux_gw equal to wflux_wl (no changes
-        !   in water potential)
-        !-----------------------------------------------------------------------
-        if (proj_leaf_psi < leaf_psi_min(ipft) .or.     &
-            proj_wood_psi < wood_psi_min(ipft)) then
-
-            wflux_wl_d = transp_d
-            wflux_gw_d = transp_d
-        endif
        
 
 

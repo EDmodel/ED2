@@ -433,8 +433,7 @@ module rk4_driver
                                       , dbh2sf               ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
                                       , k_fire_first         ! ! intent(in)
-      use plant_hydro          , only : tw2rwc               & ! subroutine
-                                      , rwc2psi              ! ! subroutine
+      use plant_hydro          , only : tw2rwc               ! ! subroutine
       use physiology_coms      , only : plant_hydro_scheme
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -465,7 +464,6 @@ module rk4_driver
       real(kind=8)                    :: gnd_water
       real(kind=8)                    :: psiplusz
       real(kind=8)                    :: mcheight
-      real(kind=8)                    :: transp
       real(kind=4)                    :: step_waterdef
       real(kind=4)                    :: can_rvap
       !----- Local contants ---------------------------------------------------------------!
@@ -779,37 +777,21 @@ module rk4_driver
          !---------------------------------------------------------------------------------!
          select case (plant_hydro_scheme)
          case (-2,-1,1,2)
-             ! Need to update leaf_water_int and wood_water_int diagnostically
-             ! from water fluxes
-             if (initp%leaf_resolvable(ico)) then
-                transp = (initp%lai(ico) / dble(cpatch%nplant(ico)))           & ! leaf area
-                        * ( initp%fs_open(ico) * initp%psi_open(ico)            & ! open stomata
-                          + (1.d0 - initp%fs_open(ico)) * initp%psi_closed(ico) & ! closed
-                          )
-             else
-                transp = 0.d0
-             endif
-
-             cpatch%leaf_water_int(ico) = sngloff(dble(cpatch%leaf_water_int(ico))   &
-                                             + (dble(cpatch%wflux_wl(ico)) * hdid    &
-                                               - transp) ,tiny_offset)
-             cpatch%wood_water_int(ico) = sngloff(dble(cpatch%wood_water_int(ico))   &
-                                             + ( dble(cpatch%wflux_gw(ico))          &
-                                               - dble(cpatch%wflux_wl(ico))) &
-                                             * hdid ,tiny_offset)
+             ! Need to update leaf_water_int and wood_water_int 
+             cpatch%leaf_water_int(ico) = sngloff( initp%leaf_water_int(ico)               &
+                                                 / dble(cpatch%nplant(ico)),tiny_offset)
+             cpatch%wood_water_int(ico) = sngloff( initp%wood_water_int(ico)               &
+                                                 / dble(cpatch%nplant(ico)),tiny_offset)
 
              ! update heat capacity only when plant_hydro_scheme > 0
              if (plant_hydro_scheme > 0) then
                  cpatch%leaf_hcap(ico) = sngloff(initp%leaf_hcap(ico),tiny_offset)
-
-                 ! only update wood hcap when wood is resolved
-                 if (initp%wood_resolvable(ico)) then
-                     cpatch%wood_hcap(ico) = sngloff(initp%wood_hcap(ico),tiny_offset)
-                 endif
+                 cpatch%wood_hcap(ico) = sngloff(initp%wood_hcap(ico),tiny_offset)
              endif
 
+
              !----------------------------------------------------------------------!
-             ! update rwc
+             ! update rwc since it will be used to update leaf/wood hcap
              !----------------------------------------------------------------------!
 
              call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &

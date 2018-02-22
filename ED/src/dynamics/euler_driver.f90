@@ -165,12 +165,12 @@ subroutine euler_timestep(cgrid)
 
 
 
-            !------------------------------------------------------------------------------!
-            !     Set up the integration patch.                                            !
-            !------------------------------------------------------------------------------!
-            call copy_patch_init(csite,ipa,integration_buff(ibuff)%initp,patch_vels)
-            !------------------------------------------------------------------------------!
 
+            !----- Get plant water flow driven by plant hydraulics ------------------------!
+            !     This must be placed before canopy_photosynthesis because                 !
+            !  plant_hydro_driver needs fs_open from last timestep                         !
+            call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
+            !------------------------------------------------------------------------------!
 
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
@@ -180,13 +180,15 @@ subroutine euler_timestep(cgrid)
                                       ,cpoly%green_leaf_factor(:,isi))
             !------------------------------------------------------------------------------!
 
-            !----- Get plant water flow driven by plant hydraulics ------------------------!
-            call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
-            !------------------------------------------------------------------------------!
-
 
             !----- Compute root and heterotrophic respiration. ----------------------------!
             call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !     Set up the integration patch.                                            !
+            !------------------------------------------------------------------------------!
+            call copy_patch_init(csite,ipa,integration_buff(ibuff)%initp,patch_vels)
             !------------------------------------------------------------------------------!
 
 

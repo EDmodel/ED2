@@ -120,7 +120,6 @@ module growth_balive
 
                   !----- Alias for current PFT. -------------------------------------------!
                   ipft = cpatch%pft(ico)
-
                   !----- Initialize cohort nitrogen uptake. -------------------------------!
                   nitrogen_uptake = 0.0
                   N_uptake_pot    = 0.0

@@ -816,18 +816,20 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
          !-------- Add water and internal energy to the wood of each cohort-------!
          do ico=1,cpatch%ncohorts
             
-            wloss = dble(cpatch%wflux_gw_layer(k1,ico) * cpatch%nplant(ico)) ! kg/m2g/s
+            wloss = dble(cpatch%wflux_gw_layer(k1,ico))                &
+                  * dble(cpatch%nplant(ico))                           ! kg/m2g/s
+
             qloss = wloss * uint_here                    ! J/m2g/s
             
             ! Now we add water absorption to wood and vegetation
+            ! first, water mass
+            dinitp%wood_water_int(ico) = dinitp%wood_water_int(ico)    + wloss
+
+            ! second energy
             dinitp%veg_energy(ico)     = dinitp%veg_energy(ico)        + qloss
             initp%hflx_lrsti(ico)      = initp%hflx_lrsti(ico)         + qloss
 
-            !Only update wood_energy and wood_hcap when wood is resolvable...
-            if (initp%wood_resolvable(ico)) then
-                dinitp%wood_energy(ico)  = dinitp%wood_energy(ico)       + qloss
-                dinitp%wood_hcap(ico)    = dinitp%wood_hcap(ico) + wloss * cliq8 !J/m2g/s
-            endif
+            dinitp%wood_energy(ico)    = dinitp%wood_energy(ico)       + qloss
 
             !Count the total loss from the layer
             wloss_tot = wloss_tot + wloss
@@ -911,6 +913,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use budget_utils          , only : compute_netrad       ! ! function
    use physiology_coms       , only : plant_hydro_scheme   ! ! intent(in)
+   use pft_coms              , only : leaf_psi_min         ! ! intent(in)
    !$ use omp_lib
 
    implicit none
@@ -1449,10 +1452,13 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                ! Compute the water demand from both open closed and open stomata, but      !
                ! first make sure that there is some water available for transpiration...   !
                !     When running plant hydrodynamics, the soil water constraint should be !
-               ! Turned off.                                                               !
+               ! Turned off. Instead, we use leaf water potential as water availability for!
+               ! transpiration.                                                            !
                !---------------------------------------------------------------------------!
-               if (rk4aux(ibuff)%avail_h2o_int(kroot) > 0.d0 .or.                          &
-                   plant_hydro_scheme /= 0 ) then
+               if ((plant_hydro_scheme == 0              .and.                             &
+                    rk4aux(ibuff)%avail_h2o_int(kroot) > 0.d0 ) .or.                       &
+                   (plant_hydro_scheme /= 0              .and.                             &
+                    cpatch%leaf_psi(ico) > leaf_psi_min(ipft) )    ) then
                   gleaf_open   = effarea_transp(ipft)                                      &
                                * initp%leaf_gbw(ico) * initp%gsw_open(ico)                 &
                                / (initp%leaf_gbw(ico) + initp%gsw_open(ico) )
@@ -1529,31 +1535,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 
 
          !---------------------------------------------------------------------------------!
-         !     Deal with plant hydraulic variables.                                        !
-         !---------------------------------------------------------------------------------!
-         select case (plant_hydro_scheme)
-         case (0)
-             ! no plant hydraulics, leaf_hcap does not change
-             wflux_wl = 0.d0
-             qwflux_wl = 0.d0
-             dinitp%leaf_hcap(ico)   = 0.d0
-         case (1,2)
-             ! with plant hydraulics, leaf_hcap changes
-             wflux_wl  = dble(cpatch%wflux_wl(ico)) * dble(cpatch%nplant(ico))
-             qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
-             dinitp%leaf_hcap(ico)   = (wflux_wl - transp) * cliq8 ! J/m2g/s
-         case (-1,-2)
-             ! decouple plant hydraulics and tissue energy, track changes in
-             ! leaf water but leaf_hcap does not change. We have to force
-             ! wflux_wl to be the same as transp in this case....
-             wflux_wl = transp
-             qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
-             dinitp%leaf_hcap(ico)   = 0.d0
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
          !     Find the water energy balance for this cohort.                              !
          !---------------------------------------------------------------------------------!
          dinitp%leaf_water(ico)  = leaf_intercepted     & ! Intercepted water
@@ -1565,7 +1546,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                                  - qwflxlc              & ! Evaporation
                                  - qwshed               & ! Water shedding
                                  - qtransp              & ! Transpiration
-                                 + qwflux_wl            & ! Sapflow
                                  + leaf_qintercepted    ! ! Intercepted water energy
 
          !---------------------------------------------------------------------------------!
@@ -1634,9 +1614,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          dinitp%leaf_water(ico)  = 0.d0
          dinitp%psi_open(ico)    = 0.d0
          dinitp%psi_closed(ico)  = 0.d0
-         ! in this case, both transp and wflux are 0. No need to change wflux
-         ! and qwflux
-         dinitp%leaf_hcap(ico)   = 0.d0
 
 
 
@@ -1830,29 +1807,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          !---------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !     Deal with plant hydraulic variables.                                        !
-         !---------------------------------------------------------------------------------!
-         select case (plant_hydro_scheme)
-         case (0)
-             ! no plant hydraulics, wood_hcap does not change
-             wflux_wl  = 0.d0
-             qwflux_wl = 0.d0
-             dinitp%wood_hcap(ico)   = 0.d0
-         case (1,2)
-             wflux_wl  = dble(cpatch%wflux_wl(ico)) * dble(cpatch%nplant(ico))
-             qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
-             ! with plant hydraulics, wood_hcap changes
-             dinitp%wood_hcap(ico)   = -wflux_wl * cliq8 ! J/m2g/s
-         case (-1,-2)
-             ! decouple plant hydraulics and tissue energy, track changes in
-             ! leaf water but wood_hcap does not change. We have to force
-             ! wflux_wl to be the same as transp in this case....
-             wflux_wl = dble(cpatch%wflux_gw(ico)) * dble(cpatch%nplant(ico))
-             qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
-             dinitp%wood_hcap(ico)   = 0.d0
-         end select
-         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Find the water energy balance for this cohort.                              !
@@ -1865,7 +1819,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                                  - hflxwc               & ! Sensible heat flux
                                  - qwflxwc              & ! Evaporation
                                  - qwshed               & ! Water shedding
-                                 - qwflux_wl            & ! Sapflow
                                  + wood_qintercepted    ! ! Intercepted water energy
          !---------------------------------------------------------------------------------!
 
@@ -1930,8 +1883,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          !---------------------------------------------------------------------------------!
          dinitp%wood_energy(ico) = 0.d0
          dinitp%wood_water(ico)  = 0.d0
-         ! no need to track wood_hcap in this case
-         dinitp%wood_hcap(ico)   = 0.d0
          !---------------------------------------------------------------------------------!
 
 
@@ -1967,6 +1918,52 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Deal with plant hydraulic variables.                                           !
+      !     We always need to update the leaf/wood internal water when plant_hydro_scheme  !
+      ! is non-zero.                                                                       !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+          ! no plant hydraulics, water_int does not change, no need to modify
+          ! leaf/wood energy
+          dinitp%leaf_water_int(ico) = 0.d0
+          dinitp%wood_water_int(ico) = 0.d0
+      case (-2,-1,1,2)
+          ! with plant hydraulics, consider changes in leaf_hcap
+
+          ! first deal with water
+          if (.not. initp%leaf_resolvable(ico)) transp = 0.d0
+          wflux_wl  = dble(cpatch%wflux_wl(ico)) * dble(cpatch%nplant(ico))
+          dinitp%leaf_water_int(ico) = wflux_wl - transp 
+          dinitp%wood_water_int(ico) = -wflux_wl 
+          ! soil water uptake will be accounted for later in leaftw_derivs
+
+          ! then deal with energy
+          if (plant_hydro_scheme > 0) then
+              ! track changes in energy and hcap
+              qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
+              dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qwflux_wl ! Energy in sapflow
+              dinitp%wood_energy(ico) = dinitp%wood_energy(ico) - qwflux_wl ! Energy in sapflow
+          else if (plant_hydro_scheme <  0) then
+              ! not track changes in hcap. We have to force wflux_wl to be the
+              ! same as transp when calculating energy fluxes
+              qwflux_wl = transp * tl2uint8(initp%wood_temp(ico),1.d0)
+              dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qwflux_wl ! Energy in sapflow
+
+              ! Similarly, we have to force wflux_wl to be the same as wflux_gw
+              ! when calculating energy fluxes for wood
+              qwflux_wl = dble(cpatch%wflux_gw(ico))                        &
+                        * dble(cpatch%nplant(ico))                          &
+                        * tl2uint8(initp%wood_temp(ico),1.d0)
+              dinitp%wood_energy(ico) = dinitp%wood_energy(ico) - qwflux_wl ! Energy in sapflow
+          endif
+
+
+
+       end select
+       !-----------------------------------------------------------------------------------!
 
 
       !------ Find the combined leaf + wood derivative. -----------------------------------!

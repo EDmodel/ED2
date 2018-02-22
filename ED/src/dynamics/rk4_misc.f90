@@ -298,6 +298,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
       if (targetp%leaf_resolvable(ico)) then
          targetp%leaf_energy(ico) = dble(cpatch%leaf_energy(ico))
          targetp%leaf_water (ico) = max(0.d0,dble(cpatch%leaf_water (ico)))
+         ! cpatch%leaf_water_int has a unit of kg/pl. Need to convert to kg/m2
+         targetp%leaf_water_int (ico) = dble(cpatch%leaf_water_int (ico)) &
+                                      * dble(cpatch%nplant(ico))
          targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
 
          call uextcm2tl8(targetp%leaf_energy(ico),targetp%leaf_water(ico)                  &
@@ -308,6 +311,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
          targetp%leaf_temp  (ico) = dble(cpatch%leaf_temp  (ico))
          targetp%leaf_water (ico) = dble(cpatch%leaf_water (ico))
          targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
+         ! cpatch%leaf_water_int has a unit of kg/pl. Need to convert to kg/m2
+         targetp%leaf_water_int (ico) = dble(cpatch%leaf_water_int (ico)) &
+                                      * dble(cpatch%nplant(ico))
          targetp%leaf_energy(ico) = cmtl2uext8( targetp%leaf_hcap (ico)                    &
                                               , targetp%leaf_water(ico)                    &
                                               , targetp%leaf_temp (ico)                    &
@@ -325,6 +331,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
       if (targetp%wood_resolvable(ico)) then
          targetp%wood_energy(ico) = dble(cpatch%wood_energy(ico))
          targetp%wood_water (ico) = max(0.d0,dble(cpatch%wood_water (ico)))
+         ! cpatch%wood_water_int has a unit of kg/pl. Need to convert to kg/m2
+         targetp%wood_water_int (ico) = dble(cpatch%wood_water_int (ico)) &
+                                      * dble(cpatch%nplant(ico))
          targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
 
          call uextcm2tl8(targetp%wood_energy(ico),targetp%wood_water(ico)                  &
@@ -334,6 +343,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
          targetp%wood_fliq  (ico) = dble(cpatch%wood_fliq  (ico))
          targetp%wood_temp  (ico) = dble(cpatch%wood_temp  (ico))
          targetp%wood_water (ico) = dble(cpatch%wood_water (ico))
+         ! cpatch%wood_water_int has a unit of kg/pl. Need to convert to kg/m2
+         targetp%wood_water_int (ico) = dble(cpatch%wood_water_int (ico)) &
+                                      * dble(cpatch%nplant(ico))
          targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
          targetp%wood_energy(ico) = cmtl2uext8( targetp%wood_hcap (ico)                    &
                                               , targetp%wood_water(ico)                    &
@@ -594,9 +606,11 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rdryi8                & ! intent(in)
                                     , rdry8                 & ! intent(in)
                                     , epim18                & ! intent(in)
-                                    , toodry8               ! ! intent(in)
+                                    , toodry8               & ! intent(in)
+                                    , cliq8                 ! ! intent(in)
    use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
    use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
+   use physiology_coms       , only : plant_hydro_scheme    ! ! intent(in)
    !$ use omp_lib
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -631,6 +645,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    real(kind=8)                     :: wgt_leaf
    real(kind=8)                     :: wgt_wood
    real(kind=8)                     :: bulk_sfcw_dens
+   real(kind=8)                     :: delta_water_int
    integer                          :: ibuff
    !---------------------------------------------------------------------------------------!
 
@@ -911,6 +926,43 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !     Now we update leaf and branch properties, based on which kind of branch thermo-   !
    ! dynamics we're using.                                                                 !
    !---------------------------------------------------------------------------------------!
+
+   ! before updating temperatures, we need to update heat capacity if we are
+   ! tracking plant hydraulics and heat capacity changes
+   select case (plant_hydro_scheme)
+   case (1,2)
+       do ico=1, cpatch%ncohorts
+       ! in order to reduce dependencies and speed up calculation
+       ! Here we do not call calc_veg_hcap. Instead, we calcualte the changes of
+       ! leaf/wood internal water relative to intial values in cpatch. Then
+       ! modify the hcap accordingly using delta_hcap = delta_water_int * cliq8
+
+            !------------------------------------------------------------------------------!
+            !leaf, note that leaf_water_int has different units between initp
+            !and cpatch
+            delta_water_int     = initp%leaf_water_int(ico)                             &
+                                - dble(cpatch%leaf_water_int(ico)) * dble(cpatch%nplant(ico))
+            ! kg/m2g
+
+            initp%leaf_hcap(ico)= dble(cpatch%leaf_hcap(ico))                           &
+                                + delta_water_int * cliq8
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !wood, note that wood_water_int has different units between initp
+            !and cpatch
+            delta_water_int     = initp%wood_water_int(ico)                             &
+                                - dble(cpatch%wood_water_int(ico)) * dble(cpatch%nplant(ico))
+            ! kg/m2g
+
+            initp%wood_hcap(ico)= dble(cpatch%wood_hcap(ico))                           &
+                                + delta_water_int * cliq8
+            !------------------------------------------------------------------------------!
+
+       enddo
+   end select
+
+
    select case(ibranch_thermo)
    case (1)
 
@@ -3291,7 +3343,41 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    end select
    !---------------------------------------------------------------------------------------!
 
+   
+   !---------------------------------------------------------------------------------------!
+   !      Plant Interal Water                                                              !
+   !---------------------------------------------------------------------------------------!
 
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
+   write(unit=*,fmt='(a)'  ) 
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
+   write(unit=*,fmt='(a)'      ) ' Wood/Leaf WATER_INT  (only the resolvable ones):'
+   write(unit=*,fmt='(9(a,1x))')         'Name            ','   PFT','         LAI'     &
+                                      ,'         WAI','         TAI','   Max.Error'     &
+                                      ,'   Abs.Error','       Scale','Problem(T|F)'
+   do ico = 1,cpatch%ncohorts
+      if (y%leaf_resolvable(ico)) then
+         errmax       = max(errmax,abs(yerr%leaf_water_int(ico)/yscal%leaf_water_int(ico)))
+         troublemaker = large_error(yerr%leaf_water_int(ico),yscal%leaf_water_int(ico))
+         write(unit=*,fmt=cohfmt) 'LEAF_WATER_INT:'                                     &
+                                 ,cpatch%pft(ico),y%lai(ico),y%wai(ico)                 &
+                                 ,y%tai(ico),errmax                                     &
+                                 ,yerr%leaf_water_int(ico)                              &
+                                 ,yscal%leaf_water_int(ico),troublemaker
+      end if
+
+      if (y%wood_resolvable(ico)) then
+         errmax       = max(errmax,abs(yerr%wood_water_int(ico)/yscal%wood_water_int(ico)))
+         troublemaker = large_error(yerr%wood_water_int(ico),yscal%wood_water_int(ico))
+         write(unit=*,fmt=cohfmt) 'WOOD_WATER_INT:'                                     &
+                                 ,cpatch%pft(ico),y%lai(ico),y%wai(ico)                 &
+                                 ,y%tai(ico),errmax                                     &
+                                 ,yerr%wood_water_int(ico)                              &
+                                 ,yscal%wood_water_int(ico),troublemaker
+      end if
+
+   end do
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

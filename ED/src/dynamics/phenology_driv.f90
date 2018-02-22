@@ -216,7 +216,9 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    logical                               :: drop_cold
    real                                  :: daylight
    real                                  :: delta_bleaf
+   real                                  :: delta_broot
    real                                  :: bl_max
+   real                                  :: br_max
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
    real                                  :: salloci
@@ -646,8 +648,14 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
 
 
-            !----- Find the maximum allowed leaf biomass. ---------------------------------!
+            !----- Find the maximum allowed leaf/root biomass. ----------------------------!
             bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            ! Assume half of the fine roots would die if all leaves have shed
+            ! Allowing fine root phenology can reduce the maintenance cost of
+            ! plants in the dry season but reducing it to zero would diable
+            ! water uptake when rain comes. The current fraction 50% is kind of
+            ! arbitrary, need updates in the future.
+            br_max = bl_max / elongf_try * q(ipft) * (elongf_try + 1.0) / 2.0
             !------------------------------------------------------------------------------!
 
 
@@ -658,6 +666,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             ! positive, it means that the plant has more leaves than it should.            !
             !------------------------------------------------------------------------------!
             delta_bleaf = cpatch%bleaf(ico) - bl_max
+            delta_broot = cpatch%broot(ico) - br_max
             !------------------------------------------------------------------------------!
 
 
@@ -738,6 +747,65 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                ! changing phenology_status = 1 while elongf = 0.
                if (delta_bleaf < 0.) cpatch%phenology_status(ico) = 1
                !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+            ! deal with root, dump biomass to soil when necessary
+            ! for now we do not record the root_drop
+            if (delta_broot > 0.0) then
+               !----- Adjust plant carbon pools. ------------------------------------------!
+               cpatch%broot     (ico) = br_max
+               cpatch%balive    (ico) = cpatch%balive(ico)   - delta_broot
+               cpatch%bstorage  (ico) = cpatch%bstorage(ico)                               &
+                                      + retained_carbon_fraction * delta_broot
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Send the lost roots  to soil carbon and nitrogen pools.               !
+               !---------------------------------------------------------------------------!
+               csite%fsc_in           (ipa) = csite%fsc_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * f_labile(ipft)                                
+               csite%fsn_in           (ipa) = csite%fsn_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * f_labile(ipft) / c2n_leaf(ipft)               
+               csite%ssc_in           (ipa) = csite%ssc_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * (1.0-f_labile(ipft))                          
+               csite%ssl_in           (ipa) = csite%ssl_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * (1.0 - f_labile(ipft)) * l2n_stem            &
+                                            / c2n_stem(ipft)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Contribution due to the fact that c2n_leaf and c2n_storage may be     !
+               ! different.                                                                !
+               !---------------------------------------------------------------------------!
+               csite%fsn_in(ipa)     = csite%fsn_in(ipa) + delta_broot*cpatch%nplant(ico)  &
+                                     * retained_carbon_fraction                            &
+                                     * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !      Deduct the leaf drop from the carbon balance.                        !
+               !---------------------------------------------------------------------------!
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+
             end if
             !------------------------------------------------------------------------------!
 
@@ -857,7 +925,9 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    real, dimension(nzg)                  :: theta
    real                                  :: daylight
    real                                  :: delta_bleaf
+   real                                  :: delta_broot
    real                                  :: bleaf_new
+   real                                  :: broot_new
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
    real                                  :: salloci
@@ -1201,6 +1271,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
 
             !----- Find the maximum allowed leaf biomass. ---------------------------------!
             bleaf_new = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            broot_new = bleaf_new / elongf_try * q(ipft) * (elongf_try + 1.0) / 2.0
             !------------------------------------------------------------------------------!
 
 
@@ -1211,6 +1282,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
             ! positive, it means that the plant has more leaves than it should.            !
             !------------------------------------------------------------------------------!
             delta_bleaf = cpatch%bleaf(ico) - bleaf_new
+            delta_broot = cpatch%broot(ico) - broot_new
             !------------------------------------------------------------------------------!
 
 
@@ -1260,6 +1332,33 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
                cpatch%bleaf           (ico) = bleaf_new
                cpatch%balive          (ico) = cpatch%balive(ico) - delta_bleaf
+            end if
+            !------------------------------------------------------------------------------!
+
+            ! deal with broot
+            if (delta_broot > 0.0) then
+               cpatch%broot     (ico) = broot_new
+               cpatch%balive    (ico) = cpatch%balive(ico)   - delta_broot
+               cpatch%bstorage  (ico) = cpatch%bstorage(ico)                               &
+                                      + retained_carbon_fraction * delta_broot
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !      Deduct the leaf drop from the carbon balance.                        !
+               !---------------------------------------------------------------------------!
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+
+               !---------------------------------------------------------------------------!
+            elseif (cpatch%phenology_status(ico) /= 0) then
+               cpatch%broot           (ico) = broot_new
+               cpatch%balive          (ico) = cpatch%balive(ico) - delta_broot
             end if
             !------------------------------------------------------------------------------!
 
