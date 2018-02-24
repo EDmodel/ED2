@@ -25,6 +25,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
                              , epi                & ! intent(in)
                              , wdnsi              & ! intent(in)
                              , wdns               & ! intent(in)
+                             , cpdry              & ! intent(in)
+                             , cph2o              & ! intent(in)
                              , umols_2_kgCyr      & ! intent(in)
                              , yr_day             & ! intent(in)
                              , lnexp_min          & ! intent(in)
@@ -41,6 +43,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
    use farq_katul     , only : katul_lphys        ! ! sub-routine
    use allometry      , only : h2crownbh          ! ! function
    use therm_lib      , only : qslif              ! ! function
+   use canopy_struct_dynamics, only : leaf_aerodynamic_conductances ! ! sub-routine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite             ! Current site
@@ -90,6 +93,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
    real                                    :: vm0_ico
    real                                    :: llspan_tuco
    real                                    :: can_ssh
+   real                                    :: can_cp   
    integer, dimension(n_pft)               :: tuco_pft
    !----- Locally saved variables. --------------------------------------------------------!
    real                          , save    :: dtlsm_o_frqsum
@@ -109,7 +113,25 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
    cpatch => csite%patch(ipa)
    !---------------------------------------------------------------------------------------!
 
-
+   !----- Update leaf_gbw if leaf is resolvable but leaf_gbw is 0. ------------------------!
+   ! Canopy air space specific heat           [   J/kg/K]
+   ! This is used to calculate leaf_gbw if the cohort 'just' become resolvable
+   ! after cohort fusion. Otherwise, there will be divide-by-zero error in
+   ! photosynthesis calculation
+   can_cp     = (1.0 - csite%can_shv(ipa)) * cpdry + csite%can_shv(ipa) * cph2o
+   do ico = 1, cpatch%ncohorts
+      if (cpatch%leaf_resolvable(ico) .and. cpatch%leaf_gbw(ico) == 0.) then
+         call leaf_aerodynamic_conductances(cpatch%pft(ico)                 &
+                                           ,cpatch%veg_wind(ico)            &
+                                           ,cpatch%leaf_temp(ico)           &
+                                           ,csite%can_temp(ipa)             &
+                                           ,csite%can_rhos(ipa)             &
+                                           ,can_cp                          &
+                                           ,cpatch%leaf_gbh(ico)            &
+                                           ,cpatch%leaf_gbw(ico))
+      endif
+   enddo
+   !---------------------------------------------------------------------------------------!
 
    !----- Allocate the available water function for plants. -------------------------------!
    if (cpatch%ncohorts > 0) then
@@ -304,7 +326,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
                 .or. (istomata_scheme == 1)) then
                 ! in this case, vm0_tuco represents the input vm0 for
                 ! photosynthesis
-                vm0_tuco = cpatch%vm0(tuco)
+                vm0_tuco = cpatch%vm0(tpft)
             end if
 
             !------------------------------------------------------------------------------!
