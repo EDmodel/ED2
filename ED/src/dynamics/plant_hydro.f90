@@ -462,12 +462,20 @@ module plant_hydro
           ! cannot support upward sapflow or leaf cannot support downward
           ! flow... This could happen for dying trees experiencing extreme
           ! drought. In this case, we zero the flow
+
+          ! Special case 3, if the cohort just grows out of 'small tree status'.
+          ! Their leaves can be over-charged with water because gravitational
+          ! effect was not considered for leaf water potential of small trees.
+          ! As a result, this can lead to a down-ward sapflow, and potentially
+          ! over-charging the sapwood. We need to zero the flow in this case as
+          ! well, until leaf_psi_d drops below wood_psi_d - hite_d
   
           zero_flow_flag = (c_leaf == 0.d0)                          .or.      & ! Case 1
                            (leaf_psi_d >= (wood_psi_d - hite_d) .and.          &
                             leaf_psi_d <= dble(leaf_psi_min(ipft)))  .or.      & ! Case 2
                            (leaf_psi_d <= (wood_psi_d - hite_d) .and.          &
-                            wood_psi_d <= dble(wood_psi_min(ipft)))            ! ! Case 2
+                            wood_psi_d <= dble(wood_psi_min(ipft)))  .or.      & ! Case 2
+                           (leaf_psi_d >  (wood_psi_d - hite_d))               ! ! Case 3
   
                           
           if (zero_flow_flag) then
