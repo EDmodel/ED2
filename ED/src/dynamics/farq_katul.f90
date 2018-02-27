@@ -377,7 +377,8 @@ Contains
       case (4)
           ! down scale Vcmax, Jmax, lambda using leaf_psi
           ! parameters are kind of arbitrary from Xu et al. 2016 New Phyt.
-      	  down_factor   = max(1e-6,min(1.0,1. / (1. + (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
+          down_factor = max(1e-6,min(1.0, &
+                        1. / (1. + (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
           lambda =  stoma_lambda(ipft) * can_co2 / 400. * exp(stoma_beta(ipft) * leaf_psi)
       end select
 
@@ -464,7 +465,7 @@ Contains
                     (test_gsc < cuticular_gsc .and. dfcdg-dfedg < 0.) .or.      &  ! close stomatal
                     (test_gsc < cuticular_gsc .and. isnan(dfcdg-dfedg)) .or.    &  ! close stomatal
                     (test_gsc + delta_g <= 0.)                 .or.             &  ! unrealistic values
-                    (isnan(delta_g) < 0.)                      .or.             &  ! unrealistic values
+                    (isnan(delta_g))                           .or.             &  ! unrealistic values
                     (delta_g == 0.)                            .or.             &  ! trapped
                     (test_gsc > 1.0 .and. dfcdg-dfedg > 0.)                     &  ! fully open stomatal
                    ) then
@@ -548,7 +549,7 @@ Contains
                     (test_gsc < cuticular_gsc .and. dfcdg-dfedg < 0.) .or.      &   ! close stomatal
                     (test_gsc < cuticular_gsc .and. isnan(dfcdg-dfedg)) .or.    &   ! close stomatal
                     (test_gsc + delta_g <= 0.)                 .or.             &   ! unrealistic values
-                    (isnan(delta_g) < 0.)                   .or.                &   ! unrealistic values
+                    (isnan(delta_g))                           .or.             &   ! unrealistic values
                     (delta_g == 0.)                 .or.                        &   ! trapped
                     (test_gsc > 1.0 .and. dfcdg-dfedg > 0.)                     &   ! fullyopen stomatal
                    ) then
@@ -636,11 +637,13 @@ Contains
     A_open          = accepted_fc           ! umol/m2/s
     leaf_resp       = Rdark
 
-    gsw_closed      = cuticular_gsc / gsw_2_gsc  * mmdry / effarea_transp(ipft)  ! convert to kg/m2/s
-    gsw_open        = accepted_gsc / gsw_2_gsc  * mmdry / effarea_transp(ipft)  ! convert to kg/m2/s
+    gsw_closed      = cuticular_gsc / gsw_2_gsc  &
+                    * mmdry / sngloff(effarea_transp(ipft),tiny_offset)  ! convert to kg/m2/s
+    gsw_open        = accepted_gsc / gsw_2_gsc  &
+                    * mmdry / sngloff(effarea_transp(ipft),tiny_offset)  ! convert to kg/m2/s
 
     !------------------- these variables are not tracked....
-    blyr_cond_h2o   = leaf_gbw * mmdryi * effarea_transp(ipft)
+    blyr_cond_h2o   = leaf_gbw * mmdryi * sngloff(effarea_transp(ipft),tiny_offset)
     stom_cond_h2o   = cuticular_gsc / gsw_2_gsc
     lsfc_shv_closed = ( stom_cond_h2o * lint_shv + blyr_cond_h2o * can_shv)                 &
                     / ( stom_cond_h2o + blyr_cond_h2o)  
