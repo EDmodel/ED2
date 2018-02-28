@@ -1154,8 +1154,8 @@ module growth_balive
 
                if (bloss_max > carbon_debt) then
                   !----- Remove biomass accordingly. --------------------------------------!
-                  tr_bleaf = f_bleaf * -1.0 * carbon_debt
-                  tr_broot = f_broot * -1.0 * carbon_debt
+                  tr_bleaf = f_bleaf * (-1.0) * carbon_debt
+                  tr_broot = f_broot * (-1.0) * carbon_debt
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -1165,8 +1165,8 @@ module growth_balive
                   ! cohort is going to fertilizer business.                                !
                   !------------------------------------------------------------------------!
                   carbon_debt = bloss_max
-                  tr_bleaf = -1.0*cpatch%bleaf(ico);
-                  tr_broot = -1.0*cpatch%broot(ico);
+                  tr_bleaf = (-1.0)*cpatch%bleaf(ico);
+                  tr_broot = (-1.0)*cpatch%broot(ico);
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1184,16 +1184,16 @@ module growth_balive
 
             if (bloss_max > carbon_debt) then
                !----- Remove biomass accordingly. -----------------------------------------!
-               tr_bleaf = f_bleaf * -1.0 * carbon_debt
-               tr_broot = f_broot * -1.0 * carbon_debt
+               tr_bleaf = f_bleaf * (-1.0) * carbon_debt
+               tr_broot = f_broot * (-1.0) * carbon_debt
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
                !     Not enough biomass, remove everything.                                !
                !---------------------------------------------------------------------------!
                carbon_debt = carbon_debt - bloss_max
-               tr_bleaf = -1.0*cpatch%bleaf(ico);
-               tr_broot = -1.0*cpatch%broot(ico);
+               tr_bleaf = (-1.0)*cpatch%bleaf(ico);
+               tr_broot = (-1.0)*cpatch%broot(ico);
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -1202,7 +1202,7 @@ module growth_balive
                !---------------------------------------------------------------------------!
                if (cpatch%bstorage(ico) > carbon_debt) then
                   !----- Enough carbon in storage, take all carbon needed from there. -----!
-                  tr_bstorage = -1.0 * carbon_debt
+                  tr_bstorage = (-1.0) * carbon_debt
                   !cpatch%bstorage(ico) = cpatch%bstorage(ico) - carbon_debt
                   !------------------------------------------------------------------------!
                else
@@ -1212,7 +1212,7 @@ module growth_balive
                   ! can't afford.  It is with profound sadness that we announce that this  !
                   ! cohort is going to fertilizer business.                                !
                   !------------------------------------------------------------------------!
-                  tr_bstorage = -1.0*cpatch%bstorage(ico)
+                  tr_bstorage = (-1.0)*cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
                end if
             end if

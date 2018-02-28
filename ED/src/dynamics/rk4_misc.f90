@@ -2068,7 +2068,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite)
 !         if ( initp%sfcwater_mass(k)   >  rk4tiny_sfcw_mass              .and.             &
 !              rk4snowmin * thicknet(k) <= sum_sfcw_mass                  .and.             &
 !              initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
-         if ( initp%sfcwater_mass(k)   >=  rk4snowmin		             .and.             &
+         if ( initp%sfcwater_mass(k)   >=  rk4snowmin                    .and.             &
               rk4snowmin * fsdnsi8 <= initp%sfcwater_depth(k)            .and.             &
               initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
             newlayers = newlayers + 1

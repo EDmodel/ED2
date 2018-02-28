@@ -49,8 +49,6 @@ Contains
                               , effarea_transp           ! ! intent(in)
     use pft_coms       , only : photosyn_pathway         & ! intent(in)
                               , phenology                & ! intent(in)
-                              , Vm0                      & ! intent(in)
-                              , Rd0                      & ! intent(in)
                               , vm_hor                   & ! intent(in)
                               , vm_low_temp              & ! intent(in)
                               , vm_high_temp             & ! intent(in)
@@ -66,8 +64,7 @@ Contains
                               , quantum_efficiency       & ! intent(in)
                               , leaf_psi_tlp             & ! intent(in)
                               , stoma_lambda             & ! intent(in)
-                              , stoma_beta               & ! intent(in)
-                              , leaf_psi_min             ! ! intent(in)
+                              , stoma_beta               ! ! intent(in)
     use consts_coms    , only : t00                      & ! intent(in)
                               , umol_2_mol               & ! intent(in)
                               , mmdry1000                & ! intent(in)
@@ -263,7 +260,7 @@ Contains
 
           cp = compp_refval * mod_arrhenius(leaf_temp,compp_hor,0.,0.,0.,.false.) / umol_2_mol
           kc = kco2_refval * mod_arrhenius(leaf_temp,kco2_hor,0.,0.,0.,.false.)   / umol_2_mol
-          ko = kco2_refval * mod_arrhenius(leaf_temp,ko2_hor,0.,0.,0.,.false.)    / umol_2_mol
+          ko = ko2_refval * mod_arrhenius(leaf_temp,ko2_hor,0.,0.,0.,.false.)    / umol_2_mol
 
       case (2,3)
           ! Use Q10 from Collatz et al. 1991 
@@ -315,7 +312,7 @@ Contains
 
           cp = compp_refval * mod_collatz(leaf_temp,compp_q10,0.,0.,0.,.false.) / umol_2_mol
           kc = kco2_refval * mod_collatz(leaf_temp,kco2_q10,0.,0.,0.,.false.)   / umol_2_mol
-          ko = kco2_refval * mod_collatz(leaf_temp,ko2_q10,0.,0.,0.,.false.)    / umol_2_mol
+          ko = ko2_refval * mod_collatz(leaf_temp,ko2_q10,0.,0.,0.,.false.)    / umol_2_mol
 
       case (4)
           ! Vcmax, Jmax Temperature dependence according to Harley et al. 1991
@@ -385,13 +382,6 @@ Contains
       Jmax      = Jmax * down_factor * greeness
       Vcmax     = Vcmax * down_factor * greeness
 
-
-      !              max(0.0,min(1.0, (leaf_psi - leaf_psi_min(ipft)) &
-      !              / (TLP(ipft) - leaf_psi_min(ipft))))
-      ! when leaf water potential is too low, there can't be any water loss...
-      ! mimicking the cease of soil evaporation near sh
-
-       
       !------------------------------------------------------------------------------------!
 
       

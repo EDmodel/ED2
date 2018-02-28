@@ -731,7 +731,7 @@ module canopy_struct_dynamics
       ! order closure as in Massman and Weil (1999).                                       !
       !------------------------------------------------------------------------------------!
       case (2:3)
-          !----- Get the appropriate characteristic wind speed. ----------------------------!
+         !----- Get the appropriate characteristic wind speed. ----------------------------!
          if (stable) then
             cmet%vels = cmet%vels_stab
          else

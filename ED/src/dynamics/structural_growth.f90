@@ -607,7 +607,7 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: bstorage_in
    real                          :: agb_in
    real                          :: ba_in
-   real                          :: phenstatus_in
+   integer                       :: phenstatus_in
    real                          :: lai_in
    real                          :: wai_in
    real                          :: cai_in
@@ -1327,9 +1327,6 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
 
    use ed_state_vars , only : patchtype           ! ! structure
    use pft_coms      , only : SLA                 & ! intent(in)
-                            , q                   & ! intent(in)
-                            , qsw                 & ! intent(in)
-                            , agf_bs              & ! intent(in)
                             , Vm0                 & ! intent(in)
                             , vm_hor              & ! intent(in)
                             , vm_low_temp         & ! intent(in)
@@ -1409,7 +1406,6 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
                                      58.52,          & ! Hv
                                      0.710,          & ! Sv
                                      220.0)            ! Hd
-
        end select
 
 

@@ -667,15 +667,15 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_vapor_wc         !<Wood evaporation  [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_intercepted_aw   !<Wood interception [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_wshed_wg         !<Wood shedding     [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_lai              !<LAI  		        [   m2l/m2g]
-      real,pointer,dimension(:)	  :: fmean_bdead            !<Bdead		        [    kgC/pl]
-      real,pointer,dimension(:)	  :: fmean_leaf_psi         !<&Psi; leaf        [         m]
-      real,pointer,dimension(:)	  :: fmean_wood_psi         !<&Psi; wood        [         m]
-      real,pointer,dimension(:)	  :: fmean_leaf_water_int   !<Water conc. leaf  [     kg/pl]
-      real,pointer,dimension(:)	  :: fmean_wood_water_int   !<Water conc. wood  [     kg/pl]
-      real,pointer,dimension(:)	  :: fmean_wflux_gw         !<Water Abs.        [      kg/s]
+      real,pointer,dimension(:)   :: fmean_lai              !<LAI               [   m2l/m2g]
+      real,pointer,dimension(:)   :: fmean_bdead            !<Bdead             [    kgC/pl]
+      real,pointer,dimension(:)   :: fmean_leaf_psi         !<&Psi; leaf        [         m]
+      real,pointer,dimension(:)   :: fmean_wood_psi         !<&Psi; wood        [         m]
+      real,pointer,dimension(:)   :: fmean_leaf_water_int   !<Water conc. leaf  [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_wood_water_int   !<Water conc. wood  [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_wflux_gw         !<Water Abs.        [      kg/s]
       real,pointer,dimension(:,:) :: fmean_wflux_gw_layer   !<Water Abs. Layer  [      kg/s]
-      real,pointer,dimension(:)	  :: fmean_wflux_wl         !<sapflow           [      kg/s]
+      real,pointer,dimension(:)   :: fmean_wflux_wl         !<sapflow           [      kg/s]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:)   :: dmean_nppleaf          !<Leaf NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppfroot         !<Fine root NPP     [ kgC/pl/yr]
@@ -763,15 +763,15 @@ module ed_state_vars
       ! for plant hydrodyanmics, daily mean water potential is of less interest.
       ! We only track daily maximum and minimum water potential here. DMEAN of
       ! water fluxes are calculated.
-      real,pointer,dimension(:)	    :: dmax_leaf_psi       !<Daily max &Psi; leaf [m]
-      real,pointer,dimension(:)	    :: dmin_leaf_psi       !<Daily min &Psi; leaf [m]
-      real,pointer,dimension(:)	    :: dmax_wood_psi       !<Daily max &Psi; wood [m]
-      real,pointer,dimension(:)	    :: dmin_wood_psi       !<Daily min &Psi; wood [m]
-      real,pointer,dimension(:)	    :: dmean_leaf_water_int   
-      real,pointer,dimension(:)	    :: dmean_wood_water_int   
-      real,pointer,dimension(:)	    :: dmean_wflux_gw         
+      real,pointer,dimension(:)     :: dmax_leaf_psi       !<Daily max &Psi; leaf [m]
+      real,pointer,dimension(:)     :: dmin_leaf_psi       !<Daily min &Psi; leaf [m]
+      real,pointer,dimension(:)     :: dmax_wood_psi       !<Daily max &Psi; wood [m]
+      real,pointer,dimension(:)     :: dmin_wood_psi       !<Daily min &Psi; wood [m]
+      real,pointer,dimension(:)     :: dmean_leaf_water_int   
+      real,pointer,dimension(:)     :: dmean_wood_water_int   
+      real,pointer,dimension(:)     :: dmean_wflux_gw         
       real,pointer,dimension(:,:)   :: dmean_wflux_gw_layer   
-      real,pointer,dimension(:)	    :: dmean_wflux_wl         
+      real,pointer,dimension(:)     :: dmean_wflux_wl         
 
 
       !----- Monthly mean (same units as fast mean). --------------------------------------!
@@ -847,15 +847,15 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nppwood
       real,pointer,dimension(:)     :: mmean_nppdaily
       ! plant hydraulics
-      real,pointer,dimension(:)	    :: mmean_dmax_leaf_psi      
-      real,pointer,dimension(:)	    :: mmean_dmin_leaf_psi       
-      real,pointer,dimension(:)	    :: mmean_dmax_wood_psi       
-      real,pointer,dimension(:)	    :: mmean_dmin_wood_psi       
-      real,pointer,dimension(:)	    :: mmean_leaf_water_int
-      real,pointer,dimension(:)	    :: mmean_wood_water_int
-      real,pointer,dimension(:)	    :: mmean_wflux_gw         
+      real,pointer,dimension(:)     :: mmean_dmax_leaf_psi      
+      real,pointer,dimension(:)     :: mmean_dmin_leaf_psi       
+      real,pointer,dimension(:)     :: mmean_dmax_wood_psi       
+      real,pointer,dimension(:)     :: mmean_dmin_wood_psi       
+      real,pointer,dimension(:)     :: mmean_leaf_water_int
+      real,pointer,dimension(:)     :: mmean_wood_water_int
+      real,pointer,dimension(:)     :: mmean_wflux_gw         
       real,pointer,dimension(:,:)   :: mmean_wflux_gw_layer   
-      real,pointer,dimension(:)	    :: mmean_wflux_wl         
+      real,pointer,dimension(:)     :: mmean_wflux_wl         
 
 
       !----- Monthly mean sum of squares. -------------------------------------------------!
@@ -2550,8 +2550,8 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_soil_wetness     !<Soil wetness index  [        --]
       real,pointer,dimension(:) :: fmean_skin_temp        !<Skin temperature    [         K]
       !--------Variables required by PEcAn.  ----------------------------------------------!
-      real,pointer,dimension(:) :: fmean_lai		  !<LAI  		[     m2/m2]
-      real,pointer,dimension(:)	:: fmean_bdead	    	  !<Bdead		[     kg/pl]
+      real,pointer,dimension(:) :: fmean_lai              !<LAI                 [     m2/m2]
+      real,pointer,dimension(:) :: fmean_bdead            !<Bdead               [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:) :: dmean_nppleaf          !<Leaf NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppfroot         !<Fine root NPP       [ kgC/m2/yr]
@@ -3445,8 +3445,8 @@ module ed_state_vars
       allocate(cgrid%fmean_dpcpg                (                    npolygons))
       allocate(cgrid%fmean_soil_wetness         (                    npolygons))
       allocate(cgrid%fmean_skin_temp            (                    npolygons))
-      allocate(cgrid%fmean_lai			(                    npolygons))
-      allocate(cgrid%fmean_bdead 		(                    npolygons))
+      allocate(cgrid%fmean_lai                  (                    npolygons))
+      allocate(cgrid%fmean_bdead                (                    npolygons))
 
 
 
@@ -5437,8 +5437,8 @@ module ed_state_vars
       nullify(cgrid%fmean_dpcpg             )
       nullify(cgrid%fmean_soil_wetness      )
       nullify(cgrid%fmean_skin_temp         )
-      nullify(cgrid%fmean_lai		    )
-      nullify(cgrid%fmean_bdead		    )
+      nullify(cgrid%fmean_lai               )
+      nullify(cgrid%fmean_bdead             )
       nullify(cgrid%dmean_nppleaf           )
       nullify(cgrid%dmean_nppfroot          )
       nullify(cgrid%dmean_nppsapwood        )
@@ -13158,7 +13158,7 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'FMEAN_LAI_PY  :11:'//trim(fast_keys)  )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - LAI'					   &
+                           ,'Sub-daily mean - LAI'                                         &
                            ,'[           m2/m2]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_skin_temp)) then

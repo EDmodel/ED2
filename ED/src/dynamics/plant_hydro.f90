@@ -290,7 +290,6 @@ module plant_hydro
                                  , vessel_curl_factor   & ! intent(in)
                                  , root_beta            & ! intent(in)
                                  , SRA                  & ! intent(in)
-                                 , is_grass             & ! intent(in)
                                  , C2B                  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -545,8 +544,9 @@ module plant_hydro
 
             ! calcualte the root fraction of this layer
             root_frac = &
-                (dble(root_beta(ipft)) ** (above_layer_depth / -slz8(krdepth)) - &
-                 dble(root_beta(ipft)) ** (current_layer_depth / -slz8(krdepth)))
+                (dble(root_beta(ipft)) ** (above_layer_depth   / (-slz8(krdepth)))  &
+                -dble(root_beta(ipft)) ** (current_layer_depth / (-slz8(krdepth)))  &
+                )
                                        
             !  Calculate RAI in each layer
             !  Assume root can extent to an area 4 times of crown area (twice as
@@ -797,8 +797,7 @@ module plant_hydro
    !=======================================================================================!
    subroutine rwc2tw(leaf_rwc,wood_rwc,bleaf,bdead,broot,sap_frac,ipft     &
                     ,leaf_water_int,wood_water_int)
-      use pft_coms      ,   only : wood_rwc_min         & ! intent(in)
-                                 , leaf_water_sat       & ! intent(in)
+      use pft_coms      ,   only : leaf_water_sat       & ! intent(in)
                                  , wood_water_sat       & ! intent(in)
                                  , C2B                  ! ! intent(in)
       implicit none
@@ -833,8 +832,7 @@ module plant_hydro
    !=======================================================================================!
    subroutine tw2rwc(leaf_water_int,wood_water_int,bleaf,bdead,broot,sap_frac,ipft        &
                     ,leaf_rwc,wood_rwc)
-      use pft_coms      ,   only : wood_rwc_min         & ! intent(in)
-                                 , leaf_water_sat       & ! intent(in)
+      use pft_coms      ,   only : leaf_water_sat       & ! intent(in)
                                  , wood_water_sat       & ! intent(in)
                                  , C2B                  ! ! intent(in)
       implicit none

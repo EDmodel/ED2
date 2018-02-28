@@ -54,7 +54,6 @@ module ed_therm_lib
                                       , wat_dry_ratio_ngrn  & ! intent(in)
                                       , leaf_water_sat      & ! intent(in)
                                       , wood_water_sat      & ! intent(in)
-                                      , wood_rwc_min        & ! intent(in)
                                       , delta_c             & ! intent(in)
                                       , agf_bs              & ! intent(in)
                                       , C2B                 & ! intent(in)

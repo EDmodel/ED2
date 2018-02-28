@@ -2526,8 +2526,8 @@ subroutine read_ed21_polyclone
          dset_slzm(dset_nzg) = 0.5*(dset_slzm(dset_nzg)+0.0)
 
 
-	 polyloop: do ipy = 1,cgrid%npolygons
-	 	       cpoly => cgrid%polygon(ipy)
+      polyloop: do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
 
             !----- We skip the polygon if its source polygon is not in this file. ---------!
             if (psrcfile(ipy) /= nf) cycle polyloop

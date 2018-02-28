@@ -146,11 +146,11 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
    real(kind=8)                     :: wilting_factor   ! Wilting factor
    real(kind=8)                     :: ext_weight       ! Layer weight for transpiration
    real(kind=8)                     :: wloss            ! Water loss due to transpiration
-   real(kind=8)                     :: wvlmeloss        ! Water loss due to transpiration
+!   real(kind=8)                     :: wvlmeloss        ! Water loss due to transpiration
    real(kind=8)                     :: wloss_tot        ! Total water loss amongst cohorts
    real(kind=8)                     :: wvlmeloss_tot    ! Total water loss amongst cohorts
    real(kind=8)                     :: qloss            ! Energy loss due to transpiration
-   real(kind=8)                     :: qvlmeloss        ! Energy loss due to transpiration
+!   real(kind=8)                     :: qvlmeloss        ! Energy loss due to transpiration
    real(kind=8)                     :: qloss_tot        ! Total energy loss amongst cohorts
    real(kind=8)                     :: qvlmeloss_tot    ! Total energy loss amongst cohorts
    real(kind=8)                     :: infilt           ! Surface infiltration rate

@@ -3480,7 +3480,7 @@ subroutine init_pft_hydro_params()
        wood_Kmax(ipft)  = exp(2.11 - 20.05 * rho(ipft) / Amax_25) / MPa2m 
        ! This is estimated from Figure S2.2 in Christofferson et al. 2016 GMD
 
-       wood_Kexp(ipft)  = 0.544 * 4. * (-wood_psi50(ipft) / MPa2m) ** -0.17
+       wood_Kexp(ipft)  = 0.544 * 4. * (-wood_psi50(ipft) / MPa2m) ** (-0.17)
        ! Christofferson et al. 2016 GMD only reports the slope of PLC at psi50,
        ! the slope = - wood_Kexp / (4 * wood_psi50) by calculating the
        ! derivatives of the PLC function. Thus, we back-calculate wood_Kexp from
