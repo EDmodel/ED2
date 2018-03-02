@@ -58,6 +58,7 @@ module plant_hydro
       real                                    :: bsap       ! sapwood biomass         [kgC]
       real                                    :: crown_area ! crown area              [m2]
       real                                    :: transp     ! transpiration rate      [kg/s]
+      real                                    :: c_leaf     ! leaf capacitance        [kg/m]
       !----- Locally saved variables. -----------------------------------------------------!
       real        , save                      :: dtlsm_o_frqsum
       logical     , save                      :: first_time = .true.
@@ -151,15 +152,18 @@ module plant_hydro
                 call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)     &
                             ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
 
-                if (cpatch%bleaf(ico) > 0.) then
+                c_leaf = leaf_water_cap(cpatch%pft(ico)) * C2B * cpatch%bleaf(ico)
+                if (c_leaf > 0.) then
             
                     cpatch%leaf_psi(ico) = cpatch%leaf_psi(ico)                  &
                                          + transp * dtlsm                        &  ! kg/H2O
-                                         / ( leaf_water_cap(cpatch%pft(ico))     &
-                                           * C2B * cpatch%bleaf(ico))               ! kgH2O/m
+                                         / c_leaf                                   ! kgH2O/m
                 else
                     ! no leaves, set leaf_psi the same as wood_psi - hite
                     cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%hite(ico)
+!                    ! need to reset rwc
+!                    call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico) &
+!                                 cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
                 endif
                 
 
@@ -846,18 +850,21 @@ module plant_hydro
       integer   , intent(in)    ::  ipft        ! Plant functional type                [  -]
       real      , intent(out)   ::  leaf_rwc    ! Relative water content of leaves     [0-1]
       real      , intent(out)   ::  wood_rwc    ! Relative water content of wood       [0-1]
+      !----- Locals    --------------------------------------------------------------------!
+      real                      :: tot_water_sat
 
       ! leaf
-      if (bleaf > 0.) then
-          leaf_rwc          =   leaf_water_int / (leaf_water_sat(ipft) * bleaf * C2B)
+      tot_water_sat = leaf_water_sat(ipft) * C2B * bleaf
+      if (tot_water_sat > 0.) then
+          leaf_rwc          =   leaf_water_int / tot_water_sat
       else
           leaf_rwc          =   0.
       endif
       
       ! wood
-      if (broot + bdead * sap_frac > 0.) then
-          wood_rwc          =   wood_water_int / wood_water_sat(ipft)                         &
-                            /   ((broot + bdead * sap_frac) * C2B)            
+      tot_water_sat = wood_water_sat(ipft) * C2B * (broot + bdead * sap_frac) * C2B
+      if (tot_water_sat > 0.) then
+          wood_rwc          =   wood_water_int / tot_water_sat
       else
           wood_rwc          =   0.
       endif
