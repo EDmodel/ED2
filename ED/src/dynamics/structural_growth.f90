@@ -1427,7 +1427,7 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
        select case (trait_plasticity_scheme)
        case (1,2)
            ! SLA is defined at the top of canopy, use LAI to change SLA
-            cpatch%sla(ico) = SLA(ipft) * exp(ksla * max_cum_lai)
+            cpatch%sla(ico) = SLA(ipft) * min(2.,exp(ksla * max_cum_lai))
        case (-1,-2)
            ! SLA is defined at the bottom of canopy, use height to change SLA
             cpatch%sla(ico) = SLA(ipft) / (1. + lma_slope * cpatch%hite(ico))

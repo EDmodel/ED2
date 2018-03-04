@@ -24980,7 +24980,7 @@ module ed_state_vars
       if (associated(cpatch%wood_rwc)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%wood_rwc,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'Wood_RWC :41:hist') 
+           var_len,var_len_global,max_ptrs,'WOOD_RWC :41:hist') 
          call metadata_edio(nvar,igr,'Wood Relative Water Content','[-]','icohort') 
       end if
 

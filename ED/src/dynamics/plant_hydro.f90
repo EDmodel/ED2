@@ -862,7 +862,7 @@ module plant_hydro
       endif
       
       ! wood
-      tot_water_sat = wood_water_sat(ipft) * C2B * (broot + bdead * sap_frac) * C2B
+      tot_water_sat = wood_water_sat(ipft) * C2B * (broot + bdead * sap_frac)
       if (tot_water_sat > 0.) then
           wood_rwc          =   wood_water_int / tot_water_sat
       else
