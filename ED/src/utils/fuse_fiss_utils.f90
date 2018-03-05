@@ -1248,6 +1248,10 @@ module fuse_fiss_utils
       ! done in ED-1.0."                                                                   !
       !------------------------------------------------------------------------------------!
       do imon = 1,13
+         cpatch%plc_monthly(imon,recc) = cpatch%plc_monthly (imon,recc) * rnplant          &
+                                       + cpatch%plc_monthly (imon,donc) * dnplant
+         cpatch%ddbh_monthly(imon,recc)= cpatch%ddbh_monthly(imon,recc) * rnplant          &
+                                       + cpatch%ddbh_monthly(imon,donc) * dnplant
          cpatch%cb         (imon,recc) = cpatch%cb          (imon,recc) * rnplant          &
                                        + cpatch%cb          (imon,donc) * dnplant
          cpatch%cb_lightmax(imon,recc) = cpatch%cb_lightmax (imon,recc) * rnplant          &
@@ -1515,10 +1519,10 @@ module fuse_fiss_utils
                                 + cpatch%llspan      (donc) * dnplant
       cpatch%vm_bar      (recc) = cpatch%vm_bar      (recc) * rnplant                      &
                                 + cpatch%vm_bar      (donc) * dnplant
-      cpatch%sla         (recc) = cpatch%sla         (recc) * rnplant                      &
-                                + cpatch%sla         (donc) * dnplant
       cpatch%vm0         (recc) = cpatch%vm0         (recc) * rnplant                      &
                                 + cpatch%vm0         (donc) * dnplant
+      ! since SLA will be influenced by LAI, we update SLA at the end after LAI
+      ! is updated
       !------------------------------------------------------------------------------------!
 
 
@@ -2883,6 +2887,15 @@ module fuse_fiss_utils
       !----- Make sure that crown area is bounded. ----------------------------------------!
       cpatch%crown_area (recc) = min(1.,cpatch%crown_area(recc)  + cpatch%crown_area(donc))
       !------------------------------------------------------------------------------------!
+      ! update SLA using the new lai, bleaf, and nplant
+      if (cpatch%bleaf(recc) * cpatch%nplant(recc) > 0.) then
+          cpatch%sla         (recc) = cpatch%lai(recc)                                     &
+                                    / (cpatch%bleaf(recc) * cpatch%nplant(recc))
+      else
+          ! no leaf biomass, use nplant to scale sla
+          cpatch%sla         (recc) = cpatch%sla         (recc) * rnplant                  &
+                                    + cpatch%sla         (donc) * dnplant
+      endif
 
       return
    end subroutine fuse_2_cohorts
