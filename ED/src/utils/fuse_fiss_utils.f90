@@ -1248,10 +1248,6 @@ module fuse_fiss_utils
       ! done in ED-1.0."                                                                   !
       !------------------------------------------------------------------------------------!
       do imon = 1,13
-         cpatch%plc_monthly(imon,recc) = cpatch%plc_monthly (imon,recc) * rnplant          &
-                                       + cpatch%plc_monthly (imon,donc) * dnplant
-         cpatch%ddbh_monthly(imon,recc)= cpatch%ddbh_monthly(imon,recc) * rnplant          &
-                                       + cpatch%ddbh_monthly(imon,donc) * dnplant
          cpatch%cb         (imon,recc) = cpatch%cb          (imon,recc) * rnplant          &
                                        + cpatch%cb          (imon,donc) * dnplant
          cpatch%cb_lightmax(imon,recc) = cpatch%cb_lightmax (imon,recc) * rnplant          &
