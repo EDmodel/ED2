@@ -1353,6 +1353,8 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
    real                        :: ksla         ! extinction coefficient for SLA
    real                        :: lma_slope    ! linearized slope of LMA with height
    real                        :: vm25
+   real                        :: new_sla
+   real                        :: sla_scaler
    !---------------------------------------------------------------------------------------!
 
 
@@ -1427,11 +1429,24 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
        select case (trait_plasticity_scheme)
        case (1,2)
            ! SLA is defined at the top of canopy, use LAI to change SLA
-            cpatch%sla(ico) = SLA(ipft) * min(2.,exp(ksla * max_cum_lai))
+            new_sla = SLA(ipft) * min(2.,exp(ksla * max_cum_lai))
        case (-1,-2)
            ! SLA is defined at the bottom of canopy, use height to change SLA
-            cpatch%sla(ico) = SLA(ipft) / (1. + lma_slope * cpatch%hite(ico))
+            new_sla = SLA(ipft) / (1. + lma_slope * cpatch%hite(ico))
        end select
+
+       ! Here we also need to retrospectively change leaf level state variables
+       ! because the leaf area has changed while we want to keep the flux the
+       ! same. This is necessary for plant hydraulic calculations, which uses
+       ! the water fluxes from 'Last Timestep'
+
+       ! For now we only update psi_open and psi_closed, which will be used in
+       ! plant_hydro_driver. We will leave A_open and A_closed unchanged because
+       ! growth of the day has already happen at this time point in the model
+       sla_scaler = cpatch%sla(ico) / new_sla
+       cpatch%psi_open(ico)     = cpatch%psi_open(ico) * sla_scaler
+       cpatch%psi_closed(ico)   = cpatch%psi_closed(ico) * sla_scaler
+
    endif
 
    return
