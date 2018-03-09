@@ -118,7 +118,8 @@ module farq_leuning
                                 , vm0_amp                  & ! intent(in)
                                 , vm0_min                  ! ! intent(in)
       use physiology_coms, only : gbw_2_gbc8               & ! intent(in)
-                                , o2_ref8                  ! ! intent(in)
+                                , o2_ref8                  & ! intent(in)
+                                , trait_plasticity_scheme  ! ! intent(in)
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
                                 , mmdryi8                  & ! intent(in)
@@ -249,8 +250,20 @@ module farq_leuning
          thispft(ib)%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
       case default
          !------ Other phenologies, no distinction on Vm0. --------------------------------!
-         thispft(ib)%vm0 = dble(vm0(ipft)) * umol_2_mol8
-         thispft(ib)%rd0 = dble(rd0(ipft)) * umol_2_mol8
+         !---------------------------------------------------------------------------------!
+         !     Consider trait plasticity                                                   !
+         !---------------------------------------------------------------------------------!
+         select case (trait_plasticity_scheme)
+         case (0)
+             ! no within-canopy trait plasticity
+             thispft(ib)%vm0 = dble(vm0(ipft)) * umol_2_mol8
+             thispft(ib)%rd0 = dble(rd0(ipft)) * umol_2_mol8
+         case (-1,-2,1,2)
+             ! consider within-canopy trait plasticity
+             ! in this case, the input vm_bar is the realized Vm0
+             thispft(ib)%vm0 = dble(vm_bar) * umol_2_mol8
+             thispft(ib)%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
+         end select
       end select
       !------------------------------------------------------------------------------------!
 

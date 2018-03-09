@@ -1,21 +1,29 @@
+!==========================================================================================!
+!==========================================================================================!
+! MODULE: ED_INIT_FULL_HISTORY
+!> \brief Rountines to initialize ED from a full history run
+!------------------------------------------------------------------------------------------!
+
+
 module ed_init_full_history
   contains
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine will set a full history start for the simulation.  In a full history !
-! start (runtype = 'HISTORY'), we assumes that you are continuing with the exact same      !
-! configuration as a given model simulation that wrote the file in which you are using.    !
-! In this case, each node starts with a list of polygons, and searches the HDF history     !
-! file for these polygons.  It expects to find at least one polygon in the file within 250 !
-! meters of proximity (although it should be exactly at the same place).  If it does not   !
-! find this it stops.                                                                      !
-!     Assuming that it finds the polygons, the subroutine then fills each of these         !
-! polygons with data, and traverses the data hierarchical tree that roots from each        !
-! polygon, initializing the model to the exact same state as the end of the previous run.  !
-! A search based restart does not expect to find exact matches, and may not use all of the !
-! polygons in the file.  Nonetheless, it will traverse the tree from these polygons and    !
-! populate the model states with what is found in the files tree.                          !
+!  SUBROUTINE: INIT_FULL_HISTORY_RESTART
+!> \brief This subroutine will set a full history start for the simulation.  
+!> \details In a full history start (runtype = 'HISTORY'), we assumes that you are 
+!> continuing with the exact same configuration as a given model simulation that wrote
+!> the file in which you are using. In this case, each node starts with a list of
+!> polygons, and searches the HDF history file for these polygons.  It expects to find
+!> at least one polygon in the file within 250 meters of proximity (although it should
+!> be exactly at the same place).  If it does not find this it stops.\n
+!>    Assuming that it finds the polygons, the subroutine then fills each of these
+!> polygons with data, and traverses the data hierarchical tree that roots from each
+!> polygon, initializing the model to the exact same state as the end of the previous run.
+!> A search based restart does not expect to find exact matches, and may not use all of the
+!> polygons in the file.  Nonetheless, it will traverse the tree from these polygons and
+!> populate the model states with what is found in the files tree.
 !------------------------------------------------------------------------------------------!
 subroutine init_full_history_restart()
    use landuse_init_module
@@ -4219,6 +4227,7 @@ end subroutine fill_history_site
 !------------------------------------------------------------------------------------------!
 subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    use ed_state_vars      , only : patchtype     ! ! structure
+   use grid_coms          , only : nzg           ! ! intent(in)
    use ed_max_dims        , only : n_pft         & ! intent(in)
                                  , n_mort        & ! intent(in)
                                  , max_site      & ! intent(in)
@@ -4320,6 +4329,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'FIRST_CENSUS              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpatch%new_recruit_flag                                              &
                      ,'NEW_RECRUIT_FLAG          ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_i(cpatch%high_leaf_psi_days                                            &
+                     ,'HIGH_LEAF_PSI_DAYS        ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_i(cpatch%low_leaf_psi_days                                             &
+                     ,'LOW_LEAF_PSI_DAYS         ',dsetrank,iparallel,.true. ,foundvar)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -4578,6 +4591,28 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'VM_BAR                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%sla                                                           &
                      ,'SLA                       ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%vm0                                                           &
+                     ,'VM0                       ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%leaf_psi                                                      &
+                     ,'LEAF_PSI                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wood_psi                                                      &
+                     ,'WOOD_PSI                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%leaf_rwc                                                      &
+                     ,'LEAF_RWC                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wood_rwc                                                      &
+                     ,'WOOD_RWC                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%leaf_water_int                                                &
+                     ,'LEAF_WATER_INT            ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wood_water_int                                                &
+                     ,'WOOD_WATER_INT            ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wflux_gw                                                      &
+                     ,'WFLUX_GW                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wflux_wl                                                      &
+                     ,'WFLUX_WL                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%last_gV                                                       &
+                     ,'LAST_GV                   ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%last_gJ                                                       &
+                     ,'LAST_GJ                   ',dsetrank,iparallel,.true. ,foundvar)
    !----- Daily means. --------------------------------------------------------------------!
    if (writing_long) then
       call hdf_getslab_r(cpatch%dmean_nppleaf                                              &
@@ -4719,6 +4754,22 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'DMEAN_INTERCEPTED_AW_CO   ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_wshed_wg                                             &
                         ,'DMEAN_WSHED_WG_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmax_leaf_psi                                              &
+                        ,'DMAX_LEAF_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmin_leaf_psi                                              &
+                        ,'DMIN_LEAF_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmax_wood_psi                                              &
+                        ,'DMAX_WOOD_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmin_wood_psi                                              &
+                        ,'DMIN_WOOD_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_leaf_water_int                                       &
+                        ,'DMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_wood_water_int                                       &
+                        ,'DMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_wflux_gw                                             &
+                        ,'DMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_wflux_wl                                             &
+                        ,'DMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
    end if
    !----- Daily means. --------------------------------------------------------------------!
    if (writing_eorq) then
@@ -4876,6 +4927,22 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'MMEAN_NPPWOOD_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_nppdaily                                             &
                         ,'MMEAN_NPPDAILY_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmax_leaf_psi                                        &
+                        ,'MMEAN_DMAX_LEAF_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmin_leaf_psi                                        &
+                        ,'MMEAN_DMIN_LEAF_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmax_wood_psi                                        &
+                        ,'MMEAN_DMAX_WOOD_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmin_wood_psi                                        &
+                        ,'MMEAN_DMIN_WOOD_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_leaf_water_int                                       &
+                        ,'MMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_wood_water_int                                       &
+                        ,'MMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_wflux_gw                                             &
+                        ,'MMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_wflux_wl                                             &
+                        ,'MMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmsqu_gpp                                                  &
                         ,'MMSQU_GPP_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmsqu_npp                                                  &
@@ -4932,6 +4999,40 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      2-D variables, dimensions: (nzg,ncohorts).                                       !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 2
+   globdims(1) = int(nzg,8)
+   chnkdims(1) = int(nzg,8)
+   chnkoffs(1) = 0_8
+   memdims (1) = int(nzg,8)
+   memsize (1) = int(nzg,8)
+   memoffs (1) = 0_8
+
+   globdims(2) = int(ncohorts_global,8)
+   chnkdims(2) = int(cpatch%ncohorts,8)
+   chnkoffs(2) = int(paco_index - 1,8)
+   memdims (2) = int(cpatch%ncohorts,8)
+   memsize (2) = int(cpatch%ncohorts,8)
+   memoffs (2) = 0_8
+   call hdf_getslab_r(cpatch%wflux_gw_layer                                                &
+                     ,'WFLUX_GW_LAYER            ',dsetrank,iparallel,.true. ,foundvar)
+   if (writing_long) then
+      call hdf_getslab_r(cpatch%dmean_wflux_gw_layer                                       &
+                        ,'DMEAN_WFLUX_GW_LAYER_CO   ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   if (writing_eorq) then
+      call hdf_getslab_r(cpatch%mmean_wflux_gw_layer                                       &
+                        ,'MMEAN_WFLUX_GW_LAYER_CO   ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -5153,6 +5254,18 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'QMEAN_INTERCEPTED_AW_CO   ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_wshed_wg                                             &
                         ,'QMEAN_WSHED_WG_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_leaf_psi                                             &
+                        ,'QMEAN_LEAF_PSI_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wood_psi                                             &
+                        ,'QMEAN_WOOD_PSI_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_leaf_water_int                                       &
+                        ,'QMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wood_water_int                                       &
+                        ,'QMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wflux_gw                                             &
+                        ,'QMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wflux_wl                                             &
+                        ,'QMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmsqu_gpp                                                  &
                         ,'QMSQU_GPP_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmsqu_npp                                                  &

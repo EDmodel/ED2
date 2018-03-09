@@ -501,7 +501,7 @@ real function root_resp_norm(ipft,soil_temp)
    ! it look similar to the leaf respiration respiration.                                  !
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
-   case (0,1)
+   case (0,1,4)
       rrf_hor8 = dble(rrf_hor(ipft))
       rrf8     = arrhenius(soil_temp8,rrf08,rrf_hor8) / (tlow_fun * thigh_fun)
    case (2,3)

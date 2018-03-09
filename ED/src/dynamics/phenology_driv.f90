@@ -43,11 +43,12 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (-1,0,2)
+         case (-1,0,2,4)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !
             !------------------------------------------------------------------------------!
+            !----- OR XU Plant Hydraulics driven drought phenology.  ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
             
@@ -122,11 +123,12 @@ subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (-1,0,2)
+         case (-1,0,2,4)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !
             !------------------------------------------------------------------------------!
+            !----- OR XU Plant Hydraulics driven drought phenology.  ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_phenology_eq_0(doy,cpoly,isi,cgrid%lat(ipy))
             
@@ -169,6 +171,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , c2n_leaf                 & ! intent(in)
                              , q                        & ! intent(in)
                              , qsw                      & ! intent(in)
+                             , leaf_psi_tlp             & ! intent(in)
+                             , high_psi_threshold       & ! intent(in)
+                             , low_psi_threshold        & ! intent(in)
+                             , leaf_shed_rate           & ! intent(in)
+                             , leaf_grow_rate           & ! intent(in)
                              , l2n_stem                 & ! intent(in)
                              , c2n_stem                 & ! intent(in)
                              , c2n_storage              ! ! intent(in)
@@ -187,8 +194,10 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
-                             , size2bl                  ! ! function
+                             , size2bl                  & ! function
+                             , dbh2sf                   ! ! function
    use phenology_aux  , only : daylength                ! ! function
+   use plant_hydro    , only : rwc2tw                   ! ! sub-routine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)        , target     :: cpoly
@@ -207,7 +216,9 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    logical                               :: drop_cold
    real                                  :: daylight
    real                                  :: delta_bleaf
+   real                                  :: delta_broot
    real                                  :: bl_max
+   real                                  :: br_max
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
    real                                  :: salloci
@@ -279,6 +290,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          ! 4. Drought deciduous - similar to one, but the threshold is compared against    !
          !                        a 10-day running average rather than the instantaneous   !
          !                        value.                                                   !
+         ! 5. Drought deciduous - Leaf will drop/grow leaves based on leaf daily maximum   !
+         !                        water potential.                                         !
          !---------------------------------------------------------------------------------!
          select case (phenology(ipft))
          case (0)
@@ -583,9 +596,221 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
+         case (5) 
+
+            !------------------------------------------------------------------------------!
+            !    Drought deciduous driven by plant hydrodyanics:                           !
+            !                                                                              !
+            !    Here, we track the number of consecutive wet days and dry days.           !
+            !    We then modify the phenology status and elongf if these numbers           !
+            !    have crossed some threshold                                               !
+            !------------------------------------------------------------------------------!
+            !----- Update consecutive wet/dry days ----------!
+            if (cpatch%dmax_leaf_psi(ico) < leaf_psi_tlp(ipft)) then
+                cpatch%low_leaf_psi_days(ico) = cpatch%low_leaf_psi_days(ico) + 1
+            else
+                ! reset the number of dry days
+                cpatch%low_leaf_psi_days(ico) = 0
+            endif
+
+
+            if (cpatch%dmax_leaf_psi(ico) >= 0.5 * leaf_psi_tlp(ipft)) then
+                cpatch%high_leaf_psi_days(ico) = cpatch%high_leaf_psi_days(ico) + 1
+            else
+                ! reset the number of wet days
+                cpatch%high_leaf_psi_days(ico) = 0
+            endif
+
+
+            !----- modify elongf and phenology_status if necessary------!
+            if (cpatch%low_leaf_psi_days(ico) >= low_psi_threshold(ipft)) then
+                ! need to reduce elongf
+                elongf_try = max(0., cpatch%elongf(ico) - leaf_shed_rate(ipft))
+            elseif (cpatch%high_leaf_psi_days(ico) >= high_psi_threshold(ipft)) then
+                ! need to increase elongf
+                if (cpatch%phenology_status(ico) == -2) then
+                    ! currently without any leaves,
+                    ! we let the tree grow a small fraction of leaves to check
+                    ! whether the condition has indeed become better.
+                    elongf_try = elongf_min + 0.01
+                else
+                    elongf_try = min(1.0, cpatch%elongf(ico) + leaf_grow_rate(ipft))
+                endif
+            else
+                ! no need to change elongf
+                elongf_try = cpatch%elongf(ico)
+            endif
+
+
+            !----- If extremely dry, force the cohort to shed all leaves... ---------------!
+            if (elongf_try < elongf_min) elongf_try = 0.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Find the maximum allowed leaf/root biomass. ----------------------------!
+            bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            ! Assume half of the fine roots would die if all leaves have shed
+            ! Allowing fine root phenology can reduce the maintenance cost of
+            ! plants in the dry season but reducing it to zero would diable
+            ! water uptake when rain comes. The current fraction 50% is kind of
+            ! arbitrary, need updates in the future.
+            br_max = bl_max / elongf_try * q(ipft) * (elongf_try + 1.0) / 2.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Delta_bleaf is the difference between the current leaf biomass and the   !
+            ! maximum permitted given the soil moisture conditions.  If delta_bleaf is     !
+            ! positive, it means that the plant has more leaves than it should.            !
+            !------------------------------------------------------------------------------!
+            delta_bleaf = cpatch%bleaf(ico) - bl_max
+            delta_broot = cpatch%broot(ico) - br_max
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Check whether drought is becoming more or less severe.                   !
+            !------------------------------------------------------------------------------!
+            if (delta_bleaf > 0.0) then
+               !---------------------------------------------------------------------------!
+               !    Drought conditions are becoming more severe, drop leaves.              !
+               !---------------------------------------------------------------------------!
+               if (elongf_try >= elongf_min) then
+                  cpatch%phenology_status(ico) = -1
+               else
+                  cpatch%phenology_status(ico) = -2
+               end if
+               cpatch%leaf_drop (ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+               cpatch%elongf    (ico) = elongf_try
+               !----- Adjust plant carbon pools. ------------------------------------------!
+               cpatch%bleaf     (ico) = bl_max
+               cpatch%balive    (ico) = cpatch%balive(ico)   - delta_bleaf
+               cpatch%bstorage  (ico) = cpatch%bstorage(ico)                               &
+                                      + retained_carbon_fraction * delta_bleaf
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Send the lost leaves to soil carbon and nitrogen pools.               !
+               !---------------------------------------------------------------------------!
+               csite%fsc_in           (ipa) = csite%fsc_in(ipa)                            &    
+                                            + cpatch%nplant(ico) * cpatch%leaf_drop(ico)   &    
+                                            * f_labile(ipft)                                
+               csite%fsn_in           (ipa) = csite%fsn_in(ipa)                            &    
+                                            + cpatch%nplant(ico) * cpatch%leaf_drop(ico)   &    
+                                            * f_labile(ipft) / c2n_leaf(ipft)               
+               csite%ssc_in           (ipa) = csite%ssc_in(ipa)                            &    
+                                            + cpatch%nplant(ico) * cpatch%leaf_drop(ico)   &    
+                                            * (1.0-f_labile(ipft))                          
+               csite%ssl_in           (ipa) = csite%ssl_in(ipa)                            &    
+                                            + cpatch%nplant(ico) * cpatch%leaf_drop(ico)   &    
+                                            * (1.0 - f_labile(ipft)) * l2n_stem            &
+                                            / c2n_stem(ipft)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Contribution due to the fact that c2n_leaf and c2n_storage may be     !
+               ! different.                                                                !
+               !---------------------------------------------------------------------------!
+               csite%fsn_in(ipa)     = csite%fsn_in(ipa) + delta_bleaf*cpatch%nplant(ico)  &
+                                     * retained_carbon_fraction                            &
+                                     * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !      Deduct the leaf drop from the carbon balance.                        !
+               !---------------------------------------------------------------------------!
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+
+               !---------------------------------------------------------------------------!
+            elseif (cpatch%phenology_status(ico) /= 0) then
+               !---------------------------------------------------------------------------!
+               !       Elongation factor could increase. Here we do not need to check the  !
+               ! safety for flushing leaves, since it is done during the calculation of    !
+               ! high_leaf_psi_days.                                                       !
+               !       However, we now need to check whether we need to                    !
+               !---------------------------------------------------------------------------!
+               cpatch%elongf          (ico) = elongf_try
+               ! only modify phenology_status when delta_bleaf < 0. This avoids
+               ! changing phenology_status = 1 while elongf = 0.
+               if (delta_bleaf < 0.) cpatch%phenology_status(ico) = 1
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+            ! deal with root, dump biomass to soil when necessary
+            ! for now we do not record the root_drop
+            if (delta_broot > 0.0) then
+               !----- Adjust plant carbon pools. ------------------------------------------!
+               cpatch%broot     (ico) = br_max
+               cpatch%balive    (ico) = cpatch%balive(ico)   - delta_broot
+               cpatch%bstorage  (ico) = cpatch%bstorage(ico)                               &
+                                      + retained_carbon_fraction * delta_broot
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Send the lost roots  to soil carbon and nitrogen pools.               !
+               !---------------------------------------------------------------------------!
+               csite%fsc_in           (ipa) = csite%fsc_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * f_labile(ipft)                                
+               csite%fsn_in           (ipa) = csite%fsn_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * f_labile(ipft) / c2n_leaf(ipft)               
+               csite%ssc_in           (ipa) = csite%ssc_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * (1.0-f_labile(ipft))                          
+               csite%ssl_in           (ipa) = csite%ssl_in(ipa)                            &    
+                                            + cpatch%nplant(ico)                           &    
+                                            * delta_broot * (1. - retained_carbon_fraction)&    
+                                            * (1.0 - f_labile(ipft)) * l2n_stem            &
+                                            / c2n_stem(ipft)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Contribution due to the fact that c2n_leaf and c2n_storage may be     !
+               ! different.                                                                !
+               !---------------------------------------------------------------------------!
+               csite%fsn_in(ipa)     = csite%fsn_in(ipa) + delta_broot*cpatch%nplant(ico)  &
+                                     * retained_carbon_fraction                            &
+                                     * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !      Deduct the leaf drop from the carbon balance.                        !
+               !---------------------------------------------------------------------------!
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+
+            end if
+            !------------------------------------------------------------------------------!
+
          end select
          !---------------------------------------------------------------------------------!
-
 
 
 
@@ -607,7 +832,15 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          old_wood_hcap       = cpatch%wood_hcap(ico)
          call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
                            ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%broot(ico),cpatch%dbh(ico)                              &
+                           ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                      &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+         ! also need to update water_int from rwc
+         call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                             &
+                    ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                 &
+                    ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)               &
+                    ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
          call is_resolvable(csite,ipa,ico)
          !---------------------------------------------------------------------------------!
@@ -652,6 +885,11 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                              , patchtype                ! ! structure
    use grid_coms      , only : nzg                      ! ! intent(in)
    use pft_coms       , only : phenology                & ! intent(in)
+                             , leaf_psi_tlp             & ! intent(in)
+                             , high_psi_threshold       & ! intent(in)
+                             , low_psi_threshold        & ! intent(in)
+                             , leaf_shed_rate           & ! intent(in)
+                             , leaf_grow_rate           & ! intent(in)
                              , q                        & ! intent(in)
                              , qsw                      ! ! intent(in)
    use phenology_coms , only : retained_carbon_fraction & ! intent(in)
@@ -663,8 +901,10 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use ed_max_dims    , only : n_pft                    ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
-                             , size2bl                  ! ! function
+                             , size2bl                  & ! function
+                             , dbh2sf                   ! ! function
    use phenology_aux  , only : daylength                ! ! function
+   use plant_hydro    , only : rwc2tw                   ! ! sub-routine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -685,7 +925,9 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    real, dimension(nzg)                  :: theta
    real                                  :: daylight
    real                                  :: delta_bleaf
+   real                                  :: delta_broot
    real                                  :: bleaf_new
+   real                                  :: broot_new
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
    real                                  :: salloci
@@ -982,6 +1224,144 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
+         case (5) 
+
+            !------------------------------------------------------------------------------!
+            !    Drought deciduous driven by plant hydrodyanics:                           !
+            !                                                                              !
+            !    Here, we track the number of consecutive wet days and dry days.           !
+            !    We then modify the phenology status and elongf if these numbers           !
+            !    have crossed some threshold                                               !
+            !------------------------------------------------------------------------------!
+            !----- Update consecutive wet/dry days ----------!
+            if (cpatch%dmax_leaf_psi(ico) < leaf_psi_tlp(ipft)) then
+                cpatch%low_leaf_psi_days(ico) = cpatch%low_leaf_psi_days(ico) + 1
+            else
+                ! reset the number of dry days
+                cpatch%low_leaf_psi_days(ico) = 0
+            endif
+
+
+            if (cpatch%dmax_leaf_psi(ico) >= 0.5 * leaf_psi_tlp(ipft)) then
+                cpatch%high_leaf_psi_days(ico) = cpatch%high_leaf_psi_days(ico) + 1
+            else
+                ! reset the number of wet days
+                cpatch%high_leaf_psi_days(ico) = 0
+            endif
+
+
+            !----- modify elongf and phenology_status if necessary------!
+            if (cpatch%low_leaf_psi_days(ico) >= low_psi_threshold(ipft)) then
+                ! need to reduce elongf
+                elongf_try = max(0., cpatch%elongf(ico) - leaf_shed_rate(ipft))
+            elseif (cpatch%high_leaf_psi_days(ico) >= high_psi_threshold(ipft)) then
+                ! need to increase elongf
+                elongf_try = min(1.0, cpatch%elongf(ico) + leaf_grow_rate(ipft))
+            else
+                ! no need to change elongf
+                elongf_try = cpatch%elongf(ico)
+            endif
+
+
+            !----- If extremely dry, force the cohort to shed all leaves... ---------------!
+            if (elongf_try < elongf_min) elongf_try = 0.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Find the maximum allowed leaf biomass. ---------------------------------!
+            bleaf_new = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            broot_new = bleaf_new / elongf_try * q(ipft) * (elongf_try + 1.0) / 2.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Delta_bleaf is the difference between the current leaf biomass and the   !
+            ! maximum permitted given the soil moisture conditions.  If delta_bleaf is     !
+            ! positive, it means that the plant has more leaves than it should.            !
+            !------------------------------------------------------------------------------!
+            delta_bleaf = cpatch%bleaf(ico) - bleaf_new
+            delta_broot = cpatch%broot(ico) - broot_new
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Check whether drought is becoming more or less severe.                   !
+            !------------------------------------------------------------------------------!
+            if (delta_bleaf > 0.0) then
+               !---------------------------------------------------------------------------!
+               !    Drought conditions are becoming more severe, drop leaves.              !
+               !---------------------------------------------------------------------------!
+               if (elongf_try >= elongf_min) then
+                  cpatch%phenology_status(ico) = -1
+               else
+                  cpatch%phenology_status(ico) = -2
+               end if
+               cpatch%leaf_drop (ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+               cpatch%elongf    (ico) = elongf_try
+               !----- Adjust plant carbon pools. ------------------------------------------!
+               cpatch%bleaf     (ico) = bleaf_new
+               cpatch%balive    (ico) = cpatch%balive(ico)   - delta_bleaf
+               cpatch%bstorage  (ico) = cpatch%bstorage(ico)                               &
+                                      + retained_carbon_fraction * delta_bleaf
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !      Deduct the leaf drop from the carbon balance.                        !
+               !---------------------------------------------------------------------------!
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+
+               !---------------------------------------------------------------------------!
+            elseif (cpatch%phenology_status(ico) /= 0) then
+               !---------------------------------------------------------------------------!
+               !       Elongation factor could increase. Here we do not need to check the  !
+               ! safety for flushing leaves, since it is done during the calculation of    !
+               ! high_leaf_psi_days.                                                       !
+               !---------------------------------------------------------------------------!
+               cpatch%elongf          (ico) = elongf_try
+               cpatch%phenology_status(ico) = 1
+               !---------------------------------------------------------------------------!
+               cpatch%bleaf           (ico) = bleaf_new
+               cpatch%balive          (ico) = cpatch%balive(ico) - delta_bleaf
+            end if
+            !------------------------------------------------------------------------------!
+
+            ! deal with broot
+            if (delta_broot > 0.0) then
+               cpatch%broot     (ico) = broot_new
+               cpatch%balive    (ico) = cpatch%balive(ico)   - delta_broot
+               cpatch%bstorage  (ico) = cpatch%bstorage(ico)                               &
+                                      + retained_carbon_fraction * delta_broot
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !      Deduct the leaf drop from the carbon balance.                        !
+               !---------------------------------------------------------------------------!
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+               cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                   &
+                                           - delta_broot * (1. - retained_carbon_fraction)
+
+               !---------------------------------------------------------------------------!
+            elseif (cpatch%phenology_status(ico) /= 0) then
+               cpatch%broot           (ico) = broot_new
+               cpatch%balive          (ico) = cpatch%balive(ico) - delta_broot
+            end if
+            !------------------------------------------------------------------------------!
+
          end select
          !---------------------------------------------------------------------------------!
 
@@ -1002,7 +1382,15 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          old_wood_hcap       = cpatch%wood_hcap(ico)
          call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
                            ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%broot(ico),cpatch%dbh(ico)                              &
+                           ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                      &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+            
+         ! also need to update water_int from rwc
+         call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                             &
+                    ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                 &
+                    ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)               &
+                    ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
          call is_resolvable(csite,ipa,ico)
       end do cohortloop

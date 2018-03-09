@@ -1,10 +1,10 @@
 !==========================================================================================!
 !==========================================================================================!
-!   This module contains a list of plant-functional type dependent properties.             !
-!                                                                                          !
-! IMPORTANT: DO NOT INITIALIZE PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL        !
-!            ACTUALLY INITIALIZE THEM.  See "init_pft_*_coms" (ed_params.f90) to check     !
-!            the default values.                                                           !
+! MODULE: PFT_COMS
+!> \brief This module contains a list of plant-functional type dependent properties.
+!> \waring IMPORTANT: DO NOT INITIALIZE PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL
+!> ACTUALLY INITIALIZE THEM.  See "init_pft_*_coms" (ed_params.f90) to check the default
+!> values.                                                           !
 !==========================================================================================!
 !==========================================================================================!
 module pft_coms
@@ -40,11 +40,10 @@ module pft_coms
    ! as which PFT should be used for agriculture, which one goes for forest plantation.    !
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     This variable is provided by the user through namelist, and contains the list of  !
-   ! PFTs he or she wants to use.                                                          !
-   !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: include_these_pft
+   !<This variable is provided by the user through namelist, and contains the list of
+   !< PFTs he or she wants to use.                                                          !
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     This flag determines what to do at the PFT initialization.  This option is        !
@@ -405,8 +404,97 @@ module pft_coms
    !=======================================================================================!
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   ! Plant hydrodynamics -- see "initialize_pft_hydro_params".                             !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: leaf_water_cap
+   !< Leaf hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< constants for now
 
+   real, dimension(n_pft) :: wood_water_cap
+   !< Wood hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< constants for now
 
+   real, dimension(n_pft) :: leaf_water_sat
+   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]       
+   
+   real, dimension(n_pft) :: wood_water_sat
+   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]       
+   
+   real, dimension(n_pft) :: leaf_rwc_min  
+   !< Leaf minimum relative water content or leaf residual fraction [-]
+   
+   real, dimension(n_pft) :: leaf_psi_min
+   !< Leaf minimum water potential based on leaf_rwc_min [m]
+
+   real, dimension(n_pft) :: wood_rwc_min  
+   !< Sapwood minimum relative water content or Sapwood residual fraction [-]
+
+   real, dimension(n_pft) :: wood_psi_min
+   !< Sapwood minimum water potential based on leaf_rwc_min [m]
+
+   real, dimension(n_pft) :: leaf_psi_tlp
+   !< Leaf water potential at turgor loss point [m]
+
+   real, dimension(n_pft) :: wood_psi_tlp
+   !< Sapwood water potential at turgor loss point [m]
+
+   real, dimension(n_pft) :: leaf_psi_osmotic
+   !< Leaf osmotic water potential at saturation [m]
+
+   real, dimension(n_pft) :: wood_psi_osmotic
+   !< Sapwood osmotic water potential at saturation [m]
+
+   real, dimension(n_pft) :: leaf_elastic_mod
+   !< Leaf bulk elastic modulus [MPa]                    
+
+   real, dimension(n_pft) :: wood_elastic_mod
+   !< Sapwood bulk elastic modulus [MPa]                   
+
+   real, dimension(n_pft) :: wood_Kmax     
+   !< Maximum hydraulic conductivity of the stem [kg H2O / m / s]       
+   
+   real, dimension(n_pft) :: wood_Kexp     
+   !< Exponent for the hydraulic vulnerability curve of stem conductivity under
+   !< the Weibull function 1/(1+(psi/psi50) ** Kexp_stem) [-]
+
+   real, dimension(n_pft) :: wood_psi50
+   !< Water potential at which 50% of stem conductivity is lost [m]     
+
+   real, dimension(n_pft) :: vessel_curl_factor
+   !< Ratio of actual vessel length (water conducting length) to tree height [-]
+
+   real, dimension(n_pft) :: stoma_lambda
+   !< Marginal water use efficiency under well-watered conditions
+   !< in the optimization based stomatal model [umol/mol/kPa]
+   !< (Katul et al. 2010 Annals of Botany, Manoni et al. 2011 Functional Ecology)
+
+   real, dimension(n_pft) :: stoma_beta
+   !< Sensitivity of stoma_lambda to leaf water potential [m-1]
+
+   real, dimension(n_pft) :: stoma_psi_b  
+   !< Water potential scaler to modify stomatal conductance under water stress from 
+   !< Powell et al. 2017  [ m]
+   real, dimension(n_pft) :: stoma_psi_c  
+   !< Exponent to modify stomatal conductance under water stress from 
+   !< Powell et al. 2017  [ unitless]
+
+   ! Parameters for new drought phenology
+   integer, dimension(n_pft) :: high_psi_threshold
+   !< Threshold of consecutive wet days to grow new leaves   [# of days]
+
+   integer, dimension(n_pft) :: low_psi_threshold
+   !< Threshold of consecutive dry days to grow new leaves   [# of days]
+
+   real, dimension(n_pft) :: leaf_shed_rate
+   !< Rate of leaf shedding if low_psi_threshold is crossed  [unitless]
+
+   real, dimension(n_pft) :: leaf_grow_rate
+   !< Rate of leaf growing if high_psi_threshold is crossed  [unitless]
+
+   !=======================================================================================!
+   !=======================================================================================!
 
 
    !=======================================================================================!
@@ -424,6 +512,10 @@ module pft_coms
    !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
+   !----- Specific Root Area (m2root area/kg_C]. ------------------------------------------!
+   real   , dimension(n_pft)    :: SRA
+   !----- Root vertical profile parameter. Fraction of root biomass below max root depth --!
+   real   , dimension(n_pft)    :: root_beta
    !---------------------------------------------------------------------------------------!
    !     DBH-height allometry intercept (m).  Notice that this variable has different      !
    ! meaning between temperate and tropical PFTs.                                          !
@@ -463,6 +555,12 @@ module pft_coms
    real   , dimension(n_pft)    :: b1WAI
    !----- DBH-WAI allometry slope.  All PFTs. ---------------------------------------------!
    real   , dimension(n_pft)    :: b2WAI
+
+   real   , dimension(n_pft)    :: b1SA
+   !< DBH-sapwood area allometry intercept
+   real   , dimension(n_pft)    :: b2SA
+   !< DBH-sapwood area allometry slope
+
    !----- Minimum DBH attainable by this PFT. ---------------------------------------------!
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!

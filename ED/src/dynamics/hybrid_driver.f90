@@ -10,6 +10,7 @@ subroutine hybrid_timestep(cgrid)
   use rk4_integ_utils
   use soil_respiration_module
   use photosyn_driv
+  use plant_hydro
   use rk4_misc
   use update_derived_props_module
   use rk4_coms              , only : integration_vars   & ! structure
@@ -209,24 +210,32 @@ subroutine hybrid_timestep(cgrid)
 
 
 
-           !------------------------------------------------------------------!
-           !     Set up the integration patch.                                !
-           !------------------------------------------------------------------!
-           call copy_patch_init(csite,ipa,initp,patch_vels)
 
            !------------------------------------------------------------------!
            !     Set up the buffer for the previous step's leaf temperature   !
            !------------------------------------------------------------------!
            call copy_bdf2_prev(csite,ipa,yprev)
 
+           !----- Get plant water flow driven by plant hydraulics ------------!
+           !     This must be placed before canopy_photosynthesis because     !
+           !  plant_hydro_driver needs fs_open from last timestep             !
+            call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
+
+           !------------------------------------------------------------------!
            !----- Get photosynthesis, stomatal conductance,
            !                                    and transpiration. -----------!
            call canopy_photosynthesis(csite,cmet,nzg,ipa,                     &
                 cpoly%ntext_soil(:,isi),cpoly%leaf_aging_factor(:,isi),       &
                 cpoly%green_leaf_factor(:,isi))
 
+
             !----- Compute root and heterotrophic respiration. ----------------!
            call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+
+           !------------------------------------------------------------------!
+           !     Set up the integration patch.                                !
+           !------------------------------------------------------------------!
+           call copy_patch_init(csite,ipa,initp,patch_vels)
 
            !------------------------------------------------------------------!
            ! Set up the remaining, carbon-dependent variables to the buffer.  !

@@ -209,7 +209,9 @@ subroutine ed_init_atm()
                   
                   call calc_veg_hcap( cpatch%bleaf     (ico) , cpatch%bdead    (ico)       &
                                     , cpatch%bsapwooda (ico) , cpatch%nplant   (ico)       &
-                                    , cpatch%pft       (ico) , cpatch%leaf_hcap(ico)       &
+                                    , cpatch%pft       (ico) , cpatch%broot    (ico)       &
+                                    , cpatch%dbh       (ico) , cpatch%leaf_rwc (ico)       &
+                                    , cpatch%wood_rwc  (ico) , cpatch%leaf_hcap(ico)       &
                                     , cpatch%wood_hcap (ico) )
 
                   cpatch%leaf_energy (ico) = cmtl2uext( cpatch%leaf_hcap   (ico)           &

@@ -463,19 +463,19 @@ module ed_state_vars
       !<Wood boundary layer conductance for water [kg/m2wood/s]
 
       real ,pointer,dimension(:) :: A_open
-      !<Photosynthesis rate, open stomata (umolmu;mol/m2 leaf/s)
+      !<Photosynthesis rate, open stomata (&mu;mol/m2 leaf/s)
 
       real ,pointer,dimension(:) :: A_closed
-      !<Photosynthesis rate, closed stomata (umolmu;mol/m2 leaf/s)
+      !<Photosynthesis rate, closed stomata (&mu;mol/m2 leaf/s)
 
       real ,pointer,dimension(:) :: A_light
-      !<Photosynthesis rate, light limited (umolmu;mol/m2 leaf/s)
+      !<Photosynthesis rate, light limited (&mu;mol/m2 leaf/s)
 
       real ,pointer,dimension(:) :: A_rubp
-      !<Photosynthesis rate, rubisco limited (umolmu;mol/m2 leaf/s)
+      !<Photosynthesis rate, rubisco limited (&mu;mol/m2 leaf/s)
 
       real ,pointer,dimension(:) :: A_co2
-      !<Photosynthesis rate, CO2 limited (umolmu;mol/m2 leaf/s)
+      !<Photosynthesis rate, CO2 limited (&mu;mol/m2 leaf/s)
 
       real ,pointer,dimension(:) :: psi_open
       !<Transpiration rate, open stomata (kg/m2_leaf/s)
@@ -513,12 +513,12 @@ module ed_state_vars
       !<Leaf loss to litter layer due to phenology [kgC/plant]
 
       real ,pointer,dimension(:) :: leaf_respiration
-      !<Instantaneous values of leaf respiration [umolmu;mol/m2/s]
+      !<Instantaneous values of leaf respiration [&mu;mol/m2g/s]
       real ,pointer,dimension(:) :: root_respiration
-      !<Instantaneous values of fine root respiration [umolmu;mol/m2/s]
+      !<Instantaneous values of fine root respiration [&mu;mol/m2/s]
 
       real, pointer,dimension(:) :: gpp
-      !<Gross Primary Productivity [umolmu;mol/m2/s]
+      !<Gross Primary Productivity [&mu;mol/m2g/s]
 
       real, pointer, dimension(:) :: paw_avg
       !<Plant available water, (stress function)  0 to 1 [unitless]
@@ -531,6 +531,65 @@ module ed_state_vars
       real, pointer, dimension(:) :: llspan
       real, pointer, dimension(:) :: vm_bar
       real, pointer, dimension(:) :: sla
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for tracking within-canopy trait plasticity.  !
+      ! sla defined above is also used for plasticity calculation.                         !
+      !------------------------------------------------------------------------------------!
+      real, pointer, dimension(:) :: vm0
+      !<The maximum rate of carboxylation at reference temperature (15 degC) [umol/m2l/s]
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for plant hydraulic calculations              !
+      !------------------------------------------------------------------------------------!
+      real, pointer, dimension(:) :: leaf_psi
+      !<Leaf water potential [m]
+      real, pointer, dimension(:) :: wood_psi
+      !<Wood water potential at the base of stem [m]
+      real, pointer, dimension(:) :: leaf_rwc
+      !<Leaf relative water content [0-1]
+      real, pointer, dimension(:) :: wood_rwc
+      !<Wood relative water content [0-1]
+      real, pointer, dimension(:) :: leaf_water_int
+      !<Leaf internal water content per plant [kg/plant]
+      real, pointer, dimension(:) :: wood_water_int
+      !<Wood internal water content per plant [kg/plant]
+      real, pointer, dimension(:) :: wflux_gw
+      !<Water flux from ground to wood/stem [kg H2O/s], root is assumed to be
+      !!super-connected with stem and shares the same water potential and rwc
+      real, pointer, dimension(:,:) :: wflux_gw_layer
+      !<Water flux from ground to wood/stem separated by each layer [kg H2O/s].
+      !! For each cohort, the sum of wflux_gw_layer should equal wflux_gw
+      real, pointer, dimension(:) :: wflux_wl
+      !<Water flux from wood to leaf [kg H2O/s], corresponding to sapflow in field
+      !! measurement
+
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for new drought phenology driven by plant     !
+      ! leaf water potential.                                                              !
+      !------------------------------------------------------------------------------------!
+      integer, pointer, dimension(:) :: high_leaf_psi_days
+      !<Consecutive days with daily maximum leaf water potential higher than
+      !< leaf_psi_tlp * 0.5 [days]
+
+      integer, pointer, dimension(:) :: low_leaf_psi_days
+      !<Consecutive days with daily maximum leaf water potential lower than
+      !< leaf_psi_tlp [days]
+
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for Katul's stomatal model.                   !
+      !------------------------------------------------------------------------------------!
+      real, pointer, dimension(:) :: last_gV
+      !< Optimized stomatal conductance under Rubisco-limited scenario using
+      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
+      !< optimization calculations
+      
+      real, pointer, dimension(:) :: last_gJ
+      !< Optimized stomatal conductance under Light-limited scenario using
+      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
+      !< optimization calculations
 
       !------------------------------------------------------------------------------------!
       ! These are diagnostic variables, averaged over various time scales.                 !
@@ -608,8 +667,15 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_vapor_wc         !<Wood evaporation  [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_intercepted_aw   !<Wood interception [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_wshed_wg         !<Wood shedding     [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_lai		    !<LAI  		[     m2/m2]
-      real,pointer,dimension(:)	  :: fmean_bdead	    !<Bdead		[     kg/pl]
+      real,pointer,dimension(:)   :: fmean_lai              !<LAI               [   m2l/m2g]
+      real,pointer,dimension(:)   :: fmean_bdead            !<Bdead             [    kgC/pl]
+      real,pointer,dimension(:)   :: fmean_leaf_psi         !<&Psi; leaf        [         m]
+      real,pointer,dimension(:)   :: fmean_wood_psi         !<&Psi; wood        [         m]
+      real,pointer,dimension(:)   :: fmean_leaf_water_int   !<Water conc. leaf  [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_wood_water_int   !<Water conc. wood  [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_wflux_gw         !<Water Abs.        [      kg/s]
+      real,pointer,dimension(:,:) :: fmean_wflux_gw_layer   !<Water Abs. Layer  [      kg/s]
+      real,pointer,dimension(:)   :: fmean_wflux_wl         !<sapflow           [      kg/s]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:)   :: dmean_nppleaf          !<Leaf NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppfroot         !<Fine root NPP     [ kgC/pl/yr]
@@ -693,6 +759,21 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_vapor_wc
       real,pointer,dimension(:)     :: dmean_intercepted_aw
       real,pointer,dimension(:)     :: dmean_wshed_wg
+
+      ! for plant hydrodyanmics, daily mean water potential is of less interest.
+      ! We only track daily maximum and minimum water potential here. DMEAN of
+      ! water fluxes are calculated.
+      real,pointer,dimension(:)     :: dmax_leaf_psi       !<Daily max &Psi; leaf [m]
+      real,pointer,dimension(:)     :: dmin_leaf_psi       !<Daily min &Psi; leaf [m]
+      real,pointer,dimension(:)     :: dmax_wood_psi       !<Daily max &Psi; wood [m]
+      real,pointer,dimension(:)     :: dmin_wood_psi       !<Daily min &Psi; wood [m]
+      real,pointer,dimension(:)     :: dmean_leaf_water_int   
+      real,pointer,dimension(:)     :: dmean_wood_water_int   
+      real,pointer,dimension(:)     :: dmean_wflux_gw         
+      real,pointer,dimension(:,:)   :: dmean_wflux_gw_layer   
+      real,pointer,dimension(:)     :: dmean_wflux_wl         
+
+
       !----- Monthly mean (same units as fast mean). --------------------------------------!
       real,pointer,dimension(:)     :: mmean_gpp
       real,pointer,dimension(:)     :: mmean_npp
@@ -765,6 +846,18 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nppseeds
       real,pointer,dimension(:)     :: mmean_nppwood
       real,pointer,dimension(:)     :: mmean_nppdaily
+      ! plant hydraulics
+      real,pointer,dimension(:)     :: mmean_dmax_leaf_psi      
+      real,pointer,dimension(:)     :: mmean_dmin_leaf_psi       
+      real,pointer,dimension(:)     :: mmean_dmax_wood_psi       
+      real,pointer,dimension(:)     :: mmean_dmin_wood_psi       
+      real,pointer,dimension(:)     :: mmean_leaf_water_int
+      real,pointer,dimension(:)     :: mmean_wood_water_int
+      real,pointer,dimension(:)     :: mmean_wflux_gw         
+      real,pointer,dimension(:,:)   :: mmean_wflux_gw_layer   
+      real,pointer,dimension(:)     :: mmean_wflux_wl         
+
+
       !----- Monthly mean sum of squares. -------------------------------------------------!
       real,pointer,dimension(:)     :: mmsqu_gpp
       real,pointer,dimension(:)     :: mmsqu_npp
@@ -840,6 +933,16 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_vapor_wc
       real,pointer,dimension(:,:)   :: qmean_intercepted_aw
       real,pointer,dimension(:,:)   :: qmean_wshed_wg
+
+      ! plant hydraulics, here for simplicity, wflux_gw_layer is not included
+      real,pointer,dimension(:,:)   :: qmean_leaf_psi      
+      real,pointer,dimension(:,:)   :: qmean_wood_psi       
+      real,pointer,dimension(:,:)   :: qmean_leaf_water_int
+      real,pointer,dimension(:,:)   :: qmean_wood_water_int
+      real,pointer,dimension(:,:)   :: qmean_wflux_gw         
+      real,pointer,dimension(:,:)   :: qmean_wflux_wl         
+
+
       !------ Mean diel of sum of squares. ------------------------------------------------!
       real,pointer,dimension(:,:)   :: qmsqu_gpp
       real,pointer,dimension(:,:)   :: qmsqu_npp
@@ -2447,8 +2550,8 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_soil_wetness     !<Soil wetness index  [        --]
       real,pointer,dimension(:) :: fmean_skin_temp        !<Skin temperature    [         K]
       !--------Variables required by PEcAn.  ----------------------------------------------!
-      real,pointer,dimension(:) :: fmean_lai		  !<LAI  		[     m2/m2]
-      real,pointer,dimension(:)	:: fmean_bdead	    	  !<Bdead		[     kg/pl]
+      real,pointer,dimension(:) :: fmean_lai              !<LAI                 [     m2/m2]
+      real,pointer,dimension(:) :: fmean_bdead            !<Bdead               [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:) :: dmean_nppleaf          !<Leaf NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppfroot         !<Fine root NPP       [ kgC/m2/yr]
@@ -3342,8 +3445,8 @@ module ed_state_vars
       allocate(cgrid%fmean_dpcpg                (                    npolygons))
       allocate(cgrid%fmean_soil_wetness         (                    npolygons))
       allocate(cgrid%fmean_skin_temp            (                    npolygons))
-      allocate(cgrid%fmean_lai			(                    npolygons))
-      allocate(cgrid%fmean_bdead 		(                    npolygons))
+      allocate(cgrid%fmean_lai                  (                    npolygons))
+      allocate(cgrid%fmean_bdead                (                    npolygons))
 
 
 
@@ -4718,6 +4821,24 @@ module ed_state_vars
       allocate(cpatch%llspan                       (                    ncohorts))
       allocate(cpatch%vm_bar                       (                    ncohorts))
       allocate(cpatch%sla                          (                    ncohorts))
+      allocate(cpatch%vm0                          (                    ncohorts))
+
+      allocate(cpatch%leaf_psi                     (                    ncohorts))
+      allocate(cpatch%wood_psi                     (                    ncohorts))
+      allocate(cpatch%leaf_rwc                     (                    ncohorts))
+      allocate(cpatch%wood_rwc                     (                    ncohorts))
+      allocate(cpatch%leaf_water_int               (                    ncohorts))
+      allocate(cpatch%wood_water_int               (                    ncohorts))
+      allocate(cpatch%wflux_gw                     (                    ncohorts))
+      allocate(cpatch%wflux_gw_layer               (                nzg,ncohorts))
+      allocate(cpatch%wflux_wl                     (                    ncohorts))
+
+      allocate(cpatch%high_leaf_psi_days           (                    ncohorts))
+      allocate(cpatch%low_leaf_psi_days            (                    ncohorts))
+
+      allocate(cpatch%last_gV                      (                    ncohorts))
+      allocate(cpatch%last_gJ                      (                    ncohorts))
+
       allocate(cpatch%fmean_gpp                    (                    ncohorts))
       allocate(cpatch%fmean_npp                    (                    ncohorts))
       allocate(cpatch%fmean_leaf_resp              (                    ncohorts))
@@ -4785,6 +4906,20 @@ module ed_state_vars
       allocate(cpatch%fmean_lai                    (                    ncohorts))
       allocate(cpatch%fmean_bdead                  (                    ncohorts))
 
+      allocate(cpatch%fmean_leaf_psi               (                    ncohorts))
+      allocate(cpatch%fmean_wood_psi               (                    ncohorts))
+      allocate(cpatch%fmean_leaf_water_int         (                    ncohorts))
+      allocate(cpatch%fmean_wood_water_int         (                    ncohorts))
+      allocate(cpatch%fmean_wflux_gw               (                    ncohorts))
+      allocate(cpatch%fmean_wflux_gw_layer         (                nzg,ncohorts))
+      allocate(cpatch%fmean_wflux_wl               (                    ncohorts))
+      ! despite dmax/dmin variables are at daily level, it is not an average.
+      ! Those variables will be used for phenology/mortality, etc. an thus need
+      ! to be allocated in all cases
+      allocate(cpatch%dmax_leaf_psi                (                    ncohorts))
+      allocate(cpatch%dmin_leaf_psi                (                    ncohorts))
+      allocate(cpatch%dmax_wood_psi                (                    ncohorts))
+      allocate(cpatch%dmin_wood_psi                (                    ncohorts))
 
       if (writing_long) then
          allocate(cpatch%dmean_nppleaf             (                    ncohorts))
@@ -4858,6 +4993,12 @@ module ed_state_vars
          allocate(cpatch%dmean_vapor_wc            (                    ncohorts))
          allocate(cpatch%dmean_intercepted_aw      (                    ncohorts))
          allocate(cpatch%dmean_wshed_wg            (                    ncohorts))
+         
+         allocate(cpatch%dmean_leaf_water_int      (                    ncohorts))
+         allocate(cpatch%dmean_wood_water_int      (                    ncohorts))
+         allocate(cpatch%dmean_wflux_gw            (                    ncohorts))
+         allocate(cpatch%dmean_wflux_gw_layer      (                nzg,ncohorts))
+         allocate(cpatch%dmean_wflux_wl            (                    ncohorts))
       end if
 
       if (writing_eorq) then
@@ -4941,6 +5082,17 @@ module ed_state_vars
          allocate(cpatch%mmean_nppseeds            (                    ncohorts))
          allocate(cpatch%mmean_nppwood             (                    ncohorts))
          allocate(cpatch%mmean_nppdaily            (                    ncohorts))
+
+         allocate(cpatch%mmean_dmax_leaf_psi       (                    ncohorts))
+         allocate(cpatch%mmean_dmin_leaf_psi       (                    ncohorts))
+         allocate(cpatch%mmean_dmax_wood_psi       (                    ncohorts))
+         allocate(cpatch%mmean_dmin_wood_psi       (                    ncohorts))
+         allocate(cpatch%mmean_leaf_water_int      (                    ncohorts))
+         allocate(cpatch%mmean_wood_water_int      (                    ncohorts))
+         allocate(cpatch%mmean_wflux_gw            (                    ncohorts))
+         allocate(cpatch%mmean_wflux_gw_layer      (                nzg,ncohorts))
+         allocate(cpatch%mmean_wflux_wl            (                    ncohorts))
+
          allocate(cpatch%mmsqu_gpp                 (                    ncohorts))
          allocate(cpatch%mmsqu_npp                 (                    ncohorts))
          allocate(cpatch%mmsqu_plresp              (                    ncohorts))
@@ -5018,6 +5170,14 @@ module ed_state_vars
          allocate(cpatch%qmean_vapor_wc            (            ndcycle,ncohorts))
          allocate(cpatch%qmean_intercepted_aw      (            ndcycle,ncohorts))
          allocate(cpatch%qmean_wshed_wg            (            ndcycle,ncohorts))
+
+         allocate(cpatch%qmean_leaf_psi            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_psi            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_water_int      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_water_int      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wflux_gw            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wflux_wl            (            ndcycle,ncohorts))
+
          allocate(cpatch%qmsqu_gpp                 (            ndcycle,ncohorts))
          allocate(cpatch%qmsqu_npp                 (            ndcycle,ncohorts))
          allocate(cpatch%qmsqu_plresp              (            ndcycle,ncohorts))
@@ -5277,8 +5437,8 @@ module ed_state_vars
       nullify(cgrid%fmean_dpcpg             )
       nullify(cgrid%fmean_soil_wetness      )
       nullify(cgrid%fmean_skin_temp         )
-      nullify(cgrid%fmean_lai		    )
-      nullify(cgrid%fmean_bdead		    )
+      nullify(cgrid%fmean_lai               )
+      nullify(cgrid%fmean_bdead             )
       nullify(cgrid%dmean_nppleaf           )
       nullify(cgrid%dmean_nppfroot          )
       nullify(cgrid%dmean_nppsapwood        )
@@ -6522,6 +6682,20 @@ module ed_state_vars
       nullify(cpatch%llspan                )
       nullify(cpatch%vm_bar                )
       nullify(cpatch%sla                   )
+      nullify(cpatch%vm0                   )
+      nullify(cpatch%leaf_psi              )
+      nullify(cpatch%wood_psi              )
+      nullify(cpatch%leaf_rwc              )
+      nullify(cpatch%wood_rwc              )
+      nullify(cpatch%leaf_water_int        )
+      nullify(cpatch%wood_water_int        )
+      nullify(cpatch%wflux_gw              )
+      nullify(cpatch%wflux_gw_layer        )
+      nullify(cpatch%wflux_wl              )
+      nullify(cpatch%high_leaf_psi_days    )
+      nullify(cpatch%low_leaf_psi_days     )
+      nullify(cpatch%last_gV               )
+      nullify(cpatch%last_gJ               )
       nullify(cpatch%fmean_gpp             )
       nullify(cpatch%fmean_npp             )
       nullify(cpatch%fmean_leaf_resp       )
@@ -6588,6 +6762,15 @@ module ed_state_vars
       nullify(cpatch%fmean_wshed_wg        )
       nullify(cpatch%fmean_lai             )
       nullify(cpatch%fmean_bdead           )
+
+      nullify(cpatch%fmean_leaf_psi        )
+      nullify(cpatch%fmean_wood_psi        )
+      nullify(cpatch%fmean_leaf_water_int  )
+      nullify(cpatch%fmean_wood_water_int  )
+      nullify(cpatch%fmean_wflux_gw        )
+      nullify(cpatch%fmean_wflux_gw_layer  )
+      nullify(cpatch%fmean_wflux_wl        )
+
       nullify(cpatch%dmean_nppleaf         )
       nullify(cpatch%dmean_nppfroot        )
       nullify(cpatch%dmean_nppsapwood      )
@@ -6659,6 +6842,17 @@ module ed_state_vars
       nullify(cpatch%dmean_vapor_wc        )
       nullify(cpatch%dmean_intercepted_aw  )
       nullify(cpatch%dmean_wshed_wg        )
+
+      nullify(cpatch%dmax_leaf_psi         )
+      nullify(cpatch%dmin_leaf_psi         )
+      nullify(cpatch%dmax_wood_psi         )
+      nullify(cpatch%dmin_wood_psi         )
+      nullify(cpatch%dmean_leaf_water_int  )
+      nullify(cpatch%dmean_wood_water_int  )
+      nullify(cpatch%dmean_wflux_gw        )
+      nullify(cpatch%dmean_wflux_gw_layer  )
+      nullify(cpatch%dmean_wflux_wl        )
+
       nullify(cpatch%mmean_lai             )
       nullify(cpatch%mmean_bleaf           )
       nullify(cpatch%mmean_broot           )
@@ -6739,6 +6933,17 @@ module ed_state_vars
       nullify(cpatch%mmean_nppseeds        )
       nullify(cpatch%mmean_nppwood         )
       nullify(cpatch%mmean_nppdaily        )
+
+      nullify(cpatch%mmean_dmax_leaf_psi   )
+      nullify(cpatch%mmean_dmin_leaf_psi   )
+      nullify(cpatch%mmean_dmax_wood_psi   )
+      nullify(cpatch%mmean_dmin_wood_psi   )
+      nullify(cpatch%mmean_leaf_water_int  )
+      nullify(cpatch%mmean_wood_water_int  )
+      nullify(cpatch%mmean_wflux_gw        )
+      nullify(cpatch%mmean_wflux_gw_layer  )
+      nullify(cpatch%mmean_wflux_wl        )
+
       nullify(cpatch%mmsqu_gpp             )
       nullify(cpatch%mmsqu_npp             )
       nullify(cpatch%mmsqu_plresp          )
@@ -6811,6 +7016,14 @@ module ed_state_vars
       nullify(cpatch%qmean_vapor_wc        )
       nullify(cpatch%qmean_intercepted_aw  )
       nullify(cpatch%qmean_wshed_wg        )
+      
+      nullify(cpatch%qmean_leaf_psi        )
+      nullify(cpatch%qmean_wood_psi        )
+      nullify(cpatch%qmean_leaf_water_int  )
+      nullify(cpatch%qmean_wood_water_int  )
+      nullify(cpatch%qmean_wflux_gw        )
+      nullify(cpatch%qmean_wflux_wl        )
+
       nullify(cpatch%qmsqu_gpp             )
       nullify(cpatch%qmsqu_npp             )
       nullify(cpatch%qmsqu_plresp          )
@@ -7447,6 +7660,23 @@ module ed_state_vars
       if(associated(cpatch%llspan              )) deallocate(cpatch%llspan              )
       if(associated(cpatch%vm_bar              )) deallocate(cpatch%vm_bar              )
       if(associated(cpatch%sla                 )) deallocate(cpatch%sla                 )
+      if(associated(cpatch%vm0                 )) deallocate(cpatch%vm0                 )
+
+      if(associated(cpatch%leaf_psi            )) deallocate(cpatch%leaf_psi            )
+      if(associated(cpatch%wood_psi            )) deallocate(cpatch%wood_psi            )
+      if(associated(cpatch%leaf_rwc            )) deallocate(cpatch%leaf_rwc            )
+      if(associated(cpatch%wood_rwc            )) deallocate(cpatch%wood_rwc            )
+      if(associated(cpatch%leaf_water_int      )) deallocate(cpatch%leaf_water_int      )
+      if(associated(cpatch%wood_water_int      )) deallocate(cpatch%wood_water_int      )
+      if(associated(cpatch%wflux_gw            )) deallocate(cpatch%wflux_gw            )
+      if(associated(cpatch%wflux_gw_layer      )) deallocate(cpatch%wflux_gw_layer      )
+      if(associated(cpatch%wflux_wl            )) deallocate(cpatch%wflux_wl            )
+
+      if(associated(cpatch%high_leaf_psi_days  )) deallocate(cpatch%high_leaf_psi_days  )
+      if(associated(cpatch%low_leaf_psi_days   )) deallocate(cpatch%low_leaf_psi_days   )
+      if(associated(cpatch%last_gV             )) deallocate(cpatch%last_gV             )
+      if(associated(cpatch%last_gJ             )) deallocate(cpatch%last_gJ             )
+
       if(associated(cpatch%fmean_gpp           )) deallocate(cpatch%fmean_gpp           )
       if(associated(cpatch%fmean_npp           )) deallocate(cpatch%fmean_npp           )
       if(associated(cpatch%fmean_leaf_resp     )) deallocate(cpatch%fmean_leaf_resp     )
@@ -7515,6 +7745,15 @@ module ed_state_vars
       if(associated(cpatch%fmean_wshed_wg      )) deallocate(cpatch%fmean_wshed_wg      )
       if(associated(cpatch%fmean_lai           )) deallocate(cpatch%fmean_lai           )
       if(associated(cpatch%fmean_bdead         )) deallocate(cpatch%fmean_bdead         )
+
+      if(associated(cpatch%fmean_leaf_psi      )) deallocate(cpatch%fmean_leaf_psi      )
+      if(associated(cpatch%fmean_wood_psi      )) deallocate(cpatch%fmean_wood_psi      )
+      if(associated(cpatch%fmean_leaf_water_int)) deallocate(cpatch%fmean_leaf_water_int)
+      if(associated(cpatch%fmean_wood_water_int)) deallocate(cpatch%fmean_wood_water_int)
+      if(associated(cpatch%fmean_wflux_gw      )) deallocate(cpatch%fmean_wflux_gw      )
+      if(associated(cpatch%fmean_wflux_gw_layer)) deallocate(cpatch%fmean_wflux_gw_layer)
+      if(associated(cpatch%fmean_wflux_wl      )) deallocate(cpatch%fmean_wflux_wl      )
+
       if(associated(cpatch%dmean_nppleaf       )) deallocate(cpatch%dmean_nppleaf       )
       if(associated(cpatch%dmean_nppfroot      )) deallocate(cpatch%dmean_nppfroot      )
       if(associated(cpatch%dmean_nppsapwood    )) deallocate(cpatch%dmean_nppsapwood    )
@@ -7588,6 +7827,17 @@ module ed_state_vars
       if(associated(cpatch%dmean_vapor_wc      )) deallocate(cpatch%dmean_vapor_wc      )
       if(associated(cpatch%dmean_intercepted_aw)) deallocate(cpatch%dmean_intercepted_aw)
       if(associated(cpatch%dmean_wshed_wg      )) deallocate(cpatch%dmean_wshed_wg      )
+
+      if(associated(cpatch%dmax_leaf_psi       )) deallocate(cpatch%dmax_leaf_psi       )
+      if(associated(cpatch%dmin_leaf_psi       )) deallocate(cpatch%dmin_leaf_psi       )
+      if(associated(cpatch%dmax_wood_psi       )) deallocate(cpatch%dmax_wood_psi       )
+      if(associated(cpatch%dmin_wood_psi       )) deallocate(cpatch%dmin_wood_psi       )
+      if(associated(cpatch%dmean_leaf_water_int)) deallocate(cpatch%dmean_leaf_water_int)
+      if(associated(cpatch%dmean_wood_water_int)) deallocate(cpatch%dmean_wood_water_int)
+      if(associated(cpatch%dmean_wflux_gw      )) deallocate(cpatch%dmean_wflux_gw      )
+      if(associated(cpatch%dmean_wflux_gw_layer)) deallocate(cpatch%dmean_wflux_gw_layer)
+      if(associated(cpatch%dmean_wflux_wl      )) deallocate(cpatch%dmean_wflux_wl      )
+
       if(associated(cpatch%mmean_lai           )) deallocate(cpatch%mmean_lai           )
       if(associated(cpatch%mmean_bleaf         )) deallocate(cpatch%mmean_bleaf         )
       if(associated(cpatch%mmean_broot         )) deallocate(cpatch%mmean_broot         )
@@ -7672,6 +7922,18 @@ module ed_state_vars
       if(associated(cpatch%mmean_nppseeds      )) deallocate(cpatch%mmean_nppseeds      )
       if(associated(cpatch%mmean_nppwood       )) deallocate(cpatch%mmean_nppwood       )
       if(associated(cpatch%mmean_nppdaily      )) deallocate(cpatch%mmean_nppdaily      )
+
+      if(associated(cpatch%mmean_dmax_leaf_psi )) deallocate(cpatch%mmean_dmax_leaf_psi )
+      if(associated(cpatch%mmean_dmin_leaf_psi )) deallocate(cpatch%mmean_dmin_leaf_psi )
+      if(associated(cpatch%mmean_dmax_wood_psi )) deallocate(cpatch%mmean_dmax_wood_psi )
+      if(associated(cpatch%mmean_dmin_wood_psi )) deallocate(cpatch%mmean_dmin_wood_psi )
+      if(associated(cpatch%mmean_leaf_water_int)) deallocate(cpatch%mmean_leaf_water_int)
+      if(associated(cpatch%mmean_wood_water_int)) deallocate(cpatch%mmean_wood_water_int)
+      if(associated(cpatch%mmean_wflux_gw      )) deallocate(cpatch%mmean_wflux_gw      )
+      if(associated(cpatch%mmean_wflux_gw_layer)) deallocate(cpatch%mmean_wflux_gw_layer)
+      if(associated(cpatch%mmean_wflux_wl      )) deallocate(cpatch%mmean_wflux_wl      )
+
+
       if(associated(cpatch%mmsqu_gpp           )) deallocate(cpatch%mmsqu_gpp           )
       if(associated(cpatch%mmsqu_npp           )) deallocate(cpatch%mmsqu_npp           )
       if(associated(cpatch%mmsqu_plresp        )) deallocate(cpatch%mmsqu_plresp        )
@@ -7746,6 +8008,14 @@ module ed_state_vars
       if(associated(cpatch%qmean_vapor_wc      )) deallocate(cpatch%qmean_vapor_wc      )
       if(associated(cpatch%qmean_intercepted_aw)) deallocate(cpatch%qmean_intercepted_aw)
       if(associated(cpatch%qmean_wshed_wg      )) deallocate(cpatch%qmean_wshed_wg      )
+
+      if(associated(cpatch%qmean_leaf_psi      )) deallocate(cpatch%qmean_leaf_psi      )
+      if(associated(cpatch%qmean_wood_psi      )) deallocate(cpatch%qmean_wood_psi      )
+      if(associated(cpatch%qmean_leaf_water_int)) deallocate(cpatch%qmean_leaf_water_int)
+      if(associated(cpatch%qmean_wood_water_int)) deallocate(cpatch%qmean_wood_water_int)
+      if(associated(cpatch%qmean_wflux_gw      )) deallocate(cpatch%qmean_wflux_gw      )
+      if(associated(cpatch%qmean_wflux_wl      )) deallocate(cpatch%qmean_wflux_wl      )
+
       if(associated(cpatch%qmsqu_gpp           )) deallocate(cpatch%qmsqu_gpp           )
       if(associated(cpatch%qmsqu_npp           )) deallocate(cpatch%qmsqu_npp           )
       if(associated(cpatch%qmsqu_plresp        )) deallocate(cpatch%qmsqu_plresp        )
@@ -9279,6 +9549,22 @@ module ed_state_vars
          opatch%llspan                (oco) = ipatch%llspan                (ico)
          opatch%vm_bar                (oco) = ipatch%vm_bar                (ico)
          opatch%sla                   (oco) = ipatch%sla                   (ico)
+         opatch%vm0                   (oco) = ipatch%vm0                   (ico)
+
+         opatch%leaf_psi              (oco) = ipatch%leaf_psi              (ico)
+         opatch%wood_psi              (oco) = ipatch%wood_psi              (ico)
+         opatch%leaf_water_int        (oco) = ipatch%leaf_water_int        (ico)
+         opatch%wood_water_int        (oco) = ipatch%wood_water_int        (ico)
+         opatch%leaf_rwc              (oco) = ipatch%leaf_rwc              (ico)
+         opatch%wood_rwc              (oco) = ipatch%wood_rwc              (ico)
+         opatch%wflux_gw              (oco) = ipatch%wflux_gw              (ico)
+         opatch%wflux_wl              (oco) = ipatch%wflux_wl              (ico)
+
+         opatch%high_leaf_psi_days    (oco) = ipatch%high_leaf_psi_days    (ico)
+         opatch%low_leaf_psi_days     (oco) = ipatch%low_leaf_psi_days     (ico)
+         opatch%last_gV               (oco) = ipatch%last_gV               (ico)
+         opatch%last_gJ               (oco) = ipatch%last_gJ               (ico)
+
          opatch%fmean_gpp             (oco) = ipatch%fmean_gpp             (ico)
          opatch%fmean_npp             (oco) = ipatch%fmean_npp             (ico)
          opatch%fmean_leaf_resp       (oco) = ipatch%fmean_leaf_resp       (ico)
@@ -9344,7 +9630,27 @@ module ed_state_vars
          opatch%fmean_wshed_wg        (oco) = ipatch%fmean_wshed_wg        (ico)
          opatch%fmean_lai             (oco) = ipatch%fmean_lai             (ico)
          opatch%fmean_bdead           (oco) = ipatch%fmean_bdead           (ico)
+
+         opatch%fmean_leaf_psi        (oco) = ipatch%fmean_leaf_psi        (ico)
+         opatch%fmean_wood_psi        (oco) = ipatch%fmean_wood_psi        (ico)
+         opatch%fmean_leaf_water_int  (oco) = ipatch%fmean_leaf_water_int  (ico)
+         opatch%fmean_wood_water_int  (oco) = ipatch%fmean_wood_water_int  (ico)
+         opatch%fmean_wflux_gw        (oco) = ipatch%fmean_wflux_gw        (ico)
+         opatch%fmean_wflux_wl        (oco) = ipatch%fmean_wflux_wl        (ico)
+
+         opatch%dmax_leaf_psi         (oco) = ipatch%dmax_leaf_psi         (ico)
+         opatch%dmin_leaf_psi         (oco) = ipatch%dmin_leaf_psi         (ico)
+         opatch%dmax_wood_psi         (oco) = ipatch%dmax_wood_psi         (ico)
+         opatch%dmin_wood_psi         (oco) = ipatch%dmin_wood_psi         (ico)
          !---------------------------------------------------------------------------------!
+
+         !------ Water absorption from each soil layer ------------------------------------!
+         do m=1,nzg
+            opatch%wflux_gw_layer        (m,oco) = ipatch%wflux_gw_layer        (m,ico)
+            opatch%fmean_wflux_gw_layer  (m,oco) = ipatch%fmean_wflux_gw_layer  (m,ico)
+         enddo
+         !---------------------------------------------------------------------------------!
+
 
 
          !------ Carbon balance variables. ------------------------------------------------!
@@ -9449,6 +9755,17 @@ module ed_state_vars
             opatch%dmean_intercepted_aw  (oco) = ipatch%dmean_intercepted_aw  (ico)
             opatch%dmean_wshed_wg        (oco) = ipatch%dmean_wshed_wg        (ico)
 
+            opatch%dmean_leaf_water_int  (oco) = ipatch%dmean_leaf_water_int  (ico)
+            opatch%dmean_wood_water_int  (oco) = ipatch%dmean_wood_water_int  (ico)
+            opatch%dmean_wflux_gw        (oco) = ipatch%dmean_wflux_gw        (ico)
+            opatch%dmean_wflux_wl        (oco) = ipatch%dmean_wflux_wl        (ico)
+
+            !------ Water absorption from each soil layer ---------------------------------!
+            do m=1,nzg
+               opatch%dmean_wflux_gw_layer  (m,oco) = ipatch%dmean_wflux_gw_layer  (m,ico)
+            enddo
+            !------------------------------------------------------------------------------!
+
 
             !------ Radiation profile variables. ------------------------------------------!
             do m=1,n_radprof
@@ -9552,6 +9869,22 @@ module ed_state_vars
             opatch%mmsqu_transp          (oco) = ipatch%mmsqu_transp          (ico)
             opatch%mmsqu_sensible_wc     (oco) = ipatch%mmsqu_sensible_wc     (ico)
             opatch%mmsqu_vapor_wc        (oco) = ipatch%mmsqu_vapor_wc        (ico)
+
+            opatch%mmean_dmax_leaf_psi   (oco) = ipatch%mmean_dmax_leaf_psi   (ico)
+            opatch%mmean_dmin_leaf_psi   (oco) = ipatch%mmean_dmin_leaf_psi   (ico)
+            opatch%mmean_dmax_wood_psi   (oco) = ipatch%mmean_dmax_wood_psi   (ico)
+            opatch%mmean_dmin_wood_psi   (oco) = ipatch%mmean_dmin_wood_psi   (ico)
+            opatch%mmean_leaf_water_int  (oco) = ipatch%mmean_leaf_water_int  (ico)
+            opatch%mmean_wood_water_int  (oco) = ipatch%mmean_wood_water_int  (ico)
+            opatch%mmean_wflux_gw        (oco) = ipatch%mmean_wflux_gw        (ico)
+            opatch%mmean_wflux_wl        (oco) = ipatch%mmean_wflux_wl        (ico)
+
+            !------ Water absorption from each soil layer ---------------------------------!
+            do m=1,nzg
+               opatch%mmean_wflux_gw_layer  (m,oco) = ipatch%mmean_wflux_gw_layer  (m,ico)
+            enddo
+            !------------------------------------------------------------------------------!
+
             !----- Mortality variables. ---------------------------------------------------!
             do m=1,n_mort
                opatch%mmean_mort_rate(m,oco) = ipatch%mmean_mort_rate(m,ico)
@@ -9637,6 +9970,14 @@ module ed_state_vars
                opatch%qmean_vapor_wc        (n,oco) = ipatch%qmean_vapor_wc        (n,ico)
                opatch%qmean_intercepted_aw  (n,oco) = ipatch%qmean_intercepted_aw  (n,ico)
                opatch%qmean_wshed_wg        (n,oco) = ipatch%qmean_wshed_wg        (n,ico)
+
+               opatch%qmean_leaf_psi        (n,oco) = ipatch%qmean_leaf_psi        (n,ico)
+               opatch%qmean_wood_psi        (n,oco) = ipatch%qmean_wood_psi        (n,ico)
+               opatch%qmean_leaf_water_int  (n,oco) = ipatch%qmean_leaf_water_int  (n,ico)
+               opatch%qmean_wood_water_int  (n,oco) = ipatch%qmean_wood_water_int  (n,ico)
+               opatch%qmean_wflux_gw        (n,oco) = ipatch%qmean_wflux_gw        (n,ico)
+               opatch%qmean_wflux_wl        (n,oco) = ipatch%qmean_wflux_wl        (n,ico)
+
                opatch%qmsqu_gpp             (n,oco) = ipatch%qmsqu_gpp             (n,ico)
                opatch%qmsqu_npp             (n,oco) = ipatch%qmsqu_npp             (n,ico)
                opatch%qmsqu_plresp          (n,oco) = ipatch%qmsqu_plresp          (n,ico)
@@ -9883,8 +10224,29 @@ module ed_state_vars
       opatch%llspan                (1:z) = pack(ipatch%llspan                    ,lmask)
       opatch%vm_bar                (1:z) = pack(ipatch%vm_bar                    ,lmask)
       opatch%sla                   (1:z) = pack(ipatch%sla                       ,lmask)
+      opatch%vm0                   (1:z) = pack(ipatch%vm0                       ,lmask)
+
+      opatch%leaf_psi              (1:z) = pack(ipatch%leaf_psi                  ,lmask)
+      opatch%wood_psi              (1:z) = pack(ipatch%wood_psi                  ,lmask)
+      opatch%leaf_rwc              (1:z) = pack(ipatch%leaf_rwc                  ,lmask)
+      opatch%wood_rwc              (1:z) = pack(ipatch%wood_rwc                  ,lmask)
+      opatch%leaf_water_int        (1:z) = pack(ipatch%leaf_water_int            ,lmask)
+      opatch%wood_water_int        (1:z) = pack(ipatch%wood_water_int            ,lmask)
+      opatch%wflux_gw              (1:z) = pack(ipatch%wflux_gw                  ,lmask)
+      opatch%wflux_wl              (1:z) = pack(ipatch%wflux_wl                  ,lmask)
+
+      opatch%high_leaf_psi_days    (1:z) = pack(ipatch%high_leaf_psi_days        ,lmask)
+      opatch%low_leaf_psi_days     (1:z) = pack(ipatch%low_leaf_psi_days         ,lmask)
+      opatch%last_gV               (1:z) = pack(ipatch%last_gV                   ,lmask)
+      opatch%last_gJ               (1:z) = pack(ipatch%last_gJ                   ,lmask)
+
       !------------------------------------------------------------------------------------!
 
+      !------ Water absorption from each soil layer ------------------------------------!
+      do m=1,nzg
+         opatch%wflux_gw_layer  (m,1:z) = pack(ipatch%wflux_gw_layer    (m,:),lmask)
+      enddo
+      !---------------------------------------------------------------------------------!
 
       !------ Carbon balance variables. ---------------------------------------------------!
       do m=1,13
@@ -10005,7 +10367,25 @@ module ed_state_vars
       opatch%fmean_wshed_wg        (1:z) = pack(ipatch%fmean_wshed_wg            ,lmask)
       opatch%fmean_lai             (1:z) = pack(ipatch%fmean_lai                 ,lmask)
       opatch%fmean_bdead           (1:z) = pack(ipatch%fmean_bdead               ,lmask)
+
+      opatch%fmean_leaf_psi        (1:z) = pack(ipatch%fmean_leaf_psi            ,lmask)
+      opatch%fmean_wood_psi        (1:z) = pack(ipatch%fmean_wood_psi            ,lmask)
+      opatch%fmean_leaf_water_int  (1:z) = pack(ipatch%fmean_leaf_water_int      ,lmask)
+      opatch%fmean_wood_water_int  (1:z) = pack(ipatch%fmean_wood_water_int      ,lmask)
+      opatch%fmean_wflux_gw        (1:z) = pack(ipatch%fmean_wflux_gw            ,lmask)
+      opatch%fmean_wflux_wl        (1:z) = pack(ipatch%fmean_wflux_wl            ,lmask)
+
+      opatch%dmax_leaf_psi         (1:z) = pack(ipatch%dmax_leaf_psi             ,lmask)
+      opatch%dmin_leaf_psi         (1:z) = pack(ipatch%dmin_leaf_psi             ,lmask)
+      opatch%dmax_wood_psi         (1:z) = pack(ipatch%dmax_wood_psi             ,lmask)
+      opatch%dmin_wood_psi         (1:z) = pack(ipatch%dmin_wood_psi             ,lmask)
       !------------------------------------------------------------------------------------!
+
+      !------ Water absorption from each soil layer ------------------------------------!
+      do m=1,nzg
+         opatch%fmean_wflux_gw_layer(m,1:z) = pack(ipatch%fmean_wflux_gw_layer(m,:),lmask)
+      enddo
+      !---------------------------------------------------------------------------------!
 
 
       !------ Radiation profile variables. ------------------------------------------------!
@@ -10115,8 +10495,18 @@ module ed_state_vars
       opatch%dmean_vapor_wc        (1:z) = pack(ipatch%dmean_vapor_wc            ,lmask)
       opatch%dmean_intercepted_aw  (1:z) = pack(ipatch%dmean_intercepted_aw      ,lmask)
       opatch%dmean_wshed_wg        (1:z) = pack(ipatch%dmean_wshed_wg            ,lmask)
+      
+      opatch%dmean_leaf_water_int  (1:z) = pack(ipatch%dmean_leaf_water_int      ,lmask)
+      opatch%dmean_wood_water_int  (1:z) = pack(ipatch%dmean_wood_water_int      ,lmask)
+      opatch%dmean_wflux_gw        (1:z) = pack(ipatch%dmean_wflux_gw            ,lmask)
+      opatch%dmean_wflux_wl        (1:z) = pack(ipatch%dmean_wflux_wl            ,lmask)
       !------------------------------------------------------------------------------------!
 
+      !------ Water absorption from each soil layer ---------------------------------!
+      do m=1,nzg
+         opatch%dmean_wflux_gw_layer(m,1:z) = pack(ipatch%dmean_wflux_gw_layer(m,:),lmask)
+      end do
+      !------------------------------------------------------------------------------------!
 
       !------ Radiation profile variables. ------------------------------------------------!
       do m=1,n_radprof
@@ -10235,6 +10625,18 @@ module ed_state_vars
       opatch%mmean_nppseeds        (1:z) = pack(ipatch%mmean_nppseeds            ,lmask)
       opatch%mmean_nppwood         (1:z) = pack(ipatch%mmean_nppwood             ,lmask)
       opatch%mmean_nppdaily        (1:z) = pack(ipatch%mmean_nppdaily            ,lmask)
+
+      opatch%mmean_dmax_leaf_psi   (1:z) = pack(ipatch%mmean_dmax_leaf_psi       ,lmask)
+      opatch%mmean_dmin_leaf_psi   (1:z) = pack(ipatch%mmean_dmin_leaf_psi       ,lmask)
+      opatch%mmean_dmax_wood_psi   (1:z) = pack(ipatch%mmean_dmax_wood_psi       ,lmask)
+      opatch%mmean_dmin_wood_psi   (1:z) = pack(ipatch%mmean_dmin_wood_psi       ,lmask)
+      opatch%mmean_leaf_water_int  (1:z) = pack(ipatch%mmean_leaf_water_int      ,lmask)
+      opatch%mmean_wood_water_int  (1:z) = pack(ipatch%mmean_wood_water_int      ,lmask)
+      opatch%mmean_wflux_gw        (1:z) = pack(ipatch%mmean_wflux_gw            ,lmask)
+      opatch%mmean_wflux_wl        (1:z) = pack(ipatch%mmean_wflux_wl            ,lmask)
+
+
+
       opatch%mmsqu_gpp             (1:z) = pack(ipatch%mmsqu_gpp                 ,lmask)
       opatch%mmsqu_npp             (1:z) = pack(ipatch%mmsqu_npp                 ,lmask)
       opatch%mmsqu_plresp          (1:z) = pack(ipatch%mmsqu_plresp              ,lmask)
@@ -10244,6 +10646,12 @@ module ed_state_vars
       opatch%mmsqu_sensible_wc     (1:z) = pack(ipatch%mmsqu_sensible_wc         ,lmask)
       opatch%mmsqu_vapor_wc        (1:z) = pack(ipatch%mmsqu_vapor_wc            ,lmask)
       !------------------------------------------------------------------------------------!
+
+      !------ Water absorption from each soil layer ---------------------------------!
+      do m=1,nzg
+         opatch%mmean_wflux_gw_layer(m,1:z) = pack(ipatch%mmean_wflux_gw_layer(m,:),lmask)
+      enddo
+      !------------------------------------------------------------------------------!
 
 
       !----- Mortality variables. ---------------------------------------------------------!
@@ -10356,6 +10764,14 @@ module ed_state_vars
          opatch%qmean_vapor_wc      (n,1:z) = pack(ipatch%qmean_vapor_wc      (n,:),lmask)
          opatch%qmean_intercepted_aw(n,1:z) = pack(ipatch%qmean_intercepted_aw(n,:),lmask)
          opatch%qmean_wshed_wg      (n,1:z) = pack(ipatch%qmean_wshed_wg      (n,:),lmask)
+
+         opatch%qmean_leaf_psi      (n,1:z) = pack(ipatch%qmean_leaf_psi      (n,:),lmask)
+         opatch%qmean_wood_psi      (n,1:z) = pack(ipatch%qmean_wood_psi      (n,:),lmask)
+         opatch%qmean_leaf_water_int(n,1:z) = pack(ipatch%qmean_leaf_water_int(n,:),lmask)
+         opatch%qmean_wood_water_int(n,1:z) = pack(ipatch%qmean_wood_water_int(n,:),lmask)
+         opatch%qmean_wflux_gw      (n,1:z) = pack(ipatch%qmean_wflux_gw      (n,:),lmask)
+         opatch%qmean_wflux_wl      (n,1:z) = pack(ipatch%qmean_wflux_wl      (n,:),lmask)
+
          opatch%qmsqu_gpp           (n,1:z) = pack(ipatch%qmsqu_gpp           (n,:),lmask)
          opatch%qmsqu_npp           (n,1:z) = pack(ipatch%qmsqu_npp           (n,:),lmask)
          opatch%qmsqu_plresp        (n,1:z) = pack(ipatch%qmsqu_plresp        (n,:),lmask)
@@ -10389,19 +10805,21 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This subroutine is the main driver for filling the variable table (var_table) of !
-   ! ED variables.  On a serial computing environment, this routine should be called near  !
-   ! the end of the initialization process after the hierarchical tree structure has been  !
-   ! trimmed via fusion/splitting/termination.  Similiarly, this routine should be called  !
-   ! after any fusion/splitting/termination process, assuming that the major vtable        !
-   ! structures have been deallocated prior to reallocation.                               !
-   !                                                                                       !
-   !      In a parallel environment, this routine should operate in a similiar fashion on  !
-   ! each of the compute nodes.  It is designed such that the compute nodes will write     !
-   ! hyperslabs of data in parallel to a joining HDF5 dataset as "collective-chunked"      !
-   ! data.  The modifications that must be made after running this subroutine, are that    !
-   ! the indexes should account for the offset of the current compute node.                !
-   !                                                                                       !!
+   !  SUBROUTINE: FILLTAB_ALLTYPES
+   !> \brief    This subroutine is the main driver for filling the variable table 
+   !>           (var_table) of ED variables.  
+   !> \details  On a serial computing environment, this routine should be called near  
+   !>the end of the initialization process after the hierarchical tree structure has been  
+   !>trimmed via fusion/splitting/termination.  Similiarly, this routine should be called  
+   !>after any fusion/splitting/termination process, assuming that the major vtable        
+   !>structures have been deallocated prior to reallocation.                               
+   !>                                                                                      
+   !>     In a parallel environment, this routine should operate in a similiar fashion on  
+   !>each of the compute nodes.  It is designed such that the compute nodes will write     
+   !>hyperslabs of data in parallel to a joining HDF5 dataset as "collective-chunked"      
+   !>data.  The modifications that must be made after running this subroutine, are that    
+   !>the indexes should account for the offset of the current compute node.                
+   !                                                                                       
    !    The various state scalars, vectors and arrays are now populate the vtable.  The    !
    ! vtable indexes the array gives it a name, records its dimensions, when it is to be    !
    ! used as output and how (averaging and such) and most importantly saves a pointer to   !
@@ -10484,6 +10902,7 @@ module ed_state_vars
    !  40    : rank 1 : cohort, integer                                                     !
    !  41    : rank 1 : cohort                                                              !
    ! -41    : rank 2 : cohort, diurnal cycle                                               !
+   !  42    : rank 2 : cohort, s-layer                                                     !
    !  44    : rank 2 : cohort, pft                                                         !
    !  46    : rank 2 : cohort, dbh                                                         !
    !  47    : rank 2 : cohort, age                                                         !
@@ -11004,8 +11423,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype).                                                                             !
+   !  SUBROUTINE: FILLTAB_EDTYPE
+   !> \brief This routine will fill the pointer table with the polygon-level variables  
+   !> (edtype).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype(igr,init)
 
@@ -11059,8 +11479,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are integer (type 10).                           !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P10
+   !> \brief  This routine will fill the pointer table with the polygon-level variables 
+   !>(edtype) that have one dimension and are integer (type 10).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p10(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -11140,8 +11561,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are instantaneous.       !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11
+   !> \brief This routine will fill the pointer table with the polygon-level variables 
+   !>(edtype) that have one dimension and are real (type 11), and are instantaneous.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11inst(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -11580,8 +12002,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are fast mean variables. !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11FMEAN
+   !> \brief This routine will fill the pointer table with the polygon-level variables 
+   !>(edtype) that have one dimension and are real (type 11), and are fast mean variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11fmean(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -12735,7 +13158,7 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'FMEAN_LAI_PY  :11:'//trim(fast_keys)  )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - LAI'					   &
+                           ,'Sub-daily mean - LAI'                                         &
                            ,'[           m2/m2]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_skin_temp)) then
@@ -12760,9 +13183,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are daily mean           !
-   ! variables.                                                                            !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11DMEAN
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have one dimension and are real (type 11), and are daily mean
+   !> variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11dmean(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -14014,9 +14438,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are monthly mean         !
-   ! variables.                                                                            !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11MMEAN
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have one dimension and are real (type 11), and are monthly mean
+   !> variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11mmean(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -15549,8 +15974,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (ndcycle,npolygons) and are real (type -11).        !
+   !  SUBROUTINE: FILLTAB_EDTYPE_M11 
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have two dimensions (ndcycle,npolygons) and are real (type -11).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_m11(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -16909,8 +17335,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (ndcycle,npolygons) and are real (type 12).         !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P12
+   !> \brief  This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have two dimensions (ndcycle,npolygons) and are real (type 12).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p12(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -17323,8 +17750,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (13 months,npolygons) and are real (type 19).       !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P19
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have two dimensions (13 months,npolygons) and are real (type 19).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p19(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -17374,8 +17802,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have three dimensions (n_dbh,n_pft,npolygons) and are real (type 146).  !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P146
+   !> \brief  This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have three dimensions (n_dbh,n_pft,npolygons) and are real (type 146).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p146(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -17701,8 +18130,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have three dimensions (3,4,npolygons) and are real (type 199).          !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P199
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have three dimensions (3,4,npolygons) and are real (type 199).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p199(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -17755,7 +18185,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine fills in the variable table with site-level variables.           !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE
+   !> \brief This sub-routine fills in the variable table with site-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype(igr,ipy,init)
       implicit none
@@ -17845,8 +18276,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are integer (type 20).                      !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P20
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are integer (type 20).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p20(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -17992,9 +18424,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are not averaged    !
-   ! variable (fmean, dmean, mmean, mmsqu, qmean, qmsqu).                                  !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21INST
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are not averaged
+   !> variable (fmean, dmean, mmean, mmsqu, qmean, qmsqu).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21inst(cpoly,igr,init,var_len,var_len_global,max_ptrs   &
                                          ,nvar)
@@ -18200,9 +18633,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are sub-daily       !
-   ! averages (fmean).                                                                     !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21FMEAN
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are sub-daily
+   !> averages (fmean).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21fmean(cpoly,igr,init,var_len,var_len_global,max_ptrs  &
                                          ,nvar)
@@ -18418,9 +18852,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are daily           !
-   ! averages (dmean).                                                                     !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21DMEAN
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are daily
+   !> averages (dmean).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21dmean(cpoly,igr,init,var_len,var_len_global,max_ptrs  &
                                          ,nvar)
@@ -18607,9 +19042,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are monthly         !
-   ! averages (mmean or mmsqu).                                                            !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21MMEAN
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are monthly
+   !> averages (mmean or mmsqu).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21mmean(cpoly,igr,init,var_len,var_len_global,max_ptrs  &
                                          ,nvar)
@@ -18826,8 +19262,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (nzg,nsites) and are integer (type 220).       !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P220
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (nzg,nsites) and are integer (type 220).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p220(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -18882,8 +19319,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (n_pft,nsites) and are real (type 24).         !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P24
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (n_pft,nsites) and are real (type 24).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p24(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -18941,8 +19379,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (ndcycle,nsites) and are real (type -21).      !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_M21
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (ndcycle,nsites) and are real (type -21).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_m21(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -19157,8 +19596,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (12 months,nsites) and are real (type 29).     !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P29
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (12 months,nsites) and are real (type 29).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p29(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -19216,8 +19656,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have three dimensions (n_pft,n_dbh,nsites) and are real (type 246).!
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P246
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have three dimensions (n_pft,n_dbh,nsites) and are real (type 246).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p246(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -19325,9 +19766,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have three dimensions (n_dist_types,n_dist_types,nsites) and are   !
-   ! real (type 255).                                                                      !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P255
+   !> \breif This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have three dimensions (n_dist_types,n_dist_types,nsites) and are
+   !> real (type 255).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p255(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -19388,9 +19830,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine will fill the variable table with the sitetype variables (patch- !
-   ! -level).  Because of the sheer number of variables, we must split the subroutines     !
-   ! into smaller routines.                                                                !
+   !  SUBROUTINE: FILLTAB_SITETYPE
+   !> \brief This sub-routine will fill the variable table with the sitetype variables
+   !> (patch-level). Because of the sheer number of variables, we must split the subroutines
+   !> into smaller routines.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype(igr,ipy,isi,init)
 
@@ -19459,8 +19902,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   !  (sitetype) that have one dimension and are integer (type 30).                        !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P30
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension and are integer (type 30).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p30(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -19531,9 +19975,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   !  (sitetype) that have one dimension and are real (type 31).  Because of the sheer     !
-   ! amount of variables with type 31, we do the averages in separate sub-routines.        !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31INST
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension and are real (type 31).  Because of the sheer
+   !> amount of variables with type 31, we do the averages in separate sub-routines.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31inst(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -20378,8 +20823,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have one dimension, are real (type 31), and are sub-daily averages.   !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31FMEAN
+   !> This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension, are real (type 31), and are sub-daily averages.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31fmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -20873,8 +21319,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have one dimension, are real (type 31), and are daily averages.       !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31DMEAN
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension, are real (type 31), and are daily averages.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31dmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -21423,9 +21870,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have one dimension, are real (type 31), and are monthly means or mean !
-   ! sum of squares.                                                                       !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31MMEAN
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension, are real (type 31), and are monthly means or mean
+   !> sum of squares.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31mmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -22172,9 +22620,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (ndcycle,npatches), and are of type -31 (qmean    !
-   ! and qmsqu).                                                                           !
+   !  SUBROUTINE: FILLTAB_SITETYPE_M31
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (ndcycle,npatches), and are of type -31 (qmean
+   !> and qmsqu).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_m31(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -22824,8 +23273,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (nzg,npatches).                                   !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P32
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (nzg,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p32(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -23173,8 +23623,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (nzs,npatches).                                   !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P33
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (nzs,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p33(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -23297,8 +23748,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (n_pft,npatches).                                 !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P34
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (n_pft,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p34(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -23365,8 +23817,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have three dimensions (n_pft,ff_nhgt,npatches).                                 !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P346
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have three dimensions (n_pft,ff_nhgt,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p346(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -23419,7 +23872,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine fills in the variable table for cohort-level variables.          !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE
+   !> \brief This sub-routine fills in the variable table for cohort-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype(igr,ipy,isi,ipa,init)
 
@@ -23516,6 +23970,7 @@ module ed_state_vars
       call filltab_patchtype_p41dmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p41mmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_m41     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_patchtype_p42     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p48     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p49     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p411    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
@@ -23534,8 +23989,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are integer (type 40).                        !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P40
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are integer (type 40).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p40(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -23620,6 +24076,21 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'NEW_RECRUIT_FLAG :40:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+
+      if (associated(cpatch%high_leaf_psi_days)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%high_leaf_psi_days,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'HIGH_LEAF_PSI_DAYS :40:hist:dail')
+         call metadata_edio(nvar,igr,'Consecutive days with high DMAX leaf psi','[day]','NA') 
+      end if
+
+      if (associated(cpatch%low_leaf_psi_days)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%low_leaf_psi_days,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LOW_LEAF_PSI_DAYS :40:hist:dail')
+         call metadata_edio(nvar,igr,'Consecutive days with low DMAX leaf psi','[day]','NA') 
+      end if
+
       !------------------------------------------------------------------------------------!
 
       return
@@ -23634,9 +24105,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and not fmean, dmean,      !
-   ! mmean, mmsqu, qmean, or qmsqu.                                                        !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41INST
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and not fmean, dmean,
+   !> mmean, mmsqu, qmean, or qmsqu.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41inst (cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -24475,6 +24947,91 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'SLA :41:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+
+      if (associated(cpatch%vm0)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%vm0,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'VM0 :41:hist') 
+         call metadata_edio(nvar,igr,'Vcmax at ref. temperature for each cohort',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
+      if (associated(cpatch%leaf_psi)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_psi,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_PSI :41:hist') 
+         call metadata_edio(nvar,igr,'Leaf Water Potential','[m]','icohort') 
+      end if
+
+      if (associated(cpatch%wood_psi)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wood_psi,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WOOD_PSI :41:hist') 
+         call metadata_edio(nvar,igr,'Wood Water Potential','[m]','icohort') 
+      end if
+
+      if (associated(cpatch%leaf_rwc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_rwc,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_RWC :41:hist') 
+         call metadata_edio(nvar,igr,'Leaf Relative Water Content','[-]','icohort') 
+      end if
+
+      if (associated(cpatch%wood_rwc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wood_rwc,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WOOD_RWC :41:hist') 
+         call metadata_edio(nvar,igr,'Wood Relative Water Content','[-]','icohort') 
+      end if
+
+      if (associated(cpatch%leaf_water_int)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_water_int,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_WATER_INT :41:hist') 
+         call metadata_edio(nvar,igr,'Leaf internal water content per plant'      ,     &
+                                     '[kg/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%wood_water_int)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wood_water_int,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WOOD_WATER_INT :41:hist') 
+         call metadata_edio(nvar,igr,'Wood internal water content per plant'      ,     &
+                                     '[kg/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%wflux_gw)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wflux_gw,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WFLUX_GW :41:hist') 
+         call metadata_edio(nvar,igr,'Water flow from ground to wood = root water absorption',&
+                                     '[kg/s]','icohort') 
+      end if
+
+      if (associated(cpatch%wflux_wl)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wflux_wl,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WFLUX_WL :41:hist') 
+         call metadata_edio(nvar,igr,'Water flow from wood to leaf = sapflow',     &
+                                    '[kg/s]','icohort') 
+      end if
+
+      if (associated(cpatch%last_gV)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%last_gV,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LAST_GV :41:hist') 
+         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Vcmax',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
+      if (associated(cpatch%last_gJ)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%last_gJ,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LAST_GJ :41:hist') 
+         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Jmax',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
       !------------------------------------------------------------------------------------!
 
       return
@@ -24489,8 +25046,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and fmean.                 !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41FMEAN
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and fmean.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41fmean(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -24546,7 +25104,7 @@ module ed_state_vars
                            ,'FMEAN_GPP_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gross primary productivity'                  &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_npp             )) then
          nvar = nvar+1
@@ -24555,7 +25113,7 @@ module ed_state_vars
                            ,'FMEAN_NPP_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net primary productivity'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_resp       )) then
          nvar = nvar+1
@@ -24564,7 +25122,7 @@ module ed_state_vars
                            ,'FMEAN_LEAF_RESP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf respiration'                            &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_root_resp       )) then
          nvar = nvar+1
@@ -24573,7 +25131,7 @@ module ed_state_vars
                            ,'FMEAN_ROOT_RESP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root respiration'                            &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -24582,7 +25140,7 @@ module ed_state_vars
                            ,'FMEAN_LEAF_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf growth respiration'                     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_root_growth_resp)) then
          nvar = nvar+1
@@ -24591,7 +25149,7 @@ module ed_state_vars
                            ,'FMEAN_ROOT_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root growth respiration'                     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -24600,7 +25158,7 @@ module ed_state_vars
                            ,'FMEAN_SAPA_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Aboveground sapwood growth respiration'      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -24609,7 +25167,7 @@ module ed_state_vars
                            ,'FMEAN_SAPB_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Belowground sapwood growth respiration'      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -24618,7 +25176,7 @@ module ed_state_vars
                            ,'FMEAN_LEAF_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf Storage respiration'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -24627,7 +25185,7 @@ module ed_state_vars
                            ,'FMEAN_ROOT_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root Storage respiration'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -24636,7 +25194,7 @@ module ed_state_vars
                            ,'FMEAN_SAPA_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Aboveground Sapwood Storage respiration'     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -24645,7 +25203,7 @@ module ed_state_vars
                            ,'FMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Belowground Sapwood Storage respiration'     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_plresp          )) then
          nvar = nvar+1
@@ -24654,7 +25212,7 @@ module ed_state_vars
                            ,'FMEAN_PLRESP_CO            :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Plant respiration'                           &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_energy     )) then
          nvar = nvar+1
@@ -25087,6 +25645,60 @@ module ed_state_vars
                            ,'Sub-daily mean - Wood shedding'                               &
                            ,'[    kg/m2/s]','(icohort)'            )
       end if
+      if (associated(cpatch%fmean_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_LEAF_PSI_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Leaf Water Potential'                        &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WOOD_PSI_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Wood Water Potential'                        &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_leaf_water_int        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_LEAF_WATER_INT_CO    :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Leaf internal water content per plnat'       &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wood_water_int        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WOOD_WATER_INT_CO    :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Wood internal water content per plant'       &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WFLUX_GW_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water flux from ground to wood'              &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WFLUX_WL_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water flux from wood to leaf, sapflow'       &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -25101,8 +25713,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and dmean.                 !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41DMEAN
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and dmean.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41dmean(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -25226,7 +25839,7 @@ module ed_state_vars
                            ,'DMEAN_GPP_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gross primary productivity'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_npp             )) then
          nvar = nvar+1
@@ -25235,7 +25848,7 @@ module ed_state_vars
                            ,'DMEAN_NPP_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity'                        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_resp       )) then
          nvar = nvar+1
@@ -25244,7 +25857,7 @@ module ed_state_vars
                            ,'DMEAN_LEAF_RESP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf respiration'                                &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_root_resp       )) then
          nvar = nvar+1
@@ -25253,7 +25866,7 @@ module ed_state_vars
                            ,'DMEAN_ROOT_RESP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root respiration'                                &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -25262,7 +25875,7 @@ module ed_state_vars
                            ,'DMEAN_LEAF_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf growth respiration'                         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_root_growth_resp)) then
          nvar = nvar+1
@@ -25271,7 +25884,7 @@ module ed_state_vars
                            ,'DMEAN_ROOT_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root growth respiration'                         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -25280,7 +25893,7 @@ module ed_state_vars
                            ,'DMEAN_SAPA_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Aboveground sapwood growth respiration'          &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -25289,7 +25902,7 @@ module ed_state_vars
                            ,'DMEAN_SAPB_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Belowground sapwood growth respiration'          &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -25298,7 +25911,7 @@ module ed_state_vars
                            ,'DMEAN_LEAF_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf Storage respiration'                        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -25307,7 +25920,7 @@ module ed_state_vars
                            ,'DMEAN_ROOT_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root storage respiration'                        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -25316,7 +25929,7 @@ module ed_state_vars
                            ,'DMEAN_SAPA_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Aboveground Sapwood Storage respiration'         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -25325,7 +25938,7 @@ module ed_state_vars
                            ,'DMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Belowground Sapwood Storage respiration'         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_plresp          )) then
          nvar = nvar+1
@@ -25334,7 +25947,7 @@ module ed_state_vars
                            ,'DMEAN_PLRESP_CO            :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Plant respiration'                               &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_energy     )) then
          nvar = nvar+1
@@ -25772,6 +26385,80 @@ module ed_state_vars
                            ,'Daily mean - Wood shedding'                                   &
                            ,'[    kg/m2/s]','(icohort)'            )
       end if
+      if (associated(cpatch%dmax_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmax_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMAX_LEAF_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily maximum - Leaf Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmin_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmin_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMIN_LEAF_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily minimum - Leaf Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmax_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmax_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMAX_WOOD_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily maximum - Wood Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmin_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmin_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMIN_WOOD_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily minimum - Wood Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_leaf_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_LEAF_WATER_INT_CO    :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Leaf internal water content per plant'           &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_wood_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WOOD_WATER_INT_CO    :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Wood internal water content per plant'           &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WFLUX_GW_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water flux from ground to wood, root absorption' &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WFLUX_WL_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water flux from wood to leaf, sapflow'           &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+
+
       !------------------------------------------------------------------------------------!
 
       return
@@ -25786,8 +26473,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and mmean.                 !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41MMEAN
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and mmean.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41mmean(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -25848,7 +26536,7 @@ module ed_state_vars
                            ,'MMEAN_GPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gross primary productivity'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_npp             )) then
          nvar = nvar+1
@@ -25857,7 +26545,7 @@ module ed_state_vars
                            ,'MMEAN_NPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_resp       )) then
          nvar = nvar+1
@@ -25866,7 +26554,7 @@ module ed_state_vars
                            ,'MMEAN_LEAF_RESP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf respiration'                              &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_root_resp       )) then
          nvar = nvar+1
@@ -25875,7 +26563,7 @@ module ed_state_vars
                            ,'MMEAN_ROOT_RESP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root respiration'                              &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -25884,7 +26572,7 @@ module ed_state_vars
                            ,'MMEAN_LEAF_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf growth respiration'                       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_root_growth_resp)) then
          nvar = nvar+1
@@ -25893,7 +26581,7 @@ module ed_state_vars
                            ,'MMEAN_ROOT_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root growth respiration'                       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -25902,7 +26590,7 @@ module ed_state_vars
                            ,'MMEAN_SAPA_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Aboveground sapwood growth respiration'        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -25911,7 +26599,7 @@ module ed_state_vars
                            ,'MMEAN_SAPB_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Belowground sapwood growth respiration'        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -25920,7 +26608,7 @@ module ed_state_vars
                            ,'MMEAN_LEAF_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf Storage respiration'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -25929,7 +26617,7 @@ module ed_state_vars
                            ,'MMEAN_ROOT_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root Storage respiration'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -25938,7 +26626,7 @@ module ed_state_vars
                            ,'MMEAN_SAPA_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Aboveground Sapwood Storage respiration'       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -25947,7 +26635,7 @@ module ed_state_vars
                            ,'MMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Belowground Sapwood Storage respiration'       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_plresp          )) then
          nvar = nvar+1
@@ -25956,7 +26644,7 @@ module ed_state_vars
                            ,'MMEAN_PLRESP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Plant respiration'                             &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_energy     )) then
          nvar = nvar+1
@@ -26531,6 +27219,78 @@ module ed_state_vars
                            ,'Monthly mean - Net primary productivity - total'              &
                            ,'[  kgC/m2/yr]','(icohort)'            )
       end if
+      if (associated(cpatch%mmean_dmax_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmax_leaf_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMAX_LEAF_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily maximum leaf water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_dmin_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmin_leaf_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMIN_LEAF_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily minimum leaf water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_dmax_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmax_wood_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMAX_WOOD_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily maximum wood water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_dmin_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmin_wood_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMIN_WOOD_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily minimum wood water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_leaf_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_LEAF_WATER_INT_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Leaf internal water content per plant'          &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_wood_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WOOD_WATER_INT_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Wood internal water content per plant'          &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WFLUX_GW_CO          :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water flux from ground to wood, root absorption' &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WFLUX_WL_CO          :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water flux from wood to leaf, sapflow'          &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
       if (associated(cpatch%mmsqu_gpp             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_gpp                                          &
@@ -26538,7 +27298,7 @@ module ed_state_vars
                            ,'MMSQU_GPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Gross primary productivity'                    &
-                           ,'[kgC2/m4/yr2]','(icohort)'            )
+                           ,'[kgC2/pl2/yr2]','(icohort)'            )
       end if
       if (associated(cpatch%mmsqu_npp             )) then
          nvar = nvar+1
@@ -26547,7 +27307,7 @@ module ed_state_vars
                            ,'MMSQU_NPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net primary productivity'                      &
-                           ,'[kgC2/m4/yr2]','(icohort)'            )
+                           ,'[kgC2/pl2/yr2]','(icohort)'            )
       end if
       if (associated(cpatch%mmsqu_plresp          )) then
          nvar = nvar+1
@@ -26556,7 +27316,7 @@ module ed_state_vars
                            ,'MMSQU_PLRESP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Plant respiration'                             &
-                           ,'[kgC2/m4/yr2]','(icohort)'            )
+                           ,'[kgC2/pl2/yr2]','(icohort)'            )
       end if
       if (associated(cpatch%mmsqu_sensible_lc     )) then
          nvar = nvar+1
@@ -26618,8 +27378,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (ndcycle,ncohorts) and are real (type -41).      !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_M41
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (ndcycle,ncohorts) and are real (type -41).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_m41(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -26673,7 +27434,7 @@ module ed_state_vars
                            ,'QMEAN_GPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gross primary productivity'                       &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_npp             )) then
          nvar = nvar+1
@@ -26682,7 +27443,7 @@ module ed_state_vars
                            ,'QMEAN_NPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net primary productivity'                         &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_resp       )) then
          nvar = nvar+1
@@ -26691,7 +27452,7 @@ module ed_state_vars
                            ,'QMEAN_LEAF_RESP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf respiration'                                 &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_root_resp       )) then
          nvar = nvar+1
@@ -26700,7 +27461,7 @@ module ed_state_vars
                            ,'QMEAN_ROOT_RESP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root respiration'                                 &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -26709,7 +27470,7 @@ module ed_state_vars
                            ,'QMEAN_LEAF_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf growth respiration'                          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_root_growth_resp)) then
          nvar = nvar+1
@@ -26718,7 +27479,7 @@ module ed_state_vars
                            ,'QMEAN_ROOT_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root growth respiration'                          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -26727,7 +27488,7 @@ module ed_state_vars
                            ,'QMEAN_SAPA_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Aboveground sapwood growth respiration'           &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -26736,7 +27497,7 @@ module ed_state_vars
                            ,'QMEAN_SAPB_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Belowground sapwood growth respiration'           &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -26745,7 +27506,7 @@ module ed_state_vars
                            ,'QMEAN_LEAF_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf Storage respiration'                         &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -26754,7 +27515,7 @@ module ed_state_vars
                            ,'QMEAN_ROOT_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root Storage respiration'                         &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -26763,7 +27524,7 @@ module ed_state_vars
                            ,'QMEAN_SAPA_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Aboveground Sapwood Storage respiration'          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -26772,7 +27533,7 @@ module ed_state_vars
                            ,'QMEAN_SAPB_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Belowground Sapwood Storage respiration'          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_plresp          )) then
          nvar = nvar+1
@@ -26781,7 +27542,7 @@ module ed_state_vars
                            ,'QMEAN_PLRESP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Plant respiration'                                &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_energy     )) then
          nvar = nvar+1
@@ -27220,6 +27981,60 @@ module ed_state_vars
                            ,'Mean diel - Wood shedding'                                    &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
       end if
+      if (associated(cpatch%qmean_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_LEAF_PSI_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Leaf Water Potential'                             &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WOOD_PSI_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Wood Water Potential'                             &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_leaf_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_LEAF_WATER_INT_CO    :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Leaf internal water content per plant'            &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wood_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WOOD_WATER_INT_CO    :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Wood internal water content per plant'            &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WFLUX_GW_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Water flux from ground to wood'                   &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WFLUX_WL_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Water flux from wood to leaf, sapflow'            &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
       if (associated(cpatch%qmsqu_gpp             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_gpp                                          &
@@ -27227,7 +28042,7 @@ module ed_state_vars
                            ,'QMSQU_GPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Gross primary productivity'                       &
-                           ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
+                           ,'[kgC2/pl2/yr2]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmsqu_npp             )) then
          nvar = nvar+1
@@ -27236,7 +28051,7 @@ module ed_state_vars
                            ,'QMSQU_NPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net primary productivity'                         &
-                           ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
+                           ,'[kgC2/pl2/yr2]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmsqu_plresp          )) then
          nvar = nvar+1
@@ -27245,7 +28060,7 @@ module ed_state_vars
                            ,'QMSQU_PLRESP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Plant respiration'                                &
-                           ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
+                           ,'[kgC2/pl2/yr2]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmsqu_sensible_lc     )) then
          nvar = nvar+1
@@ -27302,14 +28117,122 @@ module ed_state_vars
    !=======================================================================================!
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P32
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (nzg,npatches).
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_patchtype_p42(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      character(len=str_len)                :: dail_keys
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !       This part should have only 2-D vectors with dimensions ncohorts and nzg.     !
+      !  Notice that they all use the same npts.                                           !
+      !------------------------------------------------------------------------------------!
+      npts = cpatch%ncohorts * nzg
+
+      if (associated(cpatch%wflux_gw_layer)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%wflux_gw_layer                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'WFLUX_GW_LAYER :42:hist') 
+         call metadata_edio(nvar,igr,'Instantaneous - Water flux from ground to wood'      &
+                           ,'[kg/s]','(nzg,icohort)') 
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the fast, daily, and monthly means to the history.    !
+      !------------------------------------------------------------------------------------!
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_fast) then
+            fast_keys = 'hist:anal'
+         else
+            fast_keys = 'anal'
+         end if
+         if (history_dail) then
+            dail_keys = 'hist:dail'
+         else
+            dail_keys = 'dail'
+         end if
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      if (associated(cpatch%fmean_wflux_gw_layer     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wflux_gw_layer                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water flux from ground to wood'              &
+                           ,'[       kg/s]','(nzg,icohort)'        )
+      end if
+      if (associated(cpatch%dmean_wflux_gw_layer     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wflux_gw_layer                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water flux from ground to wood'                  &
+                           ,'[       kg/s]','(nzg,icohort)'        )
+      end if
+      if (associated(cpatch%mmean_wflux_gw_layer     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wflux_gw_layer                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water flux from ground to wood'                &
+                           ,'[       kg/s]','(nzg,icohort)'        )
+      end if
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine filltab_patchtype_p42
+   !=======================================================================================!
+   !=======================================================================================!
+
+
 
 
 
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (n_mort,ncohorts) and are real (type 48).        !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P48
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (n_mort,ncohorts) and are real (type 48).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p48(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27392,8 +28315,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 49).     !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P49
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 49).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p49(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27475,8 +28399,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (n_radprof,ncohorts) and are real (type 411).    !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P411
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (n_radprof,ncohorts) and are real (type 411).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p411(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27603,9 +28528,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have three dimensions (n_radprof,ndcycle,ncohorts) and are real      !
-   ! (type -411).                                                                          !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_M411
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have three dimensions (n_radprof,ndcycle,ncohorts) and are real
+   !> (type -411).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_m411(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27682,7 +28608,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This function gets the total number of sites.                                    !
+   !  FUNCTION: GET_NSITES
+   !> \brief This function gets the total number of sites.
    !---------------------------------------------------------------------------------------!
    integer function get_nsites(cgrid)
 
@@ -27715,7 +28642,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This function gets the total number of patches.                                  !
+   !  FUNCTION: GET_NPATCHES
+   !> \brief This function gets the total number of patches.
    !---------------------------------------------------------------------------------------!
    integer function get_npatches(cgrid)
 
@@ -27753,7 +28681,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This function gets the total number of ncohorts.                                 !
+   !  FUNCTION: GET_NCOHORTS
+   !> \brief This function gets the total number of ncohorts.
    !---------------------------------------------------------------------------------------!
    integer function get_ncohorts(cgrid)
 

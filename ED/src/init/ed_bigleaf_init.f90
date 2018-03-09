@@ -282,7 +282,8 @@ subroutine ed_bigleaf_init(cgrid)
                      !---------------------------------------------------------------------!
 
 
-
+                     ! sla has been initialized above, so it should be fine to
+                     ! call area_indices here.
                      !----- Assign LAI, WAI, and CAI --------------------------------------!
                      call area_indices(cpatch, 1)
 

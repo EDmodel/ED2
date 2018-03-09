@@ -1,6 +1,7 @@
 !==========================================================================================!
 !==========================================================================================!
-!    This module is a library with several allometric relationships.                       !
+! MODULE: ALLOMETRY  
+!> \brief This module is a library with several allometric relationships.
 !------------------------------------------------------------------------------------------!
 module allometry
 
@@ -135,6 +136,42 @@ contains
       end if
       return
    end function dbh2bd
+   !=======================================================================================!
+   !=======================================================================================!
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! FUNCTION DBH2SF             
+   !< \brief Calculate sapwood fraction from DBH
+   !< \author Xiangtao Xu, 31 Jan. 2018
+   !---------------------------------------------------------------------------------------!
+   real function dbh2sf(dbh,ipft)
+
+      use consts_coms   , only : pio4               ! ! intent(in)
+      use pft_coms      , only : is_grass           & ! intent(in)
+                               , b1SA               & ! intent(in)
+                               , b2SA               ! ! intent(in)
+
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: dbh
+      integer, intent(in) :: ipft
+      !------------------------------------------------------------------------------------!
+
+      if (is_grass(ipft)) then
+          ! All of the 'stem' of grass is sapwood
+          ! But we actually not use the sapwood area for grass
+          ! This is just to keep consistency across species
+          dbh2sf = 1.
+      else
+          ! For trees
+          dbh2sf = min(1.0,                             &
+                       (b1SA(ipft) * dbh ** b2SA(ipft)) & ! sapwood area cm2
+                    /  (pio4 * dbh ** 2 )               & ! total basal area
+                      )
+      endif
+
+      return 
+   end function dbh2sf
    !=======================================================================================!
    !=======================================================================================!
 
@@ -565,7 +602,6 @@ contains
    subroutine area_indices(cpatch, ico)
       use ed_state_vars, only : patchtype     ! ! Structure
       use pft_coms     , only : dbh_crit        & ! intent(in)
-                              , SLA             & ! intent(in)
                               , b1WAI           & ! intent(in)
                               , b2WAI           ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
@@ -591,10 +627,10 @@ contains
       dbh    = cpatch%dbh(ico)
 
       !----- First, we compute the LAI ----------------------------------------------------!
-      cpatch%lai(ico) = bleaf * nplant * SLA(ipft)
+      cpatch%lai(ico) = bleaf * nplant * cpatch%sla(ico)
 
       !----- Find the crown area. ---------------------------------------------------------!
-      cpatch%crown_area(ico) = min(1.0, nplant * dbh2ca(dbh,hite,SLA(ipft),ipft))
+      cpatch%crown_area(ico) = min(1.0, nplant * dbh2ca(dbh,hite,cpatch%sla(ico),ipft))
 
       !------------------------------------------------------------------------------------!
       !     Here we check whether we need to compute the branch, stem, and effective       !
@@ -617,7 +653,7 @@ contains
             !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
             ! always 11% of the potential LAI.                                             !
             !------------------------------------------------------------------------------!
-            cpatch%wai(ico) = 0.11 * nplant * SLA(ipft) * size2bl(dbh,hite,ipft)
+            cpatch%wai(ico) = 0.11 * nplant * cpatch%sla(ico) * size2bl(dbh,hite,ipft)
             !------------------------------------------------------------------------------!
          case default
             !----- Solve branches using the equations from Hormann et al. (2003) ----------!

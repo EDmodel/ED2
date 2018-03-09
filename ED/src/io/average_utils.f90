@@ -1,6 +1,7 @@
 !==========================================================================================!
 !==========================================================================================!
-!     This module contains sub-routines used to create the averaged output variables.      !
+! MODULE: AVERAGE_UTILS
+!> \brief This module contains sub-routines used to create the averaged output variables.
 !------------------------------------------------------------------------------------------!
 module average_utils
 
@@ -19,8 +20,9 @@ module average_utils
    !                           |----------------------------------|                        !
    !=======================================================================================!
    !=======================================================================================!
-   !     The following subroutine finds the polygon averages from site-, patch-, and       !
-   ! cohort-level properties that have fmean variables associated.                         !
+   !  SUBROUTINE: AGGREGATE_POLYGON_FMEAN
+   !> \brief The following subroutine finds the polygon averages from site-, patch-, and
+   !> cohort-level properties that have fmean variables associated.
    !---------------------------------------------------------------------------------------!
    subroutine aggregate_polygon_fmean(cgrid)
       use ed_state_vars         , only : edtype             & ! structure
@@ -768,8 +770,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine increments the time averaged site met-forcing variables.  The     !
-   ! polygon-level averages are found after the site-level are normalised.                 !
+   !  SUBROUTINE: INTEGRATE_ED_FMEAN_MET_VARS
+   !> \brief This subroutine increments the time averaged site met-forcing variables.  The
+   !> polygon-level averages are found after the site-level are normalised.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_fmean_met_vars(cgrid)
       use ed_state_vars  , only : edtype          & ! structure
@@ -865,8 +868,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !       The following sub-routine scales several variables that are integrated during   !
-   ! one output step (frqsum) to actual rates, and find derived properties.                !
+   !  SUBROUTINE: NORMALIZE_ED_FMEAN_VARS 
+   !> \brief The following sub-routine scales several variables that are integrated during
+   !> one output step (frqsum) to actual rates, and find derived properties.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_fmean_vars(cgrid)
       use grid_coms    , only : nzg                ! ! intent(in)
@@ -1570,6 +1574,14 @@ module average_utils
                   cpatch%fmean_wshed_wg          (ico) = 0.0
                   cpatch%fmean_lai               (ico) = 0.0
                   cpatch%fmean_bdead             (ico) = 0.0
+
+                  cpatch%fmean_leaf_psi          (ico) = 0.0
+                  cpatch%fmean_wood_psi          (ico) = 0.0
+                  cpatch%fmean_leaf_water_int    (ico) = 0.0
+                  cpatch%fmean_wood_water_int    (ico) = 0.0
+                  cpatch%fmean_wflux_gw          (ico) = 0.0
+                  cpatch%fmean_wflux_wl          (ico) = 0.0
+                  cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -1621,14 +1633,15 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine integrates most of the daily averages.  This is called after the   !
-   ! "fmean" variables are normalised, so we take advantage of these "fmean" variables.    !
+   !  SUBROUTINE: INTEGRATE_ED_DMEAN_VARS 
+   !> \brief This subroutine integrates most of the daily averages.  This is called after
+   !> the "fmean" variables are normalised, so we take advantage of these "fmean" variables.    
    !                                                                                       !
-   !    A few variables are _NOT_ integrated here:                                         !
-   ! 1. Variables that should be integrated only during daylight hours                     !
-   ! 2. The NPP breakdown variables are integrated in a separate routine                   !
-   ! 3. Variables such as temperature and liquid fraction, which are found after the daily !
-   !    means are normalised.                                                              !
+   !> \details A few variables are _NOT_ integrated here:\n
+   !> 1. Variables that should be integrated only during daylight hours\n
+   !> 2. The NPP breakdown variables are integrated in a separate routine\n
+   !> 3. Variables such as temperature and liquid fraction, which are found after the daily
+   !>    means are normalised.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_dmean_vars(cgrid)
       use ed_state_vars        , only : edtype              & ! structure
@@ -2417,6 +2430,22 @@ module average_utils
                   cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico)      &
                                                    + cpatch%fmean_wshed_wg      (ico)      &
                                                    * frqsum_o_daysec
+                  cpatch%dmean_leaf_water_int(ico) = cpatch%dmean_leaf_water_int(ico)      &
+                                                   + cpatch%fmean_leaf_water_int(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wood_water_int(ico) = cpatch%dmean_wood_water_int(ico)      &
+                                                   + cpatch%fmean_wood_water_int(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_gw      (ico) = cpatch%dmean_wflux_gw      (ico)      &
+                                                   + cpatch%fmean_wflux_gw      (ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_gw_layer(:,ico)=cpatch%dmean_wflux_gw_layer(:,ico)    &
+                                                   + cpatch%fmean_wflux_gw_layer(:,ico)    &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_wl      (ico) = cpatch%dmean_wflux_wl      (ico)      &
+                                                   + cpatch%fmean_wflux_wl      (ico)      &
+                                                   * frqsum_o_daysec
+
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -2442,11 +2471,12 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will scale the daily averages of GPP and some respiration vari-   !
-   ! ables to normal units.  These variables are not for output, so they are done          !
-   ! separatedly.  There are also some output variables here, because these depend on the  !
-   ! average of the gpp, and leaf and root respiration and would need to be calculated     !
-   ! again otherwise.                                                                      !
+   !  SUBROUTINE: NORMALIZE_ED_TODAY_VARS 
+   !> \brief This subroutine will scale the daily averages of GPP and some respiration
+   !> variables to normal units.  These variables are not for output, so they are done
+   !> separatedly.  There are also some output variables here, because these depend on the
+   !> average of the gpp, and leaf and root respiration and would need to be calculated
+   !> again otherwise.                                                                      !
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_today_vars(cgrid)
       use ed_state_vars , only : edtype        & ! structure
@@ -2540,7 +2570,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will scale the daily NPP allocation terms                         !
+   !  SUBROUTINE: NORMALIZE_ED_TODAYNPP_VARS
+   !> \brief This subroutine will scale the daily NPP allocation terms
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_todayNPP_vars(cgrid)
       use ed_state_vars , only : edtype        & ! structure
@@ -2609,9 +2640,10 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine normalises the daily mean variables of those variables that could  !
-   ! not be integrated directly.  This includes temperatures, polygon-level budget vari-   !
-   ! ables, and variables that are defined during daytime only.                            !
+   !  SUBROUTINE: NORMALIZE_ED_DMEAN_VARS   
+   !> \brief This subroutine normalises the daily mean variables of those variables that
+   !> could not be integrated directly.  This includes temperatures, polygon-level budget
+   !> variables, and variables that are defined during daytime only.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_dmean_vars(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
@@ -3102,8 +3134,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the daily_averages for variables actually used in the       !
-   ! integration.                                                                          !
+   !  SUBROUTINE: ZERO_ED_TODAY_VARS        
+   !> \brief This subroutine resets the daily_averages for variables actually used in the
+   !> integration.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_today_vars(cgrid)
       use ed_state_vars, only : edtype       & ! structure
@@ -3168,13 +3201,77 @@ module average_utils
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_DX_VARS        
+   !> \brief This subroutine resets the daily eXtreme (maximum,minimum) variables, once the
+   !> variables have been used. Current only dmin/dmax water potentials are included. 
+   !> \author Xiangtao Xu
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_dx_vars(cgrid)
+      use ed_state_vars, only : edtype        & ! structure
+                              , polygontype   & ! structure
+                              , sitetype      & ! structure
+                              , patchtype     ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target  :: cgrid
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer :: cpoly
+      type(sitetype)   , pointer :: csite
+      type(patchtype)  , pointer :: cpatch
+      integer                    :: ipy
+      integer                    :: isi
+      integer                    :: ipa
+      integer                    :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !       Loop over polygons.                                                          !
+      !------------------------------------------------------------------------------------!
+      polyloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         
+         !---------------------------------------------------------------------------------!
+         !       Loop over sites.                                                          !
+         !---------------------------------------------------------------------------------!
+         siteloop: do isi=1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+            !------------------------------------------------------------------------------!
+            !       Loop over patches.                                                     !
+            !------------------------------------------------------------------------------!
+            patchloop: do ipa=1,csite%npatches
+               cpatch => csite%patch(ipa)
+
+               !---------------------------------------------------------------------------!
+               !       Loop over cohorts.                                                  !
+               !---------------------------------------------------------------------------!
+               cohortloop: do ico=1, cpatch%ncohorts
+                    cpatch%dmax_leaf_psi(ico) = 0.0
+                    cpatch%dmin_leaf_psi(ico) = 0.0
+                    cpatch%dmax_wood_psi(ico) = 0.0
+                    cpatch%dmin_wood_psi(ico) = 0.0
+               end do cohortloop
+               !---------------------------------------------------------------------------!
+            end do patchloop
+            !------------------------------------------------------------------------------!
+         end do siteloop
+         !---------------------------------------------------------------------------------!
+      end do polyloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_dx_vars
 
 
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the daily averages once the daily average file has been     !
-   ! written and used to compute the monthly mean (in case the latter was requested).      !
+   !  SUBROUTINE: ZERO_ED_DMEAN_VARS        
+   !> \brief This subroutine resets the daily averages once the daily average file has been
+   !> written and used to compute the monthly mean (in case the latter was requested).
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_dmean_vars(cgrid)
       use ed_state_vars, only : edtype        & ! structure
@@ -3515,6 +3612,13 @@ module average_utils
                   cpatch%dmean_vapor_wc          (ico) = 0.0
                   cpatch%dmean_intercepted_aw    (ico) = 0.0
                   cpatch%dmean_wshed_wg          (ico) = 0.0
+
+                  cpatch%dmean_leaf_water_int    (ico) = 0.0
+                  cpatch%dmean_wood_water_int    (ico) = 0.0
+                  cpatch%dmean_wflux_gw          (ico) = 0.0
+                  cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
+                  cpatch%dmean_wflux_wl          (ico) = 0.0
+
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -3563,14 +3667,15 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine integrates most of the monthly mean variables.  This sub-routine   !
-   ! is called after the dmean variables have been normalised, so we can take advantage of !
-   ! their values.                                                                         !
-   !    A few variables are _NOT_ integrated here: quantities such as temperature and      !
-   ! liquid fraction are found after the monthly mean of the extensive quantities have     !
-   ! been normalised. Also, polygon-level variables that were not integrated to the daily  !
-   ! means are not integrated here, they are found after the monthly mean at the native    !
-   ! level has been found.                                                                 !
+   !  SUBROUTINE: INTEGRATE_ED_MMEAN_VARS   
+   !> \brief This subroutine integrates most of the monthly mean variables. This sub-routine   
+   !> is called after the dmean variables have been normalised, so we can take advantage of
+   !> their values.\n
+   !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the monthly mean of the extensive quantities have
+   !> been normalised. Also, polygon-level variables that were not integrated to the daily
+   !> means are not integrated here, they are found after the monthly mean at the native
+   !> level has been found.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_mmean_vars(cgrid)
       use ed_state_vars, only : edtype        & ! structure
@@ -4764,6 +4869,35 @@ module average_utils
                   cpatch%mmean_nppdaily        (ico) = cpatch%mmean_nppdaily        (ico)  &
                                                      + cpatch%dmean_nppdaily        (ico)  &
                                                      * ndaysi
+
+                  cpatch%mmean_dmax_leaf_psi   (ico) = cpatch%mmean_dmax_leaf_psi   (ico)  &
+                                                     + cpatch%dmax_leaf_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmin_leaf_psi   (ico) = cpatch%mmean_dmin_leaf_psi   (ico)  &
+                                                     + cpatch%dmin_leaf_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmax_wood_psi   (ico) = cpatch%mmean_dmax_wood_psi   (ico)  &
+                                                     + cpatch%dmax_wood_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmin_wood_psi   (ico) = cpatch%mmean_dmin_wood_psi   (ico)  &
+                                                     + cpatch%dmin_wood_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_leaf_water_int  (ico) = cpatch%mmean_leaf_water_int  (ico)  &
+                                                     + cpatch%dmean_leaf_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wood_water_int  (ico) = cpatch%mmean_wood_water_int  (ico)  &
+                                                     + cpatch%dmean_wood_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_gw        (ico) = cpatch%mmean_wflux_gw        (ico)  &
+                                                     + cpatch%dmean_wflux_gw        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_wl        (ico) = cpatch%mmean_wflux_wl        (ico)  &
+                                                     + cpatch%dmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_gw_layer(:,ico) = cpatch%mmean_wflux_gw_layer(:,ico)  &
+                                                     + cpatch%dmean_wflux_gw_layer(:,ico)  &
+                                                     * ndaysi
+
                   !----- Integrate mean sum of squares. -----------------------------------!
                   cpatch%mmsqu_gpp        (ico) = cpatch%mmsqu_gpp                  (ico)  &
                                                 + isqu_ftz(cpatch%dmean_gpp         (ico)) &
@@ -4811,9 +4945,10 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine normalises the daily mean variables of those variables that could  !
-   ! not be integrated directly.  This includes temperatures, liquid fraction, and soil    !
-   ! matric potential.                                                                     !
+   !  SUBROUTINE: NORMALIZE_ED_MMEAN_VARS   
+   !> \brief This subroutine normalises the daily mean variables of those variables that
+   !> could not be integrated directly.  This includes temperatures, liquid fraction, and
+   !> soil matric potential.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_mmean_vars(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
@@ -5140,8 +5275,9 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the monthly averages for variables actually used in the     !
-   ! integration.                                                                          !
+   !  SUBROUTINE: ZERO_ED_MMEAN_VARS        
+   !> \brief This subroutine resets the monthly averages for variables actually used in the
+   !> integration.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_mmean_vars(cgrid)
       use ed_state_vars  , only : edtype         & ! structure
@@ -5572,6 +5708,17 @@ module average_utils
                   cpatch%mmean_nppseeds          (ico) = 0.0
                   cpatch%mmean_nppwood           (ico) = 0.0
                   cpatch%mmean_nppdaily          (ico) = 0.0
+
+                  cpatch%mmean_dmax_leaf_psi     (ico) = 0.0
+                  cpatch%mmean_dmax_wood_psi     (ico) = 0.0
+                  cpatch%mmean_dmin_leaf_psi     (ico) = 0.0
+                  cpatch%mmean_dmin_wood_psi     (ico) = 0.0
+                  cpatch%mmean_leaf_water_int    (ico) = 0.0
+                  cpatch%mmean_wood_water_int    (ico) = 0.0
+                  cpatch%mmean_wflux_gw          (ico) = 0.0
+                  cpatch%mmean_wflux_wl          (ico) = 0.0
+                  cpatch%mmean_wflux_gw_layer  (:,ico) = 0.0
+
                   cpatch%mmsqu_gpp               (ico) = 0.0
                   cpatch%mmsqu_npp               (ico) = 0.0
                   cpatch%mmsqu_plresp            (ico) = 0.0
@@ -5626,13 +5773,14 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine integrates most of the mean diel variables.  This subroutine is    !
-   ! called after the fmean variables have been normalised, so we can take advantage of    !
-   ! their values.                                                                         !
+   !  SUBROUTINE: INTEGRATE_ED_QMEAN_VARS   
+   !> \brief This subroutine integrates most of the mean diel variables.  This subroutine is
+   !> called after the fmean variables have been normalised, so we can take advantage of
+   !> their values.
    !                                                                                       !
-   !    A few variables are _NOT_ integrated here: quantities such as temperature and      !
-   ! liquid fraction are found after the mean diel of the extensive variables have been    !
-   ! normalised.                                                                           !
+   !> \brief A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the mean diel of the extensive variables have been
+   !> normalised.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_qmean_vars(cgrid)
       use ed_state_vars, only : edtype              & ! structure
@@ -6579,6 +6727,26 @@ module average_utils
                   cpatch%qmean_wshed_wg      (t,ico) = cpatch%qmean_wshed_wg      (t,ico)  &
                                                      + cpatch%fmean_wshed_wg        (ico)  &
                                                      * ndaysi
+
+                  cpatch%qmean_leaf_psi      (t,ico) = cpatch%qmean_leaf_psi      (t,ico)  &
+                                                     + cpatch%fmean_leaf_psi        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wood_psi      (t,ico) = cpatch%qmean_wood_psi      (t,ico)  &
+                                                     + cpatch%fmean_wood_psi        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_leaf_water_int(t,ico) = cpatch%qmean_leaf_water_int(t,ico)  &
+                                                     + cpatch%fmean_leaf_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wood_water_int(t,ico) = cpatch%qmean_wood_water_int(t,ico)  &
+                                                     + cpatch%fmean_wood_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wflux_gw      (t,ico) = cpatch%qmean_wflux_gw      (t,ico)  &
+                                                     + cpatch%fmean_wflux_gw        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wflux_wl      (t,ico) = cpatch%qmean_wflux_wl      (t,ico)  &
+                                                     + cpatch%fmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+
                   !------ Mean sum of squares. --------------------------------------------!
                   cpatch%qmsqu_gpp        (t,ico) = cpatch%qmsqu_gpp              (t,ico)  &
                                                   + isqu_ftz(cpatch%fmean_gpp       (ico)) &
@@ -6625,9 +6793,10 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine normalises the daily mean variables of those variables that could  !
-   ! not be integrated directly.  These are pretty much just temperature, density, and     !
-   ! liquid water fraction.                                                                !
+   !  SUBROUTINE: NORMALIZE_ED_QMEAN_VARS   
+   !> \brief This subroutine normalises the daily mean variables of those variables that could
+   !> not be integrated directly.  These are pretty much just temperature, density, and
+   !> liquid water fraction.
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_qmean_vars(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
@@ -6971,7 +7140,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the mean diel once the "Q" file has been written.           !
+   !  SUBROUTINE: ZERO_ED_QMEAN_VARS        
+   !> \brief This subroutine resets the mean diel once the "Q" file has been written.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_qmean_vars(cgrid)
       use ed_state_vars, only : edtype        & ! structure
@@ -7326,6 +7496,14 @@ module average_utils
                   cpatch%qmean_vapor_wc            (:,ico) = 0.0
                   cpatch%qmean_intercepted_aw      (:,ico) = 0.0
                   cpatch%qmean_wshed_wg            (:,ico) = 0.0
+
+                  cpatch%qmean_leaf_psi            (:,ico) = 0.0
+                  cpatch%qmean_wood_psi            (:,ico) = 0.0
+                  cpatch%qmean_leaf_water_int      (:,ico) = 0.0
+                  cpatch%qmean_wood_water_int      (:,ico) = 0.0
+                  cpatch%qmean_wflux_gw            (:,ico) = 0.0
+                  cpatch%qmean_wflux_wl            (:,ico) = 0.0
+
                   cpatch%qmsqu_gpp                 (:,ico) = 0.0
                   cpatch%qmsqu_npp                 (:,ico) = 0.0
                   cpatch%qmsqu_plresp              (:,ico) = 0.0
@@ -7386,7 +7564,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This sub-routine updates the yearly variables.                                   !
+   !  SUBROUTINE: UPDATE_ED_YEARLY_VARS     
+   !> \brief This sub-routine updates the yearly variables.
    !---------------------------------------------------------------------------------------!
    subroutine update_ed_yearly_vars(cgrid)
 
@@ -7541,7 +7720,8 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This sub-routine re-sets the yearly variables.                                   !
+   !  SUBROUTINE: ZERO_ED_YEARLY_VARS       
+   !> \brief This sub-routine re-sets the yearly variables.
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_yearly_vars(cgrid)
 

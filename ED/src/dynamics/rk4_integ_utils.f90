@@ -403,8 +403,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
    do ico = 1,cpatch%ncohorts
       rkp%leaf_water (ico) = rkp%leaf_water (ico) + fac * inc%leaf_water (ico)
+      rkp%leaf_water_int(ico) = rkp%leaf_water_int  (ico) + fac * inc%leaf_water_int (ico)
       rkp%leaf_energy(ico) = rkp%leaf_energy(ico) + fac * inc%leaf_energy(ico)
       rkp%wood_water (ico) = rkp%wood_water (ico) + fac * inc%wood_water (ico)
+      rkp%wood_water_int(ico) = rkp%wood_water_int  (ico) + fac * inc%wood_water_int (ico)
       rkp%wood_energy(ico) = rkp%wood_energy(ico) + fac * inc%wood_energy(ico)
       rkp%veg_water (ico)  = rkp%veg_water  (ico) + fac * inc%veg_water  (ico)
       rkp%veg_energy(ico)  = rkp%veg_energy (ico) + fac * inc%veg_energy (ico)
@@ -571,6 +573,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    use consts_coms          , only : wdnsi8                ! ! intent(in)
    use soil_coms            , only : isoilbc               & ! intent(in)
                                    , dslzi8                ! ! intent(in)
+   use physiology_coms      , only : plant_hydro_scheme    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype), target     :: y                     ! Struct. with the guesses
@@ -723,6 +726,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    ! scale, thus preventing unecessary small steps.                                        !
    !    Also, if the cohort has almost no water, make the scale less strict.               !
    !---------------------------------------------------------------------------------------!
+
    select case (ibranch_thermo)
    case (1)
       !----- Combined leaf+wood solution. -------------------------------------------------!
@@ -814,6 +818,34 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       end do
    end select
    !---------------------------------------------------------------------------------------!
+
+   select case (plant_hydro_scheme)
+   case (0)
+       ! did not track plant hydraulics, make changes in internal water always
+       ! acceptable
+       do ico=1,cpatch%ncohorts
+           yscal%leaf_water_int(ico)    = huge_offset
+           yscal%wood_water_int(ico)    = huge_offset
+       enddo
+   case (-2,-1,1,2)
+       ! We do track plant hydraulics
+       ! calculate the scale simiarly to leaf/wood energy
+       do ico=1,cpatch%ncohorts
+           if (yscal%leaf_resolvable(ico)) then
+               yscal%leaf_water_int(ico) = abs( y%leaf_water_int(ico))                     &
+                                         + abs(dy%leaf_water_int(ico) * htry )
+           else
+               yscal%leaf_water_int(ico)    = huge_offset
+           endif
+
+           if (yscal%wood_resolvable(ico)) then
+               yscal%wood_water_int(ico) = abs( y%wood_water_int(ico))                     &
+                                         + abs(dy%wood_water_int(ico) * htry)
+           else
+               yscal%wood_water_int(ico)    = huge_offset
+           endif
+       enddo
+   end select
 
 
 
@@ -1080,6 +1112,35 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       end if
       !------------------------------------------------------------------------------------!
    end select
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Leaf/wood internal water pool                                                     !
+   !---------------------------------------------------------------------------------------!
+   ! leaf
+   errh2oMAX  = 0.d0
+   do ico = 1,cpatch%ncohorts
+      if (yscal%leaf_resolvable(ico)) then
+         errh2o     = abs(yerr%leaf_water_int (ico) / yscal%leaf_water_int (ico))
+         errmax     = max(errmax,errh2o)
+         errh2oMAX  = max(errh2oMAX ,errh2o )
+      end if
+   end do
+   if(cpatch%ncohorts > 0 .and. record_err) then
+      if (errh2oMAX  > rk4eps) integ_err(22,1) = integ_err(22,1) + 1_8
+   end if
+   ! wood
+   errh2oMAX  = 0.d0
+   do ico = 1,cpatch%ncohorts
+      if (yscal%wood_resolvable(ico)) then
+         errh2o     = abs(yerr%wood_water_int (ico) / yscal%wood_water_int (ico))
+         errmax     = max(errmax,errh2o)
+         errh2oMAX  = max(errh2oMAX ,errh2o )
+      end if
+   end do
+   if(cpatch%ncohorts > 0 .and. record_err) then
+      if (errh2oMAX  > rk4eps) integ_err(23,1) = integ_err(23,1) + 1_8
+   end if
    !---------------------------------------------------------------------------------------!
 
 

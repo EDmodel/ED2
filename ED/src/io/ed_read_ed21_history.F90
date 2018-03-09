@@ -760,17 +760,18 @@ subroutine read_ed21_history_file
                            cpatch%agb(ico) = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-
-                           !----- Assign LAI, WAI, and CAI --------------------------------!
-                           call area_indices(cpatch, ico)
-
-
                            !----- Update the derived patch-level variables. ---------------!
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
                            !----- Initialise the other cohort level variables. ------------!
                            call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                           
+                           ! --------------- Notes!       ---------------------------------!
+                           ! call init_ed_cohort_vars or initialize cpatch%sla
+                           ! before calling area_indices for new cohorts
+                           !----- Assign LAI, WAI, and CAI --------------------------------!
+                           call area_indices(cpatch, ico)
                         end do cohortloop
 
                         !------------------------------------------------------------------!
@@ -1957,16 +1958,18 @@ subroutine read_ed21_history_unstruct
 
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-                           !----- Assign LAI, WAI, and CAI --------------------------------!
-                           call area_indices(cpatch, ico)
-
-
                            !----- Update the derived patch-level variables. ---------------!
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
                            !----- Initialise the other cohort level variables. ------------!
                            call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+
+                           ! --------------- Notes!       ---------------------------------!
+                           ! call init_ed_cohort_vars or initialize cpatch%sla
+                           ! before calling area_indices for new cohorts
+                           !----- Assign LAI, WAI, and CAI --------------------------------!
+                           call area_indices(cpatch, ico)
                         end do cohortloop
 
                         !------------------------------------------------------------------!
@@ -2523,8 +2526,8 @@ subroutine read_ed21_polyclone
          dset_slzm(dset_nzg) = 0.5*(dset_slzm(dset_nzg)+0.0)
 
 
-	 polyloop: do ipy = 1,cgrid%npolygons
-	 	       cpoly => cgrid%polygon(ipy)
+      polyloop: do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
 
             !----- We skip the polygon if its source polygon is not in this file. ---------!
             if (psrcfile(ipy) /= nf) cycle polyloop
@@ -3132,8 +3135,6 @@ subroutine read_ed21_polyclone
 
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-                           !----- Assign LAI, WAI, and CAI --------------------------------!
-                           call area_indices(cpatch, ico)
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -3142,6 +3143,12 @@ subroutine read_ed21_polyclone
 
                            !----- Initialise the other cohort level variables. ------------!
                            call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+
+                           ! --------------- Notes!       ---------------------------------!
+                           ! call init_ed_cohort_vars or initialize cpatch%sla
+                           ! before calling area_indices for new cohorts
+                           !----- Assign LAI, WAI, and CAI --------------------------------!
+                           call area_indices(cpatch, ico)
                         end do cohortloop
 
                         !------------------------------------------------------------------!

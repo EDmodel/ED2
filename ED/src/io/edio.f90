@@ -23,6 +23,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
                            , normalize_ed_dmean_vars & ! sub-routine
                            , integrate_ed_mmean_vars & ! sub-routine
                            , zero_ed_dmean_vars      & ! sub-routine
+                           , zero_ed_dx_vars         & ! sub-routine
                            , normalize_ed_mmean_vars & ! sub-routine
                            , normalize_ed_qmean_vars & ! sub-routine
                            , zero_ed_mmean_vars      & ! sub-routine
@@ -120,6 +121,13 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
          call zero_ed_dmean_vars(edgrid_g(ifm))
       end do
    end if
+
+   if (new_day) then
+      do ifm=1,ngrids
+         call zero_ed_dx_vars(edgrid_g(ifm))
+      end do
+   endif
+
    !---------------------------------------------------------------------------------------!
 
 

@@ -47,7 +47,8 @@ module growth_balive
       use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           & ! subroutine
-                                 , ed_biomass             ! ! function
+                                 , ed_biomass             & ! function
+                                 , dbh2sf                 ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
       use ed_misc_coms    , only : igrass                 & ! intent(in)
@@ -55,6 +56,7 @@ module growth_balive
                                  , storage_resp_scheme    ! ! intent(in)
       use budget_utils    , only : update_budget          ! ! sub-routine
       use consts_coms   , only : tiny_num     ! ! intent(in)
+      use plant_hydro,     only : rwc2tw                   ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -118,7 +120,6 @@ module growth_balive
 
                   !----- Alias for current PFT. -------------------------------------------!
                   ipft = cpatch%pft(ico)
-
                   !----- Initialize cohort nitrogen uptake. -------------------------------!
                   nitrogen_uptake = 0.0
                   N_uptake_pot    = 0.0
@@ -333,9 +334,16 @@ module growth_balive
                   old_leaf_hcap         = cpatch%leaf_hcap(ico)
                   old_wood_hcap         = cpatch%wood_hcap(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdead(ico)                  &
-                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)               &
-                                    ,cpatch%pft(ico)                                       &
+                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
+                                    ,cpatch%pft(ico),cpatch%broot(ico),cpatch%dbh(ico)     &
+                                    ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)             &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                  ! also need to update water_int from rwc
+                  call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                 &
+                       ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)           &
+                       ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)         &
+                       ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico)
@@ -1022,7 +1030,7 @@ module growth_balive
       bsapwoodb_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * (1. - agf_bs(ipft))
       balive_aim     = bleaf_aim + broot_aim + bsapwooda_aim + bsapwoodb_aim
       !------------------------------------------------------------------------------------!
-
+      
 
       !------------------------------------------------------------------------------------!
       !      Check whether to increase living tissue biomass or not.                       !
@@ -1073,8 +1081,16 @@ module growth_balive
                !------------------------------------------------------------------------------!
                f_bleaf     = delta_bleaf     / bleaf_aim
                f_broot     = delta_broot     / broot_aim
-               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+               if (bsapwooda_aim == 0.) then
+                   f_bsapwooda = 0.
+               else
+                   f_bsapwooda = delta_bsapwooda / bsapwooda_aim
+               endif
+               if (bsapwoodb_aim == 0.) then
+                   f_bsapwoodb = 0.
+               else
+                   f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+               endif
                f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb
                !------------------------------------------------------------------------------!
             end if
@@ -1138,8 +1154,8 @@ module growth_balive
 
                if (bloss_max > carbon_debt) then
                   !----- Remove biomass accordingly. --------------------------------------!
-                  tr_bleaf = f_bleaf * -1.0 * carbon_debt
-                  tr_broot = f_broot * -1.0 * carbon_debt
+                  tr_bleaf = f_bleaf * (-1.0) * carbon_debt
+                  tr_broot = f_broot * (-1.0) * carbon_debt
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -1149,8 +1165,8 @@ module growth_balive
                   ! cohort is going to fertilizer business.                                !
                   !------------------------------------------------------------------------!
                   carbon_debt = bloss_max
-                  tr_bleaf = -1.0*cpatch%bleaf(ico);
-                  tr_broot = -1.0*cpatch%broot(ico);
+                  tr_bleaf = (-1.0)*cpatch%bleaf(ico);
+                  tr_broot = (-1.0)*cpatch%broot(ico);
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1168,16 +1184,16 @@ module growth_balive
 
             if (bloss_max > carbon_debt) then
                !----- Remove biomass accordingly. -----------------------------------------!
-               tr_bleaf = f_bleaf * -1.0 * carbon_debt
-               tr_broot = f_broot * -1.0 * carbon_debt
+               tr_bleaf = f_bleaf * (-1.0) * carbon_debt
+               tr_broot = f_broot * (-1.0) * carbon_debt
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
                !     Not enough biomass, remove everything.                                !
                !---------------------------------------------------------------------------!
                carbon_debt = carbon_debt - bloss_max
-               tr_bleaf = -1.0*cpatch%bleaf(ico);
-               tr_broot = -1.0*cpatch%broot(ico);
+               tr_bleaf = (-1.0)*cpatch%bleaf(ico);
+               tr_broot = (-1.0)*cpatch%broot(ico);
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -1186,7 +1202,7 @@ module growth_balive
                !---------------------------------------------------------------------------!
                if (cpatch%bstorage(ico) > carbon_debt) then
                   !----- Enough carbon in storage, take all carbon needed from there. -----!
-                  tr_bstorage = -1.0 * carbon_debt
+                  tr_bstorage = (-1.0) * carbon_debt
                   !cpatch%bstorage(ico) = cpatch%bstorage(ico) - carbon_debt
                   !------------------------------------------------------------------------!
                else
@@ -1196,7 +1212,7 @@ module growth_balive
                   ! can't afford.  It is with profound sadness that we announce that this  !
                   ! cohort is going to fertilizer business.                                !
                   !------------------------------------------------------------------------!
-                  tr_bstorage = -1.0*cpatch%bstorage(ico)
+                  tr_bstorage = (-1.0)*cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
                end if
             end if

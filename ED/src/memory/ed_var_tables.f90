@@ -57,6 +57,7 @@
 !     !  40  : rank 1 : integer                             !                              !
 !     !  41  : rank 1 : cohort (real)                       !                              !
 !     ! -41  : rank 2 : ndcycle                             !                              !
+!     !  42  : rank 2 : cohort, s-layer                     !                              !
 !     !  44  : rank 2 : cohort, pft                         !                              !
 !     !  46  : rank 2 : cohort, dbh                         !                              !
 !     !  47  : rank 2 : cohort, age                         !                              !
