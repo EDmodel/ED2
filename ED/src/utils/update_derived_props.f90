@@ -832,7 +832,7 @@ subroutine update_polygon_derived_props(cgrid)
             !------------------------------------------------------------------------------!
             cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                             &
                                        + csite%mineralized_N_input   (ipa)   * patch_wgt
-            cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                             &
+            cgrid%Nnet_min     (ipy) = cgrid%Nnet_min(ipy)                                 &
                                        + ( csite%mineralized_N_input (ipa)                 &
                                          - csite%mineralized_N_loss  (ipa) ) * patch_wgt
             cgrid%Nbiomass_uptake(ipy) = cgrid%Ngross_min(ipy)                             &
