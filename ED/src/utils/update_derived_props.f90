@@ -813,11 +813,11 @@ subroutine update_polygon_derived_props(cgrid)
                                             + cpatch%root_maintenance(ico)                 &
                                             * cpatch%nplant          (ico)                 &
                                             * patch_wgt
-               cgrid%Nleaf_litter_flux(ipy) = cgrid%Cleaf_litter_flux(ipy)                 &
+               cgrid%Nleaf_litter_flux(ipy) = cgrid%Nleaf_litter_flux(ipy)                 &
                                             + cpatch%leaf_maintenance(ico) / c2n_leaf(p)   &
                                             * cpatch%nplant          (ico)                 &
                                             * patch_wgt
-               cgrid%Nroot_litter_flux(ipy) = cgrid%Croot_litter_flux(ipy)                 &
+               cgrid%Nroot_litter_flux(ipy) = cgrid%Nroot_litter_flux(ipy)                 &
                                             + cpatch%root_maintenance(ico) / c2n_leaf(p)   &
                                             * cpatch%nplant          (ico)                 &
                                             * patch_wgt
@@ -835,7 +835,7 @@ subroutine update_polygon_derived_props(cgrid)
             cgrid%Nnet_min     (ipy) = cgrid%Nnet_min(ipy)                                 &
                                        + ( csite%mineralized_N_input (ipa)                 &
                                          - csite%mineralized_N_loss  (ipa) ) * patch_wgt
-            cgrid%Nbiomass_uptake(ipy) = cgrid%Ngross_min(ipy)                             &
+            cgrid%Nbiomass_uptake(ipy) = cgrid%Nbiomass_uptake(ipy)                             &
                                        + csite%total_plant_nitrogen_uptake(ipa)* patch_wgt
             !------------------------------------------------------------------------------!
 
