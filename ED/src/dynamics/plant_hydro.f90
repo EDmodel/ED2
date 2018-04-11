@@ -294,7 +294,8 @@ module plant_hydro
                                  , vessel_curl_factor   & ! intent(in)
                                  , root_beta            & ! intent(in)
                                  , SRA                  & ! intent(in)
-                                 , C2B                  ! ! intent(in)
+                                 , C2B                  & ! intent(in)
+                                 , hgt_min              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   ,                 intent(in)  :: dt              !time step [s]
@@ -424,7 +425,9 @@ module plant_hydro
       ! Consider a tree is too small if c_leaf is larger than half of c_stem
       ! This is an arbitrary threshold. Users are welcomed to modify this term
       ! if leaf_psi has strong oscillations from each timestep to another
-      small_tree_flag = (c_leaf > (c_stem / 2.d0))
+
+      ! we also assume it is a small tree if the tree is too short
+      small_tree_flag = (c_leaf > (c_stem / 2.d0) .or. (hite_d == hgt_min(ipft)))
 
       ! Ask Felicien about his problem of too large transpiration for seedlings?
 

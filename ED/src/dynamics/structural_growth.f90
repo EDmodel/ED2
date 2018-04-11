@@ -1378,10 +1378,10 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
 
             do cohort_idx = 1,ico-1
             ! from the top cohort to current cohort
-                max_cum_lai = max_cum_lai&
-                            + size2bl(cpatch%dbh(cohort_idx),&
-                                      cpatch%hite(cohort_idx),&
-                                      cpatch%pft(cohort_idx)) * &
+                max_cum_lai = max_cum_lai                           &
+                            + size2bl(cpatch%dbh(cohort_idx),       &
+                                      cpatch%hite(cohort_idx),      &
+                                      cpatch%pft(cohort_idx)) *     &
                               cpatch%sla(cohort_idx) * cpatch%nplant(cohort_idx)
             enddo
 
@@ -1444,6 +1444,7 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
        ! plant_hydro_driver. We will leave A_open and A_closed unchanged because
        ! growth of the day has already happen at this time point in the model
        sla_scaler = cpatch%sla(ico) / new_sla
+       cpatch%sla(ico) = new_sla
        cpatch%psi_open(ico)     = cpatch%psi_open(ico) * sla_scaler
        cpatch%psi_closed(ico)   = cpatch%psi_closed(ico) * sla_scaler
 

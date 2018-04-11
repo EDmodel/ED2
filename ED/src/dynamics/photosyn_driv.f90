@@ -318,16 +318,17 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ntext_soil                  
                !---------------------------------------------------------------------------!
                vm0_tuco    = cpatch%vm_bar(tpft)
                llspan_tuco = cpatch%llspan(tpft)
+
+               ! consider within-canopy trait plasticity
+               if (((phenology(ipft) /= 3) .and. (trait_plasticity_scheme /= 0)) &
+                   .or. (istomata_scheme == 1)) then
+                   ! in this case vm0_tuco represents the input vm0 for
+                   ! photosynthesis
+                   vm0_tuco = cpatch%vm0(tpft)
+               endif
             end if
             !------------------------------------------------------------------------------!
 
-            ! Consider within-canopy trait plasticity
-            if (((phenology(ipft) /= 3) .and. (trait_plasticity_scheme /= 0))              &
-                .or. (istomata_scheme == 1)) then
-                ! in this case, vm0_tuco represents the input vm0 for
-                ! photosynthesis
-                vm0_tuco = cpatch%vm0(tpft)
-            end if
 
             !------------------------------------------------------------------------------!
             !    Find the 100% relative humidity.  This is a temporary test to make the    !
