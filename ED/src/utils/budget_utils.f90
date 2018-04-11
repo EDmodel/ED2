@@ -600,10 +600,10 @@ module budget_utils
          compute_water_storage = compute_water_storage + cpatch%leaf_water(ico)
          compute_water_storage = compute_water_storage + cpatch%wood_water(ico)
          ! The following is added due to the new plant hydraulic scheme
-         compute_water_storage = compuate_water_storage                                    &
+         compute_water_storage = compute_water_storage                                     &
                                + cpatch%leaf_water_int(ico)                                &
                                * cpatch%nplant(ico)
-         compute_water_storage = compuate_water_storage                                    &
+         compute_water_storage = compute_water_storage                                     &
                                + cpatch%wood_water_int(ico)                                &
                                * cpatch%nplant(ico)
       end do
