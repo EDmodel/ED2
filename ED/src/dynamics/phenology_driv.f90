@@ -218,6 +218,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real                                  :: delta_bleaf
    real                                  :: delta_broot
    real                                  :: bl_max
+   real                                  :: bl_full
    real                                  :: br_max
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
@@ -649,13 +650,14 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
 
             !----- Find the maximum allowed leaf/root biomass. ----------------------------!
-            bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bl_full = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bl_max = elongf_try * bl_full
             ! Assume half of the fine roots would die if all leaves have shed
             ! Allowing fine root phenology can reduce the maintenance cost of
             ! plants in the dry season but reducing it to zero would diable
             ! water uptake when rain comes. The current fraction 50% is kind of
             ! arbitrary, need updates in the future.
-            br_max = bl_max / elongf_try * q(ipft) * (elongf_try + 1.0) / 2.0
+            br_max = bl_full * q(ipft) * (elongf_try + 1.0) / 2.0
             !------------------------------------------------------------------------------!
 
 
@@ -927,6 +929,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    real                                  :: delta_bleaf
    real                                  :: delta_broot
    real                                  :: bleaf_new
+   real                                  :: bleaf_full
    real                                  :: broot_new
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
@@ -1270,8 +1273,9 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
 
 
             !----- Find the maximum allowed leaf biomass. ---------------------------------!
-            bleaf_new = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
-            broot_new = bleaf_new / elongf_try * q(ipft) * (elongf_try + 1.0) / 2.0
+            bleaf_full= size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bleaf_new = elongf_try * bleaf_full 
+            broot_new = bleaf_full * q(ipft) * (elongf_try + 1.0) / 2.0
             !------------------------------------------------------------------------------!
 
 

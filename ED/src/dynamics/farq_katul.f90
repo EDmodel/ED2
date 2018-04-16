@@ -148,11 +148,11 @@ Contains
       real(kind=4)                :: Jmax15             ! current Jmax at 15 degC umol/m2/s
       real(kind=4)                :: Jrate              ! current Jrate umol/m2/s
       real(kind=4)                :: Rdark              ! current dark respiration rate umol/m2/s
-      real(kind=4)                :: cuticular_gsc      ! current cuticular_conductance for CO2 umol/m2/s
+      real(kind=4)                :: cuticular_gsc      ! current cuticular_conductance for CO2 mol/m2/s
       real(kind=4)                :: lambda             ! current lambda factor    numo/mol/kPa
       real(kind=4)                :: down_factor        ! photosynthetic down-regulation factor
       real(kind=4)                :: aero_resistance    ! aerodynamic resistance
-      real(kind=4)                :: accepted_gsc       ! gsc solved from optimization scheme umol/m2/s
+      real(kind=4)                :: accepted_gsc       ! gsc solved from optimization scheme mol/m2/s
       real(kind=4)                :: accepted_fc        ! CO2 flux solved from optimization scheme umol/m2/s
       real(kind=4)                :: accepted_ci        ! Internal CO2 concentration ppm
       real(kind=4)                :: leaf_vpr_prss      ! leaf internal vapor pressure  in kPa
@@ -388,7 +388,7 @@ Contains
       !------------------------------------------------------------------------------------!
       ! Solve the optimization
       !------------------------------------------------------------------------------------!
-      cuticular_gsc = cuticular_cond(ipft) * gsw_2_gsc * 1.0e-6 ! convert to umol/m2/s
+      cuticular_gsc = cuticular_cond(ipft) * gsw_2_gsc * 1.0e-6 ! convert to mol/m2/s
 
       ! initialize limit_flag as 0
       limit_flag      = 0
