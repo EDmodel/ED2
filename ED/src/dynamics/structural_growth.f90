@@ -36,7 +36,6 @@ module structural_growth
       use ed_max_dims         , only : n_pft                       & ! intent(in)
                                      , n_dbh                       ! ! intent(in)
       use ed_misc_coms        , only : igrass                      & ! intent(in)
-                                     , iallom                      & ! intent(in)
                                      , ibigleaf                    & ! intent(in)
                                      , current_time                ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap               & ! function
@@ -99,8 +98,6 @@ module structural_growth
       real                          :: f_bseeds
       real                          :: f_growth
       real                          :: f_bstorage
-      real                          :: f_bsapw
-      real                          :: f_bdead
       real                          :: bfast_mort_litter
       real                          :: bstruct_mort_litter
       real                          :: bstorage_mort_litter
@@ -292,32 +289,9 @@ module structural_growth
 
 
                   !------------------------------------------------------------------------!
-                  !     Determine how to distribute what is in bstorage.  Here we must     !
-                  ! check the allometry scheme.  The original method (subroutine           !
-                  ! plant_structural_allocation) uses r_fract and st_fract to find the     !
-                  ! partition between reproduction, storage, and heartwood growth.  This   !
-                  ! method is always used by grasses and used by trees using the original  !
-                  ! allometric schemes.  The revised method (subroutine grow_tissues)      !
-                  ! grows structural tissues by applying turnover of sapwood that becomes  !
-                  ! heartwood: st_fract is the minimum structural growth allocation, and   !
-                  ! the remainder goes to reproduction.                                    !
+                  !     Update bdead.                                                      !
                   !------------------------------------------------------------------------!
-                  select case (iallom)
-                  case (3)
-                     !------ Use bdead/btotal ratio to decide total allocation to bdead. --!
-                     call grow_tissues(cpatch,ipa,ico,tor_fact,f_bstorage,f_growth         &
-                                      ,f_bseeds)
-                     f_bsapw    = f_growth
-                     f_bdead    = 0.0
-                     !---------------------------------------------------------------------!
-                  case default
-                     !------ Old scheme, use everything for bdead. ------------------------!
-                     cpatch%bdead(ico) = cpatch%bdead(ico)                                 &
-                                       + f_growth * cpatch%bstorage(ico)
-                     f_bsapw    = 0.0
-                     f_bdead    = f_growth
-                     !---------------------------------------------------------------------!
-                  end select
+                  cpatch%bdead(ico) = cpatch%bdead(ico) + f_growth * cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
 
 
@@ -329,13 +303,10 @@ module structural_growth
                   case (0)
                      !------ NPP allocation to wood and coarse roots in KgC /m2 -----------!
                      cpatch%today_nppwood   (ico) = agf_bs(ipft)                           &
-                                                  * f_bdead * cpatch%bstorage(ico)         &
+                                                  * f_growth * cpatch%bstorage(ico)        &
                                                   * cpatch%nplant(ico)
                      cpatch%today_nppcroot  (ico) = (1. - agf_bs(ipft))                    &
-                                                  * f_bdead * cpatch%bstorage(ico)         &
-                                                  * cpatch%nplant(ico)
-                     cpatch%today_nppsapwood(ico) = cpatch%today_nppsapwood(ico)           &
-                                                  + f_bsapw * cpatch%bstorage(ico)         &
+                                                  * f_growth * cpatch%bstorage(ico)        &
                                                   * cpatch%nplant(ico)
                   end select
                   !------------------------------------------------------------------------!
@@ -724,10 +695,9 @@ module structural_growth
                                , is_liana     ! ! intent(in)
       use ed_misc_coms  , only : current_time & ! intent(in)
                                , igrass       & ! intent(in)
-                               , ibigleaf     & ! intent(in)
-                               , iallom       ! ! intent(in)
+                               , ibigleaf     ! ! intent(in)
       use consts_coms   , only : r_tol_trunc  ! ! intent(in)
-      use allometry     , only : dbh2bd       & ! intent(in)
+      use allometry     , only : size2bd      & ! intent(in)
                                , h2dbh        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -782,15 +752,8 @@ module structural_growth
       !------------------------------------------------------------------------------------!
 
       !----- Use storage. -----------------------------------------------------------------!
-      select case (iallom)
-      case (3)
-         use_storage = (phenology(ipft) /= 2   .or.  late_spring) .and.                    &
-                       phen_status >= 0  .and. elongf >= (1.-r_tol_trunc) .and.            &
-                       bstorage > 0.0
-      case default
-         use_storage = (phenology(ipft) /= 2   .or.  late_spring) .and.                    &
-                       phen_status == 0  .and. bstorage > 0.0
-      end select
+      use_storage = (phenology(ipft) /= 2   .or.  late_spring) .and.                       &
+                    phen_status == 0  .and. bstorage > 0.0
       !------------------------------------------------------------------------------------!
 
       select case (ibigleaf)
@@ -818,7 +781,7 @@ module structural_growth
                   f_bseeds = merge(0.0, r_fract(ipft), zero_repro)
                   f_growth = 0.0
                else
-                  bd_target = dbh2bd(h2dbh(maxh,ipft),ipft)
+                  bd_target = size2bd(h2dbh(maxh,ipft),maxh,ipft)
                   delta_bd = bd_target - bdead
                   !------------------------------------------------------------------------!
                   !    If bstorage is 0 or lianas have already reached their bd_target     !
@@ -927,221 +890,6 @@ module structural_growth
    end subroutine plant_structural_allocation
    !=======================================================================================!
    !=======================================================================================!
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !      This sub-routine increments structural biomass by applying sapwood turnover      !
-   ! rates.  The allocation to seeds and growth is then adjusted depending on the          !
-   ! availability of non-structural carbon and phenology status.                           !
-   !---------------------------------------------------------------------------------------!
-   subroutine grow_tissues(cpatch,ipa,ico,tor_fact,f_bstorage,f_growth,f_bseeds)
-      use ed_state_vars, only : patchtype          ! ! structure
-      use allometry    , only : size2bl            & ! function
-                              , size2bw            & ! function
-                              , dbh2h              & ! function
-                              , bd2dbh             & ! function
-                              , bw2dbh             ! ! function
-      use pft_coms     , only : sapw_turnover_rate & ! intent(in)
-                              , bwood_crit         & ! intent(in)
-                              , bdead_crit         & ! intent(in)
-                              , agf_bs             & ! intent(in)
-                              , repro_min_h        & ! intent(in)
-                              , is_grass           ! ! intent(in)
-      use therm_lib    , only : toler              & ! intent(in)
-                              , maxfpo             ! ! intent(in)
-      use ed_misc_coms , only : current_time       & ! intent(in)
-                              , igrass             ! ! intent(in)
-      use consts_coms  , only : tiny_num           & ! intent(in)
-                              , r_tol_trunc        ! ! intent(in)
-      implicit none
-      !------ Arguments. ------------------------------------------------------------------!
-      type(patchtype), target          :: cpatch      ! Current patch 
-      integer        , intent(in)      :: ipa         ! Index for current patch 
-      integer        , intent(in)      :: ico         ! Index for current cohort 
-      real(kind=4)   , intent(in)      :: tor_fact    ! Correction factor for monthly TO
-      real(kind=4)   , intent(inout)   :: f_bstorage  ! Allocation to storage
-      real(kind=4)   , intent(inout)   :: f_growth    ! Allocation to growth
-      real(kind=4)   , intent(inout)   :: f_bseeds    ! Allocation to reproduction
-      !------ Local variables. ------------------------------------------------------------!
-      integer                          :: ipft        ! Current PFT
-      integer                          :: igrow       ! Growth case
-      real(kind=4)                     :: bsapw_t     ! Sapwood biomass (DBH_T)
-      real(kind=4)                     :: bsapa_t     ! AG sapwood biomass (DBH_T)
-      real(kind=4)                     :: bsapb_t     ! BG sapwood root biomass (DBH_T)
-      real(kind=4)                     :: bwood_t     ! Wood biomass (DBH_T)
-      real(kind=4)                     :: bsapa_b     ! AG sapwood biomass before growth
-      real(kind=4)                     :: bsapb_b     ! BG sapwood biomass before growth
-      real(kind=4)                     :: bsapw_b     ! Sapwood biomass before growth
-      real(kind=4)                     :: bwood_b     ! Wood biomass before growth
-      real(kind=4)                     :: bdead_b     ! Heartwood biomass after turnover
-      real(kind=4)                     :: bsapa_loss  ! AG Sapwood loss through turnover
-      real(kind=4)                     :: bsapb_loss  ! BG Sapwood loss through turnover
-      real(kind=4)                     :: bdead_gain  ! Heartwood gain through turnover
-      real(kind=4)                     :: dt_bsapa    ! AG sapwood  increment
-      real(kind=4)                     :: dt_bsapb    ! BG sapwood increment
-      real(kind=4)                     :: dt_bsapw    ! Sapwood increment
-      real(kind=4)                     :: dt_bwood    ! Wood increment
-      real(kind=4)                     :: f_bsapa     ! Allocation to AG sapwood
-      real(kind=4)                     :: f_bsapb     ! Allocation to BG sapwood
-      !----- Local constants, for debugging. ----------------------------------------------!
-      logical              , parameter :: printout  = .false.
-      character(len=15)    , parameter :: growfile  = 'grow_tissue.txt'
-      !----- Locally saved variables. -----------------------------------------------------!
-      logical              , save      :: first_time = .true.
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !----- Handy aliases. ---------------------------------------------------------------!
-      ipft = cpatch%pft(ico)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    New grasses don't have structural tissues, set all growth fraction to zero and  !
-      ! return.                                                                            !
-      !------------------------------------------------------------------------------------!
-      if (igrass == 1 .and. is_grass(ipft)) return
-      !------------------------------------------------------------------------------------!
-
-
-      !----- First time, and the user wants to print the output.  Make a header. ----------!
-      if (first_time) then
-
-         !----- Make the header. ----------------------------------------------------------!
-         if (printout) then
-            open (unit=66,file=growfile,status='replace',action='write')
-            write (unit=66,fmt='(17(a,1x))')                                               &
-              ,      '  YEAR',      ' MONTH',      '   DAY',      '   IPA',      '   PFT'  &
-              ,      ' IGROW',     '  HGT_A',     '  DBH_A', '    BWOOD_A', '    BWOOD_T'  &
-              , '   DT_BWOOD', '      BDEAD','  BDEAD_GAIN', '   BSTORAGE', '   F_GROWTH'  &
-              , '   F_BSTORE', '   F_BSEEDS'
-            close (unit=66,status='keep')
-         end if
-         !---------------------------------------------------------------------------------!
-
-         first_time = .false.
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Find sapwood loss (and heartwood gain) through sapwood turnover. -------------!
-      bsapa_loss            = cpatch%bsapwooda(ico) * sapw_turnover_rate(ipft) * tor_fact
-      bsapb_loss            = cpatch%bsapwoodb(ico) * sapw_turnover_rate(ipft) * tor_fact
-      bdead_gain            = bsapa_loss + bsapb_loss
-      cpatch%bsapwooda(ico) = cpatch%bsapwooda(ico) - bsapa_loss
-      cpatch%bsapwoodb(ico) = cpatch%bsapwoodb(ico) - bsapb_loss
-      cpatch%bdead    (ico) = cpatch%bdead    (ico) + bdead_gain
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Save the biomass before growth (but after sapwood turnover). -----------------!
-      bsapa_b  = cpatch%bsapwooda(ico)
-      bsapb_b  = cpatch%bsapwoodb(ico)
-      bdead_b  = cpatch%bdead    (ico)
-      bsapw_b  = bsapa_b + bsapb_b
-      bwood_b  = bsapw_b + bdead_b
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Find the goal for new size.  In this scheme, we never allocate biomass to     !
-      ! heartwood, which is a by-product of sapwood decay.  Once the tree reaches the      !
-      ! maximum size, we only maintain sapwood.                                            !
-      !------------------------------------------------------------------------------------!
-      bsapw_t  = min( bsapw_b + f_growth * cpatch%bstorage(ico)                            &
-                    , bwood_crit(ipft) - min(bdead_crit(ipft),bdead_b) )
-      bsapa_t  =        agf_bs(ipft)   * bsapw_t
-      bsapb_t  = ( 1. - agf_bs(ipft) ) * bsapw_t
-      bwood_t  = bsapw_t + bdead_b
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Find the positive difference between current and goal. -----------------------!
-      dt_bsapa  = max(0.,bsapa_t - bsapa_b)
-      dt_bsapb  = max(0.,bsapb_t - bsapb_b)
-      dt_bsapw  = dt_bsapa + dt_bsapb
-      dt_bwood  = max(0.,bwood_t - bwood_b)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    Find the maximum increment that goes to increase in biomass.                    !
-      !------------------------------------------------------------------------------------!
-      if (f_growth < tiny_num) then
-         !----- No growth is supposed to happen. ------------------------------------------!
-         igrow      = -2
-         f_bsapa    = 0.
-         f_bsapb    = 0.
-         !---------------------------------------------------------------------------------!
-      elseif (dt_bsapw < tiny_num) then
-         !----- No growth is needed.  -----------------------------------------------------!
-         igrow      = -1
-         f_bsapa    = 0.
-         f_bsapb    = 0.
-         !---------------------------------------------------------------------------------!
-      elseif ( dt_bsapw <= (f_growth * cpatch%bstorage(ico)) ) then
-         !----- Downregulate growth to enough to meet demand. -----------------------------!
-         igrow   = 1
-         f_bsapa = dt_bsapa / cpatch%bstorage(ico)
-         f_bsapb = dt_bsapb / cpatch%bstorage(ico)
-         !---------------------------------------------------------------------------------!
-      else
-         !------ Growth is limited by storage. --------------------------------------------!
-         igrow   = 0
-         f_bsapa = dt_bsapa * f_growth / dt_bsapw
-         f_bsapb = dt_bsapb * f_growth / dt_bsapw
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    In case the allocation to growth was down-regulated, send difference to         !
-      ! reproduction in case the plant is mature, or storage otherwise.                    !
-      !------------------------------------------------------------------------------------!
-      f_growth = f_bsapa + f_bsapb
-      if (cpatch%hite(ico) >= (1. - r_tol_trunc) * repro_min_h(ipft)) then
-         f_bseeds   = 1. - f_bstorage - f_growth
-      else
-         f_bstorage = 1. - f_bseeds   - f_growth
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Increment sapwood and update balive accordingly. -----------------------------!
-      cpatch%bsapwooda(ico) = cpatch%bsapwooda(ico) + f_bsapa * cpatch%bstorage(ico)
-      cpatch%bsapwoodb(ico) = cpatch%bsapwoodb(ico) + f_bsapb * cpatch%bstorage(ico)
-      cpatch%balive   (ico) = cpatch%bleaf    (ico) + cpatch%broot(ico)                    &
-                            + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                &
-                            + cpatch%bbark    (ico)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      if (printout) then
-         open (unit=66,file=growfile,status='old',position='append',action='write')
-         write (unit=66,fmt='(6(i6,1x),2(f7.3,1x),4(f11.4,1x),es12.5,1x,4(f11.4,1x))')     &
-               current_time%year,current_time%month,current_time%date,ipa,ipft,igrow       &
-              ,cpatch%hite(ico),cpatch%dbh(ico),bwood_b,bwood_t,dt_bwood                   &
-              ,bdead_b,bdead_gain,cpatch%bstorage(ico),f_growth,f_bstorage,f_bseeds
-         close (unit=66,status='keep')
-      end if
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine grow_tissues
-   !=======================================================================================!
-   !=======================================================================================!
-
-
 end module structural_growth
 !==========================================================================================!
 !==========================================================================================!

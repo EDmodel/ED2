@@ -94,13 +94,13 @@ module allometry
             elseif (is_tropical(ipft)) then
                mdbh = min(dbh,dbh_crit(ipft))
                select case (iallom)
-                  case (0,1)
-                     !----- Default ED-2.1 allometry. -------------------------------------!
-                     dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
-                  case default
-                     !----- Poorter et al. (2006) allometry. ------------------------------!
-                     lnexp = max(lnexp_min,min(lnexp_max,b1Ht(ipft) * mdbh ** b2Ht(ipft)))
-                     dbh2h = hgt_ref(ipft) * (1. - exp(-lnexp))
+               case (0,1)
+                  !----- Default ED-2.1 allometry. ----------------------------------------!
+                  dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
+               case default
+                  !----- Poorter et al. (2006) allometry. ---------------------------------!
+                  lnexp = max(lnexp_min,min(lnexp_max,b1Ht(ipft) * mdbh ** b2Ht(ipft)))
+                  dbh2h = hgt_ref(ipft) * (1. - exp(-lnexp))
                end select
             else !----- Temperate PFT allometry. ------------------------------------------!
                lnexp = max(lnexp_min,min(lnexp_max,b2Ht(ipft) * dbh))
@@ -130,31 +130,54 @@ module allometry
    !=======================================================================================!
    !     Function that finds Bdead from DBH.                                               !
    !---------------------------------------------------------------------------------------!
-   real function dbh2bd(dbh,ipft)
+   real function size2bd(dbh,hite,ipft)
 
       use pft_coms    , only : C2B         & ! intent(in)
-                             , b1Bs_small  & ! intent(in), lookup table
-                             , b2Bs_small  & ! intent(in), lookup table
-                             , b1Bs_large  & ! intent(in), lookup table
-                             , b2Bs_large  & ! intent(in), lookup table
+                             , dbh_adult   & ! intent(in)
+                             , dbh_crit    & ! intent(in)
+                             , b1Bs_small  & ! intent(in)
+                             , b2Bs_small  & ! intent(in)
+                             , b1Bs_large  & ! intent(in)
+                             , b2Bs_large  & ! intent(in)
                              , is_grass    & ! intent(in)
-                             , dbh_crit    ! ! intent(in), lookup table
-      use ed_misc_coms, only : igrass      ! ! intent(in)
+                             , is_tropical & ! intent(in)
+                             , is_liana    ! ! intent(in)
+      use ed_misc_coms, only : igrass      & ! intent(in)
+                             , iallom      ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
+      real   , intent(in) :: hite
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
 
-      if (is_grass(ipft) .and. igrass==1) then
-         dbh2bd = 0.0
-      else if (dbh <= dbh_crit(ipft)) then
-         dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
-      else
-         dbh2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)
+
+      !------------------------------------------------------------------------------------!
+      !     Structural biomass depends on the allometry and the size.                      !
+      !------------------------------------------------------------------------------------!
+      if (igrass == 1 .and. is_grass(ipft)   ) then
+         size2bd = 0.0
+      else if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         !----- Decide parameters based on seedling/adult size. ---------------------------!
+         if (dbh <= dbh_adult(ipft)) then
+            size2bd = b1Bs_small(ipft) / C2B * (dbh*dbh*hite) ** b2Bs_small(ipft)
+         else
+            size2bd = b1Bs_large(ipft) / C2B * (dbh*dbh*hite) ** b2Bs_large(ipft)
+         end if
+         !---------------------------------------------------------------------------------!
+      else 
+         !----- Decide parameters baded on the maximum height. ----------------------------!
+         if (dbh <= dbh_crit(ipft)) then
+            size2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
+         else
+            size2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)
+         end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
+
       return
-   end function dbh2bd
+   end function size2bd
    !=======================================================================================!
    !=======================================================================================!
 
@@ -170,16 +193,31 @@ module allometry
    ! method.                                                                               !
    !---------------------------------------------------------------------------------------!
    real function bd2dbh(ipft, bdead)
-      use pft_coms    , only : b1Bs_small  & ! intent(in), lookup table
-                             , b2Bs_small  & ! intent(in), lookup table
-                             , b1Bs_large  & ! intent(in), lookup table
-                             , b2Bs_large  & ! intent(in), lookup table
-                             , bdead_crit  & ! intent(in), lookup table
+      use pft_coms    , only : b1Bs_small  & ! intent(in)
+                             , b2Bs_small  & ! intent(in)
+                             , b1Bs_large  & ! intent(in)
+                             , b2Bs_large  & ! intent(in)
+                             , bdead_adult & ! intent(in)
+                             , bdead_crit  & ! intent(in)
+                             , hgt_max     & ! intent(in)
+                             , dbh_lut     & ! intent(in)
+                             , bdead_lut   & ! intent(in)
+                             , le_mask_lut & ! intent(out)
+                             , ge_mask_lut & ! intent(out)
+                             , is_tropical & ! intent(in)
+                             , is_liana    & ! intent(in)
                              , C2B         ! ! intent(in)
+      use ed_misc_coms, only : iallom      ! ! intent(in)
+      use consts_coms , only : lnexp_min   & ! intent(in)
+                             , lnexp_max   ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in) :: ipft      ! PFT type                            [         ---]
       real   , intent(in) :: bdead     ! Structural (dead) biomass           [   kgC/plant]
+      !----- Local variables. -------------------------------------------------------------!
+      integer             :: ilwr        ! Lower index of the lookup table
+      integer             :: iupr        ! Upper index of the lookup table
+      real                :: finterp     ! Interpolation factor
       !------------------------------------------------------------------------------------!
 
 
@@ -187,10 +225,59 @@ module allometry
       !------------------------------------------------------------------------------------!
       !    Decide which coefficients to use based on the critical bdead.                   !
       !------------------------------------------------------------------------------------!
-      if (bdead <= bdead_crit(ipft)) then
-         bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
+      if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft)) ) then
+         if (bdead <= bdead_lut(1,ipft)) then
+            !----- Use the look-up table to find the best dbh. ----------------------------!
+            bd2dbh = dbh_lut(1,ipft) * bdead / bdead_lut(1,ipft)
+            !------------------------------------------------------------------------------!
+         else if (bdead >= bdead_crit(ipft)) then
+            !------------------------------------------------------------------------------!
+            !     Bdead is above critical value, height is known.  It is also very likely  !
+            ! that bdead is above minimum adult value, but just to be safe, we also check  !
+            ! it.                                                                          !
+            !------------------------------------------------------------------------------!
+            if (bdead < bdead_adult(ipft)) then
+               bd2dbh =  ( C2B * bdead                                                     &
+                         / ( b1Bs_small(ipft) * hgt_max(ipft)**b2Bs_small(ipft) ))         &
+                      ** ( 1. / (2. * b2Bs_small(ipft) ) )
+            else
+               bd2dbh =  ( C2B * bdead                                                     &
+                         / ( b1Bs_large(ipft) * hgt_max(ipft)**b2Bs_large(ipft) ))         &
+                      ** ( 1. / (2. * b2Bs_large(ipft) ) )
+            end if
+            !------------------------------------------------------------------------------!
+         else
+            !----- Use the look-up table to find the best dbh. ----------------------------!
+            le_mask_lut(:) = bdead <= bdead_lut(:,ipft)
+            ge_mask_lut(:) = bdead >= bdead_lut(:,ipft)
+            ilwr  = maxloc (bdead_lut(:,ipft),dim=1,mask=le_mask_lut)
+            iupr  = minloc (bdead_lut(:,ipft),dim=1,mask=ge_mask_lut)
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !      In case ilwr and iupr are the same, we have an exact estimate.  Other-  !
+            ! wise, use log-linear interpolation.                                          !
+            !------------------------------------------------------------------------------!
+            if (ilwr == iupr) then
+               bd2dbh = dbh_lut(ilwr,ipft)
+            else
+               finterp = log( dbh_lut  (iupr,ipft) / dbh_lut  (ilwr,ipft))                 &
+                       * log( bdead                / bdead_lut(ilwr,ipft))                 &
+                       / log( bdead_lut(iupr,ipft) / bdead_lut(ilwr,ipft))
+               finterp = max(lnexp_min,min(lnexp_max,finterp))
+               bd2dbh  = dbh_lut(ilwr,ipft) * exp(finterp)
+            end if
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
       else
-         bd2dbh = (bdead / b1Bs_large(ipft) * C2B)**(1.0/b2Bs_large(ipft))
+         !----- Bdead is not a direct function of height, simple inversion is sufficient. -!
+         if (bdead <= bdead_crit(ipft)) then
+            bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
+         else
+            bd2dbh = (bdead / b1Bs_large(ipft) * C2B)**(1.0/b2Bs_large(ipft))
+         end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -221,8 +308,10 @@ module allometry
                               , b2Bl_large     & ! intent(in)
                               , is_liana       & ! intent(in)
                               , is_grass       & ! intent(in)
+                              , is_tropical    & ! intent(in)
                               , liana_dbh_crit ! ! intent(in)
-      use ed_misc_coms , only : igrass         ! ! intent(in)
+      use ed_misc_coms , only : igrass         & ! intent(in)
+                              , iallom         ! ! intent(in)
       use ed_state_vars, only : patchtype      ! ! structure
 
       !----- Arguments --------------------------------------------------------------------!
@@ -237,7 +326,7 @@ module allometry
       !------------------------------------------------------------------------------------!
       !     Get the DBH, or potential DBH in case of grasses.                              !
       !------------------------------------------------------------------------------------!
-      if (is_grass(ipft) .and. igrass == 1) then 
+      if (igrass == 1 .and. is_grass(ipft)) then 
          !---- Use height for new grasses. ------------------------------------------------!
          mdbh   = min(dbh,h2dbh(hite,ipft))
       elseif (is_liana(ipft)) then
@@ -251,157 +340,28 @@ module allometry
       !------------------------------------------------------------------------------------!
       !     Find leaf biomass depending on the tree size.                                  !
       !------------------------------------------------------------------------------------!
-      if (mdbh < dbh_adult(ipft)) then
-         size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
-      else
-         size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
+      if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         !----- Decide parameters based on seedling/adult size. ---------------------------!
+         if (mdbh < dbh_adult(ipft)) then
+            size2bl = b1Bl_small(ipft) / C2B * (mdbh*mdbh*hite) ** b2Bl_small(ipft)
+         else
+            size2bl = b1Bl_large(ipft) / C2B * (mdbh*mdbh*hite) ** b2Bl_large(ipft)
+         end if
+         !---------------------------------------------------------------------------------!
+      else 
+         !----- Decide parameters based on seedling/adult size. ---------------------------!
+         if (mdbh < dbh_adult(ipft)) then
+            size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
+         else
+            size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
+         end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
 
       return
    end function size2bl
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     Function that finds wood biomass from DBH and height (wood here means heartwood   !
-   ! and sapwood.                                                                          !
-   !---------------------------------------------------------------------------------------!
-   real function size2bw(dbh,hite,ipft)
-
-      use pft_coms    , only : qsw         ! ! intent(in), lookup table
-
-      !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: dbh
-      real   , intent(in) :: hite
-      integer, intent(in) :: ipft
-      !----- Local variables. -------------------------------------------------------------!
-      real                :: bleaf
-      real                :: bsapw
-      real                :: bdead
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Find wood equivalent. --------------------------------------------------------!
-      bleaf   = size2bl(dbh,hite,ipft)
-      bsapw   = qsw(ipft) * hite * bleaf
-      bdead   = dbh2bd(dbh,ipft)
-      size2bw = bsapw + bdead
-      !------------------------------------------------------------------------------------!
-
-      return
-   end function size2bw
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !      This subroutine finds DBH given the biomass of woody tissues.  This uses a       !
-   ! look-up table and assumes that the partition of woody biomass does not matter for     !
-   ! DBH.                                                                                  !
-   !---------------------------------------------------------------------------------------!
-   real function bw2dbh(bsapa,bsapb,bdead,ipft)
-      use pft_coms    , only : is_grass    & ! intent(in)
-                             , qsw         & ! intent(in)
-                             , dbh_crit    & ! intent(in)
-                             , nbt_lut     & ! intent(in)
-                             , dbh_lut     & ! intent(in)
-                             , bwood_lut   & ! intent(in)
-                             , le_mask_lut & ! intent(out)
-                             , ge_mask_lut ! ! intent(out)
-      use ed_misc_coms, only : igrass      ! ! intent(in)
-      use consts_coms , only : lnexp_min   & ! intent(in)
-                             , lnexp_max   ! ! intent(in)
-
-      !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: bsapa       ! AG sapwood biomass
-      real   , intent(in) :: bsapb       ! BG sapwood biomass
-      real   , intent(in) :: bdead       ! Heartwood biomass
-      integer, intent(in) :: ipft        ! PFT
-      !----- Local variables. -------------------------------------------------------------!
-      integer             :: ilwr        ! Lower index of the lookup table
-      integer             :: iupr        ! Upper index of the lookup table
-      real                :: bwood       ! Current wood biomass
-      real                :: bwood_crit  ! Highest wood biomass
-      real                :: height_crit ! Height at DBH_crit
-      real                :: bleaf_crit  ! Leaf biomass at DBH_crit
-      real                :: bsapw_crit  ! Sapwood biomass at DBH_crit
-      real                :: bdead_eqv   ! Equivalent heartwood biomass
-      real                :: finterp     ! Interpolation factor
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Make sure this is never called by new grasses. -------------------------------!
-      if (is_grass(ipft) .and. igrass==1) then
-         call fatal_error('Function bw2dbh cannot be accessed by new grasses!'             &
-                         ,'bw2dbh','allometry.f90')
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Find current and critical wood biomass (at maximum height). ------------------!
-      bwood      = bsapa + bsapb + bdead
-      bwood_crit = bwood_lut(nbt_lut,ipft)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    In case there is more biomass than bwood_crit, assume all excess is in bdead    !
-      ! and use the bdead->dbh allometry to obtain dbh.                                    !
-      !------------------------------------------------------------------------------------!
-      if (bwood >= bwood_crit) then
-         !----- Find sapwood and bark biomass at dbh_crit. --------------------------------!
-         height_crit = dbh2h(ipft,dbh_crit(ipft))
-         bleaf_crit  = size2bl(dbh_crit(ipft),height_crit,ipft)
-         bsapw_crit  = qsw  (ipft) * height_crit * bleaf_crit
-         !---------------------------------------------------------------------------------!
-
-         !----- Find the bdead-equivalent. ------------------------------------------------!
-         bdead_eqv   = bwood - bsapw_crit
-         bw2dbh      = bd2dbh(ipft,bdead_eqv)
-         !---------------------------------------------------------------------------------!
-      elseif (bwood <= bwood_lut(1,ipft)) then
-         !----- In case bwood is less than the minimum, linearly scale it. ----------------!
-         bw2dbh      = dbh_lut(1,ipft) * bwood / bwood_lut(1,ipft)
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Use the look-up table to find the best dbh. -------------------------------!
-         le_mask_lut(:) = bwood <= bwood_lut(:,ipft)
-         ge_mask_lut(:) = bwood >= bwood_lut(:,ipft)
-         ilwr  = maxloc (bwood_lut(:,ipft),dim=1,mask=le_mask_lut)
-         iupr  = minloc (bwood_lut(:,ipft),dim=1,mask=ge_mask_lut)
-         !---------------------------------------------------------------------------------!
-
-         !---------------------------------------------------------------------------------!
-         !      In case ilwr and iupr are the same, we have an exact estimate.  Otherwise, !
-         ! use log-linear interpolation.                                                   !
-         !---------------------------------------------------------------------------------!
-         if (ilwr == iupr) then
-            bw2dbh = dbh_lut(ilwr,ipft)
-         else
-            finterp = log( dbh_lut  (iupr,ipft) / dbh_lut  (ilwr,ipft))                    &
-                    * log( bwood                / bwood_lut(ilwr,ipft))                    &
-                    / log( bwood_lut(iupr,ipft) / bwood_lut(ilwr,ipft))
-            finterp = max(lnexp_min,min(lnexp_max,finterp))
-            bw2dbh  = dbh_lut(ilwr,ipft) * exp(finterp)
-         end if
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-
-      return
-    end function bw2dbh
    !=======================================================================================!
    !=======================================================================================!
 
@@ -491,40 +451,89 @@ module allometry
                              , is_grass    & ! intent(in)
                              , C2B         & ! intent(in)
                              , bleaf_adult & ! intent(in)
+                             , bleaf_crit  & ! intent(in)
                              , b1Bl_small  & ! intent(in)
                              , b2Bl_small  & ! intent(in)
                              , b1Bl_large  & ! intent(in)
-                             , b2Bl_large  ! ! intent(in)
-      use ed_misc_coms, only : igrass      ! ! intent(in)
+                             , b2Bl_large  & ! intent(in)
+                             , dbh_lut     & ! intent(in)
+                             , bleaf_lut   & ! intent(in)
+                             , le_mask_lut & ! intent(out)
+                             , ge_mask_lut & ! intent(out)
+                             , is_tropical & ! intent(in)
+                             , is_liana    ! ! intent(in)
+      use ed_misc_coms, only : igrass      & ! intent(in)
+                             , iallom      ! ! intent(in)
+      use consts_coms , only : lnexp_min   & ! intent(in)
+                             , lnexp_max   ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: bleaf
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
+      integer             :: ilwr        ! Lower index of the lookup table
+      integer             :: iupr        ! Upper index of the lookup table
+      real                :: finterp     ! Interpolation factor
       !------------------------------------------------------------------------------------!
 
 
+      if ( iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft)) ) then
+         if (bleaf <= bleaf_lut(1,ipft)) then
+            !----- Use the look-up table to find the best dbh. ----------------------------!
+            bl2dbh = dbh_lut(1,ipft) * bleaf / bleaf_lut(1,ipft)
+            !------------------------------------------------------------------------------!
+         else if (bleaf >= bleaf_crit(ipft)) then
+            !----- Bleaf should not exceed bleaf_crit.  Set dbh to maximum. ---------------!
+            bl2dbh = dbh_crit(ipft)
+            !------------------------------------------------------------------------------!
+         else
+            !----- Use the look-up table to find the best dbh. ----------------------------!
+            le_mask_lut(:) = bleaf <= bleaf_lut(:,ipft)
+            ge_mask_lut(:) = bleaf >= bleaf_lut(:,ipft)
+            ilwr  = maxloc (bleaf_lut(:,ipft),dim=1,mask=le_mask_lut)
+            iupr  = minloc (bleaf_lut(:,ipft),dim=1,mask=ge_mask_lut)
+            !------------------------------------------------------------------------------!
 
-      !----- Find out whether this is an adult tree or a sapling/grass. -------------------!
-      if (bleaf < bleaf_adult(ipft)) then
-         mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
+            !------------------------------------------------------------------------------!
+            !      In case ilwr and iupr are the same, we have an exact estimate.  Other-  !
+            ! wise, use log-linear interpolation.                                          !
+            !------------------------------------------------------------------------------!
+            if (ilwr == iupr) then
+               bl2dbh = dbh_lut(ilwr,ipft)
+            else
+               finterp = log( dbh_lut  (iupr,ipft) / dbh_lut  (ilwr,ipft))                 &
+                       * log( bleaf                / bleaf_lut(ilwr,ipft))                 &
+                       / log( bleaf_lut(iupr,ipft) / bleaf_lut(ilwr,ipft))
+               finterp = max(lnexp_min,min(lnexp_max,finterp))
+               bl2dbh  = dbh_lut(ilwr,ipft) * exp(finterp)
+            end if
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
       else
-         mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
+         !----- Find out whether this is an adult tree or a sapling/grass. ----------------!
+         if (bleaf < bleaf_adult(ipft)) then
+            mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
+         else
+            mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     For grasses, limit maximum effective dbh by maximum height.                 !
+         !---------------------------------------------------------------------------------!
+         if (is_grass(ipft) .and. igrass == 1) then
+            bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
+         else
+            bl2dbh = min(mdbh, dbh_crit(ipft))
+         end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     For grasses, limit maximum effective dbh by maximum height.                    !
-      !------------------------------------------------------------------------------------!
-      if (is_grass(ipft) .and. igrass == 1) then
-         bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
-      else
-         bl2dbh = min(mdbh, dbh_crit(ipft))
-      end if
-      !------------------------------------------------------------------------------------!
-
 
       return
    end function bl2dbh
@@ -561,17 +570,21 @@ module allometry
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
-   real function dbh2ca(dbh,hite,sla,ipft)
-      use ed_misc_coms, only : iallom         ! ! intent(in)
-      use pft_coms    , only : dbh_crit       & ! intent(in)
-                             , hgt_max        & ! intent(in)
-                             , is_grass       & ! intent(in)
-                             , is_liana       & ! intent(in)
-                             , b1Ca           & ! intent(in)
-                             , b2Ca           & ! intent(in)
-                             , liana_dbh_crit ! ! intent(in)
-      use ed_misc_coms, only : igrass         ! ! intent(in)
-      use ed_state_vars, only: patchtype      ! ! structure
+   real function size2ca(dbh,hite,sla,ipft)
+      use ed_misc_coms , only : iallom         ! ! intent(in)
+      use pft_coms     , only : dbh_adult      & ! intent(in)
+                              , dbh_crit       & ! intent(in)
+                              , hgt_max        & ! intent(in)
+                              , is_grass       & ! intent(in)
+                              , is_liana       & ! intent(in)
+                              , is_tropical    & ! intent(in)
+                              , b1Ca           & ! intent(in)
+                              , b2Ca           & ! intent(in)
+                              , liana_dbh_crit ! ! intent(in)
+      use ed_misc_coms , only : igrass         & ! intent(in)
+                              , iallom         ! ! intent(in)
+      use ed_state_vars, only : patchtype      ! ! structure
+      use consts_coms  , only : tiny_num       ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       real          , intent(in) :: dbh
@@ -583,9 +596,9 @@ module allometry
       real                       :: mdbh   ! The maximum DBH
       !------------------------------------------------------------------------------------!
 
-      if (dbh < tiny(1.0)) then
-         loclai = 0.0
-         dbh2ca = 0.0
+      if (dbh < tiny_num) then
+         loclai  = 0.0
+         size2ca = 0.0
       else
 
          !----- make this function generic to size, not just dbh. -------------------------!
@@ -618,7 +631,15 @@ module allometry
 
 
          !----- Find the nominal crown area. ----------------------------------------------!
-         dbh2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
+         if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+            if (mdbh < dbh_adult(ipft)) then
+               size2ca = loclai
+            else
+               size2ca = b1Ca(ipft) * ( mdbh * mdbh * hite ) ** b2Ca(ipft)
+            end if
+         else
+            size2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
+         end if
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -626,11 +647,11 @@ module allometry
 
 
       !----- Local LAI / Crown area should never be less than one. ------------------------!
-      dbh2ca = min (loclai, dbh2ca)
+      size2ca = min (loclai, size2ca)
       !------------------------------------------------------------------------------------!
 
       return
-   end function dbh2ca
+   end function size2ca
    !=======================================================================================!
    !=======================================================================================!
 
@@ -650,7 +671,7 @@ module allometry
    !    Forest Ecol. Manag., 256(11), 1853-1867, Nov. 2008,                                !
    !    doi:10.1016/j.foreco.2008.07.022.                                                  !
    !---------------------------------------------------------------------------------------!
-   real function dbh2vol(dbh,hgt,ipft)
+   real function size2vol(dbh,hgt,ipft)
       use pft_coms    , only : b1Vol    & ! intent(in)
                              , b2Vol    ! ! intent(in)
 
@@ -661,10 +682,10 @@ module allometry
       !------------------------------------------------------------------------------------!
 
 
-      dbh2vol = b1Vol(ipft) * (dbh * dbh * hgt) ** b2Vol(ipft)
+      size2vol = b1Vol(ipft) * (dbh * dbh * hgt) ** b2Vol(ipft)
 
       return
-   end function dbh2vol
+   end function size2vol
    !=======================================================================================!
    !=======================================================================================!
 
@@ -711,7 +732,7 @@ module allometry
          !---------------------------------------------------------------------------------!
          !     Tropical trees.  We use the tree volume scaled with typical wood density.   !
          !---------------------------------------------------------------------------------!
-         btimber  = 1000. * rho(ipft) * dbh2vol(dbh,hgt,ipft) / C2B
+         btimber  = 1000. * rho(ipft) * size2vol(dbh,hgt,ipft) / C2B
          bagwood  = agf_bs(ipft) * (bdead + bbark) + bsapwooda
          size2bt  = min(btimber,bagwood)
          !---------------------------------------------------------------------------------!
@@ -785,7 +806,7 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   integer function dbh2krdepth(hite,dbh,ipft,lsl)
+   integer function size2krdepth(hite,dbh,ipft,lsl)
       use ed_misc_coms, only : iallom   ! ! intent(in)
       use grid_coms   , only : nzg      ! ! intent(in)
       use soil_coms   , only : slz      ! ! intent(in)
@@ -825,14 +846,14 @@ module allometry
       !     Root depth is the maximum root depth if the soil is that deep.  Find what is   !
       ! the deepest soil layer this root can go.                                           !
       !------------------------------------------------------------------------------------!
-      dbh2krdepth = nzg
+      size2krdepth = nzg
       do k=nzg,lsl+1,-1
-         if (root_depth < slz(k)) dbh2krdepth = k-1
+         if (root_depth < slz(k)) size2krdepth = k-1
       end do
       !------------------------------------------------------------------------------------!
 
       return
-   end function dbh2krdepth
+   end function size2krdepth
    !=======================================================================================!
    !=======================================================================================!
 
@@ -921,6 +942,7 @@ module allometry
       use pft_coms     , only : dbh_crit        & ! intent(in)
                               , dbh_adult       & ! intent(in)
                               , is_liana        & ! intent(in)
+                              , is_tropical     & ! intent(in)
                               , is_grass        & ! intent(in)
                               , b1WAI_small     & ! intent(in)
                               , b2WAI_small     & ! intent(in)
@@ -928,7 +950,8 @@ module allometry
                               , b2WAI_large     & ! intent(in)
                               , liana_dbh_crit  ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
-      use ed_misc_coms , only : igrass          ! ! intent(in)
+      use ed_misc_coms , only : igrass          & ! intent(in)
+                              , iallom          ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target :: cpatch
@@ -952,7 +975,7 @@ module allometry
       !------------------------------------------------------------------------------------!
 
       !----- Find the crown area. ---------------------------------------------------------!
-      loccai                 = dbh2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
+      loccai = size2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
       cpatch%crown_area(ico) = min(1.0, cpatch%nplant(ico) * loccai)
       !------------------------------------------------------------------------------------!
 
@@ -984,7 +1007,10 @@ module allometry
 
 
          !-----Find WAI. ------------------------------------------------------------------!
-         if (mdbh < dbh_adult(ipft)) then
+         if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+            cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI_small(ipft)                       &
+                            * ( mdbh * mdbh * cpatch%hite(ico) ) ** b2WAI_small(ipft)
+         else if (mdbh < dbh_adult(ipft)) then
             cpatch%wai(ico) = cpatch%nplant(ico)                                           &
                             * b1WAI_small(ipft) * mdbh ** b2WAI_small(ipft)
          else

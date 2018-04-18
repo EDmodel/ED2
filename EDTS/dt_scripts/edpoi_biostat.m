@@ -86,12 +86,13 @@ agb_sz=zeros(npft,ndbh);
 agb_pft=zeros(npft,1);
 
 
-ip=0;
+ipg=0;
 for isi=isi_a:isi_z
   ipa_a = sipa_id(isi);
   ipa_z = ipa_a+sipa_n(isi)-1;
   
   for ipa=ipa_a:ipa_z
+    ipg=ipg+1;
     
     ico_a = paco_id(ipa);
     ico_z = ico_a+paco_n(ipa)-1;
@@ -101,10 +102,9 @@ for isi=isi_a:isi_z
     area_dty(idt) = area_dty(idt) + afrac;
 
     if(paco_n(ipa)>0)
-    agb_pa(ipa) = sum(agb_co(ico_a:ico_z).*nplant(ico_a:ico_z));
+    agb_pa(ipg) = sum(agb_co(ico_a:ico_z).*nplant(ico_a:ico_z));
 
-    ip=ip+1;
-    lai_pa(ip) = sum(lai_co(ico_a:ico_z));
+    lai_pa(ipg) = sum(lai_co(ico_a:ico_z));
     
     for ico=ico_a:ico_z
       
@@ -141,47 +141,49 @@ for isi=isi_a:isi_z
       
       f_depth = htopcrown-hbotcrown;  % full depth of crown
       s_depth = 0.0;                  % depth sum counter
-      
-      % Add some leaf area to the first partial layer
-      if kap~=kaf && kap~=kzp
-	p_depth     = zztop(kap)-hbotcrown;
-	if(p_depth<0);display(p_depth);pause;end;
-	s_depth     = s_depth+p_depth;
-	lai_vp(ipft,kap) = lai_vp(ipft,kap)+lai_co(ico)*(p_depth/f_depth)*afrac;
-      end
-      
-      % Add some leaf area to all full layers
-      if(kzf>=kaf)
-	for k=kaf:kzf
-	  p_depth     = min([zztop(k)-zzbot(k) f_depth]);
-	  if(p_depth<0);display(p_depth);pause;end;
-	  s_depth     = s_depth+p_depth;
-	  lai_vp(ipft,k) = lai_vp(ipft,k)+lai_co(ico)*(p_depth/f_depth)*afrac;
-	end
-      end
-      
-      % Add some leaf area to the last partial layer
-      if kzp~=kzf && kzp~=kap
-	p_depth     = htopcrown-zzbot(kzp);
-	if(p_depth<0);display(p_depth);pause;end;
-	s_depth     = s_depth+p_depth;
-	lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
-      end
 
-      % Final case for where the partial layers are the same
-      if kzp==kap
-	p_depth = f_depth;
-	s_depth = s_depth+p_depth;
-	lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
-      end
+      if (f_depth > 0)
+
+         % Add some leaf area to the first partial layer
+         if kap~=kaf && kap~=kzp
+           p_depth     = zztop(kap)-hbotcrown;
+           if(p_depth<0);display(p_depth);pause;end;
+           s_depth     = s_depth+p_depth;
+           lai_vp(ipft,kap) = lai_vp(ipft,kap)+lai_co(ico)*(p_depth/f_depth)*afrac;
+         end
       
-      if(abs(s_depth-f_depth)>0.001)
-	display(sprintf(...
-	    'DEPTH ISSUE: s_depth %d f_depth %d\n',s_depth, ...
-	    f_depth));
-	pause;
-      end
+         % Add some leaf area to all full layers
+         if(kzf>=kaf)
+           for k=kaf:kzf
+             p_depth     = min([zztop(k)-zzbot(k) f_depth]);
+             if(p_depth<0);display(p_depth);pause;end;
+             s_depth     = s_depth+p_depth;
+             lai_vp(ipft,k) = lai_vp(ipft,k)+lai_co(ico)*(p_depth/f_depth)*afrac;
+           end
+         end
       
+         % Add some leaf area to the last partial layer
+         if kzp~=kzf && kzp~=kap
+           p_depth     = htopcrown-zzbot(kzp);
+           if(p_depth<0);display(p_depth);pause;end;
+           s_depth     = s_depth+p_depth;
+           lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
+         end
+
+         % Final case for where the partial layers are the same
+         if kzp==kap
+           p_depth = f_depth;
+           s_depth = s_depth+p_depth;
+           lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
+         end
+      
+         if(abs(s_depth-f_depth)>0.001)
+           display(sprintf(...
+               'DEPTH ISSUE: s_depth %d f_depth %d\n',s_depth, ...
+               f_depth));
+           pause;
+         end
+       end
     end   % for ico
       end % if(paco_n>0)
     

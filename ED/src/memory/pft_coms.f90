@@ -242,9 +242,6 @@ module pft_coms
    !----- This is the inverse of bark life span [1/year]. ---------------------------------!
    real, dimension(n_pft) :: bark_turnover_rate
 
-   !----- This is the inverse of sapwood life span [1/year]. ------------------------------!
-   real, dimension(n_pft) :: sapw_turnover_rate
-
    !---------------------------------------------------------------------------------------!
    !    This variable sets the rate of dark (i.e., leaf) respiration.  It is dimensionless !
    ! because it is relative to Vm0.                                                        !
@@ -513,12 +510,14 @@ module pft_coms
    real   , dimension(n_pft)    :: min_bdead
    !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
    real   , dimension(n_pft)    :: bdead_crit
-   !----- Critical Bleaf, when plants switch from sapling to adult allom. -----------------!
-   real   , dimension(n_pft)    :: bleaf_adult
-   !----- Critical Bwood, maximum allocation to woody tissues. ----------------------------!
-   real   , dimension(n_pft)    :: bwood_crit
+   !----- Critical Bleaf, maximum allocation to leaves. -----------------------------------!
+   real   , dimension(n_pft)    :: bleaf_crit
    !----- Critical balive, maximum allocation to living tissues. --------------------------!
    real   , dimension(n_pft)    :: balive_crit
+   !----- Adult Bleaf, when plants switch from sapling to adult allom. --------------------!
+   real   , dimension(n_pft)    :: bleaf_adult
+   !----- Adult Bdead, when plants switch from sapling to adult allom (iallom=3 only). ----!
+   real   , dimension(n_pft)    :: bdead_adult
    !=======================================================================================!
    !=======================================================================================!
 
@@ -726,7 +725,8 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    integer                                   :: nbt_lut
    real(kind=4), dimension(:,:), allocatable :: dbh_lut
-   real(kind=4), dimension(:,:), allocatable :: bwood_lut
+   real(kind=4), dimension(:,:), allocatable :: bleaf_lut
+   real(kind=4), dimension(:,:), allocatable :: bdead_lut
    real(kind=4), dimension(:,:), allocatable :: balive_lut
    logical     , dimension(:)  , allocatable :: le_mask_lut
    logical     , dimension(:)  , allocatable :: ge_mask_lut

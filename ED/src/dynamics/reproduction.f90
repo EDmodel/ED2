@@ -47,14 +47,14 @@ module reproduction
       use mem_polygons        , only : maxcohort                  ! ! intent(in)
       use consts_coms         , only : pio4                       ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap              ! ! function
-      use allometry           , only : dbh2bd                     & ! function
-                                     , size2bl                    & ! function
+      use allometry           , only : size2bl                    & ! function
+                                     , size2bd                    & ! function
                                      , h2dbh                      & ! function
                                      , size2bt                    & ! function
                                      , size2xb                    & ! function
                                      , ed_biomass                 & ! function
                                      , area_indices               & ! subroutine
-                                     , dbh2krdepth                ! ! function
+                                     , size2krdepth               ! ! function
       use grid_coms           , only : nzg                        ! ! intent(in)
       use ed_misc_coms        , only : ibigleaf                   & ! intent(in)
                                      , current_time               ! ! intent(in)
@@ -281,9 +281,9 @@ module reproduction
                         !------------------------------------------------------------------!
                         rectest%hite      = hgt_min(ipft)
                         rectest%dbh       = h2dbh(rectest%hite, ipft)
-                        rectest%krdepth   = dbh2krdepth(rectest%hite,rectest%dbh           &
-                                                       ,rectest%pft,cpoly%lsl(isi))
-                        rectest%bdead     = dbh2bd(rectest%dbh, ipft)
+                        rectest%krdepth   = size2krdepth(rectest%hite,rectest%dbh          &
+                                                        ,rectest%pft,cpoly%lsl(isi))
+                        rectest%bdead     = size2bd(rectest%dbh,rectest%hite,ipft)
 
                         call pheninit_balive_bstorage(nzg,rectest%pft,rectest%krdepth      &
                                                      ,rectest%hite,rectest%dbh             &
@@ -716,7 +716,7 @@ module reproduction
                         bbark_plant     = bleaf_plant * qbark(ipft) * cpatch%hite(ico)
                         balive_plant    = bleaf_plant + broot_plant + bsapwood_plant       &
                                         + bbark_plant
-                        bdead_plant     = dbh2bd(cpatch%dbh(ico),ipft)
+                        bdead_plant     = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                         !------------------------------------------------------------------!
 
 

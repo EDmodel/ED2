@@ -145,7 +145,7 @@ module ed_nbg_init
                                     , tonoha_2_kgom2      ! ! intent(in)
       use physiology_coms    , only : iddmort_scheme      ! ! intent(in)
       use allometry          , only : h2dbh               & ! function
-                                    , dbh2bd              & ! function
+                                    , size2bd             & ! function
                                     , size2bl             & ! function
                                     , size2bt             & ! function
                                     , size2xb             & ! function
@@ -257,7 +257,7 @@ module ed_nbg_init
             cpatch%hite(ico)             = hgt_min(ipft)
             cpatch%phenology_status(ico) = 0
             cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-            cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
+            cpatch%bdead(ico)            = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%sla(ico)              = sla(ipft)
             cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
@@ -378,7 +378,7 @@ module ed_nbg_init
                                     , tonoha_2_kgom2      ! ! intent(in)
       use physiology_coms    , only : iddmort_scheme      ! ! intent(in)
       use allometry          , only : h2dbh               & ! function
-                                    , dbh2bd              & ! function
+                                    , size2bd             & ! function
                                     , size2bl             & ! function
                                     , size2bt             & ! function
                                     , size2xb             & ! function
@@ -441,7 +441,7 @@ module ed_nbg_init
             cpatch%hite(ico)             = height
             cpatch%phenology_status(ico) = 0
             cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-            cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
+            cpatch%bdead(ico)            = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%sla(ico)              = sla(ipft)
 
@@ -563,7 +563,7 @@ module ed_nbg_init
                                     , kgom2_2_tonoha      & ! intent(in)
                                     , tonoha_2_kgom2      ! ! intent(in)
       use physiology_coms    , only : iddmort_scheme      ! ! intent(in)
-      use allometry          , only : dbh2bd              & ! function
+      use allometry          , only : size2bd             & ! function
                                     , size2bl             & ! function
                                     , size2bt             & ! function
                                     , size2xb             & ! function
@@ -668,7 +668,8 @@ module ed_nbg_init
                   cpatch%dbh(ico)              = dbh_bigleaf(ipft)
                   cpatch%hite(ico)             = hgt_max(ipft)
                   cpatch%phenology_status(ico) = 0
-                  cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
+                  cpatch%bdead(ico)            = size2bd(cpatch%dbh(ico)                   &
+                                                        ,cpatch%hite(ico),ipft)
                   cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico)                   &
                                                         ,cpatch%hite(ico),ipft)
                   cpatch%sla(ico)              = sla(ipft)

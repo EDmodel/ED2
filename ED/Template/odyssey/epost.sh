@@ -748,7 +748,7 @@ do
    case ${polyiata} in
    gyf)
       bioyeara=2004
-      bioyearz=2010
+      bioyearz=2013
       ;;
    s67)
       bioyeara=1999

@@ -44,7 +44,7 @@ subroutine read_ed10_ed20_history_file
    use grid_coms      , only : ngrids              ! ! intent(in)
    use allometry      , only : bd2dbh              & ! function
                              , dbh2h               & ! function
-                             , dbh2bd              & ! function
+                             , size2bd             & ! function
                              , size2bl             & ! function
                              , size2bt             & ! function
                              , size2xb             & ! function
@@ -775,7 +775,8 @@ subroutine read_ed10_ed20_history_file
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
                            cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(cpatch%pft(ic2)))
                            cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
-                           cpatch%bdead(ic2) = dbh2bd(cpatch%dbh(ic2),cpatch%pft(ic2))
+                           cpatch%bdead(ic2) = size2bd(cpatch%dbh(ic2),cpatch%hite(ic2)    &
+                                                      ,cpatch%pft(ic2))
 
                         case default
                            !---------------------------------------------------------------!
@@ -792,7 +793,8 @@ subroutine read_ed10_ed20_history_file
                            else
                               cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(cpatch%pft(ic2)))
                               cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
-                              cpatch%bdead(ic2) = dbh2bd(cpatch%dbh(ic2),cpatch%pft(ic2))
+                              cpatch%bdead(ic2) = size2bd(cpatch%dbh(ic2),cpatch%hite(ic2) &
+                                                         ,cpatch%pft(ic2))
                            end if
                         end select
                         !------------------------------------------------------------------!

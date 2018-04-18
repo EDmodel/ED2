@@ -3243,7 +3243,7 @@ module disturbance
       use consts_coms    , only : t3ple                    & ! intent(in)
                                 , pio4                     ! ! intent(in)
       use allometry      , only : h2dbh                    & ! function
-                                , dbh2bd                   & ! function
+                                , size2bd                   & ! function
                                 , size2bt                  & ! function
                                 , size2xb                  & ! function
                                 , area_indices             & ! function
@@ -3312,7 +3312,7 @@ module disturbance
          !---------------------------------------------------------------------------------!
          cpatch%hite (nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
          cpatch%dbh  (nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
+         cpatch%bdead(nc) = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
          !---------------------------------------------------------------------------------!
 
       case (1)
@@ -3322,7 +3322,7 @@ module disturbance
          !---------------------------------------------------------------------------------!
          cpatch%hite (nc) = hgt_max(cpatch%pft(nc))
          cpatch%dbh  (nc) = dbh_bigleaf(cpatch%pft(nc))
-         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%pft(nc))
+         cpatch%bdead(nc) = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -3425,8 +3425,8 @@ module disturbance
                                 , ed_biomass               & ! function
                                 , h2dbh                    & ! function
                                 , size2bl                  & ! function
-                                , dbh2bd                   & ! function
-                                , dbh2krdepth              ! ! function
+                                , size2bd                  & ! function
+                                , size2krdepth             ! ! function
       use pft_coms,        only : qsw                      & ! intent(in)
                                 , qbark                    & ! intent(in)
                                 , agf_bs                   & ! intent(in)
@@ -3521,7 +3521,7 @@ module disturbance
             cpatch%dbh(ico)       = h2dbh (cpatch%hite(ico), ipft)
             bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico), ipft)
             cpatch%bleaf(ico)     = bleaf_max * cpatch%elongf(ico)
-            cpatch%bdead(ico)     = dbh2bd(cpatch%dbh(ico), ipft)
+            cpatch%bdead(ico)     = size2bd(cpatch%dbh(ico), cpatch%hite(ico), ipft)
             cpatch%bsapwooda(ico) = bleaf_max * qsw(ipft) * cpatch%hite(ico)
             !  (MLO) Manfredo: although qbark is set to zero, check whether these changes
             !  are consistent with your rationale.
@@ -3539,7 +3539,7 @@ module disturbance
             cpatch%agb(ico)     = ed_biomass(cpatch, ico)
 
             !----- Update rooting depth ---------------------------------------------!
-            cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
+            cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
             !if new root depth is smaller keep the old one
 
             !------------------------------------------------------------------------!

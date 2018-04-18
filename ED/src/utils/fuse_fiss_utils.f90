@@ -1261,12 +1261,10 @@ module fuse_fiss_utils
       use ed_max_dims          , only : n_pft                         ! ! intent(in)
       use allometry            , only : dbh2h                         & ! function
                                       , bd2dbh                        & ! function
-                                      , bw2dbh                        & ! function
                                       , bl2dbh                        & ! function
                                       , bl2h                          & ! function
                                       , size2bl                       ! ! function
-      use ed_misc_coms         , only : igrass                        & ! intent(in)
-                                      , iallom                        ! ! intent(in)
+      use ed_misc_coms         , only : igrass                        ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
       real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
@@ -1405,26 +1403,6 @@ module fuse_fiss_utils
                      cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
                      cpatch%hite (inew)  = bl2h  (cpatch%bleaf(inew), cpatch%pft(inew))
                      !---------------------------------------------------------------------!
-                  elseif (iallom == 3) then
-                     !-- use bdead for trees and old grasses. -----------------------------!
-                     cpatch%bdead    (ico)  = cpatch%bdead    (ico) * (1.-epsilon)
-                     cpatch%bsapwooda(ico)  = cpatch%bsapwooda(ico) * (1.-epsilon)
-                     cpatch%bsapwoodb(ico)  = cpatch%bsapwoodb(ico) * (1.-epsilon)
-                     cpatch%dbh      (ico)  = bw2dbh(cpatch%bsapwooda(ico)                 &
-                                                    ,cpatch%bsapwoodb(ico)                 &
-                                                    ,cpatch%bdead    (ico)                 &
-                                                    ,cpatch%pft      (ico) )
-                     cpatch%hite     (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
-
-                     cpatch%bdead    (inew) = cpatch%bdead    (inew) * (1.+epsilon)
-                     cpatch%bsapwooda(inew) = cpatch%bsapwooda(inew) * (1.+epsilon)
-                     cpatch%bsapwoodb(inew) = cpatch%bsapwoodb(inew) * (1.+epsilon)
-                     cpatch%dbh      (inew) = bw2dbh(cpatch%bsapwooda(inew)                &
-                                                    ,cpatch%bsapwoodb(inew)                &
-                                                    ,cpatch%bdead    (inew)                &
-                                                    ,cpatch%pft      (inew) )
-                     cpatch%hite     (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
-                     !---------------------------------------------------------------------!
                   else
                      !-- use bdead for trees and old grasses. -----------------------------!
                      cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
@@ -1505,9 +1483,8 @@ module fuse_fiss_utils
       use therm_lib          , only : uextcm2tl              & ! subroutine
                                     , vpdefil                & ! subroutine
                                     , qslif                  ! ! function
-      use allometry          , only : dbh2krdepth            & ! function
+      use allometry          , only : size2krdepth           & ! function
                                     , bd2dbh                 & ! function
-                                    , bw2dbh                 & ! function
                                     , bl2dbh                 & ! function
                                     , bl2h                   & ! function
                                     , dbh2h                  & ! function
@@ -1517,8 +1494,7 @@ module fuse_fiss_utils
                                     , writing_eorq           & ! intent(in)
                                     , writing_dcyc           & ! intent(in)
                                     , ndcycle                & ! intent(in)
-                                    , igrass                 & ! intent(in)
-                                    , iallom                 ! ! intent(in)
+                                    , igrass                 ! ! intent(in)
       use consts_coms        , only : lnexp_min              & ! intent(in)
                                     , lnexp_max              & ! intent(in)
                                     , tiny_num               ! ! intent(in)
@@ -1649,14 +1625,6 @@ module fuse_fiss_utils
           cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
           cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
           !--------------------------------------------------------------------------------!
-      elseif (iallom == 3) then
-          !----- Use woody biomass (not only bdead) to update DBH then height. ------------!
-          cpatch%dbh  (recc) = bw2dbh(cpatch%bsapwooda(recc)                               &
-                                     ,cpatch%bsapwoodb(recc)                               &
-                                     ,cpatch%bdead    (recc)                               &
-                                     ,cpatch%pft      (recc))
-          cpatch%hite (recc) = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
-          !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
           cpatch%dbh  (recc) = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
@@ -1668,8 +1636,8 @@ module fuse_fiss_utils
 
 
       !----- Rooting depth. ---------------------------------------------------------------!
-      cpatch%krdepth(recc) = dbh2krdepth(cpatch%hite(recc),cpatch%dbh(recc)                &
-                                        ,cpatch%pft(recc),lsl)
+      cpatch%krdepth(recc) = size2krdepth(cpatch%hite(recc),cpatch%dbh(recc)               &
+                                         ,cpatch%pft(recc),lsl)
       !------------------------------------------------------------------------------------!
 
 
@@ -2576,14 +2544,14 @@ module fuse_fiss_utils
                                                    , rnplant                               &
                                                    , cpatch%mmean_gpp        (donc)        &
                                                    , cpatch%mmsqu_gpp        (donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .false.)
          cpatch%mmsqu_npp        (recc) = fuse_msqu( cpatch%mmean_npp        (recc)        &
                                                    , cpatch%mmsqu_npp        (recc)        &
                                                    , rnplant                               &
                                                    , cpatch%mmean_npp        (donc)        &
                                                    , cpatch%mmsqu_npp        (donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .false.)
          cpatch%mmsqu_plresp     (recc) = fuse_msqu( cpatch%mmean_plresp     (recc)        &
                                                    , cpatch%mmsqu_plresp     (recc)        &

@@ -265,7 +265,7 @@ module hrzshade_utils
                                        , gap_mask            & ! intent(out)
                                        , gap_fbeam           & ! intent(out)
                                        , gap_nuse            ! ! intent(out)
-      use allometry             , only : dbh2ca              & ! function
+      use allometry             , only : size2ca             & ! function
                                        , h2crownbh           ! ! function
       use random_utils          , only : fsample             & ! sub-routine
                                        , isample             & ! sub-routine
@@ -525,8 +525,8 @@ module hrzshade_utils
 
 
             !----- Find horizontal and vertical radii. ------------------------------------!
-            ca_ind  = dbh2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)              &
-                            ,cpatch%pft(ico))
+            ca_ind  = size2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)             &
+                             ,cpatch%pft(ico))
             rh_ind  = sqrt(ca_ind * pii)
             ch_fact = h2crownbh(cpatch%hite(ico),cpatch%pft(ico))/cpatch%hite(ico)
             rv_ind  = 0.5 * hgt_eff * (1.0 - ch_fact)

@@ -19,7 +19,7 @@ module ed_type_init
    !---------------------------------------------------------------------------------------!
    subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       use ed_state_vars  , only : patchtype           ! ! structure
-      use allometry      , only : dbh2krdepth         ! ! function
+      use allometry      , only : size2krdepth        ! ! function
       use pft_coms       , only : phenology           & ! intent(in)
                                 , leaf_turnover_rate  & ! intent(in)
                                 , Vm0                 & ! intent(in)
@@ -104,8 +104,8 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       !      The root depth should be the actual level for the roots.                      !
       !------------------------------------------------------------------------------------!
-      cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico)                   &
-                                       ,cpatch%pft(ico),lsl)
+      cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico)                  &
+                                        ,cpatch%pft(ico),lsl)
       !------------------------------------------------------------------------------------!
 
 

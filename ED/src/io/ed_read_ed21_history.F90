@@ -61,7 +61,7 @@ subroutine read_ed21_history_file
                                   , bd2dbh                  & ! function
                                   , size2bl                 & ! function
                                   , dbh2h                   & ! function
-                                  , dbh2bd                  ! ! function
+                                  , size2bd                 ! ! function
    use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
    use disturb_coms        , only : ianth_disturb           ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
@@ -606,7 +606,8 @@ subroutine read_ed21_history_file
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
+                                                         ,ipft)
                            elseif (igrass == 1 .and. is_grass(ipft)                        &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
@@ -626,7 +627,8 @@ subroutine read_ed21_history_file
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
+                                                         ,ipft)
                            end if
                            !---------------------------------------------------------------!
 
@@ -983,7 +985,7 @@ subroutine read_ed21_history_unstruct
                                   , size2xb                 & ! function
                                   , bd2dbh                  & ! function
                                   , dbh2h                   & ! function
-                                  , dbh2bd                  & ! function
+                                  , size2bd                 & ! function
                                   , size2bl                 ! ! function
    use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
    use disturb_coms        , only : ianth_disturb           & ! intent(in)
@@ -1882,7 +1884,8 @@ subroutine read_ed21_history_unstruct
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
+                                                         ,ipft)
                            elseif (igrass == 1 .and. is_grass(ipft)                        &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
@@ -1902,7 +1905,8 @@ subroutine read_ed21_history_unstruct
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
+                                                         ,ipft)
                            end if
                            !---------------------------------------------------------------!
 
@@ -2264,7 +2268,7 @@ subroutine read_ed21_polyclone
                                   , size2xb                 & ! function
                                   , bd2dbh                  & ! function
                                   , dbh2h                   & ! function
-                                  , dbh2bd                  & ! function
+                                  , size2bd                 & ! function
                                   , size2bl                 ! ! function
    use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
    use disturb_coms        , only : ianth_disturb           & ! intent(in)
@@ -3128,7 +3132,8 @@ subroutine read_ed21_polyclone
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
+                                                         ,ipft)
                            elseif (igrass == 1 .and. is_grass(ipft)                        &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
@@ -3148,7 +3153,8 @@ subroutine read_ed21_polyclone
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
+                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
+                                                         ,ipft)
                            end if
                            !---------------------------------------------------------------!
 

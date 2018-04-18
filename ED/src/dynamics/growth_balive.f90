@@ -50,7 +50,8 @@ module growth_balive
                                      , h2dbh                      & ! function
                                      , ed_biomass                 ! ! function
       use mortality           , only : mortality_rates            ! ! subroutine
-      use fuse_fiss_utils     , only : sort_cohorts               ! ! subroutine
+      use fuse_fiss_utils     , only : terminate_cohorts          & ! subroutine
+                                     , sort_cohorts               ! ! subroutine
       use ed_misc_coms        , only : igrass                     & ! intent(in)
                                      , growth_resp_scheme         & ! intent(in)
                                      , storage_resp_scheme        ! ! intent(in)
@@ -108,6 +109,8 @@ module growth_balive
       real                          :: cb_decrement
       real                          :: carbon_debt
       real                          :: balive_aim
+      real                          :: elim_nplant
+      real                          :: elim_lai
       logical                       :: flushing
       logical                       :: on_allometry
       !------------------------------------------------------------------------------------!
@@ -191,7 +194,7 @@ module growth_balive
                   case(1)
                      if (cpatch%balive(ico) >= tiny_num) then
                         storage_resp_int = cpatch%bstorage(ico) / cpatch%balive(ico)       &
-                                      * storage_turnover_rate(ipft) * tfact * temp_dep
+                                         * storage_turnover_rate(ipft) * tfact * temp_dep
                      else
                         storage_resp_int = 0.0
                      end if
@@ -245,7 +248,7 @@ module growth_balive
                   case(1)
                      if (cpatch%balive(ico) >= tiny_num) then
                         growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft) &
-                                                             / cpatch%balive(ico))
+                                                                / cpatch%balive(ico))
                      else
                         growth_resp_int = 0.0
                      end if
@@ -422,11 +425,12 @@ module growth_balive
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
-               !    Sort cohorts in case we are using the new grass scheme, as heights     !
-               ! may change every day.                                                     !
+               !    Terminate and sort cohorts in case we are using the new grass scheme,  !
+               ! as height and biomass may change every day.                               !
                !---------------------------------------------------------------------------!
                select case (igrass)
                case (1)
+                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call sort_cohorts(cpatch)
                end select
                !---------------------------------------------------------------------------!
@@ -564,7 +568,8 @@ module growth_balive
    subroutine get_daily_C_gain(cpatch,ico,daily_C_gain)
       use ed_state_vars, only : patchtype          ! ! structure
       use consts_coms  , only : umol_2_kgC         & ! intent(in)
-                              , day_sec            ! ! intent(in)
+                              , day_sec            & ! intent(in)
+                              , tiny_num           ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target       :: cpatch
@@ -572,7 +577,7 @@ module growth_balive
       real           , intent(out)  :: daily_C_gain
       !------------------------------------------------------------------------------------!
 
-      if(cpatch%nplant(ico) > tiny(1.0)) then
+      if(cpatch%nplant(ico) >= tiny_num) then
          daily_C_gain = umol_2_kgC * day_sec * ( cpatch%today_gpp(ico)                     &
                                                - cpatch%today_leaf_resp(ico)               &
                                                - cpatch%today_root_resp(ico))              &

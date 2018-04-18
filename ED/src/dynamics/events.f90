@@ -292,11 +292,10 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use pft_coms, only:qsw,qbark,q,hgt_min, agf_bs, is_grass
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, bw2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices &
+  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices &
                       , ed_biomass,size2bt,size2xb
   use consts_coms, only : pio4
-  use ed_misc_coms     , only : igrass               & ! intent(in)
-                              , iallom               ! ! intent(in)
+  use ed_misc_coms     , only : igrass               ! ! intent(in)
   use budget_utils     , only : update_budget
   implicit none
   real(kind=8),intent(in) :: agb_frac8
@@ -397,12 +396,6 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     if(is_grass(cpatch%pft(ico)) .and. igrass==1) then
                        cpatch%hite(ico) = max( hgt_min(pft), bl2h(cpatch%bleaf(ico),pft))
                        cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
-                    elseif (iallom == 3) then
-                       cpatch%dbh (ico) = bw2dbh(cpatch%bsapwooda(ico)                     &
-                                                ,cpatch%bsapwoodb(ico)                     &
-                                                ,cpatch%bdead    (ico)                     &
-                                                ,cpatch%pft      (ico))
-                       cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
                     else
                        cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
                        cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
@@ -861,7 +854,7 @@ end subroutine event_till
 !!$              cpatch%nplant(ico)  = density
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
-!!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),pft)
+!!$              cpatch%bdead(ico)   = size2bd(cpatch%dbh(ico),cpatch%hite(ico),pft)
 !!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
