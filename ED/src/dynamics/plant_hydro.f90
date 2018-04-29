@@ -427,9 +427,7 @@ module plant_hydro
       ! if leaf_psi has strong oscillations from each timestep to another
 
       ! we also assume it is a small tree if the tree is too short
-      small_tree_flag = (c_leaf > (c_stem / 2.d0) .or. (hite_d == hgt_min(ipft)))
-
-      ! Ask Felicien about his problem of too large transpiration for seedlings?
+      small_tree_flag = ((c_leaf > (c_stem / 2.d0)) .or. (hite_d == hgt_min(ipft)))
 
 
 

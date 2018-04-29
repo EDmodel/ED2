@@ -950,13 +950,17 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
             !------------------------------------------------------------------------------!
             !wood, note that wood_water_int has different units between initp
-            !and cpatch
-            delta_water_int     = initp%wood_water_int(ico)                             &
-                                - dble(cpatch%wood_water_int(ico)) * dble(cpatch%nplant(ico))
-            ! kg/m2g
+            !and cpatch. Note that we do not need to update initp%wood_hcap if
+            !ibranch_thermo = 0 (wood is not tracked)
+            if (ibranch_thermo /= 0) then
+                delta_water_int     = initp%wood_water_int(ico)                         &
+                                    - dble(cpatch%wood_water_int(ico))                  &
+                                    * dble(cpatch%nplant(ico))
+                ! kg/m2g
 
-            initp%wood_hcap(ico)= dble(cpatch%wood_hcap(ico))                           &
-                                + delta_water_int * cliq8
+                initp%wood_hcap(ico)= dble(cpatch%wood_hcap(ico))                       &
+                                    + delta_water_int * cliq8
+            endif
             !------------------------------------------------------------------------------!
 
        enddo
