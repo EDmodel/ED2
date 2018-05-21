@@ -1,9 +1,10 @@
+os: linux
+dist:bionic
 language: c
 sudo: required
 
 before_install:
     - sudo apt-get clean && sudo apt-get update
-    - sudo apt-cache search gfortran
     - sudo apt-get install gcc gfortran hdf5-tools libopenmpi-dev libhdf5-openmpi-dev 
     - which gfortran
     - which gcc
