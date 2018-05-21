@@ -2260,30 +2260,32 @@ subroutine init_pft_alloc_params()
    real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
    !---------------------------------------------------------------------------------------!
    !   Coefficients for leaf and structural biomass (iallom = 3).  For adult individuals,  !
-   ! we use the pantropical allometric equation from C14 that estimates AGB, and we use    !
-   ! the ratio between leaf and AGB from (L83) to calculate leaf biomass that is           !
-   ! consistent with C14.  Neither equation works for seedlings, so we impose the initial  !
-   ! allocation to leaves (both absolute and the leaf:AGB ratio), and derive the           !
-   ! coefficients using the values following the allometric ratios and the allocation at   !
-   ! minimum adult size, such that the functions are continuous.                           !
+   ! we use the pantropical allometric equation from C14 that estimates AGB and the leaf   !
+   ! biomass from L83.  These equations are not constrained for seedlings, and leaf bio-   !
+   ! mass can be severely underestimated.  Therefore, we assume that seedlings are 20cm    !
+   ! and have biomass of 0.001kgC, roughly the same number observed by M09 in moist        !
+   ! forests in Bolivia and fit the coefficients to match L83 at dbh.crit.                 !
    !                                                                                       !
-   ! Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau.  La       !
-   !    phytomasse epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen.,    !
-   !    4(3), 237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089 (L83).     !
+   !  References:                                                                          !
    !                                                                                       !
-   ! Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to estimate !
-   !    the aboveground biomass of tropical trees. Glob. Change Biol., 20(10):3177-3190,   !
-   !    Oct 2014. doi:10.1111/gcb.12629 (C14).                                             !
+   !   Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau. La      !
+   !      phytomasse epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen.,  !
+   !      4(3), 237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089 (L83)    !
+   !                                                                                       !
+   !   Markesteijn, L. and L. Poorter. Seedling root morphology and biomass allocation of  !
+   !      62 tropical tree species in relation to drought- and shade-tolerance. J. Ecol.,  !
+   !      97(2), 311-325, 2009. doi:10.1111/j.1365-2745.2008.01466.x (M09).                !
+   !                                                                                       !
+   !   Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to        !
+   !      estimate the aboveground biomass of tropical trees. Glob. Change Biol., 20(10),  !
+   !      3177-3190, Oct 2014. doi:10.1111/gcb.12629 (C14).                                !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 0.6134607,0.6359059 /)
-   real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.0854042,0.9849768 /)
-   real, dimension(2)    , parameter :: xgrass_bl_lg  = (/ 6.1388376,0.6706079 /)
-   real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 0.0000544,0.6706079 /)
+   real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 2.1878178,0.5361171 /)
+   real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.0770616,0.9933637 /)
+   real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 0.0000219,0.5361171 /)
    real                  , parameter :: SLA_ref       = 22.93
    real                  , parameter :: rho_ref       = 0.615
-   !----- Lower and upper bounds for local LAI. -------------------------------------------!
-   real                  , parameter :: llmin_grass = 1.0
-   real                  , parameter :: llmax_grass = 2.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -2869,20 +2871,10 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum and maximum height allowed for each cohort.                                !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      hgt_min(:) = merge( merge(0.2,0.7,is_grass(:))                                       &
-                        , merge(0.15,hgt_ref+0.2,is_grass(:))                              &
-                        , is_tropical(:) )
-      hgt_max(:) = merge( merge(1.5,37.5,is_grass(:))                                      &
-                        , merge(0.95*b1Ht(:),0.999*b1Ht(:),is_grass(:))                    &
-                        , is_tropical(:) )
-   case default
-      hgt_min(:) = merge(0.50,merge(0.15,hgt_ref+0.2,is_grass(:)),is_tropical(:))
-      hgt_max(:) = merge( merge(1.5,35.0,is_grass(:))                                      &
-                        , merge(0.95*b1Ht(:),0.999*b1Ht(:),is_grass(:))                    &
-                        , is_tropical(:) )
-   end select
+   hgt_min(:) = merge(0.50,merge(0.15,hgt_ref+0.2,is_grass(:)),is_tropical(:))
+   hgt_max(:) = merge( merge(1.5,35.0,is_grass(:))                                         &
+                     , merge(0.95*b1Ht(:),0.999*b1Ht(:),is_grass(:))                       &
+                     , is_tropical(:) )
    !---------------------------------------------------------------------------------------!
 
 
@@ -2963,48 +2955,30 @@ subroutine init_pft_alloc_params()
             b2Ca(ipft) = ncrown_area(2)
             !------------------------------------------------------------------------------!
          case (3)
-            if (is_grass(ipft)) then
-               !---------------------------------------------------------------------------!
-               ! Grasses: it doesn't make much sense to define crown area for them, so we  !
-               ! use a simple scaling factor based on individual-level leaf area index.    !
-               ! The choice of thresholds is based on the light compensation point.        !
-               !---------------------------------------------------------------------------!
-               params_bl_lg = xgrass_bl_lg
-               size_crit    = dbh_crit(ipft) * dbh_crit(ipft) * hgt_max(ipft)
-               size_min     = min_dbh (ipft) * min_dbh (ipft) * hgt_min(ipft)
-
-               b2Ca(ipft)   = params_bl_lg(2) - log(llmax_grass/llmin_grass)               &
-                            / log(size_crit/size_min)
-               b1Ca(ipft)   = params_bl_lg(1)                                              &
-                            / C2B * size_crit**(params_bl_lg(2)-b2Ca(ipft))                &
-                            * SLA(ipft) ** (1. - params_bl_lg(2)) / llmax_grass
-            else
-               !---------------------------------------------------------------------------!
-               !     Allometry using the Sustainable Landscapes data.                      !
-               !---------------------------------------------------------------------------!
-               !                                                                           !
-               !    Longo, M. et al.  Carbon Debt and Recovery time of degraded forests in !
-               !       the Amazon. Environ. Res. Lett., in prep.                           !
-               !                                                                           !
-               !    Equation was derived from forest inventory measurements carried out at !
-               ! multiple locations in the Brazilian Amazon, and fitted using a            !
-               ! heteroscedastic least squares approach.                                   !
-               !                                                                           !
-               !     The functional form uses both DBH and Height.                         !
-               !                                                                           !
-               !                       CA = b1Ca * (DBH^2 * Hgt)^b2Ca                      !
-               !                       m2            cm      m                             !
-               !                                                                           !
-               ! Total number of trees: 17072                                              !
-               ! b1Ca    = 0.370 (95% CI: [0.346;0.398])                                   !
-               ! b2Ca    = 0.464 (95% CI: [0.457;0.472])                                   !
-               ! R2      = 0.521                                                           !
-               ! RMSE    = 29.78                                                           !
-               !---------------------------------------------------------------------------!
-               b1Ca(ipft) = 0.370
-               b2Ca(ipft) = 0.464
-               !---------------------------------------------------------------------------!
-            end if
+            !------------------------------------------------------------------------------!
+            !     Allometry using the Sustainable Landscapes data.                         !
+            !------------------------------------------------------------------------------!
+            !                                                                              !
+            !    Longo, M. et al.  Carbon Debt and Recovery time of degraded forests in    !
+            !       the Amazon. Environ. Res. Lett., in prep.                              !
+            !                                                                              !
+            !    Equation was derived from forest inventory measurements carried out at    !
+            ! multiple locations in the Brazilian Amazon, and fitted using a               !
+            ! heteroscedastic least squares approach.                                      !
+            !                                                                              !
+            !     The functional form uses both DBH and Height.                            !
+            !                                                                              !
+            !                       CA = b1Ca * (DBH^2 * Hgt)^b2Ca                         !
+            !                       m2            cm      m                                !
+            !                                                                              !
+            ! Total number of trees: 17072                                                 !
+            ! b1Ca    = 0.370 (95% CI: [0.346;0.398])                                      !
+            ! b2Ca    = 0.464 (95% CI: [0.457;0.472])                                      !
+            ! R2      = 0.521                                                              !
+            ! RMSE    = 29.78                                                              !
+            !------------------------------------------------------------------------------!
+            b1Ca(ipft) = 0.370
+            b2Ca(ipft) = 0.464
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3123,30 +3097,22 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
          case (3)
             !------------------------------------------------------------------------------!
-            !    Trees: assume a minimum leaf biomass at recruitment size, and set the     !
-            !       leaf biomass to be the same as L83 allometric equation at critical     !
-            !       DBH.  Include a SLA factor similar to wood density factor commonly     !
-            !       found in above-ground biomass equations (e.g. C14).                    !
-            !                                                                              !
-            !    Grasses: assume the same minimum leaf biomass at recruitment size, and    !
-            !       set exponent to be the same as the trees.                              !
+            !    Allometry based on L83, with further correction to make leaf biomass of   !
+            !    seedlings viable -- seedling biomass taken as the average of seedlings    !
+            !    from moist forests (M09), assuming seedling height = 20cm.                !
             !                                                                              !
             ! References:                                                                  !
-            !                                                                              !
-            ! Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to !
-            !    estimate the aboveground biomass of tropical trees. Glob. Change Biol.,   !
-            !    20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629 (C14).                  !
             !                                                                              !
             ! Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau.  !
             !    La phytomasse epigee d'une foret dense en Guyane Francaise.               !
             !    Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                               !
             !    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).                  !
+            !                                                                              !
+            !   Markesteijn, L. and L. Poorter. Seedling root morphology and biomass       !
+            !      allocation of 62 tropical tree species in relation to drought- and      !
+            !      shade-tolerance. J. Ecol., 97(2), 311-325, 2009.                        !
+            !      doi:10.1111/j.1365-2745.2008.01466.x (M09).                             !
             !------------------------------------------------------------------------------!
-            if (is_grass(ipft)) then
-               params_bl_lg = xgrass_bl_lg
-            else
-               params_bl_lg = c14l83_bl_lg
-            end if
             b1Bl(ipft) = params_bl_lg(1) / SLA(ipft)
             b2Bl(ipft) = params_bl_lg(2)
             !------------------------------------------------------------------------------!

@@ -326,12 +326,11 @@ if (iallom %in% c(0,1)){
 
 #------------------------------------------------------------------------------------------#
 #   Coefficients for leaf and structural biomass (iallom = 3).  For adult individuals,     #
-# we use the pantropical allometric equation from C14 that estimates AGB, and we use the   #
-# ratio between leaf and AGB from (L83) to calculate leaf biomass that is consistent with  #
-# C14.  Neither equation works for seedlings, so we impose the initial allocation to       #
-# leaves (both absolute and the leaf:AGB ratio), and derive the coefficients using the     #
-# values following the allometric ratios and the allocation at minimum adult size, such    #
-# that the functions are continuous.                                                       #
+# we use the pantropical allometric equation from C14 that estimates AGB and the leaf      #
+# biomass from L83.  These equations are not constrained for seedlings, and leaf biomass   #
+# can be severely underestimated.  Therefore, we assume that seedlings are 20cm and have   #
+# biomass of 0.001kgC, roughly the same number observed by M09 in moist forests in         #
+# Bolivia and fit the coefficients to match L83 at dbh.crit.                               #
 #                                                                                          #
 #  References:                                                                             #
 #                                                                                          #
@@ -339,15 +338,18 @@ if (iallom %in% c(0,1)){
 #      phytomasse epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen.,     #
 #      4(3), 237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089 (L83)       #
 #                                                                                          #
+#   Markesteijn, L. and L. Poorter. Seedling root morphology and biomass allocation of 62  #
+#      tropical tree species in relation to drought- and shade-tolerance. J. Ecol., 97(2), #
+#      311-325, 2009. doi:10.1111/j.1365- 2745.2008.01466.x (M09).                         #
+#                                                                                          #
 #   Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to estimate  #
-#      the aboveground biomass of tropical trees. Glob. Change Biol., 20(10):3177-3190,    #
+#      the aboveground biomass of tropical trees. Glob. Change Biol., 20(10), 3177-3190,   #
 #      Oct 2014. doi:10.1111/gcb.12629 (C14).                                              #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-c14l83.bl.lg  = c(0.6134607,0.6359059)
-c14l83.bs.lg  = c(0.0854042,0.9849768)
-xgrass.bl.lg  = c(6.1388376,0.6706079)
-xgrass.bs.lg  = c(0.0000544,0.6706079)
+c14l83.bl.lg  = c(2.1878178,0.5361171)
+c14l83.bs.lg  = c(0.0770616,0.9933637)
+xgrass.bs.lg  = c(0.0000219,0.5361171)
 SLA.ref       = 22.93
 rho.ref       = 0.615
 #------------------------------------------------------------------------------------------#
@@ -1314,25 +1316,14 @@ pft$tpm0           = ifelse( test = pft$pathway == 4
 #------------------------------------------------------------------------------------------#
 #     Define minimum and maximum height based on life form and allometry.                  #
 #------------------------------------------------------------------------------------------#
-if (iallom %in% 3){
-   pft$hgt.min = ifelse( test = pft$tropical
-                       , yes  = ifelse(test=pft$grass,yes=0.20,no=0.70)
-                       , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
-                       )#end ifelse
-   pft$hgt.max = ifelse( test = pft$tropical
-                       , yes  = ifelse(test=pft$grass,yes=1.5         ,no=hgt.max.trop )
-                       , no   = ifelse(test=pft$grass,yes=.95*pft$b1Ht,no=.999*pft$b1Ht)
-                       )#end ifelse
-}else{
-   pft$hgt.min = ifelse( test = pft$tropical
-                       , yes  = 0.5
-                       , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
-                       )#end ifelse
-   pft$hgt.max = ifelse( test = pft$tropical
-                       , yes  = ifelse(test=pft$grass,yes=1.5         ,no=hgt.max.trop )
-                       , no   = ifelse(test=pft$grass,yes=.95*pft$b1Ht,no=.999*pft$b1Ht)
-                       )#end ifelse
-}#end if
+pft$hgt.min = ifelse( test = pft$tropical
+                    , yes  = 0.5
+                    , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
+                    )#end ifelse
+pft$hgt.max = ifelse( test = pft$tropical
+                    , yes  = ifelse(test=pft$grass,yes=1.5         ,no=hgt.max.trop )
+                    , no   = ifelse(test=pft$grass,yes=.95*pft$b1Ht,no=.999*pft$b1Ht)
+                    )#end ifelse
 #------------------------------------------------------------------------------------------#
 
 
@@ -1393,6 +1384,7 @@ pft$qwatdry.bark = rep(NA_real_,times=npft+1)
 pft$c.leaf.dry   = c(rep(3218.,times=npft),NA)
 pft$c.wood.dry   = c(rep(103.1+3.867*spht.tref,times=npft),NA)
 pft$c.bark.dry   = pft$c.wood.dry
+pft$brf.wd       = ifelse(pft$grass,0.0,0.16)
 for (ipft in sequence(npft)){
    usedef = with(pft,grass[ipft] || liana[ipft] || conifer[ipft] || (! tropical[ipft]))
    if (usedef){
@@ -1644,22 +1636,8 @@ for (ipft in sequence(npft)){
          # R2      = 0.521                                                                 #
          # RMSE    = 29.78                                                                 #
          #---------------------------------------------------------------------------------#
-         pftnow.bl.lg   = if(pft$grass[ipft]){xgrass.bl.lg}else{c14l83.bl.lg}
-         SLA            = pft$SLA[ipft]
-         hgt.min        = pft$hgt.min [ipft]
-         dbh.min        = pft$dbh.min [ipft]
-         dbh.crit       = pft$dbh.crit[ipft]
-         hgt.crit       = hgt.ref.trop * (1. - exp(-b1Ht.trop*dbh.crit^b2Ht.trop))
-         size.min       = dbh.min  * dbh.min  * hgt.min
-         size.crit      = dbh.crit * dbh.crit * hgt.crit
-         lai.min        = 1.0
-         lai.crit       = if(pft$grass[ipft]){2.0}else{5.0}
-         l1             = pftnow.bl.lg[1]
-         l2             = pftnow.bl.lg[2]
-         x2             = l2 - log(lai.crit/lai.min) / log(size.crit / size.min)
-         x1             = l1 / C2B * size.crit^(l2-x2) * SLA^(1-l2) / lai.crit
-         pft$b1Ca[ipft] = if(pft$grass[ipft]){x1}else{0.370}
-         pft$b2Ca[ipft] = if(pft$grass[ipft]){x2}else{0.464}
+         pft$b1Ca[ipft] = 0.370
+         pft$b2Ca[ipft] = 0.464
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1722,9 +1700,8 @@ for (ipft in sequence(npft)){
          #    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).                     #
          #                                                                                 #
          #---------------------------------------------------------------------------------#
-         pftnow.bl.lg   = if(pft$grass[ipft]){xgrass.bl.lg}else{c14l83.bl.lg}
-         pft$b1Bl[ipft] = pftnow.bl.lg[1] / pft$SLA[ipft] 
-         pft$b2Bl[ipft] = pftnow.bl.lg[2]
+         pft$b1Bl[ipft] = c14l83.bl.lg[1] / pft$SLA[ipft] 
+         pft$b2Bl[ipft] = c14l83.bl.lg[2]
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1805,8 +1782,8 @@ if (iallom %in% c(0)){
    #---------------------------------------------------------------------------------------#
 }else{
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
-   pft$b1Rd[1:17]  = -1.1140580
-   pft$b2Rd[1:17]  =  0.4223014
+   pft$b1Rd[1:npft]  = -1.1140580
+   pft$b2Rd[1:npft]  =  0.4223014
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
