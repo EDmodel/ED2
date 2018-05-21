@@ -236,85 +236,86 @@ do
    metdriver=$(echo ${oi}    | awk '{print $28 }')
    dtlsm=$(echo ${oi}        | awk '{print $29 }')
    monyrstep=$(echo ${oi}    | awk '{print $30 }')
-   vmfactc3=$(echo ${oi}     | awk '{print $31 }')
-   vmfactc4=$(echo ${oi}     | awk '{print $32 }')
-   mphototrc3=$(echo ${oi}   | awk '{print $33 }')
-   mphototec3=$(echo ${oi}   | awk '{print $34 }')
-   mphotoc4=$(echo ${oi}     | awk '{print $35 }')
-   bphotoblc3=$(echo ${oi}   | awk '{print $36 }')
-   bphotonlc3=$(echo ${oi}   | awk '{print $37 }')
-   bphotoc4=$(echo ${oi}     | awk '{print $38 }')
-   kwgrass=$(echo ${oi}      | awk '{print $39 }')
-   kwtree=$(echo ${oi}       | awk '{print $40 }')
-   gammac3=$(echo ${oi}      | awk '{print $41 }')
-   gammac4=$(echo ${oi}      | awk '{print $42 }')
-   d0grass=$(echo ${oi}      | awk '{print $43 }')
-   d0tree=$(echo ${oi}       | awk '{print $44 }')
-   alphac3=$(echo ${oi}      | awk '{print $45 }')
-   alphac4=$(echo ${oi}      | awk '{print $46 }')
-   klowco2=$(echo ${oi}      | awk '{print $47 }')
-   decomp=$(echo ${oi}       | awk '{print $48 }')
-   rrffact=$(echo ${oi}      | awk '{print $49 }')
-   growthresp=$(echo ${oi}   | awk '{print $50 }')
-   lwidthgrass=$(echo ${oi}  | awk '{print $51 }')
-   lwidthbltree=$(echo ${oi} | awk '{print $52 }')
-   lwidthnltree=$(echo ${oi} | awk '{print $53 }')
-   q10c3=$(echo ${oi}        | awk '{print $54 }')
-   q10c4=$(echo ${oi}        | awk '{print $55 }')
-   h2olimit=$(echo ${oi}     | awk '{print $56 }')
-   imortscheme=$(echo ${oi}  | awk '{print $57 }')
-   ddmortconst=$(echo ${oi}  | awk '{print $58 }')
-   cbrscheme=$(echo ${oi}    | awk '{print $59 }')
-   isfclyrm=$(echo ${oi}     | awk '{print $60 }')
-   icanturb=$(echo ${oi}     | awk '{print $61 }')
-   ubmin=$(echo ${oi}        | awk '{print $62 }')
-   ugbmin=$(echo ${oi}       | awk '{print $63 }')
-   ustmin=$(echo ${oi}       | awk '{print $64 }')
-   gamm=$(echo ${oi}         | awk '{print $65 }')
-   gamh=$(echo ${oi}         | awk '{print $66 }')
-   tprandtl=$(echo ${oi}     | awk '{print $67 }')
-   ribmax=$(echo ${oi}       | awk '{print $68 }')
-   atmco2=$(echo ${oi}       | awk '{print $69 }')
-   thcrit=$(echo ${oi}       | awk '{print $70 }')
-   smfire=$(echo ${oi}       | awk '{print $71 }')
-   ifire=$(echo ${oi}        | awk '{print $72 }')
-   fireparm=$(echo ${oi}     | awk '{print $73 }')
-   ipercol=$(echo ${oi}      | awk '{print $74 }')
-   runoff=$(echo ${oi}       | awk '{print $75 }')
-   imetrad=$(echo ${oi}      | awk '{print $76 }')
-   ibranch=$(echo ${oi}      | awk '{print $77 }')
-   icanrad=$(echo ${oi}      | awk '{print $78 }')
-   ihrzrad=$(echo ${oi}      | awk '{print $79 }')
-   crown=$(echo   ${oi}      | awk '{print $80 }')
-   ltransvis=$(echo ${oi}    | awk '{print $81 }')
-   lreflectvis=$(echo ${oi}  | awk '{print $82 }')
-   ltransnir=$(echo ${oi}    | awk '{print $83 }')
-   lreflectnir=$(echo ${oi}  | awk '{print $84 }')
-   orienttree=$(echo ${oi}   | awk '{print $85 }')
-   orientgrass=$(echo ${oi}  | awk '{print $86 }')
-   clumptree=$(echo ${oi}    | awk '{print $87 }')
-   clumpgrass=$(echo ${oi}   | awk '{print $88 }')
-   igoutput=$(echo ${oi}     | awk '{print $89 }')
-   ivegtdyn=$(echo ${oi}     | awk '{print $90 }')
-   igndvap=$(echo ${oi}      | awk '{print $91 }')
-   iphen=$(echo ${oi}        | awk '{print $92 }')
-   iallom=$(echo ${oi}       | awk '{print $93 }')
-   igrass=$(echo ${oi}       | awk '{print $94 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $95 }')
-   integscheme=$(echo ${oi}  | awk '{print $96 }')
-   nsubeuler=$(echo ${oi}    | awk '{print $97 }')
-   irepro=$(echo ${oi}       | awk '{print $98 }')
-   treefall=$(echo ${oi}     | awk '{print $99 }')
-   ianthdisturb=$(echo ${oi} | awk '{print $100}')
-   ianthdataset=$(echo ${oi} | awk '{print $101}')
-   slscale=$(echo ${oi}      | awk '{print $102}')
-   slyrfirst=$(echo ${oi}    | awk '{print $103}')
-   slnyrs=$(echo ${oi}       | awk '{print $104}')
-   bioharv=$(echo ${oi}      | awk '{print $105}')
-   skidarea=$(echo ${oi}     | awk '{print $106}')
-   skidsmall=$(echo ${oi}    | awk '{print $107}')
-   skidlarge=$(echo ${oi}    | awk '{print $108}')
-   fellingsmall=$(echo ${oi} | awk '{print $109}')
+   iphysiol=$(echo ${oi}     | awk '{print $31 }')
+   vmfactc3=$(echo ${oi}     | awk '{print $32 }')
+   vmfactc4=$(echo ${oi}     | awk '{print $33 }')
+   mphototrc3=$(echo ${oi}   | awk '{print $34 }')
+   mphototec3=$(echo ${oi}   | awk '{print $35 }')
+   mphotoc4=$(echo ${oi}     | awk '{print $36 }')
+   bphotoblc3=$(echo ${oi}   | awk '{print $37 }')
+   bphotonlc3=$(echo ${oi}   | awk '{print $38 }')
+   bphotoc4=$(echo ${oi}     | awk '{print $39 }')
+   kwgrass=$(echo ${oi}      | awk '{print $40 }')
+   kwtree=$(echo ${oi}       | awk '{print $41 }')
+   gammac3=$(echo ${oi}      | awk '{print $42 }')
+   gammac4=$(echo ${oi}      | awk '{print $43 }')
+   d0grass=$(echo ${oi}      | awk '{print $44 }')
+   d0tree=$(echo ${oi}       | awk '{print $45 }')
+   alphac3=$(echo ${oi}      | awk '{print $46 }')
+   alphac4=$(echo ${oi}      | awk '{print $47 }')
+   klowco2=$(echo ${oi}      | awk '{print $48 }')
+   decomp=$(echo ${oi}       | awk '{print $49 }')
+   rrffact=$(echo ${oi}      | awk '{print $50 }')
+   growthresp=$(echo ${oi}   | awk '{print $51 }')
+   lwidthgrass=$(echo ${oi}  | awk '{print $52 }')
+   lwidthbltree=$(echo ${oi} | awk '{print $53 }')
+   lwidthnltree=$(echo ${oi} | awk '{print $54 }')
+   q10c3=$(echo ${oi}        | awk '{print $55 }')
+   q10c4=$(echo ${oi}        | awk '{print $56 }')
+   h2olimit=$(echo ${oi}     | awk '{print $57 }')
+   imortscheme=$(echo ${oi}  | awk '{print $58 }')
+   ddmortconst=$(echo ${oi}  | awk '{print $59 }')
+   cbrscheme=$(echo ${oi}    | awk '{print $60 }')
+   isfclyrm=$(echo ${oi}     | awk '{print $61 }')
+   icanturb=$(echo ${oi}     | awk '{print $62 }')
+   ubmin=$(echo ${oi}        | awk '{print $63 }')
+   ugbmin=$(echo ${oi}       | awk '{print $64 }')
+   ustmin=$(echo ${oi}       | awk '{print $65 }')
+   gamm=$(echo ${oi}         | awk '{print $66 }')
+   gamh=$(echo ${oi}         | awk '{print $67 }')
+   tprandtl=$(echo ${oi}     | awk '{print $68 }')
+   ribmax=$(echo ${oi}       | awk '{print $69 }')
+   atmco2=$(echo ${oi}       | awk '{print $70 }')
+   thcrit=$(echo ${oi}       | awk '{print $71 }')
+   smfire=$(echo ${oi}       | awk '{print $72 }')
+   ifire=$(echo ${oi}        | awk '{print $73 }')
+   fireparm=$(echo ${oi}     | awk '{print $74 }')
+   ipercol=$(echo ${oi}      | awk '{print $75 }')
+   runoff=$(echo ${oi}       | awk '{print $76 }')
+   imetrad=$(echo ${oi}      | awk '{print $77 }')
+   ibranch=$(echo ${oi}      | awk '{print $78 }')
+   icanrad=$(echo ${oi}      | awk '{print $79 }')
+   ihrzrad=$(echo ${oi}      | awk '{print $80 }')
+   crown=$(echo   ${oi}      | awk '{print $81 }')
+   ltransvis=$(echo ${oi}    | awk '{print $82 }')
+   lreflectvis=$(echo ${oi}  | awk '{print $83 }')
+   ltransnir=$(echo ${oi}    | awk '{print $84 }')
+   lreflectnir=$(echo ${oi}  | awk '{print $85 }')
+   orienttree=$(echo ${oi}   | awk '{print $86 }')
+   orientgrass=$(echo ${oi}  | awk '{print $87 }')
+   clumptree=$(echo ${oi}    | awk '{print $88 }')
+   clumpgrass=$(echo ${oi}   | awk '{print $89 }')
+   igoutput=$(echo ${oi}     | awk '{print $90 }')
+   ivegtdyn=$(echo ${oi}     | awk '{print $91 }')
+   igndvap=$(echo ${oi}      | awk '{print $92 }')
+   iphen=$(echo ${oi}        | awk '{print $93 }')
+   iallom=$(echo ${oi}       | awk '{print $94 }')
+   igrass=$(echo ${oi}       | awk '{print $95 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $96 }')
+   integscheme=$(echo ${oi}  | awk '{print $97 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $98 }')
+   irepro=$(echo ${oi}       | awk '{print $99 }')
+   treefall=$(echo ${oi}     | awk '{print $100}')
+   ianthdisturb=$(echo ${oi} | awk '{print $101}')
+   ianthdataset=$(echo ${oi} | awk '{print $102}')
+   slscale=$(echo ${oi}      | awk '{print $103}')
+   slyrfirst=$(echo ${oi}    | awk '{print $104}')
+   slnyrs=$(echo ${oi}       | awk '{print $105}')
+   bioharv=$(echo ${oi}      | awk '{print $106}')
+   skidarea=$(echo ${oi}     | awk '{print $107}')
+   skidsmall=$(echo ${oi}    | awk '{print $108}')
+   skidlarge=$(echo ${oi}    | awk '{print $109}')
+   fellingsmall=$(echo ${oi} | awk '{print $110}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -473,11 +474,11 @@ do
       #------------------------------------------------------------------------------------#
       case ${polyiata} in
       tzi|zmh|nqn)
-         pfts="6,7,9,10,11,16,17"
+         pfts="1,7,8,9,10,11,15,16"
          pasture=16
          crop=16
-         plantation=17
-         logging="6,7,9,10,11,17"
+         plantation=15
+         logging="7,8,9,10,11,15"
          probharv="1.0,1.0,1.0,1.0,1.0,1.0"
          dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
          seedharv=0.75
@@ -485,25 +486,25 @@ do
          leafharv=0.00
          ;;
       hvd|wch|tqh)
-         pfts="6,8,9,10,11,16,17"
+         pfts="6,8,9,10,11,16"
          pasture=16
          crop=16
-         plantation=17
-         logging="6,8,9,10,11,17"
-         probharv="1.0,1.0,1.0,1.0,1.0,1.0"
-         dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
+         plantation=11
+         logging="6,8,9,10,11"
+         probharv="1.0,1.0,1.0,1.0,1.0"
+         dbhharv="0.0,0.0,0.0,0.0,0.0"
          seedharv=0.75
          storharv=0.00
          leafharv=0.00
          ;;
       asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
-         pfts="1,2,3,4,16,17"
+         pfts="1,2,3,4,12,13,15,16"
          pasture=1
          crop=16
-         plantation=17
-         logging="2,3,4"
-         probharv="1.0,1.0,1.0"
-         dbhharv="50.,50.,50."
+         plantation=15
+         logging="2,3,4,12,13,15"
+         probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+         dbhharv="50.,50.,50.,50.,50.,50."
          seedharv=0.75
          storharv=0.00
          leafharv=0.00
@@ -512,10 +513,10 @@ do
          pfts="1,16"
          pasture=1
          crop=1
-         plantation=17
-         logging="2,3,4"
-         probharv="1.0,1.0,1.0"
-         dbhharv="50.,50.,50."
+         plantation=13
+         logging="13"
+         probharv="1.0"
+         dbhharv="50."
          seedharv=0.75
          storharv=0.00
          leafharv=0.00
@@ -524,34 +525,22 @@ do
          pfts="1,16"
          pasture=1
          crop=16
-         plantation=17
-         logging="2,3,4"
-         probharv="1.0,1.0,1.0"
-         dbhharv="50.,50.,50."
-         seedharv=0.75
-         storharv=0.00
-         leafharv=0.00
-         ;;
-      s83)
-         pfts="1,2,3,4,16"
-         pasture=1
-         crop=1
-         plantation=3
-         logging="2,3,4"
-         probharv="1.0,1.0,1.0"
-         dbhharv="35.,35.,35."
+         plantation=13
+         logging="13"
+         probharv="1.0"
+         dbhharv="50."
          seedharv=0.75
          storharv=0.00
          leafharv=0.00
          ;;
       *)
-         pfts="1,2,3,4,16"
+         pfts="1,2,3,4,12,13,16"
          pasture=1
          crop=1
-         plantation=3
-         logging="2,3,4"
-         probharv="1.0,1.0,1.0"
-         dbhharv="50.,50.,50."
+         plantation=13
+         logging="2,3,4,12,13"
+         probharv="1.0,1.0,1.0,1.0,1.0"
+         dbhharv="50.,50.,50.,50.,50."
          seedharv=0.75
          storharv=0.00
          leafharv=0.00
@@ -564,11 +553,11 @@ do
       0|1|5)
          case ${polyiata} in
          tzi|zmh|nqn)
-            pfts="6,7,9,10,11,16,17"
+            pfts="1,7,8,9,10,11,15,16"
             pasture=16
             crop=16
-            plantation=17
-            logging="6,7,9,10,11,17"
+            plantation=15
+            logging="7,8,9,10,11,15"
             probharv="1.0,1.0,1.0,1.0,1.0,1.0"
             dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
             seedharv=0.75
@@ -576,25 +565,25 @@ do
             leafharv=0.00
             ;;
          hvd|wch|tqh)
-            pfts="6,8,9,10,11,16,17"
+            pfts="6,8,9,10,11,16"
             pasture=16
             crop=16
-            plantation=17
-            logging="6,8,9,10,11,17"
-            probharv="1.0,1.0,1.0,1.0,1.0,1.0"
-            dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
+            plantation=10
+            logging="6,8,9,10,11"
+            probharv="1.0,1.0,1.0,1.0,1.0"
+            dbhharv="0.0,0.0,0.0,0.0,0.0"
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
             ;;
          asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
-            pfts="1,2,3,4,16,17"
+            pfts="1,2,3,4,12,13,15,16"
             pasture=1
             crop=16
-            plantation=17
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="50.,50.,50."
+            plantation=15
+            logging="2,3,4,12,13,15"
+            probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+            dbhharv="50.,50.,50.,50.,50.,50."
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
@@ -603,10 +592,10 @@ do
             pfts="1,16"
             pasture=1
             crop=1
-            plantation=17
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="50.,50.,50."
+            plantation=13
+            logging="13"
+            probharv="1.0"
+            dbhharv="50."
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
@@ -615,34 +604,22 @@ do
             pfts="1,16"
             pasture=1
             crop=16
-            plantation=17
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="50.,50.,50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         s83)
-            pfts="1,2,3,4,16"
-            pasture=1
-            crop=1
-            plantation=3
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="35.,35.,35."
+            plantation=13
+            logging="13"
+            probharv="1.0"
+            dbhharv="50."
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
             ;;
          *)
-            pfts="1,2,3,4,16"
+            pfts="1,2,3,4,12,13,16"
             pasture=1
             crop=1
-            plantation=3
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="50.,50.,50."
+            plantation=13
+            logging="2,3,4,12,13"
+            probharv="1.0,1.0,1.0,1.0,1.0"
+            dbhharv="50.,50.,50.,50.,50."
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
@@ -655,10 +632,10 @@ do
             pfts="10,16"
             pasture=16
             crop=16
-            plantation=17
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="50.,50.,50."
+            plantation=10
+            logging="10"
+            probharv="1.0"
+            dbhharv="0.0"
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
@@ -667,34 +644,22 @@ do
             pfts="1"
             pasture=1
             crop=1
-            plantation=17
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="50.,50.,50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         s83)
-            pfts="1,3"
-            pasture=1
-            crop=1
-            plantation=3
-            logging="3"
+            plantation=14
+            logging="14"
             probharv="1.0"
-            dbhharv="35."
+            dbhharv="50."
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
             ;;
          *)
-            pfts="1,3"
+            pfts="1,14"
             pasture=1
             crop=1
-            plantation=3
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0"
-            dbhharv="50.,50.,50."
+            plantation=14
+            logging="14"
+            probharv="1.0"
+            dbhharv="50."
             seedharv=0.75
             storharv=0.00
             leafharv=0.00
@@ -702,13 +667,13 @@ do
          esac
          ;;
       *)
-         pfts="1,2,3,4,16"
+         pfts="1,2,3,4,12,13,16"
          pasture=1
          crop=16
-         plantation=3
-         logging="2,3,4"
-         probharv="1.0,1.0,1.0"
-         dbhharv="50.,50.,50."
+         plantation=13
+         logging="2,3,4,12,13"
+         probharv="1.0,1.0,1.0,1.0,1.0"
+         dbhharv="50.,50.,50.,50.,50."
          seedharv=0.75
          storharv=0.00
          leafharv=0.00
@@ -1620,6 +1585,7 @@ do
    sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
    sed -i s@mytoler@${toler}@g                  ${ED2IN}
    sed -i s@RUNFLAG@${runt}@g                   ${ED2IN}
+   sed -i s@myiphysiol@${iphysiol}@g            ${ED2IN}
    sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
    sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
    sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}

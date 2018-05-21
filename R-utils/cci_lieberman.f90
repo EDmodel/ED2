@@ -51,9 +51,9 @@ subroutine cci_lieberman(nxyz,xyz,radius,closure,cci)
          if (dr > 0.d0 .and. dr <= radius) then
             !----- Check whether it contributes to CCI or CII. ----------------------------!
             if (closure .and. dz > 0.d0) then
-               cci(m) = cci(m) + sin(dz / sqrt(dz*dz + dr*dr))
+               cci(m) = cci(m) + dz / sqrt(dz*dz + dr*dr)
             else if ((.not. closure) .and. dz < 0.d0) then
-               cci(m) = cci(m) - sin(dz / sqrt(dz*dz + dr*dr))
+               cci(m) = cci(m) - dz / sqrt(dz*dz + dr*dr)
             end if
             !------------------------------------------------------------------------------!
          end if
@@ -168,9 +168,9 @@ subroutine cci_lieberman_mat(nx,ny,z,dxy,radius,undef,closure,cci)
                if (dr > 0.d0 .and. dr <= radius) then
                   !----- Check whether it contributes to CCI or CII. ----------------------!
                   if (closure .and. dz > 0.d0) then
-                     cci(x0,y0) = cci(x0,y0) + sin(dz / sqrt(dz*dz + dr*dr))
+                     cci(x0,y0) = cci(x0,y0) + dz / sqrt(dz*dz + dr*dr)
                   else if ((.not. closure) .and. dz < 0.d0) then
-                     cci(x0,y0) = cci(x0,y0) - sin(dz / sqrt(dz*dz + dr*dr))
+                     cci(x0,y0) = cci(x0,y0) - dz / sqrt(dz*dz + dr*dr)
                   end if
                   !------------------------------------------------------------------------!
                end if

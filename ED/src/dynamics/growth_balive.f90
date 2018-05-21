@@ -81,15 +81,24 @@ module growth_balive
       real                          :: carbon_balance_lightmax
       real                          :: carbon_balance_moistmax
       real                          :: carbon_balance_mlmax
-      real                          :: dbh_in
-      real                          :: hite_in
       real                          :: bleaf_in
       real                          :: broot_in
-      real                          :: bsapa_in
-      real                          :: bsapb_in
+      real                          :: bsapwooda_in
+      real                          :: bsapwoodb_in
       real                          :: bbark_in
       real                          :: balive_in
+      real                          :: bdead_in
+      real                          :: hite_in
+      real                          :: dbh_in
+      real                          :: nplant_in
       real                          :: bstorage_in
+      real                          :: agb_in
+      real                          :: phenstatus_in
+      real                          :: lai_in
+      real                          :: wai_in
+      real                          :: cai_in
+      real                          :: krdepth_in
+      real                          :: ba_in
       real                          :: nitrogen_supply
       real                          :: dndt
       real                          :: dlnndt
@@ -144,15 +153,24 @@ module growth_balive
                   !     Save variables before growth, so we can revert in case             !
                   ! ivegt_dynamics is zero.                                                !
                   !------------------------------------------------------------------------!
-                  dbh_in      = cpatch%dbh      (ico)
-                  hite_in     = cpatch%hite     (ico)
-                  bleaf_in    = cpatch%bleaf    (ico)
-                  broot_in    = cpatch%broot    (ico)
-                  bsapa_in    = cpatch%bsapwooda(ico)
-                  bsapb_in    = cpatch%bsapwoodb(ico)
-                  bbark_in    = cpatch%bbark    (ico)
-                  balive_in   = cpatch%balive   (ico)
-                  bstorage_in = cpatch%bstorage (ico)
+                  balive_in     = cpatch%balive          (ico)
+                  bdead_in      = cpatch%bdead           (ico)
+                  bleaf_in      = cpatch%bleaf           (ico)
+                  broot_in      = cpatch%broot           (ico)
+                  bsapwooda_in  = cpatch%bsapwooda       (ico)
+                  bsapwoodb_in  = cpatch%bsapwoodb       (ico)
+                  bbark_in      = cpatch%bbark           (ico)
+                  hite_in       = cpatch%hite            (ico)
+                  dbh_in        = cpatch%dbh             (ico)
+                  nplant_in     = cpatch%nplant          (ico)
+                  bstorage_in   = cpatch%bstorage        (ico)
+                  agb_in        = cpatch%agb             (ico)
+                  ba_in         = cpatch%basarea         (ico)
+                  phenstatus_in = cpatch%phenology_status(ico)
+                  lai_in        = cpatch%lai             (ico)
+                  wai_in        = cpatch%wai             (ico)
+                  cai_in        = cpatch%crown_area      (ico)
+                  krdepth_in    = cpatch%krdepth         (ico)
                   !------------------------------------------------------------------------!
 
 
@@ -367,15 +385,24 @@ module growth_balive
                   ! variables values with the original values.                             !
                   !------------------------------------------------------------------------!
                   if (.not. veget_dyn_on) then
-                     cpatch%dbh      (ico) = dbh_in
-                     cpatch%hite     (ico) = hite_in
-                     cpatch%bleaf    (ico) = bleaf_in
-                     cpatch%broot    (ico) = broot_in
-                     cpatch%bsapwooda(ico) = bsapa_in
-                     cpatch%bsapwoodb(ico) = bsapb_in
-                     cpatch%bbark    (ico) = bbark_in
-                     cpatch%balive   (ico) = balive_in
-                     cpatch%bstorage (ico) = bstorage_in
+                     cpatch%balive          (ico) = balive_in
+                     cpatch%bdead           (ico) = bdead_in
+                     cpatch%bleaf           (ico) = bleaf_in
+                     cpatch%broot           (ico) = broot_in
+                     cpatch%bsapwooda       (ico) = bsapwooda_in
+                     cpatch%bsapwoodb       (ico) = bsapwoodb_in
+                     cpatch%bbark           (ico) = bbark_in
+                     cpatch%hite            (ico) = hite_in
+                     cpatch%dbh             (ico) = dbh_in
+                     cpatch%nplant          (ico) = nplant_in
+                     cpatch%bstorage        (ico) = bstorage_in
+                     cpatch%agb             (ico) = agb_in
+                     cpatch%basarea         (ico) = ba_in
+                     cpatch%phenology_status(ico) = phenstatus_in
+                     cpatch%lai             (ico) = lai_in
+                     cpatch%wai             (ico) = wai_in
+                     cpatch%crown_area      (ico) = cai_in
+                     cpatch%krdepth         (ico) = krdepth_in
                   end if
                   !------------------------------------------------------------------------!
 
@@ -424,15 +451,18 @@ module growth_balive
                end do cohortloop
                !---------------------------------------------------------------------------!
 
+
                !---------------------------------------------------------------------------!
                !    Terminate and sort cohorts in case we are using the new grass scheme,  !
                ! as height and biomass may change every day.                               !
                !---------------------------------------------------------------------------!
-               select case (igrass)
-               case (1)
-                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-                  call sort_cohorts(cpatch)
-               end select
+               if (veget_dyn_on) then
+                  select case (igrass)
+                  case (1)
+                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call sort_cohorts(cpatch)
+                  end select
+               end if
                !---------------------------------------------------------------------------!
 
 

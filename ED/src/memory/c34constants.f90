@@ -41,23 +41,35 @@ module c34constants
    ! that is in °C becomes Kelvin here.                                                    !
    !---------------------------------------------------------------------------------------!
    type farq_consts
-      integer      :: photo_pathway ! The photosynthetic pathway                 [     ---]
-      real(kind=8) :: D0            ! Threshold to close stomata when it's dry   [ mol/mol]
-      real(kind=8) :: m             ! Empirical const. for conductance calc.     [     ---]
-      real(kind=8) :: b             ! Cuticular conductance                      [mol/m²/s]
-      real(kind=8) :: alpha0        ! Quantum efficiency                         [     ---]
-      real(kind=8) :: vm0           ! Ref. value for maximum rubisco activity    [mol/m²/s]
-      real(kind=8) :: vm_low_temp   ! Low temp. threshold for rapid decline      [       K]
-      real(kind=8) :: vm_high_temp  ! High temp. threshold for rapid decline     [       K]
-      real(kind=8) :: vm_hor        ! "Activation energy" for Vm                 [       K]
-      real(kind=8) :: vm_q10        ! Vm base for C91 physiology                 [      --]
-      real(kind=8) :: vm_decay_e    ! Decay factor for Vm correction             [     1/K]
-      real(kind=8) :: rd0           ! Term used for respiration                  [mol/m²/s]
-      real(kind=8) :: rd_low_temp   ! Low temp. threshold for rapid decline      [       K]
-      real(kind=8) :: rd_high_temp  ! High temp. threshold for rapid decline     [       K]
-      real(kind=8) :: rd_hor        ! "Activation energy" for Vm                 [       K]
-      real(kind=8) :: rd_q10        ! Rd base for C91 physiology                 [      --]
-      real(kind=8) :: rd_decay_e    ! Decay factor for Rd correction as in F96   [     1/K]
+      integer      :: photo_pathway  ! The photosynthetic pathway                [     ---]
+      real(kind=8) :: D0             ! Threshold to close stomata when it's dry  [ mol/mol]
+      real(kind=8) :: m              ! Empirical const. for conductance calc.    [     ---]
+      real(kind=8) :: b              ! Cuticular conductance                     [mol/m2/s]
+      real(kind=8) :: alpha0         ! Quantum efficiency                        [     ---]
+      real(kind=8) :: curvpar        ! Curvature parameter                       [     ---]
+      real(kind=8) :: phi_psII       ! Quantum yield of photosystem II           [     ---]
+      real(kind=8) :: vm0            ! Ref. value for carboxylation rate         [mol/m2/s]
+      real(kind=8) :: vm_low_temp    ! Low temp. threshold for rapid decline     [       K]
+      real(kind=8) :: vm_high_temp   ! High temp. threshold for rapid decline    [       K]
+      real(kind=8) :: vm_hor         ! "Activation energy" for Vm                [       K]
+      real(kind=8) :: vm_q10         ! Vm base for C91 physiology                [      --]
+      real(kind=8) :: vm_decay_elow  ! Decay factor for Vm correction (low T)    [     1/K]
+      real(kind=8) :: vm_decay_ehigh ! Decay factor for Vm correction (high T)   [     1/K]
+      real(kind=8) :: jm0            ! Ref. value for electron transport rate    [mol/m2/s]
+      real(kind=8) :: jm_low_temp    ! Low temp. threshold for rapid decline     [       K]
+      real(kind=8) :: jm_high_temp   ! High temp. threshold for rapid decline    [       K]
+      real(kind=8) :: jm_hor         ! "Activation energy" for Jm                [       K]
+      real(kind=8) :: jm_q10         ! Jm base for C91 physiology                [      --]
+      real(kind=8) :: jm_decay_elow  ! Decay factor for Jm correction (low T)    [     1/K]
+      real(kind=8) :: jm_decay_ehigh ! Decay factor for Jm correction (high T)   [     1/K]
+      real(kind=8) :: rd0            ! Term used for respiration                 [mol/m2/s]
+      real(kind=8) :: rd_low_temp    ! Low temp. threshold for rapid decline     [       K]
+      real(kind=8) :: rd_high_temp   ! High temp. threshold for rapid decline    [       K]
+      real(kind=8) :: rd_hor         ! "Activation energy" for Vm                [       K]
+      real(kind=8) :: rd_q10         ! Rd base for C91 physiology                [      --]
+      real(kind=8) :: rd_decay_elow  ! Decay factor for Rd correction (low T)    [     1/K]
+      real(kind=8) :: rd_decay_ehigh ! Decay factor for Rd correction (low T)    [     1/K]
+      real(kind=8) :: tpm0           ! Ref. triose phosphate utilisation rate    [mol/m2/s]
    end type farq_consts
    !---------------------------------------------------------------------------------------!
 
@@ -76,9 +88,9 @@ module c34constants
       real(kind=8) :: can_prss      ! Canopy air pressure               (press) [       Pa]
       real(kind=8) :: leaf_temp     ! Leaf temperature                  (T    ) [        K]
       real(kind=8) :: lint_shv      ! Leaf intercell. vap. mix. ratio   (eL   ) [  mol/mol]
-      real(kind=8) :: par           ! Photosyntethically active rad.    (L    ) [ mol/m²/s]
-      real(kind=8) :: blyr_cond_co2 ! Leaf bnd. layer conduct. for CO2  (gbc  ) [ mol/m²/s]
-      real(kind=8) :: blyr_cond_h2o ! Leaf bnd. layer conduct. for H2O  (gbw  ) [ mol/m²/s]
+      real(kind=8) :: par           ! Photosyntethically active rad.    (L    ) [ mol/m2/s]
+      real(kind=8) :: blyr_cond_co2 ! Leaf bnd. layer conduct. for CO2  (gbc  ) [ mol/m2/s]
+      real(kind=8) :: blyr_cond_h2o ! Leaf bnd. layer conduct. for H2O  (gbw  ) [ mol/m2/s]
    end type metinp_vars
    !---------------------------------------------------------------------------------------!
 
@@ -92,16 +104,19 @@ module c34constants
    !---------------------------------------------------------------------------------------!
    type carb_demand_vars
       real(kind=8) :: alpha     ! Quantum yield                                 [      ---]
-      real(kind=8) :: vm        ! Rubisco capacity to perform carboxylase       [ mol/m²/s]
+      real(kind=8) :: vm        ! Maximum carboxylation rate                    [ mol/m2/s]
       real(kind=8) :: compp     ! Compens. pt. for gross photos.    (Gamma*)    [  mol/mol]
       real(kind=8) :: kco2      ! Michaelis-Mentel coefficient for CO2          [  mol/mol]
       real(kind=8) :: ko2       ! Michaelis-Mentel coefficient for O2           [  mol/mol]
-      real(kind=8) :: leaf_resp ! Leaf respiration                              [ mol/m²/s]
-      real(kind=8) :: sigma     ! sigma from equation B.2                       [ mol/m²/s]
-      real(kind=8) :: rho       ! rho from equation B.2                         [ mol/m²/s]
+      real(kind=8) :: leaf_resp ! Leaf respiration                              [ mol/m2/s]
+      real(kind=8) :: sigma     ! sigma from equation B.2                       [ mol/m2/s]
+      real(kind=8) :: rho       ! rho from equation B.2                         [ mol/m2/s]
       real(kind=8) :: xi        ! coefficient for Ci in the denominator         [  mol/mol]
       real(kind=8) :: tau       ! tau from equation B.2                         [  mol/mol]
-      real(kind=8) :: nu        ! The negative of leaf respiration              [ mol/m²/s]
+      real(kind=8) :: nu        ! The negative of leaf respiration              [ mol/m2/s]
+      real(kind=8) :: jm        ! Maximum electron transport rate               [ mol/m2/s]
+      real(kind=8) :: jact      ! Actual electron transport rate                [ mol/m2/s]
+      real(kind=8) :: tpm       ! Triose phosphate utilisation rate             [ mol/m2/s]
    end type carb_demand_vars
    !---------------------------------------------------------------------------------------!
 
@@ -117,9 +132,10 @@ module c34constants
       real(kind=8) :: lsfc_shv      ! Leaf surface specific humidity     (es )  [  mol/mol]
       real(kind=8) :: lsfc_co2      ! Leaf surface CO2 mixing ratio      (Cs )  [  mol/mol]
       real(kind=8) :: lint_co2      ! Leaf internal CO2 mixing ratio     (Ci )  [  mol/mol]
-      real(kind=8) :: co2_demand    ! Carbon demand                      (A  )  [ mol/m²/s]
-      real(kind=8) :: stom_cond_h2o ! Stomatal water conductance         (gsw)  [ mol/m²/s]
-      real(kind=8) :: stom_cond_co2 ! Stomatal CO2 conductance           (gsc)  [ mol/m²/s]
+      real(kind=8) :: co2_demand    ! Carbon demand                      (A  )  [ mol/m2/s]
+      real(kind=8) :: stom_cond_h2o ! Stomatal water conductance         (gsw)  [ mol/m2/s]
+      real(kind=8) :: stom_cond_co2 ! Stomatal CO2 conductance           (gsc)  [ mol/m2/s]
+      logical      :: success       ! Flag for success/failure                  [      T|F]
    end type solution_vars
    !---------------------------------------------------------------------------------------!
 
@@ -138,8 +154,8 @@ module c34constants
    type(carb_demand_vars) , dimension(:), pointer :: aparms
    type(solution_vars)    , dimension(:), pointer :: stopen
    type(solution_vars)    , dimension(:), pointer :: stclosed
-   type(solution_vars)    , dimension(:), pointer :: rubiscolim
-   type(solution_vars)    , dimension(:), pointer :: co2lim
+   type(solution_vars)    , dimension(:), pointer :: rubpsatlim
+   type(solution_vars)    , dimension(:), pointer :: thirdlim
    type(solution_vars)    , dimension(:), pointer :: lightlim
    !---------------------------------------------------------------------------------------!
 

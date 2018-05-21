@@ -10,13 +10,14 @@
 module pft_coms
 
    use ed_max_dims, only: n_pft
+
    !---------------------------------------------------------------------------------------!
    ! PFT | Name                            | Grass | Liana | Tropical | Savannah | Conifer !
    !-----+---------------------------------+-------+-------+----------+----------+---------!
    !   1 | C4 grass                        |   yes |    no |      yes |       no |      no !
-   !   2 | Early tropical forest           |    no |    no |      yes |       no |      no !
-   !   3 | Mid tropical forest             |    no |    no |      yes |       no |      no !
-   !   4 | Late tropical forest            |    no |    no |      yes |       no |      no !
+   !   2 | Early tropical                  |    no |    no |      yes |       no |      no !
+   !   3 | Mid tropical                    |    no |    no |      yes |       no |      no !
+   !   4 | Late tropical                   |    no |    no |      yes |       no |      no !
    !   5 | Temperate C3 grass              |   yes |    no |       no |       no |      no !
    !   6 | Northern pines                  |    no |    no |       no |       no |     yes !
    !   7 | Southern pines                  |    no |    no |       no |       no |     yes !
@@ -24,12 +25,12 @@ module pft_coms
    !   9 | Early temperate deciduous       |    no |    no |       no |       no |      no !
    !  10 | Mid temperate deciduous         |    no |    no |       no |       no |      no !
    !  11 | Late temperate deciduous        |    no |    no |       no |       no |      no !
-   !  12 | Early tropical savannah         |    no |    no |      yes |      yes |      no !
-   !  13 | Mid tropical savannah           |    no |    no |      yes |      yes |      no !
-   !  14 | Late tropical savannah          |    no |    no |      yes |      yes |      no !
+   !  12 | Early shade intolerant          |    no |    no |      yes |       no |      no !
+   !  13 | Mid shade intolerant            |    no |    no |      yes |       no |      no !
+   !  14 | Median tropical                 |    no |    no |      yes |       no |      no !
    !  15 | Araucaria                       |    no |    no |      yes |       no |     yes !
    !  16 | Tropical C3 grass               |   yes |    no |      yes |       no |      no !
-   !  17 | Liana                           |    no |   yes |      yes |       no |      no !
+   !  17 | Liana                           |    no |   yes |      yes |       no |     yes !
    !---------------------------------------------------------------------------------------!
 
 
@@ -172,10 +173,11 @@ module pft_coms
    !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Vm_high_temp 
 
-   !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: Vm_decay_e 
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: Vm_decay_elow
+   real, dimension(n_pft) :: Vm_decay_ehigh
 
-   !----- Maximum photosynthetic capacity at a reference temperature [umol/m2/s]. ---------!
+   !----- Maximum carboxylation rate at the reference temperature [umol/m2/s]. ------------!
    real, dimension(n_pft) :: Vm0 
 
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
@@ -185,13 +187,36 @@ module pft_coms
    real, dimension(n_pft) :: Vm_q10
 
    !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: Jm_low_temp 
+
+   !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: Jm_high_temp 
+
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: Jm_decay_elow
+   real, dimension(n_pft) :: Jm_decay_ehigh
+
+   !----- Maximum electron transport rate at the reference temperature [umol/m2/s]. -------!
+   real, dimension(n_pft) :: Jm0 
+
+   !----- Exponent for Jm in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: Jm_hor 
+
+   !----- Base (Q10 term) for Jm in Collatz equation. -------------------------------------!
+   real, dimension(n_pft) :: Jm_q10
+
+   !----- Maximum triose phosphate utilisation rate at the ref. temperature [umol/m2/s]. --!
+   real, dimension(n_pft) :: TPm0
+
+   !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Rd_low_temp 
 
    !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Rd_high_temp 
 
-   !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: Rd_decay_e 
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: Rd_decay_elow
+   real, dimension(n_pft) :: Rd_decay_ehigh
 
    !----- Maximum respiration factor at the reference temperature [umol/m2/s]. ------------!
    real, dimension(n_pft) :: Rd0
@@ -210,6 +235,12 @@ module pft_coms
 
    !----- Efficiency of using PAR to fix CO2 [ ----]. -------------------------------------!
    real, dimension(n_pft) :: quantum_efficiency
+
+   !----- Curvature parameter for determining the electron transport rate (aka J) [ ---]. -!
+   real, dimension(n_pft) :: curvpar_electron
+
+   !----- Quantum yield of photosystem II [ ----]. ----------------------------------------!
+   real, dimension(n_pft) :: qyield_psII
 
    !----- Specifies photosynthetic pathway.  3 corresponds to C3, 4 corresponds to C4. ----!
    integer, dimension(n_pft) :: photosyn_pathway
@@ -244,9 +275,28 @@ module pft_coms
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the rate of dark (i.e., leaf) respiration.  It is dimensionless !
-   ! because it is relative to Vm0.                                                        !
+   ! because it is relative to Vm0.  This is only needed in case Rd0 is not provided       !
+   ! through xml.                                                                          !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: dark_respiration_factor
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the rate of electron transport.  It is dimensionless            !
+   ! because it is relative to Vm0.  This is only needed in case Jm0 is not provided       !
+   ! through xml.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: electron_transport_factor
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the rate of triose phosphate utilisation.  It is dimensionless  !
+   ! because it is relative to Vm0.  This is only needed in case Jm0 is not provided       !
+   ! through xml.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: triose_phosphate_factor
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Turnover rate of plant storage pools [1/year]. ----------------------------------!
    real, dimension(n_pft) :: storage_turnover_rate 
@@ -263,8 +313,9 @@ module pft_coms
    !----- Temperature [C] above which root metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: rrf_high_temp 
 
-   !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: rrf_decay_e 
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: rrf_decay_elow
+   real, dimension(n_pft) :: rrf_decay_ehigh
 
    !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: rrf_hor 
@@ -279,7 +330,8 @@ module pft_coms
    real, dimension(n_pft) :: strf_high_temp 
 
    !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: strf_decay_e 
+   real, dimension(n_pft) :: strf_decay_elow
+   real, dimension(n_pft) :: strf_decay_ehigh
 
    !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: strf_hor 
@@ -474,26 +526,18 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Bs_large
    !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
    real   , dimension(n_pft)    :: b2Bs_large
-   !----- DBH-leaf allometry intercept for small-DBH cohorts. All PFTs. -------------------!
-   real   , dimension(n_pft)    :: b1Bl_small
-   !----- DBH-leaf allometry slope for small-DBH cohorts. All PFTs. -----------------------!
-   real   , dimension(n_pft)    :: b2Bl_small
-   !----- DBH-leaf allometry intercept for large-DBH cohorts. All PFTs. -------------------!
-   real   , dimension(n_pft)    :: b1Bl_large
-   !----- DBH-leaf allometry slope for large-DBH cohorts. All PFTs. -----------------------!
-   real   , dimension(n_pft)    :: b2Bl_large
+   !----- DBH-leaf allometry intercept. All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: b1Bl
+   !----- DBH-leaf allometry slope. All PFTs. ---------------------------------------------!
+   real   , dimension(n_pft)    :: b2Bl
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
    real   , dimension(n_pft)    :: b2Ca
-   !----- DBH-WAI allometry intercept for small-DBH cohorts. All PFTs. --------------------!
-   real   , dimension(n_pft)    :: b1WAI_small
-   !----- DBH-WAI allometry slope for small-DBH cohorts. All PFTs. ------------------------!
-   real   , dimension(n_pft)    :: b2WAI_small
-   !----- DBH-WAI allometry intercept for large-DBH cohorts. All PFTs. --------------------!
-   real   , dimension(n_pft)    :: b1WAI_large
-   !----- DBH-WAI allometry slope for large-DBH cohorts. All PFTs. ------------------------!
-   real   , dimension(n_pft)    :: b2WAI_large
+   !----- DBH-WAI allometry intercept. All PFTs. ------------------------------------------!
+   real   , dimension(n_pft)    :: b1WAI
+   !----- DBH-WAI allometry slope. All PFTs. ----------------------------------------------!
+   real   , dimension(n_pft)    :: b2WAI
    !----- DBH-bark thickness slope.  All PFTs. --------------------------------------------!
    real   , dimension(n_pft)    :: b1Xb
    !----- DBH-sapwood thickness slope.  All PFTs. -----------------------------------------!
@@ -502,8 +546,6 @@ module pft_coms
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
    real   , dimension(n_pft)    :: dbh_crit
-   !----- Critical DBH for height/bleaf, when plants switch from sapling to adult allom. --!
-   real   , dimension(n_pft)    :: dbh_adult
    !----- Prescribed DBH for the big leaf model, that allows a reasonable LAI/biomass. ----!
    real   , dimension(n_pft)    :: dbh_bigleaf
    !----- Minimum Bdead attainable by this PFT. -------------------------------------------!
@@ -514,10 +556,6 @@ module pft_coms
    real   , dimension(n_pft)    :: bleaf_crit
    !----- Critical balive, maximum allocation to living tissues. --------------------------!
    real   , dimension(n_pft)    :: balive_crit
-   !----- Adult Bleaf, when plants switch from sapling to adult allom. --------------------!
-   real   , dimension(n_pft)    :: bleaf_adult
-   !----- Adult Bdead, when plants switch from sapling to adult allom (iallom=3 only). ----!
-   real   , dimension(n_pft)    :: bdead_adult
    !=======================================================================================!
    !=======================================================================================!
 

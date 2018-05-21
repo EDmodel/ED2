@@ -98,7 +98,7 @@ module allometry
                   !----- Default ED-2.1 allometry. ----------------------------------------!
                   dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
                case default
-                  !----- Poorter et al. (2006) allometry. ---------------------------------!
+                  !----- Weibull function. ------------------------------------------------!
                   lnexp = max(lnexp_min,min(lnexp_max,b1Ht(ipft) * mdbh ** b2Ht(ipft)))
                   dbh2h = hgt_ref(ipft) * (1. - exp(-lnexp))
                end select
@@ -133,7 +133,6 @@ module allometry
    real function size2bd(dbh,hite,ipft)
 
       use pft_coms    , only : C2B         & ! intent(in)
-                             , dbh_adult   & ! intent(in)
                              , dbh_crit    & ! intent(in)
                              , b1Bs_small  & ! intent(in)
                              , b2Bs_small  & ! intent(in)
@@ -159,7 +158,7 @@ module allometry
          size2bd = 0.0
       else if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
          !----- Decide parameters based on seedling/adult size. ---------------------------!
-         if (dbh <= dbh_adult(ipft)) then
+         if (dbh <= dbh_crit(ipft)) then
             size2bd = b1Bs_small(ipft) / C2B * (dbh*dbh*hite) ** b2Bs_small(ipft)
          else
             size2bd = b1Bs_large(ipft) / C2B * (dbh*dbh*hite) ** b2Bs_large(ipft)
@@ -197,7 +196,6 @@ module allometry
                              , b2Bs_small  & ! intent(in)
                              , b1Bs_large  & ! intent(in)
                              , b2Bs_large  & ! intent(in)
-                             , bdead_adult & ! intent(in)
                              , bdead_crit  & ! intent(in)
                              , hgt_max     & ! intent(in)
                              , dbh_lut     & ! intent(in)
@@ -232,19 +230,11 @@ module allometry
             !------------------------------------------------------------------------------!
          else if (bdead >= bdead_crit(ipft)) then
             !------------------------------------------------------------------------------!
-            !     Bdead is above critical value, height is known.  It is also very likely  !
-            ! that bdead is above minimum adult value, but just to be safe, we also check  !
-            ! it.                                                                          !
+            !     Bdead is above critical value, height is known.                          !
             !------------------------------------------------------------------------------!
-            if (bdead < bdead_adult(ipft)) then
-               bd2dbh =  ( C2B * bdead                                                     &
-                         / ( b1Bs_small(ipft) * hgt_max(ipft)**b2Bs_small(ipft) ))         &
-                      ** ( 1. / (2. * b2Bs_small(ipft) ) )
-            else
-               bd2dbh =  ( C2B * bdead                                                     &
-                         / ( b1Bs_large(ipft) * hgt_max(ipft)**b2Bs_large(ipft) ))         &
-                      ** ( 1. / (2. * b2Bs_large(ipft) ) )
-            end if
+            bd2dbh =  ( C2B * bdead                                                        &
+                      / ( b1Bs_large(ipft) * hgt_max(ipft)**b2Bs_large(ipft) ))            &
+                   ** ( 1. / (2. * b2Bs_large(ipft) ) )
             !------------------------------------------------------------------------------!
          else
             !----- Use the look-up table to find the best dbh. ----------------------------!
@@ -300,12 +290,9 @@ module allometry
    !---------------------------------------------------------------------------------------!
    real function size2bl(dbh,hite,ipft)
       use pft_coms     , only : dbh_crit       & ! intent(in)
-                              , dbh_adult      & ! intent(in)
                               , C2B            & ! intent(in)
-                              , b1Bl_small     & ! intent(in)
-                              , b2Bl_small     & ! intent(in)
-                              , b1Bl_large     & ! intent(in)
-                              , b2Bl_large     & ! intent(in)
+                              , b1Bl           & ! intent(in)
+                              , b2Bl           & ! intent(in)
                               , is_liana       & ! intent(in)
                               , is_grass       & ! intent(in)
                               , is_tropical    & ! intent(in)
@@ -338,24 +325,13 @@ module allometry
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
-      !     Find leaf biomass depending on the tree size.                                  !
+      !     Find leaf biomass depending on the allometry.  The new allometry uses dbh and  !
+      ! height, whereas the old allometry uses dbh only.                                   !
       !------------------------------------------------------------------------------------!
       if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
-         !----- Decide parameters based on seedling/adult size. ---------------------------!
-         if (mdbh < dbh_adult(ipft)) then
-            size2bl = b1Bl_small(ipft) / C2B * (mdbh*mdbh*hite) ** b2Bl_small(ipft)
-         else
-            size2bl = b1Bl_large(ipft) / C2B * (mdbh*mdbh*hite) ** b2Bl_large(ipft)
-         end if
-         !---------------------------------------------------------------------------------!
+         size2bl = b1Bl(ipft) / C2B * (mdbh*mdbh*hite) ** b2Bl(ipft)
       else 
-         !----- Decide parameters based on seedling/adult size. ---------------------------!
-         if (mdbh < dbh_adult(ipft)) then
-            size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
-         else
-            size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
-         end if
-         !---------------------------------------------------------------------------------!
+         size2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -450,12 +426,9 @@ module allometry
                              , hgt_max     & ! intent(in)
                              , is_grass    & ! intent(in)
                              , C2B         & ! intent(in)
-                             , bleaf_adult & ! intent(in)
                              , bleaf_crit  & ! intent(in)
-                             , b1Bl_small  & ! intent(in)
-                             , b2Bl_small  & ! intent(in)
-                             , b1Bl_large  & ! intent(in)
-                             , b2Bl_large  & ! intent(in)
+                             , b1Bl        & ! intent(in)
+                             , b2Bl        & ! intent(in)
                              , dbh_lut     & ! intent(in)
                              , bleaf_lut   & ! intent(in)
                              , le_mask_lut & ! intent(out)
@@ -514,11 +487,7 @@ module allometry
 
       else
          !----- Find out whether this is an adult tree or a sapling/grass. ----------------!
-         if (bleaf < bleaf_adult(ipft)) then
-            mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
-         else
-            mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
-         end if
+         mdbh = (bleaf * C2B / b1Bl(ipft) ) ** (1./b2Bl(ipft))
          !---------------------------------------------------------------------------------!
 
 
@@ -570,10 +539,8 @@ module allometry
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
-   real function size2ca(dbh,hite,sla,ipft)
-      use ed_misc_coms , only : iallom         ! ! intent(in)
-      use pft_coms     , only : dbh_adult      & ! intent(in)
-                              , dbh_crit       & ! intent(in)
+   real function size2ca(dbh,hite,sla,ipft,cap_crit)
+      use pft_coms     , only : dbh_crit       & ! intent(in)
                               , hgt_max        & ! intent(in)
                               , is_grass       & ! intent(in)
                               , is_liana       & ! intent(in)
@@ -587,13 +554,24 @@ module allometry
       use consts_coms  , only : tiny_num       ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
-      real          , intent(in) :: dbh
-      real          , intent(in) :: hite
-      real          , intent(in) :: sla
-      integer       , intent(in) :: ipft
+      real   , intent(in)           :: dbh       !> Diameter at breast height     [     cm]
+      real   , intent(in)           :: hite      !> Height                        [      m]
+      real   , intent(in)           :: sla       !> Specific leaf area            [ m2/kgC]
+      integer, intent(in)           :: ipft      !> Current PFT                   [     --]
+      logical, intent(in), optional :: cap_crit  !> Force cap at dbh_crit         [    T|F]
       !----- Internal variables -----------------------------------------------------------!
-      real                       :: loclai ! The maximum local LAI for a given DBH
-      real                       :: mdbh   ! The maximum DBH
+      real                          :: loclai    !> The maximum local LAI         [  m2/m2]
+      real                          :: mdbh      !> The maximum DBH               [     cm]
+      logical                       :: upr_loose !> Cap at dbh_crit               [    T|F]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Decide whether to cap crown area at critical size. ---------------------------!
+      if (present(cap_crit)) then
+         upr_loose = .not. cap_crit
+      else
+         upr_loose = .false.
+      end if
       !------------------------------------------------------------------------------------!
 
       if (dbh < tiny_num) then
@@ -620,6 +598,8 @@ module allometry
             !----- Check whether this is grass or tree, impose maximum DBH. ---------------!
             if (is_grass(ipft) .and. igrass == 1) then
                mdbh = min(dbh,h2dbh(hgt_max(ipft),ipft) )
+            elseif (upr_loose) then
+               mdbh = dbh
             elseif (is_liana(ipft)) then
                mdbh = min(dbh,liana_dbh_crit)
             else
@@ -632,11 +612,7 @@ module allometry
 
          !----- Find the nominal crown area. ----------------------------------------------!
          if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
-            if (mdbh < dbh_adult(ipft)) then
-               size2ca = loclai
-            else
-               size2ca = b1Ca(ipft) * ( mdbh * mdbh * hite ) ** b2Ca(ipft)
-            end if
+            size2ca = b1Ca(ipft) * ( mdbh * mdbh * hite ) ** b2Ca(ipft)
          else
             size2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
          end if
@@ -647,7 +623,7 @@ module allometry
 
 
       !----- Local LAI / Crown area should never be less than one. ------------------------!
-      size2ca = min (loclai, size2ca)
+      size2ca = min(loclai, size2ca)
       !------------------------------------------------------------------------------------!
 
       return
@@ -940,14 +916,11 @@ module allometry
    subroutine area_indices(cpatch, ico)
       use ed_state_vars, only : patchtype       ! ! Structure
       use pft_coms     , only : dbh_crit        & ! intent(in)
-                              , dbh_adult       & ! intent(in)
                               , is_liana        & ! intent(in)
                               , is_tropical     & ! intent(in)
                               , is_grass        & ! intent(in)
-                              , b1WAI_small     & ! intent(in)
-                              , b2WAI_small     & ! intent(in)
-                              , b1WAI_large     & ! intent(in)
-                              , b2WAI_large     & ! intent(in)
+                              , b1WAI           & ! intent(in)
+                              , b2WAI           & ! intent(in)
                               , liana_dbh_crit  ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
       use ed_misc_coms , only : igrass          & ! intent(in)
@@ -1008,14 +981,10 @@ module allometry
 
          !-----Find WAI. ------------------------------------------------------------------!
          if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
-            cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI_small(ipft)                       &
-                            * ( mdbh * mdbh * cpatch%hite(ico) ) ** b2WAI_small(ipft)
-         else if (mdbh < dbh_adult(ipft)) then
-            cpatch%wai(ico) = cpatch%nplant(ico)                                           &
-                            * b1WAI_small(ipft) * mdbh ** b2WAI_small(ipft)
+            cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI(ipft)                             &
+                            * ( mdbh * mdbh * cpatch%hite(ico) ) ** b2WAI(ipft)
          else
-            cpatch%wai(ico) = cpatch%nplant(ico)                                           &
-                            * b1WAI_large(ipft) * mdbh ** b2WAI_large(ipft)
+            cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI(ipft) * mdbh ** b2WAI(ipft)
          end if
          !---------------------------------------------------------------------------------!
       end select

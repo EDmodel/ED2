@@ -7,6 +7,7 @@ cloud.metrics <<- function( x
                           , z1st.stats = TRUE
                           , zveg.stats = TRUE
                           , zvfr.stats = TRUE
+                          , last.stats = TRUE 
                           , probs      = c(0.01,0.05,0.10,0.25,0.50,0.75,0.90,0.95,0.99)
                           , zbreaks    = c(1.0,2.5,5.0,7.5,10.0,15.0,20.0,25.0,30.0)
                           , n.dens     = 256
@@ -68,6 +69,7 @@ cloud.metrics <<- function( x
                                 , z1st.stats = z1st.stats
                                 , zveg.stats = zveg.stats
                                 , zvfr.stats = zvfr.stats
+                                , last.stats = last.stats
                                 , probs      = probs
                                 , zbreaks    = zbreaks
                                 , n.dens     = n.dens
@@ -98,6 +100,7 @@ cloud.metrics <<- function( x
          if (z1st.stats) ans["z1st.count"] = nz
          if (zveg.stats) ans["zveg.count"] = nz
          if (zvfr.stats) ans["zvfr.count"] = nz
+         if (last.stats) ans["last.count"] = nz
       }#end if
       return(ans)
       #------------------------------------------------------------------------------------#
@@ -347,11 +350,71 @@ cloud.metrics <<- function( x
 
 
 
+   #---------------------------------------------------------------------------------------#
+   #     Find height metrics for last return only.                                         #
+   #---------------------------------------------------------------------------------------#
+   if (last.stats){
+     #-------------------------------------------------------------------------------------#
+     #     Keep only the last returns.                                                     #
+     #-------------------------------------------------------------------------------------#
+     sellast = x$retn.number %==% x$number.retn.gp
+     #----- Check whether to use the subset or the entire thing (to generate NA). ---------#
+     if (sum(sellast) >= min.pts){
+       zlast   = x$z[sellast]
+       ptclast = x$pt.class[sellast]
+     }else{
+       zlast   = x$z
+       ptclast = x$pt.class
+     }#end if
+     #-------------------------------------------------------------------------------------#
+
+
+     #----- Find the last return metrics. -------------------------------------------------#
+     if (summ.only){
+       last = .Int.summary.metrics( z       = zlast
+                                  , ptc     = ptclast
+                                  , pref    = "last"
+                                  , probs   = probs
+       )#end .Int.cloud.metrics
+     }else{
+       last = .Int.cloud.metrics( z       = zlast
+                                , ptc     = ptclast
+                                , pref    = "last"
+                                , probs   = probs
+                                , zbreaks = zbreaks
+                                , n.dens  = n.dens
+                                , zl.dens = zl.dens
+                                , zh.dens = zh.dens
+                                , zzdens  = NULL
+                                , zmin    = zmin
+                                , zmax    = zmax
+                                )#end .Int.cloud.metrics
+     }#end summ.only
+     #-------------------------------------------------------------------------------------#
+     
+     #------ Discard results in case the point cloud is too thin. -------------------------#
+     if (sum(sellast) < min.pts){
+       last = last + NA
+     }#end if (length(z1st) > min.pts)
+     #-------------------------------------------------------------------------------------#
+   }else{
+     last = NULL
+   }#end if (z1st.stats)
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Return the answer as a vector or a matrix, depending on the user's choice. ------#
    if (mat.out){
-      ans = cbind(elev = every, zmah = mah, z1st = first, zveg = plant, zvfr = pl1st)
+      ans = cbind( elev = every
+                 , zmah = mah
+                 , z1st = first
+                 , zveg = plant
+                 , zvfr = pl1st
+                 , last = last
+                 )#end cbind
    }else{
-      ans = c(every,mah,first,plant,pl1st)
+      ans = c(every,mah,first,plant,pl1st,last)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -426,14 +489,14 @@ cloud.metrics <<- function( x
 
 
    #----- Labels for mode probability. ----------------------------------------------------#
-   plist = c("prob","pmah","p1st","pveg","pvfr")
-   zlist = c("elev","zmah","z1st","zveg","zvfr")
+   plist = c("prob","pmah","p1st","pveg","pvfr","plast")
+   zlist = c("elev","zmah","z1st","zveg","zvfr","last" )
    pmode = plist[match(pref,zlist)]
    #---------------------------------------------------------------------------------------#
 
 
    #----- Labels for probabilities. -------------------------------------------------------#
-   prob.names = paste("p",sprintf(ifelse(probs==1,"%3.3i","%2.2i"),round(100*probs)),sep="")
+   prob.names = paste0("p",sprintf(ifelse(probs==1,"%3.3i","%2.2i"),round(100*probs)))
    #---------------------------------------------------------------------------------------#
 
 
@@ -545,7 +608,7 @@ cloud.metrics <<- function( x
       zprop        = lapply( X   = zprop
                            , FUN = function(x) if(length(x) == 0){x = 0}else{x=x}
                            )#end lapply
-      names(zprop) = paste("fcan.elev.",zlabels,sep="")
+      names(zprop) = paste0("fcan.elev.",zlabels)
       ans          = modifyList(x=ans,val=zprop)
       #------------------------------------------------------------------------------------#
 
@@ -555,16 +618,16 @@ cloud.metrics <<- function( x
       #----- Use proportion to find the canopy fraction. ----------------------------------#
       zfcan         = as.list(rev(cumsum(rev(unlist(zprop)))))
       if (length(zfcan) != length(alabels)) browser()
-      names(zfcan)  = paste("fcan.elev.",alabels,sep="")
+      names(zfcan)  = paste0("fcan.elev.",alabels)
       ans           = modifyList(x=ans,val=zfcan)
       #------------------------------------------------------------------------------------#
    }else{
       #----- Point cloud classes have not been provided, make variables undefined. --------#
       zprop              = replicate(n=length(zlabels),list(NA))
-      names(zprop)       = paste("fcan.elev.",zlabels,sep="")
+      names(zprop)       = paste0("fcan.elev.",zlabels)
       ans                = modifyList(x=ans,val=zprop)
       zfcan              = replicate(n=length(alabels),list(NA))
-      names(zfcan)       = paste("fcan.elev.",alabels,sep="")
+      names(zfcan)       = paste0("fcan.elev.",alabels)
       ans                = modifyList(x=ans,val=zfcan)
       #------------------------------------------------------------------------------------#
    }#end if
@@ -655,7 +718,7 @@ cloud.metrics <<- function( x
 
 
    #----- Labels for probabilities. -------------------------------------------------------#
-   prob.names = paste("p",sprintf(ifelse(probs==1,"%3.3i","%2.2i"),round(100*probs)),sep="")
+   prob.names = paste0("p",sprintf(ifelse(probs==1,"%3.3i","%2.2i"),round(100*probs)))
    #---------------------------------------------------------------------------------------#
 
 
@@ -760,9 +823,9 @@ open.fcan <<- function( pt.cloud
    #----- Make names based on zabove, then return the answer. -----------------------------#
    fmt        = ceiling(log10(max(abs(zabove))*(1.+10*.Machine$double.eps)))
    if (all(zabove == as.integer(zabove))){
-      fmt        = paste("%0",fmt,".",fmt,"i",sep="")
+      fmt        = paste0("%0",fmt,".",fmt,"i")
    }else{
-      fmt        = paste("%0",fmt+3,".",2,"f",sep="")
+      fmt        = paste0("%0",fmt+3,".",2,"f")
    }#end if
    names(ans) = paste("fcan",sprintf(fmt,zabove),sep=".")
    return(ans)

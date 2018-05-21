@@ -134,6 +134,37 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                         - mymont$QMEAN.ATM.PAR.DIFF.PY     )
       mymont$QMEAN.ATM.NIR.BEAM.PY    = ( mymont$QMEAN.ATM.RSHORT.BEAM.PY
                                         - mymont$QMEAN.ATM.PAR.BEAM.PY     )
+      #----- Add bark stuff. --------------------------------------------------------------#
+      if (  ! "MMEAN.BARK.MAINTENANCE.PY" %in% names(mymont)){
+         mymont$MMEAN.BARK.MAINTENANCE.PY = 0. * mymont$MMEAN.LEAF.MAINTENANCE.PY
+         #----- Add cohort variables in case this is not a bare ground polygon. -----------#
+         if (mymont$NCOHORTS.GLOBAL > 0){
+            mymont$MMEAN.THBARK.CO           = 0. * mymont$DBH
+            mymont$MMEAN.BBARK.CO            = 0. * mymont$MMEAN.BLEAF.CO
+            mymont$MMEAN.BARK.MAINTENANCE.CO = 0. * mymont$MMEAN.LEAF.MAINTENANCE.CO
+         }#end if (mymont$NCOHORTS.GLOBAL > 0)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- In case leaf growth respiration exists, include bark respiration too. -----#
+         if (  "MMEAN.LEAF.GROWTH.RESP.PY" %in% names(mymont)){
+            mymont$MMEAN.BARK.GROWTH.RESP.PY  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.PY
+            mymont$QMEAN.BARK.GROWTH.RESP.PY  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.PY
+            mymont$MMEAN.BARK.STORAGE.RESP.PY = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.PY
+            mymont$QMEAN.BARK.STORAGE.RESP.PY = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.PY
+
+
+            #----- Add cohort variables in case this is not a bare ground polygon. --------#
+            if (mymont$NCOHORTS.GLOBAL > 0){
+               mymont$MMEAN.BARK.GROWTH.RESP.CO  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.CO
+               mymont$QMEAN.BARK.GROWTH.RESP.CO  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.CO
+               mymont$MMEAN.BARK.STORAGE.RESP.CO = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.CO
+               mymont$QMEAN.BARK.STORAGE.RESP.CO = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.CO
+            }#end if (mymont$NCOHORTS.GLOBAL > 0)
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+      }#end if (  ! "MMEAN.THBARK.CO" %in% names(mymont))
       #----- Make a growth respiration variable. ------------------------------------------#
       if (! "MMEAN.GROWTH.RESP.PY" %in% names(mymont)){
          mymont$MMEAN.GROWTH.RESP.PY  = ( mymont$MMEAN.LEAF.GROWTH.RESP.PY
@@ -188,6 +219,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          }#end if
          #---------------------------------------------------------------------------------#
       }#end if (! "MMEAN.STORAGE.RESP.PY" %in% names(mymont))
+      #----- Set dummy values for degradation variables for back compatibility. -----------#
+      if (! "COMBUSTED.FUEL.PY" %in% names(mymont)){
+         mymont$COMBUSTED.FUEL.PY  = 0. * mymont$MMEAN.ATM.TEMP.PY
+         mymont$CROP.YIELD.PY      = rep(0.,times=12)
+         mymont$CROP.HARVEST.PY    = 0. * mymont$MMEAN.ATM.TEMP.PY
+         mymont$LOGGING.HARVEST.PY = 0. * mymont$MMEAN.ATM.TEMP.PY
+      }#end if (! "COMBUSTED.FUEL.PY" %in% names(mymont))
       #------------------------------------------------------------------------------------#
 
 

@@ -128,80 +128,80 @@ death.proofer <<- function( datum                # Forest inventory data set
          x = sub( pattern     = "not dead"
                 , replacement = "alive"
                 , x           = x )
-         x = sub( pattern     = "looks almost dead"              
-                , replacement = "dying"                        
+         x = sub( pattern     = "looks almost dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "almost dead"                    
-                , replacement = "dying"                        
+         x = sub( pattern     = "almost dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "nearly dead"                    
-                , replacement = "dying"                        
+         x = sub( pattern     = "nearly dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "thought to be dead"             
-                , replacement = "thought to have perished"     
+         x = sub( pattern     = "thought to be dead"
+                , replacement = "thought to have perished"
                 , x           = x )
-         x = sub( pattern     = "thought as dead"                
-                , replacement = "thought to have perished"     
+         x = sub( pattern     = "thought as dead"
+                , replacement = "thought to have perished"
                 , x           = x )
-         x = sub( pattern     = "half-dead"                      
-                , replacement = "dying"                        
+         x = sub( pattern     = "half-dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "not all dead"                   
-                , replacement = "still alive"                  
+         x = sub( pattern     = "not all dead"
+                , replacement = "still alive"
                 , x           = x )
-         x = sub( pattern     = "looks dead"                     
-                , replacement = "dying"                        
+         x = sub( pattern     = "looks dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "1/2 dead"                       
-                , replacement = "dying"                        
+         x = sub( pattern     = "1/2 dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "half dead"                      
-                , replacement = "dying"                        
+         x = sub( pattern     = "half dead"
+                , replacement = "dying"
                 , x           = x )
          x = sub( pattern     = "dead in 2003 but actually alive"
-                , replacement = "alive"                        
+                , replacement = "alive"
                 , x           = x )
-         x = sub( pattern     = "not found -- assume dead"       
-                , replacement = "missing"                      
+         x = sub( pattern     = "not found -- assume dead"
+                , replacement = "missing"
                 , x           = x )
-         x = sub( pattern     = "not  -- assume dead"            
-                , replacement = "missing"                      
+         x = sub( pattern     = "not  -- assume dead"
+                , replacement = "missing"
                 , x           = x )
-         x = sub( pattern     = "not found\\.assume dead"          
-                , replacement = "missing"                      
+         x = sub( pattern     = "not found\\.assume dead"
+                , replacement = "missing"
                 , x           = x )
-         x = sub( pattern     = "couldn\\.t find??? dead??"        
-                , replacement = "missing"                      
+         x = sub( pattern     = "couldn\\.t find??? dead??"
+                , replacement = "missing"
                 , x           = x )
-         x = sub( pattern     = "couldn\\.t find; probably dead; in a large tree fall\\."                                            
-                , replacement = "missing; area has tree fall." 
+         x = sub( pattern     = "couldn\\.t find; probably dead; in a large tree fall\\."
+                , replacement = "missing; area has tree fall."
                 , x           = x )
-         x = sub( pattern     = "partially dead"                 
-                , replacement = "dying"                        
+         x = sub( pattern     = "partially dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "99% dead"                       
-                , replacement = "dying"                        
+         x = sub( pattern     = "99% dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "dead; it\\.s alive now"           
-                , replacement = "alive"                        
+         x = sub( pattern     = "dead; it\\.s alive now"
+                , replacement = "alive"
                 , x           = x )
-         x = sub( pattern     = "dead; alive now"           
-                , replacement = "alive"                        
+         x = sub( pattern     = "dead; alive now"
+                , replacement = "alive"
                 , x           = x )
-         x = sub( pattern     = "half of tree it\\.s dead"         
-                , replacement = "dying"                        
+         x = sub( pattern     = "half of tree it\\.s dead"
+                , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "not found\\.  assume dead"        
-                , replacement = "missing"                      
+         x = sub( pattern     = "not found\\.  assume dead"
+                , replacement = "missing"
                 , x           = x )
-         x = sub( pattern     = "half of the tree is dead"       
-                , replacement = "dying"                        
+         x = sub( pattern     = "half of the tree is dead"
+                , replacement = "dying"
                 , x           = x )
          x = sub( pattern     = "dead; on the ground in a large tree fall; alive; broken"
-                , replacement = "on the ground in a large tree fall; alive; broken"         
+                , replacement = "on the ground in a large tree fall; alive; broken"
                 , x           = x )
-         x = sub( pattern     = "dead; broken; alive"            
-                , replacement = "broken; alive"                        
+         x = sub( pattern     = "dead; broken; alive"
+                , replacement = "broken; alive"
                 , x           = x )
          x = sub( pattern     = "deading"
                 , replacement = "dying"
@@ -324,7 +324,6 @@ death.proofer <<- function( datum                # Forest inventory data set
    #---------------------------------------------------------------------------------------#
 
 
-
    #---------------------------------------------------------------------------------------#
    #     Now we loop over all trees, correct the death flags, and move the DBH of dead     #
    # trees to the notes.                                                                   #
@@ -354,8 +353,8 @@ death.proofer <<- function( datum                # Forest inventory data set
       #     Update the death flag and notes for trees that have recently died.             #
       #------------------------------------------------------------------------------------#
       if (length(dead.new) > 0 && (! dbh.stdead)){
-         datum[[this.notes]][dead.new] = concatenate.message(datum[[this.notes]][dead.new]
-                                                            ,message            [dead.new]
+         datum[[this.notes]][dead.new] = concatenate.message( datum[[this.notes]][dead.new]
+                                                            , message            [dead.new]
                                                             )#end concatenate.message
          datum[[this.dbh  ]][dead.new] = NA
       }#end if
@@ -368,8 +367,8 @@ death.proofer <<- function( datum                # Forest inventory data set
       # have DBH data.                                                                     #
       #------------------------------------------------------------------------------------#
       if (length(dead.old) > 0 && (! dbh.stdead)){
-         datum[[this.notes]][dead.old] = concatenate.message(datum[[this.notes]][dead.old]
-                                                            ,message            [dead.old]
+         datum[[this.notes]][dead.old] = concatenate.message( datum[[this.notes]][dead.old]
+                                                            , message            [dead.old]
                                                             )#end concatenate.message
          datum[[this.dbh  ]][dead.old] = NA
       }#end if
@@ -439,13 +438,15 @@ death.proofer <<- function( datum                # Forest inventory data set
 # and the growth history for that tree.  If both are weird, we move the datum to the notes #
 # and temporarily replace by the negative number (to make it easier for recruitment).      #
 #------------------------------------------------------------------------------------------#
-growth.proofer <<- function( datum                  # Forest inventory data set
-                           , month2                 # Months
-                           , year4                  # Years
-                           , miss.pref  = "missing" # Prefix of dead flag variables
-                           , dbh.pref   = "dbh"     # Prefix of DBH variables
-                           , notes.pref = "notes"   # Prefix of note variables
-                           , vsep       = "."       # Separator between prefixes and year
+growth.proofer <<- function( datum                   # Forest inventory data set
+                           , month2                  # Months
+                           , year4                   # Years
+                           , indiv.dates = FALSE     # Use individual dates?
+                           , miss.pref   = "missing" # Prefix of dead flag variables
+                           , dbh.pref    = "dbh"     # Prefix of DBH variables
+                           , date.pref   = "date"    # Prefix of date variables
+                           , notes.pref  = "notes"   # Prefix of note variables
+                           , vsep        = "."       # Separator between prefixes and year
                            ){
 
 
@@ -460,6 +461,7 @@ growth.proofer <<- function( datum                  # Forest inventory data set
    #----- Create a table with dbh, so it is easier to find growth rates. ------------------#
    mat.names    = list(datum$full.tag,year4)
    dbh.table    = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
+   date.table   = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    growth.bef   = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    growth.aft   = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    lngrowth.bef = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
@@ -478,16 +480,27 @@ growth.proofer <<- function( datum                  # Forest inventory data set
    #---------------------------------------------------------------------------------------#
    for (y in sequence(n.years)){
       this.dbh         = paste(dbh.pref  ,year4[y],sep=vsep)
+      this.date        = paste(date.pref ,year4[y],sep=vsep)
       this.missing     = paste(miss.pref ,year4[y],sep=vsep)
       this.notes       = paste(notes.pref,year4[y],sep=vsep)
       dbh.table   [,y] = datum[[this.dbh]]
+      if (indiv.dates){
+         this.when      = as.numeric(datum[[this.date]])
+         this.year      = numyears(datum[[this.date]])
+         this.when0     = as.numeric(chron(paste(12,31,this.year-1,sep="/")))
+         this.yr.day    = ifelse(test=is.leap(this.year),yes=366,no=365)
+         date.table[,y] = this.year + (this.when - this.when0) / this.yr.day
+      }else{
+         date.table[,y] = when[y]
+      }#end if
+
       if (this.missing %in% names(datum)){
          del              = as.numeric(datum[[this.missing]]) == 1
          dbh.table[del,y] = NA
          message          = paste0(this.dbh,"=",datum[[this.dbh]]
                                   ," was gap filled thus removed")
-         datum[[this.notes]][del] = concatenate.message(datum[[this.notes]][del]
-                                                       ,message[del])
+         datum[[this.notes]][del] = concatenate.message( datum[[this.notes]][del]
+                                                       , message[del])
          datum[[this.dbh  ]][del] = NA
       }#end if (this.missing %in% names(datum))
       #------------------------------------------------------------------------------------#
@@ -503,10 +516,10 @@ growth.proofer <<- function( datum                  # Forest inventory data set
    for (y in sequence(n.years)[-1]){
       dbh.bef  = rep(NA,times=n.datum)
       when.bef = rep(NA,times=n.datum)
-      for (b in seq(from=1,y-1,+1)){
+      for (b in sequence(y-1)){
          sel           = is.finite(dbh.table[,b])
          dbh.bef [sel] = dbh.table [sel,b]
-         when.bef[sel] = when          [b]
+         when.bef[sel] = date.table[sel,b]
       }#end for (b in seq(from=1,y-1,+1))
       #------------------------------------------------------------------------------------#
 
@@ -515,7 +528,7 @@ growth.proofer <<- function( datum                  # Forest inventory data set
       #------------------------------------------------------------------------------------#
       #     Define the growth rates between the previous measurement and the current.      #
       #------------------------------------------------------------------------------------#
-      dtime.bef   [,y] = when[y]-when.bef
+      dtime.bef   [,y] = date.table[,y]-when.bef
       lngrowth.bef[,y] = log(dbh.table[,y]/dbh.bef)/dtime.bef[,y]
       growth.bef  [,y] = (dbh.table[,y]-dbh.bef)/dtime.bef[,y]
       if (any(is.finite(lngrowth.bef[,y]))){
@@ -535,10 +548,10 @@ growth.proofer <<- function( datum                  # Forest inventory data set
    for (y in sequence(n.years-1)){
       dbh.aft  = rep(NA,times=n.datum)
       when.aft = rep(NA,times=n.datum)
-      for (b in seq(from=n.years,y+1,-1)){
+      for (b in seq(from=n.years,to=y+1,by=-1)){
          sel           = is.finite(dbh.table[,b])
          dbh.aft [sel] = dbh.table [sel,b]
-         when.aft[sel] = when          [b]
+         when.aft[sel] = date.table[sel,b]
       }#end for (b in seq(from=n.years,y+1,-1))
       #------------------------------------------------------------------------------------#
 
@@ -547,7 +560,7 @@ growth.proofer <<- function( datum                  # Forest inventory data set
       #------------------------------------------------------------------------------------#
       #     Define the growth rates between the previous measurement and the current.      #
       #------------------------------------------------------------------------------------#
-      dtime.aft   [,y] = when.aft-when[y]
+      dtime.aft   [,y] = when.aft-date.table[,y]
       lngrowth.aft[,y] = log(dbh.aft/dbh.table[,y])/dtime.aft[,y]
       growth.aft  [,y] = (dbh.aft-dbh.table[,y])/dtime.aft[,y]
       if (any(is.finite(lngrowth.aft[,y]))){
@@ -739,10 +752,12 @@ dbh.gap.filler <<- function( datum
                            , month2
                            , year4
                            , abs.y.sub     = Inf
+                           , indiv.dates   = FALSE
                            , gf.individual = FALSE
                            , dbh.brks      = c(10,20,35,55,Inf)
                            , dbh.pref      = "dbh"
                            , gf.dbh.pref   = "gf.dbh"
+                           , date.pref     = "date"
                            , notes.pref    = "notes"
                            , vsep          = "."
                            , dbhmin.small  = dbh.min.sub
@@ -772,6 +787,7 @@ dbh.gap.filler <<- function( datum
    #----- Create a table with dbh, so it is easier to find growth rates. ------------------#
    mat.names               = list(datum$full.tag,year4)
    dbh.table               = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
+   date.table              = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    lngrowth                = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    dtime                   = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    if (! ("subplot" %in% names(datum))){
@@ -788,7 +804,8 @@ dbh.gap.filler <<- function( datum
    y.1st   = rep(NA,times=n.datum)
    dbh.1st = rep(NA,times=n.datum)
    for (y in sequence(n.years)){
-      this.dbh         = paste(dbh.pref,year4[y],sep=vsep)
+      this.dbh         = paste(dbh.pref ,year4[y],sep=vsep)
+      this.date        = paste(date.pref,year4[y],sep=vsep)
       dbh.ok           = is.finite(datum[[this.dbh]]) & datum$year.goodbye > year4[y]
 
       #------------------------------------------------------------------------------------#
@@ -813,6 +830,17 @@ dbh.gap.filler <<- function( datum
       dbh.table[sel,y] = datum[[this.dbh]][sel]
       #------------------------------------------------------------------------------------#
 
+      #----- Fill in date table. ----------------------------------------------------------#
+      if (indiv.dates){
+         this.when      = datum[[this.date]]
+         this.year      = numyears(this.when)
+         this.when0     = chron(paste(12,31,this.year-1,sep="/"))
+         this.yr.day    = ifelse(test=is.leap(this.year),yes=366,no=365)
+         date.table[,y] = this.year + as.numeric((this.when - this.when0)) / this.yr.day
+      }else{
+         date.table[,y] = when[y]
+      }#end if
+      #------------------------------------------------------------------------------------#
 
       #----- Check whether this is the first time this tree has good data. ----------------#
       sel              = sel & is.na(y.1st)
@@ -842,7 +870,7 @@ dbh.gap.filler <<- function( datum
       for (b in seq(from=1,y-1,+1)){
          sel           = is.finite(dbh.table[,b]) & dbh.table[,b] > 0
          dbh.bef [sel] = dbh.table [sel,b]
-         when.bef[sel] = when          [b]
+         when.bef[sel] = date.table[sel,b]
       }#end for
       #------------------------------------------------------------------------------------#
 
@@ -851,7 +879,7 @@ dbh.gap.filler <<- function( datum
       #------------------------------------------------------------------------------------#
       #     Define the growth rates between the previous measurement and the current.      #
       #------------------------------------------------------------------------------------#
-      dtime    [,y] = when[y]-when.bef
+      dtime    [,y] = date.table[,y]-when.bef
       lngrowth [,y] = log(dbh.table[,y] / dbh.bef) / dtime[,y]
       #------------------------------------------------------------------------------------#
    }#end for
@@ -972,7 +1000,7 @@ dbh.gap.filler <<- function( datum
          for (b in seq(from=1,y-1,+1)){
             sel           = is.finite(dbh.table[,b])
             dbh.bef [sel] = dbh.table [sel,b]
-            when.bef[sel] = when          [b]
+            when.bef[sel] = date.table[sel,b]
          }#end for
       }#end if
       #------------------------------------------------------------------------------------#
@@ -988,7 +1016,7 @@ dbh.gap.filler <<- function( datum
          for (b in seq(from=n.years,y+1,-1)){
             sel           = is.finite(dbh.table[,b])
             dbh.aft [sel] = dbh.table [sel,b]
-            when.aft[sel] = when          [b]
+            when.aft[sel] = date.table[sel,b]
          }#end for
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1001,9 +1029,11 @@ dbh.gap.filler <<- function( datum
       # that is available.                                                                 #
       #------------------------------------------------------------------------------------#
       dbh.guess = data.frame( before = dbh.bef
-                                     * exp(typical.tree.lngrowth * (when[y] - when.bef))
+                                     * exp( typical.tree.lngrowth 
+                                          * (date.table[,y] - when.bef) )
                             , after  = dbh.aft
-                                     * exp(typical.tree.lngrowth * (when[y] - when.aft))
+                                     * exp( typical.tree.lngrowth
+                                          * (date.table[,y] - when.aft))
                             )#end data.frame
       gfflg     = 1. + rowSums(is.na(dbh.guess),na.rm=TRUE)
       dbh.guess = round(rowMeans(dbh.guess,na.rm=TRUE),1)
@@ -1018,7 +1048,7 @@ dbh.gap.filler <<- function( datum
       is.recruited = ( dbh.guess %>% ( dbh.min + dbh.min.toler )
                      | datum[[dbh.label]] %>=% dbh.min
                      | datum$year.recruit <= year4[y] )
-      is.alive     = datum$year.goodbye > year4[y]
+      is.alive     = datum$year.death > year4[y]
       update.year  = dbh.miss & is.recruited & is.alive
       #------------------------------------------------------------------------------------#
 

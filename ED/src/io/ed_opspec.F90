@@ -2465,7 +2465,7 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (treefall_disturbance_rate /= 0.0) then
+   if (treefall_disturbance_rate > 0.0) then
       if (time2canopy < 0.0) then
          write (reason,fmt='(a,1x,es14.7,a)')                                              &
                 'Invalid TIME2CANOPY, it can''t be negative.  Yours is set to'             &
@@ -2489,6 +2489,14 @@ end do
          call opspec_fatal(reason,'opspec_misc')  
          ifaterr = ifaterr +1
       end if
+   elseif (treefall_disturbance_rate < 0.0) then
+      !----- Treefall disturbance rate must be non-negative. ------------------------------!
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+             'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
+             ,treefall_disturbance_rate,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+      !------------------------------------------------------------------------------------!
    end if
     
    

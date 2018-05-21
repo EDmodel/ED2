@@ -126,7 +126,6 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
       ss.tot    = sum(x.tot.ok^2)
       ss.err    = sum(x.res.ok^2)
       r.squared = 1. - df.tot * ss.err / ( df.err * ss.tot )
-      if (! is.finite(r.squared)) browser()
       #------------------------------------------------------------------------------------#
 
 

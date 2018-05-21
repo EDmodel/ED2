@@ -81,7 +81,7 @@ module farq_leuning
                            ,leaf_gbw,A_open,A_closed,A_light,A_rubp,A_co2,gsw_open         &
                            ,gsw_closed,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open         &
                            ,lsfc_co2_closed,lint_co2_open,lint_co2_closed,leaf_resp,vmout  &
-                           ,comppout,limit_flag)
+                           ,jmout,tpmout,jactout,comppout,limit_flag)
       use rk4_coms       , only : tiny_offset              & ! intent(in)
                                 , effarea_transp           ! ! intent(in)
       use c34constants   , only : thispft                  & ! intent(out)
@@ -90,8 +90,8 @@ module farq_leuning
                                 , stclosed                 & ! intent(inout)
                                 , stopen                   & ! intent(inout)
                                 , lightlim                 & ! intent(inout)
-                                , rubiscolim               & ! intent(inout)
-                                , co2lim                   ! ! intent(inout)
+                                , rubpsatlim               & ! intent(inout)
+                                , thirdlim                 ! ! intent(inout)
       use pft_coms       , only : photosyn_pathway         & ! intent(in)
                                 , phenology                & ! intent(in)
                                 , D0                       & ! intent(in)
@@ -100,17 +100,29 @@ module farq_leuning
                                 , vm_high_temp             & ! intent(in)
                                 , vm_hor                   & ! intent(in)
                                 , vm_q10                   & ! intent(in)
-                                , vm_decay_e               & ! intent(in)
+                                , vm_decay_elow            & ! intent(in)
+                                , vm_decay_ehigh           & ! intent(in)
+                                , Jm0                      & ! intent(in)
+                                , jm_low_temp              & ! intent(in)
+                                , jm_high_temp             & ! intent(in)
+                                , jm_hor                   & ! intent(in)
+                                , jm_q10                   & ! intent(in)
+                                , jm_decay_elow            & ! intent(in)
+                                , jm_decay_ehigh           & ! intent(in)
+                                , TPm0                     & ! intent(in)
                                 , Rd0                      & ! intent(in)
                                 , rd_low_temp              & ! intent(in)
                                 , rd_high_temp             & ! intent(in)
                                 , rd_hor                   & ! intent(in)
                                 , rd_q10                   & ! intent(in)
-                                , rd_decay_e               & ! intent(in)
+                                , rd_decay_elow            & ! intent(in)
+                                , rd_decay_ehigh           & ! intent(in)
                                 , cuticular_cond           & ! intent(in)
                                 , dark_respiration_factor  & ! intent(in)
                                 , stomatal_slope           & ! intent(in)
-                                , quantum_efficiency       ! ! intent(in)
+                                , quantum_efficiency       & ! intent(in)
+                                , curvpar_electron         & ! intent(in)
+                                , qyield_psII              ! ! intent(in)
       use phenology_coms , only : vm0_tran                 & ! intent(in)
                                 , vm0_slope                & ! intent(in)
                                 , vm0_amp                  & ! intent(in)
@@ -158,6 +170,9 @@ module farq_leuning
       real(kind=4), intent(out)   :: lint_co2_closed   ! Intercell. CO2   (cl.) [ umol/mol]
       real(kind=4), intent(out)   :: leaf_resp         ! Leaf respiration rate  [umol/m2/s]
       real(kind=4), intent(out)   :: vmout             ! Max. Rubisco capacity  [umol/m2/s]
+      real(kind=4), intent(out)   :: jmout             ! Max. electron transp.  [umol/m2/s]
+      real(kind=4), intent(out)   :: tpmout            ! Max. triose phoshphate [umol/m2/s]
+      real(kind=4), intent(out)   :: jactout           ! Act. electron transp.  [umol/m2/s]
       real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ umol/mol]
       integer     , intent(out)   :: limit_flag        ! Photosyn. limit. flag  [      ---]
       !----- External function. -----------------------------------------------------------!
@@ -209,21 +224,33 @@ module farq_leuning
       !     Load physiological parameters that are PFT-dependent to the thispft structure. !
       ! Convert all variables to mol and Kelvin, when needed.                              !
       !------------------------------------------------------------------------------------!
-      thispft(ib)%photo_pathway = photosyn_pathway(ipft)
-      thispft(ib)%D0            = dble(D0(ipft))
-      thispft(ib)%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
-      thispft(ib)%m             = dble(stomatal_slope(ipft))
-      thispft(ib)%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
-      thispft(ib)%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
-      thispft(ib)%vm_hor        = dble(vm_hor(ipft))
-      thispft(ib)%vm_q10        = dble(vm_q10(ipft))
-      thispft(ib)%vm_decay_e    = dble(vm_decay_e(ipft))
-      thispft(ib)%rd_low_temp   = dble(rd_low_temp(ipft))  + t008
-      thispft(ib)%rd_high_temp  = dble(rd_high_temp(ipft)) + t008
-      thispft(ib)%rd_hor        = dble(rd_hor(ipft))
-      thispft(ib)%rd_q10        = dble(rd_q10(ipft))
-      thispft(ib)%rd_decay_e    = dble(rd_decay_e(ipft))
-      thispft(ib)%alpha0        = dble(quantum_efficiency(ipft))
+      thispft(ib)%photo_pathway    = photosyn_pathway(ipft)
+      thispft(ib)%D0               = dble(D0(ipft))
+      thispft(ib)%b                = dble(cuticular_cond(ipft)) * umol_2_mol8
+      thispft(ib)%m                = dble(stomatal_slope(ipft))
+      thispft(ib)%vm_low_temp      = dble(vm_low_temp(ipft))  + t008
+      thispft(ib)%vm_high_temp     = dble(vm_high_temp(ipft)) + t008
+      thispft(ib)%vm_hor           = dble(vm_hor(ipft))
+      thispft(ib)%vm_q10           = dble(vm_q10(ipft))
+      thispft(ib)%vm_decay_elow    = dble(vm_decay_elow(ipft))
+      thispft(ib)%vm_decay_ehigh   = dble(vm_decay_ehigh(ipft))
+      thispft(ib)%jm_low_temp      = dble(jm_low_temp(ipft))  + t008
+      thispft(ib)%jm_high_temp     = dble(jm_high_temp(ipft)) + t008
+      thispft(ib)%jm_hor           = dble(jm_hor(ipft))
+      thispft(ib)%jm_q10           = dble(jm_q10(ipft))
+      thispft(ib)%jm_decay_elow    = dble(jm_decay_elow(ipft))
+      thispft(ib)%jm_decay_ehigh   = dble(jm_decay_ehigh(ipft))
+      thispft(ib)%rd_low_temp      = dble(rd_low_temp(ipft))  + t008
+      thispft(ib)%rd_high_temp     = dble(rd_high_temp(ipft)) + t008
+      thispft(ib)%rd_hor           = dble(rd_hor(ipft))
+      thispft(ib)%rd_q10           = dble(rd_q10(ipft))
+      thispft(ib)%rd_decay_elow    = dble(rd_decay_elow(ipft))
+      thispft(ib)%rd_decay_ehigh   = dble(rd_decay_ehigh(ipft))
+      thispft(ib)%alpha0           = dble(quantum_efficiency(ipft))
+      thispft(ib)%jm0              = dble(jm0 (ipft)) * umol_2_mol8
+      thispft(ib)%TPm0             = dble(TPm0(ipft)) * umol_2_mol8
+      thispft(ib)%curvpar          = dble(curvpar_electron(ipft))
+      thispft(ib)%phi_psII         = dble(qyield_psII     (ipft))
       !------------------------------------------------------------------------------------!
 
 
@@ -254,6 +281,9 @@ module farq_leuning
       ! the functional form chosen by the user.  The variables that are defined there are: !
       ! - alpha     - the quantum yield, which may be a function of temperature.           !
       ! - Vm        - the maximum capacity of Rubisco to perform the carboxylase function. !
+      ! - Jm        - the maximum electron transport rate.                                 !
+      ! - J         - the actual electron transport rate.                                  !
+      ! - TPm       - the maximum triose phosphate utilisation rate.                       !
       ! - leaf_resp - the leaf respiration.                                                !
       ! - compp     - the CO2 compensation point for gross photosynthesis (Gamma*)         !
       ! - kco2      - Michaelis-Mentel coefficient for CO2                                 !
@@ -280,8 +310,8 @@ module farq_leuning
       A_closed       = sngloff(stclosed(ib)%co2_demand    * mol_2_umol8 , tiny_offset)
       A_open         = sngloff(stopen(ib)%co2_demand      * mol_2_umol8 , tiny_offset)
       A_light        = sngloff(lightlim(ib)%co2_demand    * mol_2_umol8 , tiny_offset)
-      A_rubp         = sngloff(rubiscolim(ib)%co2_demand  * mol_2_umol8 , tiny_offset)
-      A_co2          = sngloff(co2lim(ib)%co2_demand      * mol_2_umol8 , tiny_offset)
+      A_rubp         = sngloff(rubpsatlim(ib)%co2_demand  * mol_2_umol8 , tiny_offset)
+      A_co2          = sngloff(thirdlim(ib)%co2_demand    * mol_2_umol8 , tiny_offset)
       !----- Stomatal resistance, convert the conductances to [kg/m2/s]. ------------------!
       gsw_closed     = sngloff(stclosed(ib)%stom_cond_h2o * mmdry8 / effarea_transp(ipft)  &
                               , tiny_offset)
@@ -300,6 +330,12 @@ module farq_leuning
       leaf_resp       = sngloff(aparms(ib)%leaf_resp      * mol_2_umol8 , tiny_offset)
       !----- Maximum Rubisco capacity to perform the carboxylase function [umol/m2/s]. ----!
       vmout           = sngloff(aparms(ib)%vm             * mol_2_umol8 , tiny_offset)
+      !----- Maximum electron transport rate [umol/m2/s]. ---------------------------------!
+      jmout           = sngloff(aparms(ib)%jm             * mol_2_umol8 , tiny_offset)
+      !----- Maximum triose phosphate utilisation rate [umol/m2/s]. -----------------------!
+      tpmout          = sngloff(aparms(ib)%tpm            * mol_2_umol8 , tiny_offset)
+      !----- Actual electron transport rate [umol/m2/s]. ----------------------------------!
+      jactout         = sngloff(aparms(ib)%jact           * mol_2_umol8 , tiny_offset)
       !----- Gross photosynthesis compensation point, convert it to [umol/mol]. -----------!
       comppout        = sngloff(aparms(ib)%compp          * mol_2_umol8 , tiny_offset)
       !------------------------------------------------------------------------------------!
@@ -326,6 +362,9 @@ module farq_leuning
    ! functional form chosen by the user.  The variables that are defined there are:        !
    ! - alpha     - the quantum yield, which may be a function of temperature.              !
    ! - Vm        - the maximum capacity of Rubisco to perform the carboxylase function.    !
+   ! - Jm        - the maximum electron transport rate.                                    !
+   ! - J         - the actual electron transport rate.                                     !
+   ! - TPm       - the maximum triose phosphate utilisation rate.                          !
    ! - leaf_resp - the leaf respiration.                                                   !
    ! - compp     - the CO2 compensation point for gross photosynthesis (Gamma*)            !
    ! - kco2      - Michaelis-Mentel coefficient for CO2                                    !
@@ -353,20 +392,30 @@ module farq_leuning
       use consts_coms    , only : lnexp_min8            & ! intent(in)
                                 , lnexp_max8            & ! intent(in)
                                 , rmol8                 & ! intent(in)
-                                , t008                  ! ! intent(in)
+                                , t008                  & ! intent(in)
+                                , mol_2_umol8           ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       integer     , intent(in) :: ib                ! Multithread ID 
       real(kind=4), intent(in) :: leaf_aging_factor ! Ageing factor             [      ---]
       real(kind=4), intent(in) :: green_leaf_factor ! Greeness (prescr. phen.)  [      ---]
       !------ Local variables. ------------------------------------------------------------!
-      real(kind=8)             :: vm_nocorr         ! Vm  with no correction    [ mol/m2/s]
-      real(kind=8)             :: rd_nocorr         ! Rd  with no correction    [ mol/m2/s]
-      real(kind=8)             :: lnexplow          ! Low temperature exponent  [      ---]
-      real(kind=8)             :: lnexphigh         ! High temperature exponent [      ---]
-      real(kind=8)             :: tlow_fun          ! Low temperature bound     [      ---]
-      real(kind=8)             :: thigh_fun         ! High temperature bound    [      ---]
-      real(kind=8)             :: greeness          ! Leaf "Greeness"           [   0 to 1]
+      real(kind=8)             :: vm_nocorr !> Vm  with no correction           [ mol/m2/s]
+      real(kind=8)             :: jm_nocorr !> Jm  with no correction           [ mol/m2/s]
+      real(kind=8)             :: rd_nocorr !> Rd  with no correction           [ mol/m2/s]
+      real(kind=8)             :: lnexplow  !> Low temperature exponent         [      ---]
+      real(kind=8)             :: lnexphigh !> High temperature exponent        [      ---]
+      real(kind=8)             :: tlow_fun  !> Low temperature bound            [      ---]
+      real(kind=8)             :: thigh_fun !> High temperature bound           [      ---]
+      real(kind=8)             :: greeness  !> Leaf "Greeness"                  [   0 to 1]
+      real(kind=8)             :: ipsII     !> Light used by photosystem II     [ mol/m2/s]
+      real(kind=8)             :: ipsII_max !> critical value for ipsII         [      ---]
+      real(kind=8)             :: aterm     !> 'a' term for quadratic equation  [      ---]
+      real(kind=8)             :: bterm     !> 'b' term for quadratic equation  [      ---]
+      real(kind=8)             :: cterm     !> 'c' term for quadratic equation  [      ---]
+      real(kind=8)             :: discr     !> discriminant for quadratic eqn   [      ---]
+      real(kind=8)             :: jroot1    !> root for quadratic equation      [      ---]
+      real(kind=8)             :: jroot2    !> root for quadratic equation      [      ---]
       !------------------------------------------------------------------------------------!
 
 
@@ -393,6 +442,7 @@ module farq_leuning
          case (0)
             !----- The user wants constant alpha for C3 plants. ---------------------------!
             aparms(ib)%alpha = thispft(ib)%alpha0
+            !------------------------------------------------------------------------------!
 
          case (1)
             !------------------------------------------------------------------------------!
@@ -411,6 +461,7 @@ module farq_leuning
             end if
             !------------------------------------------------------------------------------!
          end select
+         !---------------------------------------------------------------------------------!
 
       case (4)
          aparms(ib)%alpha = thispft(ib)%alpha0
@@ -422,66 +473,31 @@ module farq_leuning
 
       !------------------------------------------------------------------------------------!
       !     Here we decide which temperature-dependence to use, the "Arrhenius" form as in !
-      ! F96, or the power law as in C91.                                                   !
+      ! F96, or the power law as in C91.  Solve all the temperature functions first, then  !
+      ! we apply the temperature correction term.                                          !
       !------------------------------------------------------------------------------------!
       select case (iphysiol)
       case (0,1)
          !---------------------------------------------------------------------------------!
-         !     We go for the "Arrhenius" form, like in F96 and M01.                        !
+         !     Use  the "Arrhenius" form, like in F96 and M01.                             !
          !---------------------------------------------------------------------------------!
 
 
-         !----- Find Vm using the Arrhenius equation, with no correction. -----------------!
+         !----- Find Vm, with no correction. ----------------------------------------------!
          vm_nocorr = greeness * arrhenius(met(ib)%leaf_temp,thispft(ib)%vm0                &
                                          ,thispft(ib)%vm_hor)
          !---------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !    Compute the functions that will control the Vm function for low and high     !
-         ! temperature.  In order to avoid floating point exceptions, we check whether the !
-         ! temperature will make the exponential too large or too small.                   !
-         !---------------------------------------------------------------------------------!
-         !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft(ib)%vm_decay_e * (thispft(ib)%vm_low_temp  - met(ib)%leaf_temp)
-         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
-         tlow_fun  = 1.d0 +  exp(lnexplow)
-         !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft(ib)%vm_decay_e * (met(ib)%leaf_temp - thispft(ib)%vm_high_temp)
-         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-         thigh_fun = 1.d0 + exp(lnexphigh)
+         !----- Find Jm, with no correction. ----------------------------------------------!
+         jm_nocorr = greeness * arrhenius(met(ib)%leaf_temp,thispft(ib)%jm0                &
+                                         ,thispft(ib)%jm_hor)
          !---------------------------------------------------------------------------------!
 
 
-         !------ Correct Vm. --------------------------------------------------------------!
-         aparms(ib)%vm = vm_nocorr / (tlow_fun * thigh_fun)
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Find Rd using the Arrhenius equation, with no correction. -----------------!
+         !----- Find Rd, with no correction. ----------------------------------------------!
          rd_nocorr = greeness * arrhenius(met(ib)%leaf_temp,thispft(ib)%rd0                &
                                          ,thispft(ib)%rd_hor)
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !    Compute the functions that will control the rd function for low and high     !
-         ! temperature.  In order to avoid floating point exceptions, we check whether the !
-         ! temperature will make the exponential too large or too small.                   !
-         !---------------------------------------------------------------------------------!
-         !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft(ib)%rd_decay_e * (thispft(ib)%rd_low_temp - met(ib)%leaf_temp)
-         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
-         tlow_fun  = 1.d0 +  exp(lnexplow)
-         !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft(ib)%rd_decay_e * (met(ib)%leaf_temp - thispft(ib)%rd_high_temp)
-         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-         thigh_fun = 1.d0 + exp(lnexphigh)
-         !---------------------------------------------------------------------------------!
-
-
-         !------ Correct rd. --------------------------------------------------------------!
-         aparms(ib)%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
 
@@ -507,60 +523,25 @@ module farq_leuning
 
       case (2,3)
          !---------------------------------------------------------------------------------!
-         !     We go for the power law, as in C91/C92.                                     !
+         !     Use  the "Collatz" (Q10) form, like in C91 and C92.                         !
          !---------------------------------------------------------------------------------!
 
 
-         !----- Find Vm using the Collatz equation, with no correction. -------------------!
+         !----- Find Vm, with no correction. ----------------------------------------------!
          vm_nocorr = greeness * collatz(met(ib)%leaf_temp,thispft(ib)%vm0                  &
                                        ,thispft(ib)%vm_q10)
          !---------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !    Compute the functions that will control the Vm function for high temper-     !
-         ! ature.  In order to avoid floating point exceptions, we check whether the       !
-         ! temperature will make the exponential too small or too large.                   !
-         !---------------------------------------------------------------------------------!
-         !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft(ib)%vm_decay_e * (thispft(ib)%vm_low_temp - met(ib)%leaf_temp)
-         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
-         tlow_fun  = 1.d0 +  exp(lnexplow)
-         !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft(ib)%vm_decay_e * (met(ib)%leaf_temp - thispft(ib)%vm_high_temp)
-         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-         thigh_fun = 1.d0 + exp(lnexphigh)
+         !----- Find Jm, with no correction. ----------------------------------------------!
+         jm_nocorr = greeness * collatz(met(ib)%leaf_temp,thispft(ib)%jm0                  &
+                                       ,thispft(ib)%jm_q10)
          !---------------------------------------------------------------------------------!
 
 
-         !------ Correct Vm. --------------------------------------------------------------!
-         aparms(ib)%vm = vm_nocorr / (tlow_fun * thigh_fun)
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Find Rd using the Collatz equation, with no correction. -------------------!
+         !----- Find Rd, with no correction. ----------------------------------------------!
          rd_nocorr = greeness * collatz(met(ib)%leaf_temp,thispft(ib)%rd0                  &
                                        ,thispft(ib)%rd_q10)
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !    Compute the functions that will control the rd function for low and high     !
-         ! temperature.  In order to avoid floating point exceptions, we check whether the !
-         ! temperature will make the exponential too large or too small.                   !
-         !---------------------------------------------------------------------------------!
-         !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft(ib)%rd_decay_e * (thispft(ib)%rd_low_temp  - met(ib)%leaf_temp)
-         lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
-         tlow_fun  = 1.d0 +  exp(lnexplow)
-         !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft(ib)%rd_decay_e * (met(ib)%leaf_temp - thispft(ib)%rd_high_temp)
-         lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-         thigh_fun = 1.d0 + exp(lnexphigh)
-         !---------------------------------------------------------------------------------!
-
-         !------ Correct Rd. --------------------------------------------------------------!
-         aparms(ib)%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
 
@@ -584,6 +565,164 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !    Apply further temperature correction to shut down Vm at extreme temperatures.   !
+      ! In order to avoid floating point exceptions, we check whether the temperature will !
+      ! make the exponential too large or too small.                                       !
+      !------------------------------------------------------------------------------------!
+      !----- Low temperature. -------------------------------------------------------------!
+      lnexplow  = thispft(ib)%vm_decay_elow  * (thispft(ib)%vm_low_temp -met(ib)%leaf_temp)
+      lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow ))
+      tlow_fun  = 1.d0 +  exp(lnexplow )
+      !----- High temperature. ------------------------------------------------------------!
+      lnexphigh = thispft(ib)%vm_decay_ehigh * (met(ib)%leaf_temp-thispft(ib)%vm_high_temp)
+      lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+      thigh_fun = 1.d0 + exp(lnexphigh)
+      !------ Correct Vm. -----------------------------------------------------------------!
+      aparms(ib)%vm = vm_nocorr / (tlow_fun * thigh_fun)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Apply further temperature correction to shut down Jm at extreme temperatures.   !
+      ! In order to avoid floating point exceptions, we check whether the temperature will !
+      ! make the exponential too large or too small.                                       !
+      !------------------------------------------------------------------------------------!
+      !----- Low temperature. -------------------------------------------------------------!
+      lnexplow  = thispft(ib)%jm_decay_elow  * (thispft(ib)%jm_low_temp -met(ib)%leaf_temp)
+      lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow ))
+      tlow_fun  = 1.d0 +  exp(lnexplow )
+      !----- High temperature. ------------------------------------------------------------!
+      lnexphigh = thispft(ib)%jm_decay_ehigh * (met(ib)%leaf_temp-thispft(ib)%jm_high_temp)
+      lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+      thigh_fun = 1.d0 + exp(lnexphigh)
+      !------ Correct jm. -----------------------------------------------------------------!
+      aparms(ib)%jm = jm_nocorr / (tlow_fun * thigh_fun)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Apply further temperature correction to shut down Rd at extreme temperatures.   !
+      ! In order to avoid floating point exceptions, we check whether the temperature will !
+      ! make the exponential too large or too small.                                       !
+      !------------------------------------------------------------------------------------!
+      !----- Low temperature. -------------------------------------------------------------!
+      lnexplow  = thispft(ib)%rd_decay_elow  * (thispft(ib)%rd_low_temp -met(ib)%leaf_temp)
+      lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow ))
+      tlow_fun  = 1.d0 +  exp(lnexplow )
+      !----- High temperature. ------------------------------------------------------------!
+      lnexphigh = thispft(ib)%rd_decay_ehigh * (met(ib)%leaf_temp-thispft(ib)%rd_high_temp)
+      lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+      thigh_fun = 1.d0 + exp(lnexphigh)
+      !------ Correct leaf respiration. ---------------------------------------------------!
+      aparms(ib)%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the maximum triose phosphate utilisation rate based on Vm and reference   !
+      ! values.                                                                            !
+      !------------------------------------------------------------------------------------!
+      aparms(ib)%tpm = aparms(ib)%vm * thispft(ib)%TPm0 / thispft(ib)%vm0
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the actual electron transport electron rate.  This is solved only when    !
+      ! iphysiol is 1 or 3.  For the old ED-method (cases 0 and 2), we assume that         !
+      ! J = 4 * alpha * PAR, which makes the light-limited case the same as the original.  !
+      !------------------------------------------------------------------------------------!
+      select case (iphysiol)
+      case (0,2)
+         !----- Quantum efficiency method. ------------------------------------------------!
+         aparms(ib)%jact = 4.d0 * aparms(ib)%alpha * met(ib)%par
+         !---------------------------------------------------------------------------------!
+      case (1,3)
+         !---------------------------------------------------------------------------------!
+         !      Check whether there is a risk of negative discriminant.  This occurs only  !
+         ! when the curvature parameter is greater than 1.0.                               !
+         !---------------------------------------------------------------------------------!
+         if (thispft(ib)%curvpar > 1.d0) then
+            ipsII_max = aparms(ib)%jm                                                      &
+                      * ( 2.d0 * thispft(ib)%curvpar - 1.d0                                &
+                        - sqrt(thispft(ib)%curvpar * (thispft(ib)%curvpar-1.d0) ) )
+         else
+            ipsII_max = discard
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find absorbed light used by photosystem II. -------------------------------!
+         ipsII = min(ipsII_max,0.5 * thispft(ib)%phi_psII * met(ib)%par)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the quadratic terms. -------------------------------------------------!
+         aterm = thispft(ib)%curvpar
+         bterm = - (ipsII + aparms(ib)%jm)
+         cterm = ipsII * aparms(ib)%jm
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         if (aterm == 0.d0) then
+            !----- Equation was reduced to linear equation. -------------------------------!
+            aparms(ib)%jact = - cterm / bterm
+            !------------------------------------------------------------------------------!
+         else
+            !----- Check whether discriminant is positive. --------------------------------!
+            discr = bterm * bterm - 4.d0 * aterm * cterm
+            if (discr == 0.d0) then
+               aparms(ib)%jact = - bterm / (2.d0 * aterm)
+            elseif (discr > 0.d0) then
+               !----- Always pick the smallest of the roots. ------------------------------!
+               jroot1 = ( - bterm - sqrt(discr) ) / ( 2.d0 * aterm)
+               jroot2 = ( - bterm + sqrt(discr) ) / ( 2.d0 * aterm)
+               if (jroot1 <= jroot2) then
+                  aparms(ib)%jact = jroot1
+               else 
+                  aparms(ib)%jact = jroot2
+               end if
+               !---------------------------------------------------------------------------!
+            else
+               !----- Broadcast the bad news. ---------------------------------------------!
+               write(unit=*,fmt='(a)'          ) ''
+               write(unit=*,fmt='(a)'          ) ''
+               write(unit=*,fmt='(a)'          ) '========================================'
+               write(unit=*,fmt='(a)'          ) '========================================'
+               write(unit=*,fmt='(a)'          ) '   Discriminant is negative.'
+               write(unit=*,fmt='(a)'          ) '----------------------------------------'
+               write(unit=*,fmt='(a,1x,f12.5)' ) 'PAR       = ', met(ib)%par * mol_2_umol8
+               write(unit=*,fmt='(a,1x,f12.5)' ) 'QYIELD    = ', thispft(ib)%phi_psII
+               write(unit=*,fmt='(a,1x,f12.5)' ) 'CURVATURE = ', thispft(ib)%curvpar
+               write(unit=*,fmt='(a,1x,f12.5)' ) 'JMAX      = ', aparms(ib)%jm             &
+                                                               * mol_2_umol8
+               write(unit=*,fmt='(a,1x,f12.5)' ) 'JM0       = ', thispft(ib)%jm0           &
+                                                               * mol_2_umol8
+               write(unit=*,fmt='(a,1x,f12.5)' ) 'LEAF_TEMP = ', met(ib)%leaf_temp + t008
+               write(unit=*,fmt='(a,1x,es12.5)') 'A         = ', aterm
+               write(unit=*,fmt='(a,1x,es12.5)') 'B         = ', bterm
+               write(unit=*,fmt='(a,1x,es12.5)') 'C         = ', cterm
+               write(unit=*,fmt='(a,1x,es12.5)') 'DISCR     = ', discr
+               write(unit=*,fmt='(a)'          ) '========================================'
+               write(unit=*,fmt='(a)'          ) '========================================'
+               write(unit=*,fmt='(a)'          ) ''
+               write(unit=*,fmt='(a)'          ) ''
+               call fatal_error(' Negative discriminant when seeking the J rate.'          &
+                               ,'comp_photo_tempfun','farq_leuning.f90')
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine comp_photo_tempfun
    !=======================================================================================!
@@ -603,26 +742,28 @@ module farq_leuning
                                 , thispft          & ! intent(in)
                                 , stopen           & ! intent(inout)
                                 , stclosed         & ! intent(inout)
-                                , rubiscolim       & ! intent(inout)
-                                , co2lim           & ! intent(inout)
+                                , rubpsatlim       & ! intent(inout)
+                                , thirdlim         & ! intent(inout)
                                 , lightlim         & ! intent(inout)
                                 , copy_solution    ! ! intent(in)
+      use physiology_coms, only : iphysiol         ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       integer     , intent(in)  :: ib               ! Multithread ID
       integer     , intent(out) :: limit_flag       ! Flag with limiting case    [     ---]
       !------ Local variables. ------------------------------------------------------------!
-      logical                   :: success          ! The solver succeeded.      [     T|F]
       real(kind=8)              :: par_twilight_min ! Minimum daytime radiation  [mol/m2/s]
       !------------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !      Initialise the limitation flag with some dummy value, so the debugger does    !
-      ! not complain.                                                                      !
-      !------------------------------------------------------------------------------------!
-      limit_flag = 99
-      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !      Initialise the limitation flag with -1.  This will mean that none of the      !
+      ! solutions worked and it is daytime.  We will replace the flag depending on the     !
+      ! success of solutions.                                                              !
+      !------------------------------------------------------------------------------------!
+      limit_flag = -1
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -632,8 +773,8 @@ module farq_leuning
       ! conductance depend on the intercellular CO2 mixing ratio.                          !
       !------------------------------------------------------------------------------------!
       call set_co2_demand_params(ib,'CLOSED')
-      call solve_aofixed_case(ib,stclosed(ib),success)
-      if (.not. success) then
+      call solve_aofixed_case(ib,stclosed(ib))
+      if (.not. stclosed(ib)%success) then
          call fatal_error ('Solution failed for closed case'                               &
                           ,'photosynthesis_exact_solver','farq_leuning.f90')
       end if
@@ -654,41 +795,47 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !   1. The light-limited (aka PAR) case.                                             !
-      !------------------------------------------------------------------------------------!
-      !----- Update the CO2 demand function parameters for light limitation. --------------!
-      call set_co2_demand_params(ib,'LIGHT')
-      !------------------------------------------------------------------------------------!
       !    First we check whether it is at least dawn or dusk.  In case it is not, no      !
       ! photosynthesis should happen, so we copy the closed case stomata values to the     !
       ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
       !------------------------------------------------------------------------------------!
       par_twilight_min = find_twilight_min(ib)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Check the amount of light before running the light-limited case. -------------!
       if (met(ib)%par < par_twilight_min) then
-         call copy_solution(stclosed(ib),stopen  (ib))
-         call copy_solution(stclosed(ib),lightlim(ib))
          limit_flag = 0
+         call copy_solution(stclosed(ib),lightlim(ib))
       else
+         !----- Light above minimum, run the RubP-regeneration (aka light) limited case. --!
+         call set_co2_demand_params(ib,'LIGHT')
+         !---------------------------------------------------------------------------------!
+
          !---------------------------------------------------------------------------------!
          !     Day time: choose the appropriate solver depending on the photosynthetic     !
          ! pathway.                                                                        !
          !---------------------------------------------------------------------------------!
          select case(thispft(ib)%photo_pathway)
          case (3)
-            call solve_iterative_case(ib,lightlim(ib),success)
+            call solve_iterative_case(ib,lightlim(ib))
          case (4)
-            call solve_aofixed_case(ib,lightlim(ib),success)
+            call solve_aofixed_case(ib,lightlim(ib))
          end select
          !---------------------------------------------------------------------------------!
          !     In case success was returned as "false", this means that the light-limited  !
-         ! case didn't converge (there was no root).  If this is the case we give up and   !
-         ! close all stomata, as there was no viable state for stomata to remain opened.   !
+         ! case didn't converge (there was no root).  If this is the case we don't let     !
+         ! this solution to be selected (but do not give up because this case may fail     !
+         ! when light is excessive).                                                       !
          !---------------------------------------------------------------------------------!
-         if (.not. success) then
-            call copy_solution(stclosed(ib),stopen  (ib))
-            call copy_solution(stclosed(ib),lightlim(ib))
-            limit_flag = -1
+         if (lightlim(ib)%success) then
+            limit_flag              = 99
+         else
+            lightlim(ib)%lint_co2   = -discard
+            lightlim(ib)%co2_demand = + discard
          end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -696,28 +843,32 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !    2. The Rubisco-limited (aka Vm) case.                                           !
+      !    2. The RubP-saturated (aka Rubisco-limited) case.                               !
       !------------------------------------------------------------------------------------!
       !----- Update the CO2 demand function parameters for Rubisco limitation. ------------!
-      call set_co2_demand_params(ib,'RUBISCO')
+      call set_co2_demand_params(ib,'RUBP_SAT')
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
       select case(thispft(ib)%photo_pathway)
       case (3)
-         call solve_iterative_case(ib,rubiscolim(ib),success)
+         call solve_iterative_case(ib,rubpsatlim(ib))
       case (4)
-         call solve_aofixed_case(ib,rubiscolim(ib),success)
+         call solve_aofixed_case(ib,rubpsatlim(ib))
       end select
       !------------------------------------------------------------------------------------!
-      !     In case success was returned as "false", this means that the Rubisco-limited   !
-      ! case didn't converge (there was no root).  If this is the case we give up and      !
-      ! close all stomata, as there was no viable state for stomata to remain opened.      !
+      !     In case success was returned as "false", this means that the RubP-             !
+      ! saturated case didn't converge (there was no root).  If this is the case we don't  !
+      ! let this solution to be selected.  Furthermore, if this is C3, it means that       !
+      ! the solution is invalid, in which case we close the stomata.                       !
       !------------------------------------------------------------------------------------!
-      if (.not. success) then
-         call copy_solution(stclosed(ib),rubiscolim(ib))
-         select case (limit_flag)
-         case (99)
-            call copy_solution(stclosed(ib),stopen(ib))
+      if (rubpsatlim(ib)%success) then
+         limit_flag    = 99
+      else
+         select case (thispft(ib)%photo_pathway)
+         case (3)
             limit_flag = -2
+         case (4)
+            rubpsatlim(ib)%lint_co2   = -discard
+            rubpsatlim(ib)%co2_demand = +discard
          end select
       end if
       !------------------------------------------------------------------------------------!
@@ -726,43 +877,52 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      ! 3. The low CO2 concentration case (aka the CO2 case).                              !
+      !  3. The third case.  This is the triose phosphate utilisation limitation for C3    !
+      !     plants, and the low CO2 concentration case for C4 plants.                      !
       !------------------------------------------------------------------------------------!
-      !----- Update the CO2 demand function parameters for CO2 limitation. ----------------!
-      call set_co2_demand_params(ib,'CO2')
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
       select case(thispft(ib)%photo_pathway)
       case (3)
          !---------------------------------------------------------------------------------!
-         !    C3, there is no CO2 limitation in this formulation.  Copy the Rubisco-       !
-         ! -limited case.                                                                  !
+         !     The triose phosphate utilisation limitation was not originally solved in    !
+         ! ED-1/ED-2.0, so we skip it for back-compatibility.                              !
          !---------------------------------------------------------------------------------!
-         !call copy_solution(rubiscolim(ib),co2lim(ib))
-         !success           = .true.
+         select case (iphysiol)
+         case (0,2)
+            !----- Old-style solution, ignore triose phosphate case. ----------------------!
+            call copy_solution(rubpsatlim(ib),thirdlim(ib))
+            !------------------------------------------------------------------------------!
+         case (1,3)
+            !----- Set parameters for TPU limitation and solve it. ------------------------!
+            call set_co2_demand_params(ib,'TPU')
+            call solve_aofixed_case(ib,thirdlim(ib))
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
-         !    C3, use the expression from C91, that Ao should not exceed 0.5 * Vm.         !
-         !---------------------------------------------------------------------------------!
-         call solve_aofixed_case(ib,co2lim(ib),success)
-         !---------------------------------------------------------------------------------!
-
       case (4)
          !---------------------------------------------------------------------------------!
          !    C4, both carbon_demand and stomatal conductance of water depend on the       !
          ! inter-cellular CO2 concentration.  We must find all these three variables       !
          ! simultaneously, using an iterative method.                                      !
          !---------------------------------------------------------------------------------!
-         call solve_iterative_case(ib,co2lim(ib),success)
+         call set_co2_demand_params(ib,'CO2')
+         call solve_iterative_case(ib,thirdlim(ib))
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
       !     In case success was returned as "false", this means that the CO2-limited case  !
-      ! didn't converge (there was no root).  If this is the case we give up and close all !
-      ! stomata, as there was no viable state for stomata to remain opened.                !
+      ! didn't converge (there was no root).  If this is the case we don't let             !
+      ! this solution to be selected.  Furthermore, if this is C4, it means that the       !
+      !  solution is invalid, so we close the stomata.                                     !
       !------------------------------------------------------------------------------------!
-      if (.not. success) then
-         call copy_solution(stclosed(ib),co2lim(ib))
-         select case (limit_flag)
-         case (99)
-            call copy_solution(stclosed(ib),stopen(ib))
+      if (thirdlim(ib)%success) then
+         limit_flag = 99
+      else
+         select case (thispft(ib)%photo_pathway)
+         case (3)
+            thirdlim(ib)%lint_co2   = -discard
+            thirdlim(ib)%co2_demand = +discard
+         case (4)
             limit_flag = -3
          end select
       end if
@@ -770,32 +930,53 @@ module farq_leuning
 
 
 
+
       !------------------------------------------------------------------------------------!
       !     The actual solution will be the one with the lowest carbon demand.  In case    !
-      ! it is night time or one of the solvers failed, we close all stomata and skip this  !
-      ! decision step.                                                                     !
+      ! it is night time or we do not have good solutions, we close all stomata.           !
       !------------------------------------------------------------------------------------!
       select case (limit_flag)
       case (99)
-         if (lightlim(ib)%co2_demand <= rubiscolim(ib)%co2_demand .and.                    &
-             lightlim(ib)%co2_demand <= co2lim(ib)%co2_demand              )  then
-            !----- Light is the strongest limitation. -------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !      At least one plausible solution was found, pick the most limiting one.     !
+         !---------------------------------------------------------------------------------!
+         if (lightlim(ib)%co2_demand <= rubpsatlim(ib)%co2_demand .and.                    &
+             lightlim(ib)%co2_demand <= thirdlim(ib)%co2_demand              )  then
+            !----- RubP-regeneration (aka light) is limiting photosynthesis. --------------!
             call copy_solution(lightlim(ib),stopen(ib))
             limit_flag = 1
-         elseif (rubiscolim(ib)%co2_demand <  lightlim(ib)%co2_demand .and.                &
-                 rubiscolim(ib)%co2_demand <= co2lim(ib)%co2_demand        ) then
-            !----- Rubisco is the strongest limitation. -----------------------------------!
-            call copy_solution(rubiscolim(ib),stopen(ib))
+            !------------------------------------------------------------------------------!
+         elseif (rubpsatlim(ib)%co2_demand <= thirdlim(ib)%co2_demand        ) then
+            !----- RubP is saturated. -----------------------------------------------------!
+            call copy_solution(rubpsatlim(ib),stopen(ib))
             limit_flag = 2
+            !------------------------------------------------------------------------------!
          else
-            !----- CO2 is the strongest limitation. ---------------------------------------!
-            call copy_solution(co2lim(ib),stopen(ib))
+            !------------------------------------------------------------------------------!
+            !     Triose Phosphate Utilisation(C3) or CO2 (C4) is limiting photosynthesis. !
+            !------------------------------------------------------------------------------!
+            call copy_solution(thirdlim(ib),stopen(ib))
             limit_flag = 3
          end if
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !     No suitable solution found, because it is either night time or the iter-    !
+         ! ative cases (RubP-sat for C3; CO2 for C4) failed.  Close stomata.               !
+         !---------------------------------------------------------------------------------!
+         call copy_solution(stclosed(ib),stopen  (ib))
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !    To avoid FPE problems, we copy the closed case to unsuccessful solutions.       !
+      !------------------------------------------------------------------------------------!
+      if (.not. lightlim(ib)%success  ) call copy_solution(stclosed(ib),lightlim  (ib))
+      if (.not. rubpsatlim(ib)%success) call copy_solution(stclosed(ib),rubpsatlim(ib))
+      if (.not. thirdlim(ib)%success  ) call copy_solution(stclosed(ib),thirdlim  (ib))
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine photosynthesis_exact_solver
@@ -813,7 +994,7 @@ module farq_leuning
    ! depend on the internal carbon.  This is simpler than the iterative case because we    !
    ! can solve through a quadratic equation for the stomatal conductance for water vapour. !
    !---------------------------------------------------------------------------------------!
-   subroutine solve_aofixed_case(ib,answer,success)
+   subroutine solve_aofixed_case(ib,answer)
       use c34constants   , only : solution_vars     & ! structure
                                 , met               & ! intent(in)
                                 , thispft           & ! intent(in)
@@ -826,7 +1007,6 @@ module farq_leuning
       !----- Arguments. -------------------------------------------------------------------!
       integer                          :: ib
       type(solution_vars), intent(out) :: answer
-      logical            , intent(out) :: success
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                     :: qterm1
       real(kind=8)                     :: qterm2
@@ -844,11 +1024,12 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
-      !   1. Initialise the success flag as true.  In case we have trouble solving this    !
-      !      case, we switch the flag to false before we quit.                             !
+      !   1. Initialise the success flag as false, and switch it to true only when (and    !
+      !      if) a valid and plausible solution is found.                                  !
       !------------------------------------------------------------------------------------!
-      success = .true.
+      answer%success = .false.
       !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !   2. Since the carbon demand doesn't depend on the intercellular CO2, compute it   !
@@ -864,6 +1045,13 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !       In case the leaf surface CO2 is unrealistic (i.e. negative), don't bother    !
+      ! looking for a solution.                                                            !
+      !------------------------------------------------------------------------------------!
+      if (answer%lsfc_co2 < c34smin_lint_co28) return
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !   3. Here we check the sign of the carbon demand.                                  !
@@ -876,6 +1064,7 @@ module farq_leuning
          answer%stom_cond_h2o = thispft(ib)%b
          answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
          answer%lint_co2      = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !     Carbon demand is positive, look for a solution.                             !
@@ -904,15 +1093,18 @@ module farq_leuning
                !----- Double root. --------------------------------------------------------!
                gswroot1 = - bquad / (2.d0 * aquad)
                gswroot2 = discard
+               !---------------------------------------------------------------------------!
             elseif (discr > 0.d0) then
                !----- Two distinct roots. -------------------------------------------------!
                gswroot1 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
                gswroot2 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
+               !---------------------------------------------------------------------------!
             else
                !----- None of the roots are real, this solution failed. -------------------!
-               success = .false.
                return
+               !---------------------------------------------------------------------------!
             end if
+            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
 
@@ -956,7 +1148,6 @@ module farq_leuning
                answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
                answer%lint_co2      = ciroot2
             else
-               success = .false.
                return
             end if
          elseif (bounded1) then
@@ -974,7 +1165,6 @@ module farq_leuning
                                  - answer%co2_demand / answer%stom_cond_co2
          else
             !----- None of the solutions are bounded.  This solution failed. --------------!
-            success = .false.
             return
          end if
          !---------------------------------------------------------------------------------!
@@ -988,6 +1178,11 @@ module farq_leuning
       answer%lsfc_shv = ( answer%stom_cond_h2o * met(ib)%lint_shv                          &
                         + met(ib)%blyr_cond_h2o    * met(ib)%can_shv  )                    &
                       / ( met(ib)%blyr_cond_h2o + answer%stom_cond_h2o)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Successful solution, update the logical flag before quitting. ----------------!
+      answer%success = .true.
       !------------------------------------------------------------------------------------!
 
       return
@@ -1012,7 +1207,7 @@ module farq_leuning
    ! If the method fails finding the pair, it means that there is no viable solution       !
    ! within this range, so the method quits and return the error message.                  !
    !---------------------------------------------------------------------------------------!
-   subroutine solve_iterative_case(ib,answer,converged)
+   subroutine solve_iterative_case(ib,answer)
       use c34constants   , only : solution_vars     & ! structure
                                 , met               ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8        ! ! intent(in)
@@ -1020,7 +1215,6 @@ module farq_leuning
       !----- Arguments. -------------------------------------------------------------------!
       integer                          :: ib        ! Multithread ID
       type(solution_vars), intent(out) :: answer    ! The strutcure with the answer
-      logical            , intent(out) :: converged ! A solution was found     [      T|F]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                     :: ci        ! Intercellular CO2         [  mol/mol]
       real(kind=8)                     :: cia       ! Smallest/previous guess   [  mol/mol]
@@ -1034,6 +1228,7 @@ module farq_leuning
       real(kind=8)                     :: cimax     ! Maximum intercell. CO2    [  mol/mol]
       integer                          :: itn       ! Iteration counter         [      ---]
       integer                          :: itb       ! Iteration counter         [      ---]
+      logical                          :: converged ! A solution was found     [      T|F]
       logical                          :: zside     ! Check for 1-sided appr.   [      ---]
       logical                          :: hitmin    ! 2nd guess tried minimum   [      ---]
       logical                          :: hitmax    ! 2nd guess tried maximum   [      ---]
@@ -1041,12 +1236,12 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
-      !      Initialise the convergence flag.  Here we start realistic, ops, I mean,       !
-      ! pessimistic, and assume that we are failing.  This will be switched to true only   !
-      ! if a real answer is found, so in case we quit the sub-routine due to impossible    !
-      ! solution, the result will be failure.                                              !
+      !      Initialise the convergence and success flags.  Set both to false, and change  !
+      ! them only when (and if) a real, plausible answer is found.  In case such           !
+      ! solution doesn't exist, we report back the failure so this case is not selected.   !
       !------------------------------------------------------------------------------------!
-      converged = .false.
+      converged      = .false.
+      answer%success = .false.
       !------------------------------------------------------------------------------------!
 
 
@@ -1077,11 +1272,15 @@ module farq_leuning
       fun = funa
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !      Also check whether we have been lucky and have hit the jackpot (answer is     !
+      ! ciz).                                                                              !
+      !------------------------------------------------------------------------------------!
       if (fun == 0.d0) then 
-         !----- We have actually hit the jackpot, the answer is ciz. ----------------------!
          ci        = ciz
          converged = .true.
       end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -1122,10 +1321,12 @@ module farq_leuning
                !----- This guess went off-bounds, we give up on Newton's. -----------------!
                converged = .false.
                exit newloop
+               !---------------------------------------------------------------------------!
             elseif (converged) then
                !----- Converged, find the root as the mid-point. --------------------------!
                ci  = 5.d-1 * (cia+ciz)
                exit newloop
+               !---------------------------------------------------------------------------!
             else
                !----- Not there yet, update the function evaluation and the derivative. ---!
                call iter_solver_step(ib,.true.,ciz,fun,deriv)
@@ -1134,10 +1335,13 @@ module farq_leuning
                   ci        = ciz
                   converged = .true.
                   exit newloop
+                  !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end do newloop
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1198,6 +1402,7 @@ module farq_leuning
                   !------------------------------------------------------------------------!
                   return
                end if
+               !---------------------------------------------------------------------------!
 
                ciz = cia + dble((-1)**itb * (itb+3)/2) * delta
                if (ciz < cimin) then
@@ -1224,7 +1429,7 @@ module farq_leuning
 
 
          !---------------------------------------------------------------------------------!
-         !     If we have reached this points, it means that there is a root that hasn't   !
+         !     If we have reached this point, it means that there is a root that hasn't    !
          ! been found yet, but at least we know that it is between cia and ciz.  Use the   !
          ! modified Regula Falsi (Illinois) method to find it.                             !
          !---------------------------------------------------------------------------------!
@@ -1244,6 +1449,7 @@ module farq_leuning
 
             !----- Find the new function evaluation. --------------------------------------!
             call iter_solver_step(ib,.false.,ci,fun,deriv)
+            !------------------------------------------------------------------------------!
 
 
             !------ Define the new interval based on the intermediate value theorem. ------!
@@ -1251,6 +1457,7 @@ module farq_leuning
                !----- We have actually hit the jackpot, the answer is ciz. ----------------!
                converged = .true.
                exit fpoloop
+               !---------------------------------------------------------------------------!
             elseif (fun*funa < 0.d0 ) then
                ciz = ci
                funz  = fun
@@ -1258,6 +1465,7 @@ module farq_leuning
                if (zside) funa=funa * 5.d-1
                !----- We just updated zside, set zside to true. ---------------------------!
                zside = .true.
+               !---------------------------------------------------------------------------!
             else
                cia = ci
                funa   = fun
@@ -1265,7 +1473,9 @@ module farq_leuning
                if (.not. zside) funz=funz * 5.d-1
                !----- We just updated aside, set zside to false. --------------------------!
                zside = .false.
+               !---------------------------------------------------------------------------!
             end if
+            !------------------------------------------------------------------------------!
          end do fpoloop
          !---------------------------------------------------------------------------------!
       end if
@@ -1292,6 +1502,8 @@ module farq_leuning
          answer%lsfc_shv  = ( answer%stom_cond_h2o * met(ib)%lint_shv                      &
                             + met(ib)%blyr_cond_h2o    * met(ib)%can_shv  )                &
                           / ( met(ib)%blyr_cond_h2o + answer%stom_cond_h2o)
+         !----- 7. Update the success flag. -----------------------------------------------!
+         answer%success   = .true.
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1347,56 +1559,57 @@ module farq_leuning
          select case (thispft(ib)%photo_pathway)
          case (3)
             !------------------------------------------------------------------------------!
-            !     C3 case.  Decide whether this is the light- or Rubisco-limited case.     !
+            !     C3 case.  Decide which case to solve.                                    !
             !------------------------------------------------------------------------------!
             select case (trim(whichlim))
             case ('LIGHT')
-               !---- Light-limited case. --------------------------------------------------!
-               aparms(ib)%rho   =  aparms(ib)%alpha * met(ib)%par
-               aparms(ib)%sigma = -aparms(ib)%alpha * met(ib)%par * aparms(ib)%compp
-               aparms(ib)%xi    = 1.d0
-               aparms(ib)%tau   = 2.d0 * aparms(ib)%compp
+               !---- RubP regeneration (aka Light) limitation case. -----------------------!
+               aparms(ib)%rho   =  aparms(ib)%jact
+               aparms(ib)%sigma = -aparms(ib)%jact * aparms(ib)%compp
+               aparms(ib)%xi    = 4.d0
+               aparms(ib)%tau   = 8.d0 * aparms(ib)%compp
                aparms(ib)%nu    = -aparms(ib)%leaf_resp
-
-            case ('RUBISCO')
-               !----- Rubisco-limited rate of photosynthesis case. ------------------------!
+               !---------------------------------------------------------------------------!
+            case ('RUBP_SAT')
+               !----- RubP-saturated rate of photosynthesis case. -------------------------!
                aparms(ib)%rho   =  aparms(ib)%vm
                aparms(ib)%sigma = -aparms(ib)%vm * aparms(ib)%compp
                aparms(ib)%xi    = 1.d0
                aparms(ib)%tau   = aparms(ib)%kco2 * (1.d0 + met(ib)%can_o2 / aparms(ib)%ko2)
                aparms(ib)%nu    = -aparms(ib)%leaf_resp
                !---------------------------------------------------------------------------!
-
-            case ('CO2')
-               !----- CO2-limited for low CO2 concentration case. -------------------------!
+            case ('TPU')
+               !----- Triose phosphate utilisation limitation case. -----------------------!
                aparms(ib)%rho   = 0.d0
-               aparms(ib)%sigma = aparms(ib)%vm
+               aparms(ib)%sigma = 3.d0 * aparms(ib)%tpm
                aparms(ib)%xi    = 0.d0
-               aparms(ib)%tau   = 2.d0
+               aparms(ib)%tau   = 1.d0
                aparms(ib)%nu    = -aparms(ib)%leaf_resp
-
+               !---------------------------------------------------------------------------!
             end select
+            !------------------------------------------------------------------------------!
          case (4)
             !------------------------------------------------------------------------------!
-            !     C4 case.  There are three possibilities, the light-limited, the Rubisco- !
-            ! limited, and the CO2-limited cases.                                          !
+            !     C4 case.  Decide which case to solve.                                    !
             !------------------------------------------------------------------------------!
             select case(trim(whichlim))
             case ('LIGHT')
-               !----- Light-limited case. -------------------------------------------------!
+               !---- RubP regeneration (aka Light) limitation case. -----------------------!
                aparms(ib)%rho   = 0.d0
-               aparms(ib)%sigma = aparms(ib)%alpha * met(ib)%par
+               aparms(ib)%sigma = aparms(ib)%jact
                aparms(ib)%xi    = 0.d0
-               aparms(ib)%tau   = 1.d0
+               aparms(ib)%tau   = 4.d0
                aparms(ib)%nu    = - aparms(ib)%leaf_resp
+               !---------------------------------------------------------------------------!
 
-            case ('RUBISCO')
-               !----- Rubisco-limited rate of photosynthesis case. ------------------------!
+            case ('RUBP_SAT')
+               !----- RubP-saturated rate of photosynthesis case. -------------------------!
                aparms(ib)%rho   = 0.d0
                aparms(ib)%sigma = aparms(ib)%vm
                aparms(ib)%xi    = 0.d0
                aparms(ib)%tau   = 1.d0
                aparms(ib)%nu    = -aparms(ib)%leaf_resp
+               !---------------------------------------------------------------------------!
 
             case ('CO2')
                !----- CO2-limited for low CO2 concentration case. -------------------------!
@@ -1405,7 +1618,7 @@ module farq_leuning
                aparms(ib)%xi    = 0.d0
                aparms(ib)%tau   = 1.d0
                aparms(ib)%nu    = -aparms(ib)%leaf_resp
-
+               !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
          end select
@@ -1416,6 +1629,10 @@ module farq_leuning
    end subroutine set_co2_demand_params
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
 
 
    !=======================================================================================!
@@ -1671,8 +1888,12 @@ module farq_leuning
       ! First case: This check will find when Aopen goes to 0., which causes a singularity !
       ! in the function of which we are looking for a root.                                !
       !------------------------------------------------------------------------------------!
-      ciAo = - (aparms(ib)%tau * aparms(ib)%nu + aparms(ib)%sigma)                         &
-           / (aparms(ib)%xi  * aparms(ib)%nu + aparms(ib)%rho  )
+      if (aparms(ib)%rho == 0.d0 .and. aparms(ib)%xi == 0.d0) then
+         ciAo = c34smin_lint_co28
+      else
+         ciAo = - (aparms(ib)%tau * aparms(ib)%nu + aparms(ib)%sigma)                      &
+              / (aparms(ib)%xi  * aparms(ib)%nu + aparms(ib)%rho  )
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -1701,13 +1922,17 @@ module farq_leuning
             ciroot1      = - bquad / (2.d0 * aquad)
             ciroot2      = - discard
          elseif (discr > 0.d0) then
+            !----- Positive discriminant, two solutions are possible. ---------------------!
             ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
             ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
+            !------------------------------------------------------------------------------!
          else
             !----- Discriminant is negative.  Impossible to solve. ------------------------!
             ciroot1      = - discard
             ciroot2      = - discard
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !    This is a linear case, the xi term is zero.  There is only one number that   !
@@ -1717,6 +1942,7 @@ module farq_leuning
          ciroot2      = - discard
          !----- Not used, just for the debugging process. ---------------------------------!
          discr        = bquad * bquad
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
       !     Save the largest of the values.  In case both were discarded, we switch it to  !
@@ -1759,13 +1985,17 @@ module farq_leuning
             !------------------------------------------------------------------------------!
             ciroot1 = - bquad / (2.d0 * aquad)
             ciroot2 = -discard
+            !------------------------------------------------------------------------------!
          elseif (discr > 0.d0) then
+            !----- Positive discriminant, two solutions are possible. ---------------------!
             ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
             ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
+            !------------------------------------------------------------------------------!
          else
             !----- Discriminant is negative.  Impossible to solve. ------------------------!
             ciroot1      = -discard
             ciroot2      = -discard
+            !------------------------------------------------------------------------------!
          end if
       else
          !---------------------------------------------------------------------------------!
@@ -1827,6 +2057,7 @@ module farq_leuning
       else
          bounded = .true.
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine find_lint_co2_bounds
@@ -1928,17 +2159,52 @@ module farq_leuning
    ! cannot be a constant because it depends on the PFT and the environmental conditions.  !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function find_twilight_min(ib)
-      use c34constants   , only : aparms            & ! intent(in)
-                                , met               ! ! intent(in)
+      use c34constants   , only : aparms              & ! intent(in)
+                                , thispft             & ! intent(in)
+                                , met                 ! ! intent(in)
+      use physiology_coms, only : iphysiol            & ! intent(in)
+                                , par_lightcompp_max8 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer, intent(in) :: ib ! Multithread ID
+      integer     , intent(in) :: ib !> Multithread ID
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: j0 !> Critical electron transport [mol/m2/s]
       !------------------------------------------------------------------------------------!
 
-      find_twilight_min = ( aparms(ib)%leaf_resp                                           &
-                          * (met(ib)%can_co2 + 2.d0 * aparms(ib)%compp) )                  &
-                        / ( aparms(ib)%alpha                                               &
-                          * (met(ib)%can_co2 -        aparms(ib)%compp) )
+
+      !----- Electron transport that makes Ao = 0. ----------------------------------------!
+      j0 = 4.d0 * aparms(ib)%leaf_resp * (met(ib)%can_co2 + 2.d0 * aparms(ib)%compp)       &
+                                       / (met(ib)%can_co2 -        aparms(ib)%compp)
+      !------------------------------------------------------------------------------------!
+
+
+      select case (iphysiol)
+      case (0,2)
+         !----- Linear equation relating PAR and J (Foley/Collatz style). -----------------!
+         find_twilight_min = 2.5d-1 * j0 / aparms(ib)%alpha
+         !---------------------------------------------------------------------------------!
+      case (1,3)
+         !---------------------------------------------------------------------------------!
+         !      J is defined from quadratic equation (van Caemmerer/CLM 4.5 style).        !
+         !---------------------------------------------------------------------------------!
+
+         !----- Compare J0 with Jmax, to avoid singularities. -----------------------------!
+         if (j0 < aparms(ib)%jm) then
+            !------------------------------------------------------------------------------!
+            !    Safe case, use the inverse of the quadratic equation to find the light    !
+            ! compensation point.                                                          !
+            !------------------------------------------------------------------------------!
+            find_twilight_min = 2.d0 * j0 * (aparms(ib)%jm - thispft(ib)%curvpar * j0)     &
+                              / ( thispft(ib)%phi_psII * (aparms(ib)%jm - j0) )
+            !------------------------------------------------------------------------------!
+         else
+            !----- Set to a large number so it cannot be selected. ------------------------!
+            find_twilight_min = max(par_lightcompp_max8,1.1d0*met(ib)%par)
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end select
+
       return
    end function find_twilight_min
    !=======================================================================================!

@@ -71,7 +71,6 @@ module structural_growth
       real                          :: broot_in
       real                          :: bsapwooda_in
       real                          :: bsapwoodb_in
-      real                          :: bsapw_in
       real                          :: bbark_in
       real                          :: balive_in
       real                          :: bdead_in
@@ -212,7 +211,6 @@ module structural_growth
                   broot_in      = cpatch%broot           (ico)
                   bsapwooda_in  = cpatch%bsapwooda       (ico)
                   bsapwoodb_in  = cpatch%bsapwoodb       (ico)
-                  bsapw_in      = bsapwooda_in + bsapwoodb_in
                   bbark_in      = cpatch%bbark           (ico)
                   hite_in       = cpatch%hite            (ico)
                   dbh_in        = cpatch%dbh             (ico)

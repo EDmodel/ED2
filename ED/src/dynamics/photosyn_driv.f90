@@ -75,6 +75,9 @@ module photosyn_driv
       real                                    :: d_lint_co2_open
       real                                    :: d_lint_co2_closed
       real                                    :: vm
+      real                                    :: jm
+      real                                    :: tpm
+      real                                    :: jact
       real                                    :: mcheight
       real                                    :: compp
       real                                    :: broot_tot
@@ -322,6 +325,9 @@ module photosyn_driv
                 , d_lint_co2_closed        & ! Intercellular CO2       (closed) [ umol/mol]
                 , leaf_resp                & ! Leaf respiration rate            [umol/m2/s]
                 , vm                       & ! Max. capacity of Rubisco         [umol/m2/s]
+                , jm                       & ! Max. electron transport          [umol/m2/s]
+                , tpm                      & ! Max. triose phosphate            [umol/m2/s]
+                , jact                     & ! Actual electron transport        [umol/m2/s]
                 , compp                    & ! Gross photo. compensation point  [ umol/mol]
                 , limit_flag               & ! Photosynthesis limitation flag   [      ---]
                 )
@@ -405,6 +411,9 @@ module photosyn_driv
                 , cpatch%lint_co2_closed(ico) & ! Intercellular CO2  (closed)   [ umol/mol]
                 , leaf_resp                   & ! Leaf respiration rate         [umol/m2/s]
                 , vm                          & ! Max. capacity of Rubisco      [umol/m2/s]
+                , jm                          & ! Max. electron transport       [umol/m2/s]
+                , tpm                         & ! Max. triose phosphate         [umol/m2/s]
+                , jact                        & ! Actual electron transport     [umol/m2/s]
                 , compp                       & ! Gross photo. compens. point   [ umol/mol]
                 , limit_flag                  & ! Photosynth. limitation flag   [      ---]
                 )
@@ -549,6 +558,9 @@ module photosyn_driv
             cpatch%gpp(ico)                  = 0.0
             cpatch%leaf_respiration(ico)     = 0.0
             vm                               = 0.0
+            jm                               = 0.0
+            tpm                              = 0.0
+            jact                             = 0.0
             limit_flag                       = 0
          end if
 
@@ -595,7 +607,7 @@ module photosyn_driv
          !---------------------------------------------------------------------------------!
 
          if (print_photo_debug) then
-            call print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
+            call print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,jm,tpm,jact,compp)
          end if
       end do cohortloop
       !------------------------------------------------------------------------------------!
@@ -638,7 +650,7 @@ module photosyn_driv
    !     This sub-routine prints some extra information on the photosynthesis driver in a  !
    ! convenient ascii file for debugging purposes.                                         !
    !---------------------------------------------------------------------------------------!
-   subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
+   subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,jm,tpm,jact,compp)
       use ed_max_dims    , only : str_len            ! ! intent(in)
       use ed_state_vars  , only : sitetype           & ! structure
                                 , patchtype          ! ! structure
@@ -660,6 +672,9 @@ module photosyn_driv
       integer                   , intent(in)  :: ico        ! Current cohort number
       integer                   , intent(in)  :: limit_flag ! Limitation flag
       real                      , intent(in)  :: vm         ! Maximum Rubisco capacity
+      real                      , intent(in)  :: jm         ! Maximum electron transport
+      real                      , intent(in)  :: tpm        ! Maximum triose phosphate
+      real                      , intent(in)  :: jact       ! Actual electron transport
       real                      , intent(in)  :: compp      ! GPP compensation point
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)           , pointer     :: jpatch     ! Current site
@@ -677,9 +692,9 @@ module photosyn_driv
       real                                    :: util_parv
       real                                    :: alpha
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: hfmt='(63(a,1x))'
+      character(len=10), parameter :: hfmt='(66(a,1x))'
       character(len=48), parameter ::                                                      &
-                                    bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),57(es13.6,1x))'
+                                    bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),60(es13.6,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical                   , save        :: first_time=.true.
       !------------------------------------------------------------------------------------!
@@ -781,7 +796,8 @@ module photosyn_driv
                                   , '     GSW_OPEN', '     GSW_CLOS', '     PSI_OPEN'      &
                                   , '     PSI_CLOS', '   H2O_SUPPLY', '          FSW'      &
                                   , '          FSN', '      FS_OPEN', '     ATM_WIND'      &
-                                  , '     VEG_WIND', '        USTAR', '           VM'
+                                  , '     VEG_WIND', '        USTAR', '           VM'      &
+                                  , '           JM', '          TPM', '         JACT'
 
 
          close (unit=57,status='keep')
@@ -825,7 +841,8 @@ module photosyn_driv
                              , cpatch%fsw(ico)            , cpatch%fsn(ico)                &
                              , cpatch%fs_open(ico)        , cmet%vels                      &
                              , cpatch%veg_wind(ico)       , csite%ustar(ipa)               &
-                             , vm
+                             , vm                         , jm                             &
+                             , tpm                        , jact
       close(unit=57,status='keep')
       !------------------------------------------------------------------------------------!
 

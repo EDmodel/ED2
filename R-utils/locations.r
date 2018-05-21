@@ -617,10 +617,14 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , names  = c("Normal","2010 drought")
                                        )#end list
    #----- Photosynthesis parameters. ------------------------------------------------------#
-   flagvar[["iphoto"]]           = list( descr  = "Photosynthesis parameters"
+   flagvar[["iphysiol"]]         = list( descr  = "Photosynthesis"
                                       , numeric = TRUE
-                                       , values = seq(from=0,to=1,by=1)
-                                       , names  = c("Old","New")
+                                       , values = seq(from=0,to=3,by=1)
+                                       , names  = c("Arrhenius (no Jmax/TPmax)"
+                                                   ,"Arrenhius (with Jmax/TPmax)"
+                                                   ,"Q10 function (no Jmax/TPmax)"
+                                                   ,"Q10 function (with Jmax/TPmax)"
+                                                   )#end c
                                        )#end list
    #----- Grass type. ---------------------------------------------------------------------#
    flagvar[["igrass"]]           = list( descr  = "Grass scheme"
@@ -1275,12 +1279,17 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("isas","iage","idiversity")
          na     = c(     6,    14,          20)
          nz     = c(     8,    15,          21)
-      }else if (lenici == 22){
+      }else if (lenici == 22 && grepl(pattern="iallom",x=ici)){
          nparms = 2
          param  = c("iallom","igrass")
          na     = c(      12,      21)
          nz     = c(      13,      22)
-      }else if (lenici == 22){
+      }else if (lenici == 22 && grepl(pattern="iustar",x=ici)){
+         nparms = 2
+         param  = c("iustar","icanturb")
+         na     = c(      14,      21)
+         nz     = c(      15,      22)
+      }else if (lenici == 22 && grepl(pattern="ihrzrad",x=ici)){
          nparms = 2
          param  = c("ihrzrad","include.fire")
          na     = c(       13,            21)
@@ -1290,11 +1299,16 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iustar","icanturb")
          na     = c(      12,        22)
          nz     = c(      13,        23)
-      }else if (lenici == 24){
+      }else if (lenici == 24 && grepl(pattern="ihrzrad",x=ici)){
          nparms = 2
          param  = c("ihrzrad","imetrad")
          na     = c(       13,       23)
          nz     = c(       14,       24)
+      }else if (lenici == 24 && grepl(pattern="iallom",x=ici)){
+         nparms = 2
+         param  = c("iallom","iphysiol")
+         na     = c(      12,      23)
+         nz     = c(      13,      24)
       }else if (lenici == 25){
          nparms = 3
          param  = c("iphen.scheme","d0","include.fire")

@@ -426,7 +426,8 @@ module soil_respiration
       use pft_coms       , only : root_respiration_factor  & ! intent(in)
                                 , rrf_low_temp             & ! intent(in)
                                 , rrf_high_temp            & ! intent(in)
-                                , rrf_decay_e              & ! intent(in)
+                                , rrf_decay_elow           & ! intent(in)
+                                , rrf_decay_ehigh          & ! intent(in)
                                 , rrf_hor                  & ! intent(in)
                                 , rrf_q10                  ! ! intent(in)
       use farq_leuning   , only : arrhenius                & ! function
@@ -445,7 +446,8 @@ module soil_respiration
       real(kind=8)             :: rrf08
       real(kind=8)             :: rrf_low_temp8
       real(kind=8)             :: rrf_high_temp8
-      real(kind=8)             :: rrf_decay_e8
+      real(kind=8)             :: rrf_decay_elow8
+      real(kind=8)             :: rrf_decay_ehigh8
       real(kind=8)             :: rrf_hor8
       real(kind=8)             :: rrf_q108
       real(kind=8)             :: lnexplow
@@ -458,11 +460,12 @@ module soil_respiration
       !------------------------------------------------------------------------------------!
 
       !----- Copy some variables to double precision temporaries. -------------------------!
-      soil_temp8      = dble(soil_temp                    )
-      rrf08           = dble(root_respiration_factor(ipft))
-      rrf_low_temp8   = dble(rrf_low_temp           (ipft)) + t008
-      rrf_high_temp8  = dble(rrf_high_temp          (ipft)) + t008
-      rrf_decay_e8    = dble(rrf_decay_e            (ipft))
+      soil_temp8       = dble(soil_temp                    )
+      rrf08            = dble(root_respiration_factor(ipft))
+      rrf_low_temp8    = dble(rrf_low_temp           (ipft)) + t008
+      rrf_high_temp8   = dble(rrf_high_temp          (ipft)) + t008
+      rrf_decay_elow8  = dble(rrf_decay_elow         (ipft))
+      rrf_decay_ehigh8 = dble(rrf_decay_ehigh        (ipft))
       !------------------------------------------------------------------------------------!
 
 
@@ -473,11 +476,11 @@ module soil_respiration
       ! temperature will make the exponential too large or too small.                      !
       !------------------------------------------------------------------------------------!
       !----- Low temperature. -------------------------------------------------------------!
-      lnexplow  = rrf_decay_e8 * (rrf_low_temp8  - soil_temp8)
+      lnexplow  = rrf_decay_elow8  * (rrf_low_temp8  - soil_temp8)
       lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
       tlow_fun  = 1.d0 +  exp(lnexplow)
       !----- High temperature. ------------------------------------------------------------!
-      lnexphigh = rrf_decay_e8 * (soil_temp8 - rrf_high_temp8)
+      lnexphigh = rrf_decay_ehigh8 * (soil_temp8 - rrf_high_temp8)
       lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
       thigh_fun = 1.d0 + exp(lnexphigh)
       !------------------------------------------------------------------------------------!

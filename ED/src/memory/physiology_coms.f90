@@ -29,6 +29,8 @@
 ! - C92 - Collatz, G. J., M. Ribas-Carbo, J. A. Berry, 1992: Coupled photosynthesis-       !
 !         stomatal conductance model for leaves of C4 plants.  Aust. J. Plant Physiol.,    !
 !         19, 519-538.                                                                     !
+! - C00 - von Caemmerer, S., 2000: Biochemical models of leaf photosynthesis. Number 2 in  !
+!         Techniques in Plant Sciences. CSIRO Publishing, Collingwood, VIC, Australia.     !
 ! - E78 - Ehleringer, J. R., 1978: Implications of quantum yield differences on the        !
 !         distributions of C3 and C4 grasses.  Oecologia, 31, 255-267.                     !
 !                                                                                          !
@@ -54,13 +56,18 @@ module physiology_coms
    ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
    !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
    !      Foley et al. (1996).                                                             !
-   ! 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        !
-   !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
+   ! 1 -- Similar to case 0, but we use Jmax to determine the RubP-regeneration (aka       !
+   !      light) limitation case, account for the triose phosphate utilisation limitation  !
+   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
+   !      from von Caemmerer (2000).                                                       !
    ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
    !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
    !      correction for high and low temperatures are the same as in Moorcroft et al.     !
    !      (2001).                                                                          !
-   ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
+   ! 3 -- Similar to case 2, but we use Jmax to determine the RubP-regeneration (aka       !
+   !      light) limitation case, account for the triose phosphate utilisation limitation  !
+   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
+   !      from von Caemmerer (2000).                                                       !
    !---------------------------------------------------------------------------------------!
    integer                :: iphysiol 
    !---------------------------------------------------------------------------------------!
@@ -209,16 +216,17 @@ module physiology_coms
    !----- Bounds for the new C3 solver. ---------------------------------------------------!
    real(kind=4) :: c34smin_lint_co2 ! Minimum carbon dioxide concentration      [  mol/mol]
    real(kind=4) :: c34smax_lint_co2 ! Maximum carbon dioxide concentration      [  mol/mol]
-   real(kind=4) :: c34smax_gsw      ! Maximum stom. conductance for water vap.  [ mol/m²/s]
+   real(kind=4) :: c34smax_gsw      ! Maximum stom. conductance for water vap.  [ mol/m2/s]
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !     This is the minimum threshold for the photosynthetically active radiation, in     !
-   ! µmol/m²/s to consider non-night time conditions (day time or twilight).               !
+   !     Upper limit for light compensation point, usually set when the minimum electron   !
+   ! transport exceeds Jm (this should occur very rarely, typically when temperature is    !
+   ! exceedingly high).                                                                    !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) :: par_twilight_min ! Minimum non-nocturnal PAR.                [ mol/m²/s]
+   real(kind=4) :: par_lightcompp_max
    !---------------------------------------------------------------------------------------!
 
 
@@ -243,15 +251,6 @@ module physiology_coms
    real(kind=4) :: gbw_2_gbc ! water to carbon - leaf boundary layer
    real(kind=4) :: gsw_2_gsc ! water to carbon - stomata
    real(kind=4) :: gsc_2_gsw ! carbon to water - stomata
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     This parameter is from F80, and is the ratio between the turnover number for the  !
-   ! oxylase function and the turnover number for the carboxylase function.                !
-   !---------------------------------------------------------------------------------------!
-   real(kind=4) :: kookc
    !---------------------------------------------------------------------------------------!
 
 
@@ -318,7 +317,6 @@ module physiology_coms
    real(kind=8) :: gbw_2_gbc8
    real(kind=8) :: gsw_2_gsc8
    real(kind=8) :: gsc_2_gsw8
-   real(kind=8) :: kookc8
    real(kind=8) :: tphysref8
    real(kind=8) :: tphysrefi8
    real(kind=8) :: fcoll8
@@ -332,7 +330,7 @@ module physiology_coms
    real(kind=8) :: ko2_hor8
    real(kind=8) :: ko2_q108
    real(kind=8) :: klowco28
-   real(kind=8) :: par_twilight_min8
+   real(kind=8) :: par_lightcompp_max8
    real(kind=8) :: o2_ref8
    real(kind=8) :: qyield08
    real(kind=8) :: qyield18

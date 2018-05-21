@@ -106,6 +106,8 @@ module random_utils
 
       call random_seed(put=seed)
 
+      deallocate(seed)
+
       return
    end subroutine init_random_seed
    !=======================================================================================!

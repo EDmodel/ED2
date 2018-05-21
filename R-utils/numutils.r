@@ -260,7 +260,7 @@ weighted.frac <<- function(x,w,na.rm=TRUE){
 # sample.  If the size of the resampling is not provided, then the number of samples is    #
 # dependent on the range of probabilities.  By default we find the 0.50 quantile (median). #
 #------------------------------------------------------------------------------------------#
-weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
+weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE,out.case=FALSE){
 
    #----- Delete the missing values if the user asked to do it. ---------------------------#
    if (any(w <= 0, na.rm = TRUE) || any(is.infinite(w)) || any(is.na(w))){
@@ -321,8 +321,14 @@ weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
    #---------------------------------------------------------------------------------------#
 
 
-   ans = list(q = qout, case = case)
-   return(qout)
+   #---- Decide what to return. -----------------------------------------------------------#
+   if (out.case){
+      ans = list(q = qout, case = case)
+   }else{
+      ans = qout
+   }#end if (out.case)
+   return(ans)
+   #---------------------------------------------------------------------------------------#
 }#end function weighted.quantile
 #==========================================================================================#
 #==========================================================================================#
@@ -1727,5 +1733,27 @@ aggr.se <<- function(x,fmin=0.5,...){
 #     This function finds the maximum absolute elementwise difference of two vectors.      #
 #------------------------------------------------------------------------------------------#
 max.abs.diff <<- function(x,y,na.rm=TRUE) max(abs(x-y),na.rm=na.rm) 
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function counts the number of valid entries.                                    #
+#------------------------------------------------------------------------------------------#
+count.valid <<- function(x,qq.rm=FALSE){
+   type.x = typeof(x)
+   if (type.x %in% "logical"){
+      ans = sum(! is.na(x))
+   }else if (type.x %in% "character"){
+      ans = sum(! ( is.na(x) | ((x %in% "") & qq.rm)))
+   }else{
+      ans = sum(is.finite(x))
+   }#end if (type.x %in% c("logical","character"))
+   return(ans)
+}#end count.finite
 #==========================================================================================#
 #==========================================================================================#

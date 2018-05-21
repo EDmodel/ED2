@@ -26,7 +26,6 @@ module reproduction
                                      , min_recruit_size           & ! intent(in)
                                      , one_plant_c                & ! intent(in)
                                      , c2n_recruit                & ! intent(in)
-                                     , seed_rain                  & ! intent(in)
                                      , include_pft                & ! intent(in)
                                      , include_pft_ag             & ! intent(in)
                                      , include_pft_fp             & ! intent(in)
@@ -300,14 +299,13 @@ module reproduction
                                                      ,rectest%cb_mlmax,rectest%cbr_bar)
 
                         !------------------------------------------------------------------!
-                        !     Find the expected population from the reproduction stocks,   !
-                        ! and also include the "seed_rain" term, which represents sources  !
-                        ! of seed that are external to the polygon.                        !
+                        !     Find the expected population from the reproduction stocks.   !
+                        ! MLO Note: seed rain is now included in csite%repro (Check sub-   !
+                        ! routine seed_dispersal).                                         !
                         !------------------------------------------------------------------!
                         rectest%nplant    = csite%repro(ipft,ipa)                          &
                                           / ( rectest%balive + rectest%bdead               &
-                                            + rectest%bstorage)                            &
-                                          + seed_rain(ipft)
+                                            + rectest%bstorage)
                         !------------------------------------------------------------------!
 
 
@@ -349,7 +347,7 @@ module reproduction
 
 
                            !----- Reset the carbon available for reproduction. ------------!
-                           csite%repro(ipft,ipa) = 0.0                          
+                           csite%repro(ipft,ipa) = 0.0
                            !---------------------------------------------------------------!
                         end if
                         !------------------------------------------------------------------!
@@ -834,6 +832,7 @@ module reproduction
    ! the year.                                                                             !
    !---------------------------------------------------------------------------------------!
    subroutine seed_dispersal(cpoly,late_spring)
+      use ed_max_dims        , only : n_pft                 ! ! intent(in)
       use phenology_coms     , only : repro_scheme          ! ! intent(in)
       use ed_state_vars      , only : polygontype           & ! structure
                                     , sitetype              & ! structure
@@ -841,7 +840,12 @@ module reproduction
       use pft_coms           , only : recruittype           & ! structure
                                     , nonlocal_dispersal    & ! intent(in)
                                     , seedling_mortality    & ! intent(in)
-                                    , phenology             ! ! intent(in)
+                                    , phenology             & ! intent(in)
+                                    , plant_min_temp        & ! intent(in)
+                                    , seed_rain             & ! intent(in)
+                                    , include_pft           & ! intent(in)
+                                    , include_pft_ag        & ! intent(in)
+                                    , include_pft_fp        ! ! intent(in)
       use ed_misc_coms       , only : ibigleaf              ! ! intent(in)
 
       implicit none
@@ -853,7 +857,10 @@ module reproduction
       type(sitetype)   , pointer    :: donsite     ! Donor site                 [      ---]
       type(sitetype)   , pointer    :: recsite     ! Receptor site              [      ---]
       type(patchtype)  , pointer    :: donpatch    ! Donor patch                [      ---]
+      logical                       :: allow_pft   ! Flag: is this PFT allowed? [      ---]
       integer                       :: isi         ! Site counter               [      ---]
+      integer                       :: ipa         ! Patch counter              [      ---]
+      integer                       :: ipft        ! PFT counter                [      ---]
       integer                       :: recsi       ! Receptor site counter      [      ---]
       integer                       :: donsi       ! Donor site counter         [      ---]
       integer                       :: recpa       ! Receptor patch counter     [      ---]
@@ -874,6 +881,78 @@ module reproduction
       case (0)
           !------ No reproduction, quit. --------------------------------------------------!
           return
+      case default
+         !---------------------------------------------------------------------------------!
+         !     Seed rain should apply to all patches and sites, include them to the seed   !
+         ! bank.                                                                           !
+         !---------------------------------------------------------------------------------!
+         siteloop0: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+
+            !------------------------------------------------------------------------------!
+            !      Loop over the patches and PFTs to include seed_rain.                    !
+            !------------------------------------------------------------------------------!
+            seedloop: do ipa = 1,csite%npatches
+               pftloop: do ipft=1,n_pft
+                  !------------------------------------------------------------------------!
+                  !     Check whether to include this PFT or not.  The decision depends on !
+                  ! the following decisions.                                               !
+                  ! 1.  The PFT is included in this simulation.   In case of agriculture   !
+                  !     or forest plantation, it must also be allowed in such patches.     !
+                  ! 2.  The temperature is not limiting reproduction.                      !
+                  ! 3.  The user wants reproduction to occur.                              !
+                  !------------------------------------------------------------------------!
+                  select case (csite%dist_type(ipa))
+                  case (1)
+                     !----- Agriculture (cropland or pasture). ----------------------------!
+                     allow_pft =                                                           &
+                        include_pft_ag(ipft)                                      .and.    &
+                        cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.    &
+                        repro_scheme                /= 0
+                     !---------------------------------------------------------------------!
+
+                  case (2)
+                     !----- Forest plantation. --------------------------------------------!
+                     allow_pft =                                                           &
+                        include_pft_fp(ipft)                                      .and.    &
+                        cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.    &
+                        repro_scheme                /= 0
+                     !---------------------------------------------------------------------!
+
+                  case default
+                     !----- Primary or secondary vegetation. ------------------------------!
+                     allow_pft =                                                           &
+                        include_pft(ipft)                                         .and.    &
+                        cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.    &
+                        repro_scheme                /= 0
+                     !---------------------------------------------------------------------!
+                  end select
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !    In case this PFT is allowed, update the seed pool.                  !
+                  !------------------------------------------------------------------------!
+                  if (allow_pft) then
+                     csite%repro(ipft,ipa) = csite%repro(ipft,ipa) + seed_rain(ipft)
+                  end if
+                  !------------------------------------------------------------------------!
+               end do pftloop
+               !---------------------------------------------------------------------------!
+            end do seedloop
+            !------------------------------------------------------------------------------!
+         end do siteloop0
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      In this select block we decide the seed dispersal depending the cross-site    !
+      !------------------------------------------------------------------------------------!
+      select case (repro_scheme)
       case (1)
          !---------------------------------------------------------------------------------!
          !     Seeds are dispersed amongst patches that belong to the same site, but they  !
@@ -881,7 +960,6 @@ module reproduction
          !---------------------------------------------------------------------------------!
          siteloop1: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
-
             !------------------------------------------------------------------------------!
             !      Loop over the donor cohorts.                                            !
             !------------------------------------------------------------------------------!

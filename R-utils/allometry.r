@@ -12,12 +12,16 @@ h2dbh <<- function(h,ipft){
    tropn = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe = ! pft$tropical[zpft]
 
+   ztropo        = zpft[tropo]
+   ztropn        = zpft[tropn]
+   ztempe        = zpft[tempe]
+
    dbh = NA * h
-   dbh[tropo] = exp((log(h[tropo])-pft$b1Ht[zpft[tropo]])/pft$b2Ht[zpft[tropo]])
-   dbh[tropn] = ( log( pft$hgt.ref[zpft[tropn]] / ( pft$hgt.ref[zpft[tropn]] - h[tropn] ) )
-                / pft$b1Ht[zpft[tropn]] ) ^ ( 1. / pft$b2Ht[zpft[tropn]])
-   dbh[tempe] = log( 1.0 - ( h[tempe] - pft$hgt.ref[zpft[tempe]])
-                   / pft$b1Ht[zpft[tempe]] ) / pft$b2Ht[zpft[tempe]]
+   dbh[tropo] = exp((log(h[tropo])-pft$b1Ht[ztropo])/pft$b2Ht[ztropo])
+   dbh[tropn] = ( log( pft$hgt.ref[ztropn] / ( pft$hgt.ref[ztropn] - h[tropn] ) )
+                / pft$b1Ht[ztropn] ) ^ ( 1. / pft$b2Ht[ztropn])
+   dbh[tempe] = log( 1.0 - ( h[tempe] - pft$hgt.ref[ztempe])
+                   / pft$b1Ht[ztempe] ) / pft$b2Ht[ztempe]
 
    return(dbh)
 }#end function h2dbh
@@ -47,12 +51,16 @@ dbh2h <<- function(ipft,dbh){
    tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe         = ! pft$tropical[zpft]
 
+   ztropo        = zpft[tropo]
+   ztropn        = zpft[tropn]
+   ztempe        = zpft[tempe]
+
    h         = NA * dbh
-   h[tropo]  = exp(pft$b1Ht[zpft[tropo]] + pft$b2Ht[zpft[tropo]] * log(dbhuse[tropo]) )
-   h[tropn]  = ( pft$hgt.ref[zpft[tropn]] 
-               * (1.0 - exp( -pft$b1Ht[zpft[tropn]] * dbhuse^pft$b2Ht[zpft[tropn]] ) ) )
-   h[tempe]  = ( pft$hgt.ref[zpft[tempe]] + pft$b1Ht[zpft[tempe]] 
-               * (1.0 - exp(pft$b2Ht[zpft[tempe]] * dbhuse[tempe] ) ) )
+   h[tropo]  = exp(pft$b1Ht[ztropo] + pft$b2Ht[ztropo] * log(dbhuse[tropo]) )
+   h[tropn]  = ( pft$hgt.ref[ztropn] 
+               * (1.0 - exp( -pft$b1Ht[ztropn] * dbhuse[tropn]^pft$b2Ht[ztropn])))
+   h[tempe]  = ( pft$hgt.ref[ztempe] + pft$b1Ht[ztempe] 
+               * (1.0 - exp(pft$b2Ht[ztempe] * dbhuse[tempe] ) ) )
 
    return(h)
 }#end function dbh2h
@@ -67,18 +75,33 @@ dbh2h <<- function(ipft,dbh){
 #==========================================================================================#
 #==========================================================================================#
 dbh2bl <<- function(dbh,ipft){
-
+   #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
      zpft = ipft
    }#end if
+   #---------------------------------------------------------------------------------------#
 
-   dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
-   bleaf  = ifelse( test = dbhuse < pft$dbh.adult[zpft]
-                  , yes  = pft$b1Bl.small[zpft] / C2B * dbhuse ^ pft$b2Bl.small[zpft]
-                  , no   = pft$b1Bl.large[zpft] / C2B * dbhuse ^ pft$b2Bl.large[zpft]
-                  )#end ifelse
+
+   #----- Limit dbh to dbh.crit. ----------------------------------------------------------#
+   dbhuse  = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+                    , yes  = dbhuse * dbhuse * dbh2h(dbhuse,ipft=zpft)
+                    , no   = dbhuse
+                    )#end ifelse
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find leaf biomass. --------------------------------------------------------------#
+   bleaf = pft$b1Bl[zpft] / C2B * size ^ pft$b2Bl[zpft]
+   #---------------------------------------------------------------------------------------#
+
 
    return(bleaf)
 }# end function dbh2bl
@@ -93,22 +116,33 @@ dbh2bl <<- function(dbh,ipft){
 #==========================================================================================#
 #==========================================================================================#
 dbh2bd <<- function(dbh,ipft){
+   #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
      zpft = ipft
    }#end if
+   #---------------------------------------------------------------------------------------#
 
-   small = is.finite(dbh) & dbh <= pft$dbh.crit[zpft]
-   large = is.finite(dbh) & dbh >  pft$dbh.crit[zpft]
 
-   bdead = NA * dbh
-   bdead[small] = ( pft$b1Bs.small[zpft[small]] / C2B * dbh[small] 
-                  ^ pft$b2Bs.small[zpft[small]] )
-   bdead[large] = ( pft$b1Bs.large[zpft[large]] / C2B * dbh[large] 
-                  ^ pft$b2Bs.large[zpft[large]] )
+   #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+                    , yes  = dbh * dbh * dbh2h(dbh,ipft=zpft)
+                    , no   = dbh
+                    )#end ifelse
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Select allometric parameters based on the size. ---------------------------------#
+   bdead = ifelse( test = dbh %<% pft$dbh.crit[zpft]
+                 , yes  = pft$b1Bs.small[zpft] / C2B * size ^ pft$b2Bs.small[zpft]
+                 , no   = pft$b1Bs.large[zpft] / C2B * size ^ pft$b2Bs.large[zpft]
+                 )#end ifelse
+   #---------------------------------------------------------------------------------------#
+
    return(bdead)
-}# end function dbh2bw
+}# end function dbh2bd
 #==========================================================================================#
 #==========================================================================================#
 
@@ -160,24 +194,22 @@ dbh2ca <<- function(dbh,ipft){
    #---------------------------------------------------------------------------------------#
 
 
-
-   #----- Find the effective DBH. ---------------------------------------------------------#
-   dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
-   #---------------------------------------------------------------------------------------#
-
-   #---------------------------------------------------------------------------------------#
-   #     Decide how to calculate based on allometry.                                       #
-   #---------------------------------------------------------------------------------------#
-   if (iallom %in% c(0,1,2)){
-      crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
-   }else if (iallom %in% c(3)){
-      crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
-   }#end if
+   #----- Limit dbh to dbh.crit. ----------------------------------------------------------#
+   dbhuse  = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
    #---------------------------------------------------------------------------------------#
 
 
-   #----- Local LAI / Crown area should never be less than one. ---------------------------#
-   crown = pmin(crown,loclai)
+   #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+                    , yes  = dbhuse * dbhuse * dbh2h(dbhuse,ipft=zpft)
+                    , no   = dbhuse
+                    )#end ifelse
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Select allometric parameters based on the size. ---------------------------------#
+   crown = pmin(loclai,pft$b1Ca[zpft] * size ^ pft$b2Ca[zpft])
    #---------------------------------------------------------------------------------------#
 
    return(crown)
@@ -229,6 +261,34 @@ dbh2vol <<- function(hgt,dbh,ipft){
 #==========================================================================================#
 #==========================================================================================#
 
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    Above-ground biomass.                                                                 #
+#------------------------------------------------------------------------------------------#
+ed.biomass <<- function(dbh,ipft){
+   if (length(ipft) == 1){
+     zpft = rep(ipft,times=length(dbh))
+   }else{
+     zpft = ipft
+   }#end if
+
+   bleaf  = dbh2bl(dbh=dbh,ipft=zpft)
+   height = dbh2h(dbh=dbh,ipft=zpft)
+   bsapa  = pft$agf.bs[zpft] * pft$qsw[zpft] * height * bleaf
+   bdeada = pft$agf.bs[zpft] * dbh2bd(dbh=dbh,ipft=zpft)
+   bwooda = bsapa + bdeada
+
+   agb    = bleaf + bwooda
+   return(agb)
+}#end function ed.biomass
+#==========================================================================================#
+#==========================================================================================#
 
 
 
@@ -475,6 +535,70 @@ dbh2agb.baker <<- function(dbh,wdens,allom="baker.chave"){
    #---------------------------------------------------------------------------------------#
    return(agb)
 }#end function dbh2agb.baker
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Biomass allometry based on Chave et al. (2014).  Results are always in kgC/plant.    #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Chave, J., and co-authors, 2014: Improved allometric models to estimate tha aboveground  #
+#     biomass of tropical trees.  Glob. Change Biol., 20, 3177-3190                        #
+#     doi:10.1111/gcb.12629                                                                #
+#                                                                                          #
+#                                                                                          #
+#                                                                                          #
+# Input:                                                                                   #
+# ---------------------------------------------------------------------------------------- #
+# dbh        --- Diameter at breast height [cm]                                            #
+# height     --- Height [m]                                                                #
+# wdens      --- Wood density [g/cm3]                                                      #
+# ---------------------------------------------------------------------------------------- #
+#------------------------------------------------------------------------------------------#
+size2agb.chave <<- function(dbh,height,wdens){
+   #---------------------------------------------------------------------------------------#
+   #     Make sure all terms have the same length.                                         #
+   #---------------------------------------------------------------------------------------#
+   lens = unique(c(length(dbh),length(height),length(wdens)))
+   if ( length(lens) != 1 ){
+      cat0("-----------------------------------------------------------")
+      cat0("   Variables don't have the same length."                   )
+      cat0("   DBH    = ",length(dbh)                                   )
+      cat0("   HEIGHT = ",length(height)                                )
+      cat0("   WDENS  = ",length(wdens)                                 )
+      cat0("-----------------------------------------------------------")
+      stop(" Incorrect input data.")
+   }else{
+      fine.dbh    = is.numeric  (dbh)    || all(is.na(dbh   ))
+      fine.height = is.numeric  (height) || all(is.na(height))
+      fine.wdens  = is.numeric  (wdens)  || all(is.na(wdens ))
+      if (! all(c(fine.dbh,fine.height,fine.wdens))){
+         cat0("-----------------------------------------------------------")
+         cat0("   Not all variables have the correct type."                )
+         cat0("   DBH    (numeric)   = ",fine.dbh                          )
+         cat0("   HEIGHT (numeric)   = ",fine.height                       )
+         cat0("   WDENS  (numeric)   = ",fine.wdens                        )
+         cat0("-----------------------------------------------------------")
+         stop(" Incorrect data types.")
+      }#end if (! all(c(fine.dbh,fine.height,fine.wdens,fine.type,fine.dead)))
+   }#end if ( length(lens) != 1)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Find the allometry based on Chave et al. (2014).                                  #
+   #---------------------------------------------------------------------------------------#
+   ans = 0.0673 * (wdens*dbh^2*height)^0.976 / C2B
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function size2agb.chave
 #==========================================================================================#
 #==========================================================================================#
 

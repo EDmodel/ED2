@@ -261,6 +261,11 @@ module canopy_radiation_coms
    integer                                   :: gap_npixel
    !----- Total 'raster' landscape area. --------------------------------------------------!
    real(kind=4)                              :: rls_area
+   !----- Use fixed thresholds to split patches by illumination classes? ------------------!
+   logical                                   :: fixed_hrz_classes
+   !----- Default thresholds in case fixed classes are to be used. ------------------------!
+   real(kind=4)                              :: at_bright_def
+   real(kind=4)                              :: at_dark_def
    !----- x of the 'raster' landscape. ----------------------------------------------------!
    real(kind=4), dimension(:,:), allocatable :: rls_x
    !----- y of the 'raster' landscape. ----------------------------------------------------!

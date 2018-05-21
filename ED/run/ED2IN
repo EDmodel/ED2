@@ -709,15 +709,20 @@ $ED_NL
    ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
    !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
    !      Foley et al. (1996).                                                             !
-   ! 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        !
-   !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
+   ! 1 -- Similar to case 0, but we use Jmax to determine the RubP-regeneration (aka       !
+   !      light) limitation case, account for the triose phosphate utilisation limitation  !
+   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
+   !      from von Caemmerer (2000).                                                       !
    ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
    !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
    !      correction for high and low temperatures are the same as in Moorcroft et al.     !
    !      (2001).                                                                          !
-   ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
+   ! 3 -- Similar to case 2, but we use Jmax to determine the RubP-regeneration (aka       !
+   !      light) limitation case, account for the triose phosphate utilisation limitation  !
+   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
+   !      from von Caemmerer (2000).                                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPHYSIOL = 2
+   NL%IPHYSIOL = 3
    !---------------------------------------------------------------------------------------!
 
 
@@ -1353,9 +1358,9 @@ $ED_NL
    ! 1 - C4 grass                         |  9 - early temperate deciduous                 !
    ! 2 - early tropical                   | 10 - mid temperate deciduous                   !
    ! 3 - mid tropical                     | 11 - late temperate deciduous                  !
-   ! 4 - late tropical                    | 12 - early savannah (thick bark)               !
-   ! 5 - temperate C3 grass               | 13 - mid savannah (thick bark)                 !
-   ! 6 - northern pines                   | 14 - late savannah (thick bark)                !
+   ! 4 - late tropical                    | 12 - early shade intolerant (high SLA)         !
+   ! 5 - temperate C3 grass               | 13 - mid shade intolerant (high SLA)           !
+   ! 6 - northern pines                   | 14 - medoid tropical (~ average tropical tree) !
    ! 7 - southern pines                   | 15 - araucaria                                 !
    ! 8 - late conifers                    | 16 - tropical C3 grass                         !
    !                                      | 17 - liana                                     !
@@ -1448,11 +1453,6 @@ $ED_NL
    ! TREEFALL_DISTURBANCE_RATE -- Sign-dependent treefall disturbance rate:                !
    !                              > 0. usual disturbance rate, in 1/years;                 !
    !                              = 0. No treefall disturbance;                            !
-   !                              < 0. (Tropical PFTs only, others will use the absolute   !
-   !                                   value instead).  Test for a new slope for density   !
-   !                                   independent mortality based on Kraft et al. (2010)  !
-   !                                   and Paracou data.  Absolute value will be used as   !
-   !                                   the base line rate for late successional trees.     !
    ! TIME2CANOPY               -- Minimum patch age for treefall disturbance to happen.    !
    !                              If TREEFALL_DISTURBANCE_RATE = 0., this value will be    !
    !                              ignored.  If this value is different than zero, then     !

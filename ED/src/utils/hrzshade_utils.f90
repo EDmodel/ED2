@@ -239,6 +239,7 @@ module hrzshade_utils
                                        , copy_sitetype_mask  & ! subroutine
                                        , copy_sitetype       ! ! subroutine
       use canopy_radiation_coms , only : ihrzrad             & ! intent(in)
+                                       , fixed_hrz_classes   & ! intent(in)
                                        , cci_pixres          & ! intent(in)
                                        , cci_gapsize         & ! intent(in)
                                        , cci_gapmin          & ! intent(in)
@@ -254,6 +255,8 @@ module hrzshade_utils
                                        , gap_x0              & ! intent(in)
                                        , gap_y0              & ! intent(in)
                                        , cci_gaparea         & ! intent(in)
+                                       , at_bright_def       & ! intent(in)
+                                       , at_dark_def         & ! intent(in)
                                        , rls_igp             & ! intent(out)
                                        , rls_ipa             & ! intent(out)
                                        , rls_ztch            & ! intent(out)
@@ -511,7 +514,7 @@ module hrzshade_utils
          !----- Loop through all cohorts. -------------------------------------------------!
          cohloop: do ico=1,cpatch%ncohorts
             ipft = cpatch%pft(ico)
-         
+
             !----- Decide the height based on ihrzrad. ------------------------------------!
             select case (ihrzrad)
             case (2,4)
@@ -526,7 +529,7 @@ module hrzshade_utils
 
             !----- Find horizontal and vertical radii. ------------------------------------!
             ca_ind  = size2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)             &
-                             ,cpatch%pft(ico))
+                             ,cpatch%pft(ico),cap_crit=.false.)
             rh_ind  = sqrt(ca_ind * pii)
             ch_fact = h2crownbh(cpatch%hite(ico),cpatch%pft(ico))/cpatch%hite(ico)
             rv_ind  = 0.5 * hgt_eff * (1.0 - ch_fact)
@@ -668,8 +671,13 @@ module hrzshade_utils
       if (verbose) then
          write(unit=*,fmt='(a)') '    -> Find the mean illumination by class...'
       end if
-      at_bright = fquant(rls_ngap,gap_fbeam,twothirds)
-      at_dark   = fquant(rls_ngap,gap_fbeam,onethird )
+      if (fixed_hrz_classes) then
+         at_bright = at_bright_def
+         at_dark   = at_dark_def
+      else
+         at_bright = fquant(rls_ngap,gap_fbeam,twothirds)
+         at_dark   = fquant(rls_ngap,gap_fbeam,onethird )
+      end if
       if (verbose) then
          write(unit=*,fmt='(a)')         ''
          write(unit=*,fmt='(a)')         ''

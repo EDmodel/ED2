@@ -45,7 +45,8 @@ xy.density <<- function( x
                        , yaxs             = "i"
                        , mar.main         = c(4.1,4.1,4.1,1.1)
                        , mar.key          = NULL
-                       , useRaster        = TRUE
+                       , useRaster        = ! (xlog || ylog)
+                       , reparse          = TRUE
                        , ...
                        ){
 
@@ -360,7 +361,10 @@ xy.density <<- function( x
    #---------------------------------------------------------------------------------------#
    n.after = length(plot.after)
    for (a in sequence(n.after)){
-      do.call(what=names(plot.after)[a],args=plot.after[[a]])
+      a.fun = names(plot.after)[a]
+      a.args = plot.after[[a]]
+      if (a.fun %in% "text" && reparse) a.args$labels = parse(text=a.args$labels)
+      do.call(what=a.fun,args=a.args)
    }#end for
    #---------------------------------------------------------------------------------------#
 

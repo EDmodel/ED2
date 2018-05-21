@@ -1194,8 +1194,8 @@ module rk4_integ_utils
                                        , aparms                & ! intent(out)
                                        , stopen                & ! intent(out)
                                        , stclosed              & ! intent(out)
-                                       , rubiscolim            & ! intent(out)
-                                       , co2lim                & ! intent(out)
+                                       , rubpsatlim            & ! intent(out)
+                                       , thirdlim              & ! intent(out)
                                        , lightlim              ! ! intent(out)
       use canopy_radiation_coms , only : radscr                & ! intent(out)
                                        , alloc_radscratch      & ! sub-routine
@@ -1227,14 +1227,14 @@ module rk4_integ_utils
          !---------------------------------------------------------------------------------!
          ! Initialize the photosynthesis arrays.
          !---------------------------------------------------------------------------------!
-         allocate(thispft(nthreads))
-         allocate(met(nthreads))
-         allocate(aparms(nthreads))
-         allocate(stopen(nthreads))
-         allocate(stclosed(nthreads))
-         allocate(rubiscolim(nthreads))
-         allocate(co2lim(nthreads))
-         allocate(lightlim(nthreads))
+         allocate(thispft   (nthreads))
+         allocate(met       (nthreads))
+         allocate(aparms    (nthreads))
+         allocate(stopen    (nthreads))
+         allocate(stclosed  (nthreads))
+         allocate(rubpsatlim(nthreads))
+         allocate(thirdlim  (nthreads))
+         allocate(lightlim  (nthreads))
 
          !---------------------------------------------------------------------------------!
          ! Initialize radiation scratch space                                              !

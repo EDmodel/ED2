@@ -165,8 +165,8 @@ ptcloud.2.patch <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
 
 
-      
-      
+
+
 
       #------------------------------------------------------------------------------------#
       #     Grab current pdf profile, and find maxima, minima, and inflection points.      #
@@ -321,10 +321,10 @@ ptcloud.2.patch <<- function( pt.cloud
          #---------------------------------------------------------------------------------#
          npl.pft    = rep(unpl           , times= npfts)      * fpft
          dbh.pft    = rep(udbh           , times= npfts) + 0. * fpft
-         hgt.pft    = rep(uhgt.bnd       , times= npfts) + 0. * fpft  
+         hgt.pft    = rep(uhgt.bnd       , times= npfts) + 0. * fpft
          ipft.pft   = rep(mypfts         , each = ncoh ) + 0L * fpft
          wdns.pft   = rep(pft$rho[mypfts], each = ncoh ) + 0. * fpft
-         bleaf.pft  = dbh2bl(dbh=dbh.pft,ipft=ipft.pft)
+         bleaf.pft  = dbh2bl(dbh=dbh.pft,ipft=ipft.pft)  + 0. * fpft
          broot.pft  = rep(pft$qroot[mypfts],each = ncoh) * bleaf.pft
          bsw.pft    = rep(pft$qsw  [mypfts],each = ncoh) * hgt.pft   * bleaf.pft
          balive.pft = bleaf.pft + broot.pft + bsw.pft

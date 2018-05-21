@@ -41,10 +41,8 @@ recruitment.rate <<- function( property
 
 
    #---- Find the inverse of the time step (and check whether it is an scalar). -----------#
-   if (length(dtime) != 1){
-      stop ("dtime must be a scalar...")
-   }else{
-      dtimei = 1. / dtime
+   if (length(dtime) == 1){
+      dtime = rep(dtime,times=length(taxon))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -70,11 +68,14 @@ recruitment.rate <<- function( property
    property.tx            = split (x = property     , f = taxon)
    p.use.tx               = split (x = p.use        , f = taxon)
    p.established.tx       = split (x = p.established, f = taxon)
+   dtime.tx               = split (x = dtime        , f = taxon)
    median.tx              = sapply(X = property.tx, FUN = median, na.rm = TRUE)
+   dtbar.tx               = sapply(X = dtime.tx   , FUN = mean  , na.rm = TRUE)
    zero.append            = N.tx == 0
    median.tx[zero.append] = 1.
    dont.append            = N.tx > 0 & ( N.tx != E.tx & E.tx != 0 )
    median.tx[dont.append] = NA
+   dtbar.tx [dont.append] = NA
    property.tx            = lapply( X   = mapply( FUN = c
                                                 , mapply(FUN=c,property.tx,median.tx)
                                                 , median.tx
@@ -99,24 +100,30 @@ recruitment.rate <<- function( property
                                                 )#end mapply
                                   , FUN = na.omit
                                   )#end lapply
+   dtime.tx               = lapply( X   = mapply( FUN = c
+                                                , mapply( FUN = c, dtime.tx, dtbar.tx)
+                                                , dtbar.tx
+                                                )#end mapply
+                                  , FUN = na.omit
+                                  )#end lapply
    #---------------------------------------------------------------------------------------#
-
 
 
 
    #---------------------------------------------------------------------------------------#
    #      Collapse the data into lists, and run bootstrap for each of the groups.          #
    #---------------------------------------------------------------------------------------#
-   datum.tx    = lapply( X   = mapply( FUN           = list
-                                     , property      = property.tx
-                                     , p.established = p.established.tx
-                                     , p.use         = p.use.tx
-                                     , SIMPLIFY      = FALSE
-                                     )#end mapply
-                       , FUN = data.frame
+   datum.tx    = lapply( X        = mapply( FUN           = list
+                                          , property      = property.tx
+                                          , p.established = p.established.tx
+                                          , p.use         = p.use.tx
+                                          , dtime         = dtime.tx
+                                          , SIMPLIFY      = FALSE
+                                          )#end mapply
+                       , FUN      = data.frame
+                       , MoreArgs = list(stringsAsFactors = FALSE)
                        )#end lapply
-   
-   boot.tx     = try(lapply(X= datum.tx,FUN=boot,statistic=boot.recruit,R=R,dtime=dtime))
+   boot.tx     = try(lapply(X= datum.tx,FUN=boot,statistic=boot.recruit,R=R))
    if ("try-error" %in% is(boot.tx)) browser()
    expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
    q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
@@ -133,15 +140,20 @@ recruitment.rate <<- function( property
    property.gb         = property
    p.established.gb    = p.established
    p.use.gb            = p.use
+   dtime.gb            = dtime
    if ( N.gb > 0 && ( N.gb == E.gb || E.gb == 0 ) ){
       median.gb        = median(x = property, na.rm = TRUE)
+      dtbar.gb         = mean  (x = dtime   , na.rm = TRUE)
       property.gb      = c(property.gb     ,median.gb,median.gb)
       p.established.gb = c(p.established.gb,       1.,       0.)
       p.use.gb         = c(p.use.gb        ,       1.,       1.)
+      dtime.gb         = c(dtime.gb        , dtbar.gb, dtbar.gb)
    }else if (N.gb == 0){
-      property.gb    = c(1.,1.)
-      established.gb = c(1.,0.)
-      p.use.gb       = c(1.,1.)
+      dtbar.gb         = mean  (x = dtime   , na.rm = TRUE)
+      property.gb      = c(1.,1.)
+      p.established.gb = c(1.,0.)
+      p.use.gb         = c(1.,1.)
+      dtime.gb         = c(dtbar.gb,dtbar.gb)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -154,9 +166,10 @@ recruitment.rate <<- function( property
    datum.gb    = data.frame   ( property         = property.gb
                               , p.established    = p.established.gb
                               , p.use            = p.use.gb
+                              , dtime            = dtime.gb
                               , stringsAsFactors = FALSE
                               )#end data.frame
-   boot.gb     = boot         (data=datum.gb,statistic=boot.recruit,R=R,dtime=dtime)
+   boot.gb     = boot         (data=datum.gb,statistic=boot.recruit,R=R)
    expected.gb = boot.gb$t0
    q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
    q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
@@ -169,12 +182,12 @@ recruitment.rate <<- function( property
    #---------------------------------------------------------------------------------------#
    ans = list( taxon = data.frame( expected         = expected.tx
                                  , q025             = q025.tx
-                                 , q975             = q975.tx 
+                                 , q975             = q975.tx
                                  , stringsAsFactors = FALSE
                                  )
-             , comm  = data.frame( expected = expected.gb
-                                 , q025     = q025.gb
-                                 , q975     = q975.gb
+             , comm  = data.frame( expected         = expected.gb
+                                 , q025             = q025.gb
+                                 , q975             = q975.gb
                                  , stringsAsFactors = FALSE
                                  )
              )#end list
@@ -229,10 +242,8 @@ mortality.rate <<- function( property
 
 
    #---- Find the inverse of the time step (and check whether it is an scalar). -----------#
-   if (length(dtime) != 1){
-      stop ("dtime must be a scalar...")
-   }else{
-      dtimei = 1. / dtime
+   if (length(dtime) == 1){
+      dtime = rep(dtime,times=length(taxon))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -259,11 +270,14 @@ mortality.rate <<- function( property
    property.tx            = split (x = property  , f = taxon)
    p.survivor.tx          = split (x = p.survivor, f = taxon)
    p.use.tx               = split (x = p.use     , f = taxon)
+   dtime.tx               = split (x = dtime        , f = taxon)
    median.tx              = sapply(X = property.tx, FUN = median, na.rm = TRUE)
+   dtbar.tx               = sapply(X = dtime.tx   , FUN = median, na.rm = TRUE)
    zero.append            = N.tx == 0
    median.tx[zero.append] = 1.
    dont.append            = N.tx > 0 & ( N.tx != S.tx & S.tx != 0)
    median.tx[dont.append] = NA
+   dtbar.tx [dont.append] = NA
    property.tx            = lapply( X   = mapply( FUN = c
                                                 , mapply( FUN = c
                                                         , property.tx
@@ -297,6 +311,15 @@ mortality.rate <<- function( property
                                                 )#end mapply
                                   , FUN = na.omit
                                   )#end lapply
+   dtime.tx               = lapply( X   = mapply( FUN = c
+                                                , mapply( FUN = c
+                                                        , dtime.tx
+                                                        , dtbar.tx
+                                                        )#end mapply
+                                                , dtbar.tx
+                                                )#end mapply
+                                  , FUN = na.omit
+                                  )#end lapply
    #---------------------------------------------------------------------------------------#
 
 
@@ -312,12 +335,13 @@ mortality.rate <<- function( property
                                        , property    = property.tx
                                        , p.survivor  = p.survivor.tx
                                        , p.use       = p.use.tx
+                                       , dtime       = dtime.tx
                                        , SIMPLIFY    = FALSE
                                        )#end mapply
                     , FUN      = data.frame
                     , MoreArgs = list(stringsAsFactors = FALSE)
                     )#end lapply
-   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.mortality,R=R,dtime=dtime)
+   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.mortality,R=R)
    expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
    q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
    q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
@@ -333,15 +357,20 @@ mortality.rate <<- function( property
    property.gb   = property
    p.survivor.gb = p.survivor
    p.use.gb      = p.use
+   dtime.gb      = dtime
    if ( N.gb > 0 && ( N.gb == S.gb || S.gb == 0 ) ){
       median.gb      = median(x = property, na.rm = TRUE)
+      dtbar.gb       = mean  (x = dtime   , na.rm = TRUE)
       property.gb    = c(property.gb  ,median.gb,median.gb)
       p.survivor.gb  = c(p.survivor.gb,       1.,       0.)
       p.use.gb       = c(p.use.gb     ,       1.,       1.)
+      dtime.gb       = c(dtime.gb     , dtbar.gb, dtbar.gb)
    }else if (N.gb == 0){
+      dtbar.gb       = mean  (x = dtime   , na.rm = TRUE)
       property.gb    = c(1.,1.)
       p.survivor.gb  = c(1.,0.)
       p.use.gb       = c(1.,1.)
+      dtime.gb       = c(dtbar.gb,dtbar.gb)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -354,9 +383,10 @@ mortality.rate <<- function( property
    datum.gb    = data.frame   ( property         = property.gb
                               , p.survivor       = p.survivor.gb
                               , p.use            = p.use.gb
+                              , dtime            = dtime.gb
                               , stringsAsFactors = FALSE
                               )#end data.frame
-   boot.gb     = boot         (data=datum.gb,statistic=boot.mortality,R=R,dtime=dtime)
+   boot.gb     = boot         (data=datum.gb,statistic=boot.mortality,R=R)
    expected.gb = boot.gb$t0
    q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
    q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
@@ -507,10 +537,8 @@ acc.recruitment.rate <<- function( property
 
 
    #---- Find the inverse of the time step (and check whether it is an scalar). -----------#
-   if (length(dtime) != 1){
-      stop ("dtime must be a scalar...")
-   }else{
-      dtimei = 1. / dtime
+   if (length(dtime) == 1){
+      dtime = rep(dtime,times=length(taxon))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -536,11 +564,14 @@ acc.recruitment.rate <<- function( property
    property.tx            = split (x = count * property, f = taxon)
    p.use.tx               = split (x = p.use           , f = taxon)
    p.established.tx       = split (x = p.established   , f = taxon)
+   dtime.tx               = split (x = dtime           , f = taxon)
    median.tx              = sapply(X = property.tx     , FUN = median, na.rm = TRUE)
+   dtbar.tx               = sapply(X = dtime.tx        , FUN = median, na.rm = TRUE)
    zero.append            = N.tx == 0
    median.tx[zero.append] = 1.
    dont.append            = N.tx > 0 & ( N.tx != E.tx & E.tx != 0 )
    median.tx[dont.append] = NA
+   dtbar.tx [dont.append] = NA
    property.tx            = lapply( X   = mapply( FUN = c
                                                 , mapply(FUN=c,property.tx,median.tx)
                                                 , median.tx
@@ -565,6 +596,15 @@ acc.recruitment.rate <<- function( property
                                                 )#end mapply
                                   , FUN = na.omit
                                   )#end lapply
+   dtime.tx               = lapply( X   = mapply( FUN = c
+                                                , mapply( FUN = c
+                                                        , dtime.tx
+                                                        , dtbar.tx
+                                                        )#end mapply
+                                                , dtbar.tx
+                                                )#end mapply
+                                  , FUN = na.omit
+                                  )#end lapply
    #---------------------------------------------------------------------------------------#
 
 
@@ -573,15 +613,17 @@ acc.recruitment.rate <<- function( property
    #---------------------------------------------------------------------------------------#
    #      Collapse the data into lists, and run bootstrap for each of the groups.          #
    #---------------------------------------------------------------------------------------#
-   datum.tx    = lapply( X   = mapply( FUN           = list
-                                     , property      = property.tx
-                                     , p.established = p.established.tx
-                                     , p.use         = p.use.tx
-                                     , SIMPLIFY      = FALSE
-                                     )#end mapply
-                       , FUN = data.frame
+   datum.tx    = lapply( X        = mapply( FUN           = list
+                                          , property      = property.tx
+                                          , p.established = p.established.tx
+                                          , p.use         = p.use.tx
+                                          , dtime         = dtime.tx
+                                          , SIMPLIFY      = FALSE
+                                          )#end mapply
+                       , FUN      = data.frame
+                       , MoreArgs = list(stringsAsFactors = FALSE)
                        )#end lapply
-   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.recruit,R=R,dtime=dtime)
+   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.recruit,R=R)
    expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
    q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
    q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
@@ -597,15 +639,20 @@ acc.recruitment.rate <<- function( property
    property.gb         = global * property
    p.established.gb    = p.established
    p.use.gb            = p.use
+   dtime.gb            = dtime
    if ( N.gb > 0 && ( N.gb == E.gb || E.gb == 0 ) ){
       median.gb        = median(x = property.gb, na.rm = TRUE)
+      dtbar.gb         = mean  (x = dtime      , na.rm = TRUE)
       property.gb      = c(property.gb     ,median.gb,median.gb)
       p.established.gb = c(p.established.gb,       1.,       0.)
       p.use.gb         = c(p.use.gb        ,       1.,       1.)
+      dtime.gb         = c(dtime.gb        , dtbar.gb, dtbar.gb)
    }else if (N.gb == 0){
-      property.gb    = c(1.,1.)
-      established.gb = c(1.,0.)
-      p.use.gb       = c(1.,1.)
+      dtbar.gb         = mean  (x = dtime   , na.rm = TRUE)
+      property.gb      = c(1.,1.)
+      p.established.gb = c(1.,0.)
+      p.use.gb         = c(1.,1.)
+      dtime.gb         = c(dtbar.gb,dtbar.gb)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -618,9 +665,10 @@ acc.recruitment.rate <<- function( property
    datum.gb    = data.frame   ( property         = property.gb
                               , p.established    = p.established.gb
                               , p.use            = p.use.gb
+                              , dtime            = dtime.gb
                               , stringsAsFactors = FALSE
                               )#end data.frame
-   boot.gb     = boot         (data=datum.gb,statistic=boot.acc.recruit,R=R,dtime=dtime)
+   boot.gb     = boot         (data=datum.gb,statistic=boot.acc.recruit,R=R)
    expected.gb = boot.gb$t0
    q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
    q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
@@ -688,10 +736,8 @@ acc.mortality.rate <<- function( property
 
 
    #---- Find the inverse of the time step (and check whether it is an scalar). -----------#
-   if (length(dtime) != 1){
-      stop ("dtime must be a scalar...")
-   }else{
-      dtimei = 1. / dtime
+   if (length(dtime) == 1){
+      dtime = rep(dtime,times=length(taxon))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -718,11 +764,14 @@ acc.mortality.rate <<- function( property
    property.tx            = split (x = count*property, f = taxon)
    p.survivor.tx          = split (x = p.survivor    , f = taxon)
    p.use.tx               = split (x = p.use         , f = taxon)
+   dtime.tx               = split (x = dtime         , f = taxon)
    median.tx              = sapply(X = property.tx   , FUN = median, na.rm = TRUE)
+   dtbar.tx               = sapply(X = dtime.tx   , FUN = median, na.rm = TRUE)
    zero.append            = N.tx == 0
    median.tx[zero.append] = 1.
    dont.append            = N.tx > 0 & ( N.tx != S.tx & S.tx != 0)
    median.tx[dont.append] = NA
+   dtbar.tx [dont.append] = NA
    property.tx            = lapply( X   = mapply( FUN = c
                                                 , mapply( FUN = c
                                                         , property.tx
@@ -756,6 +805,15 @@ acc.mortality.rate <<- function( property
                                                 )#end mapply
                                   , FUN = na.omit
                                   )#end lapply
+   dtime.tx               = lapply( X   = mapply( FUN = c
+                                                , mapply( FUN = c
+                                                        , dtime.tx
+                                                        , dtbar.tx
+                                                        )#end mapply
+                                                , dtbar.tx
+                                                )#end mapply
+                                  , FUN = na.omit
+                                  )#end lapply
    #---------------------------------------------------------------------------------------#
 
 
@@ -771,12 +829,13 @@ acc.mortality.rate <<- function( property
                                        , property    = property.tx
                                        , p.survivor  = p.survivor.tx
                                        , p.use       = p.use.tx
+                                       , dtime       = dtime.tx
                                        , SIMPLIFY    = FALSE
                                        )#end mapply
                     , FUN      = data.frame
                     , MoreArgs = list(stringsAsFactors = FALSE)
                     )#end lapply
-   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.mortality,R=R,dtime=dtime)
+   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.mortality,R=R)
    expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
    q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
    q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
@@ -793,15 +852,20 @@ acc.mortality.rate <<- function( property
    property.gb   = global * property
    p.survivor.gb = p.survivor
    p.use.gb      = p.use
+   dtime.gb      = dtime
    if ( N.gb > 0 && ( N.gb == S.gb || S.gb == 0 ) ){
       median.gb      = median(x = property * global, na.rm = TRUE)
+      dtbar.gb       = mean  (x = dtime   , na.rm = TRUE)
       property.gb    = c(property.gb  ,median.gb,median.gb)
       p.survivor.gb  = c(p.survivor.gb,       1.,       0.)
       p.use.gb       = c(p.use.gb     ,       1.,       1.)
+      dtime.gb       = c(dtime.gb     , dtbar.gb, dtbar.gb)
    }else if (N.gb == 0){
+      dtbar.gb       = mean  (x = dtime   , na.rm = TRUE)
       property.gb    = c(1.,1.)
       p.survivor.gb  = c(1.,0.)
       p.use.gb       = c(1.,1.)
+      dtime.gb       = c(dtbar.gb,dtbar.gb)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -814,9 +878,10 @@ acc.mortality.rate <<- function( property
    datum.gb    = data.frame   ( property         = property.gb
                               , p.survivor       = p.survivor.gb
                               , p.use            = p.use.gb
+                              , dtime            = dtime.gb
                               , stringsAsFactors = FALSE
                               )#end data.frame
-   boot.gb     = boot         (data=datum.gb,statistic=boot.acc.mortality,R=R,dtime=dtime)
+   boot.gb     = boot         (data=datum.gb,statistic=boot.acc.mortality,R=R)
    expected.gb = boot.gb$t0
    q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
    q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")

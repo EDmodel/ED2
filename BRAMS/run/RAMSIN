@@ -2245,13 +2245,18 @@ $ED2_INFO
    ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
    !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
    !      Foley et al. (1996).                                                             !
-   ! 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        !
-   !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
+   ! 1 -- Similar to case 0, but we use Jmax to determine the RubP-regeneration (aka       !
+   !      light) limitation case, account for the triose phosphate utilisation limitation  !
+   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
+   !      from von Caemmerer (2000).                                                       !
    ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
    !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
-   !      leaf respiration correction for high and low temperatures are the same as in     !
-   !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
-   ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
+   !      correction for high and low temperatures are the same as in Moorcroft et al.     !
+   !      (2001).                                                                          !
+   ! 3 -- Similar to case 2, but we use Jmax to determine the RubP-regeneration (aka       !
+   !      light) limitation case, account for the triose phosphate utilisation limitation  !
+   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
+   !      from von Caemmerer (2000).                                                       !
    !---------------------------------------------------------------------------------------!
    IPHYSIOL = 2,
    !---------------------------------------------------------------------------------------!
@@ -2863,8 +2868,6 @@ $ED2_INFO
    ! TREEFALL_DISTURBANCE_RATE -- Sign-dependent treefall disturbance rate:                !
    !                              > 0. usual disturbance rate, in 1/years;                 !
    !                              = 0. No treefall disturbance;                            !
-   !                              < 0. Treefall will be added as a mortality rate (it      !
-   !                                   will kill plants, but it won't create a new patch). !
    ! TIME2CANOPY               -- Minimum patch age for treefall disturbance to happen.    !
    !                              If TREEFALL_DISTURBANCE_RATE = 0., this value will be    !
    !                              ignored.  If this value is different than zero, then     !

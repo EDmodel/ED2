@@ -516,3 +516,71 @@ dec2dms <<- function(lon=NULL,lat=NULL){
 }#end dec2dms
 #------------------------------------------------------------------------------------------#
 
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#     This function converts longitude/latitude into country names.                        #
+# This script was adapted from 
+#                                                                                          #
+# Input variables:                                                                         #
+# lon     - vector with longitudes (degrees, negative means west)                          #
+# lat     - vector with latitudes (degrees, negative means south)                          #
+# res     - map resolution to define country boundaries                                    #
+# subnatl - list of countries for which the subnational information is to be attached      #
+#           to the country name (default is none)                                          #
+#------------------------------------------------------------------------------------------#
+lonlat.2.country <<- function( lon
+                             , lat
+                             , res    = "low"
+                             , output = c("name","continent","iso")
+                             ){
+   #------ Select the output column. ------------------------------------------------------#
+   output = match.arg(output)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Retrieve spatial point. --------------------------------------------------------#
+   countries.sp = getMap(resolution="low")
+   #---------------------------------------------------------------------------------------#
+
+   #----- Create spatial points. ----------------------------------------------------------#
+   points.sp = data.frame(x=lon,y=lat)
+   points.sp = SpatialPoints( points.sp
+                            , proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs")
+                            )#end SpatialPoints
+   points.sp = spTransform(points.sp,CRSobj=proj4string(countries.sp))
+   #---------------------------------------------------------------------------------------#
+
+   #----- Find the countries. -------------------------------------------------------------#
+   info = over(points.sp,countries.sp)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- For some reason French Guiana doesn't belong to any continent... ----------------#
+   info$Stern[info$NAME %in% "French Guiana"] = "South America"
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Get indices of the polygons object containing each point. -----------------------#
+   if (output %in% "name"){
+      ans = as.character(info$NAME)
+   }else if (output %in% "continent"){
+      ans = as.character(info$Stern)
+      ans[ans %in% "Australia"     ] = "Oceania"
+      ans[ans %in% "Australasia"   ] = "Oceania"
+      ans[ans %in% "East Asia"     ] = "Asia"
+      ans[ans %in% "North Africa"  ] = "Africa"
+      ans[ans %in% "South+E Africa"] = "Africa"
+      ans[ans %in% "South Asia"    ] = "Asia"
+      ans[ans %in% "West Africa"   ] = "Africa"
+      ans[ans %in% "West Asia"     ] = "Asia"
+   }else if (output %in% "iso"){
+      ans = as.character(info$ISO_A3)
+   }#end if (output %in% "name")
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end lonlat.2.country
+#------------------------------------------------------------------------------------------#
