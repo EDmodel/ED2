@@ -4393,7 +4393,8 @@ subroutine init_pft_mort_params()
                 ! values from K11 and indirectly from N17).  The excess ageing mortality   !
                 ! was estimated by subtracting the background gap turnover rate calculated !
                 ! by B82 (40 m2 gaps).   We fitted a standard major axis model to the      !
-                ! mortality rate as a function of the average wood density.                !
+                ! mortality rate as a function of the average wood density for each        !
+                ! species.                                                                 !
                 !                                                                          !
                 ! References:                                                              !
                 !                                                                          !
@@ -4425,7 +4426,7 @@ subroutine init_pft_mort_params()
                 !    in tropical forests of Panama. New Phytol., 215 (4):1425-1437,        !
                 !    Sep 2017. doi:10.1111/nph.14319 (N17).                                !
                 !--------------------------------------------------------------------------!
-                mort3(ipft) = exp(-0.1133677-6.73458 * rho(ipft))
+                mort3(ipft) = exp(-0.382 - 5.21 * rho(ipft))
                 !--------------------------------------------------------------------------!
              end if
           case default

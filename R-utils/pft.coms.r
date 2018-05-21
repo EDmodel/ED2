@@ -1066,7 +1066,7 @@ pft$bark.turnover.rate = ifelse( test = bltree & iallom == 3, yes = 0.4,no = 0.0
 pft$mort3  = ifelse( test = is.finite(pft$mort3)
                    , yes  = pft$mort3
                    , no   = if (iallom == 3){
-                               exp(-0.474-5.26*pft$rho) - 1/126.
+                               exp(-0.382-5.21*pft$rho) - 1/126.
 #                                2.02e-5 * pft$SLA^2.17 - 1/126.
                             }else{
                                0.15 * (1. - pft$rho/0.9)
