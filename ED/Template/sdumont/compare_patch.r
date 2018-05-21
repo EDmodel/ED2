@@ -1441,7 +1441,7 @@ for (s in loop.sites){
             if (this.hgtprof){
 
                #----- Find coarse-layer aggregated properties. ----------------------------#
-               cinteg.agg      = tapply( X     = cintegco * careaco
+               cinteg.agg      = tapply( X     = cintegco
                                        , INDEX = list(c.ilyr,c.ipa)
                                        , FUN   = sum
                                        )#end tapply
@@ -1626,8 +1626,9 @@ for (s in loop.sites){
          #---------------------------------------------------------------------------------#
          if (! is.null(tcohort)){
             #----- Find cohort, patch, and light indices so we store data as arrays. ------#
-            t.ipa           = ptable$ipa   [test$cohort$ipa[[stamp]]]
-            t.ilt           = ptable$ilight[test$cohort$ipa[[stamp]]]
+            t.xpa           = test$cohort$ipa[[stamp]]
+            t.ipa           = ptable$ipa   [t.xpa]
+            t.ilt           = ptable$ilight[t.xpa]
             t.ico           = test$cohort$ico   [[stamp]]
             t.idx           = cbind(t.ico,t.ipa,t.ilt)
             t.npa           = length(test$patch$area[[stamp]])
@@ -1707,8 +1708,8 @@ for (s in loop.sites){
             if (this.hgtprof){
 
                #----- Find coarse-layer aggregated properties. ----------------------------#
-               tinteg.agg      = tapply( X     = tintegco*tareaco
-                                       , INDEX = list(t.ilyr,t.ipa)
+               tinteg.agg      = tapply( X     = tintegco
+                                       , INDEX = list(t.ilyr,t.xpa)
                                        , FUN   = sum
                                        )#end tapply
                tinteg.lyr      = matrix(data = 0,nrow=n.hgt.lyr,ncol=t.npa)
@@ -1754,7 +1755,7 @@ for (s in loop.sites){
 
 
                #----- Find fine-layer aggregated properties (with CDF). -------------------#
-               tinteg.agg      = tapply(X=tintegco,INDEX=list(t.icdf,t.ipa),FUN=sum )
+               tinteg.agg      = tapply(X=tintegco,INDEX=list(t.icdf,t.xpa),FUN=sum )
                tinteg.cdf      = matrix(data = 0,nrow=n.hgt.cdf,ncol=t.npa)
                tarea.cdf       = matrix( data  = tarea[[stamp]]
                                        , nrow  = n.hgt.cdf
