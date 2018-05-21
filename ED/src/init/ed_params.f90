@@ -4311,6 +4311,8 @@ subroutine init_pft_mort_params()
    real     :: leff_neg
    real     :: leff_pos
    integer  :: ipft
+   !----- Local constants. ----------------------------------------------------------------!
+   real, parameter :: lambda_brokaw = 1./126. ! Default disturbance rate for BCI (B82).
    !---------------------------------------------------------------------------------------!
 
 
@@ -4426,7 +4428,7 @@ subroutine init_pft_mort_params()
                 !    in tropical forests of Panama. New Phytol., 215 (4):1425-1437,        !
                 !    Sep 2017. doi:10.1111/nph.14319 (N17).                                !
                 !--------------------------------------------------------------------------!
-                mort3(ipft) = exp(-0.382 - 5.21 * rho(ipft))
+                mort3(ipft) = max(0.,exp(-0.382 - 5.21 * rho(ipft)) - lambda_brokaw)
                 !--------------------------------------------------------------------------!
              end if
           case default

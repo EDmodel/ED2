@@ -342,7 +342,7 @@ subroutine ed_init_atm()
                   end do groundloop2
 
                   !----- Initial condition is with no snow/pond. --------------------------!
-                  csite%nlev_sfcwater(ipa)    = 0.
+                  csite%nlev_sfcwater(ipa)    = 0
                   csite%snowfac(ipa)          = 0.
                   csite%total_sfcw_depth(ipa) = 0.
                   snowloop2: do k=1,nzs

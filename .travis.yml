@@ -1,5 +1,3 @@
-os: linux
-dist: bionic
 language: c
 sudo: required
 
@@ -13,4 +11,5 @@ before_install:
 script:
     - pwd
     - cd ED/build/
+    - ./install.sh -k C -p travisci -g -c
     - ./install.sh -k C -p travisci -g

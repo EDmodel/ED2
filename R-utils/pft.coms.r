@@ -1067,7 +1067,6 @@ pft$mort3  = ifelse( test = is.finite(pft$mort3)
                    , yes  = pft$mort3
                    , no   = if (iallom == 3){
                                exp(-0.382-5.21*pft$rho) - 1/126.
-#                                2.02e-5 * pft$SLA^2.17 - 1/126.
                             }else{
                                0.15 * (1. - pft$rho/0.9)
                             }#end if (iallom == 3)
