@@ -1,6 +1,0 @@
-<map id="set_site_defprops" name="set_site_defprops">
-<area shape="rect" id="node2" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="199,5,277,32"/>
-<area shape="rect" id="node3" href="$ed__init_8_f90.html#abd21b4ecdd7fccba297059af9e5a6f4f" title="soil_default_fill" alt="" coords="185,56,291,83"/>
-<area shape="rect" id="node4" href="$init__hydro__sites_8f90.html#a58088749f24a3c09a102197d02f2766f" title="calc_flow_routing" alt="" coords="177,107,299,133"/>
-<area shape="rect" id="node5" href="$numutils_8f90.html#a0084ebfe86806971df228c1a4ef3ffbf" title="rank_up" alt="" coords="347,107,415,133"/>
-</map>

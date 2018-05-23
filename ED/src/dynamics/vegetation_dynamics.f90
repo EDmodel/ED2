@@ -17,7 +17,6 @@ subroutine vegetation_dynamics(new_month,new_year)
    use grid_coms        , only : ngrids
    use ed_misc_coms     , only : current_time               & ! intent(in)
                                , dtlsm                      & ! intent(in)
-                               , frqsum                     & ! intent(in)
                                , ibigleaf                   ! ! intent(in)
    use disturbance_utils, only : apply_disturbances         & ! subroutine
                                , site_disturbance_rates     ! ! subroutine
@@ -26,7 +25,9 @@ subroutine vegetation_dynamics(new_month,new_year)
                                , rescale_patches            ! ! subroutine
    use ed_state_vars    , only : edgrid_g                   & ! intent(inout)
                                , edtype                     & ! variable type
-                               , polygontype                ! ! variable type
+                               , polygontype                & ! variable type!
+                               , sitetype                   & ! structure
+                               , patchtype                  ! ! structure!*
    use growth_balive    , only : dbalive_dt                 ! ! subroutine
    use consts_coms      , only : day_sec                    & ! intent(in)
                                , yr_day                     ! ! intent(in)
@@ -44,12 +45,12 @@ subroutine vegetation_dynamics(new_month,new_year)
    real                            :: dtlsm_o_day
    real                            :: one_o_year
    integer                         :: doy
-   integer                         :: ipy
-   integer                         :: isi
    integer                         :: ifm
    !----- External functions. -------------------------------------------------------------!
    integer          , external     :: julday
    !---------------------------------------------------------------------------------------!
+   integer                       :: ipy
+   integer                       :: isi
 
    !----- Find the day of year. -----------------------------------------------------------!
    doy = julday(current_time%month, current_time%date, current_time%year)
@@ -79,7 +80,6 @@ subroutine vegetation_dynamics(new_month,new_year)
       call phenology_driver(cgrid,doy,current_time%month, dtlsm_o_day)
       call dbalive_dt(cgrid,one_o_year)
       !------------------------------------------------------------------------------------!
-
 
 
       !------------------------------------------------------------------------------------!
@@ -167,13 +167,14 @@ subroutine vegetation_dynamics(new_month,new_year)
       !     Update polygon-level properties that are derived from patches and cohorts.     !
       !------------------------------------------------------------------------------------!
       call update_polygon_derived_props(edgrid_g(ifm))
-      !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
 
       !----- Print the carbon and nitrogen budget. ----------------------------------------!
       call print_C_and_N_budgets(cgrid)
       !------------------------------------------------------------------------------------!
+
    end do
 
    return
@@ -202,8 +203,7 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
    use update_derived_props_module
    use grid_coms        , only : ngrids
    use ed_misc_coms     , only : current_time               & ! intent(in)
-                               , dtlsm                      & ! intent(in)
-                               , frqsum                     ! ! intent(in)
+                               , dtlsm                      ! ! intent(in)
    use disturbance_utils, only : apply_disturbances         & ! subroutine
                                , site_disturbance_rates     ! ! subroutine
    use fuse_fiss_utils  , only : fuse_patches               ! ! subroutine
@@ -213,7 +213,6 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
                                , dbalive_dt_eq_0            ! ! subroutine
    use consts_coms      , only : day_sec                    & ! intent(in)
                                , yr_day                     ! ! intent(in)
-   use mem_polygons     , only : maxpatch                   ! ! intent(in)
    use average_utils    , only : normalize_ed_today_vars    & ! sub-routine
                                , normalize_ed_todaynpp_vars & ! sub-routine
                                , zero_ed_today_vars         ! ! sub-routine
@@ -271,7 +270,7 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
          call structural_growth_eq_0(cgrid, current_time%month)
 
          !----- Solve the reproduction rates. ---------------------------------------------!
-         call reproduction_eq_0(cgrid,current_time%month)
+         call reproduction_eq_0(cgrid)
 
          !----- Update the fire disturbance rates. ----------------------------------------!
          call fire_frequency(cgrid)
@@ -304,7 +303,7 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
       !     Update polygon-level properties that are derived from patches and cohorts.     !
       !------------------------------------------------------------------------------------!
       call update_polygon_derived_props(cgrid)
-      !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
 

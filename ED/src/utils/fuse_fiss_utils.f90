@@ -1,7 +1,8 @@
 !==========================================================================================!
 !==========================================================================================!
-!  Module fuse_fiss_utils.                                                                 !
-!  Routines to terminate and fuse patches, and to terminate, fuse and split cohorts.       !
+! MODULE: FUSE_FISS_UTILS
+!> \brief Routines to terminate and fuse patches, and to terminate, fuse and split cohorts.
+!> \author  Translated from ED1 by David Medivgy, Ryan Knox and Marcos Longo
 !------------------------------------------------------------------------------------------!
 module fuse_fiss_utils
 
@@ -17,11 +18,12 @@ module fuse_fiss_utils
    contains
    !=======================================================================================!
    !=======================================================================================!
-   !      This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)  !
-   ! In case there is a tie (for example, when 2 cohorts have reached the maximum possible !
-   ! height, then we use DBH for tie breaking, and if they have the exact same DBH, then   !
-   ! we simply pick the lowest index (as they are exactly the same).  This could cause     !
-   ! some problems when the new grass allometry is implemented, though.                    !
+   !  SUBROUTINE: SORT_COHORTS      
+   !> \brief This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)
+   !> \details In case there is a tie (for example, when 2 cohorts have reached the
+   !> maximum possible height, then we use DBH for tie breaking, and if they have the
+   !> exact same DBH, then we simply pick the lowest index (as they are exactly the same).
+   !> This could cause some problems when the new grass allometry is implemented, though.       
    !---------------------------------------------------------------------------------------!
    subroutine sort_cohorts(cpatch)
 
@@ -110,8 +112,10 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine will eliminate cohorts based on their sizes. This is intended to   !
-   ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
+   !  SUBROUTINE: TERMINATE_COHORTS 
+   !> \brief This subroutine will eliminate cohorts based on their sizes.
+   !> This is intended to eliminate cohorts that have little contribution
+   !> and thus we can speed up the run.
    !---------------------------------------------------------------------------------------!
    subroutine terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
       use pft_coms           , only : min_cohort_size  & ! intent(in)
@@ -218,8 +222,9 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine will eliminate tiny or empty patches. This is intended to          !
-   ! eliminate patches that have little contribution and thus we can speed up the run.     !
+   !  SUBROUTINE: TERMINATE_PATCHES 
+   !> \brief This subroutine will eliminate tiny or empty patches. This is intended to
+   !> eliminate patches that have little contribution and thus we can speed up the run.
    !---------------------------------------------------------------------------------------!
    subroutine terminate_patches(csite)
 
@@ -227,9 +232,6 @@ module fuse_fiss_utils
                               , sitetype           & ! Structure
                               , patchtype          ! ! Structure
       use disturb_coms , only : min_patch_area     ! ! intent(in)
-      use ed_misc_coms , only : iqoutput           & ! intent(in)
-                              , imoutput           & ! intent(in)
-                              , idoutput           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)       , target      :: csite        ! Current site
@@ -307,8 +309,10 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will rescale the area of the patches.  This is almost the same as !
-   ! the terminate_patches subroutine, except that no patch is removed.                    !
+   !  SUBROUTINE: RESCALE_PATCHES   
+   !> \brief This subroutine will rescale the area of the patches.
+   !> This is almost the same as the terminate_patches subroutine,
+   !> except that no patch is removed.
    !---------------------------------------------------------------------------------------!
    subroutine rescale_patches(csite)
       use update_derived_props_module
@@ -316,10 +320,7 @@ module fuse_fiss_utils
                               , sitetype           & ! Structure
                               , patchtype          ! ! Structure
       use disturb_coms , only : min_patch_area     ! ! intent(in)
-      use ed_misc_coms , only : iqoutput           & ! intent(in)
-                              , imoutput           & ! intent(in)
-                              , idoutput           ! ! intent(in)
-      use allometry    , only : size2bl            ! ! function
+      use allometry    , only : size2bl        ! ! function
       use ed_max_dims  , only : n_dist_types       & ! intent(in)
                               , n_pft              ! ! intent(in)
       
@@ -366,6 +367,7 @@ module fuse_fiss_utils
       allocate (elim_area(n_dist_types))
       elim_area (:) = 0.0
 
+      !Manfredo: inefficient: (.not. onlyone) should be checked outside the do loop
       do ipa = 1,csite%npatches
          if (csite%area(ipa) < min_patch_area .and. (.not. onlyone)) then
             ilu = csite%dist_type(ipa)
@@ -550,23 +552,21 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will perform cohort fusion based on various similarity criteria to  !
-   ! determine whether they can be fused with no significant loss of information. The user !
-   ! is welcome to set up a benchmark, but should be aware that no miracles will happen    !
-   ! here. If there are more very distinct cohorts than maxcohort, then the user will need !
-   ! to live with that and accept life is not always fair with those with limited          !
-   ! computational resources.                                                              !
+   !  SUBROUTINE: FUSE_COHORTS
+   !> \brief This subroutine will perform cohort fusion based on various
+   !> similarity criteria to determine whether they can be fused with no 
+   !> significant loss of information. 
+   !> \details The user is welcome to set up a benchmark, but should be 
+   !> aware that no miracles will happen here. If there are more very distinct
+   !> cohorts than maxcohort, then the user will need to live with that and
+   !> accept life is not always fair with those with limited computational resources.           
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_cohorts(csite,ipa, green_leaf_factor, lsl, fuse_initial)
+   subroutine fuse_cohorts(csite,ipa, lsl, fuse_initial)
 
       use ed_state_vars       , only : sitetype            & ! Structure
                                      , patchtype           ! ! Structure
-      use pft_coms            , only : rho                 & ! intent(in)
-                                     , b1Ht                & ! intent(in)
-                                     , hgt_max             & ! intent(in)
-                                     , sla                 & ! intent(in)
-                                     , is_grass            & ! intent(in)
-                                     , hgt_ref             ! ! intent(in)
+      use pft_coms            , only : hgt_max             & ! intent(in)
+                                     , is_grass            ! ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
                                      , lai_fuse_tol        & ! intent(in)
@@ -574,15 +574,12 @@ module fuse_fiss_utils
                                      , coh_tolerance_max   ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
-      use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
-      use allometry           , only : dbh2h               & ! function
-                                     , size2bl             ! ! function
+      use allometry           , only : size2bl         ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
       integer                , intent(in)  :: ipa               ! Current patch ID
-      real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
       integer                , intent(in)  :: lsl               ! Lowest soil level
       logical                , intent(in)  :: fuse_initial      ! Initialisation step?
       !----- Local variables --------------------------------------------------------------!
@@ -739,10 +736,8 @@ module fuse_fiss_utils
                      ) then
 
                      !----- Proceed with fusion -------------------------------------------!
-                     call fuse_2_cohorts(cpatch,donc,recc,newn                             &
-                                        ,green_leaf_factor(cpatch%pft(donc))               &
-                                        ,csite%can_prss(ipa),csite%can_shv(ipa),lsl        &
-                                        ,fuse_initial)
+                     call fuse_2_cohorts(cpatch,donc,recc,csite%can_prss(ipa)              &
+                                        ,csite%can_shv(ipa),lsl,fuse_initial)
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
                      fuse_table(donc) = .false.
@@ -845,10 +840,12 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will split two cohorts if its LAI has become too large.  This is    !
-   ! only necessary when we solve radiation cohort by cohort rather than layer by layer.   !
+   !  SUBROUTINE: SPLIT_COHORTS
+   !> \brief This subroutine will split two cohorts if its LAI has become too large.
+   !> \details This is only necessary when we solve radiation cohort by cohort rather
+   !> than layer by layer.
    !---------------------------------------------------------------------------------------!
-   subroutine split_cohorts(cpatch, green_leaf_factor, lsl)
+   subroutine split_cohorts(cpatch, green_leaf_factor)
       use update_derived_props_module
       use ed_state_vars        , only : patchtype              & ! structure
                                       , copy_patchtype         ! ! sub-routine
@@ -861,19 +858,17 @@ module fuse_fiss_utils
                                       , bd2dbh                 & ! function
                                       , bl2dbh                 & ! function
                                       , bl2h                   & ! function
-                                      , dbh2bd                 ! ! function
-      use ed_misc_coms         , only : iqoutput               & ! intent(in)
-                                      , imoutput               & ! intent(in)
-                                      , idoutput               & ! intent(in)
-                                      , igrass                 ! ! intent(in)
-      use canopy_layer_coms    , only : crown_mod              ! ! intent(in)
+                                      , dbh2bd                 & ! function
+                                      , dbh2sf                 ! ! function
+      use ed_misc_coms         , only : igrass                 ! ! intent(in)
+      use ed_therm_lib         , only : calc_veg_hcap          ! ! function
+      use plant_hydro          , only : rwc2tw                 ! ! subroutine
       implicit none
       !----- Constants --------------------------------------------------------------------!
       real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype)        , target      :: cpatch            ! Current patch
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor !
-      integer                , intent(in)  :: lsl               ! Lowest soil level
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer     :: temppatch         ! Temporary patch
       logical, dimension(:)  , allocatable :: split_mask        ! Flag: split this cohort
@@ -970,7 +965,7 @@ module fuse_fiss_utils
 
                    cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
                    cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
-                   cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))               
+                   cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))
                else
                    !-- use bdead for trees
                    cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
@@ -982,6 +977,30 @@ module fuse_fiss_utils
                    cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
                end if
                !---------------------------------------------------------------------------!
+
+               ! since biomass has chaanged, we need to modify wood water_int
+               ! and hcap
+               ! original cohort
+               call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdead(ico)                  &
+                                 ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
+                                 ,cpatch%pft(ico),cpatch%broot(ico),cpatch%dbh(ico)     &
+                                 ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)             &
+                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+               call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                    &
+                          ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)        &
+                          ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)      &
+                          ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+               
+               ! new cohort
+               call calc_veg_hcap(cpatch%bleaf(inew),cpatch%bdead(inew)                 &
+                                 ,cpatch%bsapwooda(inew),cpatch%nplant(inew)            &
+                                 ,cpatch%pft(inew),cpatch%broot(inew),cpatch%dbh(inew)  &
+                                 ,cpatch%leaf_rwc(inew),cpatch%wood_rwc(inew)           &
+                                 ,cpatch%leaf_hcap(inew),cpatch%wood_hcap(inew))
+               call rwc2tw(cpatch%leaf_rwc(inew),cpatch%wood_rwc(inew)                  &
+                          ,cpatch%bleaf(inew),cpatch%bdead(inew),cpatch%broot(inew)     &
+                          ,dbh2sf(cpatch%dbh(inew),cpatch%pft(inew)),cpatch%pft(inew)   &
+                          ,cpatch%leaf_water_int(inew),cpatch%wood_water_int(inew))
 
             end if
          end do
@@ -1022,17 +1041,15 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will merge two cohorts into 1. The donating cohort (donc) is the  !
-   ! one that will be deallocated, while the receptor cohort (recc) will contain the       !
-   !  information from both cohorts.                                                       !
-   !                                                                                       !
+   !  SUBROUTINE: FUSE_2_COHORTS
+   !> \brief This subroutine will merge two cohorts into 1.
+   !> \details The donating cohort (donc) is the one that will be deallocated,
+   !> while the receptor cohort (recc) will contain the information from both cohorts.
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor,can_prss,can_shv,lsl &
+   subroutine fuse_2_cohorts(cpatch,donc,recc,can_prss,can_shv,lsl &
                             ,fuse_initial)
       use ed_state_vars      , only : patchtype              ! ! Structure
-      use pft_coms           , only : q                      & ! intent(in), lookup table
-                                    , qsw                    & ! intent(in), lookup table
-                                    , is_grass               ! ! intent(in)
+      use pft_coms           , only : is_grass               ! ! intent(in)
       use therm_lib          , only : uextcm2tl              & ! subroutine
                                     , vpdefil                & ! subroutine
                                     , qslif                  ! ! function
@@ -1040,7 +1057,8 @@ module fuse_fiss_utils
                                     , bd2dbh                 & ! function
                                     , bl2dbh                 & ! function
                                     , bl2h                   & ! function
-                                    , dbh2h                  ! ! function
+                                    , dbh2h                  & ! function
+                                    , dbh2sf                 ! ! function
       use ed_max_dims        , only : n_mort                 ! ! intent(in)
       use ed_misc_coms       , only : writing_long           & ! intent(in)
                                     , writing_eorq           & ! intent(in)
@@ -1051,13 +1069,16 @@ module fuse_fiss_utils
                                     , lnexp_max              & ! intent(in)
                                     , tiny_num               ! ! intent(in)
       use fusion_fission_coms, only : corr_cohort
+      use grid_coms          , only : nzg                    ! ! intent(in)
+      use plant_hydro        , only : rwc2psi                & ! subroutine
+                                    , tw2rwc                 & ! subroutine 
+                                    , psi2tw                 & ! subroutine
+                                    , tw2psi                 ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
       integer                      :: donc              ! Donating cohort.
       integer                      :: recc              ! Receptor cohort.
-      real            , intent(in) :: newn              ! New nplant
-      real            , intent(in) :: green_leaf_factor ! Green leaf factor
       real            , intent(in) :: can_prss          ! Canopy air pressure
       real            , intent(in) :: can_shv           ! Canopy air specific humidity
       integer         , intent(in) :: lsl               ! Lowest soil level
@@ -1066,6 +1087,7 @@ module fuse_fiss_utils
       integer                      :: imon              ! Month for cb loop
       integer                      :: t                 ! Time of day for dcycle loop
       integer                      :: imty              ! Mortality type
+      integer                      :: isl               ! Soil layer
       real                         :: newni             ! Inverse of new nplants
       real                         :: exp_mort_donc     ! Exp(mortality) donor
       real                         :: exp_mort_recc     ! Exp(mortality) receptor
@@ -1520,13 +1542,59 @@ module fuse_fiss_utils
                                 + cpatch%llspan      (donc) * dnplant
       cpatch%vm_bar      (recc) = cpatch%vm_bar      (recc) * rnplant                      &
                                 + cpatch%vm_bar      (donc) * dnplant
-      cpatch%sla         (recc) = cpatch%sla         (recc) * rnplant                      &
-                                + cpatch%sla         (donc) * dnplant
+      cpatch%vm0         (recc) = cpatch%vm0         (recc) * rnplant                      &
+                                + cpatch%vm0         (donc) * dnplant
+      ! since SLA will be influenced by LAI, we update SLA at the end after LAI
+      ! is updated
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !    Plant hydrodynamics characteristics (XXT)                                       !
+      !------------------------------------------------------------------------------------!
+      ! Internal water content and water fluxes are weighted by nplant
+      cpatch%leaf_water_int(recc) = cpatch%leaf_water_int(recc) * rnplant                  &
+                                  + cpatch%leaf_water_int(donc) * dnplant
+      cpatch%wood_water_int(recc) = cpatch%wood_water_int(recc) * rnplant                  &
+                                  + cpatch%wood_water_int(donc) * dnplant
+
+      cpatch%wflux_gw      (recc) = cpatch%wflux_gw     (recc) * rnplant                   &
+                                  + cpatch%wflux_gw     (donc) * dnplant
+      cpatch%wflux_wl      (recc) = cpatch%wflux_wl     (recc) * rnplant                   &
+                                  + cpatch%wflux_wl     (donc) * dnplant
+      do isl = 1,nzg
+         cpatch%wflux_gw_layer(isl,recc) = cpatch%wflux_gw_layer(isl,recc) * rnplant       &
+                                         + cpatch%wflux_gw_layer(isl,donc) * dnplant
+      enddo
+
+      ! Now, we recalculate rwc and psi from water_int
+      ! This ensures that psi, rwc, and total water are consistent with each
+      ! other
+      call tw2rwc(cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc)                  &
+                 ,cpatch%bleaf(recc),cpatch%bdead(recc),cpatch%broot(recc)                 &
+                 ,dbh2sf(cpatch%dbh(recc),cpatch%pft(recc)),cpatch%pft(recc)               &
+                 ,cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc))
+      call rwc2psi(cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc),cpatch%pft(recc)            &
+                  ,cpatch%leaf_psi(recc),cpatch%wood_psi(recc))
 
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Phenology/Stomatal variabels associated with plant hydraulics                   !
+      !------------------------------------------------------------------------------------!
+      cpatch%high_leaf_psi_days(recc) = nint(                                              &
+                                        cpatch%high_leaf_psi_days(recc) * rnplant          &
+                                      + cpatch%high_leaf_psi_days(donc) * dnplant)
+      cpatch%low_leaf_psi_days(recc)  = nint(                                              &
+                                        cpatch%low_leaf_psi_days(recc) * rnplant           &
+                                      + cpatch%low_leaf_psi_days(donc) * dnplant)
+      cpatch%last_gJ(recc)  =   cpatch%last_gJ(recc) * rnplant                             &
+                            +   cpatch%last_gJ(recc) * dnplant
+      cpatch%last_gV(recc)  =   cpatch%last_gV(recc) * rnplant                             &
+                            +   cpatch%last_gV(recc) * dnplant
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !    Fast averages.                                                                  !
@@ -1713,6 +1781,41 @@ module fuse_fiss_utils
                                              + cpatch%fmean_wshed_wg        (donc)
          !---------------------------------------------------------------------------------!
 
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%fmean_leaf_water_int(recc) = cpatch%fmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%fmean_leaf_water_int(donc) * dnplant
+         cpatch%fmean_wood_water_int(recc) = cpatch%fmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%fmean_wood_water_int(donc) * dnplant
+         cpatch%fmean_wflux_gw      (recc) = cpatch%fmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%fmean_wflux_gw      (donc) * dnplant
+         cpatch%fmean_wflux_wl      (recc) = cpatch%fmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%fmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%fmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%fmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%fmean_wflux_gw_layer(isl,donc) * dnplant
+         enddo
+
+         ! for daily maximum and minimum psi, we simply use NPLANT as weight 
+         cpatch%dmax_leaf_psi(recc) = cpatch%dmax_leaf_psi(recc) * rnplant +               &
+                                      cpatch%dmax_leaf_psi(donc) * dnplant
+         cpatch%dmin_leaf_psi(recc) = cpatch%dmin_leaf_psi(recc) * rnplant +               &
+                                      cpatch%dmin_leaf_psi(donc) * dnplant
+         cpatch%dmax_wood_psi(recc) = cpatch%dmax_wood_psi(recc) * rnplant +               &
+                                      cpatch%dmax_wood_psi(donc) * dnplant
+         cpatch%dmin_wood_psi(recc) = cpatch%dmin_wood_psi(recc) * rnplant +               &
+                                      cpatch%dmin_wood_psi(donc) * dnplant
+
+         ! Now, we recalculate psi from water_int
+         call tw2psi(cpatch%fmean_leaf_water_int(recc),cpatch%fmean_wood_water_int(recc)   &
+                    ,cpatch%bleaf(recc),cpatch%bdead(recc),cpatch%broot(recc)              &
+                    ,dbh2sf(cpatch%dbh(recc),cpatch%pft(recc)),cpatch%pft(recc)            &
+                    ,cpatch%fmean_leaf_psi(recc),cpatch%fmean_wood_psi(recc))
+
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -1976,6 +2079,25 @@ module fuse_fiss_utils
                                              + cpatch%dmean_intercepted_aw  (donc)
          cpatch%dmean_wshed_wg        (recc) = cpatch%dmean_wshed_wg        (recc)         &
                                              + cpatch%dmean_wshed_wg        (donc)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%dmean_leaf_water_int(recc) = cpatch%dmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%dmean_leaf_water_int(donc) * dnplant
+         cpatch%dmean_wood_water_int(recc) = cpatch%dmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%dmean_wood_water_int(donc) * dnplant
+         cpatch%dmean_wflux_gw      (recc) = cpatch%dmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%dmean_wflux_gw      (donc) * dnplant
+         cpatch%dmean_wflux_wl      (recc) = cpatch%dmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%dmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%dmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%dmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%dmean_wflux_gw_layer(isl,donc) * dnplant
+         enddo
          !---------------------------------------------------------------------------------!
 
 
@@ -2338,6 +2460,24 @@ module fuse_fiss_utils
                                              + cpatch%mmean_wshed_wg        (donc)
          !---------------------------------------------------------------------------------!
 
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%mmean_leaf_water_int(recc) = cpatch%mmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%mmean_leaf_water_int(donc) * dnplant
+         cpatch%mmean_wood_water_int(recc) = cpatch%mmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%mmean_wood_water_int(donc) * dnplant
+         cpatch%mmean_wflux_gw      (recc) = cpatch%mmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%mmean_wflux_gw      (donc) * dnplant
+         cpatch%mmean_wflux_wl      (recc) = cpatch%mmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%mmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%mmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%mmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%mmean_wflux_gw_layer(isl,donc) * dnplant
+         enddo
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -2680,6 +2820,29 @@ module fuse_fiss_utils
                                              + cpatch%qmean_wshed_wg      (:,donc)
          !---------------------------------------------------------------------------------!
 
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT)                                    !
+         !---------------------------------------------------------------------------------!
+         ! Internal water content and water fluxes are weighted by nplant
+         cpatch%qmean_leaf_water_int(:,recc) = cpatch%qmean_leaf_water_int(:,recc) * rnplant &
+                                             + cpatch%qmean_leaf_water_int(:,donc) * dnplant
+         cpatch%qmean_wood_water_int(:,recc) = cpatch%qmean_wood_water_int(:,recc) * rnplant &
+                                             + cpatch%qmean_wood_water_int(:,donc) * dnplant
+        
+         ! Water fluxes are weighted by nplant since they are kg H2O/s/plant
+         cpatch%qmean_wflux_gw      (:,recc) = cpatch%qmean_wflux_gw   (:,recc) * rnplant  &
+                                             + cpatch%qmean_wflux_gw   (:,donc) * dnplant
+         cpatch%qmean_wflux_wl      (:,recc) = cpatch%qmean_wflux_wl   (:,recc) * rnplant  &
+                                             + cpatch%qmean_wflux_wl   (:,donc) * dnplant
+
+         ! For psi, we simply use lai-weighted average for leaves and
+         ! bdead-weighted average for wood because at this time point we don't
+         ! know qmean biomass values
+         cpatch%qmean_leaf_psi      (:,recc) = cpatch%qmean_leaf_psi   (:,recc) * rlai     &
+                                             + cpatch%qmean_leaf_psi   (:,donc) * dlai
+         cpatch%qmean_wood_psi      (:,recc) = cpatch%qmean_wood_psi   (:,recc) * rlai     &
+                                             + cpatch%qmean_wood_psi   (:,donc) * dlai
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -2747,6 +2910,15 @@ module fuse_fiss_utils
       !----- Make sure that crown area is bounded. ----------------------------------------!
       cpatch%crown_area (recc) = min(1.,cpatch%crown_area(recc)  + cpatch%crown_area(donc))
       !------------------------------------------------------------------------------------!
+      ! update SLA using the new lai, bleaf, and nplant
+      if (cpatch%bleaf(recc) * cpatch%nplant(recc) > 0.) then
+          cpatch%sla         (recc) = cpatch%lai(recc)                                     &
+                                    / (cpatch%bleaf(recc) * cpatch%nplant(recc))
+      else
+          ! no leaf biomass, use nplant to scale sla
+          cpatch%sla         (recc) = cpatch%sla         (recc) * rnplant                  &
+                                    + cpatch%sla         (donc) * dnplant
+      endif
 
       return
    end subroutine fuse_2_cohorts
@@ -2760,7 +2932,8 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will sort the patches by age (1st = oldest, last = youngest.)       !
+   !  SUBROUTINE: SORT_PATCHES  
+   !> \brief This subroutine will sort the patches by age (1st = oldest, last = youngest.)
    !---------------------------------------------------------------------------------------!
    subroutine sort_patches(csite)
 
@@ -2835,12 +3008,14 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will perform patch fusion based on some similarity criteria to      !
-   ! determine whether they can be fused with no significant loss of information. The user !
-   ! is welcome to set up a benchmark, but they should be aware that no miracles will      !
-   ! happen here. If there are more very distinct patches than maxpatch, then the user     !
-   ! will need to live with that and accept life is not always fair with those with        !
-   ! limited computational resources.                                                      !
+   !  SUBROUTINE: FUSE_PATCHES  
+   !> \brief This subroutine will perform patch fusion based on some similarity
+   !> criteria to determine whether they can be fused with no significant loss of
+   !> information.
+   !> \details The user is welcome to set up a benchmark, but they should be aware
+   !> that no miracles will happen here. If there are more very distinct patches
+   !> than maxpatch, then the user will need to live with that and accept life is
+   !> not always fair with those with limited computational resources.
    !---------------------------------------------------------------------------------------!
    subroutine fuse_patches(cgrid,ifm,fuse_initial)
       use patch_pft_size_profile_mod
@@ -2850,22 +3025,18 @@ module fuse_fiss_utils
                                      , patchtype           ! ! structure
       use fusion_fission_coms , only : ff_nhgt             & ! intent(in)
                                      , niter_patfus        & ! intent(in)
-                                     , dark_cumlai_min     & ! intent(in)
                                      , dark_cumlai_max     & ! intent(in)
                                      , dark_cumlai_mult    & ! intent(in)
                                      , sunny_cumlai_min    & ! intent(in)
-                                     , sunny_cumlai_max    & ! intent(in)
                                      , sunny_cumlai_mult   & ! intent(in)
                                      , print_fuse_details  & ! intent(in)
                                      , light_toler_min     & ! intent(in)
-                                     , light_toler_max     & ! intent(in)
                                      , light_toler_mult    & ! intent(in)
                                      , min_oldgrowth       & ! intent(in)
                                      , fuse_prefix         ! ! intent(in)
       use ed_max_dims         , only : n_pft               & ! intent(in)
                                      , str_len             ! ! intent(in)
-      use mem_polygons        , only : maxpatch            & ! intent(in)
-                                     , maxcohort           ! ! intent(in)
+      use mem_polygons        , only : maxpatch            ! ! intent(in)
       use ed_node_coms        , only : mynum               ! ! intent(in)
       use ed_misc_coms        , only : current_time        ! ! intent(in)
       use grid_coms           , only : nzg                 & ! intent(in)
@@ -3134,7 +3305,7 @@ module fuse_fiss_utils
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -3404,7 +3575,7 @@ module fuse_fiss_utils
                         !     Take an average of the patch properties of donpatch and      !
                         ! recpatch, and assign the average recpatch.                       !
                         !------------------------------------------------------------------!
-                        call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss    &
+                        call fuse_2_patches(csite,donp,recp,nzg,nzs                        &
                                            ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
                                            ,cpoly%green_leaf_factor(:,isi),fuse_initial    &
                                            ,elim_nplant,elim_lai)
@@ -3750,7 +3921,7 @@ module fuse_fiss_utils
                   ! properties of donpatch and recpatch, and leave the averaged values at  !
                   ! recpatch.                                                              !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -3966,9 +4137,10 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will merge two patches into 1.                                      !
+   !  SUBROUTINE: FUSE_2_PATCHES  
+   !> \brief This subroutine will merge two patches into 1.
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,prss,lsl,ntext_soil,green_leaf_factor &
+   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,lsl,ntext_soil,green_leaf_factor &
                             ,fuse_initial,elim_nplant,elim_lai)
       use update_derived_props_module
       use patch_pft_size_profile_mod
@@ -4002,7 +4174,6 @@ module fuse_fiss_utils
       integer                , intent(in)  :: mzs               ! # of sfc. water layers
       integer, dimension(mzg), intent(in)  :: ntext_soil        ! Soil type
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
-      real                   , intent(in)  :: prss              ! Sfc. air density
       logical                , intent(in)  :: fuse_initial      ! Initialisation?
       real                   , intent(out) :: elim_nplant       ! Eliminated nplant 
       real                   , intent(out) :: elim_lai          ! Eliminated lai
@@ -5020,8 +5191,8 @@ module fuse_fiss_utils
             csite%dmean_sfcw_temp  (recp)  = csite%dmean_soil_temp(mzg,recp)
             csite%dmean_sfcw_fliq  (recp)  = csite%dmean_soil_fliq(mzg,recp)
          end if
-         !------------------------------------------------------------------------------------!
-		end if
+         !---------------------------------------------------------------------------------!
+       end if
       end if
       !------------------------------------------------------------------------------------!
 
@@ -5503,7 +5674,7 @@ module fuse_fiss_utils
             csite%mmean_sfcw_fliq  (recp)  = csite%mmean_soil_fliq(mzg,recp)
          end if
          !------------------------------------------------------------------------------------!
-		end if
+        end if
       end if
       !------------------------------------------------------------------------------------!
 
@@ -5934,7 +6105,7 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          end do
          !---------------------------------------------------------------------------------!
-		end if
+        end if
       end if
       !------------------------------------------------------------------------------------!
 
@@ -5991,9 +6162,9 @@ module fuse_fiss_utils
          ! eliminate others.                                                               !
          !---------------------------------------------------------------------------------!
          if (cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-            call fuse_cohorts(csite,recp,green_leaf_factor,lsl,fuse_initial)
+            call fuse_cohorts(csite,recp,lsl,fuse_initial)
             call terminate_cohorts(csite,recp,elim_nplant,elim_lai)
-            call split_cohorts(cpatch,green_leaf_factor,lsl)
+            call split_cohorts(cpatch,green_leaf_factor)
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -6017,7 +6188,7 @@ module fuse_fiss_utils
       ! + csite%ebudget_initialstorage(recp)                                               !
       ! + csite%co2budget_initialstorage(recp)                                             !
       !------------------------------------------------------------------------------------!
-      call update_budget(csite,lsl,recp,recp)
+      call update_budget(csite,lsl,recp)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -6040,7 +6211,8 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine combines the mean sum of squares of two quantities (x and y).     !
+   !  SUBROUTINE: FUSE_MSQU       
+   !> \brief This subroutine combines the mean sum of squares of two quantities (x and y).
    !                                                                                       !
    ! xmean, ymean -- the mean values of x and y                                            !
    ! xmsqu, ymsqu -- the mean sum of squares of x and y                                    !

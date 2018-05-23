@@ -267,7 +267,6 @@ subroutine ed21_fileinfo(nfiles,full_list,nhisto,histo_list)
    integer                                                    :: posend
    integer                                                    :: posdot
    integer                                                    :: posdsd
-   integer                                                    :: posextradot
    !----- Local constants. ----------------------------------------------------------------!
    integer                                    , parameter     :: okdot = 2
    integer                                    , parameter     :: okdsd = 26
@@ -336,7 +335,6 @@ subroutine copy_path_from_grid_1(ngrids,varname,pathval)
    character(len=str_len), dimension(maxgrds), intent(inout) :: pathval
    !----- Local variables. ----------------------------------------------------------------!
    integer                                                   :: ifm
-   integer                                                   :: nundef
    !---------------------------------------------------------------------------------------!
 
    !----- No need to bother if this has a single grid or if values were defined. ----------!

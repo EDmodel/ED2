@@ -29,9 +29,9 @@ module rk4_coms
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
       real(kind=8)                        :: can_ssh      ! Sat. spec. humidity  [   kg/kg]
       real(kind=8)                        :: can_rhv      ! Relative humidity    [     ---]
-      real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
+      real(kind=8)                        :: can_co2      ! CO_2                 [ï¿½mol/mol]
       real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
-      real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
+      real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/mï¿½]
       real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
       real(kind=8)                        :: can_exner    ! Exner function       [  J/kg/K]
       real(kind=8)                        :: can_cp       ! Specific heat        [  J/kg/K]
@@ -82,11 +82,11 @@ module rk4_coms
 
 
       !----- Soil variables. --------------------------------------------------------------!
-      real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
+      real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/mï¿½]
       real(kind=8), dimension(:), pointer :: soil_mstpot  ! Soil matric potential [      m]
       real(kind=8), dimension(:), pointer :: soil_tempk   ! Specific humidity     [      K]
       real(kind=8), dimension(:), pointer :: soil_fracliq ! Liquid fraction       [   ----]
-      real(kind=8), dimension(:), pointer :: soil_water   ! Water content         [  m³/m³]
+      real(kind=8), dimension(:), pointer :: soil_water   ! Water content         [  mï¿½/mï¿½]
       !------------------------------------------------------------------------------------!
 
 
@@ -95,8 +95,8 @@ module rk4_coms
       integer                             :: nlev_sfcwater    ! # of layers       [   ----]
       integer                             :: flag_sfcwater    ! Status flag       [  -----]
       real(kind=8), dimension(:), pointer :: sfcwater_depth   ! Depth             [      m]
-      real(kind=8), dimension(:), pointer :: sfcwater_mass    ! Mass              [  kg/m²]
-      real(kind=8), dimension(:), pointer :: sfcwater_energy  ! Internal energy   [   J/m²]
+      real(kind=8), dimension(:), pointer :: sfcwater_mass    ! Mass              [  kg/mï¿½]
+      real(kind=8), dimension(:), pointer :: sfcwater_energy  ! Internal energy   [   J/mï¿½]
       real(kind=8), dimension(:), pointer :: sfcwater_tempk   ! Temperature       [      K]
       real(kind=8), dimension(:), pointer :: sfcwater_fracliq ! Liquid fraction   [   ----]
       !------------------------------------------------------------------------------------!
@@ -104,8 +104,8 @@ module rk4_coms
 
 
       !----- Virtual layer variables. -----------------------------------------------------!
-      real(kind=8)                        :: virtual_water    ! Mass              [  kg/m²]
-      real(kind=8)                        :: virtual_energy   ! Internal energy   [  kg/m²]
+      real(kind=8)                        :: virtual_water    ! Mass              [  kg/mï¿½]
+      real(kind=8)                        :: virtual_energy   ! Internal energy   [  kg/mï¿½]
       real(kind=8)                        :: virtual_depth    ! Depth             [      m]
       real(kind=8)                        :: virtual_tempk    ! Temperature       [      K]
       real(kind=8)                        :: virtual_fracliq  ! Liquid fraction   [      K]
@@ -125,7 +125,7 @@ module rk4_coms
 
       !----- Characteristic scale. --------------------------------------------------------!
       real(kind=8)                        :: ustar  ! Momentum                    [    m/s]
-      real(kind=8)                        :: cstar  ! Carbon mixing ratio         [µmol/m³]
+      real(kind=8)                        :: cstar  ! Carbon mixing ratio         [ï¿½mol/mï¿½]
       real(kind=8)                        :: tstar  ! Temperature                 [      K]
       real(kind=8)                        :: qstar  ! Water vapour spec. humidity [  kg/kg]
       real(kind=8)                        :: estar  ! Eq. potential temperature   [      K]
@@ -152,7 +152,7 @@ module rk4_coms
 
 
 
-      !----- Heterotrophic respiration.[µmol/m²/s] ----------------------------------------!
+      !----- Heterotrophic respiration.[ï¿½mol/mï¿½/s] ----------------------------------------!
       real(kind=8)                        :: cwd_rh
       real(kind=8)                        :: rh
       !------------------------------------------------------------------------------------!
@@ -160,76 +160,78 @@ module rk4_coms
 
 
       !----- Leaf (cohort-level) variables. -----------------------------------------------!
-      real(kind=8), pointer, dimension(:) :: leaf_energy     ! Internal energy  [     J/m²]
-      real(kind=8), pointer, dimension(:) :: leaf_water      ! Sfc. water mass  [    kg/m²]
+      real(kind=8), pointer, dimension(:) :: leaf_energy     ! Internal energy  [     J/mï¿½]
+      real(kind=8), pointer, dimension(:) :: leaf_water      ! Sfc. water mass  [    kg/mï¿½]
+      real(kind=8), pointer, dimension(:) :: leaf_water_int  ! Int. water mass  [    kg/mï¿½]
       real(kind=8), pointer, dimension(:) :: leaf_temp       ! Temperature      [        K]
       real(kind=8), pointer, dimension(:) :: leaf_fliq       ! Liquid fraction  [      ---]
-      real(kind=8), pointer, dimension(:) :: leaf_hcap       ! Heat capacity    [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: leaf_hcap       ! Heat capacity    [   J/mï¿½/K]
       real(kind=8), pointer, dimension(:) :: leaf_reynolds   ! Reynolds number  [      ---]
       real(kind=8), pointer, dimension(:) :: leaf_grashof    ! Grashof number   [      ---]
       real(kind=8), pointer, dimension(:) :: leaf_nussfree   ! Nusselt # (free) [      ---]
       real(kind=8), pointer, dimension(:) :: leaf_nussforc   ! Nusselt # (forc.)[      ---]
       real(kind=8), pointer, dimension(:) :: lint_shv        ! Interc. sp. hum. [    kg/kg]
       logical     , pointer, dimension(:) :: leaf_resolvable ! resolve leaves?  [      T|F]
-      real(kind=8), pointer, dimension(:) :: leaf_gbh        ! Bnd.lyr. condct. [ J/K/m²/s]
-      real(kind=8), pointer, dimension(:) :: leaf_gbw        ! Bnd.lyr. condct. [  kg/m²/s]
-      real(kind=8), pointer, dimension(:) :: gsw_open        ! Sto. cond. (op.) [ J/K/m²/s]
-      real(kind=8), pointer, dimension(:) :: gsw_closed      ! Sto. cond. (cl.) [  kg/m²/s]
-      real(kind=8), pointer, dimension(:) :: rshort_l        ! Absorbed SWRad.  [   J/m²/s]
-      real(kind=8), pointer, dimension(:) :: rlong_l         ! Absorbed LWRad.  [   J/m²/s]
+      real(kind=8), pointer, dimension(:) :: leaf_gbh        ! Bnd.lyr. condct. [ J/K/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: leaf_gbw        ! Bnd.lyr. condct. [  kg/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: gsw_open        ! Sto. cond. (op.) [ J/K/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: gsw_closed      ! Sto. cond. (cl.) [  kg/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: rshort_l        ! Absorbed SWRad.  [   J/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: rlong_l         ! Absorbed LWRad.  [   J/mï¿½/s]
       !------------------------------------------------------------------------------------!
 
 
       !----- Wood (cohort-level) variables. -----------------------------------------------!
-      real(kind=8), pointer, dimension(:) :: wood_energy     ! Internal energy  [     J/m²]
-      real(kind=8), pointer, dimension(:) :: wood_water      ! Sfc. water mass  [    kg/m²]
+      real(kind=8), pointer, dimension(:) :: wood_energy     ! Internal energy  [     J/mï¿½]
+      real(kind=8), pointer, dimension(:) :: wood_water      ! Sfc. water mass  [    kg/mï¿½]
+      real(kind=8), pointer, dimension(:) :: wood_water_int  ! Int. water mass  [    kg/mï¿½]
       real(kind=8), pointer, dimension(:) :: wood_temp       ! Temperature      [        K]
       real(kind=8), pointer, dimension(:) :: wood_fliq       ! Liquid fraction  [      ---]
-      real(kind=8), pointer, dimension(:) :: wood_hcap       ! Heat capacity    [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: wood_hcap       ! Heat capacity    [   J/mï¿½/K]
       real(kind=8), pointer, dimension(:) :: wood_reynolds   ! Reynolds number  [      ---]
       real(kind=8), pointer, dimension(:) :: wood_grashof    ! Grashof number   [      ---]
       real(kind=8), pointer, dimension(:) :: wood_nussfree   ! Nusselt # (free) [      ---]
       real(kind=8), pointer, dimension(:) :: wood_nussforc   ! Nusselt # (forc.)[      ---]
       logical     , pointer, dimension(:) :: wood_resolvable ! resolve wood?    [      T|F]
-      real(kind=8), pointer, dimension(:) :: wood_gbh        ! Bnd.lyr. condct. [ J/K/m²/s]
-      real(kind=8), pointer, dimension(:) :: wood_gbw        ! Bnd.lyr. condct. [  kg/m²/s]
-      real(kind=8), pointer, dimension(:) :: rshort_w        ! Absorbed SWRad.  [   J/m²/s]
-      real(kind=8), pointer, dimension(:) :: rlong_w         ! Absorbed LWRad.  [   J/m²/s]
+      real(kind=8), pointer, dimension(:) :: wood_gbh        ! Bnd.lyr. condct. [ J/K/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: wood_gbw        ! Bnd.lyr. condct. [  kg/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: rshort_w        ! Absorbed SWRad.  [   J/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: rlong_w         ! Absorbed LWRad.  [   J/mï¿½/s]
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Leaf+branchwood (cohort-level) variables. ------------------------------------!
-      real(kind=8), pointer, dimension(:) :: veg_energy      ! Internal energy  [     J/m²]
-      real(kind=8), pointer, dimension(:) :: veg_water       ! Sfc. water mass  [    kg/m²]
-      real(kind=8), pointer, dimension(:) :: veg_hcap        ! Heat capacity    [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: veg_energy      ! Internal energy  [     J/mï¿½]
+      real(kind=8), pointer, dimension(:) :: veg_water       ! Sfc. water mass  [    kg/mï¿½]
+      real(kind=8), pointer, dimension(:) :: veg_hcap        ! Heat capacity    [   J/mï¿½/K]
       logical     , pointer, dimension(:) :: veg_resolvable  ! resolve leaves?  [      T|F]
       !------------------------------------------------------------------------------------!
 
 
 
       !----- General cohort-level properties. ---------------------------------------------!
-      real(kind=8), pointer, dimension(:) :: nplant       ! Plant density       [ plant/m²]
+      real(kind=8), pointer, dimension(:) :: nplant       ! Plant density       [ plant/mï¿½]
       real(kind=8), pointer, dimension(:) :: veg_wind      ! Cohort-level wind  [      m/s]
-      real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
-      real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
-      real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
-      real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    mï¿½/mï¿½]
+      real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    mï¿½/mï¿½]
+      real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    mï¿½/mï¿½]
+      real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    mï¿½/mï¿½]
       real(kind=8), pointer, dimension(:) :: elongf       ! Elongation factor   [     ----]
-      real(kind=8), pointer, dimension(:) :: psi_open     ! Water demand (op.)  [kg/m²lf/s]
-      real(kind=8), pointer, dimension(:) :: psi_closed   ! Water demand (clos.)[kg/m²lf/s]
+      real(kind=8), pointer, dimension(:) :: psi_open     ! Water demand (op.)  [kg/mï¿½lf/s]
+      real(kind=8), pointer, dimension(:) :: psi_closed   ! Water demand (clos.)[kg/mï¿½lf/s]
       real(kind=8), pointer, dimension(:) :: fs_open      ! Frac. of op. stom.  [      ---]
-      real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: leaf_storage_resp ! Storage resp   [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: root_storage_resp ! Storage resp   [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: sapa_storage_resp ! Storage resp   [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: sapb_storage_resp ! Storage resp   [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: leaf_growth_resp !                 [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: root_growth_resp !                 [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: sapa_growth_resp !                 [µmol/m²/s]
-      real(kind=8), pointer, dimension(:) :: sapb_growth_resp !                 [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: leaf_storage_resp ! Storage resp   [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: root_storage_resp ! Storage resp   [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: sapa_storage_resp ! Storage resp   [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: sapb_storage_resp ! Storage resp   [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: leaf_growth_resp !                 [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: root_growth_resp !                 [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: sapa_growth_resp !                 [ï¿½mol/mï¿½/s]
+      real(kind=8), pointer, dimension(:) :: sapb_growth_resp !                 [ï¿½mol/mï¿½/s]
 
 
       !------ Variables used for hybrid stepping -----------------------------------------!
@@ -411,17 +413,17 @@ module rk4_coms
       real(kind=8), dimension(:)  , pointer :: avail_h2o_lyr
       !----- Integral of available water factor from top to this layer [n/d]. -------------!
       real(kind=8), dimension(:)  , pointer :: avail_h2o_int
-      !----- Extracted water by transpiration [kg/m²]. ------------------------------------!
+      !----- Extracted water by transpiration [kg/mï¿½]. ------------------------------------!
       real(kind=8), dimension(:,:), pointer :: extracted_water
       !----- Thermal conductivity [W/m/K]. ------------------------------------------------!
       real(kind=8), dimension(:)  , pointer :: th_cond_s
       real(kind=8), dimension(:)  , pointer :: th_cond_p
-      !----- Sensible heat flux at staggered layer (k = k-1/2) [W/m²]. --------------------!
+      !----- Sensible heat flux at staggered layer (k = k-1/2) [W/mï¿½]. --------------------!
       real(kind=8), dimension(:)  , pointer :: h_flux_g
       real(kind=8), dimension(:)  , pointer :: h_flux_s
-      !----- Water flux at staggered layers (k = k-1/2) [kg/m²/s]. ------------------------!
+      !----- Water flux at staggered layers (k = k-1/2) [kg/mï¿½/s]. ------------------------!
       real(kind=8), dimension(:)  , pointer :: w_flux_g
-      !----- Latent heat flux at staggered layers (k=k-1/2) [W/m²]. -----------------------!
+      !----- Latent heat flux at staggered layers (k=k-1/2) [W/mï¿½]. -----------------------!
       real(kind=8), dimension(:)  , pointer :: qw_flux_g
       !----- Tests to check if the soil is too dry or too wet. ----------------------------!
       logical     , dimension(:)  , pointer :: drysoil
@@ -436,12 +438,12 @@ module rk4_coms
       ! version of canopy air space prognostic variables (specific enthalpy, water vapour   !
       ! specific humidity and CO2 mixing ratio) into extensive variables.                   ! 
       !-------------------------------------------------------------------------------------!
-      real(kind=8) :: wcapcan  ! Water capacity                             [  kg_air/m²gnd]
-      real(kind=8) :: hcapcan  ! Enthalpy capacity                          [  kg_air/m²gnd]
-      real(kind=8) :: ccapcan  ! CO2 capacity                               [ mol_air/m²gnd]
-      real(kind=8) :: wcapcani ! Inverse of water capacity                  [  m²gnd/kg_air]
-      real(kind=8) :: hcapcani ! Inverse of enthalpy capacity               [  m²gnd/kg_air]
-      real(kind=8) :: ccapcani ! Inverse of CO2 capacity                    [ m²gnd/mol_air]
+      real(kind=8) :: wcapcan  ! Water capacity                             [  kg_air/mï¿½gnd]
+      real(kind=8) :: hcapcan  ! Enthalpy capacity                          [  kg_air/mï¿½gnd]
+      real(kind=8) :: ccapcan  ! CO2 capacity                               [ mol_air/mï¿½gnd]
+      real(kind=8) :: wcapcani ! Inverse of water capacity                  [  mï¿½gnd/kg_air]
+      real(kind=8) :: hcapcani ! Inverse of enthalpy capacity               [  mï¿½gnd/kg_air]
+      real(kind=8) :: ccapcani ! Inverse of CO2 capacity                    [ mï¿½gnd/mol_air]
 
 
       
@@ -685,8 +687,8 @@ module rk4_coms
    real(kind=8) :: rk4max_can_shv       ! Maximum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4min_can_rhv       ! Minimum canopy    relative humidity   [      ---]
    real(kind=8) :: rk4max_can_rhv       ! Maximum canopy    relative humidity   [      ---]
-   real(kind=8) :: rk4min_can_co2       ! Minimum canopy    CO2 mixing ratio    [ µmol/mol]
-   real(kind=8) :: rk4max_can_co2       ! Maximum canopy    CO2 mixing ratio    [ µmol/mol]
+   real(kind=8) :: rk4min_can_co2       ! Minimum canopy    CO2 mixing ratio    [ ï¿½mol/mol]
+   real(kind=8) :: rk4max_can_co2       ! Maximum canopy    CO2 mixing ratio    [ ï¿½mol/mol]
    real(kind=8) :: rk4min_soil_temp     ! Minimum soil      temperature         [        K]
    real(kind=8) :: rk4max_soil_temp     ! Maximum soil      temperature         [        K]
    real(kind=8) :: rk4min_veg_temp      ! Minimum leaf      temperature         [        K]
@@ -694,12 +696,12 @@ module rk4_coms
    real(kind=8) :: rk4min_sfcw_temp     ! Minimum snow/pond temperature         [        K]
    real(kind=8) :: rk4max_sfcw_temp     ! Maximum snow/pond temperature         [        K]
    !----- The following variables have units different from the actual value. -------------!
-   real(kind=8) :: rk4min_veg_lwater    ! Maximum leaf      surface water mass  [kg/m²leaf]
-   real(kind=8) :: rk4min_sfcw_moist    ! Maximum snow/pond water mass          [m³/m³soil]
-   real(kind=8) :: rk4min_virt_moist    ! Minimum virtual pool mass             [m³/m³soil]
+   real(kind=8) :: rk4min_veg_lwater    ! Maximum leaf      surface water mass  [kg/mï¿½leaf]
+   real(kind=8) :: rk4min_sfcw_moist    ! Maximum snow/pond water mass          [mï¿½/mï¿½soil]
+   real(kind=8) :: rk4min_virt_moist    ! Minimum virtual pool mass             [mï¿½/mï¿½soil]
    !----- The following variables will be defined in sfcdata_ed (ed_init.f90). ------------!
-   real(kind=8) :: rk4min_sfcw_mass     ! Minimum snow/pond    mass             [    kg/m²]
-   real(kind=8) :: rk4min_virt_water    ! Minimum virtual pool mass             [    kg/m²]
+   real(kind=8) :: rk4min_sfcw_mass     ! Minimum snow/pond    mass             [    kg/mï¿½]
+   real(kind=8) :: rk4min_virt_water    ! Minimum virtual pool mass             [    kg/mï¿½]
 
    !----- MOVED THE FOLLOWING BLOCK TO RK4AUX BECAUSE WITH SMP WE NEED MULTIPLES
    !----- The following variables will be defined every time step. ------------------------!
@@ -713,11 +715,11 @@ module rk4_coms
 
 
    !----- The following variables are double precision version of some bounds. ------------!
-   real(kind=8) :: rk4tiny_sfcw_mass     ! Min. non-negligible snow/pond mass   [    kg/m²]
-   real(kind=8) :: rk4water_stab_thresh  ! Min. mass for a layer to be stable   [    kg/m²]
-   real(kind=8) :: rk4snowmin            ! Min. snow mass required for new lyr  [    kg/m²]
-   real(kind=8) :: rk4leaf_drywhc        ! Min. non-negligible leaf water mass  [kg/m²leaf]
-   real(kind=8) :: rk4leaf_maxwhc        ! Max. leaf water mass possible        [kg/m²leaf]
+   real(kind=8) :: rk4tiny_sfcw_mass     ! Min. non-negligible snow/pond mass   [    kg/mï¿½]
+   real(kind=8) :: rk4water_stab_thresh  ! Min. mass for a layer to be stable   [    kg/mï¿½]
+   real(kind=8) :: rk4snowmin            ! Min. snow mass required for new lyr  [    kg/mï¿½]
+   real(kind=8) :: rk4leaf_drywhc        ! Min. non-negligible leaf water mass  [kg/mï¿½leaf]
+   real(kind=8) :: rk4leaf_maxwhc        ! Max. leaf water mass possible        [kg/mï¿½leaf]
    real(kind=8) :: rk4tiny_sfcw_depth    ! Minimum snow/pond depth              [        m]
    !---------------------------------------------------------------------------------------!
 
@@ -725,8 +727,8 @@ module rk4_coms
   !---------------------------------------------------------------------------------------!
   !     The following variables are going to be allocated at the first time step, and     !
    ! they will be re-calculated every time the integrator is called.                       !
-   ! rk4min_soil_water                  ! Minimum soil moisture                 [    m³/m³]!
-   ! rk4max_soil_water                  ! Maximum soil moisture                 [    m³/m³]!
+   ! rk4min_soil_water                  ! Minimum soil moisture                 [    mï¿½/mï¿½]!
+   ! rk4max_soil_water                  ! Maximum soil moisture                 [    mï¿½/mï¿½]!
    !---------------------------------------------------------------------------------------!
 !   real(kind=8), dimension(:), allocatable :: rk4min_soil_water
 !   real(kind=8), dimension(:), allocatable :: rk4max_soil_water
@@ -787,7 +789,7 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 21
+   integer                          , parameter   :: nerrfix = 23
    !---------------------------------------------------------------------------------------!
 
 
@@ -853,18 +855,6 @@ module rk4_coms
        deallocate(y%wood_temp)
        return
      end subroutine deallocate_bdf2_patch
-
-     
-     subroutine nullify_bdf2_patch(y)
-       
-       implicit none
-       type(bdf2patchtype), target :: y
-       
-       nullify(y%leaf_temp)
-       nullify(y%wood_temp)
-       return
-     end subroutine nullify_bdf2_patch
-
 
 
    !=======================================================================================!
@@ -978,8 +968,6 @@ module rk4_coms
    !    Forcing all variables to be zero.                                                  !
    !---------------------------------------------------------------------------------------!
    subroutine zero_rk4_patch(y)
-      use grid_coms     , only : nzg          & ! intent(in)
-                               , nzs          ! ! intent(in)
       implicit none
       !----- Argument ---------------------------------------------------------------------!
       type(rk4patchtype), target :: y
@@ -1144,48 +1132,6 @@ module rk4_coms
 
 
 
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine will perform the temporary patch deallocation.                     !
-   !---------------------------------------------------------------------------------------!
-   subroutine deallocate_rk4_patch(y)
-      implicit none
-      !----- Argument ---------------------------------------------------------------------!
-      type(rk4patchtype), target :: y
-      !------------------------------------------------------------------------------------!
-
-      if (associated(y%soil_energy ))            deallocate(y%soil_energy )
-      if (associated(y%soil_mstpot ))            deallocate(y%soil_mstpot )
-      if (associated(y%soil_water  ))            deallocate(y%soil_water  )
-      if (associated(y%soil_fracliq))            deallocate(y%soil_fracliq)
-      if (associated(y%soil_tempk  ))            deallocate(y%soil_tempk  )
-
-      if (associated(y%sfcwater_energy ))        deallocate(y%sfcwater_energy )
-      if (associated(y%sfcwater_mass   ))        deallocate(y%sfcwater_mass   )
-      if (associated(y%sfcwater_depth  ))        deallocate(y%sfcwater_depth  )
-      if (associated(y%sfcwater_fracliq))        deallocate(y%sfcwater_fracliq)
-      if (associated(y%sfcwater_tempk  ))        deallocate(y%sfcwater_tempk  )
-
-      ! Diagnostics
-      if (associated(y%avg_smoist_gg  ))         deallocate(y%avg_smoist_gg  )
-      if (associated(y%avg_transloss  ))         deallocate(y%avg_transloss  )
-      if (associated(y%avg_sensible_gg))         deallocate(y%avg_sensible_gg)
-      if (associated(y%flx_smoist_gg  ))         deallocate(y%flx_smoist_gg  )
-      if (associated(y%flx_transloss  ))         deallocate(y%flx_transloss  )
-      if (associated(y%flx_sensible_gg))         deallocate(y%flx_sensible_gg)
-
-      return
-   end subroutine deallocate_rk4_patch
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
    !=======================================================================================!
    !=======================================================================================!
    !    This subroutine will allocate the cohorts of the temporary patch.                  !
@@ -1203,6 +1149,7 @@ module rk4_coms
 
       allocate(y%leaf_energy      (maxcohort))
       allocate(y%leaf_water       (maxcohort))
+      allocate(y%leaf_water_int   (maxcohort))
       allocate(y%leaf_temp        (maxcohort))
       allocate(y%leaf_fliq        (maxcohort))
       allocate(y%leaf_hcap        (maxcohort))
@@ -1220,6 +1167,7 @@ module rk4_coms
       allocate(y%rlong_l          (maxcohort))
       allocate(y%wood_energy      (maxcohort))
       allocate(y%wood_water       (maxcohort))
+      allocate(y%wood_water_int   (maxcohort))
       allocate(y%wood_temp        (maxcohort))
       allocate(y%wood_fliq        (maxcohort))
       allocate(y%wood_hcap        (maxcohort))
@@ -1307,6 +1255,7 @@ module rk4_coms
 
       nullify(y%leaf_energy      )
       nullify(y%leaf_water       )
+      nullify(y%leaf_water_int   )
       nullify(y%leaf_temp        )
       nullify(y%leaf_fliq        )
       nullify(y%leaf_hcap        )
@@ -1324,6 +1273,7 @@ module rk4_coms
       nullify(y%rlong_l          )
       nullify(y%wood_energy      )
       nullify(y%wood_water       )
+      nullify(y%wood_water_int   )
       nullify(y%wood_temp        )
       nullify(y%wood_fliq        )
       nullify(y%wood_hcap        )
@@ -1410,6 +1360,7 @@ module rk4_coms
 
       if (associated(y%leaf_energy      )) y%leaf_energy      = 0.d0
       if (associated(y%leaf_water       )) y%leaf_water       = 0.d0
+      if (associated(y%leaf_water_int   )) y%leaf_water_int   = 0.d0
       if (associated(y%leaf_temp        )) y%leaf_temp        = 0.d0
       if (associated(y%leaf_fliq        )) y%leaf_fliq        = 0.d0
       if (associated(y%leaf_hcap        )) y%leaf_hcap        = 0.d0
@@ -1427,6 +1378,7 @@ module rk4_coms
       if (associated(y%rlong_l          )) y%rlong_l          = 0.d0
       if (associated(y%wood_energy      )) y%wood_energy      = 0.d0
       if (associated(y%wood_water       )) y%wood_water       = 0.d0
+      if (associated(y%wood_water_int   )) y%wood_water_int   = 0.d0
       if (associated(y%wood_temp        )) y%wood_temp        = 0.d0
       if (associated(y%wood_fliq        )) y%wood_fliq        = 0.d0
       if (associated(y%wood_hcap        )) y%wood_hcap        = 0.d0
@@ -1512,6 +1464,7 @@ module rk4_coms
 
       if (associated(y%leaf_energy      )) deallocate(y%leaf_energy       )
       if (associated(y%leaf_water       )) deallocate(y%leaf_water        )
+      if (associated(y%leaf_water_int   )) deallocate(y%leaf_water_int    )
       if (associated(y%leaf_temp        )) deallocate(y%leaf_temp         )
       if (associated(y%leaf_fliq        )) deallocate(y%leaf_fliq         )
       if (associated(y%leaf_hcap        )) deallocate(y%leaf_hcap         )
@@ -1529,6 +1482,7 @@ module rk4_coms
       if (associated(y%rlong_l          )) deallocate(y%rlong_l           )
       if (associated(y%wood_energy      )) deallocate(y%wood_energy       )
       if (associated(y%wood_water       )) deallocate(y%wood_water        )
+      if (associated(y%wood_water_int   )) deallocate(y%wood_water_int    )
       if (associated(y%wood_temp        )) deallocate(y%wood_temp         )
       if (associated(y%wood_fliq        )) deallocate(y%wood_fliq         )
       if (associated(y%wood_hcap        )) deallocate(y%wood_hcap         )
@@ -1608,8 +1562,6 @@ module rk4_coms
    !    Re-set the instantaneous flux variables to zero.                                   !
    !---------------------------------------------------------------------------------------!
    subroutine reset_rk4_fluxes(y)
-      use grid_coms     , only : nzg          & ! intent(in)
-                               , nzs          ! ! intent(in)
       implicit none
       !----- Argument ---------------------------------------------------------------------!
       type(rk4patchtype), target :: y
@@ -1667,8 +1619,6 @@ module rk4_coms
    !    This sub-routine normalises the fluxes by dividing it by the actual time step.     !
    !---------------------------------------------------------------------------------------!
    subroutine norm_rk4_fluxes(y,hdid)
-      use grid_coms     , only : nzg          & ! intent(in)
-                               , nzs          ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(rk4patchtype), target        :: y
@@ -1951,7 +1901,7 @@ module rk4_coms
           ,'CAN_CO2      ','LEAF_WATER   ','LEAF_ENERGY  ','WOOD_WATER   ','WOOD_ENERGY  ' &
           ,'VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM','EB_NETRAD    ' &
           ,'EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA','ENB_STORAGE  ' &
-          ,'WATB_STORAGE '/)
+          ,'WATB_STORAGE ','LEAF_WAT_INT ','WOOD_WAT_INT '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc
@@ -1998,8 +1948,7 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine find_derived_thbounds(can_rhos,can_theta,can_temp,                           &
-                                    can_shv,can_prss,can_depth)
+   subroutine find_derived_thbounds(can_theta,can_temp,can_shv,can_prss,can_depth)
       use grid_coms   , only : nzg           ! ! intent(in)
       use consts_coms , only : rdry8         & ! intent(in)
                              , epim18        & ! intent(in)
@@ -2021,14 +1970,12 @@ module rk4_coms
       
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=8)                , intent(in) :: can_rhos
       real(kind=8)                , intent(in) :: can_theta
       real(kind=8)                , intent(in) :: can_temp
       real(kind=8)                , intent(in) :: can_shv
       real(kind=8)                , intent(in) :: can_prss
       real(kind=8)                , intent(in) :: can_depth
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)                             :: can_prss_try
       real(kind=8)                             :: can_exner_try
       real(kind=8)                             :: can_theta_try
       real(kind=8)                             :: can_enthalpy_try

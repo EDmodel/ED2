@@ -20,38 +20,44 @@ module phenology_coms
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   ! IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the       !
-   !                 actual phenology will be different depending on the PFT.              !
-   !                                                                                       !
-   ! -1: grasses   - evergreen;                                                            !
-   !     tropical  - evergreen;                                                            !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous (Botta et al.);                                        !
-   !                                                                                       !
-   !  0: grasses   - drought-deciduous (old scheme);                                       !
-   !     tropical  - drought-deciduous (old scheme);                                       !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  1: prescribed phenology                                                              !
-   !                                                                                       !
-   !  2: grasses   - drought-deciduous (new scheme);                                       !
-   !     tropical  - drought-deciduous (new scheme);                                       !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  3: grasses   - drought-deciduous (new scheme);                                       !
-   !     tropical  - drought-deciduous (light phenology);                                  !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
-   !              becomes less than a critical value.                                      !
-   !  New scheme: plants shed their leaves once a 10-day running average of available      !
-   !              water becomes less than a critical value.                                !
-   !---------------------------------------------------------------------------------------!
    integer                :: iphen_scheme
+   !---------------------------------------------------------------------------------------!
+   !< IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the     \n
+   !<                 actual phenology will be different depending on the PFT.            \n
+   !<                                                                                     \n
+   !< -1: grasses   - evergreen;                                                          \n
+   !<     tropical  - evergreen;                                                          \n
+   !<     conifers  - evergreen;                                                          \n
+   !<     hardwoods - cold-deciduous (Botta et al.);                                      \n
+   !<                                                                                     \n
+   !<  0: grasses   - drought-deciduous (old scheme);                                     \n
+   !<     tropical  - drought-deciduous (old scheme);                                     \n
+   !<     conifers  - evergreen;                                                          \n
+   !<     hardwoods - cold-deciduous;                                                     \n
+   !<                                                                                     \n
+   !<  1: prescribed phenology                                                            \n
+   !<                                                                                     \n
+   !<  2: grasses   - drought-deciduous (new scheme);                                     \n
+   !<     tropical  - drought-deciduous (new scheme);                                     \n
+   !<     conifers  - evergreen;                                                          \n
+   !<     hardwoods - cold-deciduous;                                                     \n
+   !<                                                                                     \n
+   !<  3: grasses   - drought-deciduous (new scheme);                                     \n
+   !<     tropical  - drought-deciduous (light phenology);                                \n
+   !<     conifers  - evergreen;                                                          \n
+   !<     hardwoods - cold-deciduous;                                                     \n
+   !<                                                                                     \n
+   !<  4: grasses   - drought-deciduous (plant hydraulics);                               \n
+   !<     tropical  - drought-deciduous (plant hydraulics;                                \n
+   !<     conifers  - evergreen;                                                          \n
+   !<     hardwoods - cold-deciduous;                                                     \n
+   !<                                                                                     \n
+   !<  Old scheme: plants shed their leaves once instantaneous amount of available water  \n
+   !<              becomes less than a critical value.                                    \n
+   !<  New scheme: plants shed their leaves once a 10-day running average of available    \n
+   !<              water becomes less than a critical value.                              \n
+   !---------------------------------------------------------------------------------------!
+
    !---------------------------------------------------------------------------------------!
 
 

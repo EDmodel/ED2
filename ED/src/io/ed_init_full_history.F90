@@ -1,21 +1,29 @@
+!==========================================================================================!
+!==========================================================================================!
+! MODULE: ED_INIT_FULL_HISTORY
+!> \brief Rountines to initialize ED from a full history run
+!------------------------------------------------------------------------------------------!
+
+
 module ed_init_full_history
   contains
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine will set a full history start for the simulation.  In a full history !
-! start (runtype = 'HISTORY'), we assumes that you are continuing with the exact same      !
-! configuration as a given model simulation that wrote the file in which you are using.    !
-! In this case, each node starts with a list of polygons, and searches the HDF history     !
-! file for these polygons.  It expects to find at least one polygon in the file within 250 !
-! meters of proximity (although it should be exactly at the same place).  If it does not   !
-! find this it stops.                                                                      !
-!     Assuming that it finds the polygons, the subroutine then fills each of these         !
-! polygons with data, and traverses the data hierarchical tree that roots from each        !
-! polygon, initializing the model to the exact same state as the end of the previous run.  !
-! A search based restart does not expect to find exact matches, and may not use all of the !
-! polygons in the file.  Nonetheless, it will traverse the tree from these polygons and    !
-! populate the model states with what is found in the files tree.                          !
+!  SUBROUTINE: INIT_FULL_HISTORY_RESTART
+!> \brief This subroutine will set a full history start for the simulation.  
+!> \details In a full history start (runtype = 'HISTORY'), we assumes that you are 
+!> continuing with the exact same configuration as a given model simulation that wrote
+!> the file in which you are using. In this case, each node starts with a list of
+!> polygons, and searches the HDF history file for these polygons.  It expects to find
+!> at least one polygon in the file within 250 meters of proximity (although it should
+!> be exactly at the same place).  If it does not find this it stops.\n
+!>    Assuming that it finds the polygons, the subroutine then fills each of these
+!> polygons with data, and traverses the data hierarchical tree that roots from each
+!> polygon, initializing the model to the exact same state as the end of the previous run.
+!> A search based restart does not expect to find exact matches, and may not use all of the
+!> polygons in the file.  Nonetheless, it will traverse the tree from these polygons and
+!> populate the model states with what is found in the files tree.
 !------------------------------------------------------------------------------------------!
 subroutine init_full_history_restart()
    use landuse_init_module
@@ -35,16 +43,11 @@ subroutine init_full_history_restart()
    use soil_coms        , only : alloc_soilgrid        ! ! subroutine
    use grid_coms        , only : ngrids                ! ! intent(in)
    use phenology_startup, only : phenology_init        ! ! subroutine
-   use ed_node_coms     , only : mynum                 & ! intent(in)
-                               , nmachs                & ! intent(in)
-                               , nnodetot              & ! intent(in)
-                               , mchnum                & ! intent(in)
-                               , machs                 ! ! intent(in)
+   use ed_node_coms     , only : mynum                 ! ! intent(in)
    use hdf5
    use hdf5_coms        , only : file_id               & ! intent(inout)
                                , dset_id               & ! intent(inout)
                                , dspace_id             & ! intent(inout)
-                               , plist_id              & ! intent(inout)
                                , globdims              & ! intent(inout)
                                , chnkdims              & ! intent(inout)
                                , chnkoffs              ! ! intent(inout)
@@ -142,25 +145,25 @@ subroutine init_full_history_restart()
       chnkdims    = 0_8
       chnkoffs    = 0_8
       globdims(1) = 1_8
-      
+
       call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%npolygons_global,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'NSITES_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%nsites_global,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'NPATCHES_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%npatches_global,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'NCOHORTS_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,cgrid%ncohorts_global,globdims, hdferr)
@@ -175,65 +178,65 @@ subroutine init_full_history_restart()
       !------------------------------------------------------------------------------------!
       globdims    = 0_8
       globdims(1) = int(cgrid%npolygons_global,8)
-      
+
       allocate(pysi_n(cgrid%npolygons_global))
       allocate(pysi_id(cgrid%npolygons_global))
-      
+
       call h5dopen_f(file_id,'PYSI_N', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_n,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'PYSI_ID', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_id,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       globdims(1) = int(cgrid%nsites_global,8)
-      
+
       allocate(sipa_n(cgrid%nsites_global))
       allocate(sipa_id(cgrid%nsites_global))
-      
+
       call h5dopen_f(file_id,'SIPA_N', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_n,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'SIPA_ID', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_id,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       globdims(1) = int(cgrid%npatches_global,8)
-      
+
       allocate(paco_n(cgrid%npatches_global))
       allocate(paco_id(cgrid%npatches_global))
-      
+
       call h5dopen_f(file_id,'PACO_N', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_n,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'PACO_ID', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_id,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
       !------------------------------------------------------------------------------------!
-      
-      
+
+
       !------------------------------------------------------------------------------------!
       !      Retrieve the polygon coordinates data.                                        !
       !------------------------------------------------------------------------------------!
       globdims(1) = int(cgrid%npolygons_global,8)
       allocate(file_lats(cgrid%npolygons_global))
       allocate(file_lons(cgrid%npolygons_global))
-      
+
       call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_REAL,file_lats,globdims, hdferr)
@@ -311,10 +314,10 @@ subroutine init_full_history_restart()
             is_burnt(:) = .false.
             call fill_history_polygon(cpoly,pysi_id(py_index),cgrid%nsites_global          &
                                      ,pysi_n(py_index),is_burnt)
-            
+
             siteloop: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
-               
+
                !------ Calculate the index of this site's data in the HDF. ----------------!
                si_index = pysi_id(py_index) + isi - 1
 
@@ -336,7 +339,7 @@ subroutine init_full_history_restart()
                      if (paco_n(pa_index) > 0) then
                         !----- Allocate the patchtype structure (cohort level). -----------!
                         call allocate_patchtype(cpatch,paco_n(pa_index))
-                        
+
                         !------------------------------------------------------------------!
                         !     Get all necessary site variables associated with this index  !
                         ! for the current patch.                                           !
@@ -364,7 +367,7 @@ subroutine init_full_history_restart()
 
             end do siteloop
             deallocate (is_burnt)
-            
+
          else
             write (unit=*,fmt='(a)'          ) '------------------------------------'
             write (unit=*,fmt='(a)'          ) ' Found a polygon with no sites.'
@@ -385,7 +388,7 @@ subroutine init_full_history_restart()
           print*,hdferr
           call fatal_error('Could not close the HDF file'                                  &
                           ,'init_full_history_restart','ed_init_full_history.F90')
-          
+
       end if
 
       deallocate(file_lats)
@@ -439,30 +442,12 @@ end subroutine init_full_history_restart
 subroutine fill_history_grid(cgrid,ipy,py_index)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
                            , n_dbh         & ! intent(in)
                            , n_age         & ! intent(in)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
-                           , chnkdims      & ! intent(inout)
-                           , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
-                           , memdims       & ! intent(inout)
-                           , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
-   use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
-                           , writing_dcyc  ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -504,30 +489,18 @@ end subroutine fill_history_grid
 subroutine fill_history_grid_p11(cgrid,ipy,py_index)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
                            , n_dbh         & ! intent(in)
                            , n_age         & ! intent(in)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
-   use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
-                           , writing_dcyc  ! ! intent(in)
+                           , memsize       ! ! intent(inout)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 
@@ -549,7 +522,7 @@ subroutine fill_history_grid_p11(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -702,30 +675,19 @@ end subroutine fill_history_grid_p11
 subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
                            , n_dbh         & ! intent(in)
                            , n_age         & ! intent(in)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
-   use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
-                           , writing_dcyc  ! ! intent(in)
+                           , memsize       ! ! intent(inout)
+   use ed_misc_coms , only : writing_long  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 
@@ -747,7 +709,7 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -1079,30 +1041,19 @@ end subroutine fill_history_grid_p11dmean
 subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
                            , n_dbh         & ! intent(in)
                            , n_age         & ! intent(in)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
-   use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
-                           , writing_dcyc  ! ! intent(in)
+                           , memsize       ! ! intent(inout)
+   use ed_misc_coms , only : writing_eorq  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 
@@ -1124,7 +1075,7 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -1542,27 +1493,21 @@ subroutine fill_history_grid_p12(cgrid,ipy,py_index)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
-   use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
-                           , writing_dcyc  ! ! intent(in)
+                           , memsize       ! ! intent(inout)
+   use ed_misc_coms , only : writing_long  & ! intent(in)
+                           , writing_eorq  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
+
+
+
 
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1580,7 +1525,7 @@ subroutine fill_history_grid_p12(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -1686,29 +1631,19 @@ end subroutine fill_history_grid_p12
 subroutine fill_history_grid_m11(cgrid,ipy,py_index)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
                            , n_dbh         & ! intent(in)
                            , n_age         & ! intent(in)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
+                           , memsize       ! ! intent(inout)
    use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
@@ -1731,7 +1666,7 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -2092,30 +2027,18 @@ end subroutine fill_history_grid_m11
 subroutine fill_history_grid_p19(cgrid,ipy,py_index)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
                            , n_dbh         & ! intent(in)
                            , n_age         & ! intent(in)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
-   use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
-                           , writing_dcyc  ! ! intent(in)
+                           , memsize       ! ! intent(inout)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 
@@ -2137,7 +2060,7 @@ subroutine fill_history_grid_p19(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -2217,22 +2140,13 @@ subroutine fill_history_grid_m12(cgrid,ipy,py_index)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
+                           , memsize       ! ! intent(inout)
    use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
@@ -2255,7 +2169,7 @@ subroutine fill_history_grid_m12(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -2348,30 +2262,19 @@ end subroutine fill_history_grid_m12
 subroutine fill_history_grid_p146(cgrid,ipy,py_index)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
                            , n_dbh         & ! intent(in)
                            , n_age         & ! intent(in)
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
-   use ed_misc_coms , only : ndcycle       & ! intent(in)
-                           , writing_long  & ! intent(in)
-                           , writing_eorq  & ! intent(in)
-                           , writing_dcyc  ! ! intent(in)
+                           , memsize       ! ! intent(inout)
+   use ed_misc_coms , only : writing_eorq  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 
@@ -2393,7 +2296,7 @@ subroutine fill_history_grid_p146(cgrid,ipy,py_index)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -2546,19 +2449,12 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
                            , max_site      & ! intent(in)
                            , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms    , only : file_id       & ! intent(inout)
-                           , dset_id       & ! intent(inout)
-                           , dspace_id     & ! intent(inout)
-                           , plist_id      & ! intent(inout)
-                           , globdims      & ! intent(inout)
+   use hdf5_coms    , only : globdims      & ! intent(inout)
                            , chnkdims      & ! intent(inout)
                            , chnkoffs      & ! intent(inout)
-                           , cnt           & ! intent(inout)
-                           , stride        & ! intent(inout)
                            , memdims       & ! intent(inout)
                            , memoffs       & ! intent(inout)
-                           , memsize       & ! intent(inout)
-                           , datatype_id   ! ! intent(inout)
+                           , memsize       ! ! intent(inout)
    use ed_misc_coms , only : ndcycle       & ! intent(in)
                            , writing_long  & ! intent(in)
                            , writing_eorq  & ! intent(in)
@@ -2594,7 +2490,7 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -3226,20 +3122,12 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                                  , max_site      & ! intent(in)
                                  , n_dist_types  ! ! intent(in)
    use hdf5
-   use hdf5_coms          , only : file_id       & ! intent(inout)
-                                 , dset_id       & ! intent(inout)
-                                 , dspace_id     & ! intent(inout)
-                                 , plist_id      & ! intent(inout)
-                                 , globdims      & ! intent(inout)
+   use hdf5_coms          , only : globdims      & ! intent(inout)
                                  , chnkdims      & ! intent(inout)
                                  , chnkoffs      & ! intent(inout)
-                                 , cnt           & ! intent(inout)
-                                 , stride        & ! intent(inout)
                                  , memdims       & ! intent(inout)
                                  , memoffs       & ! intent(inout)
-                                 , memsize       & ! intent(inout)
-                                 , datatype_id   & ! intent(inout)
-                                 , setsize       ! ! intent(inout)
+                                 , memsize       ! ! intent(inout)
    use ed_misc_coms       , only : ndcycle       & ! intent(in)
                                  , writing_long  & ! intent(in)
                                  , writing_eorq  & ! intent(in)
@@ -3269,7 +3157,7 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -3874,7 +3762,7 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                         ,'MMSQU_SENSIBLE_GC_PA      ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmsqu_sensible_ac                                           &
                         ,'MMSQU_SENSIBLE_AC_PA      ',dsetrank,iparallel,.false.,foundvar)
-   end if                                                                           
+   end if
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -4339,34 +4227,23 @@ end subroutine fill_history_site
 !------------------------------------------------------------------------------------------!
 subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    use ed_state_vars      , only : patchtype     ! ! structure
-   use grid_coms          , only : nzg           & ! intent(in)
-                                 , nzs           ! ! intent(in)
+   use grid_coms          , only : nzg           ! ! intent(in)
    use ed_max_dims        , only : n_pft         & ! intent(in)
                                  , n_mort        & ! intent(in)
                                  , max_site      & ! intent(in)
                                  , n_dist_types  & ! intent(in)
                                  , n_radprof     ! ! intent(in)
    use hdf5
-   use hdf5_coms          , only : file_id       & ! intent(inout)
-                                 , dset_id       & ! intent(inout)
-                                 , dspace_id     & ! intent(inout)
-                                 , plist_id      & ! intent(inout)
-                                 , globdims      & ! intent(inout)
+   use hdf5_coms          , only : globdims      & ! intent(inout)
                                  , chnkdims      & ! intent(inout)
                                  , chnkoffs      & ! intent(inout)
-                                 , cnt           & ! intent(inout)
-                                 , stride        & ! intent(inout)
                                  , memdims       & ! intent(inout)
                                  , memoffs       & ! intent(inout)
-                                 , memsize       & ! intent(inout)
-                                 , datatype_id   & ! intent(inout)
-                                 , setsize       ! ! intent(inout)
+                                 , memsize       ! ! intent(inout)
    use ed_misc_coms       , only : ndcycle       & ! intent(in)
                                  , writing_long  & ! intent(in)
                                  , writing_eorq  & ! intent(in)
                                  , writing_dcyc  ! ! intent(in)
-   use fusion_fission_coms, only : ff_nhgt       ! ! intent(in)
-   use allometry          , only : dbh2ca        ! ! function
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 
@@ -4394,7 +4271,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    !----- Turn off parallel for this sub-routine. -----------------------------------------!
    iparallel = 0
    !---------------------------------------------------------------------------------------!
- 
+
 
    !---------------------------------------------------------------------------------------!
    !     Reset the dimension arrays.                                                       !
@@ -4452,6 +4329,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'FIRST_CENSUS              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpatch%new_recruit_flag                                              &
                      ,'NEW_RECRUIT_FLAG          ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_i(cpatch%high_leaf_psi_days                                            &
+                     ,'HIGH_LEAF_PSI_DAYS        ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_i(cpatch%low_leaf_psi_days                                             &
+                     ,'LOW_LEAF_PSI_DAYS         ',dsetrank,iparallel,.true. ,foundvar)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -4710,6 +4591,28 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'VM_BAR                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%sla                                                           &
                      ,'SLA                       ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%vm0                                                           &
+                     ,'VM0                       ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%leaf_psi                                                      &
+                     ,'LEAF_PSI                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wood_psi                                                      &
+                     ,'WOOD_PSI                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%leaf_rwc                                                      &
+                     ,'LEAF_RWC                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wood_rwc                                                      &
+                     ,'WOOD_RWC                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%leaf_water_int                                                &
+                     ,'LEAF_WATER_INT            ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wood_water_int                                                &
+                     ,'WOOD_WATER_INT            ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wflux_gw                                                      &
+                     ,'WFLUX_GW                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%wflux_wl                                                      &
+                     ,'WFLUX_WL                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%last_gV                                                       &
+                     ,'LAST_GV                   ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%last_gJ                                                       &
+                     ,'LAST_GJ                   ',dsetrank,iparallel,.true. ,foundvar)
    !----- Daily means. --------------------------------------------------------------------!
    if (writing_long) then
       call hdf_getslab_r(cpatch%dmean_nppleaf                                              &
@@ -4851,6 +4754,22 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'DMEAN_INTERCEPTED_AW_CO   ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_wshed_wg                                             &
                         ,'DMEAN_WSHED_WG_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmax_leaf_psi                                              &
+                        ,'DMAX_LEAF_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmin_leaf_psi                                              &
+                        ,'DMIN_LEAF_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmax_wood_psi                                              &
+                        ,'DMAX_WOOD_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmin_wood_psi                                              &
+                        ,'DMIN_WOOD_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_leaf_water_int                                       &
+                        ,'DMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_wood_water_int                                       &
+                        ,'DMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_wflux_gw                                             &
+                        ,'DMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_wflux_wl                                             &
+                        ,'DMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
    end if
    !----- Daily means. --------------------------------------------------------------------!
    if (writing_eorq) then
@@ -5008,6 +4927,22 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'MMEAN_NPPWOOD_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_nppdaily                                             &
                         ,'MMEAN_NPPDAILY_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmax_leaf_psi                                        &
+                        ,'MMEAN_DMAX_LEAF_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmin_leaf_psi                                        &
+                        ,'MMEAN_DMIN_LEAF_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmax_wood_psi                                        &
+                        ,'MMEAN_DMAX_WOOD_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_dmin_wood_psi                                        &
+                        ,'MMEAN_DMIN_WOOD_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_leaf_water_int                                       &
+                        ,'MMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_wood_water_int                                       &
+                        ,'MMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_wflux_gw                                             &
+                        ,'MMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_wflux_wl                                             &
+                        ,'MMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmsqu_gpp                                                  &
                         ,'MMSQU_GPP_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmsqu_npp                                                  &
@@ -5028,7 +4963,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-  
+
 
 
 
@@ -5065,6 +5000,40 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      2-D variables, dimensions: (nzg,ncohorts).                                       !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 2
+   globdims(1) = int(nzg,8)
+   chnkdims(1) = int(nzg,8)
+   chnkoffs(1) = 0_8
+   memdims (1) = int(nzg,8)
+   memsize (1) = int(nzg,8)
+   memoffs (1) = 0_8
+
+   globdims(2) = int(ncohorts_global,8)
+   chnkdims(2) = int(cpatch%ncohorts,8)
+   chnkoffs(2) = int(paco_index - 1,8)
+   memdims (2) = int(cpatch%ncohorts,8)
+   memsize (2) = int(cpatch%ncohorts,8)
+   memoffs (2) = 0_8
+   call hdf_getslab_r(cpatch%wflux_gw_layer                                                &
+                     ,'WFLUX_GW_LAYER            ',dsetrank,iparallel,.true. ,foundvar)
+   if (writing_long) then
+      call hdf_getslab_r(cpatch%dmean_wflux_gw_layer                                       &
+                        ,'DMEAN_WFLUX_GW_LAYER_CO   ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   if (writing_eorq) then
+      call hdf_getslab_r(cpatch%mmean_wflux_gw_layer                                       &
+                        ,'MMEAN_WFLUX_GW_LAYER_CO   ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -5080,7 +5049,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    memdims (1) = int(n_mort,8)
    memsize (1) = int(n_mort,8)
    memoffs (1) = 0_8
-   
+
    globdims(2) = int(ncohorts_global,8)
    chnkdims(2) = int(cpatch%ncohorts,8)
    chnkoffs(2) = int(paco_index - 1,8)
@@ -5114,7 +5083,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    memdims (1) = int(n_radprof,8)
    memsize (1) = int(n_radprof,8)
    memoffs (1) = 0_8
-   
+
    globdims(2) = int(ncohorts_global,8)
    chnkdims(2) = int(cpatch%ncohorts,8)
    chnkoffs(2) = int(paco_index - 1,8)
@@ -5285,6 +5254,18 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'QMEAN_INTERCEPTED_AW_CO   ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_wshed_wg                                             &
                         ,'QMEAN_WSHED_WG_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_leaf_psi                                             &
+                        ,'QMEAN_LEAF_PSI_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wood_psi                                             &
+                        ,'QMEAN_WOOD_PSI_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_leaf_water_int                                       &
+                        ,'QMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wood_water_int                                       &
+                        ,'QMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wflux_gw                                             &
+                        ,'QMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_wflux_wl                                             &
+                        ,'QMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmsqu_gpp                                                  &
                         ,'QMSQU_GPP_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmsqu_npp                                                  &
@@ -5369,19 +5350,16 @@ end subroutine fill_history_patch
 ! FOUNDVAR  -- Output flag that tells whether the variable was found or not.               !
 !------------------------------------------------------------------------------------------!
 subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-   
+
    use hdf5
    use hdf5_coms, only : file_id      & ! intent(inout)
                        , dset_id      & ! intent(inout)
-                       , dspace_id    & ! intent(inout)
                        , plist_id     & ! intent(inout)
                        , filespace    & ! intent(inout)
                        , memspace     & ! intent(inout)
                        , globdims     & ! intent(inout)
                        , chnkdims     & ! intent(inout)
                        , chnkoffs     & ! intent(inout)
-                       , cnt          & ! intent(inout)
-                       , stride       & ! intent(inout)
                        , memdims      & ! intent(inout)
                        , memoffs      & ! intent(inout)
                        , memsize        ! intent(inout)
@@ -5446,7 +5424,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
       write (unit=*,fmt='(a)') '----------------------------------------------------------'
       write (unit=*,fmt='(a)') ''
       end if
-      
+
       buff(:,:,:,:) = 0.
       return
       !------------------------------------------------------------------------------------!
@@ -5461,14 +5439,14 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
          call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!'   &
               ,'hdf_getslab_r','ed_init_full_history.F90')
       end if
-      
+
       call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
            chnkdims,hdferr)
       if (hdferr /= 0) then
          call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)//'!' &
               ,'hdf_getslab_r','ed_init_full_history.F90')
       end if
-      
+
       call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
       if (hdferr /= 0) then
          write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
@@ -5476,20 +5454,20 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
          call fatal_error('Couldn''t create the hyperslab memspace for '//trim(varn)//'!'  &
                          ,'hdf_getslab_r','ed_init_full_history.F90')
       end if
-      
+
       call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
            memdims,hdferr)
       if (hdferr /= 0) then
          call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)//'!' &
               ,'hdf_getslab_r','ed_init_full_history.F90')
       end if
-      
+
       if (iparallel == 1) then
-         
+
          call h5dread_f(dset_id, H5T_NATIVE_REAL,buff,globdims, hdferr, &
               mem_space_id = memspace, file_space_id = filespace, &
               xfer_prp = plist_id)
-         
+
          if (hdferr /= 0) then
             call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//'!'   &
                  ,'hdf_getslab_r','ed_init_full_history.F90')
@@ -5506,13 +5484,13 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
          end if
 
       end if
-      
+
       !  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
-      
+
       call h5sclose_f(filespace, hdferr)
       call h5sclose_f(memspace , hdferr)
       call h5dclose_f(dset_id  , hdferr)
-      
+
    end if
    return
 end subroutine hdf_getslab_r
@@ -5539,25 +5517,22 @@ end subroutine hdf_getslab_r
 ! FOUNDVAR  -- Output flag that tells whether the variable was found or not.               !
 !------------------------------------------------------------------------------------------!
 subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-   
+
    use hdf5
    use hdf5_coms, only : file_id      & ! intent(inout)
                        , dset_id      & ! intent(inout)
-                       , dspace_id    & ! intent(inout)
                        , plist_id     & ! intent(inout)
                        , filespace    & ! intent(inout)
                        , memspace     & ! intent(inout)
                        , globdims     & ! intent(inout)
                        , chnkdims     & ! intent(inout)
                        , chnkoffs     & ! intent(inout)
-                       , cnt          & ! intent(inout)
-                       , stride       & ! intent(inout)
                        , memdims      & ! intent(inout)
                        , memoffs      & ! intent(inout)
                        , memsize      ! ! intent(inout)
 
    use ed_misc_coms,only: suppress_h5_warnings
-   
+
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))                &
@@ -5629,14 +5604,14 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
          call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!'   &
               ,'hdf_getslab_d','ed_init_full_history.F90')
       end if
-      
+
       call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
            chnkdims,hdferr)
       if (hdferr /= 0) then
          call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)//'!' &
               ,'hdf_getslab_d','ed_init_full_history.F90')
       end if
-      
+
       call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
       if (hdferr /= 0) then
          write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
@@ -5644,20 +5619,20 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
          call fatal_error('Couldn''t create the hyperslab memspace for '//trim(varn)//'!'  &
                          ,'hdf_getslab_d','ed_init_full_history.F90')
       end if
-      
+
       call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
            memdims,hdferr)
       if (hdferr /= 0) then
          call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)//'!' &
               ,'hdf_getslab_d','ed_init_full_history.F90')
       end if
-      
+
       if (iparallel == 1) then
-         
+
          call h5dread_f(dset_id, H5T_NATIVE_DOUBLE,buff,globdims, hdferr, &
               mem_space_id = memspace, file_space_id = filespace, &
               xfer_prp = plist_id)
-         
+
          if (hdferr /= 0) then
             call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//'!'   &
                  ,'hdf_getslab_d','ed_init_full_history.F90')
@@ -5674,13 +5649,13 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
          end if
 
       end if
-      
+
       !  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
-      
+
       call h5sclose_f(filespace, hdferr)
       call h5sclose_f(memspace , hdferr)
       call h5dclose_f(dset_id  , hdferr)
-      
+
    end if
    return
 end subroutine hdf_getslab_d
@@ -5707,19 +5682,16 @@ end subroutine hdf_getslab_d
 ! FOUNDVAR  -- Output flag that tells whether the variable was found or not.               !
 !------------------------------------------------------------------------------------------!
 subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-   
+
    use hdf5
    use hdf5_coms, only : file_id      & ! intent(inout)
                        , dset_id      & ! intent(inout)
-                       , dspace_id    & ! intent(inout)
                        , plist_id     & ! intent(inout)
                        , filespace    & ! intent(inout)
                        , memspace     & ! intent(inout)
                        , globdims     & ! intent(inout)
                        , chnkdims     & ! intent(inout)
                        , chnkoffs     & ! intent(inout)
-                       , cnt          & ! intent(inout)
-                       , stride       & ! intent(inout)
                        , memdims      & ! intent(inout)
                        , memoffs      & ! intent(inout)
                        , memsize      ! ! intent(inout)
@@ -5796,14 +5768,14 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
          call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!'   &
               ,'hdf_getslab_i','ed_init_full_history.F90')
       end if
-      
+
       call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
            chnkdims,hdferr)
       if (hdferr /= 0) then
          call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)//'!' &
               ,'hdf_getslab_i','ed_init_full_history.F90')
       end if
-      
+
       call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
       if (hdferr /= 0) then
          write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
@@ -5811,20 +5783,20 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
          call fatal_error('Couldn''t create the hyperslab memspace for '//trim(varn)//'!'  &
                          ,'hdf_getslab_i','ed_init_full_history.F90')
       end if
-      
+
       call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
            memdims,hdferr)
       if (hdferr /= 0) then
          call fatal_error('Couldn''t assign the hyperslab filespace for '//trim(varn)//'!' &
               ,'hdf_getslab_i','ed_init_full_history.F90')
       end if
-      
+
       if (iparallel == 1) then
-         
+
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,buff,globdims, hdferr, &
               mem_space_id = memspace, file_space_id = filespace, &
               xfer_prp = plist_id)
-         
+
          if (hdferr /= 0) then
             call fatal_error('Couldn''t read in hyperslab dataset for '//trim(varn)//'!'   &
                  ,'hdf_getslab_i','ed_init_full_history.F90')
@@ -5841,13 +5813,13 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
          end if
 
       end if
-      
+
       !  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
-      
+
       call h5sclose_f(filespace, hdferr)
       call h5sclose_f(memspace , hdferr)
       call h5dclose_f(dset_id  , hdferr)
-      
+
    end if
    return
 end subroutine hdf_getslab_i

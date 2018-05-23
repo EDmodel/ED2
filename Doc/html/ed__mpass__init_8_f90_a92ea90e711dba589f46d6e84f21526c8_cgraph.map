@@ -1,6 +1,0 @@
-<map id="ed_masterput_worklist_info" name="ed_masterput_worklist_info">
-<area shape="rect" id="node2" href="$namespaceed__mem__alloc.html#a410d759cf4e13ea20ace04982d91d9bb" title="ed_mem_alloc::ed_memory\l_allocation" alt="" coords="232,64,415,105"/>
-<area shape="rect" id="node3" href="$namespaceed__mem__grid__dim__defs.html#ad239d701d9000451504dc71a6a3b538a" title="ed_mem_grid_dim_defs\l::define_grid_dim_pointer" alt="" coords="463,5,629,47"/>
-<area shape="rect" id="node4" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="507,71,585,98"/>
-<area shape="rect" id="node5" href="$ed__grid_8f90.html#a91112e6806db1100d405228002308384" title="ed_newgrid" alt="" coords="503,122,589,149"/>
-</map>

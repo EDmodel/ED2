@@ -44,18 +44,24 @@ module ed_therm_lib
    !      energy storages on the land surface fluxes and radiative temperature.            !
    !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
    !---------------------------------------------------------------------------------------!
-   subroutine calc_veg_hcap(bleaf,bdead,bsapwooda,nplant,pft,leaf_hcap,wood_hcap)
+   subroutine calc_veg_hcap(bleaf,bdead,bsapwooda,nplant,pft                           &
+                           ,broot,dbh,leaf_rwc,wood_rwc                                &
+                           ,leaf_hcap,wood_hcap)
       use consts_coms          , only : cliq                ! ! intent(in)
       use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
                                       , wat_dry_ratio_grn   & ! intent(in)
                                       , c_ngrn_biom_dry     & ! intent(in)
                                       , wat_dry_ratio_ngrn  & ! intent(in)
+                                      , leaf_water_sat      & ! intent(in)
+                                      , wood_water_sat      & ! intent(in)
                                       , delta_c             & ! intent(in)
                                       , agf_bs              & ! intent(in)
                                       , C2B                 & ! intent(in)
                                       , brf_wd              ! ! intent(in)
 
       use rk4_coms             , only : ibranch_thermo      ! ! intent(in)
+      use physiology_coms      , only : plant_hydro_scheme  ! ! intent(in)
+      use allometry            , only : dbh2sf              ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real    , intent(in)    :: bleaf         ! Biomass of leaves              [kgC/plant]
@@ -63,6 +69,10 @@ module ed_therm_lib
       real    , intent(in)    :: bsapwooda     ! Biomass of above ground sapwood[kgC/plant]
       real    , intent(in)    :: nplant        ! Number of plants               [ plant/m2]
       integer , intent(in)    :: pft           ! Plant functional type          [     ----]
+      real    , intent(in)    :: broot         ! Biomass of fine roots          [kgC/plant]
+      real    , intent(in)    :: dbh           ! Diameter at Breast Height      [       cm]
+      real    , intent(in)    :: leaf_rwc      ! Leaf relative water content    [      0-1]
+      real    , intent(in)    :: wood_rwc      ! Wood relative water content    [      0-1]
       real    , intent(out)   :: leaf_hcap     ! Leaf heat capacity             [   J/m2/K]
       real    , intent(out)   :: wood_hcap     ! Wood heat capacity             [   J/m2/K]
       !----- Local variables --------------------------------------------------------------!
@@ -71,32 +81,66 @@ module ed_therm_lib
       real                    :: spheat_wood   ! Wood specific heat             [   J/kg/K]
       !------------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !    Here we decide whether we compute the branch heat capacity or not.              !
-      !------------------------------------------------------------------------------------!
-      select case (ibranch_thermo)
-      case (0)
-         !----- Skip it, the user doesn't want to solve for branches. ---------------------!
-         spheat_wood = 0.
-         bwood       = 0.
-      case default
-         !----- Find branch/twig specific heat and biomass. -------------------------------!
-         spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
-                     / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bwood       = brf_wd(pft) * (bsapwooda + bdead*agf_bs(pft))
+      select case (plant_hydro_scheme)
+      case (-2,-1,0)
+          ! original ED-2.2
+          ! No plant hydraulics
+          !------------------------------------------------------------------------------------!
+          !    Here we decide whether we compute the branch heat capacity or not.              !
+          !------------------------------------------------------------------------------------!
+          select case (ibranch_thermo)
+          case (0)
+             !----- Skip it, the user doesn't want to solve for branches. ---------------------!
+             spheat_wood = 0.
+             bwood       = 0.
+          case default
+             !----- Find branch/twig specific heat and biomass. -------------------------------!
+             spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
+                         / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
+             bwood       = brf_wd(pft) * (bsapwooda + bdead*agf_bs(pft))
+          end select
+
+          !----- Find the leaf specific heat. -------------------------------------------------!
+          spheat_leaf = (c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft) * cliq)                  &
+                      / (1. + wat_dry_ratio_grn(pft))
+
+          !------------------------------------------------------------------------------------!
+          !     The heat capacity is specific heat times the plant density times the leaf/wood !
+          ! biomass.                                                                           !
+          !------------------------------------------------------------------------------------!
+          leaf_hcap = nplant * C2B * bleaf * spheat_leaf * (1. + wat_dry_ratio_grn (pft))
+          wood_hcap = nplant * C2B * bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))
+          !------------------------------------------------------------------------------------!
+      case (1,2)
+          ! with plant hydraulics
+          !------------------------------------------------------------------------------------!
+          !    Here we decide whether we compute the branch heat capacity or not.              !
+          !------------------------------------------------------------------------------------!
+          select case (ibranch_thermo)
+          case (0)
+             !----- Skip it, the user doesn't want to solve for branches. ---------------------!
+             spheat_wood = 0.
+             bwood       = 0.
+          case default
+             !----- Find branch/twig specific heat and biomass. -------------------------------!
+             !Here we consider the relative water content of wood
+             spheat_wood = (c_ngrn_biom_dry(pft) + wood_water_sat(pft) * wood_rwc * cliq)      &
+                         / (1. + wood_water_sat(pft) * wood_rwc) + delta_c(pft) * wood_rwc
+             bwood       = bdead * dbh2sf(dbh,pft) + broot
+          end select
+
+          !----- Find the leaf specific heat. -------------------------------------------------!
+          spheat_leaf = (c_grn_leaf_dry(pft) + leaf_water_sat(pft) * leaf_rwc * cliq)       &
+                      / (1. + leaf_water_sat(pft) * leaf_rwc)
+
+          !------------------------------------------------------------------------------------!
+          !     The heat capacity is specific heat times the plant density times the leaf/wood !
+          ! biomass.                                                                           !
+          !------------------------------------------------------------------------------------!
+          leaf_hcap = nplant * C2B * bleaf * spheat_leaf * (1. + leaf_water_sat(pft) * leaf_rwc)
+          wood_hcap = nplant * C2B * bwood * spheat_wood * (1. + wood_water_sat(pft) * wood_rwc)
+          !------------------------------------------------------------------------------------!
       end select
-
-      !----- Find the leaf specific heat. -------------------------------------------------!
-      spheat_leaf = (c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft) * cliq)                  &
-                  / (1. + wat_dry_ratio_grn(pft))
-
-      !------------------------------------------------------------------------------------!
-      !     The heat capacity is specific heat times the plant density times the leaf/wood !
-      ! biomass.                                                                           !
-      !------------------------------------------------------------------------------------!
-      leaf_hcap = nplant * C2B * bleaf * spheat_leaf * (1. + wat_dry_ratio_grn (pft))
-      wood_hcap = nplant * C2B * bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))
-      !------------------------------------------------------------------------------------!
 
       return
    end subroutine calc_veg_hcap
@@ -139,7 +183,6 @@ module ed_therm_lib
       real           , intent(in) :: old_wood_hcap
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer    :: cpatch
-      real(kind=8)                :: new_energy
       real                        :: new_temp
       real                        :: new_fliq
       integer                     :: kclosest
@@ -294,8 +337,8 @@ module ed_therm_lib
    ! References:                                                                           !
    !                                                                                       !
    ! P86  - Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol    !
-   !        stratifié soumis à une excitation amtosphérique naturelle. Comparaison:        !
-   !        Modèles-expérience. Thesis, Institut National Polytechnique de Grenoble.       !
+   !        stratifiï¿½ soumis ï¿½ une excitation amtosphï¿½rique naturelle. Comparaison:        !
+   !        Modï¿½les-expï¿½rience. Thesis, Institut National Polytechnique de Grenoble.       !
    !                                                                                       !
    ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
    !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
@@ -311,7 +354,7 @@ module ed_therm_lib
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp   &
-                        ,sfcwater_fliq,sfcwater_frac,can_prss,can_shv,ground_shv           &
+                        ,sfcwater_frac,can_prss,can_shv,ground_shv                         &
                         ,ground_ssh,ground_temp,ground_fliq,ggsoil)
 
       use canopy_air_coms, only : ied_grndvap       & ! intent(in)
@@ -326,19 +369,15 @@ module ed_therm_lib
                                 , tiny_num          & ! intent(in)
                                 , huge_num          ! ! intent(in)
       use therm_lib      , only : qslif             ! ! function
-      use rk4_coms       , only : rk4site           ! ! intent(in)
-      use grid_coms      , only : nzg               ! ! intent(in)
       use ed_max_dims    , only : n_pft             ! ! intent(in)
-      use ed_misc_coms   , only : current_time      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
       integer     , intent(in)  :: nsoil         ! Soil type                    [     ----]
-      real(kind=4), intent(in)  :: topsoil_water ! Top soil water               [m³_h2o/m³]
+      real(kind=4), intent(in)  :: topsoil_water ! Top soil water               [mï¿½_h2o/mï¿½]
       real(kind=4), intent(in)  :: topsoil_temp  ! Top soil temperature         [        K]
       real(kind=4), intent(in)  :: topsoil_fliq  ! Top soil liquid water frac.  [       --]
       real(kind=4), intent(in)  :: sfcwater_temp ! Snow/water temperature       [        K]
-      real(kind=4), intent(in)  :: sfcwater_fliq ! Snow/water liq. water frac.  [       --]
       real(kind=4), intent(in)  :: sfcwater_frac ! Snow/water liq. water frac.  [       --]
       real(kind=4), intent(in)  :: can_prss      ! canopy pressure              [       Pa]
       real(kind=4), intent(in)  :: can_shv       ! canopy vapour spec humidity  [kg_vap/kg]
@@ -348,7 +387,6 @@ module ed_therm_lib
       real(kind=4), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
       real(kind=4), intent(out) :: ggsoil        ! Soil conductance for evap.   [      m/s]
       !----- Local variables --------------------------------------------------------------!
-      integer                   :: k             ! Index counter.               [     ----]
       real(kind=4)              :: slpotvn       ! soil water potential         [        m]
       real(kind=4)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
       real(kind=4)              :: beta          ! beta term  (Lee-Pielke,1992) [     ----]
@@ -494,8 +532,8 @@ module ed_therm_lib
    ! References:                                                                           !
    !                                                                                       !
    ! P86  - Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol    !
-   !        stratifié soumis à une excitation amtosphérique naturelle. Comparaison:        !
-   !        Modèles-expérience. Thesis, Institut National Polytechnique de Grenoble.       !
+   !        stratifiï¿½ soumis ï¿½ une excitation amtosphï¿½rique naturelle. Comparaison:        !
+   !        Modï¿½les-expï¿½rience. Thesis, Institut National Polytechnique de Grenoble.       !
    !                                                                                       !
    ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
    !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
@@ -511,7 +549,7 @@ module ed_therm_lib
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap8(ksn,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp        &
-                         ,sfcwater_fliq,sfcwater_frac,can_prss,can_shv,ground_shv          &
+                         ,sfcwater_frac,can_prss,can_shv,ground_shv                        &
                          ,ground_ssh,ground_temp,ground_fliq,ggsoil)
       use canopy_air_coms, only : ied_grndvap       & ! intent(in)
                                 , ggsoil08          & ! intent(in)
@@ -528,15 +566,13 @@ module ed_therm_lib
       use rk4_coms       , only : rk4site           ! ! intent(in)
       use grid_coms      , only : nzg               ! ! intent(in)
       use ed_max_dims    , only : n_pft             ! ! intent(in)
-      use ed_misc_coms   , only : current_time      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
-      real(kind=8), intent(in)  :: topsoil_water ! Top soil water               [m³_h2o/m³]
+      real(kind=8), intent(in)  :: topsoil_water ! Top soil water               [mï¿½_h2o/mï¿½]
       real(kind=8), intent(in)  :: topsoil_temp  ! Top soil temperature         [        K]
       real(kind=8), intent(in)  :: topsoil_fliq  ! Top soil liquid water frac.  [       --]
       real(kind=8), intent(in)  :: sfcwater_temp ! Snow/water temperature       [        K]
-      real(kind=8), intent(in)  :: sfcwater_fliq ! Snow/water liq. water frac.  [       --]
       real(kind=8), intent(in)  :: sfcwater_frac ! Snow/water liq. water frac.  [       --]
       real(kind=8), intent(in)  :: can_prss      ! canopy pressure              [       Pa]
       real(kind=8), intent(in)  :: can_shv       ! canopy vapour spec humidity  [kg_vap/kg]
@@ -547,7 +583,6 @@ module ed_therm_lib
       real(kind=8), intent(out) :: ggsoil        ! Soil conductance for evap.   [      m/s]
       !----- Local variables --------------------------------------------------------------!
       integer                   :: nsoil         ! Soil type                    [     ----]
-      integer                   :: k             ! Index counter.               [     ----]
       real(kind=8)              :: slpotvn       ! soil water potential         [        m]
       real(kind=8)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
       real(kind=8)              :: beta          ! beta term  (Lee-Pielke,1992) [     ----]

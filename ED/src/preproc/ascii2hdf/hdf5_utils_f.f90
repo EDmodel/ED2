@@ -63,44 +63,6 @@ end subroutine shdf5_info_f
 
 !===============================================================================
 
-subroutine shdf5_io(action,ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
-                                              ,ivars,rvars,cvars,dvars,lvars)
-  use hdf5_coms
-  implicit none
-
-  character(len=*)           :: dsetname, action
-  integer                    :: ndims, dims(*)
-  integer,          optional :: ivara(*), ivars
-  real,             optional :: rvara(*), rvars
-  character(len=*), optional :: cvara(*), cvars
-  real(kind=8),     optional :: dvara(*), dvars
-  logical,          optional :: lvara(*), lvars
- 
-  ! THIS ROUTINE CALLS SHDF5_IREC OR SHDF5_OREC TO READ OR WRITE A VARIABLE
-  ! DEPENDING ON WHETHER 'ACTION' EQUALS 'READ' OR 'WRITE'
-
-  if (trim(action) == 'READ') then
-     
-     call shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
-          ,ivars,rvars,cvars,dvars,lvars)
-     
-  elseif (trim(action) == 'WRITE') then
-     
-     call shdf5_orec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
-          ,ivars,rvars,cvars,dvars,lvars)
-     
-  else
-     
-     print *, "Illegal action in shdf5_io."
-     print *, "Action should be 'READ' or 'WRITE'"
-     stop     "Ending model run"
-
-  endif
-  
-end subroutine shdf5_io
-
-! ========================================
-
 subroutine shdf5_open_f(locfn,access,idelete)
 
   use hdf5_coms

@@ -147,10 +147,10 @@ subroutine ed_masterput_nl(par_run)
                                    , writing_mont              & ! intent(in)
                                    , writing_dcyc              & ! intent(in)
                                    , writing_year              & ! intent(in)
-                                   , writing_long              & ! intent(in) 
+                                   , writing_long              & ! intent(in)
                                    , writing_eorq              & ! intent(in)
-                                   , history_fast              & ! intent(in) 
-                                   , history_dail              & ! intent(in) 
+                                   , history_fast              & ! intent(in)
+                                   , history_dail              & ! intent(in)
                                    , history_eorq              ! ! intent(in)
    use canopy_air_coms      , only : icanturb                  & ! intent(in)
                                    , isfclyrm                  & ! intent(in)
@@ -225,6 +225,10 @@ subroutine ed_masterput_nl(par_run)
                                    , maxcohort                 ! ! intent(in)
    use physiology_coms      , only : iphysiol                  & ! intent(in)
                                    , h2o_plant_lim             & ! intent(in)
+                                   , plant_hydro_scheme        & ! intent(in)
+                                   , istomata_scheme           & ! intent(in)
+                                   , istruct_growth_scheme     & ! intent(in)
+                                   , trait_plasticity_scheme   & ! intent(in)
                                    , iddmort_scheme            & ! intent(in)
                                    , cbr_scheme                & ! intent(in)
                                    , ddmort_const              & ! intent(in)
@@ -280,7 +284,6 @@ subroutine ed_masterput_nl(par_run)
                                    , sm_fire                   & ! intent(in)
                                    , time2canopy               & ! intent(in)
                                    , min_patch_area            ! ! intent(in)
-   use optimiz_coms         , only : ioptinpt                  ! ! intent(in)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(in)
    use canopy_radiation_coms, only : icanrad                   & ! intent(in)
                                    , ltrans_vis                & ! intent(in)
@@ -364,7 +367,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(outstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(unitfast,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(unitstate,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-                      
+
    call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
@@ -382,7 +385,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(slz ,nzgmax,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(stgoff,nzgmax,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slmstr,nzgmax,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   
+
    do n=1, maxgrds
       call MPI_Bcast(sfilin         (n),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
       call MPI_Bcast(veg_database   (n),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
@@ -405,7 +408,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(n_poi,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_ed_region,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(grid_type,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   
+
    call MPI_Bcast(grid_res,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lat,max_poi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lon,max_poi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -435,9 +438,9 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(igrass,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(radint,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)   
+   call MPI_Bcast(radint,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(radslp,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-      
+
    call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(crown_mod,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(icanrad,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -450,6 +453,10 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(clump_tree,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(clump_grass,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(h2o_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plant_hydro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(istomata_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(istruct_growth_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(trait_plasticity_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iddmort_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(cbr_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ddmort_const,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -515,7 +522,7 @@ subroutine ed_masterput_nl(par_run)
    end do
    call MPI_Bcast(ipmin,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ipmax,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   
+
    call MPI_Bcast(imettype,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ishuffle,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcyc1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -539,8 +546,6 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(min_site_area,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_patch_area,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
-  
-   call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(zrough,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -619,7 +624,7 @@ subroutine ed_masterput_met_header(par_run)
                              , no_ll             & ! intent(in)
                              , metname_len       & ! intent(in)
                              , metvars_len       ! ! intent(in)
-   
+
    implicit none
    !------ Pre-compiled options. ----------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -659,7 +664,7 @@ subroutine ed_masterput_met_header(par_run)
    do f=1,nformats
       call MPI_Bcast(met_names(f),metname_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    end do
-   
+
    call MPI_Bcast(met_nlon,nformats,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nlat,nformats,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_dx,nformats,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -668,14 +673,14 @@ subroutine ed_masterput_met_header(par_run)
    call MPI_Bcast(met_ymin,nformats,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nv,nformats,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(no_ll,nformats,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
-  
+
    do f=1,nformats
       do v=1,max_met_vars
          call MPI_Bcast(met_vars(f,v),metvars_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD     &
                        ,ierr)
       end do
    end do
-   
+
    call MPI_Bcast(met_frq,nsize,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_interp,nsize,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 #endif
@@ -757,7 +762,7 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
       write (unit=*,fmt='(a)') '  Thank you for choosing ED, the Ecosystem Demography Model!        '
       write (unit=*,fmt='(a)') 'We know that choosing a model is more than looking for a            '
       write (unit=*,fmt='(a)') 'numeric solver, it is an investment in your academic career.        '
-      write (unit=*,fmt='(a)') 'Therefore, it is our commitment to provide our valuable researchers ' 
+      write (unit=*,fmt='(a)') 'Therefore, it is our commitment to provide our valuable researchers '
       write (unit=*,fmt='(a)') 'with the very best in ecosystem dynamics modelling and we want to   '
       write (unit=*,fmt='(a)') 'reaffirm that your satisfaction is our number-one priority.         '
       write (unit=*,fmt='(a)') '  Unfortunately, the option of using parallelism under POI is not   '
@@ -768,11 +773,11 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
       write (unit=*,fmt='(a)') 'a fast and reliable model. Meanwhile you may find useful to run the '
       write (unit=*,fmt='(a)') 'SOI runs in serial mode instead.                                    '
       write (unit=*,fmt='(a)') '                                                                    '
-      write (unit=*,fmt='(a)') '--------------------------------------------------------------------' 
+      write (unit=*,fmt='(a)') '--------------------------------------------------------------------'
       call fatal_error('Parallel version of POI runs not available.'                       &
                       , 'ed_masterput_poly_dims','ed_mpass_init.F90')
    end if
-  
+
 
    !---------------------------------------------------------------------------------------!
    !     Now we decide how many polygons we send for each node.  If this is a serial       !
@@ -822,7 +827,7 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
          ! significantly less than the number of polygons.                                 !
          !---------------------------------------------------------------------------------!
          maxnmachs = ceiling(totalwork)
-         
+
          !---------------------------------------------------------------------------------!
          !     If nmachsmax is less than the number of machines, stop the run.  The MPI    !
          ! process contains way too many nodes, and this would be a waste of resources.    !
@@ -841,8 +846,8 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
             write (unit=*,fmt='(a)') ' try again...                                       '
             write (unit=*,fmt='(a)') '----------------------------------------------------'
             write (unit=*,fmt='(a,1x,i6)') ' # of requested slave nodes :',ntotmachs
-            write (unit=*,fmt='(a,1x,i6)') ' # of polygons              :',npolys 
-            write (unit=*,fmt='(a,1x,i6)') ' Max. # of nodes needed     :',maxnmachs 
+            write (unit=*,fmt='(a,1x,i6)') ' # of polygons              :',npolys
+            write (unit=*,fmt='(a,1x,i6)') ' Max. # of nodes needed     :',maxnmachs
             write (unit=*,fmt='(a)') '----------------------------------------------------'
             call fatal_error('Requested number of nodes exceeds the maximum needed.'       &
                             ,'ed_masterput_poly_dims','ed_mpass_init.F90')
@@ -904,7 +909,7 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
          ibest = minloc(maxload,dim=1)
 
          if(loadmeth>0) ibest = loadmeth
-         
+
          !----- Count how many polygons go to each node. ----------------------------------!
          do imach=1,ntotmachs
             mpolys(imach) = count(machind(:,ibest) == imach)
@@ -1040,11 +1045,11 @@ subroutine ed_masterput_worklist_info(par_run)
    real           , dimension(:), allocatable  :: rscratch
    integer        , dimension(:), allocatable  :: iscratch
    !---------------------------------------------------------------------------------------!
-   
+
 
 #if defined(RAMS_MPI)
    if (par_run == 1) then
-      
+
       do nm=1,nmachs
          do ifm=1,ngrids
 
@@ -1117,7 +1122,7 @@ subroutine ed_masterput_worklist_info(par_run)
    nm = nmachs+1
    allocate(sc_work(ngrids))
    do ifm=1,ngrids
-      
+
       npoly  = gdpy(nm,ifm)
       offset = py_off(nm,ifm)
       ipya   = offset + 1
@@ -1147,7 +1152,7 @@ subroutine ed_masterput_worklist_info(par_run)
    !     So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a       !
    ! serial run.                                                                           !
    !---------------------------------------------------------------------------------------!
-   call ed_memory_allocation(2*par_run) 
+   call ed_memory_allocation(2*par_run)
    allocate (work_v(ngrids))
    do ifm=1,ngrids
 
@@ -1174,7 +1179,7 @@ subroutine ed_masterput_worklist_info(par_run)
     deallocate(sc_work)
 
 
-   
+
    return
 end subroutine ed_masterput_worklist_info
 !==========================================================================================!
@@ -1205,14 +1210,14 @@ subroutine ed_nodeget_processid(init)
 
 #if defined(RAMS_MPI)
   if(init == 1) then
-     
+
      call MPI_Recv(master_num,1,MPI_INTEGER,0,311,MPI_COMM_WORLD,status,ierr)
      call MPI_Recv(mchnum,1,MPI_INTEGER,0,312,MPI_COMM_WORLD,status,ierr)
      call MPI_Recv(mynum,1,MPI_INTEGER,0,313,MPI_COMM_WORLD,status,ierr)
      call MPI_Recv(nmachs,1,MPI_INTEGER,0,314,MPI_COMM_WORLD,status,ierr)
      call MPI_Recv(machs,nmachs,MPI_INTEGER,0,315,MPI_COMM_WORLD,status,ierr)
      call MPI_Recv(nnodetot,1,MPI_INTEGER,0,316,MPI_COMM_WORLD,status,ierr)
-     
+
      recvnum = mynum-1
      sendnum = mynum+1
      if (mynum == nmachs) sendnum=0
@@ -1311,10 +1316,10 @@ subroutine ed_nodeget_nl
                                    , writing_mont              & ! intent(out)
                                    , writing_dcyc              & ! intent(out)
                                    , writing_year              & ! intent(out)
-                                   , writing_long              & ! intent(out) 
+                                   , writing_long              & ! intent(out)
                                    , writing_eorq              & ! intent(out)
-                                   , history_fast              & ! intent(out) 
-                                   , history_dail              & ! intent(out) 
+                                   , history_fast              & ! intent(out)
+                                   , history_dail              & ! intent(out)
                                    , history_eorq              ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
@@ -1389,6 +1394,10 @@ subroutine ed_nodeget_nl
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
+                                   , plant_hydro_scheme        & ! intent(out)
+                                   , istomata_scheme           & ! intent(out)
+                                   , istruct_growth_scheme     & ! intent(out)
+                                   , trait_plasticity_scheme   & ! intent(out)
                                    , iddmort_scheme            & ! intent(out)
                                    , cbr_scheme                & ! intent(out)
                                    , ddmort_const              & ! intent(out)
@@ -1444,7 +1453,6 @@ subroutine ed_nodeget_nl
                                    , sm_fire                   & ! intent(out)
                                    , time2canopy               & ! intent(out)
                                    , min_patch_area            ! ! intent(out)
-   use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
                                    , ltrans_vis                & ! intent(out)
@@ -1526,7 +1534,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(outstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(unitfast,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(unitstate,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-                      
+
    call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
@@ -1540,13 +1548,13 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(isoilcol,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxclay,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxsand,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   
+
    call MPI_Bcast(slz ,nzgmax,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(stgoff,nzgmax,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slmstr,nzgmax,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   
- 
-   
+
+
+
    do n=1, maxgrds
       call MPI_Bcast(sfilin         (n),str_len,MPI_CHARACTER,master_num                   &
                     ,MPI_COMM_WORLD,ierr)
@@ -1575,7 +1583,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(n_poi,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_ed_region,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(grid_type,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   
+
    call MPI_Bcast(grid_res,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lat,max_poi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(poi_lon,max_poi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1606,8 +1614,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(radint,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(radslp,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)   
-   
+   call MPI_Bcast(radslp,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+
    call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(crown_mod,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(icanrad,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1620,6 +1628,10 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(clump_tree,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(clump_grass,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(h2o_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plant_hydro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(istomata_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(istruct_growth_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(trait_plasticity_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iddmort_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(cbr_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ddmort_const,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1685,7 +1697,7 @@ subroutine ed_nodeget_nl
    end do
    call MPI_Bcast(ipmin,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ipmax,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   
+
    call MPI_Bcast(imettype,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ishuffle,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcyc1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1709,18 +1721,15 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(min_site_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_patch_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
-  
-   call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-
    call MPI_Bcast(zrough,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   
+
    call MPI_Bcast(iadd_site_means  ,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iadd_patch_means ,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iadd_cohort_means,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   
+
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
+
    call MPI_Bcast(dt_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(yr1st_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(mon1st_census,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1787,7 +1796,7 @@ subroutine ed_nodeget_met_header()
 #endif
    integer             :: ierr, nsize,f,v
 
-   
+
 
 #if defined(RAMS_MPI)
 !----- First I get the scalars ------------------------------------------------------------!
@@ -1808,7 +1817,7 @@ subroutine ed_nodeget_met_header()
    allocate(met_frq(nformats, max_met_vars))
    allocate(met_interp(nformats, max_met_vars))
    allocate(no_ll(nformats))
-       
+
 !------------------------------------------------------------------------------------------!
 !   Here I need a MPI Barrier. I don't want the master sending information before the      !
 ! variables are allocated in this node.                                                    !
@@ -1818,7 +1827,7 @@ subroutine ed_nodeget_met_header()
    do f=1,nformats
      call MPI_Bcast(met_names(f),metname_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    end do
-   
+
    call MPI_Bcast(met_nlon,nformats,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nlat,nformats,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_dx,nformats,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1827,13 +1836,13 @@ subroutine ed_nodeget_met_header()
    call MPI_Bcast(met_ymin,nformats,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nv,nformats,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(no_ll, nformats, MPI_LOGICAL, master_num, MPI_COMM_WORLD, ierr)
-   
+
    do f=1,nformats
       do v=1,max_met_vars
          call MPI_Bcast(met_vars(f,v),metvars_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
       end do
    end do
-   
+
    call MPI_Bcast(met_frq,nsize,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_interp,nsize,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 #endif
@@ -1856,7 +1865,7 @@ subroutine ed_nodeget_poly_dims
 #endif
    integer :: ierr
    integer :: ifm,nm
-  
+
 #if defined(RAMS_MPI)
    do ifm=1,ngrids
       do nm=1,nmachs
@@ -1913,7 +1922,7 @@ subroutine ed_nodeget_worklist_info
    !---------------------------------------------------------------------------------------!
 
    do ifm=1,ngrids
-      
+
       npolygons = gdpy(mynum,ifm)
 
       !----- Allocate the work vectors elements. ------------------------------------------!
@@ -1965,75 +1974,3 @@ end subroutine ed_nodeget_worklist_info
 !==========================================================================================!
 !==========================================================================================!
 
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine mk_2_buff(a,b,n1,n2,m1,m2,i1,i2,j1,j2)
-  implicit none
-  integer :: n1,n2,m1,m2,i1,i2,j1,j2
-  real :: a(n1,n2),b(m1,m2)
-     
-     b(1:m1,1:m2)=a(i1:i2,j1:j2)
-
-  return
-end subroutine mk_2_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine mk_2p_buff(a,b,n1,n2,n3,m1,m2,m3,i1,i2,j1,j2)
-  implicit none
-  integer :: n1,n2,n3,m1,m2,m3,i1,i2,j1,j2
-  real :: a(n1,n2,n3),b(m1,m2,m3)
-     
-     b(1:m1,1:m2,1:m3)=a(i1:i2,j1:j2,1:n3)
-
-  return
-end subroutine mk_2p_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine mk_3_buff(a,b,n1,n2,n3,m1,m2,m3,i1,i2,j1,j2)
-  implicit none
-  integer :: n1,n2,n3,m1,m2,m3,i1,i2,j1,j2
-  real :: a(n1,n2,n3),b(m1,m2,m3)
-     
-     b(1:m1,1:m2,1:m3)=a(1:n1,i1:i2,j1:j2)
-
-  return
-end subroutine mk_3_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine mk_4_buff(a,b,n1,n2,n3,n4,m1,m2,m3,m4,i1,i2,j1,j2)
-  implicit none
-  integer :: n1,n2,n3,n4,m1,m2,m3,m4,i1,i2,j1,j2
-  real :: a(n1,n2,n3,m4),b(m1,m2,m3,m4)
-     
-     b(1:m1,1:m2,1:m3,1:m4)=a(1:n1,i1:i2,j1:j2,1:n4)
-
-  return
-end subroutine mk_4_buff
-!==========================================================================================!
-!==========================================================================================!

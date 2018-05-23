@@ -1,7 +1,0 @@
-<map id="canopy_air_coms::zoobukhov" name="canopy_air_coms::zoobukhov">
-<area shape="rect" id="node2" href="$namespacecanopy__air__coms.html#ab103fa081460babbe04c9a5a4699be5f" title="canopy_air_coms::psim" alt="" coords="266,5,426,32"/>
-<area shape="rect" id="node3" href="$namespacecanopy__air__coms.html#acedb0f66db4b79009a69e87c5fd3ed71" title="canopy_air_coms::psih" alt="" coords="268,56,424,83"/>
-<area shape="rect" id="node4" href="$namespacecanopy__air__coms.html#af8bc6f1d6999a4b614461cecb85c9b1b" title="canopy_air_coms::dpsimdzeta" alt="" coords="247,107,445,133"/>
-<area shape="rect" id="node5" href="$namespacecanopy__air__coms.html#a64552e0380fcb36366b5eb0f624241a3" title="canopy_air_coms::dpsihdzeta" alt="" coords="249,157,443,184"/>
-<area shape="rect" id="node6" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="307,208,385,235"/>
-</map>

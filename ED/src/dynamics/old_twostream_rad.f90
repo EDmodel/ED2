@@ -25,7 +25,6 @@ subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai,c
                                    , wood_scatter_nir        & ! intent(in)
                                    , wood_scatter_vis        & ! intent(in)
                                    , clumping_factor         & ! intent(in)
-                                   , orient_factor           & ! intent(in)
                                    , phi1                    & ! intent(in)
                                    , phi2                    & ! intent(in)
                                    , mu_bar                  & ! intent(in)
@@ -117,7 +116,6 @@ subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai,c
    real(kind=8), dimension(2*ncoh,5)              :: mastermat
    real(kind=8), dimension(2*ncoh,2*ncoh)         :: masmatcp
    real(kind=8)                                   :: albedo
-   real(kind=8)                                   :: cosz
    real(kind=8)                                   :: cosaoi
    real(kind=8)                                   :: eta
    real(kind=8)                                   :: zeta
@@ -137,8 +135,6 @@ subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai,c
    real(kind=8)                                   :: weight_wood
    real(kind=8)                                   :: proj_area
    real(kind=8)                                   :: snglscat_alb
-   real                                           :: uw_parhi_beam
-   real                                           :: uw_nirhi_beam
    !----- External functions. -------------------------------------------------------------!
    real(kind=4)                  , external       :: sngloff
    !---------------------------------------------------------------------------------------!
@@ -777,15 +773,13 @@ end subroutine mprove
 ! the two stream approach considering the size distribution of cohorts, acknowledging the  !
 ! effect of leaves, and, if that's the user's will, the branches.                          !
 !------------------------------------------------------------------------------------------!
-subroutine old_lw_two_stream(semgs,sT_grnd,rlong_top4,ncoh, pft,lai,wai,canopy_area        &
-                            ,leaf_temp,wood_temp,radprof_flip,tir_flip,dw_tirlo,uw_tirlo   &
-                            ,uw_tirhi)
+subroutine old_lw_two_stream(semgs,sT_grnd,rlong_top4,ncoh, pft,lai,wai,leaf_temp          &
+                            ,wood_temp,radprof_flip,tir_flip,dw_tirlo,uw_tirlo,uw_tirhi)
    use ed_max_dims           , only : n_radprof            ! ! intent(in)
    use canopy_radiation_coms , only : leaf_emiss_tir       & ! intent(in)
                                     , wood_emiss_tir       & ! intent(in)
                                     , leaf_backscatter_tir & ! intent(in)
                                     , wood_backscatter_tir & ! intent(in)
-                                    , clumping_factor      & ! intent(in)
                                     , mu_bar               ! ! intent(in)
    use consts_coms           , only : stefan8              & ! intent(in)
                                     , tiny_num8            ! ! intent(in)
@@ -801,7 +795,6 @@ subroutine old_lw_two_stream(semgs,sT_grnd,rlong_top4,ncoh, pft,lai,wai,canopy_a
    real(kind=8), dimension(ncoh)          , intent(in)    :: wai         ! Wood Area Index
    real(kind=8), dimension(ncoh)          , intent(in)    :: leaf_temp   ! Leaf temperature
    real(kind=8), dimension(ncoh)          , intent(in)    :: wood_temp   ! Leaf temperature
-   real(kind=8), dimension(ncoh)          , intent(in)    :: canopy_area ! canopy area
    real(kind=4), dimension(n_radprof,ncoh), intent(inout) :: radprof_flip
    real(kind=4), dimension(ncoh)          , intent(out)   :: tir_flip
    real(kind=4)                           , intent(out)   :: dw_tirlo

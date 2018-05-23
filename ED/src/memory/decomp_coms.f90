@@ -34,13 +34,13 @@ Module decomp_coms
    !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
    !                      reaches a maximum at around 38C (using the default parameters),  !
    !                      then quickly falls to zero at around 50C.                        !
+   !                  3.  Similar to option 0. Uses empirical moisture limit equation.     !
+   !                  4.  Similar to option 1. Uses empirical moisture limit equation.     !           
    !---------------------------------------------------------------------------------------!
    integer :: decomp_scheme
    !---------------------------------------------------------------------------------------!
    !=======================================================================================!
    !=======================================================================================!
-
-
 
 
    !=======================================================================================!
@@ -94,7 +94,7 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    !     Supply coefficient for nitrogen immobilization (1/day).                           !
    !---------------------------------------------------------------------------------------!
-   real :: N_immobil_supply_scale 
+   real :: N_immobil_supply_scale
    !---------------------------------------------------------------------------------------!
    !     Fraction of structural material that goes to coarse woody debris upon mortality.  !
    ! Note that currently CWD decomposed at a rate identical to structural soil C.          !
@@ -128,10 +128,11 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_ssc
    !---------------------------------------------------------------------------------------!
-   !     Labile fraction of leaves, fine roots and sapwood.                                !
+   !     Labile fraction of leaves, fine roots and sapwood. (parte non immediatamente      !
+   !     solubile che però a un certo punto diventa disponibile)                           !
    !     ([[MCD]].  Moved setting of values to initialize_pft_resp_params)                 !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: f_labile 
+   real, dimension(n_pft) :: f_labile
    !---------------------------------------------------------------------------------------!
 
 end Module decomp_coms

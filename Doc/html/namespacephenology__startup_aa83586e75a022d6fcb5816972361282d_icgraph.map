@@ -1,7 +1,0 @@
-<map id="phenology_startup::read_prescribed_phenology" name="phenology_startup::read_prescribed_phenology">
-<area shape="rect" id="node2" href="$namespacephenology__startup.html#abebba7585ef5aec3dd00f7cfa0b56067" title="phenology_startup::\lphenology_init" alt="" coords="233,23,369,65"/>
-<area shape="rect" id="node3" href="$ed__init_8_f90.html#a700ec73689c2c4dd726b318ed1a7fcf5" title="load_ecosystem_state" alt="" coords="417,5,571,32"/>
-<area shape="rect" id="node6" href="$ed__init__full__history_8_f90.html#aae7df21bdc388f535c22bf77f8acb93f" title="init_full_history_restart" alt="" coords="418,56,570,83"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="619,31,692,57"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="740,31,791,57"/>
-</map>

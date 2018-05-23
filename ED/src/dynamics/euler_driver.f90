@@ -9,6 +9,7 @@ subroutine euler_timestep(cgrid)
    use rk4_integ_utils
    use soil_respiration_module
    use photosyn_driv
+   use plant_hydro
    use rk4_misc
    use update_derived_props_module
    use rk4_coms              , only : integration_vars   & ! structure
@@ -149,7 +150,7 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
 
             !----- Compute current storage terms. -----------------------------------------!
-            call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+            call update_budget(csite,cpoly%lsl(isi),ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -164,25 +165,30 @@ subroutine euler_timestep(cgrid)
 
 
 
-            !------------------------------------------------------------------------------!
-            !     Set up the integration patch.                                            !
-            !------------------------------------------------------------------------------!
-            call copy_patch_init(csite,ipa,integration_buff(ibuff)%initp,patch_vels)
-            !------------------------------------------------------------------------------!
 
+            !----- Get plant water flow driven by plant hydraulics ------------------------!
+            !     This must be placed before canopy_photosynthesis because                 !
+            !  plant_hydro_driver needs fs_open from last timestep                         !
+            call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
+            !------------------------------------------------------------------------------!
 
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
-            call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                   &
+            call canopy_photosynthesis(csite,cmet,nzg,ipa                                  &
                                       ,cpoly%ntext_soil(:,isi)                             &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
             !------------------------------------------------------------------------------!
 
 
-
             !----- Compute root and heterotrophic respiration. ----------------------------!
             call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !     Set up the integration patch.                                            !
+            !------------------------------------------------------------------------------!
+            call copy_patch_init(csite,ipa,integration_buff(ibuff)%initp,patch_vels)
             !------------------------------------------------------------------------------!
 
 
@@ -236,7 +242,7 @@ subroutine euler_timestep(cgrid)
                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
                                ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
                                ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
-                               ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
+                               ,old_can_co2,old_can_rhos,old_can_prss)
             !------------------------------------------------------------------------------!
          end do patchloop
          !---------------------------------------------------------------------------------!
@@ -345,7 +351,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,is
    initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
    initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
    initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
-      
+
    !---------------------------------------------------------------------------------------!
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
@@ -441,7 +447,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
    real(kind=8)                            :: h                ! Current delta-t attempt
    real(kind=8)                            :: hnext            ! Next delta-t
    real(kind=8)                            :: qwfree           ! Free water internal energy
-   real(kind=8)                            :: wfreeb           ! Free water 
+   real(kind=8)                            :: wfreeb           ! Free water
    real(kind=8)                            :: errmax           ! Maximum error of this step
    real(kind=8)                            :: elaptime         ! Absolute elapsed time.
    !----- External function. --------------------------------------------------------------!
@@ -574,9 +580,9 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(ytemp,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(ytemp,h,csite,ipa)
+            call adjust_topsoil_properties(ytemp,h,csite)
             !----- ii. Make temporary surface water stable and positively defined. --------!
-            call adjust_sfcw_properties(nzg,nzs,ytemp,h,csite,ipa)
+            call adjust_sfcw_properties(nzg,nzs,ytemp,h,csite)
             !----- iii.  Update the diagnostic variables. ---------------------------------!
             call update_diagnostic_vars(ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
@@ -593,7 +599,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
             hnext = max(2.d0*hmin,hnext)
 
             call leaf_derivs(ytemp,dydx,csite,ipa,hnext,.false.)
-            
+
 
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
@@ -646,7 +652,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
                !----- Recompute the energy removing runoff --------------------------------!
                initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
 
-               call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,csite)
                call update_diagnostic_vars(initp,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
@@ -678,7 +684,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
          nsteps = i
          return
       end if
-      
+
       !----- Use hnext as the next substep ------------------------------------------------!
       h = hnext
    end do timesteploop

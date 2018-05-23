@@ -12,7 +12,6 @@ subroutine near_bare_ground_init(cgrid)
                              , allocate_sitetype ! ! subroutine
    use ed_misc_coms   , only : ied_init_mode     ! ! intent(in)
    use physiology_coms, only : n_plant_lim       ! ! intent(in)
-   use grid_coms      , only : nzg               ! ! intent(in)
 
    implicit none
 
@@ -80,9 +79,9 @@ subroutine near_bare_ground_init(cgrid)
          call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
       end do
       !----- Initialise some site-level variables. ----------------------------------------!
-      call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+      call init_ed_site_vars(cpoly)
    end do
-   
+
    !----- Last, but not the least, the polygons. ------------------------------------------!
    call init_ed_poly_vars(cgrid)
 
@@ -114,7 +113,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , sla                & ! intent(in)
                                  , hgt_min            & ! intent(in)
                                  , include_pft        & ! intent(in)
-                                 , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
                                  , include_pft_fp     & ! intent(in)
                                  , init_density       & ! intent(in)
@@ -219,7 +217,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%phenology_status(ico) = 0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
+         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
 
 
@@ -237,25 +235,21 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                               + cpatch%bsapwooda(ico)                      &
                                               + cpatch%bsapwoodb(ico))
 
-         !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
-
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+         cpatch%agb(ico) = ed_biomass(cpatch, ico)
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
 
+         !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
+         call area_indices(cpatch, ico)
+
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
                                      + cpatch%nplant(ico) * cpatch%agb(ico)
       end do pftloop
-      
+
       !------------------------------------------------------------------------------------!
       !     Since initial heights may not be constant, we must sort the cohorts.           !
       !------------------------------------------------------------------------------------!
@@ -287,11 +281,8 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
-                                 , hgt_min            & ! intent(in)
                                  , include_pft        & ! intent(in)
                                  , include_these_pft  & ! intent(in)
-                                 , include_pft_ag     & ! intent(in)
-                                 , init_density       & ! intent(in)
                                  , agf_bs             ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
@@ -334,9 +325,9 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                          ,'init_cohorts_by_layers','ed_nbg_init.f90')
       end if
 
-      !----- Assigning the PFT. -----------------------------------------------------------! 
+      !----- Assigning the PFT. -----------------------------------------------------------!
       ipft = include_these_pft(1)
-      
+
       !----- Perform cohort allocation. ---------------------------------------------------!
       call allocate_patchtype(cpatch,nlayers)
 
@@ -378,14 +369,10 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
 
          !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch, ico)
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+         cpatch%agb(ico) = ed_biomass(cpatch, ico)
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -395,7 +382,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
                                      + cpatch%nplant(ico) * cpatch%agb(ico)
       end do layerloop
-      
+
       !------------------------------------------------------------------------------------!
       !     Since initial heights may not be constant, we must sort the cohorts.           !
       !------------------------------------------------------------------------------------!
@@ -423,10 +410,8 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , patchtype          & ! structure
                                  , allocate_sitetype  & ! subroutine
                                  , allocate_patchtype ! ! subroutine
-   use ed_misc_coms       , only : ied_init_mode      & ! intent(in)
-                                 , ibigleaf           ! ! intent(in)
+   use ed_misc_coms       , only : ied_init_mode      ! ! intent(in)
    use physiology_coms    , only : n_plant_lim        ! ! intent(in)
-   use grid_coms          , only : nzg                ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
@@ -435,7 +420,6 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , hgt_max            & ! intent(in)
                                  , include_pft        & ! intent(in)
                                  , include_these_pft  & ! intent(in)
-                                 , include_pft_ag     & ! intent(in)
                                  , init_density       ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
@@ -469,7 +453,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
-         
+
          !-- Figure out how many patches (1 patch per pft), always primary vegetation. ----!
          select case (ied_init_mode)
          case (-1) !------ True bare ground simulation (absolute desert). -----------------!
@@ -478,14 +462,14 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
             mypfts = count(include_pft)
          end select
          csite%npatches = mypfts
-         
+
          call allocate_sitetype(csite,mypfts)
-         
+
          !----- Patch loop  ---------------------------------------------------------------!
          patchloop: do ipa=1, csite%npatches
             cpatch => csite%patch(ipa)
             ipft = include_these_pft(ipa)
-            
+
             csite%dist_type          (ipa) = 3
             csite%age                (ipa) = 0.0
             csite%area               (ipa) = 1.0 / mypfts
@@ -524,7 +508,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                call allocate_patchtype(cpatch,0)
             case default
                ico = 1
-            
+
                call allocate_patchtype(cpatch,1)
                !----- The PFT is the plant functional type. -------------------------------!
                cpatch%pft(ico)              = ipft
@@ -555,15 +539,10 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                             * cpatch%balive(ico) * salloci *(1.-agf_bs(ipft))
 
                !----- Find the initial area indices (LAI, WAI, CAI). ----------------------!
-               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)    &
-                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)      &
-                                ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)           &
-                                ,cpatch%wai(ico),cpatch%crown_area(ico)                    &
-                                ,cpatch%bsapwooda(ico))
+               call area_indices(cpatch, ico)
 
                !----- Find the above-ground biomass and basal area. -----------------------!
-               cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)            &
-                                           ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+               cpatch%agb(ico) = ed_biomass(cpatch, ico)
                cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
                !----- Initialize other cohort-level variables. ----------------------------!
@@ -574,14 +553,14 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                            + cpatch%nplant(ico) * cpatch%agb(ico)
             end select
          end do patchloop
-         
+
          !----- Initialise the patches now that cohorts are there. ------------------------!
          call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
       end do siteloop
       !----- Initialise some site-level variables. ----------------------------------------!
-      call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+      call init_ed_site_vars(cpoly)
    end do polyloop
-   
+
    !----- Last, but not the least, the polygons. ------------------------------------------!
    call init_ed_poly_vars(cgrid)
 

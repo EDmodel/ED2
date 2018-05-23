@@ -263,6 +263,11 @@ farq_leuning.o : $(ED_DYNAMICS)/farq_leuning.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+farq_katul.o : $(ED_DYNAMICS)/farq_katul.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 fatal_error.o : $(ED_UTILS)/fatal_error.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
@@ -292,11 +297,6 @@ patch_pft_size_profile_mod.o : $(ED_UTILS)/patch_pft_size_profile_mod.F90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
-
-great_circle.o : $(ED_UTILS)/great_circle.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
 
 grid_coms.o : $(ED_MEMORY)/grid_coms.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -403,11 +403,6 @@ old_twostream_rad.o : $(ED_DYNAMICS)/old_twostream_rad.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-optimiz_coms.o : $(ED_MEMORY)/optimiz_coms.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
-
 phenology_aux.o : $(ED_DYNAMICS)/phenology_aux.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -432,6 +427,11 @@ photosyn_driv.o : $(ED_DYNAMICS)/photosyn_driv.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
+
+plant_hydro.o : $(ED_DYNAMICS)/plant_hydro.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
 
 physiology_coms.o : $(ED_MEMORY)/physiology_coms.f90
 	cp -f $< $(<F:.f90=.f90)

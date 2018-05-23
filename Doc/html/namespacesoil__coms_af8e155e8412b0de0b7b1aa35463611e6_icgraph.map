@@ -1,5 +1,0 @@
-<map id="soil_coms::find_soil_class" name="soil_coms::find_soil_class">
-<area shape="rect" id="node2" href="$ed__load__namelist_8f90.html#a6c55a5dcbe1f908f9e2599d577e8a2d2" title="copy_nl" alt="" coords="189,13,256,39"/>
-<area shape="rect" id="node3" href="$ed__1st_8_f90.html#a68fd3739f8d8de8d87a9a887e3b30c32" title="ed_1st_master" alt="" coords="304,13,412,39"/>
-<area shape="rect" id="node4" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="460,13,511,39"/>
-</map>

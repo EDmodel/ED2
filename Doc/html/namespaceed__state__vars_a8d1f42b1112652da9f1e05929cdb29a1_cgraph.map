@@ -1,8 +1,0 @@
-<map id="ed_state_vars::copy_patchtype_mask" name="ed_state_vars::copy_patchtype_mask">
-<area shape="rect" id="node2" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="240,5,319,32"/>
-<area shape="rect" id="node3" href="$namespaceed__state__vars.html#aa9c50f14b3b7cdf0b27019486921c8dd" title="ed_state_vars::copy\l_patchtype_mask_inst" alt="" coords="203,57,356,98"/>
-<area shape="rect" id="node4" href="$namespaceed__state__vars.html#a1b0d514260b90af76ca01eb35453722a" title="ed_state_vars::copy\l_patchtype_mask_fmean" alt="" coords="196,122,363,163"/>
-<area shape="rect" id="node5" href="$namespaceed__state__vars.html#afdb52860e9dff4bb1917d54009d84d68" title="ed_state_vars::copy\l_patchtype_mask_dmean" alt="" coords="194,187,365,229"/>
-<area shape="rect" id="node6" href="$namespaceed__state__vars.html#a35a0142a5bd5bfb026012c1e9c38dbf5" title="ed_state_vars::copy\l_patchtype_mask_mmean" alt="" coords="192,253,367,294"/>
-<area shape="rect" id="node7" href="$namespaceed__state__vars.html#a4fb10d3b10b1c5d40c2c36d89c8121ee" title="ed_state_vars::copy\l_patchtype_mask_qmean" alt="" coords="194,318,365,359"/>
-</map>

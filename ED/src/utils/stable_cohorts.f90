@@ -23,7 +23,6 @@ subroutine flag_stable_cohorts(cgrid)
    integer                     :: isi           ! Site index
    integer                     :: ipa           ! Patch index
    integer                     :: ico           ! Cohort index
-   integer                     :: k             ! Vertical index
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy=1, cgrid%npolygons
@@ -72,7 +71,6 @@ end subroutine flag_stable_cohorts
 subroutine is_resolvable(csite,ipa,ico)
    use ed_state_vars , only : sitetype        & ! structure
                             , patchtype       ! ! structure
-   use phenology_coms, only : elongf_min      ! ! intent(in)
    use pft_coms      , only : veg_hcap_min    ! ! intent(in)
    use ed_max_dims   , only : n_pft           ! ! intent(in)
 

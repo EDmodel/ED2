@@ -45,24 +45,25 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   ! IPHYSIOL --  This variable will determine the functional form that will control how   !
-   !              the various parameters will vary with temperature, and how the CO2       !
-   !              compensation point for gross photosynthesis (Gamma*) will be found.      !
-   !              Options are:                                                             !
-   !                                                                                       !
-   ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
-   !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
-   !      Foley et al. (1996).                                                             !
-   ! 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        !
-   !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
-   ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
-   !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
-   !      correction for high and low temperatures are the same as in Moorcroft et al.     !
-   !      (2001).                                                                          !
-   ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
-   !---------------------------------------------------------------------------------------!
    integer                :: iphysiol 
+   !---------------------------------------------------------------------------------------!
+   !<IPHYSIOL --  This variable will determine the functional form that will control how
+   !< the various parameters will vary with temperature, and how the CO2
+   !< compensation point for gross photosynthesis (Gamma*) will be found.
+   !< Options are:\n
+   !<
+   !< 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   \n
+   !<      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     \n
+   !<      Foley et al. (1996).                                                             \n
+   !< 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        \n
+   !<      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            \n
+   !< 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    \n
+   !<      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   \n
+   !<      correction for high and low temperatures are the same as in Moorcroft et al.     \n
+   !<      (2001).                                                                          \n
+   !< 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   \n
+   !< 4 -- Use "Arrhenius" function as in Harley et al. (1991). This has to be run with     \n
+   !<      ISTOMATA_SCHEME = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -75,27 +76,76 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   ! H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by       !
-   !                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply). !
-   !                                                                                       !
-   !                  Demand is always the transpiration rates in case soil moisture is    !
-   !                  not limiting (the psi_0 term times LAI).  The supply is determined   !
-   !                  by Kw * nplant * Broot * Available_Water, and the definition of      !
-   !                  available water changes depending on H2O_PLANT_LIM:                  !
-   !                  0.  Force FSW = 1 (effectively available water is infinity).         !
-   !                  1.  Available water is the total soil water above wilting point,     !
-   !                      integrated across all layers within the rooting zone.            !
-   !                  2.  Available water is the soil water at field capacity minus        !
-   !                      wilting point, scaled by the so-called wilting factor:           !
-   !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
-   !                      where psi is the matric potentital at layer k, z is the layer    !
-   !                      depth, H it the crown height and psi_fc and psi_wp are the       !
-   !                      matric potentials at wilting point and field capacity.           !
-   !---------------------------------------------------------------------------------------!
    integer               :: h2o_plant_lim 
    !---------------------------------------------------------------------------------------!
+   !< H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by      \n
+   !<                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply).\n
+   !<                                                                                      \n
+   !<                  Demand is always the transpiration rates in case soil moisture is   \n
+   !<                  not limiting (the psi_0 term times LAI).  The supply is determined  \n
+   !<                  by Kw * nplant * Broot * Available_Water, and the definition of     \n
+   !<                  available water changes depending on H2O_PLANT_LIM:                 \n
+   !<                  0.  Force FSW = 1 (effectively available water is infinity).        \n
+   !<                  1.  Available water is the total soil water above wilting point,    \n
+   !<                      integrated across all layers within the rooting zone.           \n
+   !<                  2.  Available water is the soil water at field capacity minus       \n
+   !<                      wilting point, scaled by the so-called wilting factor:          \n
+   !<                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)              \n
+   !<                      where psi is the matric potentital at layer k, z is the layer   \n
+   !<                      depth, H it the crown height and psi_fc and psi_wp are the      \n
+   !<                      matric potentials at wilting point and field capacity.          \n
+   !<                  3.  Use leaf water potential to modify fsw following Powell et al.  \n
+   !<                      2017. Need to set PLANT_HYDRO_SCHEME to non-zero values         \n
+   !<                  4.  Use leaf water potential to modify Optimization-based stomatal  \n
+   !<                      model following Xu et al. 2016. Need to set PLANT_HYDRO_SCHEME  \n
+   !<                      to non-zero values and set ISTOMATA_SCHEME to 1.                \n
+   !---------------------------------------------------------------------------------------!
 
+   integer               :: istruct_growth_scheme
+   !---------------------------------------------------------------------------------------!
+   !< ISTRUCT_GROWTH_SCHEME -- Different methods to perform structural growth.\n
+   !<                          0. Use all bstorage (default by ED2.2 and before) \n
+   !<                          1. Reserve bstorage to reflush the whole canopy and
+   !< fine roots once before calculating structural growth. This helps to give
+   !< deciduous PFTs enough carbon to flush new leaves when growing season comes
+   !---------------------------------------------------------------------------------------!
+
+   integer               :: istomata_scheme
+   !---------------------------------------------------------------------------------------!
+   !< ISTOMATA_SCHEME -- Which stomatal conductance model to use.\n
+   !<                    0. Leuning (default by ED2.2 and before) \n
+   !<                    1. Katul's optimization based (see Xu et al. 2016)\n
+   !---------------------------------------------------------------------------------------!
+
+
+   integer               :: plant_hydro_scheme
+   !---------------------------------------------------------------------------------------!
+   !< PLANT_HYDRO_SCHEME -- Whether to track plant hydrodynamics.\n
+   !<                       0. No hydraulics (leaf and wood are always saturated)\n
+   !<                       1. Track plant hydrodynamics using parameters from
+   !<  Christofferson et al. 2016 GMD\n
+   !<                       2. Track plant hydrodynamics using parameters from
+   !<  Xu et al. 2016 New Phytologist\n
+   !<                      -1. Same as 1 but leaf/wood heat capacity does not
+   !< change with internal water content.
+   !<                      -2. Same as 2 but leaf/wood heat capacity does not
+   !< change with internal water content.
+   !---------------------------------------------------------------------------------------!
+
+   integer               :: trait_plasticity_scheme
+   !---------------------------------------------------------------------------------------!
+   !< TRAIT_PLASTICITY_SCHEME -- Whether/How plant traits vary with local environment.\n
+   !<                            0. No trait plasticity. Trait parameters for
+   !< each PFT is fixed. (ED2.2 and before).\n
+   !<                            1. Vm0 and SLA change with cohort light environment based
+   !< on Lloyld et al. 2010 Biogeosciences. For each cohort, Vm0 decreases and SLA increases
+   !< under shading. The magnitude of changes is calcualted using overtopping
+   !< LAI and corresponding extinction facotrs for each trait. The traits for
+   !< each cohort are updated every year.\n
+   !<                            2. Same as 1 but the traits are updated every month.\n
+   !<                           -1. Same as 1 but use height to adjust SLA\n
+   !<                           -2. Same as 2 but use height to adjust SLA\n
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

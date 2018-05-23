@@ -137,6 +137,10 @@ module ename_coms
       integer                                           :: ivegt_dynamics
       integer                                           :: ibigleaf
       integer                                           :: integration_scheme
+      integer                                           :: plant_hydro_scheme
+      integer                                           :: istomata_scheme
+      integer                                           :: istruct_growth_scheme
+      integer                                           :: trait_plasticity_scheme
       integer                                           :: growth_resp_scheme
       integer                                           :: storage_resp_scheme
       real                                              :: rk4_tolerance
@@ -258,9 +262,6 @@ module ename_coms
       integer                                           :: maxcohort
       real                                              :: min_site_area
       real                                              :: min_patch_area
-
-      !----- Directory for optimizer inputs. ----------------------------------------------!
-      character(len=str_len)                            :: ioptinpt
 
       !----- Roughness length. ------------------------------------------------------------!
       real                                              :: zrough
@@ -406,6 +407,10 @@ module ename_coms
       enl%ivegt_dynamics            = undef_integer
       enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
+      enl%plant_hydro_scheme        = undef_integer
+      enl%istomata_scheme           = undef_integer
+      enl%istruct_growth_scheme     = undef_integer
+      enl%trait_plasticity_scheme   = undef_integer
       enl%growth_resp_scheme        = undef_integer
       enl%storage_resp_scheme       = undef_integer
       enl%rk4_tolerance             = undef_real
@@ -523,7 +528,6 @@ module ename_coms
       enl%min_site_area             = undef_real
       enl%min_patch_area            = undef_real
 
-      enl%ioptinpt                  = undef_path
       enl%zrough                    = undef_real
       enl%edres                     = undef_real 
 

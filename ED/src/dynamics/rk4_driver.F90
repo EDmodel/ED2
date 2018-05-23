@@ -15,14 +15,14 @@ module rk4_driver
       use rk4_integ_utils
       use soil_respiration_module
       use photosyn_driv
+      use plant_hydro
       use rk4_misc
       use update_derived_props_module
       use rk4_coms               , only : integration_vars     & ! structure
                                         , rk4patchtype         & ! structure
                                         , zero_rk4_patch       & ! subroutine
                                         , zero_rk4_cohort      & ! subroutine
-                                        , integration_buff     & ! intent(out)
-                                        , rk4site              ! ! intent(out)
+                                        , integration_buff     ! ! intent(out)
       use ed_state_vars          , only : edtype               & ! structure
                                         , polygontype          & ! structure
                                         , sitetype             & ! structure
@@ -85,7 +85,7 @@ module rk4_driver
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
 
-      
+
 
 
       polygonloop: do ipy = 1,cgrid%npolygons
@@ -203,7 +203,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
 
                !----- Compute current storage terms. --------------------------------------!
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
 
 
@@ -216,16 +216,16 @@ module rk4_driver
                end if
                !---------------------------------------------------------------------------!
 
-               !---------------------------------------------------------------------------!
-               !     Set up the integration patch.                                         !
-               !---------------------------------------------------------------------------!
-               call copy_patch_init(csite,ipa,initp,patch_vels)
+
+               !----- Get plant water flow driven by plant hydraulics ---------------------!
+               !     This must be placed before canopy_photosynthesis because              !
+               !  plant_hydro_driver needs fs_open from last timestep                      !
+               call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
                !---------------------------------------------------------------------------!
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                &
-                                         ,cpoly%ntext_soil(:,isi)                          &
+               call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%ntext_soil(:,isi)       &
                                          ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%green_leaf_factor(:,isi))
                !---------------------------------------------------------------------------!
@@ -235,6 +235,11 @@ module rk4_driver
                call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
                !---------------------------------------------------------------------------!
 
+               !---------------------------------------------------------------------------!
+               !     Set up the integration patch.                                         !
+               !---------------------------------------------------------------------------!
+               call copy_patch_init(csite,ipa,initp,patch_vels)
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
@@ -255,7 +260,7 @@ module rk4_driver
 
 
                !----- Add the number of steps into the step counter. ----------------------!
-               !----- workload accumulation is order-independent, so this can stay shared 
+               !----- workload accumulation is order-independent, so this can stay shared
                cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
                !---------------------------------------------------------------------------!
 
@@ -277,8 +282,7 @@ module rk4_driver
                                   ,co2curr_loss2atm,wcurr_loss2drainage                    &
                                   ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
                                   ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_enthalpy &
-                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp       &
-                                  ,old_can_prss)
+                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_prss)
                !---------------------------------------------------------------------------!
             end do patchloop
             !$OMP END PARALLEL DO
@@ -310,18 +314,12 @@ module rk4_driver
       use rk4_integ_utils
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
-      use ed_misc_coms    , only : dtlsm                ! ! intent(in)
-      use soil_coms       , only : soil_rough           & ! intent(in)
-                                 , snow_rough           ! ! intent(in)
-      use canopy_air_coms , only : exar8                ! ! intent(in)
       use rk4_coms        , only : integration_vars     & ! structure
                                  , rk4patchtype         & ! structure
-                                 , rk4site              & ! intent(inout)
                                  , zero_rk4_patch       & ! subroutine
                                  , zero_rk4_cohort      & ! subroutine
                                  , tbeg                 & ! intent(inout)
                                  , tend                 & ! intent(inout)
-                                 , dtrk4                & ! intent(inout)
                                  , dtrk4i               ! ! intent(inout)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -373,8 +371,8 @@ module rk4_driver
       initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
       initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
       initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
-      
-      
+
+
       !------------------------------------------------------------------------------------!
       ! Move the state variables from the integrated patch to the model patch.             !
       !------------------------------------------------------------------------------------!
@@ -405,16 +403,16 @@ module rk4_driver
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
                                       , rk4max_veg_temp      & ! intent(in)
-                                      , tiny_offset          & ! intent(in) 
+                                      , tiny_offset          & ! intent(in)
                                       , checkbudget          & ! intent(in)
                                       , ibranch_thermo       ! ! intent(in)
       use ed_state_vars        , only : sitetype             & ! structure
-                                      , patchtype            & ! structure
-                                      , edgrid_g             ! ! structure
+                                      , patchtype            ! ! structure
       use consts_coms          , only : day_sec              & ! intent(in)
                                       , t3ple                & ! intent(in)
                                       , t3ple8               & ! intent(in)
-                                      , wdns8                ! ! intent(in)
+                                      , wdns8                & ! intent(in)
+                                      , cliq8                ! ! intent(in)
       use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
                                       , writing_long         & ! intent(in)
                                       , dtlsm                & ! intent(in)
@@ -431,9 +429,12 @@ module rk4_driver
                                       , cmtl2uext            & ! subroutine
                                       , qslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
-      use allometry            , only : h2crownbh            ! ! function
+      use allometry            , only : h2crownbh            & ! function
+                                      , dbh2sf               ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
                                       , k_fire_first         ! ! intent(in)
+      use plant_hydro          , only : tw2rwc               ! ! subroutine
+      use physiology_coms      , only : plant_hydro_scheme
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -717,7 +718,7 @@ module rk4_driver
                                 + sngl(available_water)*sngl(hdid)/tendays_sec
          end do
       end if
-      
+
       do k = rk4site%lsl, nzg
          csite%soil_water  (k,ipa) = sngloff(initp%soil_water  (k),tiny_offset)
          csite%soil_mstpot (k,ipa) = sngloff(initp%soil_mstpot (k),tiny_offset)
@@ -725,10 +726,10 @@ module rk4_driver
          csite%soil_tempk  (k,ipa) = sngloff(initp%soil_tempk  (k),tiny_offset)
          csite%soil_fracliq(k,ipa) = sngloff(initp%soil_fracliq(k),tiny_offset)
       end do
-      
+
 
       !------------------------------------------------------------------------------------!
-      !    Surface water energy is computed in J/m² inside the integrator. Convert it back !
+      !    Surface water energy is computed in J/mï¿½ inside the integrator. Convert it back !
       ! to J/kg in the layers that surface water/snow still exists.                        !
       !------------------------------------------------------------------------------------!
       csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
@@ -770,6 +771,45 @@ module rk4_driver
       ! snow.                                                                              !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+         !---------------------------------------------------------------------------------!
+         ! First, update variables related with plant hydrodynamics because it can 
+         ! change leaf/wood heat capacity, which will be used later 
+         !---------------------------------------------------------------------------------!
+         select case (plant_hydro_scheme)
+         case (-2,-1,1,2)
+             ! Need to update leaf_water_int and wood_water_int 
+             cpatch%leaf_water_int(ico) = sngloff( initp%leaf_water_int(ico)               &
+                                                 / dble(cpatch%nplant(ico)),tiny_offset)
+             cpatch%wood_water_int(ico) = sngloff( initp%wood_water_int(ico)               &
+                                                 / dble(cpatch%nplant(ico)),tiny_offset)
+
+             ! update heat capacity only when plant_hydro_scheme > 0
+             if (plant_hydro_scheme > 0) then
+                 cpatch%leaf_hcap(ico) = sngloff(initp%leaf_hcap(ico),tiny_offset)
+                 cpatch%wood_hcap(ico) = sngloff(initp%wood_hcap(ico),tiny_offset)
+             endif
+
+
+             !----------------------------------------------------------------------!
+             ! update rwc since it will be used to update leaf/wood hcap
+             !----------------------------------------------------------------------!
+
+             call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
+                        ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)       &
+                        ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)     &
+                        ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+
+             
+             ! leaf and wood psi are updated in plant_hydro_driver of 
+             ! dynamics/plant_hydro.f90 for consistency reasons, see the file
+             ! for details
+             ! 
+
+         end select
+
+
+
+
          select case (ibranch_thermo)
          case (1)
             !------------------------------------------------------------------------------!
@@ -1197,7 +1237,7 @@ module rk4_driver
                else
                   cpatch%leaf_fliq(ico)   = 0.0
                end if
-               cpatch%leaf_water(ico)  = 0. 
+               cpatch%leaf_water(ico)  = 0.
                cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
                                                   , cpatch%leaf_water(ico)                 &
                                                   , cpatch%leaf_temp (ico)                 &

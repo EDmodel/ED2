@@ -92,6 +92,10 @@ subroutine copy_nl(copy_type)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
+                                   , plant_hydro_scheme        & ! intent(out)
+                                   , istomata_scheme           & ! intent(out)
+                                   , istruct_growth_scheme     & ! intent(out)
+                                   , trait_plasticity_scheme   & ! intent(out)
                                    , iddmort_scheme            & ! intent(out)
                                    , cbr_scheme                & ! intent(out)
                                    , ddmort_const              & ! intent(out)
@@ -242,7 +246,6 @@ subroutine copy_nl(copy_type)
                                    , tprandtl                  & ! intent(out)
                                    , ribmax                    & ! intent(out)
                                    , leaf_maxwhc               ! ! intent(out)
-   use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
                                    , ltrans_vis                & ! intent(out)
@@ -367,6 +370,10 @@ subroutine copy_nl(copy_type)
       ivegt_dynamics            = nl%ivegt_dynamics
       ibigleaf                  = nl%ibigleaf
       integration_scheme        = nl%integration_scheme
+      plant_hydro_scheme        = nl%plant_hydro_scheme
+      istomata_scheme           = nl%istomata_scheme
+      istruct_growth_scheme     = nl%istruct_growth_scheme
+      trait_plasticity_scheme   = nl%trait_plasticity_scheme
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol
@@ -479,7 +486,6 @@ subroutine copy_nl(copy_type)
       maxcohort                 = nl%maxcohort
       min_site_area             = nl%min_site_area
       min_patch_area            = nl%min_patch_area
-      ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
 
       dt_census                 = nl%dt_census

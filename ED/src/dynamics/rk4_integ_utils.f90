@@ -16,24 +16,17 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
                              , polygontype
    use rk4_coms       , only : integration_vars       & ! structure
                              , integration_buff       & ! intent(inout)
-                             , rk4site                & ! intent(in)
-                             , rk4tiny_sfcw_mass      & ! intent(in)
                              , maxstp                 & ! intent(in)
                              , tbeg                   & ! intent(in)
                              , tend                   & ! intent(in)
                              , dtrk4                  & ! intent(in)
-                             , dtrk4i                 & ! intent(in)
                              , tiny_offset            & ! intent(in)
                              , checkbudget            & ! intent(in)
-                             , print_detailed         & ! intent(in)
                              , norm_rk4_fluxes        ! ! sub-routine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
-   use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
                              , nzs                    ! ! intent(in)
-   use soil_coms      , only : dslz8                  & ! intent(in)
-                             , runoff_time            & ! intent(in)
-                             , runoff_time_i          &
+   use soil_coms      , only : runoff_time_i          &
                              , simplerunoff
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
    use therm_lib8     , only : tl2uint8               ! ! intent(in)
@@ -136,7 +129,7 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
                integration_buff(ibuff)%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff(ibuff)%y%sfcwater_energy(ksn) - qwfree
 
-               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,csite)
                call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
@@ -242,8 +235,7 @@ subroutine copy_met_2_rk4site(mzg,                                            &
 
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
-   use canopy_air_coms, only : ubmin8        & ! intent(in)
-                             , ustmin8       ! ! intent(in) 
+   use canopy_air_coms, only : ustmin8       ! ! intent(in)
    use therm_lib8     , only : rehuil8       & ! function
                              , reducedpress8 & ! function
                              , tq2enthalpy8  & ! function
@@ -368,8 +360,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
                             , rk4site            & ! intent(in)
                             , checkbudget        & ! intent(in)
                             , print_detailed     ! ! intent(in)
-   use grid_coms     , only : nzg                & ! intent(in)
-                            , nzs                ! ! intent(in)
+   use grid_coms     , only : nzg                ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics   ! ! intent(in)
    implicit none
 
@@ -412,8 +403,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
    do ico = 1,cpatch%ncohorts
       rkp%leaf_water (ico) = rkp%leaf_water (ico) + fac * inc%leaf_water (ico)
+      rkp%leaf_water_int(ico) = rkp%leaf_water_int  (ico) + fac * inc%leaf_water_int (ico)
       rkp%leaf_energy(ico) = rkp%leaf_energy(ico) + fac * inc%leaf_energy(ico)
       rkp%wood_water (ico) = rkp%wood_water (ico) + fac * inc%wood_water (ico)
+      rkp%wood_water_int(ico) = rkp%wood_water_int  (ico) + fac * inc%wood_water_int (ico)
       rkp%wood_energy(ico) = rkp%wood_energy(ico) + fac * inc%wood_energy(ico)
       rkp%veg_water (ico)  = rkp%veg_water  (ico) + fac * inc%veg_water  (ico)
       rkp%veg_energy(ico)  = rkp%veg_energy (ico) + fac * inc%veg_energy (ico)
@@ -580,6 +573,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    use consts_coms          , only : wdnsi8                ! ! intent(in)
    use soil_coms            , only : isoilbc               & ! intent(in)
                                    , dslzi8                ! ! intent(in)
+   use physiology_coms      , only : plant_hydro_scheme    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype), target     :: y                     ! Struct. with the guesses
@@ -732,6 +726,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    ! scale, thus preventing unecessary small steps.                                        !
    !    Also, if the cohort has almost no water, make the scale less strict.               !
    !---------------------------------------------------------------------------------------!
+
    select case (ibranch_thermo)
    case (1)
       !----- Combined leaf+wood solution. -------------------------------------------------!
@@ -823,6 +818,34 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       end do
    end select
    !---------------------------------------------------------------------------------------!
+
+   select case (plant_hydro_scheme)
+   case (0)
+       ! did not track plant hydraulics, make changes in internal water always
+       ! acceptable
+       do ico=1,cpatch%ncohorts
+           yscal%leaf_water_int(ico)    = huge_offset
+           yscal%wood_water_int(ico)    = huge_offset
+       enddo
+   case (-2,-1,1,2)
+       ! We do track plant hydraulics
+       ! calculate the scale simiarly to leaf/wood energy
+       do ico=1,cpatch%ncohorts
+           if (yscal%leaf_resolvable(ico)) then
+               yscal%leaf_water_int(ico) = abs( y%leaf_water_int(ico))                     &
+                                         + abs(dy%leaf_water_int(ico) * htry )
+           else
+               yscal%leaf_water_int(ico)    = huge_offset
+           endif
+
+           if (yscal%wood_resolvable(ico)) then
+               yscal%wood_water_int(ico) = abs( y%wood_water_int(ico))                     &
+                                         + abs(dy%wood_water_int(ico) * htry)
+           else
+               yscal%wood_water_int(ico)    = huge_offset
+           endif
+       enddo
+   end select
 
 
 
@@ -1091,6 +1114,35 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    end select
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     Leaf/wood internal water pool                                                     !
+   !---------------------------------------------------------------------------------------!
+   ! leaf
+   errh2oMAX  = 0.d0
+   do ico = 1,cpatch%ncohorts
+      if (yscal%leaf_resolvable(ico)) then
+         errh2o     = abs(yerr%leaf_water_int (ico) / yscal%leaf_water_int (ico))
+         errmax     = max(errmax,errh2o)
+         errh2oMAX  = max(errh2oMAX ,errh2o )
+      end if
+   end do
+   if(cpatch%ncohorts > 0 .and. record_err) then
+      if (errh2oMAX  > rk4eps) integ_err(22,1) = integ_err(22,1) + 1_8
+   end if
+   ! wood
+   errh2oMAX  = 0.d0
+   do ico = 1,cpatch%ncohorts
+      if (yscal%wood_resolvable(ico)) then
+         errh2o     = abs(yerr%wood_water_int (ico) / yscal%wood_water_int (ico))
+         errmax     = max(errmax,errh2o)
+         errh2oMAX  = max(errh2oMAX ,errh2o )
+      end if
+   end do
+   if(cpatch%ncohorts > 0 .and. record_err) then
+      if (errh2oMAX  > rk4eps) integ_err(23,1) = integ_err(23,1) + 1_8
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Virtual pool.                                                                     !
@@ -1217,11 +1269,9 @@ subroutine initialize_rk4patches(init)
                             , allocate_rk4_aux      & ! structure
                             , allocate_bdf2_patch   &
                             , deallocate_bdf2_patch & 
-                            , rk4aux                &
-                            , rk4site
+                            , rk4aux
 
-   use canopy_layer_coms,only : canstr              & 
-                              , alloc_canopy_layer_mbs &
+   use canopy_layer_coms,only : alloc_canopy_layer_mbs &
                               , tai_lyr_max          ! ! intent(in)
    use ed_misc_coms  , only : integration_scheme,    & ! intent(in)
                               ibigleaf
@@ -1568,7 +1618,6 @@ end subroutine initialize_rk4patches
 !        this.  It would overwrite in case of multiple sites per run, but I fixed this.    !
 !------------------------------------------------------------------------------------------!
 subroutine initialize_misc_stepvars()
-   use ed_misc_coms  , only  : integration_scheme  ! ! intent(in)
    use rk4_coms      , only  : tbeg                & ! intent(inout)
                              , tend                & ! intent(inout)
                              , dtrk4               & ! intent(inout)
@@ -1714,7 +1763,6 @@ end subroutine initialize_misc_stepvars
                                , pgrow               & ! intent(in)
                                , pshrnk              & ! intent(in)
                                , errcon              & ! intent(in)
-                               , print_diags         & ! intent(in)
                                , print_detailed      & ! intent(in)
                                , norm_rk4_fluxes     & ! intent(in)
                                , reset_rk4_fluxes    ! ! intent(in)
@@ -1735,7 +1783,7 @@ end subroutine initialize_misc_stepvars
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                             :: h,errmax,xnew,newh,oldh
       logical                                  :: reject_step,reject_result
-      logical                                  :: minstep,stuck,test_reject,pdo
+      logical                                  :: minstep,stuck,test_reject
       integer                                  :: k
       integer                                  :: ibuff
       !------------------------------------------------------------------------------------!
@@ -1754,7 +1802,7 @@ end subroutine initialize_misc_stepvars
                   ,integration_buff(ibuff)%ytemp,integration_buff(ibuff)%yerr              &
                   ,integration_buff(ibuff)%ak2,integration_buff(ibuff)%ak3                 &
                   ,integration_buff(ibuff)%ak4,integration_buff(ibuff)%ak5                 &
-                  ,integration_buff(ibuff)%ak6,integration_buff(ibuff)%ak7,x,h,csite,ipa   &
+                  ,integration_buff(ibuff)%ak6,integration_buff(ibuff)%ak7,h,csite,ipa     &
                   ,reject_step,reject_result)
 
          !---------------------------------------------------------------------------------!
@@ -1860,9 +1908,9 @@ end subroutine initialize_misc_stepvars
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
+            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,csite)
             !----- iii. Make temporary surface water stable and positively defined. -------!
-            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h, csite,ipa)
+            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h, csite)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
             call update_diagnostic_vars(integration_buff(ibuff)%ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
@@ -1921,13 +1969,12 @@ end subroutine initialize_misc_stepvars
    !=======================================================================================!
    !    This subroutine will update the variables and perform the actual time stepping.    !
    !---------------------------------------------------------------------------------------!
-   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa                  &
+   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,h,csite,ipa                  &
                   ,reject_step,reject_result)
       use rk4_misc
       use rk4_copy_patch
       use rk4_coms      , only : rk4patchtype        & ! structure
                                , integration_vars    & ! structure
-                               , rk4site             & ! intent(in)
                                , print_diags         & ! intent(in)
                                , rk4_a2              & ! intent(in)
                                , rk4_a3              & ! intent(in)
@@ -1962,13 +2009,11 @@ end subroutine initialize_misc_stepvars
                                , zero_rk4_cohort     ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           ! ! structure
-      use grid_coms     , only : nzg                 & ! intent(in)
-                               , nzs                 ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       integer           , intent(in)  :: ipa
-      real(kind=8)      , intent(in)  :: x,h
+      real(kind=8)      , intent(in)  :: h
       type(rk4patchtype), target      :: y,dydx,yout,yerr
       type(rk4patchtype), target      :: ak2,ak3,ak4,ak5,ak6,ak7
       type(sitetype)    , target      :: csite
@@ -2151,9 +2196,7 @@ end subroutine initialize_misc_stepvars
       use rk4_coms              , only : rk4patchtype          & ! structure
                                        , integration_vars      & ! structure
                                        , rk4site               & ! intent(in)
-                                       , rk4eps                & ! intent(in)
                                        , rk4aux                & ! intent(in)
-                                       , toocold               & ! intent(in)
                                        , rk4max_can_shv        & ! intent(in)
                                        , rk4min_can_shv        & ! intent(in)
                                        , rk4min_can_rhv        & ! intent(in)
@@ -2171,7 +2214,6 @@ end subroutine initialize_misc_stepvars
                                        , rk4min_soil_temp      & ! intent(in)
                                        , rk4min_sfcw_mass      & ! intent(in)
                                        , rk4min_virt_water     & ! intent(in)
-                                       , rk4tiny_sfcw_mass     & ! intent(in)
                                        , rk4water_stab_thresh  & ! intent(in)
                                        , integ_err             & ! intent(inout)
                                        , record_err            & ! intent(in)
@@ -2854,7 +2896,6 @@ end subroutine initialize_misc_stepvars
       use ed_state_vars         , only : sitetype      & ! structure
                                        , patchtype     ! ! structure
       use grid_coms             , only : nzg           ! ! intent(in)
-      use soil_coms             , only : soil8         ! ! intent(in), look-up table
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: y

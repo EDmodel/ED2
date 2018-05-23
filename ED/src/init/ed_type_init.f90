@@ -6,7 +6,8 @@
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    use ed_state_vars , only : patchtype           ! ! structure
-   use allometry     , only : dbh2krdepth         ! ! function
+   use allometry     , only : dbh2krdepth         & ! function
+                            , dbh2sf              ! ! function
    use pft_coms      , only : phenology           & ! intent(in)
                             , leaf_turnover_rate  & ! intent(in)
                             , Vm0                 & ! intent(in)
@@ -19,6 +20,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
                             , vm0_amp             & ! intent(in)
                             , vm0_min             & ! intent(in)
                             , llspan_inf          ! ! intent(in)
+   use plant_hydro   , only : psi2rwc             & ! subroutine
+                            , rwc2tw              ! ! subroutine 
+   use physiology_coms,only : plant_hydro_scheme  ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -64,9 +68,48 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    case default
       cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
    end select
+
+   ! SLA and Vm0 can change if within canopy trait plasticity is enabled
    cpatch%sla(ico) = sla(cpatch%pft(ico))
+   cpatch%vm0(ico) = Vm0(cpatch%pft(ico))
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Start variables related with plant hydraulics                                     !
+   !---------------------------------------------------------------------------------------!
+   select case (plant_hydro_scheme)
+   case (0)
+       ! set psi to 0
+       cpatch%leaf_psi      (  ico) = 0.
+       cpatch%wood_psi      (  ico) = 0.
+
+   case (-1,-2,1,2)
+       ! start the water potential with ~-0.1MPa, assuming the plant is under
+       ! well-watered conditions
+       cpatch%leaf_psi      (  ico) = -10. - cpatch%hite(ico) ! in m
+       cpatch%wood_psi      (  ico) = -10. ! in m
+   end select
+   
+   ! convert water potential to relative water content
+   call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)                  &
+               ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+   ! convert relative water content to total water content
+   call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                                   &
+              ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)                       &
+              ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)                     &
+              ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+
+   ! start the fluxes to be 0.
+   cpatch%wflux_gw      (  ico) = 0.
+   cpatch%wflux_wl      (  ico) = 0.
+   cpatch%wflux_gw_layer(:,ico) = 0.
+
+   cpatch%high_leaf_psi_days    (ico)   = 0
+   cpatch%low_leaf_psi_days     (ico)   = 0
+   cpatch%last_gV(ico)  =   0.
+   cpatch%last_gJ(ico)  =   0.
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Start the fraction of open stomata with 1., since this is the most likely value   !
@@ -301,6 +344,18 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
    cpatch%fmean_lai               (ico) = 0.0
    cpatch%fmean_bdead             (ico) = 0.0
+   
+   cpatch%fmean_leaf_psi          (ico) = 0.0
+   cpatch%fmean_wood_psi          (ico) = 0.0
+   cpatch%fmean_leaf_water_int    (ico) = 0.0
+   cpatch%fmean_wood_water_int    (ico) = 0.0
+   cpatch%fmean_wflux_gw          (ico) = 0.0
+   cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
+   cpatch%fmean_wflux_wl          (ico) = 0.0
+   cpatch%dmax_leaf_psi           (ico) = 0.0
+   cpatch%dmin_leaf_psi           (ico) = 0.0
+   cpatch%dmax_wood_psi           (ico) = 0.0 
+   cpatch%dmin_wood_psi           (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -381,6 +436,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_vapor_wc          (ico) = 0.0
       cpatch%dmean_intercepted_aw    (ico) = 0.0
       cpatch%dmean_wshed_wg          (ico) = 0.0
+
+      cpatch%dmean_leaf_water_int    (ico) = 0.0
+      cpatch%dmean_wood_water_int    (ico) = 0.0
+      cpatch%dmean_wflux_gw          (ico) = 0.0
+      cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
+      cpatch%dmean_wflux_wl          (ico) = 0.0
+
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -470,6 +532,17 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_nppseeds            (ico) = 0.0
       cpatch%mmean_nppwood             (ico) = 0.0
       cpatch%mmean_nppdaily            (ico) = 0.0
+
+      cpatch%mmean_dmax_leaf_psi       (ico) = 0.0
+      cpatch%mmean_dmin_leaf_psi       (ico) = 0.0
+      cpatch%mmean_dmax_wood_psi       (ico) = 0.0
+      cpatch%mmean_dmin_wood_psi       (ico) = 0.0
+      cpatch%mmean_leaf_water_int      (ico) = 0.0
+      cpatch%mmean_wood_water_int      (ico) = 0.0
+      cpatch%mmean_wflux_gw            (ico) = 0.0
+      cpatch%mmean_wflux_gw_layer    (:,ico) = 0.0
+      cpatch%mmean_wflux_wl            (ico) = 0.0
+
       cpatch%mmsqu_gpp                 (ico) = 0.0
       cpatch%mmsqu_npp                 (ico) = 0.0
       cpatch%mmsqu_plresp              (ico) = 0.0
@@ -552,6 +625,14 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%qmean_vapor_wc          (:,ico) = 0.0
       cpatch%qmean_intercepted_aw    (:,ico) = 0.0
       cpatch%qmean_wshed_wg          (:,ico) = 0.0
+
+      cpatch%qmean_leaf_psi          (:,ico) = 0.0
+      cpatch%qmean_wood_psi          (:,ico) = 0.0
+      cpatch%qmean_leaf_water_int    (:,ico) = 0.0
+      cpatch%qmean_wood_water_int    (:,ico) = 0.0
+      cpatch%qmean_wflux_gw          (:,ico) = 0.0
+      cpatch%qmean_wflux_wl          (:,ico) = 0.0
+
       cpatch%qmsqu_gpp               (:,ico) = 0.0
       cpatch%qmsqu_npp               (:,ico) = 0.0
       cpatch%qmsqu_plresp            (:,ico) = 0.0
@@ -585,8 +666,6 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    use grid_coms      , only : nzs                  & ! intent(in)
                              , nzg                  ! ! intent(in)
    use soil_coms      , only : slz                  ! ! intent(in)
-   use canopy_air_coms, only : veg_height_min       & ! intent(in)
-                             , minimum_canopy_depth ! ! intent(in)
    use ed_misc_coms   , only : writing_long         & ! intent(in)
                              , writing_eorq         & ! intent(in)
                              , writing_dcyc         & ! intent(in)
@@ -598,7 +677,6 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    integer          , intent(in) :: ipaz
    integer          , intent(in) :: lsl
    !----- Local variables. ----------------------------------------------------------------!
-   integer                       :: ipft
    integer                       :: ncohorts
    integer                       :: ipa
    !---------------------------------------------------------------------------------------!
@@ -1119,21 +1197,18 @@ end subroutine init_ed_patch_vars
 !==========================================================================================!
 !     This sub-routine initialises some site-level variables.                              !
 !------------------------------------------------------------------------------------------!
-subroutine init_ed_site_vars(cpoly, lat)
+subroutine init_ed_site_vars(cpoly)
    use ed_state_vars, only : polygontype      ! ! intent(in)
    use ed_max_dims  , only : n_pft            & ! intent(in)
                            , n_dbh            ! ! intent(in)
    use pft_coms     , only : agri_stock       & ! intent(in)
                            , plantation_stock ! ! intent(in)
-   use grid_coms    , only : nzs              & ! intent(in)
-                           , nzg              ! ! intent(in)
    use ed_misc_coms , only : writing_long     & ! intent(in)
                            , writing_eorq     & ! intent(in)
                            , writing_dcyc     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(polygontype), target     :: cpoly
-   real             , intent(in) :: lat
    !----- External functions. -------------------------------------------------------------!
    integer          , external   :: julday
    !---------------------------------------------------------------------------------------!
@@ -1336,20 +1411,18 @@ subroutine init_ed_poly_vars(cgrid)
    use ed_state_vars, only : edtype       & ! structure
                            , polygontype  & ! structure
                            , sitetype     ! ! structure
-   use ed_misc_coms , only : dtlsm        & ! intent(in)
-                           , writing_long & ! intent(in)
+   use ed_misc_coms , only : writing_long & ! intent(in)
                            , writing_eorq & ! intent(in)
                            , writing_dcyc ! ! intent(in)
    use consts_coms  , only : day_sec      ! ! intent(in)
    implicit none
-   !----- Arguments. ----------------------------------------------------------------------!  
+   !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
    !----- Local variables. ----------------------------------------------------------------!
    type(polygontype), pointer :: cpoly
    type(sitetype)   , pointer :: csite
    integer                    :: ipy
    integer                    :: isi
-   integer                    :: ipa
    real                       :: soil_C
    real                       :: soil_N
    real                       :: veg_C
@@ -2140,7 +2213,6 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    use ed_state_vars , only : sitetype           & ! structure
                             , patchtype          ! ! structure
    use soil_coms     , only : soil               & ! intent(in), look-up table
-                            , slz                & ! intent(in)
                             , tiny_sfcwater_mass & ! intent(in)
                             , soil_rough         & ! intent(in)
                             , ny07_eq04_a        & ! intent(in)
@@ -2160,9 +2232,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    integer                        , intent(in) :: mzs            ! # of sfc. water layers
    integer        , dimension(mzg), intent(in) :: ntext_soil     ! Soil texture
    !----- Local variables -----------------------------------------------------------------!
-   type(patchtype)                , pointer    :: cpatch         ! Current patch
    integer                                     :: k              ! Layer counter
-   integer                                     :: ico            ! Cohort counter
    integer                                     :: nsoil          ! Soil texture class
    real                                        :: tot_sfcw_mass  ! Total mass
    real                                        :: bulk_sfcw_dens ! Bulk density
@@ -2179,15 +2249,15 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
                     ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
       csite%soil_mstpot(k,ipa) = matric_potential(nsoil,csite%soil_water(k,ipa))
    end do
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !   Determine the number of temporary snow/surface water layers.  This is done by       !
    ! checking the mass.  In case there is a layer, we convert sfcwater_energy from J/m2 to !
    ! J/kg, and compute the temperature and liquid fraction.                                !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    csite%nlev_sfcwater   (ipa) = 0
    tot_sfcw_mass               = 0.
    csite%total_sfcw_depth(ipa) = 0.
@@ -2212,7 +2282,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
       csite%sfcwater_depth(k,ipa)  = 0.
       if (k == 1) then
          csite%sfcwater_tempk(k,ipa)   = csite%soil_tempk(mzg,ipa)
-         csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(mzg,ipa) 
+         csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(mzg,ipa)
       else
          csite%sfcwater_tempk(k,ipa)   = csite%sfcwater_tempk(k-1,ipa)
          csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
@@ -2244,16 +2314,16 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    end if
    !---------------------------------------------------------------------------------------!
 
-   
+
    !----- Now we can compute the surface properties. --------------------------------------!
    k=max(1,csite%nlev_sfcwater(ipa))
    call ed_grndvap(csite%nlev_sfcwater(ipa),ntext_soil(mzg)                                &
                   ,csite%soil_water(mzg,ipa),csite%soil_tempk(mzg,ipa)                     &
                   ,csite%soil_fracliq(mzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
-                  ,csite%sfcwater_fracliq(k,ipa),csite%snowfac(ipa),csite%can_prss(ipa)    &
+                  ,csite%snowfac(ipa),csite%can_prss(ipa)                                  &
                   ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
                   ,csite%ground_temp(ipa),csite%ground_fliq(ipa),csite%ggsoil(ipa))
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine new_patch_sfc_props

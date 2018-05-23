@@ -1,7 +1,0 @@
-<map id="geth5dims" name="geth5dims">
-<area shape="rect" id="node2" href="$h5__output_8_f90.html#a78e65cbae2b56d1977947520a93139dd" title="h5_output" alt="" coords="136,5,215,32"/>
-<area shape="rect" id="node3" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="389,5,468,32"/>
-<area shape="rect" id="node6" href="$edio_8f90.html#ad8881e6d009ffe427f1fa02d73ccc46b" title="ed_output" alt="" coords="263,31,341,57"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="516,5,589,32"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="637,5,688,32"/>
-</map>

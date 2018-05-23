@@ -443,7 +443,6 @@ real function root_resp_norm(ipft,soil_temp)
                              , rrf_q10                  ! ! intent(in)
    use farq_leuning   , only : arrhenius                & ! function
                              , collatz                  ! ! function
-   use soil_coms      , only : soil8                    ! ! intent(in)
    use rk4_coms       , only : tiny_offset              ! ! intent(in)
    use physiology_coms, only : iphysiol                 ! ! intent(in)
    use consts_coms    , only : lnexp_min8               & ! intent(in)
@@ -502,7 +501,7 @@ real function root_resp_norm(ipft,soil_temp)
    ! it look similar to the leaf respiration respiration.                                  !
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
-   case (0,1)
+   case (0,1,4)
       rrf_hor8 = dble(rrf_hor(ipft))
       rrf8     = arrhenius(soil_temp8,rrf08,rrf_hor8) / (tlow_fun * thigh_fun)
    case (2,3)
@@ -579,12 +578,12 @@ real function het_resp_weight(soil_tempk,rel_soil_moist)
    !     Find the temperature dependence.                                                  !
    !---------------------------------------------------------------------------------------!
    select case(decomp_scheme)
-   case (0)
+   case (0,3)
       !----- Use original ED-2.1 exponential temperature dependence. ----------------------!
       temperature_limitation = min( 1.0                                                    &
                                   , exp( resp_temperature_increase * (soil_tempk-318.15)))
       !------------------------------------------------------------------------------------!
-   case (1) 
+   case (1,4) 
       !----- Use Lloyd and Taylor (1994) temperature dependence. --------------------------!
       lnexplloyd             = rh_lloyd_1 * ( rh_lloyd_2 - 1. / (soil_tempk - rh_lloyd_3))
       lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
@@ -634,6 +633,11 @@ real function het_resp_weight(soil_tempk,rel_soil_moist)
       smwet_fun        = 1.0 + exp(lnexpwet)
       !----- Soil moisture limitation is a combination of both. ---------------------------!
       water_limitation = 1.0 / (smdry_fun * smwet_fun)
+      !------------------------------------------------------------------------------------!
+   case (3,4)
+      !----- From Jaclyn Matthes:
+      !----- Empirical equation from meta-analysis in Moyano et al., Biogeosciences,2012 --!
+      water_limitation = rel_soil_moist * 4.0893 - rel_soil_moist**2 * 3.1681 - 0.3195897
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
