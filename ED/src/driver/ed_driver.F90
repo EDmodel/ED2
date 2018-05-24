@@ -25,6 +25,9 @@ subroutine ed_driver()
    use ed_node_coms         , only : mynum                         & ! intent(in)
                                    , nnodetot                      & ! intent(in)
                                    , sendnum                       ! ! intent(in)
+#if defined(RAMS_MPI)
+   use ed_node_coms         , only : recvnum                       ! ! intent(in)
+#endif
    use detailed_coms        , only : idetailed                     & ! intent(in)
                                    , patch_keep                    ! ! intent(in)
    use phenology_aux        , only : first_phenology               ! ! subroutine
