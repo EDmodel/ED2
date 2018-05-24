@@ -2053,6 +2053,10 @@ subroutine ed_nodeget_worklist_info
 #endif
 
    implicit none
+#if defined(RAMS_MPI)
+   !------ Pre-compiled options. ----------------------------------------------------------!
+   include 'mpif.h'
+#endif
    !------ Local variables. ---------------------------------------------------------------!
    integer                             :: npolygons
    integer                             :: ifm
@@ -2061,8 +2065,6 @@ subroutine ed_nodeget_worklist_info
    integer                             :: ierr
    integer                             :: mpiid
    integer                             :: itext
-   !------ Pre-compiled options. ----------------------------------------------------------!
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 
