@@ -66,6 +66,8 @@ module structural_growth
       integer                       :: prev_year
       integer                       :: prev_ndays
       integer                       :: imonth
+      integer                       :: phenstatus_in
+      integer                       :: krdepth_in
       real                          :: tor_fact
       real                          :: bleaf_in
       real                          :: broot_in
@@ -79,11 +81,9 @@ module structural_growth
       real                          :: nplant_in
       real                          :: bstorage_in
       real                          :: agb_in
-      real                          :: phenstatus_in
       real                          :: lai_in
       real                          :: wai_in
       real                          :: cai_in
-      real                          :: krdepth_in
       real                          :: ba_in
       real                          :: bag_in
       real                          :: bam_in
@@ -126,7 +126,7 @@ module structural_growth
          if (printout) then
             open (unit=66,file=fracfile,status='replace',action='write')
             write (unit=66,fmt='(20(a,1x))')                                               &
-              ,      '  YEAR',     '  MONTH',      '   DAY',      '   PFT',      '   ICO'  &
+                     '  YEAR',     '  MONTH',      '   DAY',      '   PFT',      '   ICO'  &
               ,'       BA_IN','      BAG_IN','      BAM_IN','      DBH_IN','   NPLANT_IN'  &
               ,'      BA_OUT','     BAG_OUT','     BAM_OUT','     DBH_OUT','  NPLANT_OUT'  &
               ,' TOTAL_BA_PY','TOTAL_BAG_PY','TOTAL_BAM_PY','TOTAL_BAR_PY','FIRST_CENSUS'
@@ -732,7 +732,7 @@ module structural_growth
          if (printout) then
             open (unit=66,file=fracfile,status='replace',action='write')
             write (unit=66,fmt='(18(a,1x))')                                               &
-              ,'  YEAR',' MONTH','   DAY','   PFT','PHENOL','PH_STT','SPRING',' GRASS'     &
+               '  YEAR',' MONTH','   DAY','   PFT','PHENOL','PH_STT','SPRING',' GRASS'     &
               ,'      HEIGHT','   REPRO_HGT','         DBH','    DBH_CRIT','      ELONGF'  &
               ,'       BDEAD','    BSTORAGE','   F_STORAGE','     F_SEEDS','    F_GROWTH'
             close (unit=66,status='keep')

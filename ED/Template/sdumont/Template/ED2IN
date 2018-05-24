@@ -730,7 +730,7 @@ $ED_NL
    !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
    !      from von Caemmerer (2000).                                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPHYSIOL = myiphsyiol
+   NL%IPHYSIOL = myiphysiol
    !---------------------------------------------------------------------------------------!
 
 

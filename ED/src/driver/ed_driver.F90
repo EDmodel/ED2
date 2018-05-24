@@ -24,8 +24,7 @@ subroutine ed_driver()
    use soil_coms            , only : alloc_soilgrid                ! ! sub-routine
    use ed_node_coms         , only : mynum                         & ! intent(in)
                                    , nnodetot                      & ! intent(in)
-                                   , sendnum                       & ! intent(inout)
-                                   , recvnum                       ! ! intent(in)
+                                   , sendnum                       ! ! intent(in)
    use detailed_coms        , only : idetailed                     & ! intent(in)
                                    , patch_keep                    ! ! intent(in)
    use phenology_aux        , only : first_phenology               ! ! subroutine

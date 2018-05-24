@@ -20,11 +20,12 @@ BASE=$(ED_ROOT)/build/
 # libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may still  #
 # be able to compile without HDF5 but it will not run.                                     #
 #------------------------------------------------------------------------------------------#
-USE_HDF5=0
-HDF5_PATH=/Users/mlongo/util/hdf5-1.8.16
+USE_HDF5=1
+ZLIB_PATH=/Users/mlongo/Util/ED2_Libs/zlib-1.2.11
+HDF5_PATH=/Users/mlongo/Util/ED2_Libs/hdf5-1.10.2
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5C_INCS=$(HDF5_INCS)
-HDF5_LIBS=-lz -L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl
+HDF5_LIBS=-L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl
 #------------------------------------------------------------------------------------------#
 
 
@@ -86,18 +87,20 @@ endif
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
    F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
-           -ffpe-trap=invalid,zero,overflow,underflow -fcheck=all -frecursive              \
-           -fno-whole-file -static
+           -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
+           -fcheck=all -frecursive -fsignaling-nans -Werror -mmacosx-version-min=10.12     \
+           -static
    C_OPTS= -O0 -DLITTLE  -g -static
    LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
-           -ffpe-trap=invalid,zero,overflow,underflow -fcheck=all -frecursive              \
-           -fno-whole-file
+                -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
+                -fcheck=all -frecursive -fsignaling-nans -Werror                           \
+                -mmacosx-version-min=10.12
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
-   F_OPTS= -O3 -ffree-line-length-none -frecursive -fno-whole-file -static
+   F_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -static
    C_OPTS= -O0 -DLITTLE  -g -static
-   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fno-whole-file
+   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#

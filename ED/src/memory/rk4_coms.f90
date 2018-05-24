@@ -2074,7 +2074,8 @@ module rk4_coms
       if (print_thbnd) then
          hour   = floor(nint(current_time%time) / hr_sec)
          minute = floor((nint(current_time%time) - hour * hr_sec) / min_sec)
-         second = mod(nint(current_time%time) - hour * hr_sec - minute * min_sec,min_sec)
+         second = floor( mod( nint(current_time%time) - hour * hr_sec - minute * min_sec   &
+                            , min_sec                                                   ) )
 
          open (unit=39,file=trim(thbnds_fout),status='old',action='write'                  &
                       ,position='append')

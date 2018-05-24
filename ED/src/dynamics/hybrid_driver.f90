@@ -21,8 +21,7 @@ module hybrid_driver
      use rk4_driver            , only : initp2modelp
      use ed_state_vars         , only : edtype             & ! structure
                                       , polygontype        & ! structure
-                                      , sitetype           & ! structure
-                                      , patchtype          ! ! structure
+                                      , sitetype           ! ! structure
      use met_driver_coms       , only : met_driv_state     ! ! structure
      use grid_coms             , only : nzg                & ! intent(in)
                                       , nzs                ! ! intent(in)
@@ -48,7 +47,6 @@ module hybrid_driver
      !----- Local variables ---------------------------------------------------------------!
      type(polygontype)        , pointer     :: cpoly
      type(sitetype)           , pointer     :: csite
-     type(patchtype)          , pointer     :: cpatch
      type(met_driv_state)     , pointer     :: cmet
      type(rk4patchtype)       , pointer     :: initp
      type(rk4patchtype)       , pointer     :: dinitp
@@ -471,7 +469,7 @@ module hybrid_driver
             ! Very simple analysis of derivative.  ie try to reduce drastic
             ! changes in key state variables.
             !---------------------------------------------------------------------!
-            call fb_dy_step_trunc(initp,restart_step,csite,dinitp,h,htrunc)
+            call fb_dy_step_trunc(initp,restart_step,dinitp,h,htrunc)
 
             if (restart_step) then
 
@@ -1051,7 +1049,8 @@ module hybrid_driver
 
     subroutine copy_prev2patch(yprev,csite,ipa)
 
-      use rk4_coms             , only : bdf2patchtype
+      use rk4_coms             , only : bdf2patchtype  & ! structure
+                                      , tiny_offset    ! ! intent(in)
       use ed_state_vars        , only : patchtype,sitetype
 
       implicit none
@@ -1060,13 +1059,14 @@ module hybrid_driver
       type(patchtype),pointer         :: cpatch
       type(sitetype),target          :: csite
       integer                        :: ico,ipa
+      real, external :: sngloff
 
       cpatch => csite%patch(ipa)
-      csite%can_temp_pv(ipa) = yprev%can_temp
+      csite%can_temp_pv(ipa) = sngloff(yprev%can_temp,tiny_offset)
 
       do ico=1,cpatch%ncohorts
-         cpatch%leaf_temp_pv(ico) = yprev%leaf_temp(ico)
-         cpatch%wood_temp_pv(ico) = yprev%wood_temp(ico)
+         cpatch%leaf_temp_pv(ico) = sngloff(yprev%leaf_temp(ico),tiny_offset)
+         cpatch%wood_temp_pv(ico) = sngloff(yprev%wood_temp(ico),tiny_offset)
       end do
 
       return
@@ -1301,13 +1301,12 @@ module hybrid_driver
 
     ! ========================================================================= !
 
-    subroutine fb_dy_step_trunc(y,restart_step,csite,dydx,h,hmin)
+    subroutine fb_dy_step_trunc(y,restart_step,dydx,h,hmin)
 
       use rk4_coms               , only : rk4patchtype          & ! structure
                                         , integration_vars      & ! structure
                                         , integ_err             & ! intent(inout)
                                         , record_err            ! ! intent(in)
-      use ed_state_vars          , only : sitetype              ! ! structure
       use therm_lib8             , only : eslif8
       use consts_coms            , only : ep8
 
@@ -1315,7 +1314,6 @@ module hybrid_driver
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target      :: y
       type(rk4patchtype) , target      :: dydx
-      type(sitetype)     , target      :: csite
       real(kind=8)       , intent(in)  :: h
       real(kind=8)       , intent(out) :: hmin
       !----- Local variables --------------------------------------------------------------!

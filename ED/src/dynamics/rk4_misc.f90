@@ -3124,7 +3124,7 @@ module rk4_misc
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
+   subroutine print_errmax(errmax,yerr,yscal,cpatch,y)
       use rk4_coms              , only : rk4patchtype       & ! Structure
                                        , ibranch_thermo     & ! intent(in)
                                        , rk4site            & ! intent(in)
@@ -3134,7 +3134,7 @@ module rk4_misc
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) , target       :: yerr,yscal,y,ytemp
+      type(rk4patchtype) , target       :: yerr,yscal,y
       type(patchtype)    , target       :: cpatch
       real(kind=8)       , intent(out)  :: errmax
       !----- Local variables --------------------------------------------------------------!

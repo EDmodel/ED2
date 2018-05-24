@@ -122,7 +122,7 @@ module reproduction
          if (printout .and. veget_dyn_on) then
             open (unit=66,file=fracfile,status='replace',action='write')
             write (unit=66,fmt='(11(a,1x))')                                               &
-              ,      '  YEAR',     '  MONTH',      '   DAY',      '   IPA',      '   ICO'  &
+                     '  YEAR',     '  MONTH',      '   DAY',      '   IPA',      '   ICO'  &
               ,      '   PFT','  REC_NPLANT',' REC_BIOMASS','       REPRO','MIN_REC_SIZE'  &
               ,'MAKE_RECRUIT'
             close (unit=66,status='keep')

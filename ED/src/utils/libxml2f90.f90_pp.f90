@@ -606,8 +606,8 @@ contains
     character(*),intent(in)        :: id
     real(8),intent(in)             :: value
     integer(4)                     :: size_ 
-    character(32)                  :: ch
-    character, dimension(32)       :: chvec
+    character(256)                 :: ch
+    character, dimension(256)      :: chvec
     integer                        :: s
     !............................................
     
@@ -630,7 +630,7 @@ contains
     character(*),intent(in)        :: id
     integer(4),intent(in)          :: n
     real(8),intent(in)             :: value(n)
-    character(32)                  :: ch(n)
+    character(256)                 :: ch(n)
     integer(4)                     :: i,l,ipos
     character(1),allocatable       :: ch1(:)
     !............................................

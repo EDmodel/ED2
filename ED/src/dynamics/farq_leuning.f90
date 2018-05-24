@@ -1287,7 +1287,7 @@ module farq_leuning
       !     Enter Newton's method loop in case we haven't found the answer.                !
       !------------------------------------------------------------------------------------!
       if (.not. converged) then
-         newloop: do itn = 1,maxfpofl/6
+         newloop: do itn = 1,nint(maxfpofl/6.)
             !------------------------------------------------------------------------------!
             !    In case the derivative is bad, we give up on Newton's and go with Regula  !
             ! Falsi.                                                                       !

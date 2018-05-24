@@ -2216,8 +2216,6 @@ subroutine init_pft_alloc_params()
    real                      :: eta_f16
    real                      :: eta_c_f16
    real                      :: asal_bar
-   real                      :: size_min
-   real                      :: size_crit
    real, dimension(2)        :: params_bl_lg
    real, dimension(2)        :: params_bs_lg
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
@@ -4633,7 +4631,6 @@ end subroutine init_pft_mort_params
 subroutine init_pft_nitro_params()
    use pft_coms    , only : Vm0                  & ! intent(in)
                           , SLA                  & ! intent(in)
-                          , is_grass             & ! intent(in)
                           , is_conifer           & ! intent(in)
                           , is_tropical          & ! intent(in)
                           , is_liana             & ! intent(in)
@@ -4706,7 +4703,7 @@ subroutine init_pft_nitro_params()
             !    economics spectrum. Nature, 428(6985):821-827, Apr 2004.                  !
             !    doi:10.1038/nature02403 (W04).                                            !
             !------------------------------------------------------------------------------!
-            c2n_leaf(ipft) = 337.959 * SLA(ipft) ** -0.834527
+            c2n_leaf(ipft) = 337.959 / SLA(ipft) ** 0.834527
             !------------------------------------------------------------------------------!
          end if
       case default
@@ -5098,8 +5095,9 @@ subroutine init_can_air_params()
                              , onesixth              & ! intent(in)
                              , vonk                  ! ! intent(in)
    use pft_coms       , only : hgt_min               ! ! intent(in)
-   use canopy_air_coms, only : psim                  & ! function
-                             , psih                  & ! function
+   use rk4_coms       , only : tiny_offset           ! ! intent(in)
+   use canopy_air_coms, only : psim8                 & ! function
+                             , psih8                 & ! function
                              , ugbmin                & ! intent(in)
                              , ubmin                 & ! intent(in)
                              , ustmin                & ! intent(in)
@@ -5273,6 +5271,7 @@ subroutine init_can_air_params()
    implicit none
    !----- External functions. -------------------------------------------------------------!
    real   , external :: cbrt
+   real   , external :: sngloff
    !---------------------------------------------------------------------------------------!
 
 
@@ -5358,16 +5357,6 @@ subroutine init_can_air_params()
    zetac_shi   = 1.0 / zetac_sh
    zetac_umi16 = 1.0 / (- zetac_um) ** onesixth
    zetac_uhi13 = 1.0 / cbrt(-zetac_uh)
-
-   !---------------------------------------------------------------------------------------!
-   !     Initialise these values with dummies, it will be updated after we define the      !
-   ! functions.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   psimc_um  = 0.
-   psimc_um  = psim(zetac_um,.false.)
-   psihc_uh  = 0.
-   psihc_uh  = psih(zetac_uh,.false.)
-   !---------------------------------------------------------------------------------------!
 
 
    !----- Parameters for the z0m:z0h ratio, following Zeng and Dickinson (1998). ----------!
@@ -5590,10 +5579,16 @@ subroutine init_can_air_params()
    zetac_shi8            = dble(zetac_shi           )
    zetac_umi168          = dble(zetac_umi16         )
    zetac_uhi138          = dble(zetac_uhi13         )
-   psimc_um8             = dble(psimc_um            )
-   psimc_um8             = dble(psimc_um            )
-   psihc_uh8             = dble(psihc_uh            )
-   psihc_uh8             = dble(psihc_uh            )
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise these values with dummies, it will be updated after we define the      !
+   ! functions.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   psimc_um8  = psim8(zetac_um8,.false.)
+   psimc_um   = sngloff(psimc_um8,tiny_offset)
+   psihc_uh8  = psih8(zetac_uh8,.false.)
+   psihc_uh   = sngloff(psihc_uh8,tiny_offset)
    !---------------------------------------------------------------------------------------!
 
    return

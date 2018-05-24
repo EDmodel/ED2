@@ -251,7 +251,6 @@ module euler_driver
                                             ,integration_buff(ibuff)%dinitp                &
                                             ,integration_buff(ibuff)%ytemp                 &
                                             ,integration_buff(ibuff)%yscal                 &
-                                            ,integration_buff(ibuff)%yerr                  &
                                             ,integration_buff(ibuff)%dydx                  &
                                             ,ipa,isi,ibuff,cpoly%nighttime(isi)            &
                                             ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm    &
@@ -314,7 +313,7 @@ module euler_driver
    !     This subroutine will drive the integration process using the Euler method.        !
    ! Notice that most of the Euler method utilises the subroutines from Runge-Kutta.       !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,ibuff &
+   subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,dydx,ipa,isi,ibuff      &
                                    ,nighttime,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm   &
                                    ,co2curr_loss2atm,wcurr_loss2drainage                   &
                                    ,ecurr_loss2drainage,wcurr_loss2runoff                  &
@@ -339,7 +338,6 @@ module euler_driver
       type(rk4patchtype)    , target      :: dinitp
       type(rk4patchtype)    , target      :: ytemp
       type(rk4patchtype)    , target      :: yscal
-      type(rk4patchtype)    , target      :: yerr
       type(rk4patchtype)    , target      :: dydx
       integer               , intent(in)  :: ipa
       integer               , intent(in)  :: isi
@@ -386,7 +384,7 @@ module euler_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator using Euler. --------------------------------------!
-      call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,ibuff,nsteps)
+      call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,dydx,ipa,isi,ibuff,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -422,7 +420,7 @@ module euler_driver
    !     This subroutine will drive the integration of several ODEs that drive the fast-   !
    ! -scale state variables.                                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,ibuff,nsteps)
+   subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,dydx,ipa,isi,ibuff,nsteps)
       use ed_state_vars  , only : sitetype                  & ! structure
                                 , patchtype                 & ! structure
                                 , polygontype               ! ! structure
@@ -475,7 +473,6 @@ module euler_driver
       type(rk4patchtype)        , target      :: dinitp      ! Integration derivative
       type(rk4patchtype)        , target      :: ytemp       ! Temporary integ. patch
       type(rk4patchtype)        , target      :: yscal       ! Scale for error analysis
-      type(rk4patchtype)        , target      :: yerr        ! Patch integration error
       type(rk4patchtype)        , target      :: dydx        ! Patch integration error
       integer                   , intent(in)  :: ipa         ! Current patch ID
       integer                   , intent(in)  :: isi         ! Current patch ID

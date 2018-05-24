@@ -912,7 +912,7 @@ module rk4_integ_utils
    !    This subroutine loops through the integrating variables, seeking for the largest   !
    ! error.                                                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
+   subroutine get_errmax(errmax,yerr,yscal,cpatch,ytemp)
 
       use rk4_coms              , only : rk4patchtype       & ! structure
                                        , ibranch_thermo     & ! intent(in)
@@ -931,7 +931,6 @@ module rk4_integ_utils
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target      :: yerr      ! Error structure
       type(rk4patchtype) , target      :: yscal     ! Scale structure
-      type(rk4patchtype) , target      :: y         ! Structure with previous value
       type(rk4patchtype) , target      :: ytemp     ! Structure with attempted values
       type(patchtype)    , target      :: cpatch    ! Current patch
       real(kind=8)       , intent(out) :: errmax    ! Maximum error
@@ -1621,9 +1620,9 @@ module rk4_integ_utils
       !------------------------------------------------------------------------------------!
       simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
       if (runoff_time /= 0.) then
-         runoff_time_i = 1.d0/dble(runoff_time)
+         runoff_time_i = 1.0 / runoff_time
       else 
-         runoff_time_i = 0.d0
+         runoff_time_i = 0.0
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1729,7 +1728,7 @@ module rk4_integ_utils
          else
             call get_errmax(errmax,integration_buff(ibuff)%yerr                            &
                            ,integration_buff(ibuff)%yscal,csite%patch(ipa)                 &
-                           ,integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
+                           ,integration_buff(ibuff)%ytemp)
             errmax = errmax * rk4epsi
          end if
 
@@ -1814,7 +1813,7 @@ module rk4_integ_utils
                else
                   call print_errmax(errmax,integration_buff(ibuff)%yerr                    &
                                    ,integration_buff(ibuff)%yscal,csite%patch(ipa)         &
-                                   ,integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
+                                   ,integration_buff(ibuff)%y)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax*rk4eps
@@ -2870,7 +2869,7 @@ module rk4_integ_utils
       write (unit=*,fmt='(a,1x,i12)')    ' #LEV_SFCH2O=  ',y%nlev_sfcwater
       write (unit=*,fmt='(a,1x,i12)')    ' OLD_#_SFCH2O= ',csite%nlev_sfcwater(ipa)
       if(y%nlev_sfcwater == 1) then
-         write(unit=*,fmt='(a,1x,es12.4)') ,'SFCWATER_TEMPK=',y%sfcwater_tempk(1)
+         write(unit=*,fmt='(a,1x,es12.4)') 'SFCWATER_TEMPK=',y%sfcwater_tempk(1)
       end if
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 

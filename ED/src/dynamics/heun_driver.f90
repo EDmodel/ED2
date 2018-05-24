@@ -555,7 +555,7 @@ module heun_driver
             else
                call get_errmax(errmax,integration_buff(ibuff)%yerr                         &
                               ,integration_buff(ibuff)%yscal,csite%patch(ipa)              &
-                              ,integration_buff(ibuff)%initp,integration_buff(ibuff)%ytemp)
+                              ,integration_buff(ibuff)%ytemp)
                !----- Scale the error based on the prescribed tolerance. ------------------!
                errmax = errmax * rk4epsi
             end if
@@ -645,8 +645,7 @@ module heun_driver
                   else
                      call print_errmax(errmax,integration_buff(ibuff)%yerr                 &
                                       ,integration_buff(ibuff)%yscal,csite%patch(ipa)      &
-                                      ,integration_buff(ibuff)%y                           &
-                                      ,integration_buff(ibuff)%ytemp)
+                                      ,integration_buff(ibuff)%y)
                      write (unit=*,fmt='(80a)') ('=',k=1,80)
                      write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax
                      write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax*rk4eps

@@ -75,6 +75,8 @@ module growth_balive
       integer                       :: ipa
       integer                       :: ico
       integer                       :: ipft
+      integer                       :: phenstatus_in
+      integer                       :: krdepth_in
       real                          :: daily_C_gain
       real                          :: carbon_balance
       real                          :: carbon_balance_pot
@@ -93,11 +95,9 @@ module growth_balive
       real                          :: nplant_in
       real                          :: bstorage_in
       real                          :: agb_in
-      real                          :: phenstatus_in
       real                          :: lai_in
       real                          :: wai_in
       real                          :: cai_in
-      real                          :: krdepth_in
       real                          :: ba_in
       real                          :: nitrogen_supply
       real                          :: dndt

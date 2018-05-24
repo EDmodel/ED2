@@ -651,17 +651,17 @@ module photosyn_driv
    ! convenient ascii file for debugging purposes.                                         !
    !---------------------------------------------------------------------------------------!
    subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,jm,tpm,jact,compp)
-      use ed_max_dims    , only : str_len            ! ! intent(in)
-      use ed_state_vars  , only : sitetype           & ! structure
-                                , patchtype          ! ! structure
-      use met_driver_coms, only : met_driv_state     ! ! structure
-      use physiology_coms, only : photo_prefix       ! ! intent(in)
-      use ed_misc_coms   , only : current_time       ! ! intent(in)
-      use consts_coms    , only : Watts_2_Ein        & ! intent(in)
-                                , mol_2_umol         & ! intent(in)
-                                , t008               ! ! intent(in)
-      use pft_coms       , only : quantum_efficiency & ! intent(in)
-                                , photosyn_pathway   ! ! intent(in)
+      use ed_max_dims    , only : str_len              ! ! intent(in)
+      use ed_state_vars  , only : sitetype             & ! structure
+                                , patchtype            ! ! structure
+      use met_driver_coms, only : met_driv_state       ! ! structure
+      use physiology_coms, only : photo_prefix         ! ! intent(in)
+      use ed_misc_coms   , only : current_time         ! ! intent(in)
+      use consts_coms    , only : Watts_2_Ein          & ! intent(in)
+                                , mol_2_umol           & ! intent(in)
+                                , t00                  ! ! intent(in)
+      use pft_coms       , only : quantum_efficiency   & ! intent(in)
+                                , photosyn_pathway     ! ! intent(in)
       use physiology_coms, only : quantum_efficiency_T ! ! intent(in)
 
       implicit none
@@ -721,12 +721,12 @@ module photosyn_driv
          case(1)
               select case (photosyn_pathway(ipft))
               case (4)
-                  alpha         = dble(quantum_efficiency(ipft))
+                  alpha = quantum_efficiency(ipft)
               case (3)
-                  alpha         = dble(-0.0016*(dble(cpatch%leaf_temp(ico))-t008)+0.1040)
+                  alpha = -0.0016*(cpatch%leaf_temp(ico)-t00)+0.1040
               end select
          case default
-               alpha         = dble(quantum_efficiency(ipft))
+               alpha    = quantum_efficiency(ipft)
          end select
 
          util_parv  = alpha * parv

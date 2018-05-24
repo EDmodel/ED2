@@ -138,7 +138,7 @@ module ed_print
       count_pvars: do
 
          ip = ip+1
-         pvar_name = printvars(ip)
+         pvar_name = printvars(ip)(1:str_len_short)
          if (len_trim(pvar_name) == str_len_short) then
             exit count_pvars
          endif

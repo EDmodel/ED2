@@ -1290,12 +1290,12 @@ subroutine calcHydroSurface()
                     endif
 
                     !! calculate flow velocity (m/s)
-                    flow_denom = 1.0+csite%runoff_a(2,ipa)*surf_water_depth**(4/3) & 
-                         - csite%runoff_a(3,ipa)*surf_water_depth**(7/3)
+                    flow_denom = 1.0+csite%runoff_a(2,ipa)*surf_water_depth**(4./3.) & 
+                         - csite%runoff_a(3,ipa)*surf_water_depth**(7./3.)
                     if(flow_denom > 1.0) then
-                       flow_vel = surf_water_depth**(2/3)*csite%runoff_a(1,ipa)/sqrt(flow_denom)
+                       flow_vel = surf_water_depth**(2./3.)*csite%runoff_a(1,ipa)/sqrt(flow_denom)
                     else
-                       flow_vel = surf_water_depth**(2/3)*csite%runoff_a(1,ipa) !! asymptotic vel w/o vegetation
+                       flow_vel = surf_water_depth**(2./3.)*csite%runoff_a(1,ipa) !! asymptotic vel w/o vegetation
                     endif
                     flow_vel = min(flow_vel,runoff_vmax) !! clamp runoff velocity to maximum sensible value
 
@@ -1870,9 +1870,9 @@ subroutine updateHydroParms (cgrid)
            end do ! cohort
            n0 = nb + n3 + n4 
 !           cp%runoff_a(1) = 1.486*m2f**(-1/3)*sqrt(tan(beta))/n0
-           csite%runoff_a(1,ipa) = m2f**(-1/3)*sqrt(tan(beta))/n0
-           csite%runoff_a(2,ipa) = c1 * m2f**(4/3)*sigma*1.49*1.49/(2.*grav*m2f*n0*n0)
-           csite%runoff_a(3,ipa) = c2 * m2f**(7/3)*sigma*1.49*1.49/(2.*grav*m2f*n0*n0)
+           csite%runoff_a(1,ipa) = m2f**(-1./3.)*sqrt(tan(beta))/n0
+           csite%runoff_a(2,ipa) = c1 * m2f**(4./3.)*sigma*1.49*1.49/(2.*grav*m2f*n0*n0)
+           csite%runoff_a(3,ipa) = c2 * m2f**(7./3.)*sigma*1.49*1.49/(2.*grav*m2f*n0*n0)
         end do !patch
      end do !site 
   end do !polygon

@@ -296,6 +296,7 @@ module radiate_driver
                                       , n_radprof            ! ! intent(in)
       use allometry            , only : h2crownbh            ! ! intent(in)
       use ed_misc_coms         , only : ibigleaf             ! ! intent(in)
+      use rk4_coms             , only : tiny_offset          ! ! intent(in)
       use old_twostream_rad    , only : old_lw_two_stream    & ! sub-routine
                                       , old_sw_two_stream    ! ! sub-routine
       use multiple_scatter     , only : lw_multiple_scatter  & ! sub-routine
@@ -372,10 +373,9 @@ module radiate_driver
       real                                          :: wwood_tir
       real                                          :: bl_lai_each
       real                                          :: bl_wai_each
+      real(kind=8)                                  :: tmpvar8
       !----- External function. -----------------------------------------------------------!
       real            , external                    :: sngloff
-      !----- Local constants. -------------------------------------------------------------!
-      real(kind=8)    , parameter                   :: tiny_offset = 1.d-20
       !------------------------------------------------------------------------------------!
 
 
@@ -988,12 +988,16 @@ module radiate_driver
                                     + (1.d0 - wood_scatter_vis(ipft))                      &
                                     * radscr(ibuff)%WAI_array(tuco_leaf) )                 &
                                   , tiny_offset)
-               csite%par_l_beam_max(ipa)    = radscr(ibuff)%par_v_beam_array(tuco_leaf)    &
+               tmpvar8                      = radscr(ibuff)%par_v_beam_array(tuco_leaf)    &
                                             * wleaf_vis   &
                                             / radscr(ibuff)%LAI_array(tuco_leaf)
-               csite%par_l_diffuse_max(ipa) = radscr(ibuff)%par_v_diffuse_array(tuco_leaf) &
+               csite%par_l_beam_max(ipa)    = sngloff(tmpvar8,tiny_offset)
+
+
+               tmpvar8                      = radscr(ibuff)%par_v_diffuse_array(tuco_leaf) &
                                             * wleaf_vis   &
                                             / radscr(ibuff)%LAI_array(tuco_leaf)
+               csite%par_l_beam_max(ipa)    = sngloff(tmpvar8,tiny_offset)
             end if
             !------------------------------------------------------------------------------!
 
@@ -1025,21 +1029,33 @@ module radiate_driver
 
 
             !----- The code expects values for these, even when it is not daytime. --------!
-            downward_par_below_beam         = par_beam_norm
-            downward_par_below_diffuse      = par_diff_norm
-            downward_nir_below_beam         = nir_beam_norm
-            downward_nir_below_diffuse      = nir_diff_norm
-            downward_rshort_below_beam      = par_beam_norm + nir_beam_norm
-            downward_rshort_below_diffuse   = par_diff_norm + nir_diff_norm
-            upward_par_above_diffuse        = albedo_ground_par * par_diff_norm
-            upward_nir_above_diffuse        = albedo_ground_nir * nir_diff_norm
-            upward_rshort_above_diffuse     = upward_par_above_diffuse                     &
-                                            + upward_nir_above_diffuse
-            csite%albedo_par          (ipa) = upward_par_above_diffuse                     &
-                                            / ( par_beam_norm + par_diff_norm )
-            csite%albedo_nir          (ipa) = upward_nir_above_diffuse                     &
-                                            / ( nir_beam_norm + nir_diff_norm )
-            csite%albedo              (ipa) = upward_rshort_above_diffuse
+            downward_par_below_beam         = sngloff( par_beam_norm                       &
+                                                     , tiny_offset                       )
+            downward_par_below_diffuse      = sngloff( par_diff_norm                       &
+                                                     , tiny_offset                       )
+            downward_nir_below_beam         = sngloff( nir_beam_norm                       &
+                                                     , tiny_offset                       )
+            downward_nir_below_diffuse      = sngloff( nir_diff_norm                       &
+                                                     , tiny_offset                       )
+            downward_rshort_below_beam      = sngloff( par_beam_norm + nir_beam_norm       &
+                                                     , tiny_offset                       )
+            downward_rshort_below_diffuse   = sngloff( par_diff_norm + nir_diff_norm       &
+                                                     , tiny_offset                       )
+            upward_par_above_diffuse        = sngloff( albedo_ground_par * par_diff_norm   &
+                                                     , tiny_offset                       )
+            upward_nir_above_diffuse        = sngloff( albedo_ground_nir * nir_diff_norm   &
+                                                     , tiny_offset                       )
+            upward_rshort_above_diffuse     = sngloff( upward_par_above_diffuse            &
+                                                     + upward_nir_above_diffuse            &
+                                                     , tiny_offset                       )
+            csite%albedo_par          (ipa) = sngloff( upward_par_above_diffuse            &
+                                                     / ( par_beam_norm + par_diff_norm )   &
+                                                     , tiny_offset                       )
+            csite%albedo_nir          (ipa) = sngloff( upward_nir_above_diffuse            &
+                                                     / ( nir_beam_norm + nir_diff_norm )   &
+                                                     , tiny_offset                       )
+            csite%albedo              (ipa) = sngloff( upward_rshort_above_diffuse         &
+                                                     , tiny_offset                       )
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -1275,26 +1291,38 @@ module radiate_driver
       else
 
          !----- This is the case where there is no vegetation. ----------------------------!
-         downward_par_below_beam         = par_beam_norm
-         downward_par_below_diffuse      = par_diff_norm
-         downward_nir_below_beam         = nir_beam_norm
-         downward_nir_below_diffuse      = nir_diff_norm
-         downward_rshort_below_beam      = par_beam_norm + nir_beam_norm
-         downward_rshort_below_diffuse   = par_diff_norm + nir_diff_norm
+         downward_par_below_beam         = sngloff( par_beam_norm                          &
+                                                  , tiny_offset                       )
+         downward_par_below_diffuse      = sngloff( par_diff_norm                          &
+                                                  , tiny_offset                       )
+         downward_nir_below_beam         = sngloff( nir_beam_norm                          &
+                                                  , tiny_offset                       )
+         downward_nir_below_diffuse      = sngloff( nir_diff_norm                          &
+                                                  , tiny_offset                       )
+         downward_rshort_below_beam      = sngloff( par_beam_norm + nir_beam_norm          &
+                                                  , tiny_offset                       )
+         downward_rshort_below_diffuse   = sngloff( par_diff_norm + nir_diff_norm          &
+                                                  , tiny_offset                       )
+         upward_par_above_diffuse        = sngloff( albedo_ground_par * par_diff_norm      &
+                                                  , tiny_offset                       )
+         upward_nir_above_diffuse        = sngloff( albedo_ground_nir * nir_diff_norm      &
+                                                  , tiny_offset                       )
+         upward_rshort_above_diffuse     = sngloff( upward_par_above_diffuse               &
+                                                  + upward_nir_above_diffuse               &
+                                                  , tiny_offset                       )
+         csite%albedo_par          (ipa) = sngloff( upward_par_above_diffuse               &
+                                                  / ( par_beam_norm + par_diff_norm )      &
+                                                  , tiny_offset                       )
+         csite%albedo_nir          (ipa) = sngloff( upward_nir_above_diffuse               &
+                                                  / ( nir_beam_norm + nir_diff_norm )      &
+                                                  , tiny_offset                       )
+         csite%albedo              (ipa) = sngloff( upward_rshort_above_diffuse            &
+                                                  , tiny_offset                       )
+         !---------------------------------------------------------------------------------!
 
-         upward_par_above_diffuse        = albedo_ground_par * par_diff_norm
-         upward_nir_above_diffuse        = albedo_ground_nir * nir_diff_norm
-         upward_rshort_above_diffuse     = upward_par_above_diffuse                        &
-                                         + upward_nir_above_diffuse
 
+         !------ Long wave variables. -----------------------------------------------------!
          surface_netabs_longwave         = emissivity * (rlong - stefan * T_surface**4 )
-
-         csite%albedo_par          (ipa) = upward_par_above_diffuse                        &
-                                         / ( par_beam_norm + par_diff_norm )
-         csite%albedo_nir          (ipa) = upward_nir_above_diffuse                        &
-                                         / ( nir_beam_norm + nir_diff_norm )
-         csite%albedo              (ipa) = upward_rshort_above_diffuse
-         csite%rlongup             (ipa) = rlong - surface_netabs_longwave
          csite%rlong_albedo        (ipa) = csite%rlongup(ipa) / rlong
          !---------------------------------------------------------------------------------!
       end if

@@ -644,7 +644,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_intercepted_aw   !<Wood interception [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_wshed_wg         !<Wood shedding     [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_lai              !<LAI               [     m2/m2]
-      real,pointer,dimension(:)	  :: fmean_bdead            !<Bdead             [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_bdead            !<Bdead             [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:)   :: dmean_nppleaf          !<Leaf NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppfroot         !<Fine root NPP     [ kgC/pl/yr]
@@ -2563,7 +2563,7 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_skin_temp        !<Skin temperature    [         K]
       !--------Variables required by PEcAn.  ----------------------------------------------!
       real,pointer,dimension(:) :: fmean_lai              !<LAI                 [     m2/m2]
-      real,pointer,dimension(:)	:: fmean_bdead            !<Bdead               [     kg/pl]
+      real,pointer,dimension(:) :: fmean_bdead            !<Bdead               [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:) :: dmean_nppleaf          !<Leaf NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppfroot         !<Fine root NPP       [ kgC/m2/yr]
@@ -13170,7 +13170,7 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'FMEAN_LAI_PY  :11:'//trim(fast_keys)  )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - LAI'					   &
+                           ,'Sub-daily mean - LAI'                                         &
                            ,'[           m2/m2]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_skin_temp)) then

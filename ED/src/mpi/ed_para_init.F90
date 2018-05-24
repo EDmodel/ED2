@@ -57,7 +57,7 @@ subroutine ed_node_decomp(masterworks)
 
    call get_grid()
 
-   do ngr = 1,ngrids!n_ed_region
+   do ngr = 1,n_ed_region
 
       !------------------------------------------------------------------------------------!
       !      Obtain estimates of the fraction of computational time (work) required for    !
@@ -80,6 +80,7 @@ subroutine ed_node_decomp(masterworks)
       work_e(ngr)%land(1,1)=.true.
       call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr))
    end do
+
 
    return
 end subroutine ed_node_decomp
@@ -355,7 +356,6 @@ subroutine get_work(ifm,nxp,nyp)
    end if
    !---------------------------------------------------------------------------------------!
 
-
    !---------------------------------------------------------------------------------------!
    !      For the time being, soil colour is constant.  Only if results look promising we  !
    ! will attempt to read a map.                                                           !
@@ -543,13 +543,9 @@ subroutine ed_load_work_from_history()
                              , memsize             ! ! intent(inout)
    use ed_init_history, only : hdf_getslab_r       ! ! sub-routine
 
-#if USE_HDF5
    use hdf5
-#endif
 
    implicit none
-
-#if USE_HDF5
 
    !----- Local variables. ----------------------------------------------------------------!
    character(len=str_len), dimension(maxlist)               :: full_list
@@ -831,11 +827,6 @@ subroutine ed_load_work_from_history()
 
    !----- Close the HDF environment. ------------------------------------------------------!
    call h5close_f(hdferr)
-#else
-
-   call fatal_error('ED2 now requires HDF5...','ed_load_work_from_history'                 &
-                   ,'ed_para_init.F90')
-#endif
 
    write (unit=*,fmt='(a)') '-------------------------------------------------------------'
    write (unit=*,fmt='(a)') ' '

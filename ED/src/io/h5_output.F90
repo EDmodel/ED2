@@ -784,7 +784,7 @@ subroutine h5_output(vtype)
       subaname = '  Monthly average analysis HDF write   '
 
    case ('DCYC')
-      subaname = '  Mean diurnal cycle analysis HDF write   '
+      subaname = '  Mean diurnal cycle analysis HDF write'
 
    case ('YEAR')
       subaname = '  Annual average analysis HDF write   '
