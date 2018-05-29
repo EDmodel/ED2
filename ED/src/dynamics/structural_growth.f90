@@ -35,7 +35,8 @@ module structural_growth
       use disturb_coms        , only : cl_fseeds_harvest           ! ! intent(in)
       use ed_max_dims         , only : n_pft                       & ! intent(in)
                                      , n_dbh                       ! ! intent(in)
-      use ed_misc_coms        , only : igrass                      & ! intent(in)
+      use ed_misc_coms        , only : iallom                      & ! intent(in)
+                                     , igrass                      & ! intent(in)
                                      , ibigleaf                    & ! intent(in)
                                      , current_time                ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap               & ! function
@@ -47,7 +48,8 @@ module structural_growth
       use stable_cohorts      , only : is_resolvable               ! ! subroutine
       use update_derived_utils, only : update_cohort_derived_props & ! subroutine
                                      , update_vital_rates          ! ! subroutine
-      use allometry           , only : size2bl                     ! ! function
+      use allometry           , only : size2bl                     & ! function
+                                     , expand_bevery               ! ! subroutine
       use consts_coms         , only : yr_sec                      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -76,6 +78,7 @@ module structural_growth
       real                          :: bbark_in
       real                          :: balive_in
       real                          :: bdead_in
+      real                          :: bevery_in
       real                          :: hite_in
       real                          :: dbh_in
       real                          :: nplant_in
@@ -95,6 +98,7 @@ module structural_growth
       real                          :: cbr_moist
       real                          :: cbr_ml
       real                          :: f_bseeds
+      real                          :: f_bdead
       real                          :: f_growth
       real                          :: f_bstorage
       real                          :: bfast_mort_litter
@@ -103,6 +107,16 @@ module structural_growth
       real                          :: bfast
       real                          :: bstruct
       real                          :: bstorage
+      real                          :: dbh_aim
+      real                          :: hite_aim
+      real                          :: bleaf_aim
+      real                          :: broot_aim
+      real                          :: bsapwooda_aim
+      real                          :: bsapwoodb_aim
+      real                          :: bbark_aim
+      real                          :: balive_aim
+      real                          :: bdead_aim
+      real                          :: bevery_aim
       real                          :: maxh !< maximum patch height
       real                          :: mort_litter
       real                          :: bseeds_mort_litter
@@ -223,8 +237,10 @@ module structural_growth
                   wai_in        = cpatch%wai             (ico)
                   cai_in        = cpatch%crown_area      (ico)
                   krdepth_in    = cpatch%krdepth         (ico)
-                  bag_in      = sum(cpoly%basal_area_growth(ipft,:,isi))
-                  bam_in      = sum(cpoly%basal_area_mort(ipft,:,isi))
+                  bevery_in     = bleaf_in + broot_in + bsapwooda_in + bsapwoodb_in        &
+                                + bbark_in + bdead_in
+                  bag_in        = sum(cpoly%basal_area_growth(ipft,:,isi))
+                  bam_in        = sum(cpoly%basal_area_mort(ipft,:,isi))
                   !------------------------------------------------------------------------!
 
                   !------------------------------------------------------------------------!
@@ -287,9 +303,28 @@ module structural_growth
 
 
                   !------------------------------------------------------------------------!
-                  !     Update bdead.                                                      !
+                  !     Update bdead.   It turns out that when the fraction allocated to   !
+                  ! sapwood is reasonable, structural growth causes the tree to have a     !
+                  ! large debt for the following month, and GPP alone may not be           !
+                  ! sufficient to make the trees with compatible balive.  This solution    !
+                  ! attempts to correct for this, by assuming that f_growth is used to     !
+                  ! grow all tissues, and only a fraction of f_growth goes to bdead.  The  !
+                  ! remaining stays in bstorage and can be used to bring the cohort back   !
+                  ! to allometry.                                                          !
                   !------------------------------------------------------------------------!
-                  cpatch%bdead(ico) = cpatch%bdead(ico) + f_growth * cpatch%bstorage(ico)
+                  select case (iallom)
+                  case (3)
+                     bevery_aim     = bevery_in + f_growth * cpatch%bstorage(ico)
+                     call expand_bevery(cpatch%pft(ico),bevery_aim,dbh_aim,hite_aim        &
+                                       ,bleaf_aim,broot_aim,bsapwooda_aim,bsapwoodb_aim    &
+                                       ,bbark_aim,balive_aim,bdead_aim)
+                     f_bdead        = f_growth * ( bdead_aim  - bdead_in  )                &
+                                               / ( bevery_aim - bevery_in )
+                     f_bstorage     = f_bstorage + f_growth - f_bdead
+                  case default
+                     f_bdead        = f_growth
+                  end select
+                  cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
 
 

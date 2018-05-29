@@ -556,6 +556,8 @@ module pft_coms
    real   , dimension(n_pft)    :: bleaf_crit
    !----- Critical balive, maximum allocation to living tissues. --------------------------!
    real   , dimension(n_pft)    :: balive_crit
+   !----- Critical balive+bdead ("Everything but storage"). -------------------------------!
+   real   , dimension(n_pft)    :: bevery_crit
    !=======================================================================================!
    !=======================================================================================!
 
@@ -766,6 +768,7 @@ module pft_coms
    real(kind=4), dimension(:,:), allocatable :: bleaf_lut
    real(kind=4), dimension(:,:), allocatable :: bdead_lut
    real(kind=4), dimension(:,:), allocatable :: balive_lut
+   real(kind=4), dimension(:,:), allocatable :: bevery_lut
    logical     , dimension(:)  , allocatable :: le_mask_lut
    logical     , dimension(:)  , allocatable :: ge_mask_lut
    !=======================================================================================!

@@ -2279,7 +2279,7 @@ subroutine init_pft_alloc_params()
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 2.1878178,0.5361171 /)
-   real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.0770616,0.9933637 /)
+   real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.0243364,1.0782521 /)
    real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 0.0000219,0.5361171 /)
    real                  , parameter :: SLA_ref       = 22.93
    real                  , parameter :: rho_ref       = 0.615
@@ -2736,12 +2736,6 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
       abas(:)  = b1Xb(:) * (1.0 - b1Xb(:)) / ( b1Xs(:) * (1. + b1Xs(:) - 2. * b1Xb(:)) )
       qbark(:) = qrhob(:) * abas(:) * qsw(:)
-      !------------------------------------------------------------------------------------!
-
-
-      !------ For the time being, combine sapwood and heartwood into a single pool. -------!
-      qbark(:) = 0.0
-      qsw(:)   = merge(0.0,qsw(:),is_tropical(:) .and. (.not. is_liana(:)))
       !------------------------------------------------------------------------------------!
 
    case default
@@ -6402,6 +6396,7 @@ subroutine init_derived_params_after_xml()
                                    , dbh_crit                  & ! intent(inout)
                                    , bleaf_crit                & ! intent(inout)
                                    , bdead_crit                & ! intent(inout)
+                                   , bevery_crit               & ! intent(inout)
                                    , seed_rain                 & ! intent(inout)
                                    , Jm_low_temp               & ! intent(inout)
                                    , Jm_high_temp              & ! intent(inout)
@@ -6440,6 +6435,7 @@ subroutine init_derived_params_after_xml()
                                    , bleaf_lut                 & ! intent(out)
                                    , balive_lut                & ! intent(out)
                                    , bdead_lut                 & ! intent(out)
+                                   , bevery_lut                & ! intent(out)
                                    , le_mask_lut               & ! intent(out)
                                    , ge_mask_lut               ! ! intent(out)
    use fusion_fission_coms  , only : ifusion                   & ! intent(in)
@@ -6479,8 +6475,6 @@ subroutine init_derived_params_after_xml()
    use rk4_coms             , only : effarea_heat              & ! intent(in)
                                    , effarea_evap              & ! intent(in)
                                    , effarea_transp            ! ! intent(in)
-   use therm_lib            , only : maxfpo                    & ! intent(in)
-                                   , toler                     ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=2)                  :: char_pathway
@@ -6497,7 +6491,6 @@ subroutine init_derived_params_after_xml()
    real                              :: huge_height
    real                              :: height_now
    real                              :: bleaf_now
-   real                              :: bsapwood_now
    real                              :: bdead_now
    real                              :: bleaf_min
    real                              :: broot_min
@@ -6616,11 +6609,12 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
    do ipft = 1,n_pft
       !----- Re-define the "critical" parameters as the numbers may have changed. ---------!
-      dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
-      bleaf_crit (ipft) = size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)
-      bdead_crit (ipft) = size2bd(dbh_crit(ipft),hgt_max(ipft),ipft)
-      balive_crit(ipft) = bleaf_crit (ipft)                                                &
-                        * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hgt_max(ipft) )
+      dbh_crit    (ipft) = h2dbh(hgt_max(ipft),ipft)
+      bleaf_crit  (ipft) = size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)
+      bdead_crit  (ipft) = size2bd(dbh_crit(ipft),hgt_max(ipft),ipft)
+      balive_crit (ipft) = bleaf_crit (ipft)                                               &
+                         * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hgt_max(ipft) )
+      bevery_crit (ipft) = balive_crit(ipft) + bdead_crit(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -7102,23 +7096,24 @@ subroutine init_derived_params_after_xml()
       allocate(bleaf_lut  (nbt_lut,n_pft))
       allocate(balive_lut (nbt_lut,n_pft))
       allocate(bdead_lut  (nbt_lut,n_pft))
+      allocate(bevery_lut (nbt_lut,n_pft))
       allocate(le_mask_lut(nbt_lut      ))     ! Aux variable used by b?2dbh
       allocate(ge_mask_lut(nbt_lut      ))     ! Aux variable used by b?2dbh
       exp_dbh8 = 1.d0 / (dble(nbt_lut) - 1.d0)
       do ipft=1,n_pft
          dbh_mult8 = (dble(dbh_crit(ipft))/dble(min_dbh(ipft))) **exp_dbh8
          do ilut = 1, nbt_lut
-            dbh_now8              = dble(min_dbh(ipft)) * dbh_mult8 ** (ilut-1)
-            dbh_now               = sngloff(dbh_now8,tiny_num8)
-            height_now            = dbh2h(ipft, dbh_now)
-            bleaf_now             = size2bl(dbh_now,height_now,ipft)
-            bsapwood_now          = bleaf_now * qsw(ipft)   * height_now
-            bdead_now             = size2bd(dbh_now,height_now,ipft)
-            dbh_lut   (ilut,ipft) = dbh_now
-            bleaf_lut (ilut,ipft) = bleaf_now
-            balive_lut(ilut,ipft) = bleaf_now                                              &
-                                  * (1. + q(ipft) + (qsw(ipft) + qbark(ipft))*height_now)
-            bdead_lut (ilut,ipft) = bdead_now
+            dbh_now8               = dble(min_dbh(ipft)) * dbh_mult8 ** (ilut-1)
+            dbh_now                = sngloff(dbh_now8,tiny_num8)
+            height_now             = dbh2h(ipft, dbh_now)
+            bleaf_now              = size2bl(dbh_now,height_now,ipft)
+            bdead_now              = size2bd(dbh_now,height_now,ipft)
+            dbh_lut    (ilut,ipft) = dbh_now
+            bleaf_lut  (ilut,ipft) = bleaf_now
+            balive_lut (ilut,ipft) = bleaf_now                                             &
+                                   * (1. + q(ipft) + (qsw(ipft) + qbark(ipft))*height_now)
+            bdead_lut  (ilut,ipft) = bdead_now
+            bevery_lut (ilut,ipft) = balive_lut(ilut,ipft) + bdead_lut(ilut,ipft)
          end do
          !---------------------------------------------------------------------------------!
       end do
@@ -7220,7 +7215,7 @@ subroutine init_derived_params_after_xml()
    !----- Print allometric coefficients. --------------------------------------------------!
    if (print_zero_table) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(38(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=18,fmt='(39(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
                                      ,'         RHO','        B1HT','        B2HT'         &
                                      ,'     HGT_REF','        B1BL','        B2BL'         &
@@ -7230,12 +7225,12 @@ subroutine init_derived_params_after_xml()
                                      ,'        B1XB','     HGT_MIN','     HGT_MAX'         &
                                      ,'     MIN_DBH','    DBH_CRIT',' DBH_BIGLEAF'         &
                                      ,'  BDEAD_CRIT','  BLEAF_CRIT',' BALIVE_CRIT'         &
-                                     ,'   INIT_DENS','         SLA','F_BSTOR_INIT'         &
-                                     ,'           Q','         QSW','       QBARK'         &
-                                     ,'       QRHOB',' INIT_LAIMAX'
-                                     
+                                     ,' BEVERY_CRIT','   INIT_DENS','         SLA'         &
+                                     ,'F_BSTOR_INIT','           Q','         QSW'         &
+                                     ,'       QBARK','       QRHOB',' INIT_LAIMAX'
+
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,5(12x,l1),31(1x,f12.6),1(1x,es12.5))')                 &
+         write (unit=18,fmt='(8x,i5,5(12x,l1),32(1x,f12.6),1(1x,es12.5))')                 &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft)   &
                        ,hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)               &
@@ -7243,7 +7238,7 @@ subroutine init_derived_params_after_xml()
                        ,b2Ca(ipft),b1WAI(ipft),b2WAI(ipft),b1Xs(ipft),b1Xb(ipft)           &
                        ,hgt_min(ipft),hgt_max(ipft),min_dbh(ipft),dbh_crit(ipft)           &
                        ,dbh_bigleaf(ipft),bdead_crit(ipft),bleaf_crit(ipft)                &
-                       ,balive_crit(ipft),init_density(ipft),sla(ipft)                     &
+                       ,balive_crit(ipft),bevery_crit(ipft),init_density(ipft),sla(ipft)   &
                        ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)    &
                        ,init_laimax(ipft)
       end do

@@ -21,8 +21,7 @@ module hybrid_driver
      use rk4_driver            , only : initp2modelp
      use ed_state_vars         , only : edtype             & ! structure
                                       , polygontype        & ! structure
-                                      , sitetype           & ! structure
-                                      , patchtype          ! ! structure
+                                      , sitetype           ! ! structure
      use met_driver_coms       , only : met_driv_state     ! ! structure
      use grid_coms             , only : nzg                & ! intent(in)
                                       , nzs                ! ! intent(in)
@@ -48,7 +47,6 @@ module hybrid_driver
      !----- Local variables ---------------------------------------------------------------!
      type(polygontype)        , pointer     :: cpoly
      type(sitetype)           , pointer     :: csite
-     type(patchtype)          , pointer     :: cpatch
      type(met_driv_state)     , pointer     :: cmet
      type(rk4patchtype)       , pointer     :: initp
      type(rk4patchtype)       , pointer     :: dinitp
@@ -134,7 +132,7 @@ module hybrid_driver
            !$OMP wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm,&
            !$OMP co2curr_loss2atm,wcurr_loss2drainage,      &
            !$OMP ecurr_loss2drainage,wcurr_loss2runoff,     &
-           !$OMP ecurr_loss2runoff,cpatch)
+           !$OMP ecurr_loss2runoff)
            threadloop: do ibuff=1,nthreads
               initp => integration_buff(ibuff)%initp
               ytemp => integration_buff(ibuff)%ytemp

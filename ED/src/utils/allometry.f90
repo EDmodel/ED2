@@ -17,6 +17,7 @@ module allometry
                              , b2Ht        & ! intent(in), lookup table
                              , hgt_ref     ! ! intent(in)
       use ed_misc_coms, only : iallom      ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: h
@@ -72,6 +73,7 @@ module allometry
       use ed_state_vars, only : patchtype   ! ! structure
       use consts_coms  , only : lnexp_max   & ! intent(in)
                               , lnexp_min   ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       integer       , intent(in) :: ipft
@@ -143,6 +145,7 @@ module allometry
                              , is_liana    ! ! intent(in)
       use ed_misc_coms, only : igrass      & ! intent(in)
                              , iallom      ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
@@ -208,14 +211,27 @@ module allometry
       use ed_misc_coms, only : iallom      ! ! intent(in)
       use consts_coms , only : lnexp_min   & ! intent(in)
                              , lnexp_max   ! ! intent(in)
+      use therm_lib   , only : toler       & ! intent(in)
+                             , maxfpo      ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
-      integer, intent(in) :: ipft      ! PFT type                            [         ---]
-      real   , intent(in) :: bdead     ! Structural (dead) biomass           [   kgC/plant]
+      integer, intent(in)  :: ipft      ! PFT type                           [         ---]
+      real   , intent(in)  :: bdead     ! Structural (dead) biomass          [   kgC/plant]
       !----- Local variables. -------------------------------------------------------------!
-      integer             :: ilwr        ! Lower index of the lookup table
-      integer             :: iupr        ! Upper index of the lookup table
-      real                :: finterp     ! Interpolation factor
+      integer              :: ilwr      ! Lower index of the lookup table
+      integer              :: iupr      ! Upper index of the lookup table
+      integer              :: it        ! Iteration counter
+      real                 :: dbha      ! Lower guess for DBH
+      real                 :: dbhz      ! Upper guess for DBH
+      real                 :: hgta      ! Lower guess for height
+      real                 :: hite      ! New   guess for height
+      real                 :: hgtz      ! Upper guess for height
+      real                 :: funa      ! Function evaluation for lower guess
+      real                 :: funz      ! Function evaluation for upper guess
+      real                 :: fun       ! Function evaluation for new   guess
+      logical              :: zside     ! Last update was on zside
+      logical              :: converged ! Iterative method converged
       !------------------------------------------------------------------------------------!
 
 
@@ -251,11 +267,121 @@ module allometry
             if (ilwr == iupr) then
                bd2dbh = dbh_lut(ilwr,ipft)
             else
-               finterp = log( dbh_lut  (iupr,ipft) / dbh_lut  (ilwr,ipft))                 &
-                       * log( bdead                / bdead_lut(ilwr,ipft))                 &
-                       / log( bdead_lut(iupr,ipft) / bdead_lut(ilwr,ipft))
-               finterp = max(lnexp_min,min(lnexp_max,finterp))
-               bd2dbh  = dbh_lut(ilwr,ipft) * exp(finterp)
+               !------ Define the first guess for Regula Falsi (Illinois) method. ---------!
+               dbha    = dbh_lut(ilwr,ipft)
+               dbhz    = dbh_lut(iupr,ipft)
+               hgta    = dbh2h(ipft,dbha)
+               hgtz    = dbh2h(ipft,dbhz)
+               funa    = size2bd(dbha,hgta,ipft) - bdead
+               funz    = size2bd(dbhz,hgtz,ipft) - bdead
+               zside   = funa * funz < 0.
+               !---------------------------------------------------------------------------!
+
+
+               !----- This should not happen, but check it anyway. ------------------------!
+               if (.not. zside) then
+                  write (unit=*,fmt='(a)')           '------------------------------------'
+                  write (unit=*,fmt='(a)')           ' Ill-posed first guesses:           '
+                  write (unit=*,fmt='(a)')           '------------------------------------'
+                  write (unit=*,fmt='(a)')           ' '
+                  write (unit=*,fmt='(a)')           ' Input:    '
+                  write (unit=*,fmt='(a,1x,i14)'   ) ' + ipft    =',ipft
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + bdead   =',bdead
+                  write (unit=*,fmt='(a)')           ' '
+                  write (unit=*,fmt='(a)')           ' Guesses:  '
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + dbha    =',dbha
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + dbhz    =',dbhz
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + hgta    =',hgta
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + hgtz    =',hgtz
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + bdeada  =',size2bd(dbha,hgta,ipft)
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + bdeadz  =',size2bd(dbhz,hgtz,ipft)
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + funa    =',funa
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + funz    =',funz
+                  write (unit=*,fmt='(a)')           ' '
+                  write (unit=*,fmt='(a)')           '-----------------------------------'
+                  call fatal_error('Ill-posed first guesses for Regula Falsi'              &
+                                  ,'bd2dbh','allometry.f90')
+               end if
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Loop until convergence.                                               !
+               !---------------------------------------------------------------------------!
+               rfaloop: do it=1,maxfpo
+                  bd2dbh = (funz * dbha - funa * dbhz) / ( funz - funa)
+                  hite   = dbh2h(ipft,bd2dbh)
+
+                  !------------------------------------------------------------------------!
+                  !     Now that we updated the guess, check whether they are really       !
+                  ! close.  If so, it converged within tolerance.                          !
+                  !------------------------------------------------------------------------!
+                  converged = abs(bd2dbh-dbha) < toler * bd2dbh
+                  if (converged) exit rfaloop
+                  !------------------------------------------------------------------------!
+
+
+                  !------ Find the new function evaluation. -------------------------------!
+                  fun  =  size2bd(bd2dbh,hite,ipft) - bdead
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Define the new interval based on the intermediate value theorem.   !
+                  ! We check whether the same side is being picked repeatedly, and apply   !
+                  ! the Regula Falsi step to try to speed up convergence.                  !
+                  !------------------------------------------------------------------------!
+                  if (fun*funa < 0. ) then
+                     dbhz  = bd2dbh
+                     funz  = fun
+                     if (zside) funa = funa * 0.5
+                     zside = .true.
+                  else
+                     dbha  = bd2dbh
+                     funa  = fun
+                     if (.not. zside) funz = funz * 0.5
+                     zside = .false.
+                  end if
+                  !------------------------------------------------------------------------!
+               end do rfaloop
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !---------------------------------------------------------------------------!
+               !      This method should always congerge in case the function is           !
+               ! continuous, but just in case.                                             !
+               !---------------------------------------------------------------------------!
+               if (.not. converged) then
+                  write (unit=*,fmt='(a)')           '------------------------------------'
+                  write (unit=*,fmt='(a)')           ' Function did not converge:         '
+                  write (unit=*,fmt='(a)')           '------------------------------------'
+                  write (unit=*,fmt='(a)')           ' '
+                  write (unit=*,fmt='(a,1x,i14)'   ) ' Iterations =',maxfpo
+                  write (unit=*,fmt='(a)')           ' '
+                  write (unit=*,fmt='(a)')           ' Input:     '
+                  write (unit=*,fmt='(a,1x,i14)'   ) ' + ipft    =',ipft
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + bdead   =',bdead
+                  write (unit=*,fmt='(a)')           ' '
+                  write (unit=*,fmt='(a)')           ' Guesses:  '
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + dbha    =',dbha
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + dbh     =',bd2dbh
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + dbhz    =',dbhz
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + hgta    =',hgta
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + hite    =',hite
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + hgtz    =',hgtz
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + bdeada  =',size2bd(dbha,hgta,ipft)
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + bdeadz  =',size2bd(dbhz,hgtz,ipft)
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + funa    =',funa
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + fun     =',fun
+                  write (unit=*,fmt='(a,1x,es14.7)') ' + funz    =',funz
+                  write (unit=*,fmt='(a)')           ' '
+                  write (unit=*,fmt='(a)')           '-------------------------------------'
+                  call fatal_error('Ill-posed first guess for Regula Falsi'                &
+                                  ,'bd2dbh','allometry.f90')
+               end if
+               !------------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end if
@@ -300,6 +426,7 @@ module allometry
       use ed_misc_coms , only : igrass         & ! intent(in)
                               , iallom         ! ! intent(in)
       use ed_state_vars, only : patchtype      ! ! structure
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real          , intent(in) :: dbh
@@ -360,6 +487,7 @@ module allometry
                              , ge_mask_lut ! ! intent(out)
       use consts_coms , only : lnexp_min   & ! intent(in)
                              , lnexp_max   ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: balive      ! Live biomass
@@ -439,6 +567,7 @@ module allometry
                              , iallom      ! ! intent(in)
       use consts_coms , only : lnexp_min   & ! intent(in)
                              , lnexp_max   ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: bleaf
@@ -520,6 +649,7 @@ module allometry
    !---------------------------------------------------------------------------------------!
    real function bl2h(bleaf,ipft)
       use pft_coms,      only:  hgt_max    ! ! intent(in), lookup table
+      implicit none
       
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in)      :: bleaf
@@ -533,6 +663,10 @@ module allometry
    end function bl2h
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
 
 
    !=======================================================================================!
@@ -552,6 +686,7 @@ module allometry
                               , iallom         ! ! intent(in)
       use ed_state_vars, only : patchtype      ! ! structure
       use consts_coms  , only : tiny_num       ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in)           :: dbh       !> Diameter at breast height     [     cm]
@@ -650,6 +785,7 @@ module allometry
    real function size2vol(dbh,hgt,ipft)
       use pft_coms    , only : b1Vol    & ! intent(in)
                              , b2Vol    ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
@@ -788,6 +924,7 @@ module allometry
       use soil_coms   , only : slz      ! ! intent(in)
       use pft_coms    , only : b1Rd     & ! intent(in)
                              , b2Rd     ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: hite
@@ -851,6 +988,7 @@ module allometry
    real function h2crownbh(height,ipft)
       use pft_coms, only : b1Cl & ! intent(in)
                          , b2Cl ! ! intent(in)
+      implicit none 
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: height
@@ -879,6 +1017,7 @@ module allometry
    real function ed_biomass(cpatch,ico)
       use pft_coms,      only : agf_bs     ! ! intent(in)
       use ed_state_vars, only : patchtype  ! ! Structure
+      implicit none 
 
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target :: cpatch
@@ -890,6 +1029,293 @@ module allometry
 
       return
    end function ed_biomass
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This function computes the biomass of everything but storage ("bevery") given    !
+   ! size (dbh and height) and the PFT.  This assumes that cohort is in perfect allometry. !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   real function size2be(dbh,hite,ipft)
+      use pft_coms, only : q     & ! intent(in)
+                         , qsw   & ! intent(in)
+                         , qbark ! ! intent(in)
+      implicit none
+
+      !----- Arguments --------------------------------------------------------------------!
+      real          , intent(in) :: dbh
+      real          , intent(in) :: hite
+      integer       , intent(in) :: ipft
+      !----- Local variables --------------------------------------------------------------!
+      real                       :: bleaf
+      real                       :: bdead
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find potential leaf and heartwood biomass.                                     !
+      !------------------------------------------------------------------------------------!
+      bleaf   = size2bl(dbh,hite,ipft)
+      bdead   = size2bd(dbh,hite,ipft)
+      size2be = bleaf * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite) + bdead
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function size2be
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function decomposes total biomass (except for storage) into biomass of each  !
+   ! tissue, plus the dbh and height.                                                      !
+   !---------------------------------------------------------------------------------------!
+   subroutine expand_bevery(ipft,bevery,dbh,hite,bleaf,broot,bsapa,bsapb,bbark,balive,bdead)
+      use pft_coms    , only : bevery_crit & ! intent(in)
+                             , balive_crit & ! intent(in)
+                             , agf_bs      & ! intent(in)
+                             , q           & ! intent(in)
+                             , qsw         & ! intent(in)
+                             , qbark       & ! intent(in)
+                             , hgt_max     & ! intent(in)
+                             , dbh_lut     & ! intent(in)
+                             , bevery_lut  & ! intent(in)
+                             , balive_lut  & ! intent(in)
+                             , bdead_lut   & ! intent(in)
+                             , le_mask_lut & ! intent(out)
+                             , ge_mask_lut ! ! intent(in)
+      use consts_coms , only : lnexp_min   & ! intent(in)
+                             , lnexp_max   ! ! intent(in)
+      use therm_lib   , only : toler       & ! intent(in)
+                             , maxfpo      ! ! intent(in)
+      implicit none
+
+      !----- Arguments --------------------------------------------------------------------!
+      integer, intent(in)  :: ipft      ! PFT type                            [        ---]
+      real   , intent(in)  :: bevery    ! Biomass (Everything but storage)    [  kgC/plant]
+      real   , intent(out) :: dbh       ! Diameter at breast height           [         cm]
+      real   , intent(out) :: hite      ! Cohort height                       [          m]
+      real   , intent(out) :: bleaf     ! Leaf biomass                        [  kgC/plant]
+      real   , intent(out) :: broot     ! Root biomass                        [  kgC/plant]
+      real   , intent(out) :: bsapa     ! Above-ground sapwood biomass        [  kgC/plant]
+      real   , intent(out) :: bsapb     ! Below-ground sapwood biomass        [  kgC/plant]
+      real   , intent(out) :: bbark     ! Bark biomass                        [  kgC/plant]
+      real   , intent(out) :: balive    ! Live biomass                        [  kgC/plant]
+      real   , intent(out) :: bdead     ! Heartwood biomass                   [  kgC/plant]
+      !----- Local variables. -------------------------------------------------------------!
+      integer              :: ilwr      ! Lower index of the lookup table
+      integer              :: iupr      ! Upper index of the lookup table
+      integer              :: it        ! Iteration counter
+      real                 :: finterp   ! Interpolation factor
+      real                 :: salloci   ! Allocation parameters
+      real                 :: dbha      ! Lower guess for DBH
+      real                 :: dbhz      ! Upper guess for DBH
+      real                 :: hgta      ! Lower guess for height
+      real                 :: hgtz      ! Upper guess for height
+      real                 :: funa      ! Function evaluation for lower guess
+      real                 :: funz      ! Function evaluation for upper guess
+      real                 :: fun       ! Function evaluation for new   guess
+      logical              :: zside     ! Last update was on zside
+      logical              :: converged ! Iterative method converged
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Decide which coefficients to use based on the critical bdead.                   !
+      !------------------------------------------------------------------------------------!
+      if (bevery <= bevery_lut(1,ipft)) then
+         !----- Use the look-up table to find the best dbh. -------------------------------!
+         finterp = bevery / bevery_lut(1,ipft)
+         dbh     = dbh_lut(1,ipft)    * bevery / bevery_lut(1,ipft)
+         hite    = dbh2h(ipft,dbh)
+         bdead   = bdead_lut(1,ipft)  * bevery / bevery_lut(1,ipft)
+         balive  = balive_lut(1,ipft) * bevery / bevery_lut(1,ipft)
+         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
+         bleaf   =                                            salloci * balive
+         broot   =                       q    (ipft)        * salloci * balive
+         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
+         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
+         bbark   =                       qbark(ipft) * hite * salloci * balive
+         !---------------------------------------------------------------------------------!
+      else if (bevery >= bevery_crit(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !     Bdead is above critical value, height is known.                             !
+         !---------------------------------------------------------------------------------!
+         balive  = balive_crit(ipft)
+         bdead   = bevery - balive
+         dbh     = bd2dbh(ipft,bdead)
+         hite    = hgt_max(ipft)
+         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
+         bleaf   =                                            salloci * balive
+         broot   =                       q    (ipft)        * salloci * balive
+         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
+         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
+         bbark   =                       qbark(ipft) * hite * salloci * balive
+
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Use the look-up table to find the best dbh. -------------------------------!
+         le_mask_lut(:) = bevery <= bevery_lut(:,ipft)
+         ge_mask_lut(:) = bevery >= bevery_lut(:,ipft)
+         ilwr           = maxloc (bevery_lut(:,ipft),dim=1,mask=le_mask_lut)
+         iupr           = minloc (bevery_lut(:,ipft),dim=1,mask=ge_mask_lut)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !      In case ilwr and iupr are the same, we have an exact estimate.  Other-     !
+         ! wise, use log-linear interpolation.                                             !
+         !---------------------------------------------------------------------------------!
+         if (ilwr == iupr) then
+            dbh     = dbh_lut(ilwr,ipft)
+            hite    = dbh2h(ipft,dbh)
+         else
+            !------ Define the first guess for Regula Falsi (Illinois) method. ------------!
+            dbha    = dbh_lut(ilwr,ipft)
+            dbhz    = dbh_lut(iupr,ipft)
+            hgta    = dbh2h(ipft,dbha)
+            hgtz    = dbh2h(ipft,dbhz)
+            funa    = size2be(dbha,hgta,ipft) - bevery
+            funz    = size2be(dbhz,hgtz,ipft) - bevery
+            zside   = funa * funz < 0.
+            !------------------------------------------------------------------------------!
+
+
+            !----- This should not happen, but check it anyway. ---------------------------!
+            if (.not. zside) then
+               write (unit=*,fmt='(a)')           '---------------------------------------'
+               write (unit=*,fmt='(a)')           ' Function does not have proper guess:  '
+               write (unit=*,fmt='(a)')           '---------------------------------------'
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a)')           ' Input:    '
+               write (unit=*,fmt='(a,1x,i14)'   ) ' + ipft   =',ipft
+               write (unit=*,fmt='(a,1x,es14.7)') ' + bevery =',bevery
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a)')           ' Guesses:  '
+               write (unit=*,fmt='(a,1x,es14.7)') ' + dbha    =',dbha
+               write (unit=*,fmt='(a,1x,es14.7)') ' + dbhz    =',dbhz
+               write (unit=*,fmt='(a,1x,es14.7)') ' + hgta    =',hgta
+               write (unit=*,fmt='(a,1x,es14.7)') ' + hgtz    =',hgtz
+               write (unit=*,fmt='(a,1x,es14.7)') ' + beverya =',size2be(dbha,hgta,ipft)
+               write (unit=*,fmt='(a,1x,es14.7)') ' + beveryz =',size2be(dbhz,hgtz,ipft)
+               write (unit=*,fmt='(a,1x,es14.7)') ' + funa    =',funa
+               write (unit=*,fmt='(a,1x,es14.7)') ' + funz    =',funz
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a)')           '--------------------------------------'
+               call fatal_error('Ill-posed first guesses for Regula Falsi'                 &
+                               ,'expand_bevery','allometry.f90')
+               
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Loop until convergence.                                                  !
+            !------------------------------------------------------------------------------!
+            rfaloop: do it=1,maxfpo
+               dbh  = (funz * dbha - funa * dbhz) / ( funz - funa)
+               hite = dbh2h(ipft,dbh)
+
+               !---------------------------------------------------------------------------!
+               !     Now that we updated the guess, check whether they are really close.   !
+               ! If so, it converged within tolerance.                                     !
+               !---------------------------------------------------------------------------!
+               converged = abs(dbh-dbha) < toler * dbh
+               if (converged) exit rfaloop
+               !---------------------------------------------------------------------------!
+
+
+               !------ Find the new function evaluation. ----------------------------------!
+               fun  =  size2be(dbh,hite,ipft) - bevery
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Define the new interval based on the intermediate value theorem.  We  !
+               ! check whether the same side is being picked repeatedly, and apply the     !
+               ! Regula Falsi step to try to speed up convergence.                         !
+               !---------------------------------------------------------------------------!
+               if (fun*funa < 0. ) then
+                  dbhz  = dbh
+                  funz  = fun
+                  if (zside) funa = funa * 0.5
+                  zside = .true.
+               else
+                  dbha  = dbh
+                  funa  = fun
+                  if (.not. zside) funz = funz * 0.5
+                  zside = .false.
+               end if
+               !---------------------------------------------------------------------------!
+            end do rfaloop
+            !------------------------------------------------------------------------------!
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !      This method should always congerge in case the function is continuous,  !
+            ! but just in case.                                                            !
+            !------------------------------------------------------------------------------!
+            if (.not. converged) then
+               write (unit=*,fmt='(a)')           '---------------------------------------'
+               write (unit=*,fmt='(a)')           ' Function did not converge:            '
+               write (unit=*,fmt='(a)')           '---------------------------------------'
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a,1x,i14)'   ) ' Iterations =',maxfpo
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a)')           ' Input:      '
+               write (unit=*,fmt='(a,1x,i14)'   ) ' + ipft     =',ipft
+               write (unit=*,fmt='(a,1x,es14.7)') ' + bevery   =',bevery
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a)')           ' Guesses:    '
+               write (unit=*,fmt='(a,1x,es14.7)') ' + dbha      =',dbha
+               write (unit=*,fmt='(a,1x,es14.7)') ' + dbh       =',dbh
+               write (unit=*,fmt='(a,1x,es14.7)') ' + dbhz      =',dbhz
+               write (unit=*,fmt='(a,1x,es14.7)') ' + hgta      =',hgta
+               write (unit=*,fmt='(a,1x,es14.7)') ' + hite      =',hite
+               write (unit=*,fmt='(a,1x,es14.7)') ' + hgtz      =',hgtz
+               write (unit=*,fmt='(a,1x,es14.7)') ' + beverya   =',size2be(dbha,hgta,ipft)
+               write (unit=*,fmt='(a,1x,es14.7)') ' + beveryz   =',size2be(dbhz,hgtz,ipft)
+               write (unit=*,fmt='(a,1x,es14.7)') ' + funa      =',funa
+               write (unit=*,fmt='(a,1x,es14.7)') ' + fun       =',fun
+               write (unit=*,fmt='(a,1x,es14.7)') ' + funz      =',funz
+               write (unit=*,fmt='(a)')           ' '
+               write (unit=*,fmt='(a)')           '--------------------------------------'
+               call fatal_error('Ill-posed first guess for Regula Falsi'                   &
+                               ,'expand_bevery','allometry.f90')
+               
+            end if
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Solution for dbh was determined, derive tissue biomass. ------------------!
+         bdead   = size2bd(dbh,hite,ipft)
+         balive  = bevery - bdead
+         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
+         bleaf   =                                            salloci * balive
+         broot   =                       q    (ipft)        * salloci * balive
+         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
+         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
+         bbark   =                       qbark(ipft) * hite * salloci * balive
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine expand_bevery
    !=======================================================================================!
    !=======================================================================================!
 
@@ -925,6 +1351,7 @@ module allometry
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
       use ed_misc_coms , only : igrass          & ! intent(in)
                               , iallom          ! ! intent(in)
+      implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target :: cpatch

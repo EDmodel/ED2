@@ -89,18 +89,19 @@ ifeq ($(KIND_COMP),A)
    F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
            -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
            -fcheck=all -frecursive -fsignaling-nans -Werror -mmacosx-version-min=10.12     \
-           -static
+           -fopenmp -static
    C_OPTS= -O0 -DLITTLE  -g -static
    LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
                 -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
                 -fcheck=all -frecursive -fsignaling-nans -Werror                           \
-                -mmacosx-version-min=10.12
+                -mmacosx-version-min=10.12 -fopenmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
-   F_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -static
-   C_OPTS= -O0 -DLITTLE  -g -static
-   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12
+   F_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -fopenmp     \
+           -static
+   C_OPTS= -O0 -DLITTLE  -g  -static
+   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -fopenmp
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#
@@ -125,5 +126,6 @@ PAR_DEFS=
 #------------------------------------------------------------------------------------------#
 #      Archive options for Mac OS X.                                                       #
 #------------------------------------------------------------------------------------------#
-ARCHIVE=libtool -c -static -o
+#ARCHIVE=libtool -c -static -stack_size 0x1000000 -o
+ARCHIVE=ar rs
 #------------------------------------------------------------------------------------------#

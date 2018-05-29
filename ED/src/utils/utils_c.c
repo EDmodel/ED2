@@ -20,6 +20,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef MAC_OS_X
+#include <stdlib.h>
+#endif
+
 #ifdef SUNHPC
 #include <sched.h>
 #include <syscall.h>
@@ -351,7 +355,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
     strcpy(fpref0,token);
 
     // Fetch next token
-    token = strtok('\0', delim);
+    token = strtok("\0", delim);
   }
 
   /* Now we have the string parsed into the file prefix and the directory. 
@@ -371,7 +375,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
     tfound=1;
     
     /* Try the next token */
-    token = strtok('\0',delim2);
+    token = strtok("\0",delim2);
     if (token != '\0'){
       tfound=2;
       strcpy(fpref2,token);
@@ -390,7 +394,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
     }
     
     /* Try the next token */
-    token = strtok('\0',delim2);
+    token = strtok("\0",delim2);
     if (token != '\0'){
       tfound=2;
       strcpy(fpref2,token);
