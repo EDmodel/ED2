@@ -2216,7 +2216,6 @@ subroutine init_pft_alloc_params()
    real                      :: eta_f16
    real                      :: eta_c_f16
    real                      :: asal_bar
-   real, dimension(2)        :: params_bl_lg
    real, dimension(2)        :: params_bs_lg
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
@@ -3111,8 +3110,8 @@ subroutine init_pft_alloc_params()
             !      shade-tolerance. J. Ecol., 97(2), 311-325, 2009.                        !
             !      doi:10.1111/j.1365-2745.2008.01466.x (M09).                             !
             !------------------------------------------------------------------------------!
-            b1Bl(ipft) = params_bl_lg(1) / SLA(ipft)
-            b2Bl(ipft) = params_bl_lg(2)
+            b1Bl(ipft) = c14l83_bl_lg(1) / SLA(ipft)
+            b2Bl(ipft) = c14l83_bl_lg(2)
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!

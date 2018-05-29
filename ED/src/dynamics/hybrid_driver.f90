@@ -21,7 +21,8 @@ module hybrid_driver
      use rk4_driver            , only : initp2modelp
      use ed_state_vars         , only : edtype             & ! structure
                                       , polygontype        & ! structure
-                                      , sitetype           ! ! structure
+                                      , sitetype           & ! structure
+                                      , patchtype          ! ! structure
      use met_driver_coms       , only : met_driv_state     ! ! structure
      use grid_coms             , only : nzg                & ! intent(in)
                                       , nzs                ! ! intent(in)
@@ -47,6 +48,7 @@ module hybrid_driver
      !----- Local variables ---------------------------------------------------------------!
      type(polygontype)        , pointer     :: cpoly
      type(sitetype)           , pointer     :: csite
+     type(patchtype)          , pointer     :: cpatch
      type(met_driv_state)     , pointer     :: cmet
      type(rk4patchtype)       , pointer     :: initp
      type(rk4patchtype)       , pointer     :: dinitp

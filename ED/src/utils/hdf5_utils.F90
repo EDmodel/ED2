@@ -42,29 +42,12 @@ module hdf5_utils
 
       !----- Open the dataset. ------------------------------------------------------------!
       call h5dopen_f(fileid_f,trim(dsetname)//char(0), dsetid_f, hdferr)
-      if (hdferr /= 0) then
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) '-------------------------------------------------'
-         write(unit=*,fmt='(a,1x,a)'  ) ' Dataset name:   ',trim(dsetname)
-         write(unit=*,fmt='(a,1x,i18)') ' Dataset ID:     ',dsetid_f
-         write(unit=*,fmt='(a,1x,i18)') ' File ID:        ',fileid_f
-         write(unit=*,fmt='(a,1x,i18)') ' Dimension size: ',ndims
-         write(unit=*,fmt='(a,1x,i18)') ' HDF error flag: ',hdferr
-         write(unit=*,fmt='(a)'       ) '-------------------------------------------------'
-         write(unit=*,fmt='(a)'       ) 'Failed opening dataset, assume dummy dimensions.'
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) ''
-         ndims   = 0
-         dims(1) = 0
-         return
-      end if
       !------------------------------------------------------------------------------------!
 
 
       !----- Get data space. --------------------------------------------------------------!
       call h5dget_space_f(dsetid_f, dspaceid_f, hdferr)
-      if (hdferr /= 0) then
+      if (hdferr < 0) then
          write(unit=*,fmt='(a)'       ) ''
          write(unit=*,fmt='(a)'       ) ''
          write(unit=*,fmt='(a)'       ) '-------------------------------------------------'
@@ -85,41 +68,11 @@ module hdf5_utils
 
       !----- Get dataset's dimension count. -----------------------------------------------!
       call h5sget_simple_extent_ndims_f(dspaceid_f,ndims,hdferr)
-      if (hdferr /= 0) then
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) '-------------------------------------------------'
-         write(unit=*,fmt='(a,1x,a)'  ) ' Dataset name:   ',trim(dsetname)
-         write(unit=*,fmt='(a,1x,i18)') ' Data space ID:  ',dspaceid_f
-         write(unit=*,fmt='(a,1x,i18)') ' HDF error flag: ',hdferr
-         write(unit=*,fmt='(a)'       ) '-------------------------------------------------'
-         write(unit=*,fmt='(a)'       ) 'Failed getting dimension count, assume dummy ones.'
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) ''
-         ndims   = 0
-         dims(1) = 0
-         return
-      end if
       !------------------------------------------------------------------------------------!
 
 
       !----- Get dataset's extent dimensions. ---------------------------------------------!
       call h5Sget_simple_extent_dims_f (dspaceid_f,dimshf,maxdims,hdferr)
-      if (hdferr /= 0) then
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) '-------------------------------------------------'
-         write(unit=*,fmt='(a,1x,a)'  ) ' Dataset name:   ',trim(dsetname)
-         write(unit=*,fmt='(a,1x,i18)') ' Data space ID:  ',dspaceid_f
-         write(unit=*,fmt='(a,1x,i18)') ' HDF error flag: ',hdferr
-         write(unit=*,fmt='(a)'       ) '-------------------------------------------------'
-         write(unit=*,fmt='(a)'       ) 'Failed getting dimensions, assume dummy ones.'
-         write(unit=*,fmt='(a)'       ) ''
-         write(unit=*,fmt='(a)'       ) ''
-         ndims   = 0
-         dims(1) = 0
-         return
-      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -417,8 +370,8 @@ module hdf5_utils
          write(unit=*,fmt='(a)'       ) '------------------------------------------------'
          write(unit=*,fmt='(a)'       ) ''
          write(unit=*,fmt='(a)'       ) ''
-         call fatal_error('Invalid settins, one and only one of the above variables '      &
-                         ,'should be present!','shdf5_orec_f','hdf5_utils.F90')
+         call fatal_error('Invalid settings, one and only one of the above variables '     &
+                         //'should be present!','shdf5_orec_f','hdf5_utils.F90')
       end if
       !------------------------------------------------------------------------------------!
 
@@ -806,8 +759,8 @@ module hdf5_utils
          write(unit=*,fmt='(a)'       ) '------------------------------------------------'
          write(unit=*,fmt='(a)'       ) ''
          write(unit=*,fmt='(a)'       ) ''
-         call fatal_error('Invalid settins, one and only one of the above variables '      &
-                         ,'should be present!','shdf5_irec_f','hdf5_utils.F90')
+         call fatal_error('Invalid settings, one and only one of the above variables '     &
+                         //'should be present!','shdf5_irec_f','hdf5_utils.F90')
       end if
       !------------------------------------------------------------------------------------!
 

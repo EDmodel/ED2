@@ -1045,17 +1045,15 @@ module radiate_driver
                                                      , tiny_offset                       )
             upward_nir_above_diffuse        = sngloff( albedo_ground_nir * nir_diff_norm   &
                                                      , tiny_offset                       )
-            upward_rshort_above_diffuse     = sngloff( upward_par_above_diffuse            &
-                                                     + upward_nir_above_diffuse            &
-                                                     , tiny_offset                       )
+            upward_rshort_above_diffuse     = upward_par_above_diffuse                     &
+                                            + upward_nir_above_diffuse
             csite%albedo_par          (ipa) = sngloff( upward_par_above_diffuse            &
                                                      / ( par_beam_norm + par_diff_norm )   &
                                                      , tiny_offset                       )
             csite%albedo_nir          (ipa) = sngloff( upward_nir_above_diffuse            &
                                                      / ( nir_beam_norm + nir_diff_norm )   &
                                                      , tiny_offset                       )
-            csite%albedo              (ipa) = sngloff( upward_rshort_above_diffuse         &
-                                                     , tiny_offset                       )
+            csite%albedo              (ipa) = upward_rshort_above_diffuse
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -1307,17 +1305,15 @@ module radiate_driver
                                                   , tiny_offset                       )
          upward_nir_above_diffuse        = sngloff( albedo_ground_nir * nir_diff_norm      &
                                                   , tiny_offset                       )
-         upward_rshort_above_diffuse     = sngloff( upward_par_above_diffuse               &
-                                                  + upward_nir_above_diffuse               &
-                                                  , tiny_offset                       )
+         upward_rshort_above_diffuse     = upward_par_above_diffuse                        &
+                                         + upward_nir_above_diffuse
          csite%albedo_par          (ipa) = sngloff( upward_par_above_diffuse               &
                                                   / ( par_beam_norm + par_diff_norm )      &
                                                   , tiny_offset                       )
          csite%albedo_nir          (ipa) = sngloff( upward_nir_above_diffuse               &
                                                   / ( nir_beam_norm + nir_diff_norm )      &
                                                   , tiny_offset                       )
-         csite%albedo              (ipa) = sngloff( upward_rshort_above_diffuse            &
-                                                  , tiny_offset                       )
+         csite%albedo              (ipa) = upward_rshort_above_diffuse
          !---------------------------------------------------------------------------------!
 
 

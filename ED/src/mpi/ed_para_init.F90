@@ -63,7 +63,7 @@ subroutine ed_node_decomp(masterworks)
       !      Obtain estimates of the fraction of computational time (work) required for    !
       ! each column in the region of the domain.                                           !
       !------------------------------------------------------------------------------------!
-      call get_work(ngr,mmxp(ngr),mmyp(ngr))
+      call get_work(ngr,mmxp(ngr),mmyp(ngr),.false.)
       call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr))
    end do
 
@@ -76,6 +76,7 @@ subroutine ed_node_decomp(masterworks)
    !---------------------------------------------------------------------------------------!
    do ngr=n_ed_region+1,ngrids
       call ed_newgrid(ngr)
+      call get_work(ngr,mmxp(ngr),mmyp(ngr),.true.)
       work_e(ngr)%work(1,1)=1.
       work_e(ngr)%land(1,1)=.true.
       call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr))
@@ -168,7 +169,7 @@ end subroutine get_grid
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine get_work(ifm,nxp,nyp)
+subroutine get_work(ifm,nxp,nyp,is_poi)
 
    use ed_work_vars, only : work_e         ! ! structure
    use soil_coms   , only : veg_database   & ! intent(in)
@@ -187,6 +188,7 @@ subroutine get_work(ifm,nxp,nyp)
    integer, intent(in) :: ifm
    integer, intent(in) :: nxp
    integer, intent(in) :: nyp
+   logical, intent(in) :: is_poi
    !----- Local variables. ----------------------------------------------------------------!
    integer :: npoly
    real   , dimension(:,:), allocatable :: lat_list
@@ -335,12 +337,25 @@ subroutine get_work(ifm,nxp,nyp)
       end do
    end if
 
-   !----- Generate the land/sea mask. -----------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     Generate the land/sea mask.  This is only needed in regional runs.  For single    !
+   ! polygons of interest, we assume that the place is in the land.                        !
+   !---------------------------------------------------------------------------------------!
    write(unit=*,fmt=*) ' => Generating the land/sea mask.'
+   if (is_poi) then
+      ipcent_land    (:,:) = 0.
+      ipcent_land    (1,:) = 1.
+      leaf_class_list(:,:) = 6
+   else
+      call leaf_database(trim(veg_database(ifm)),maxsite,npoly,'leaf_class'                &
+                        ,lat_list,lon_list,leaf_class_list,ipcent_land)
+   end if
+   !---------------------------------------------------------------------------------------!
 
-   call leaf_database(trim(veg_database(ifm)),maxsite,npoly,'leaf_class'                   &
-                     ,lat_list,lon_list,leaf_class_list,ipcent_land)
 
+   !---------------------------------------------------------------------------------------!
+   !     Either read or assign the soil texture from ED2IN.                                !
+   !---------------------------------------------------------------------------------------!
    if (isoilflg(ifm) == 1) then
       call leaf_database(trim(soil_database(ifm)),maxsite,npoly,'soil_text'                &
                         ,lat_list,lon_list,ntext_soil_list,ipcent_soil)

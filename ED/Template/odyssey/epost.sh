@@ -262,8 +262,8 @@ let n_tasks_max=${n_nodes_max}*${n_tpn}
 #------------------------------------------------------------------------------------------#
 if [ ${myself} == "mlongo" ]
 then
-   rscpath="${HOME}/util/Rsc"
-   rlibs="${SCRATCH}/util/R-3.1.2/lib"
+   rscpath="${HOME}/Util/Rsc"
+   rlibs="${SCRATCH}/Util/R-3.4.2/lib"
 fi
 #------------------------------------------------------------------------------------------#
 

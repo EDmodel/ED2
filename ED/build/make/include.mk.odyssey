@@ -24,7 +24,8 @@ BASE=$(ED_ROOT)/build/
 # still be able to compile without HDF5 but the code is not going to run.                  #
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
-HDF5_PATH=/n/sw/fasrcsw/apps/MPI/intel/17.0.2-fasrc01/impi/2017.2.174-fasrc01/hdf5/1.10.1-fasrc01
+#HDF5_PATH=/n/sw/fasrcsw/apps/MPI/intel/17.0.2-fasrc01/impi/2017.2.174-fasrc01/hdf5/1.10.1-fasrc01
+HDF5_PATH=/n/helmod/apps/centos7/MPI/intel/17.0.4-fasrc01/openmpi/2.1.0-fasrc02/hdf5/1.10.1-fasrc01
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
@@ -42,9 +43,12 @@ USE_COLLECTIVE_MPIO=0
 
 #################################### COMPILER SETTINGS #####################################
 CMACH=ODYSSEY
-F_COMP=mpif90 -fc=ifort
-C_COMP=mpicc -cc=icc
-LOADER=mpif90 -fc=ifort
+#F_COMP=mpif90 -fc=ifort
+#C_COMP=mpicc -cc=icc
+#LOADER=mpif90 -fc=ifort
+F_COMP=mpif90
+C_COMP=mpicc
+LOADER=mpif90
 LIBS=
 MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
@@ -86,12 +90,12 @@ ifeq ($(KIND_COMP),A)
    F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
            -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
            -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -gen-interfaces -qopenmp -diag-error=all -static
+           -warn declarations -gen-interfaces -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp  -static
    LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
                -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
                -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -gen-interfaces -qopenmp -diag-error=all
+               -warn declarations -gen-interfaces -qopenmp -diag-error=all
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
@@ -99,12 +103,12 @@ ifeq ($(KIND_COMP),B)
    F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
            -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
            -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn interfaces -qopenmp -diag-error=all -static
+           -warn interfaces -warn declarations -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
    LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
                -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
                -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn interfaces -qopenmp -diag-error=all 
+               -warn interfaces -warn declarations -qopenmp -diag-error=all 
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
