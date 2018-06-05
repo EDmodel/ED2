@@ -74,7 +74,7 @@ do
       ;;
    -c|--clean)
       CLEAN="clean"
-      STEP=1
+      STEP=662941
       shift 1
       ;;
    -g|--gitoff)
@@ -114,6 +114,10 @@ intel|odyssey|sunhpc|sdumont)
       0)
          echo "You must provide step (option -s or --step) when use \"-k A\" or \"-k B\""
          exit 1
+         ;;
+      662941)
+         LKIND="A"
+         echo "Clean compilation."
          ;;
       1)
          LKIND="A"

@@ -1073,21 +1073,16 @@ module growth_balive
                !     Find total biomass that can be lost.  We take an amount proportional  !
                ! to the current biomass of each the pools.                                 !
                !---------------------------------------------------------------------------!
-               bloss_max   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bbark(ico)     &
-                           + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)
+               bloss_max   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bbark(ico)
                f_bleaf     = cpatch%bleaf    (ico) / bloss_max
                f_broot     = cpatch%broot    (ico) / bloss_max
                f_bbark     = cpatch%bbark    (ico) / bloss_max
-               f_bsapwooda = cpatch%bsapwooda(ico) / bloss_max
-               f_bsapwoodb = cpatch%bsapwoodb(ico) / bloss_max
 
                if (bloss_max > carbon_debt) then
                   !----- Remove biomass accordingly. --------------------------------------!
                   tr_bleaf     = -1.0 * carbon_debt * f_bleaf
                   tr_broot     = -1.0 * carbon_debt * f_broot
                   tr_bbark     = -1.0 * carbon_debt * f_bbark
-                  tr_bsapwooda = -1.0 * carbon_debt * f_bsapwooda
-                  tr_bsapwoodb = -1.0 * carbon_debt * f_bsapwoodb
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -1100,8 +1095,6 @@ module growth_balive
                   tr_bleaf     = -1.0 * cpatch%bleaf    (ico)
                   tr_broot     = -1.0 * cpatch%broot    (ico)
                   tr_bbark     = -1.0 * cpatch%bbark    (ico)
-                  tr_bsapwooda = -1.0 * cpatch%bsapwooda(ico)
-                  tr_bsapwoodb = -1.0 * cpatch%bsapwoodb(ico)
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1114,20 +1107,15 @@ module growth_balive
             ! storage.  Bark is not 100% living tissue, but for simplicity we don't        !
             ! separate inner bark from outer bark.                                         !
             !------------------------------------------------------------------------------!
-            bloss_max   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bbark(ico)        &
-                        + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)
+            bloss_max   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bbark(ico)
             if (bloss_max >= tiny_num) then
                f_bleaf     = cpatch%bleaf    (ico) / bloss_max
                f_broot     = cpatch%broot    (ico) / bloss_max
                f_bbark     = cpatch%bbark    (ico) / bloss_max
-               f_bsapwooda = cpatch%bsapwooda(ico) / bloss_max
-               f_bsapwoodb = cpatch%bsapwoodb(ico) / bloss_max
             else
                f_bleaf     = 0.
                f_broot     = 0.
                f_bbark     = 0.
-               f_bsapwooda = 0.
-               f_bsapwoodb = 0.
             end if
 
             if (bloss_max > carbon_debt) then
@@ -1135,8 +1123,6 @@ module growth_balive
                tr_bleaf     = -1.0 * carbon_debt * f_bleaf
                tr_broot     = -1.0 * carbon_debt * f_broot
                tr_bbark     = -1.0 * carbon_debt * f_bbark
-               tr_bsapwooda = -1.0 * carbon_debt * f_bsapwooda
-               tr_bsapwoodb = -1.0 * carbon_debt * f_bsapwoodb
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
@@ -1146,8 +1132,6 @@ module growth_balive
                tr_bleaf     = -1.0 * cpatch%bleaf    (ico)
                tr_broot     = -1.0 * cpatch%broot    (ico)
                tr_bbark     = -1.0 * cpatch%bbark    (ico)
-               tr_bsapwooda = -1.0 * cpatch%bsapwooda(ico)
-               tr_bsapwoodb = -1.0 * cpatch%bsapwoodb(ico)
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!

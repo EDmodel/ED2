@@ -25,7 +25,7 @@ BASE=$(ED_ROOT)/build/
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
 #HDF5_PATH=/n/sw/fasrcsw/apps/MPI/intel/17.0.2-fasrc01/impi/2017.2.174-fasrc01/hdf5/1.10.1-fasrc01
-HDF5_PATH=/n/helmod/apps/centos7/MPI/intel/17.0.4-fasrc01/openmpi/2.1.0-fasrc02/hdf5/1.10.1-fasrc01
+HDF5_PATH=/n/home00/mlongo/Util/Modules/hdf5/1.10.2_intel
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#

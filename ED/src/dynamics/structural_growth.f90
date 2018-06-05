@@ -50,7 +50,8 @@ module structural_growth
                                      , update_vital_rates          ! ! subroutine
       use allometry           , only : size2bl                     & ! function
                                      , expand_bevery               ! ! subroutine
-      use consts_coms         , only : yr_sec                      ! ! intent(in)
+      use consts_coms         , only : yr_sec                      & ! intent(in)
+                                     , almost_zero                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -312,18 +313,28 @@ module structural_growth
                   ! remaining stays in bstorage and can be used to bring the cohort back   !
                   ! to allometry.                                                          !
                   !------------------------------------------------------------------------!
-                  select case (iallom)
-                  case (3)
-                     bevery_aim     = bevery_in + f_growth * cpatch%bstorage(ico)
-                     call expand_bevery(cpatch%pft(ico),bevery_aim,dbh_aim,hite_aim        &
-                                       ,bleaf_aim,broot_aim,bsapwooda_aim,bsapwoodb_aim    &
-                                       ,bbark_aim,balive_aim,bdead_aim)
-                     f_bdead        = f_growth * ( bdead_aim  - bdead_in  )                &
-                                               / ( bevery_aim - bevery_in )
-                     f_bstorage     = f_bstorage + f_growth - f_bdead
-                  case default
-                     f_bdead        = f_growth
-                  end select
+                  if (f_growth > almost_zero) then
+                     select case (iallom)
+                     case (3)
+                        bevery_aim     = bevery_in + f_growth * cpatch%bstorage(ico)
+                        call expand_bevery(cpatch%pft(ico),bevery_aim,dbh_aim,hite_aim     &
+                                          ,bleaf_aim,broot_aim,bsapwooda_aim,bsapwoodb_aim &
+                                          ,bbark_aim,balive_aim,bdead_aim)
+                        if (bevery_aim > bevery_in .and. bdead_aim > bdead_in) then
+                           f_bdead     = f_growth * ( bdead_aim  - bdead_in  )             &
+                                                  / ( bevery_aim - bevery_in )
+                        else
+                           f_bdead     = 0.0
+                        end if
+                        f_bstorage     = f_bstorage + f_growth - f_bdead
+                     case default
+                        f_bdead        = f_growth
+                     end select
+                  else
+                     f_bstorage = f_bstorage + f_growth
+                     f_growth   = 0.
+                     f_bdead    = 0.
+                  end if
                   cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
 

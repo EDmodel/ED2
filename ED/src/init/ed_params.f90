@@ -44,8 +44,8 @@ subroutine load_ed_ecosystem_params()
    !   9 | Early hardwood                  |    no |    no |       no |       no |      no !
    !  10 | Mid hardwood                    |    no |    no |       no |       no |      no !
    !  11 | Late hardwood                   |    no |    no |       no |       no |      no !
-   !  12 | Early shade intolerant          |    no |    no |      yes |       no |      no !
-   !  13 | Mid shade intolerant            |    no |    no |      yes |       no |      no !
+   !  12 | Early thin-leaved               |    no |    no |      yes |       no |      no !
+   !  13 | Mid thin-leaved                 |    no |    no |      yes |       no |      no !
    !  14 | Median tropical                 |    no |    no |      yes |       no |      no !
    !  15 | Araucaria                       |    no |    no |      yes |       no |     yes !
    !  16 | Tropical C3 grass               |   yes |    no |      yes |       no |      no !
@@ -65,8 +65,8 @@ subroutine load_ed_ecosystem_params()
    pft_name16( 9) = 'Early_hardwood  '
    pft_name16(10) = 'Mid_hardwood    '
    pft_name16(11) = 'Late_hardwood   '
-   pft_name16(12) = 'Early_shade_int '
-   pft_name16(13) = 'Mid_shade_int   '
+   pft_name16(12) = 'Early_thin_leaf '
+   pft_name16(13) = 'Mid_thin_leaf   '
    pft_name16(14) = 'Median_tropical '
    pft_name16(15) = 'Araucaria       '
    pft_name16(16) = 'Subtrop_C3_grass'
@@ -2211,6 +2211,10 @@ subroutine init_pft_alloc_params()
    !----- Local variables. ----------------------------------------------------------------!
    integer                   :: ipft
    real   , dimension(n_pft) :: abas
+   real   , dimension(n_pft) :: size_min
+   real   , dimension(n_pft) :: size_crit
+   real   , dimension(n_pft) :: wai_min
+   real   , dimension(n_pft) :: wai_crit
    real                      :: aux
    real                      :: init_bleaf
    real                      :: eta_f16
@@ -2284,10 +2288,34 @@ subroutine init_pft_alloc_params()
    real                  , parameter :: SLA_ref       = 22.93
    real                  , parameter :: rho_ref       = 0.615
    !---------------------------------------------------------------------------------------!
+   !    For the new allometry, we estimate WAI from the the potential LAI.   The ratio for !
+   ! canopy trees is set to 0.11 following the average ratio from Olivas et al. (2013).    !
+   ! For seedlings, we assume the ratio to be 0.0005, similar to the old allometry.        !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan, J. J. O'Brien,  !
+   !    and H. Ordonez. Comparison of direct and indirect methods for assessing leaf area  !
+   !    index across a tropical rain forest landscape.  Agric. For. Meteorol.,             !
+   !    177:110-116, Aug 2013. doi:10.1016/j.agrformet.2013.04.010.                        !
+   !---------------------------------------------------------------------------------------!
+   real                  , parameter :: f_wai_min     = 0.0005
+   real                  , parameter :: f_wai_crit    = 0.11
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    C2B    = 2.0
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Liana-specific parameters, move here so they are properly initialised.            !
+   ! MLO - Manfredo, is there a reason two define two dbh_crit for lianas? Couldn't this   !
+   !       number simply replace dbh_crit for lianas?                                      !
+   !---------------------------------------------------------------------------------------!
+   h_edge = 0.5          !< maximum height advantage for lianas
+   liana_dbh_crit = 26.0 !< liana specific critical dbh
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -2316,9 +2344,9 @@ subroutine init_pft_alloc_params()
                rho(ipft) = 0.610
             case ( 4) ! Late-successional tropical
                rho(ipft) = 0.770
-            case (12) ! Early-successional shade intolerant
-               rho(ipft) = 0.520
-            case (13) ! Early-successional shade intolerant
+            case (12) ! Early-successional thin-leaved
+               rho(ipft) = 0.510
+            case (13) ! Early-successional thin-leaved
                rho(ipft) = 0.718
             case (14) ! Medoid tropical
                rho(ipft) = rho_ref
@@ -2371,23 +2399,23 @@ subroutine init_pft_alloc_params()
          !---------------------------------------------------------------------------------!
          select case (ipft)
          case (1)     ! C4 grass
-            leaf_turnover_rate(ipft) = 1.7351359
+            leaf_turnover_rate(ipft) = 1.735136
          case (2)     ! Early tropical
-            leaf_turnover_rate(ipft) = 1.0254281
+            leaf_turnover_rate(ipft) = 1.4275285
          case (3)     ! Mid tropical
-            leaf_turnover_rate(ipft) = 0.8654336
+            leaf_turnover_rate(ipft) = 1.2888647
          case (4)     ! Late tropical
-            leaf_turnover_rate(ipft) = 0.6447438
-         case (12)    ! Early shade intolerant
-            leaf_turnover_rate(ipft) = 3.0388083
-         case (13)    ! Mid shade intolerant
-            leaf_turnover_rate(ipft) = 1.9085949
+            leaf_turnover_rate(ipft) = 0.7478274
+         case (12)    ! Early thin-leaved
+            leaf_turnover_rate(ipft) = 4.7551878
+         case (13)    ! Mid thin-leaved
+            leaf_turnover_rate(ipft) = 2.7573663
          case (14)    ! Medoid tropical
-            leaf_turnover_rate(ipft) = 0.9751402
+            leaf_turnover_rate(ipft) = 1.3141919
          case (16)    ! C3 grass
             leaf_turnover_rate(ipft) = 2.5113406
          case default ! Just in case
-            leaf_turnover_rate(ipft) = 1.0000000
+            leaf_turnover_rate(ipft) = 1.3141919
          end select
          !---------------------------------------------------------------------------------!
       else
@@ -2447,39 +2475,23 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       if (is_tropical(ipft)) then
+         !----- Assign life-type specific SMA coefficients based on trait data bases. -----!
          if (is_conifer(ipft)) then ! Sub-tropical conifers
-            SLA   (ipft) = 10.0
-            sla_s0(ipft) = SLA(ipft)
+            sla_s0(ipft) = 10.0
             sla_s1(ipft) = 0.0
-         elseif (is_grass(ipft)) then ! Tropical grasses, adjust based on allometry
-            select case (iallom)
-            case (2,3)
-               select case (ipft)
-               case (1)  ! C4 grass
-                  SLA   (ipft) = 24.40
-               case (16) ! C3 grass
-                  SLA   (ipft) = 33.58
-               end select
-               sla_s0(ipft) = SLA(ipft)
-               sla_s1(ipft) = 0.0
-            case default
-               SLA   (ipft) = 22.7
-               sla_s0(ipft) = SLA(ipft)
-               sla_s1(ipft) = 0.0
-            end select
-         else ! Tropical trees.
-            select case (iallom)
-            case (2,3)
-               sla_s0(ipft) = 23.21856
-               sla_s1(ipft) = 0.496771
-            case default
-               ! Tropical trees
-               sla_s0(ipft) = exp(log(0.1*C2B)+2.4*log(10.)-0.46*log(12.))
-               sla_s1(ipft) = 0.46
-            end select
-            SLA   (ipft) = sla_s0(ipft) * leaf_turnover_rate(ipft) ** sla_s1(ipft)
-            !------------------------------------------------------------------------------!
+         elseif (is_grass(ipft)) then ! Grasses, use trait data base
+            sla_s0(ipft) = 15.159000
+            sla_s1(ipft) = 0.8637294
+         else ! Broadleaf trees, use trait data base
+            sla_s0(ipft) = 20.276230
+            sla_s1(ipft) = 0.4501726
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Use SMA relationship to derive SLA. ---------------------------------------!
+         SLA   (ipft) = sla_s0(ipft) * leaf_turnover_rate(ipft) ** sla_s1(ipft)
          !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
@@ -3358,8 +3370,9 @@ subroutine init_pft_alloc_params()
    select case (iallom)
    case (3)
       !------------------------------------------------------------------------------------!
-      !    WAI is defined as a fraction of (potential) LAI.   The ratio is set to 0.11     !
-      ! following the average ratio from Olivas et al. (2013).                             !
+      !    WAI is defined as a fraction of (potential) LAI.   The ratio for canopy trees   !
+      ! is set to 0.11 following the average ratio from Olivas et al. (2013).  For         !
+      ! seedlings, we assume the ratio to be 0.0005, similar to the old allometry.         !
       !                                                                                    !
       ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,              !
       !    J. J. O'Brien, and H. Ordonez. Comparison of direct and indirect methods for    !
@@ -3367,8 +3380,20 @@ subroutine init_pft_alloc_params()
       !    Agric. For. Meteorol., 177:110-116, Aug 2013.                                   !
       !    doi:10.1016/j.agrformet.2013.04.010.                                            !
       !------------------------------------------------------------------------------------!
-      b1WAI(:) = merge(0.0,0.11*SLA(:)*b1Bl(:),is_grass(:))
-      b2WAI(:) = merge(1.0,            b2Bl(:),is_grass(:))
+      size_min (:) = merge( min_dbh (:) * min_dbh (:) * hgt_min(:)                         &
+                          , min_dbh (:)                                                    &
+                          , is_tropical(:) .and. (.not. is_liana(:))       )
+      size_crit(:) = merge( dbh_crit(:) * dbh_crit(:) * hgt_max(:)                         &
+                          , merge(liana_dbh_crit,dbh_crit(:),is_liana(:))                  &
+                          , is_tropical(:) .and. (.not. is_liana(:))       )
+      wai_min  (:) = f_wai_min  * SLA(:) * b1Bl(:) * size_min (:) ** b2Bl(:)
+      wai_crit (:) = f_wai_crit * SLA(:) * b1Bl(:) * size_crit(:) ** b2Bl(:)
+      b2WAI(:) = merge( 1.0                                                                &
+                      , log(wai_crit(:)/wai_min(:))/log(size_crit(:)/size_min(:))          &
+                      , is_grass(:)                                               )
+      b1WAI(:) = merge( 0.0                                                                &
+                      , wai_crit(:) / size_crit(:) ** b2WAI(:)                             &
+                      , is_grass(:)                                               )
       !------------------------------------------------------------------------------------!
    case default
       !------------------------------------------------------------------------------------!
@@ -3521,16 +3546,6 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !     Liana-specific parameters, move here so they are properly initialised.            !
-   ! MLO - Manfredo, is there a reason two define two dbh_crit for lianas? Couldn't this   !
-   !       number simply replace dbh_crit for lianas?                                      !
-   !---------------------------------------------------------------------------------------!
-   h_edge = 0.5          !< maximum height advantage for lianas
-   liana_dbh_crit = 26.0 !< liana specific critical dbh
-   !---------------------------------------------------------------------------------------!
-
-
    !----- Define the number of bins for the look-up tables. -------------------------------!
    nbt_lut = 10000
    !---------------------------------------------------------------------------------------!
@@ -3622,23 +3637,29 @@ subroutine init_pft_photo_params()
 
 
    !----- Local variables. ----------------------------------------------------------------!
-   real(kind=4)            :: ssfact
-   real(kind=4)            :: vmexpo_pft
-   real(kind=4)            :: gamma_pft
-   real(kind=4)            :: a_pft
-   real(kind=4)            :: b_pft
-   integer                 :: ipft
+   real(kind=4), dimension(n_pft) :: wl_alloc     !> Wood:leaf allocation parameter
+   real(kind=4)                   :: ssfact       !> Correction factor for Vcmax
+   real(kind=4)                   :: vmexpo_pft   !> Correction factor dor Rdmax
+   real(kind=4)                   :: gamma_pft    !> Rdmax / Vcmax
+   real(kind=4)                   :: a_pft        !> Parameter for gamma estimation
+   real(kind=4)                   :: b_pft        !> Parameter for gamma estimation
+   integer                        :: ipft         !> PFT index
    !----- Local parameters, based on Atkin et al. (2015), Table S3 (Rdark,m). -------------!
-   real(kind=4), parameter :: a_c3grss = -1.962            ! 5d, C3H
-   real(kind=4), parameter :: b_c3grss =  1.247            ! 5d, C3H
-   real(kind=4), parameter :: a_c4grss =  0.30103000-1.962 ! Make it twice C3H
-   real(kind=4), parameter :: b_c4grss =  1.247            ! Make it twice C3H
-   real(kind=4), parameter :: a_bltrop = -1.533            ! 5f, TWQ >= 25 degC
-   real(kind=4), parameter :: b_bltrop =  1.022            ! 5f, TWQ >= 25 degC
-   real(kind=4), parameter :: a_bltemp = -0.862            ! 5f, 15 degC <= TWQ < 25 degC
-   real(kind=4), parameter :: b_bltemp =  0.753            ! 5f, 15 degC <= TWQ < 25 degC
-   real(kind=4), parameter :: a_needle = -0.366            ! 5d, NlT
-   real(kind=4), parameter :: b_needle =  0.494            ! 5d, NlT
+   real(kind=4), parameter        :: a_c3grss = -1.962            !> 5d, C3H
+   real(kind=4), parameter        :: b_c3grss =  1.247            !> 5d, C3H
+   real(kind=4), parameter        :: a_c4grss =  0.30103000-1.962 !> Make it twice C3H
+   real(kind=4), parameter        :: b_c4grss =  1.247            !> Make it twice C3H
+   real(kind=4), parameter        :: a_bltrop = -1.533            !> 5f, TWQ >= 25C
+   real(kind=4), parameter        :: b_bltrop =  1.022            !> 5f, TWQ >= 25C
+   real(kind=4), parameter        :: a_bltemp = -0.862            !> 5f, 15C <= TWQ < 25C
+   real(kind=4), parameter        :: b_bltemp =  0.753            !> 5f, 15C <= TWQ < 25C
+   real(kind=4), parameter        :: a_needle = -0.366            !> 5d, NlT
+   real(kind=4), parameter        :: b_needle =  0.494            !> 5d, NlT
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Leaf:wood allocation parameter (rho*SLA expressed in m-1). ----------------------!
+   wl_alloc(:) = 1000. * rho(:) * SLA(:) / C2B
    !---------------------------------------------------------------------------------------!
 
 
@@ -3712,12 +3733,10 @@ subroutine init_pft_photo_params()
          case (2,3)
             !------------------------------------------------------------------------------!
             ! Tropical parameters based on multiple data sets (K11,W04, B17, and N17).     !
-            ! For GLOPNET, Amax, Rdmax, and Ca-Ci were available for some entries, so      !
-            ! Vcmax was estimated using the RubP saturated curve (similar to R17).         !
-            !                                                                              !
-            ! Most traits tested turned out to be poorly correlated with Vcmax.  We used   !
-            ! wood density as it had the highest correlation (perhaps surprising, but      !
-            ! higher than Nitrogen or SLA).                                                !
+            ! Most traits tested turned out to be poorly correlated with Vcmax.  The best  !
+            ! correlation was found between Jmax and the product of SLA and wood density   !
+            ! (wl_alloc parameter), when data were aggregated to species level.  For the   !
+            ! time being, we use this term.                                                !
             !                                                                              !
             ! References                                                                   !
             !                                                                              !
@@ -3746,12 +3765,12 @@ subroutine init_pft_photo_params()
             !    doi:10.1038/nature02403 (W04).                                            !
             !------------------------------------------------------------------------------!
             select case (ipft)
-            case (1)     ! C4 grass. 
-               Vm0(ipft) = 35.91
-            case (16)    ! Subtropical C3 grass
-               Vm0(ipft) = 57.50
+            case (1)     ! C4 grass. Use CLM defaults
+               Vm0(ipft) = 23.348416
+            case (16)    ! Subtropical C3 grass.  Use CLM defaults
+               Vm0(ipft) = 35.384615
             case default 
-               Vm0(ipft) = exp(4.351103 -2.58096 * rho(ipft))
+               Vm0(ipft) = 17405.83395 / wl_alloc(ipft) ** 0.784278
             end select
             !------------------------------------------------------------------------------!
          case default
@@ -3995,8 +4014,8 @@ subroutine init_pft_photo_params()
       electron_transport_factor(:) = 2.0
       triose_phosphate_factor  (:) = 0.0
    case (1,3)
-      electron_transport_factor(:) = 1.79
-      triose_phosphate_factor  (:) = merge( 0.0, 0.109,photosyn_pathway(:) == 4)
+      electron_transport_factor(:) = 1.767
+      triose_phosphate_factor  (:) = merge( 0.0, 0.110,photosyn_pathway(:) == 4)
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -4696,7 +4715,7 @@ subroutine init_pft_nitro_params()
             !    economics spectrum. Nature, 428(6985):821-827, Apr 2004.                  !
             !    doi:10.1038/nature02403 (W04).                                            !
             !------------------------------------------------------------------------------!
-            c2n_leaf(ipft) = 337.959 / SLA(ipft) ** 0.834527
+            c2n_leaf(ipft) = 327.1240 / SLA(ipft) ** 0.823498
             !------------------------------------------------------------------------------!
          end if
       case default
@@ -7249,7 +7268,7 @@ subroutine init_derived_params_after_xml()
    !----- Print trait coefficients. -------------------------------------------------------!
    if (print_zero_table) then
       open (unit=19,file=trim(strat_file),status='replace',action='write')
-      write(unit=19,fmt='(65(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=19,fmt='(69(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
                                      ,'         RHO','         SLA','         VM0'         &
                                      ,'  F_DARKRESP',' F_GROW_RESP','    LEAF_TOR'         &
@@ -7270,9 +7289,10 @@ subroutine init_derived_params_after_xml()
                                      ,'  LBSCAT_NIR','   WSCAT_NIR','  WBSCAT_NIR'         &
                                      ,'  LBSCAT_TIR','  WBSCAT_TIR','        PHI1'         &
                                      ,'        PHI2','      MU_BAR','       CLEAF'         &
-                                     ,'       CWOOD','       CBARK'
+                                     ,'       CWOOD','       CBARK','    C2N_LEAF'         &
+                                     ,'    C2N_STEM',' C2N_STORAGE',' C2N_RECRUIT'
       do ipft=1,n_pft
-         write (unit=19,fmt='(8x,i5,5(12x,l1),59(1x,f12.6))')                              &
+         write (unit=19,fmt='(8x,i5,5(12x,l1),63(1x,f12.6))')                              &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),SLA(ipft),Vm0(ipft)     &
                        ,dark_respiration_factor(ipft),growth_resp_factor(ipft)             &
@@ -7296,7 +7316,8 @@ subroutine init_derived_params_after_xml()
                        ,wood_scatter_nir(ipft),wood_backscatter_nir(ipft)                  &
                        ,leaf_backscatter_tir(ipft),wood_backscatter_tir(ipft)              &
                        ,phi1(ipft),phi2(ipft),mu_bar(ipft),cleaf(ipft),cwood(ipft)         &
-                       ,cbark(ipft)
+                       ,cbark(ipft),c2n_leaf(ipft),c2n_stem(ipft),c2n_storage              &
+                       ,c2n_recruit(ipft)
       end do
       close(unit=19,status='keep')
    end if
