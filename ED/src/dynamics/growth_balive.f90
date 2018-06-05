@@ -30,7 +30,7 @@ module growth_balive
    !> \warning The order of the operations here affect the C/N budgets, so don't
    !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
-   subroutine dbalive_dt(cgrid, tfact,veget_dyn_on)
+   subroutine dbalive_dt(cgrid,gr_tfact,year_o_day,veget_dyn_on)
       use ed_state_vars       , only : edtype                     & ! structure
                                      , polygontype                & ! structure
                                      , sitetype                   & ! structure
@@ -64,7 +64,8 @@ module growth_balive
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid        !< the ed grid
-      real             , intent(in) :: tfact        !< "time factor" i.e. call frequency
+      real             , intent(in) :: gr_tfact     !< growth cap to smooth daily increment
+      real             , intent(in) :: year_o_day   !< "time factor" i.e. call frequency
       logical          , intent(in) :: veget_dyn_on !< Is vegetation dynamics on?
       !----- Local variables. -------------------------------------------------------------!
       type(polygontype), pointer    :: cpoly
@@ -125,6 +126,9 @@ module growth_balive
       !------------------------------------------------------------------------------------!
 
 
+      !------ Find the number of days in a month to limit growth rate. --------------------!
+      !------------------------------------------------------------------------------------!
+
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
@@ -177,7 +181,7 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   !     Compute and apply maintenance costs and get daily C gain.          !
                   !------------------------------------------------------------------------!
-                  call get_maintenance(cpatch,ico,tfact,csite%avg_daily_temp(ipa))
+                  call get_maintenance(cpatch,ico,year_o_day,csite%avg_daily_temp(ipa))
                   call get_daily_C_gain(cpatch,ico,daily_C_gain)
                   call apply_maintenance(cpatch,ico,cb_decrement)
 
@@ -203,7 +207,7 @@ module growth_balive
                      cpatch%root_storage_resp(ico) = 0.0
                      cpatch%sapa_storage_resp(ico) = cpatch%bstorage(ico)                  &
                                                    * storage_turnover_rate(ipft)           &
-                                                   * tfact * temp_dep
+                                                   * year_o_day * temp_dep
                      cpatch%sapb_storage_resp(ico) = 0.0
                      cpatch%bark_storage_resp(ico) = 0.0
 
@@ -212,7 +216,8 @@ module growth_balive
                   case(1)
                      if (cpatch%balive(ico) >= tiny_num) then
                         storage_resp_int = cpatch%bstorage(ico) / cpatch%balive(ico)       &
-                                         * storage_turnover_rate(ipft) * tfact * temp_dep
+                                         * storage_turnover_rate(ipft)                     &
+                                         * year_o_day * temp_dep
                      else
                         storage_resp_int = 0.0
                      end if
@@ -284,9 +289,9 @@ module growth_balive
                   !      Allocate plant carbon balance to balive and bstorage.             !
                   !------------------------------------------------------------------------!
                   call get_c_xfers(csite,ipa,ico,carbon_balance                            &
-                                  ,cpoly%green_leaf_factor(ipft,isi),tr_bleaf,tr_broot     &
-                                  ,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage          &
-                                  ,carbon_debt,flushing,balive_aim)
+                                  ,cpoly%green_leaf_factor(ipft,isi),gr_tfact              &
+                                  ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbark    &
+                                  ,tr_bstorage,carbon_debt,flushing,balive_aim)
 
                   call apply_c_xfers(cpatch,ico,carbon_balance,tr_bleaf,tr_broot           &
                                     ,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage)
@@ -375,8 +380,10 @@ module growth_balive
                   !------------------------------------------------------------------------!
 
                   !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
-                  cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico) + dndt   * tfact
-                  cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico) + dlnndt * tfact
+                  cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico)                  &
+                                             + dndt   * year_o_day
+                  cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico)                  &
+                                             + dlnndt * year_o_day
                   !------------------------------------------------------------------------!
 
 
@@ -499,7 +506,7 @@ module growth_balive
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine get_maintenance(cpatch,ico,tfact,tempk)
+   subroutine get_maintenance(cpatch,ico,year_o_day,tempk)
       use ed_state_vars, only : patchtype             ! ! structure
       use pft_coms     , only : phenology             & ! intent(in)
                               , leaf_turnover_rate    & ! intent(in)
@@ -509,7 +516,7 @@ module growth_balive
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target       :: cpatch
       integer        , intent(in)   :: ico
-      real           , intent(in)   :: tfact
+      real           , intent(in)   :: year_o_day
       real           , intent(in)   :: tempk
       !----- Local variables. -------------------------------------------------------------!
       integer                       :: ipft
@@ -521,12 +528,12 @@ module growth_balive
 
       !------------------------------------------------------------------------------------!
       !      Find the maintenance costs.  This will depend on the type of phenology that   !
-      ! the PFT has.   The tfact term applied converts the maintenance rates to            !
+      ! the PFT has.   The year_o_day term applied converts the maintenance rates to       !
       ! [kgC/plant/day].                                                                   !
       !------------------------------------------------------------------------------------!
-      cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft) *cpatch%bleaf(ico) *tfact
-      cpatch%root_maintenance(ico) = root_turnover_rate(ipft) *cpatch%broot(ico) *tfact
-      cpatch%bark_maintenance(ico) = bark_turnover_rate(ipft) *cpatch%bbark(ico) *tfact
+      cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft)*cpatch%bleaf(ico) *year_o_day
+      cpatch%root_maintenance(ico) = root_turnover_rate(ipft)*cpatch%broot(ico) *year_o_day
+      cpatch%bark_maintenance(ico) = bark_turnover_rate(ipft)*cpatch%bbark(ico) *year_o_day
       
       select case (phenology(ipft))
       case (0)
@@ -814,9 +821,9 @@ module growth_balive
    !> \warning The order of the operations here affect the C/N budgets, so don't
    !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
-   subroutine get_c_xfers(csite,ipa,ico,carbon_balance,green_leaf_factor,tr_bleaf,tr_broot &
-                         ,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage,carbon_debt       &
-                         ,flushing,balive_aim)
+   subroutine get_c_xfers(csite,ipa,ico,carbon_balance,green_leaf_factor,gr_tfact          &
+                         ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage &
+                         ,carbon_debt,flushing,balive_aim)
       use ed_state_vars , only : sitetype     & ! structure
                                , patchtype    ! ! structure
       use pft_coms      , only : q            & ! intent(in)
@@ -836,6 +843,7 @@ module growth_balive
       integer        , intent(in)    :: ico                 !< Loop-Current Cohort
       real           , intent(in)    :: carbon_balance      !< Plant net carbon uptake
       real           , intent(in)    :: green_leaf_factor   !< Cohort leaf-age param.
+      real           , intent(in)    :: gr_tfact            !< Growth smoothing factor
       real           , intent(out)   :: tr_bleaf            !< Transfer to leaf C pool
       real           , intent(out)   :: tr_broot            !< Transfer to root C pool
       real           , intent(out)   :: tr_bsapwooda        !< Transfer to sapwooda C pool
@@ -862,12 +870,17 @@ module growth_balive
       real                           :: delta_bsapwooda
       real                           :: delta_bsapwoodb
       real                           :: delta_bbark
+      real                           :: delta_btotal
       real                           :: available_carbon
+      real                           :: leaf_mco
+      real                           :: root_mco
+      real                           :: bark_mco
+      real                           :: gtf_bleaf
+      real                           :: gtf_broot
+      real                           :: gtf_bbark
       real                           :: f_total
       real                           :: f_bleaf
       real                           :: f_broot
-      real                           :: f_bsapwooda
-      real                           :: f_bsapwoodb
       real                           :: f_bbark
       logical                        :: time_to_flush
       integer                        :: phen_stat_in
@@ -950,6 +963,10 @@ module growth_balive
 
 
       !------------------------------------------------------------------------------------!
+      !      Assume the maximum growth rate to be the build-up of the 
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
       !      Check whether to increase living tissue biomass or not.                       !
       !------------------------------------------------------------------------------------!
       flushing = .false.
@@ -961,67 +978,72 @@ module growth_balive
             !     There are leaves, we are not actively dropping leaves and we're off      !
             ! allometry.  Here we will compute the maximum amount that can go to balive    !
             ! pools, and put any excess in storage.                                        !
+            !                                                                              !
+            ! MLO: one problem with the original scheme is the excessive carbon flux on    !
+            !      the first day of the month when plants are growing in allometry to      !
+            !      catch up the increase in heartwood biomass (bdead).  To smooth the      !
+            !      increments throughout the month, we include some scaling factors.       !
+            !                                                                              !
+            !      - gr_fact is a time in the month correction factor that increases       !
+            !        towards the end of the month.  For tissues with no turnover rate,     !
+            !        this allows linear increase in the pool, reaching allometry just      !
+            !        before the beginning o the next month                                 !
+            !      - gtf_xxxx is similar to gr_fact, except that it accounts for the       !
+            !        turnover.  The minimum value ensures that the pools will at least     !
+            !        break even the following day if there is sufficent storage (the       !
+            !        threshold is calculated based biomass prior to applying the           !
+            !        maintenance costs due to turnover).  This is more likely to be        !
+            !        necessary when the turnover rate is too high, or when the pool is     !
+            !        almost back on allometry.                                             !
+            !                                                                              !
+            !      Disclaimer: This solution is not perfect as it tends to increase growth !
+            !      towards the end of the month, although the increase is not as dramatic  !
+            !      as the sharp decrease in the first few days without this correction.    !
             !------------------------------------------------------------------------------!
-
             !---- Amount that bleaf, broot, and bsapwood are off allometry. ---------------!
             delta_bleaf     = max (0.0, bleaf_aim     - cpatch%bleaf    (ico))
             delta_broot     = max (0.0, broot_aim     - cpatch%broot    (ico))
             delta_bsapwooda = max (0.0, bsapwooda_aim - cpatch%bsapwooda(ico))
             delta_bsapwoodb = max (0.0, bsapwoodb_aim - cpatch%bsapwoodb(ico))
             delta_bbark     = max (0.0, bbark_aim     - cpatch%bbark    (ico))
+            !----- Find the correction factors.  Check whether delta is 0. ----------------!
+            if (delta_bleaf > tiny_num) then
+               gtf_bleaf = max( gr_tfact,cpatch%leaf_maintenance(ico)/delta_bleaf)
+            else
+               gtf_bleaf = gr_tfact
+            end if
+            if (delta_broot > tiny_num) then
+               gtf_broot = max( gr_tfact,cpatch%root_maintenance(ico)/delta_broot)
+            else
+               gtf_broot = gr_tfact
+            end if
+            if (delta_bbark > tiny_num) then
+               gtf_bbark = max( gr_tfact,cpatch%bark_maintenance(ico)/delta_bbark)
+            else
+               gtf_bbark = gr_tfact
+            end if
+            !----- Correct deltas based on the time of the month and turnover. ------------!
+            delta_bleaf     = delta_bleaf     * gtf_bleaf
+            delta_broot     = delta_broot     * gtf_broot
+            delta_bsapwooda = delta_bsapwooda * gr_tfact  ! sapwood turnover is zero.
+            delta_bsapwoodb = delta_bsapwoodb * gr_tfact  ! sapwood turnover is zero.
+            delta_bbark     = delta_bbark     * gtf_bbark
+            delta_btotal    = delta_bleaf + delta_broot + delta_bsapwooda                  &
+                            + delta_bsapwoodb + delta_bbark
             !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Check the intended biomass. In case of singularities, make the fraction  !
-            ! zero.                                                                        !
-            !------------------------------------------------------------------------------!
-            !----- Leaf. ------------------------------------------------------------------!
-            if (bleaf_aim >= tiny_num) then
-               f_bleaf = delta_bleaf / bleaf_aim
-            else
-               f_bleaf = 0.
-            end if
-            !----- Fine root. -------------------------------------------------------------!
-            if (broot_aim >= tiny_num) then
-               f_broot = delta_broot / broot_aim
-            else
-               f_broot = 0.
-            end if
-            !----- Above-ground sapwood. --------------------------------------------------!
-            if (bsapwooda_aim >= tiny_num) then
-               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-            else
-               f_bsapwooda = 0.
-            end if
-            !----- Below-ground sapwood. --------------------------------------------------!
-            if (bsapwooda_aim >= tiny_num) then
-               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
-            else
-               f_bsapwoodb = 0.
-            end if
-            !----- Bark. ------------------------------------------------------------------!
-            if (bbark_aim >= tiny_num) then
-               f_bbark = delta_bbark / bbark_aim
-            else
-               f_bbark = 0.
-            end if
-            !----- Total. -----------------------------------------------------------------!
-            f_total = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb + f_bbark
-            !------------------------------------------------------------------------------!
-
 
             !------------------------------------------------------------------------------!
             !     In case the available carbon is less than what we need to get back to    !
             ! allometry, grow pools in proportion to demand.  Otherwise, put the excess    !
             ! carbon into bstorage.                                                        !
             !------------------------------------------------------------------------------!
-            if (f_total >= tiny_num) then
-               tr_bleaf     = min(delta_bleaf    , f_bleaf     / f_total * available_carbon)
-               tr_broot     = min(delta_broot    , f_broot     / f_total * available_carbon)
-               tr_bsapwooda = min(delta_bsapwooda, f_bsapwooda / f_total * available_carbon)
-               tr_bsapwoodb = min(delta_bsapwoodb, f_bsapwoodb / f_total * available_carbon)
-               tr_bbark     = min(delta_bbark    , f_bbark     / f_total * available_carbon)
+            if (delta_btotal >= tiny_num) then
+               f_total      = min(1.0, available_carbon / delta_btotal)
+               tr_bleaf     = delta_bleaf      * f_total
+               tr_broot     = delta_broot      * f_total
+               tr_bsapwooda = delta_bsapwooda  * f_total
+               tr_bsapwoodb = delta_bsapwoodb  * f_total
+               tr_bbark     = delta_bbark      * f_total
             else
                tr_bleaf     = 0.
                tr_broot     = 0.

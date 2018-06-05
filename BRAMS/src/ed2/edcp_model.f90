@@ -129,60 +129,61 @@ end subroutine ed_timestep
 ! side this subroutine to avoid confusion when we run nested grid simulations.             !
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_model(ifm)
-   use ed_max_dims  , only : maxgrds                     ! ! intent(in)
-   use ed_misc_coms , only : ivegt_dynamics              & ! intent(in)
-                           , integration_scheme          & ! intent(in)
-                           , simtime                     & ! variable type
-                           , current_time                & ! intent(inout)
-                           , frqfast                     & ! intent(in)
-                           , frqstate                    & ! intent(in)
-                           , out_time_fast               & ! intent(in)
-                           , dtlsm                       & ! intent(in)
-                           , month_yrstep                & ! intent(in)
-                           , ifoutput                    & ! intent(in)
-                           , isoutput                    & ! intent(in)
-                           , idoutput                    & ! intent(in)
-                           , imoutput                    & ! intent(in)
-                           , iqoutput                    & ! intent(in)
-                           , itoutput                    & ! intent(in)
-                           , iyoutput                    & ! intent(in)
-                           , writing_dail                & ! intent(in)
-                           , writing_mont                & ! intent(in)
-                           , writing_dcyc                & ! intent(in)
-                           , writing_year                & ! intent(in)
-                           , writing_eorq                & ! intent(in)
-                           , writing_long                & ! intent(in)
-                           , frqsum                      & ! intent(inout)
-                           , unitfast                    & ! intent(in)
-                           , unitstate                   & ! intent(in)
-                           , imontha                     & ! intent(in)
-                           , iyeara                      & ! intent(in)
-                           , outstate                    & ! intent(in)
-                           , outfast                     & ! intent(in)
-                           , nrec_fast                   & ! intent(in)
-                           , nrec_state                  ! ! intent(in)
-   use grid_coms    , only : ngrids                      & ! intent(in)
-                           , istp                        & ! intent(in)
-                           , time                        & ! intent(inout)
-                           , timmax                      ! ! intent(in)
-   use ed_state_vars, only : edgrid_g                    & ! intent(inout)
-                           , edtype                      & ! variable type
-                           , patchtype                   & ! variable type
-                           , filltab_alltypes            & ! subroutine
-                           , filltables                  ! ! intent(in)
-   use rk4_driver   , only : rk4_timestep                ! ! subroutine
-   use rk4_coms     , only : record_err                  & ! intent(out)
-                           , print_detailed              & ! intent(out)
-                           , print_thbnd                 ! ! intent(out)
-   use ed_node_coms , only : mynum                       & ! intent(in)
-                           , nnodetot                    ! ! intent(in)
-   use mem_polygons , only : maxpatch                    & ! intent(in)
-                           , maxcohort                   ! ! intent(in)
-   use consts_coms  , only : day_sec                     ! ! intent(in)
-   use io_params    , only : ioutput                     ! ! intent(in)
-   use average_utils, only : update_ed_yearly_vars       & ! sub-routine
-                           , integrate_ed_fmean_met_vars & ! sub-routine
-                           , zero_ed_fmean_vars          ! ! sub-routine
+   use ed_max_dims         , only : maxgrds                     ! ! intent(in)
+   use ed_misc_coms        , only : ivegt_dynamics              & ! intent(in)
+                                  , integration_scheme          & ! intent(in)
+                                  , simtime                     & ! variable type
+                                  , current_time                & ! intent(inout)
+                                  , frqfast                     & ! intent(in)
+                                  , frqstate                    & ! intent(in)
+                                  , out_time_fast               & ! intent(in)
+                                  , dtlsm                       & ! intent(in)
+                                  , month_yrstep                & ! intent(in)
+                                  , ifoutput                    & ! intent(in)
+                                  , isoutput                    & ! intent(in)
+                                  , idoutput                    & ! intent(in)
+                                  , imoutput                    & ! intent(in)
+                                  , iqoutput                    & ! intent(in)
+                                  , itoutput                    & ! intent(in)
+                                  , iyoutput                    & ! intent(in)
+                                  , writing_dail                & ! intent(in)
+                                  , writing_mont                & ! intent(in)
+                                  , writing_dcyc                & ! intent(in)
+                                  , writing_year                & ! intent(in)
+                                  , writing_eorq                & ! intent(in)
+                                  , writing_long                & ! intent(in)
+                                  , frqsum                      & ! intent(inout)
+                                  , unitfast                    & ! intent(in)
+                                  , unitstate                   & ! intent(in)
+                                  , imontha                     & ! intent(in)
+                                  , iyeara                      & ! intent(in)
+                                  , outstate                    & ! intent(in)
+                                  , outfast                     & ! intent(in)
+                                  , nrec_fast                   & ! intent(in)
+                                  , nrec_state                  ! ! intent(in)
+   use grid_coms           , only : ngrids                      & ! intent(in)
+                                  , istp                        & ! intent(in)
+                                  , time                        & ! intent(inout)
+                                  , timmax                      ! ! intent(in)
+   use ed_state_vars       , only : edgrid_g                    & ! intent(inout)
+                                  , edtype                      & ! variable type
+                                  , patchtype                   & ! variable type
+                                  , filltab_alltypes            & ! subroutine
+                                  , filltables                  ! ! intent(in)
+   use rk4_driver          , only : rk4_timestep                ! ! subroutine
+   use rk4_coms            , only : record_err                  & ! intent(out)
+                                  , print_detailed              & ! intent(out)
+                                  , print_thbnd                 ! ! intent(out)
+   use ed_node_coms        , only : mynum                       & ! intent(in)
+                                  , nnodetot                    ! ! intent(in)
+   use mem_polygons        , only : maxpatch                    & ! intent(in)
+                                  , maxcohort                   ! ! intent(in)
+   use consts_coms         , only : day_sec                     ! ! intent(in)
+   use io_params           , only : ioutput                     ! ! intent(in)
+   use average_utils       , only : update_ed_yearly_vars       & ! sub-routine
+                                  , integrate_ed_fmean_met_vars & ! sub-routine
+                                  , zero_ed_fmean_vars          ! ! sub-routine
+   use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in)                   :: ifm
@@ -199,6 +200,7 @@ subroutine ed_coup_model(ifm)
    logical                               :: dail_analy_time
    logical                               :: dcyc_analy_time
    logical                               :: reset_time
+   logical                               :: veget_dyn_on
    integer                               :: ndays
    integer                               :: jfm
    !----- External functions. -------------------------------------------------------------!
@@ -221,6 +223,9 @@ subroutine ed_coup_model(ifm)
       calledgrid(:)     = .false.
       first_time        = .false.
    end if
+
+   !----- Run with vegetation dynamics turned on?  ----------------------------------------!
+   veget_dyn_on = ivegt_dynamics == 1
 
    !---------------------------------------------------------------------------------------!
    !     Flagging that this grid has been called.                                          !
@@ -320,12 +325,17 @@ subroutine ed_coup_model(ifm)
                           mod(real(current_time%year-iyeara),frqstate) == 0.
       end select
 
+
+      !----- Find the number of days in this month. ---------------------------------------!
+      ndays = num_days(current_time%month,current_time%year)
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !    Update nrec_fast and nrec_state if it is a new month and outfast/outstate are   !
       ! monthly and frqfast/frqstate are daily or by seconds.                              !
       !------------------------------------------------------------------------------------!
       if (new_month) then
-         ndays = num_days(current_time%month,current_time%year)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
@@ -374,31 +384,13 @@ subroutine ed_coup_model(ifm)
       !------------------------------------------------------------------------------------!
       if (new_day) then
 
+
          !---------------------------------------------------------------------------------!
          !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
          ! whether we will apply them to the ecosystem or not.                             !
          !---------------------------------------------------------------------------------!
-         select case (ivegt_dynamics)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     Dummy vegetation dynamics, we compute the tendencies but we don't really !
-            ! apply to the vegetation, so they will remain constant throughout the entire  !
-            ! simulation.                                                                  !
-            !------------------------------------------------------------------------------!
-            call vegetation_dynamics_eq_0(new_month,new_year)
-            !------------------------------------------------------------------------------!
-
-         case (1)
-            !------------------------------------------------------------------------------!
-            !     Actual vegetation dynamics, we compute the tendencies and apply to the   !
-            ! vegetation.                                                                  !
-            !------------------------------------------------------------------------------!
-            call vegetation_dynamics(new_month,new_year)
-            !------------------------------------------------------------------------------!
-
-         end select
+         call veg_dynamics_driver(new_month,new_year,ndays,veget_dyn_on)
          !---------------------------------------------------------------------------------!
-
 
          
          !---------------------------------------------------------------------------------!

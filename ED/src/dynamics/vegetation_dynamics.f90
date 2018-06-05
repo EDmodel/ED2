@@ -15,7 +15,7 @@ module vegetation_dynamics
    !=======================================================================================!
    !    Main driver for calling long-term vegetation dynamics.                             !
    !---------------------------------------------------------------------------------------!
-   subroutine veg_dynamics_driver(new_month,new_year,veget_dyn_on)
+   subroutine veg_dynamics_driver(new_month,new_year,ndays,veget_dyn_on)
       use grid_coms            , only : ngrids
       use ed_misc_coms         , only : current_time                  & ! intent(in)
                                       , dtlsm                         & ! intent(in)
@@ -50,14 +50,16 @@ module vegetation_dynamics
       use fire                 , only : fire_frequency                ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      logical          , intent(in)   :: new_month    !< First dtlsm of a new month?
-      logical          , intent(in)   :: new_year     !< First dtlsm of a new year?
-      logical          , intent(in)   :: veget_dyn_on !< Run with vegetation dynamics?
+      logical          , intent(in)   :: new_month    !> First dtlsm of a new month?
+      logical          , intent(in)   :: new_year     !> First dtlsm of a new year?
+      integer          , intent(in)   :: ndays        !> Number of days in this month
+      logical          , intent(in)   :: veget_dyn_on !> Run with vegetation dynamics?
       !----- Local variables. -------------------------------------------------------------!
       type(edtype)     , pointer      :: cgrid
       type(polygontype), pointer      :: cpoly
       real                            :: dtlsm_o_day
-      real                            :: one_o_year
+      real                            :: year_o_day
+      real                            :: gr_tfact
       integer                         :: doy
       integer                         :: ifm
       !----- External functions. ----------------------------------------------------------!
@@ -72,7 +74,21 @@ module vegetation_dynamics
       !----- Time factor for normalizing daily variables updated on the DTLSM step. -------!
       dtlsm_o_day = dtlsm / day_sec
       !----- Time factor for averaging dailies. -------------------------------------------!
-      one_o_year  = 1.0 / yr_day
+      year_o_day  = 1.0 / yr_day
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     This cap limits the growth rate depending on the day of the month.  This is    !
+      ! to avoid trees going off-allometry after heartwood growth and having excessive     !
+      ! respiration during the first day of the month.   This factor increases as it       !
+      ! approaches the end of the month to make the growth exactly the same every day of   !
+      ! the month in case plenty of storage is available and no loss due to turnover       !
+      ! occurs (e.g. sapwood).                                                             !
+      !------------------------------------------------------------------------------------!
+      gr_tfact = 1.0 / (ndays - current_time%date + 1)
+      !------------------------------------------------------------------------------------!
+
 
       !----- Apply events. ----------------------------------------------------------------!
       if (veget_dyn_on) then
@@ -93,7 +109,7 @@ module vegetation_dynamics
          call normalize_ed_today_vars(cgrid)
          !----- Update phenology and growth of live tissues. ------------------------------!
          call phenology_driver(cgrid,doy,current_time%month, dtlsm_o_day,veget_dyn_on)
-         call dbalive_dt(cgrid,one_o_year,.true.)
+         call dbalive_dt(cgrid,gr_tfact,year_o_day,.true.)
          !---------------------------------------------------------------------------------!
 
 

@@ -354,12 +354,17 @@ subroutine ed_model()
                           mod(real(current_time%year-iyeara),frqstate) == 0.
       end select
 
+
+      !----- Find the number of days in this month. ---------------------------------------!
+      ndays = num_days(current_time%month,current_time%year)
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !    Update nrec_fast and nrec_state if it is a new month and outfast/outstate are   !
       ! monthly and frqfast/frqstate are daily or by seconds.                              !
       !------------------------------------------------------------------------------------!
       if (new_month) then
-         ndays=num_days(current_time%month,current_time%year)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
@@ -389,7 +394,7 @@ subroutine ed_model()
          !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
          ! whether we will apply them to the ecosystem or not.                             !
          !---------------------------------------------------------------------------------!
-         call veg_dynamics_driver(new_month,new_year,veget_dyn_on)
+         call veg_dynamics_driver(new_month,new_year,ndays,veget_dyn_on)
          !---------------------------------------------------------------------------------!
 
          !----- First day of a month. -----------------------------------------------------!
