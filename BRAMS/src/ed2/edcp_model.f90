@@ -130,7 +130,8 @@ end subroutine ed_timestep
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_model(ifm)
    use ed_max_dims         , only : maxgrds                     ! ! intent(in)
-   use ed_misc_coms        , only : ivegt_dynamics              & ! intent(in)
+   use ed_misc_coms        , only : simtime                     & ! structure
+                                  , ivegt_dynamics              & ! intent(in)
                                   , integration_scheme          & ! intent(in)
                                   , simtime                     & ! variable type
                                   , current_time                & ! intent(inout)
@@ -188,6 +189,7 @@ subroutine ed_coup_model(ifm)
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in)                   :: ifm
    !----- Local variables. ----------------------------------------------------------------!
+   type(simtime)                         :: daybefore
    logical                               :: analysis_time
    logical                               :: new_day
    logical                               :: new_month
@@ -202,7 +204,10 @@ subroutine ed_coup_model(ifm)
    logical                               :: reset_time
    logical                               :: veget_dyn_on
    integer                               :: ndays
+   integer                               :: dbndays
    integer                               :: jfm
+   real                                  :: dbndaysi
+   real                                  :: gr_tfact0
    !----- External functions. -------------------------------------------------------------!
    integer                    , external :: num_days
    !----- Locally saved variables. --------------------------------------------------------!
@@ -324,10 +329,6 @@ subroutine ed_coup_model(ifm)
                           current_time%month == imontha .and.                              &
                           mod(real(current_time%year-iyeara),frqstate) == 0.
       end select
-
-
-      !----- Find the number of days in this month. ---------------------------------------!
-      ndays = num_days(current_time%month,current_time%year)
       !------------------------------------------------------------------------------------!
 
 
@@ -336,6 +337,7 @@ subroutine ed_coup_model(ifm)
       ! monthly and frqfast/frqstate are daily or by seconds.                              !
       !------------------------------------------------------------------------------------!
       if (new_month) then
+         ndays = num_days(current_time%month,current_time%year)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
@@ -383,13 +385,31 @@ subroutine ed_coup_model(ifm)
       ! this part of the code when all grids have reached this point.                      !
       !------------------------------------------------------------------------------------!
       if (new_day) then
+         !----- Find the number of days in this month and the previous month. ----------------!
+         call yesterday_info(current_time,daybefore,dbndays,dbndaysi)
+         !------------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     This cap limits the growth rate depending on the day of the month.  This is !
+         ! to account for the different time scales between heartwood growth (monthly) and !
+         ! growth of the other tissues (daily).  This factor ensures that growth           !
+         ! respiration is evenly distributed during the month, as opposed to have a spike  !
+         ! on the second day of every month, when live tissues are growing to catch up the !
+         ! allometry after heartwood biomass had increased.  This factor grows as the time !
+         ! step approaches the end of the month, but the biomass increment will be the     !
+         ! same every day and trees will be back on allometry be the time of the following !
+         ! month in case storage is not limiting.
+         !---------------------------------------------------------------------------------!
+         gr_tfact0 = 1.0 / (dbndays - daybefore%date + 1)
+         !------------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
          !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
          ! whether we will apply them to the ecosystem or not.                             !
          !---------------------------------------------------------------------------------!
-         call veg_dynamics_driver(new_month,new_year,ndays,veget_dyn_on)
+         call veg_dynamics_driver(new_month,new_year,gr_tfact0,veget_dyn_on)
          !---------------------------------------------------------------------------------!
 
          

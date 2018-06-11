@@ -311,7 +311,8 @@ module structural_growth
                   ! attempts to correct for this, by assuming that f_growth is used to     !
                   ! grow all tissues, and only a fraction of f_growth goes to bdead.  The  !
                   ! remaining stays in bstorage and can be used to bring the cohort back   !
-                  ! to allometry.                                                          !
+                  ! to allometry during the upcoming month (so respiration can be          !
+                  ! properly accounted for).                                               !
                   !------------------------------------------------------------------------!
                   if (f_growth > almost_zero) then
                      select case (iallom)
@@ -331,9 +332,9 @@ module structural_growth
                         f_bdead        = f_growth
                      end select
                   else
-                     f_bstorage = f_bstorage + f_growth
-                     f_growth   = 0.
-                     f_bdead    = 0.
+                     f_bstorage  = f_bstorage + f_growth
+                     f_growth    = 0.
+                     f_bdead     = 0.
                   end if
                   cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
@@ -346,12 +347,12 @@ module structural_growth
                   select case (ibigleaf)
                   case (0)
                      !------ NPP allocation to wood and coarse roots in KgC /m2 -----------!
-                     cpatch%today_nppwood   (ico) = agf_bs(ipft)                           &
-                                                  * f_growth * cpatch%bstorage(ico)        &
-                                                  * cpatch%nplant(ico)
-                     cpatch%today_nppcroot  (ico) = (1. - agf_bs(ipft))                    &
-                                                  * f_growth * cpatch%bstorage(ico)        &
-                                                  * cpatch%nplant(ico)
+                     cpatch%today_nppwood    (ico) = agf_bs(ipft)                          &
+                                                   * f_bdead * cpatch%bstorage(ico)        &
+                                                   * cpatch%nplant(ico)
+                     cpatch%today_nppcroot   (ico) = (1. - agf_bs(ipft))                   &
+                                                   * f_bdead * cpatch%bstorage(ico)        &
+                                                   * cpatch%nplant(ico)
                   end select
                   !------------------------------------------------------------------------!
 

@@ -3619,6 +3619,7 @@ module average_utils
       integer                       :: isi
       integer                       :: ipa
       integer                       :: ico
+      integer                       :: ndays
       real                          :: ndaysi
       !------------------------------------------------------------------------------------!
 
@@ -3628,7 +3629,7 @@ module average_utils
       !     Find which day we have just integrated, we will use it to determine the right  !
       ! scaling factor.                                                                    !
       !------------------------------------------------------------------------------------!
-      call yesterday_info(current_time,daybefore,ndaysi)
+      call yesterday_info(current_time,daybefore,ndays,ndaysi)
       !------------------------------------------------------------------------------------!
 
 
@@ -5766,6 +5767,7 @@ module average_utils
       integer                     :: ipa
       integer                     :: ico
       integer                     :: t
+      integer                     :: ndays
       real                        :: ndaysi
       !------------------------------------------------------------------------------------!
 
@@ -5785,7 +5787,7 @@ module average_utils
       !     Find which day we have just integrated, we will use it to determine the right  !
       ! scaling factor.                                                                    !
       !------------------------------------------------------------------------------------!
-      call yesterday_info(current_time,daybefore,ndaysi)
+      call yesterday_info(current_time,daybefore,ndays,ndaysi)
       !------------------------------------------------------------------------------------!
 
 

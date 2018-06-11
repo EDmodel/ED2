@@ -30,7 +30,7 @@ module growth_balive
    !> \warning The order of the operations here affect the C/N budgets, so don't
    !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
-   subroutine dbalive_dt(cgrid,gr_tfact,year_o_day,veget_dyn_on)
+   subroutine dbalive_dt(cgrid,gr_tfact0,year_o_day,veget_dyn_on)
       use ed_state_vars       , only : edtype                     & ! structure
                                      , polygontype                & ! structure
                                      , sitetype                   & ! structure
@@ -64,7 +64,7 @@ module growth_balive
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid        !< the ed grid
-      real             , intent(in) :: gr_tfact     !< growth cap to smooth daily increment
+      real             , intent(in) :: gr_tfact0    !< Correction factor for steady growth
       real             , intent(in) :: year_o_day   !< "time factor" i.e. call frequency
       logical          , intent(in) :: veget_dyn_on !< Is vegetation dynamics on?
       !----- Local variables. -------------------------------------------------------------!
@@ -289,7 +289,7 @@ module growth_balive
                   !      Allocate plant carbon balance to balive and bstorage.             !
                   !------------------------------------------------------------------------!
                   call get_c_xfers(csite,ipa,ico,carbon_balance                            &
-                                  ,cpoly%green_leaf_factor(ipft,isi),gr_tfact              &
+                                  ,cpoly%green_leaf_factor(ipft,isi),gr_tfact0             &
                                   ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbark    &
                                   ,tr_bstorage,carbon_debt,flushing,balive_aim)
 
@@ -821,7 +821,7 @@ module growth_balive
    !> \warning The order of the operations here affect the C/N budgets, so don't
    !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
-   subroutine get_c_xfers(csite,ipa,ico,carbon_balance,green_leaf_factor,gr_tfact          &
+   subroutine get_c_xfers(csite,ipa,ico,carbon_balance,green_leaf_factor,gr_tfact0         &
                          ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage &
                          ,carbon_debt,flushing,balive_aim)
       use ed_state_vars , only : sitetype     & ! structure
@@ -835,24 +835,25 @@ module growth_balive
       use allometry     , only : size2bl      & ! function
                                , ba2h         ! ! function
       use consts_coms   , only : tiny_num     ! ! intent(in)
-      use ed_misc_coms  , only : igrass       ! ! intent(in)
+      use ed_misc_coms  , only : igrass       & ! intent(in)
+                               , iallom       ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype) , target        :: csite               !< Current Site
-      integer        , intent(in)    :: ipa                 !< Loop-Current Patch
-      integer        , intent(in)    :: ico                 !< Loop-Current Cohort
-      real           , intent(in)    :: carbon_balance      !< Plant net carbon uptake
-      real           , intent(in)    :: green_leaf_factor   !< Cohort leaf-age param.
-      real           , intent(in)    :: gr_tfact            !< Growth smoothing factor
-      real           , intent(out)   :: tr_bleaf            !< Transfer to leaf C pool
-      real           , intent(out)   :: tr_broot            !< Transfer to root C pool
-      real           , intent(out)   :: tr_bsapwooda        !< Transfer to sapwooda C pool
-      real           , intent(out)   :: tr_bsapwoodb        !< Transfer to sapwoodb C pool
-      real           , intent(out)   :: tr_bbark            !< Transfer to bark C pool
-      real           , intent(out)   :: tr_bstorage         !< Transfer to storage C pool
-      real           , intent(out)   :: carbon_debt         !< Net cohort carbon uptake
-      logical        , intent(out)   :: flushing            !< Flag for leaf flush
-      real           , intent(out)   :: balive_aim          !< Desired cohort balive value
+      type(sitetype) , target        :: csite             !< Current Site
+      integer        , intent(in)    :: ipa               !< Loop-Current Patch
+      integer        , intent(in)    :: ico               !< Loop-Current Cohort
+      real           , intent(in)    :: carbon_balance    !< Plant net carbon uptake
+      real           , intent(in)    :: green_leaf_factor !< Cohort leaf-age param.
+      real           , intent(in)    :: gr_tfact0         !< Corr. factor for steady growth
+      real           , intent(out)   :: tr_bleaf          !< Transfer to leaf C pool
+      real           , intent(out)   :: tr_broot          !< Transfer to root C pool
+      real           , intent(out)   :: tr_bsapwooda      !< Transfer to sapwooda C pool
+      real           , intent(out)   :: tr_bsapwoodb      !< Transfer to sapwoodb C pool
+      real           , intent(out)   :: tr_bbark          !< Transfer to bark C pool
+      real           , intent(out)   :: tr_bstorage       !< Transfer to storage C pool
+      real           , intent(out)   :: carbon_debt       !< Net cohort carbon uptake
+      logical        , intent(out)   :: flushing          !< Flag for leaf flush
+      real           , intent(out)   :: balive_aim        !< Desired cohort balive value
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype), pointer       :: cpatch
       integer                        :: ipft
@@ -872,9 +873,6 @@ module growth_balive
       real                           :: delta_bbark
       real                           :: delta_btotal
       real                           :: available_carbon
-      real                           :: leaf_mco
-      real                           :: root_mco
-      real                           :: bark_mco
       real                           :: gtf_bleaf
       real                           :: gtf_broot
       real                           :: gtf_bbark
@@ -973,61 +971,76 @@ module growth_balive
       if (time_to_flush) then
          select case (cpatch%phenology_status(ico))
          case (0,1)
-            flushing = .true.
             !------------------------------------------------------------------------------!
             !     There are leaves, we are not actively dropping leaves and we're off      !
             ! allometry.  Here we will compute the maximum amount that can go to balive    !
             ! pools, and put any excess in storage.                                        !
-            !                                                                              !
-            ! MLO: one problem with the original scheme is the excessive carbon flux on    !
-            !      the first day of the month when plants are growing in allometry to      !
-            !      catch up the increase in heartwood biomass (bdead).  To smooth the      !
-            !      increments throughout the month, we include some scaling factors.       !
-            !                                                                              !
-            !      - gr_fact is a time in the month correction factor that increases       !
-            !        towards the end of the month.  For tissues with no turnover rate,     !
-            !        this allows linear increase in the pool, reaching allometry just      !
-            !        before the beginning o the next month                                 !
-            !      - gtf_xxxx is similar to gr_fact, except that it accounts for the       !
-            !        turnover.  The minimum value ensures that the pools will at least     !
-            !        break even the following day if there is sufficent storage (the       !
-            !        threshold is calculated based biomass prior to applying the           !
-            !        maintenance costs due to turnover).  This is more likely to be        !
-            !        necessary when the turnover rate is too high, or when the pool is     !
-            !        almost back on allometry.                                             !
-            !                                                                              !
-            !      Disclaimer: This solution is not perfect as it tends to increase growth !
-            !      towards the end of the month, although the increase is not as dramatic  !
-            !      as the sharp decrease in the first few days without this correction.    !
             !------------------------------------------------------------------------------!
+            flushing = .true.
+            !------------------------------------------------------------------------------!
+
+
+
             !---- Amount that bleaf, broot, and bsapwood are off allometry. ---------------!
             delta_bleaf     = max (0.0, bleaf_aim     - cpatch%bleaf    (ico))
             delta_broot     = max (0.0, broot_aim     - cpatch%broot    (ico))
             delta_bsapwooda = max (0.0, bsapwooda_aim - cpatch%bsapwooda(ico))
             delta_bsapwoodb = max (0.0, bsapwoodb_aim - cpatch%bsapwoodb(ico))
             delta_bbark     = max (0.0, bbark_aim     - cpatch%bbark    (ico))
-            !----- Find the correction factors.  Check whether delta is 0. ----------------!
-            if (delta_bleaf > tiny_num) then
-               gtf_bleaf = max( gr_tfact,cpatch%leaf_maintenance(ico)/delta_bleaf)
-            else
-               gtf_bleaf = gr_tfact
+            !------------------------------------------------------------------------------!
+            
+            !------------------------------------------------------------------------------!
+            ! MLO: Find correction factors for growth.  Rationale: the original approach   !
+            !      will try to fix allometry in the first day of the month, to catch up    !
+            !      the increase in heartwood biomass (bdead).  This could lead to large    !
+            !      CO2 fluxes due to growth respiration in one day of the month.  This is  !
+            !      less of an issue in the old allometry because sapwood is so under-      !
+            !      estimated, but with the correct ratios this flux can be large.          !
+            !      To make the increments more steady throughout the month, we include     !
+            !      a scaling factor that makes the increments the same throughout the      !
+            !      month if available carbon is not limiting.  Currently this is only      !
+            !      applied to iallom 3 so it doesn't break other people's code, although   !
+            !      this may change in the future.                                          !
+            !                                                                              !
+            !      - gr_tfact0 splits the increment to bring back to allometry equal       !
+            !        amounts every day if the tissue does not have maintenance costs.      !
+            !      - gtf_xxxx corrects gr_tfact0 to account for the maintenance, so the    !
+            !        net growth (i.e. increment from the value of btissue before           !
+            !        maintenance was applied) is the same every day.                       !
+            !------------------------------------------------------------------------------!
+            if ( iallom == 3 .and. (.not. (is_grass(ipft) .and. igrass == 1)) ) then
+               if (delta_bleaf > tiny_num) then
+                  gtf_bleaf = ( cpatch%leaf_maintenance(ico)                               &
+                              + gr_tfact0 * (delta_bleaf - cpatch%leaf_maintenance(ico)) ) &
+                            / delta_bleaf
+               else
+                  gtf_bleaf = gr_tfact0
+               end if
+               if (delta_broot > tiny_num) then
+                  gtf_broot = ( cpatch%root_maintenance(ico)                               &
+                              + gr_tfact0 * (delta_broot - cpatch%root_maintenance(ico)) ) &
+                            / delta_broot
+               else
+                  gtf_broot = gr_tfact0
+               end if
+               if (delta_bbark > tiny_num) then
+                  gtf_bbark = ( cpatch%bark_maintenance(ico)                               &
+                              + gr_tfact0 * (delta_bbark - cpatch%bark_maintenance(ico)) ) &
+                            / delta_bbark
+               else
+                  gtf_bbark = gr_tfact0
+               end if
+               !----- Correct deltas based on the time of the month and turnover. ------------!
+               delta_bleaf     = delta_bleaf     * gtf_bleaf
+               delta_broot     = delta_broot     * gtf_broot
+               delta_bsapwooda = delta_bsapwooda * gr_tfact0 ! sapwood turnover is zero.
+               delta_bsapwoodb = delta_bsapwoodb * gr_tfact0 ! sapwood turnover is zero.
+               delta_bbark     = delta_bbark     * gtf_bbark
             end if
-            if (delta_broot > tiny_num) then
-               gtf_broot = max( gr_tfact,cpatch%root_maintenance(ico)/delta_broot)
-            else
-               gtf_broot = gr_tfact
-            end if
-            if (delta_bbark > tiny_num) then
-               gtf_bbark = max( gr_tfact,cpatch%bark_maintenance(ico)/delta_bbark)
-            else
-               gtf_bbark = gr_tfact
-            end if
-            !----- Correct deltas based on the time of the month and turnover. ------------!
-            delta_bleaf     = delta_bleaf     * gtf_bleaf
-            delta_broot     = delta_broot     * gtf_broot
-            delta_bsapwooda = delta_bsapwooda * gr_tfact  ! sapwood turnover is zero.
-            delta_bsapwoodb = delta_bsapwoodb * gr_tfact  ! sapwood turnover is zero.
-            delta_bbark     = delta_bbark     * gtf_bbark
+            !------------------------------------------------------------------------------!
+
+
+            !---- Total transfer. ---------------------------------------------------------!
             delta_btotal    = delta_bleaf + delta_broot + delta_bsapwooda                  &
                             + delta_bsapwoodb + delta_bbark
             !------------------------------------------------------------------------------!

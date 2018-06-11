@@ -10,7 +10,8 @@
 !> \author  Translated from ED1 by David Medvigy, Ryan Knox and Marcos Longo
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
-   use ed_misc_coms        , only : ivegt_dynamics              & ! intent(in)
+   use ed_misc_coms        , only : simtime                     & ! structure
+                                  , ivegt_dynamics              & ! intent(in)
                                   , integration_scheme          & ! intent(in)
                                   , current_time                & ! intent(in)
                                   , frqfast                     & ! intent(in)
@@ -30,8 +31,8 @@ subroutine ed_model()
                                   , outfast                     & ! intent(in)
                                   , nrec_fast                   & ! intent(in)
                                   , nrec_state                  & ! intent(in)
-                                  , runtype                     ! ! intent(in)
-   use ed_misc_coms        , only : month_yrstep                & ! intent(in)
+                                  , runtype                     & ! intent(in)
+                                  , month_yrstep                & ! intent(in)
                                   , writing_dail                & ! intent(in)
                                   , writing_mont                & ! intent(in)
                                   , writing_dcyc                & ! intent(in)
@@ -92,11 +93,13 @@ subroutine ed_model()
    include 'mpif.h'
 #endif
    !----- Local variables. ----------------------------------------------------------------!
+   type(simtime)      :: daybefore
    character(len=28)  :: fmthead
    character(len=32)  :: fmtcntr
    integer            :: ifm
    integer            :: nn
    integer            :: ndays
+   integer            :: dbndays
    logical            :: analysis_time
    logical            :: new_day
    logical            :: new_month
@@ -118,6 +121,8 @@ subroutine ed_model()
    real               :: wtime2
    real               :: t2
    real               :: wtime_tot
+   real               :: dbndaysi
+   real               :: gr_tfact0
    !----- Local variables (MPI only). -----------------------------------------------------!
 #if defined(RAMS_MPI)
    integer            :: ierr
@@ -309,7 +314,6 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
 
 
-
       !----- Check whether it is some special time... -------------------------------------!
       new_day         = current_time%time < dtlsm
       if (.not. past_one_day .and. new_day) past_one_day=.true.
@@ -355,22 +359,19 @@ subroutine ed_model()
       end select
 
 
-      !----- Find the number of days in this month. ---------------------------------------!
-      ndays = num_days(current_time%month,current_time%year)
-      !------------------------------------------------------------------------------------!
-
-
       !------------------------------------------------------------------------------------!
       !    Update nrec_fast and nrec_state if it is a new month and outfast/outstate are   !
       ! monthly and frqfast/frqstate are daily or by seconds.                              !
       !------------------------------------------------------------------------------------!
       if (new_month) then
+         ndays = num_days(current_time%month,current_time%year)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
 
       !----- Check if this is the beginning of a new simulated day. -----------------------!
       if (new_day) then
+
 
          if (record_err) then
 
@@ -390,11 +391,31 @@ subroutine ed_model()
          end if
 
 
+         !----- Find the number of days in this month and the previous month. ----------------!
+         call yesterday_info(current_time,daybefore,dbndays,dbndaysi)
+         !------------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     This cap limits the growth rate depending on the day of the month.  This is !
+         ! to account for the different time scales between heartwood growth (monthly) and !
+         ! growth of the other tissues (daily).  This factor ensures that growth           !
+         ! respiration is evenly distributed during the month, as opposed to have a spike  !
+         ! on the second day of every month, when live tissues are growing to catch up the !
+         ! allometry after heartwood biomass had increased.  This factor grows as the time !
+         ! step approaches the end of the month, but the biomass increment will be the     !
+         ! same every day and trees will be back on allometry be the time of the following !
+         ! month in case storage is not limiting.
+         !---------------------------------------------------------------------------------!
+         gr_tfact0 = 1.0 / (dbndays - daybefore%date + 1)
+         !------------------------------------------------------------------------------------!
+
+
          !---------------------------------------------------------------------------------!
          !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
          ! whether we will apply them to the ecosystem or not.                             !
          !---------------------------------------------------------------------------------!
-         call veg_dynamics_driver(new_month,new_year,ndays,veget_dyn_on)
+         call veg_dynamics_driver(new_month,new_year,gr_tfact0,veget_dyn_on)
          !---------------------------------------------------------------------------------!
 
          !----- First day of a month. -----------------------------------------------------!

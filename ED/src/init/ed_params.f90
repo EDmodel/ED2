@@ -2211,10 +2211,6 @@ subroutine init_pft_alloc_params()
    !----- Local variables. ----------------------------------------------------------------!
    integer                   :: ipft
    real   , dimension(n_pft) :: abas
-   real   , dimension(n_pft) :: size_min
-   real   , dimension(n_pft) :: size_crit
-   real   , dimension(n_pft) :: wai_min
-   real   , dimension(n_pft) :: wai_crit
    real                      :: aux
    real                      :: init_bleaf
    real                      :: eta_f16
@@ -2287,20 +2283,6 @@ subroutine init_pft_alloc_params()
    real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 0.0000219,0.5361171 /)
    real                  , parameter :: SLA_ref       = 22.93
    real                  , parameter :: rho_ref       = 0.615
-   !---------------------------------------------------------------------------------------!
-   !    For the new allometry, we estimate WAI from the the potential LAI.   The ratio for !
-   ! canopy trees is set to 0.11 following the average ratio from Olivas et al. (2013).    !
-   ! For seedlings, we assume the ratio to be 0.0005, similar to the old allometry.        !
-   !                                                                                       !
-   ! References:                                                                           !
-   !                                                                                       !
-   ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan, J. J. O'Brien,  !
-   !    and H. Ordonez. Comparison of direct and indirect methods for assessing leaf area  !
-   !    index across a tropical rain forest landscape.  Agric. For. Meteorol.,             !
-   !    177:110-116, Aug 2013. doi:10.1016/j.agrformet.2013.04.010.                        !
-   !---------------------------------------------------------------------------------------!
-   real                  , parameter :: f_wai_min     = 0.0005
-   real                  , parameter :: f_wai_crit    = 0.11
    !---------------------------------------------------------------------------------------!
 
 
@@ -3370,30 +3352,19 @@ subroutine init_pft_alloc_params()
    select case (iallom)
    case (3)
       !------------------------------------------------------------------------------------!
-      !    WAI is defined as a fraction of (potential) LAI.   The ratio for canopy trees   !
-      ! is set to 0.11 following the average ratio from Olivas et al. (2013).  For         !
-      ! seedlings, we assume the ratio to be 0.0005, similar to the old allometry.         !
-      !                                                                                    !
-      ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,              !
-      !    J. J. O'Brien, and H. Ordonez. Comparison of direct and indirect methods for    !
-      !    assessing leaf area index across a tropical rain forest landscape.              !
-      !    Agric. For. Meteorol., 177:110-116, Aug 2013.                                   !
-      !    doi:10.1016/j.agrformet.2013.04.010.                                            !
+      !    WAI is defined as a fraction of (potential) LAI.   This is just a refit of      !
+      ! allometry 2 but using DBH*DBH*Height as predictor for consistency.                 !
       !------------------------------------------------------------------------------------!
-      size_min (:) = merge( min_dbh (:) * min_dbh (:) * hgt_min(:)                         &
-                          , min_dbh (:)                                                    &
-                          , is_tropical(:) .and. (.not. is_liana(:))       )
-      size_crit(:) = merge( dbh_crit(:) * dbh_crit(:) * hgt_max(:)                         &
-                          , merge(liana_dbh_crit,dbh_crit(:),is_liana(:))                  &
-                          , is_tropical(:) .and. (.not. is_liana(:))       )
-      wai_min  (:) = f_wai_min  * SLA(:) * b1Bl(:) * size_min (:) ** b2Bl(:)
-      wai_crit (:) = f_wai_crit * SLA(:) * b1Bl(:) * size_crit(:) ** b2Bl(:)
-      b2WAI(:) = merge( 1.0                                                                &
-                      , log(wai_crit(:)/wai_min(:))/log(size_crit(:)/size_min(:))          &
-                      , is_grass(:)                                               )
       b1WAI(:) = merge( 0.0                                                                &
-                      , wai_crit(:) / size_crit(:) ** b2WAI(:)                             &
-                      , is_grass(:)                                               )
+                      , merge( merge(0.01757882,0.00594221,is_conifer(:))                  &
+                             , merge(0.0553*0.5,0.0192*0.5,is_conifer(:))                  &
+                             , is_tropical(:) .and. (.not. is_liana(:) )  )                &
+                      , is_grass(:)                                       )
+      b2WAI(:) = merge( 1.0                                                                &
+                      , merge( merge(0.71986449,0.76275995,is_conifer(:))                  &
+                             , merge(    1.9769,    2.0947,is_conifer(:))                  &
+                             , is_tropical(:) .and. (.not. is_liana(:) )  )                &
+                      , is_grass(:)                                       )
       !------------------------------------------------------------------------------------!
    case default
       !------------------------------------------------------------------------------------!
@@ -3407,25 +3378,8 @@ subroutine init_pft_alloc_params()
       !    und Landwirtschaft (BMVEL), Bonn, Germany, 2003.                                !
       !    URL http://www.wasklim.de/download/Methodenband.pdf.                            !
       !------------------------------------------------------------------------------------!
-      do ipft=1,n_pft
-         if (is_grass(ipft) .and. (.not. is_tropical(ipft))) then
-            !------ Grasses don't have WAI. -----------------------------------------------!
-            b1WAI(ipft) = 0.0
-            b2WAI(ipft) = 1.0
-            !------------------------------------------------------------------------------!
-         elseif (is_conifer(ipft)) then
-            !------ Conifers. -------------------------------------------------------------!
-            b1WAI(ipft) = 0.0553 * 0.5
-            b2WAI(ipft) = 1.9769
-            !------------------------------------------------------------------------------!
-         else
-            !------ Tropical grasses and broadleaf trees. ---------------------------------!
-            b1WAI(ipft) = 0.0192 * 0.5
-            b2WAI(ipft) = 2.0947
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
+      b1WAI(:) = merge(0.0,merge(0.0553*0.5,0.0192*0.5,is_conifer(:)),is_grass(:))
+      b2WAI(:) = merge(1.0,merge(    1.9769,    2.0947,is_conifer(:)),is_grass(:))
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -3637,7 +3591,6 @@ subroutine init_pft_photo_params()
 
 
    !----- Local variables. ----------------------------------------------------------------!
-   real(kind=4), dimension(n_pft) :: wl_alloc     !> Wood:leaf allocation parameter
    real(kind=4)                   :: ssfact       !> Correction factor for Vcmax
    real(kind=4)                   :: vmexpo_pft   !> Correction factor dor Rdmax
    real(kind=4)                   :: gamma_pft    !> Rdmax / Vcmax
@@ -3655,11 +3608,6 @@ subroutine init_pft_photo_params()
    real(kind=4), parameter        :: b_bltemp =  0.753            !> 5f, 15C <= TWQ < 25C
    real(kind=4), parameter        :: a_needle = -0.366            !> 5d, NlT
    real(kind=4), parameter        :: b_needle =  0.494            !> 5d, NlT
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Leaf:wood allocation parameter (rho*SLA expressed in m-1). ----------------------!
-   wl_alloc(:) = 1000. * rho(:) * SLA(:) / C2B
    !---------------------------------------------------------------------------------------!
 
 
@@ -3733,10 +3681,9 @@ subroutine init_pft_photo_params()
          case (2,3)
             !------------------------------------------------------------------------------!
             ! Tropical parameters based on multiple data sets (K11,W04, B17, and N17).     !
-            ! Most traits tested turned out to be poorly correlated with Vcmax.  The best  !
-            ! correlation was found between Jmax and the product of SLA and wood density   !
-            ! (wl_alloc parameter), when data were aggregated to species level.  For the   !
-            ! time being, we use this term.                                                !
+            ! Most traits tested turned out to be poorly correlated with Vcmax.  Using the !
+            ! wood density after trying different approaches, as it is the one that shows  !
+            ! most robustness (although rho*SLA had better correlation).                   !
             !                                                                              !
             ! References                                                                   !
             !                                                                              !
@@ -3770,7 +3717,7 @@ subroutine init_pft_photo_params()
             case (16)    ! Subtropical C3 grass.  Use CLM defaults
                Vm0(ipft) = 35.384615
             case default 
-               Vm0(ipft) = 17405.83395 / wl_alloc(ipft) ** 0.784278
+               Vm0(ipft) = exp(4.335387 - 2.58938 * rho(ipft))
             end select
             !------------------------------------------------------------------------------!
          case default
@@ -4438,7 +4385,7 @@ subroutine init_pft_mort_params()
                 !    in tropical forests of Panama. New Phytol., 215 (4):1425-1437,        !
                 !    Sep 2017. doi:10.1111/nph.14319 (N17).                                !
                 !--------------------------------------------------------------------------!
-                mort3(ipft) = max(0.,exp(-0.382 - 5.21 * rho(ipft)) - lambda_brokaw)
+                mort3(ipft) = max(0.,exp(-0.396 - 5.20 * rho(ipft)) - lambda_brokaw)
                 !--------------------------------------------------------------------------!
              end if
           case default
