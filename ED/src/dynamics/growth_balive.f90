@@ -327,6 +327,7 @@ module growth_balive
                              cpatch%phenology_status(ico) == 1)) then
                         cpatch%phenology_status(ico) = 1
                      end if
+                     !---------------------------------------------------------------------!
                   end if
                   !------------------------------------------------------------------------!
 
@@ -387,6 +388,17 @@ module growth_balive
                   !------------------------------------------------------------------------!
 
 
+                  !----- Updating LAI, WAI, and CAI. --------------------------------------!
+                  call area_indices(cpatch, ico)
+                  !------------------------------------------------------------------------!
+
+
+
+                  !----- Update above-ground biomass. -------------------------------------!
+                  cpatch%agb(ico) = ed_biomass(cpatch, ico)
+                  !------------------------------------------------------------------------!
+
+
                   !------------------------------------------------------------------------!
                   !     In case vegetation dynamics is turned off, overwrite state         !
                   ! variables values with the original values.                             !
@@ -411,17 +423,6 @@ module growth_balive
                      cpatch%crown_area      (ico) = cai_in
                      cpatch%krdepth         (ico) = krdepth_in
                   end if
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Updating LAI, WAI, and CAI. --------------------------------------!
-                  call area_indices(cpatch, ico)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Update above-ground biomass. -------------------------------------!
-                  cpatch%agb(ico) = ed_biomass(cpatch, ico)
                   !------------------------------------------------------------------------!
 
 

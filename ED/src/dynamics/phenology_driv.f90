@@ -139,6 +139,8 @@ module phenology_driv
       real                                  :: old_wood_hcap
       real                                  :: elongf_try
       real                                  :: elongf_grow
+      real                                  :: bleaf_in
+      real                                  :: bstorage_in
       !----- Variables used only for debugging purposes. ----------------------------------!
       logical                  , parameter  :: printphen=.false.
       logical, dimension(n_pft), save       :: first_time=.true.
@@ -172,6 +174,11 @@ module phenology_driv
             ipft    = cpatch%pft(ico)
             kroot   = cpatch%krdepth(ico)
             
+            !----- Save input leaf and storage biomass for when dynamics is disabled. -----!
+            bleaf_in    = cpatch%bleaf(ico)
+            bstorage_in = cpatch%bstorage(ico)
+
+
             !----- Initially, we assume all leaves stay. ----------------------------------!
             cpatch%leaf_drop(ico) = 0.0
 
@@ -243,10 +250,8 @@ module phenology_driv
                   !------------------------------------------------------------------------!
 
                   !----- Update storage only if vegetation dynamics is on. ----------------!
-                  if (veget_dyn_on) then
-                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
-                                          + cpatch%bleaf(ico) * retained_carbon_fraction
-                  end if
+                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
+                                       + cpatch%bleaf(ico) * retained_carbon_fraction
                   !------------------------------------------------------------------------!
 
 
@@ -301,19 +306,8 @@ module phenology_driv
                   !      It is time to flush.  Change phenology_status will update carbon  !
                   ! pools in growth_balive.                                                !
                   !------------------------------------------------------------------------!
-                  if (veget_dyn_on) then
-                     cpatch%phenology_status(ico) = 1
-                     cpatch%elongf          (ico) = 1.0
-                  else
-                     !---------------------------------------------------------------------!
-                     !    When vegetation dynamics is off, instantaneously update tissues  !
-                     !---------------------------------------------------------------------!
-                     cpatch%bleaf(ico)  = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
-                     cpatch%balive(ico) = cpatch%balive(ico) + cpatch%bleaf(ico)
-                     cpatch%phenology_status(ico) = 0
-                     cpatch%elongf          (ico) = 1.0
-                     !---------------------------------------------------------------------!
-                  end if
+                  cpatch%phenology_status(ico) = 1
+                  cpatch%elongf          (ico) = 1.0
                   !------------------------------------------------------------------------!
                end if  ! critical moisture
 
@@ -356,11 +350,8 @@ module phenology_driv
                                        * l2n_stem / c2n_stem(ipft)
                      
                      !----- Adjust plant carbon pools. ------------------------------------!
-                     cpatch%balive(ico)   = cpatch%balive(ico) - delta_bleaf
-                     if (veget_dyn_on) then
-                        cpatch%bstorage(ico) = cpatch%bstorage(ico)                        &
-                                             + retained_carbon_fraction * delta_bleaf
-                     end if
+                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
+                                          + retained_carbon_fraction * delta_bleaf
 
                      !---------------------------------------------------------------------!
                      !     Contribution due to the fact that c2n_leaf and c2n_storage may  !
@@ -401,16 +392,8 @@ module phenology_driv
                   !------------------------------------------------------------------------!
                   !      Update the phenology status (1 means that leaves are growing),    !
                   !------------------------------------------------------------------------!
-                  if (veget_dyn_on) then
-                     cpatch%phenology_status(ico) = 1
-                     cpatch%elongf          (ico) = 1.0 
-                  else
-                     cpatch%phenology_status(ico) = 0
-                     cpatch%elongf          (ico) = 1.0 
-                     cpatch%bleaf(ico)  = cpoly%green_leaf_factor(ipft,isi)                &
-                                        * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
-                     cpatch%balive(ico) = cpatch%balive(ico) + cpatch%bleaf(ico)
-                  end if
+                  cpatch%phenology_status(ico) = 1
+                  cpatch%elongf          (ico) = 1.0 
                   !------------------------------------------------------------------------!
                end if
 
@@ -466,11 +449,8 @@ module phenology_driv
                   cpatch%elongf    (ico) = elongf_try
                   !----- Adjust plant carbon pools. ---------------------------------------!
                   cpatch%bleaf     (ico) = bl_max
-                  cpatch%balive    (ico) = cpatch%balive(ico)   - delta_bleaf
-                  if (veget_dyn_on) then
-                     cpatch%bstorage  (ico) = cpatch%bstorage(ico)                         &
-                                            + retained_carbon_fraction * delta_bleaf
-                  end if
+                  cpatch%bstorage  (ico) = cpatch%bstorage(ico)                            &
+                                         + retained_carbon_fraction * delta_bleaf
                   !------------------------------------------------------------------------!
 
 
@@ -539,22 +519,36 @@ module phenology_driv
                      !---------------------------------------------------------------------!
                   end select
                   !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Conditions are slightly more humid.  Let them grow.                !
-                  !------------------------------------------------------------------------!
-                  if (.not. veget_dyn_on) then
-                     cpatch%bleaf           (ico) = bl_max
-                     cpatch%balive          (ico) = cpatch%balive(ico) - delta_bleaf
-                  end if
-                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
 
 
+            !------------------------------------------------------------------------------!
+            !     In case vegetation dynamics is turned off, we replace leaf biomass with  !
+            ! the equilibrium leaf biomass, whilst we keep the same storage pool as the    !
+            ! input.                                                                       !
+            !------------------------------------------------------------------------------!
+            if (.not. veget_dyn_on) then
+               elongf_try           = cpoly%green_leaf_factor(ipft,isi) * cpatch%elongf(ico)
+               cpatch%bleaf(ico)    = elongf_try                                           &
+                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+               cpatch%bstorage(ico) = bstorage_in
+               !----- Fix phenology status according to elongation factor. ----------------!
+               if (elongf_try == 1.0) then
+                  cpatch%phenology_status(ico) = 0
+               elseif (elongf_try < elongf_min) then
+                  cpatch%phenology_status(ico) = -2
+               end if
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update balive. ---------------------------------------------------------!
+            cpatch%balive(ico) = cpatch%balive(ico) + cpatch%bleaf(ico) - bleaf_in
+            !------------------------------------------------------------------------------!
 
 
             !----- Update LAI, WAI, and CAI accordingly. ----------------------------------!

@@ -255,10 +255,8 @@ module structural_growth
                   cpatch%monthly_dlnndt(ico) = max( cpatch%monthly_dlnndt (ico)            &
                                                   , log( negligible_nplant(ipft)           &
                                                        / cpatch%nplant    (ico) ) )
-                  if (veget_dyn_on) then
-                     cpatch%nplant(ico)      = cpatch%nplant(ico)                          &
+                  cpatch%nplant(ico)         = cpatch%nplant(ico)                          &
                                              * exp(cpatch%monthly_dlnndt(ico))
-                  end if
                   !------------------------------------------------------------------------!
 
                   !----- Split biomass components that are labile or structural. ----------!
