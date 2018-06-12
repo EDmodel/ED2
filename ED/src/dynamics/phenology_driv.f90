@@ -243,7 +243,6 @@ module phenology_driv
 
 
                   !----- Update plant carbon pools. ---------------------------------------!
-                  cpatch%balive  (ico) = cpatch%balive(ico) - cpatch%bleaf(ico)
                   cpatch%bleaf   (ico) = 0.0
                   cpatch%elongf  (ico) = 0.0
                   cpatch%phenology_status(ico) = -2
