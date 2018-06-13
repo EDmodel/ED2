@@ -613,11 +613,11 @@ do
          leafharv=0.00
          ;;
       asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
-         pfts="1,2,3,4,12,13,15,16"
+         pfts="1,2,3,4,15,16"
          pasture=1
          crop=16
          plantation=15
-         logging="2,3,4,12,13,15"
+         logging="2,3,4,15"
          probharv="1.0,1.0,1.0,1.0,1.0,1.0"
          dbhharv="50.,50.,50.,50.,50.,50."
          seedharv=0.75
@@ -649,11 +649,11 @@ do
          leafharv=0.00
          ;;
       *)
-         pfts="1,2,3,4,12,13,16"
+         pfts="1,2,3,4,16"
          pasture=1
          crop=1
          plantation=13
-         logging="2,3,4,12,13"
+         logging="2,3,4"
          probharv="1.0,1.0,1.0,1.0,1.0"
          dbhharv="50.,50.,50.,50.,50."
          seedharv=0.75
@@ -692,11 +692,11 @@ do
             leafharv=0.00
             ;;
          asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
-            pfts="1,2,3,4,12,13,15,16"
+            pfts="1,2,3,4,15,16"
             pasture=1
             crop=16
             plantation=15
-            logging="2,3,4,12,13,15"
+            logging="2,3,4,15"
             probharv="1.0,1.0,1.0,1.0,1.0,1.0"
             dbhharv="50.,50.,50.,50.,50.,50."
             seedharv=0.75
@@ -728,11 +728,11 @@ do
             leafharv=0.00
             ;;
          *)
-            pfts="1,2,3,4,12,13,16"
+            pfts="1,2,3,4,16"
             pasture=1
             crop=1
             plantation=13
-            logging="2,3,4,12,13"
+            logging="2,3,4"
             probharv="1.0,1.0,1.0,1.0,1.0"
             dbhharv="50.,50.,50.,50.,50."
             seedharv=0.75
@@ -782,11 +782,11 @@ do
          esac
          ;;
       *)
-         pfts="1,2,3,4,12,13,16"
+         pfts="1,2,3,4,16"
          pasture=1
          crop=16
          plantation=13
-         logging="2,3,4,12,13"
+         logging="2,3,4"
          probharv="1.0,1.0,1.0,1.0,1.0"
          dbhharv="50.,50.,50.,50.,50."
          seedharv=0.75
