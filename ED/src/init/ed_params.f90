@@ -2216,6 +2216,7 @@ subroutine init_pft_alloc_params()
    real                      :: eta_f16
    real                      :: eta_c_f16
    real                      :: asal_bar
+   real                      :: hgt_max_trop
    real, dimension(2)        :: params_bs_lg
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
@@ -2278,9 +2279,12 @@ subroutine init_pft_alloc_params()
    !      3177-3190, Oct 2014. doi:10.1111/gcb.12629 (C14).                                !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 2.1878178,0.5361171 /)
-   real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.0243364,1.0782521 /)
-   real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 0.0000219,0.5361171 /)
+   ! real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 2.1878178,0.5361171 /)
+   ! real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.0243364,1.0782521 /)
+   ! real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 0.0000219,0.5361171 /)
+   real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 0.90260980,0.6055996 /)
+   real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.04508606,1.0279430 /)
+   real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 1.0e-5, 1.0 /) * c14l83_bl_lg
    real                  , parameter :: SLA_ref       = 22.93
    real                  , parameter :: rho_ref       = 0.615
    !---------------------------------------------------------------------------------------!
@@ -2856,8 +2860,14 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum and maximum height allowed for each cohort.                                !
    !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      hgt_max_trop = 42.0
+   case default
+      hgt_max_trop = 35.0
+   end select
    hgt_min(:) = merge(0.50,merge(0.15,hgt_ref+0.2,is_grass(:)),is_tropical(:))
-   hgt_max(:) = merge( merge(1.5,35.0,is_grass(:))                                         &
+   hgt_max(:) = merge( merge(1.5         ,hgt_max_trop ,is_grass(:))                       &
                      , merge(0.95*b1Ht(:),0.999*b1Ht(:),is_grass(:))                       &
                      , is_tropical(:) )
    !---------------------------------------------------------------------------------------!
@@ -3681,9 +3691,11 @@ subroutine init_pft_photo_params()
          case (2,3)
             !------------------------------------------------------------------------------!
             ! Tropical parameters based on multiple data sets (K11,W04, B17, and N17).     !
-            ! Most traits tested turned out to be poorly correlated with Vcmax.  Using the !
-            ! wood density after trying different approaches, as it is the one that shows  !
-            ! most robustness (although rho*SLA had better correlation).                   !
+            ! Most traits tested turned out to be poorly correlated with area-based Vcmax  !
+            ! (umol m-2 s-1).   Using the mass-based Vcmax (umol kgC-1 s-1) and SLA        !
+            ! (m2 kgC-1), the fit is considerably better (R2 = 0.389 and slope > 1, as     !
+            ! expected).  We use this relationship and convert the equation back to        !
+            ! area-based by reducing the exponent by 1 unit.                               !
             !                                                                              !
             ! References                                                                   !
             !                                                                              !
@@ -3718,6 +3730,7 @@ subroutine init_pft_photo_params()
                Vm0(ipft) = 35.384615
             case default 
                Vm0(ipft) = exp(4.335387 - 2.58938 * rho(ipft))
+               Vm0(ipft) = 4.173421 * SLA(ipft) ** 0.50175
             end select
             !------------------------------------------------------------------------------!
          case default
