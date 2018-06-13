@@ -1,19 +1,3 @@
-#==========================================================================================#
-#==========================================================================================#
-#     Global variables to define plant properties.                                         #
-#------------------------------------------------------------------------------------------#
-
-if (! "mypfts"     %in% ls()) mypfts     <<- c(2,3,4)
-if (! "n.pfts"     %in% ls()) n.pfts     <<- length(mypfts)
-if (! "pft.dens"   %in% ls()) pft.dens   <<- c(0.478,0.673,0.829)
-if (! "pft.breaks" %in% ls()) pft.breaks <<- c(-Inf,0.572,0.772,Inf)
-if (! "pft.cols"   %in% ls()) pft.cols   <<- c( "#83CCC0","#44AA99","#186659")
-if (! "pft.pch"    %in% ls()) pft.pch    <<- c(         0,        9,       15)
-if (! "pft.lwd"    %in% ls()) pft.lwd    <<- c(       1.5,      1.5,      1.0)
-if (! "pft.names"  %in% ls()) pft.names  <<- paste(c("Early","Mid","Late"),"Tropical")
-#------------------------------------------------------------------------------------------#
-
-
 #----- List of flags for undetermined species. --------------------------------------------#
 unknown.wildcard     <<- c("aff","cf","deleteme","ind","indet","na","ni","sp","sp1"
                           ,"sp1cay-atdn","sp11cay-atdn","sp19","sp2","sp21cay-atdn"

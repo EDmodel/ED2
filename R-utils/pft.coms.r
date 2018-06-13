@@ -92,36 +92,41 @@ gsc.2.gsw  <<- 1.0 / gsw.2.gsc     # carbon to water  - stomata
 par.twilight.min <<- 0.5 * Watts.2.Ein # Minimum non-nocturnal PAR.              [mol/m2/s]
 #------------------------------------------------------------------------------------------#
 
+
 #----- This is a flag for the maximum representable number in R. --------------------------#
 discard <<- 2^1023
 #------------------------------------------------------------------------------------------#
 
 
+#----- Critical DBH for lianas. -----------------------------------------------------------#
+liana.dbh.crit <<- 26.0
+#------------------------------------------------------------------------------------------#
+
 
 #----- Fudging parameters to try to tune photosynthesis. ----------------------------------#
 if (! "alpha.c3"          %in% ls()) alpha.c3          <<- 0.08
-if (! "alpha.c4"          %in% ls()) alpha.c4          <<- 0.053
+if (! "alpha.c4"          %in% ls()) alpha.c4          <<- 0.040
 if (! "phi.psII.c3"       %in% ls()) phi.psII.c3       <<- 0.625
 if (! "phi.psII.c4"       %in% ls()) phi.psII.c4       <<- 0.85
 if (! "curvpar.c3"        %in% ls()) curvpar.c3        <<- 0.70
 if (! "curvpar.c4"        %in% ls()) curvpar.c4        <<- 0.70
 if (! "vmfact.c3"         %in% ls()) vmfact.c3         <<- 1.0
 if (! "vmfact.c4"         %in% ls()) vmfact.c4         <<- 1.0
-if (! "jmfact.c3"         %in% ls()) jmfact.c3         <<- 1.79
-if (! "jmfact.c4"         %in% ls()) jmfact.c4         <<- 1.79
-if (! "tpmfact.c3"        %in% ls()) tpmfact.c3        <<- 0.109
-if (! "mphoto.c3"         %in% ls()) mphoto.c3         <<- 8.0
-if (! "mphoto.aa"         %in% ls()) mphoto.aa         <<- 6.4
+if (! "jmfact.c3"         %in% ls()) jmfact.c3         <<- 1.767
+if (! "jmfact.c4"         %in% ls()) jmfact.c4         <<- 1.767
+if (! "tpmfact.c3"        %in% ls()) tpmfact.c3        <<- 0.110
+if (! "mphoto.c3"         %in% ls()) mphoto.c3         <<- 9.0
+if (! "mphoto.aa"         %in% ls()) mphoto.aa         <<- 7.2
 if (! "mphoto.c4"         %in% ls()) mphoto.c4         <<- 4.0
 if (! "gamma.c3"          %in% ls()) gamma.c3          <<- 0.020
 if (! "gamma.aa"          %in% ls()) gamma.aa          <<- 0.020
 if (! "gamma.c4"          %in% ls()) gamma.c4          <<- 0.030
-if (! "d0.grass"          %in% ls()) d0.grass          <<- 0.01
-if (! "d0.tree"           %in% ls()) d0.tree           <<- 0.01
+if (! "d0.grass"          %in% ls()) d0.grass          <<- 0.016
+if (! "d0.tree"           %in% ls()) d0.tree           <<- 0.016
 if (! "klowin"            %in% ls()) klowin            <<- 0.7 / 39 * 1.e6
 if (! "b.c3"              %in% ls()) b.c3              <<- 10000.
 if (! "b.aa"              %in% ls()) b.aa              <<- 1000.
-if (! "b.c4"              %in% ls()) b.c4              <<- 8000.
+if (! "b.c4"              %in% ls()) b.c4              <<- 10000.
 if (! "orient.tree"       %in% ls()) orient.tree       <<- +0.10
 if (! "orient.aa"         %in% ls()) orient.aa         <<- +0.00
 if (! "orient.grass"      %in% ls()) orient.grass      <<- -0.30
@@ -131,12 +136,12 @@ if (! "clumping.grass"    %in% ls()) clumping.grass    <<- 0.75
 if (! "lwidth.grass"      %in% ls()) lwidth.grass      <<- 0.05
 if (! "lwidth.bltree"     %in% ls()) lwidth.bltree     <<- 0.05
 if (! "lwidth.nltree"     %in% ls()) lwidth.nltree     <<- 0.05
-if (! "vm.q10.c3"         %in% ls()) vm.q10.c3         <<- 2.0
-if (! "vm.q10.c4"         %in% ls()) vm.q10.c4         <<- 2.2
+if (! "vm.q10.c3"         %in% ls()) vm.q10.c3         <<- 2.21
+if (! "vm.q10.c4"         %in% ls()) vm.q10.c4         <<- 2.21
 if (! "vm.tcold.c3temp"   %in% ls()) vm.tcold.c3temp   <<- 4.7137
-if (! "vm.tcold.c3trop"   %in% ls()) vm.tcold.c3trop   <<- 8.0
+if (! "vm.tcold.c3trop"   %in% ls()) vm.tcold.c3trop   <<- 10.
 if (! "vm.tcold.aa"       %in% ls()) vm.tcold.aa       <<- 4.7137
-if (! "vm.tcold.c4"       %in% ls()) vm.tcold.c4       <<- 8.0
+if (! "vm.tcold.c4"       %in% ls()) vm.tcold.c4       <<- 10.
 if (! "vm.thot.c3temp"    %in% ls()) vm.thot.c3temp    <<- 45.0
 if (! "vm.thot.c3trop"    %in% ls()) vm.thot.c3trop    <<- 45.0
 if (! "vm.thot.aa"        %in% ls()) vm.thot.aa        <<- 45.0
@@ -145,8 +150,8 @@ if (! "vm.decay.ecold.c3" %in% ls()) vm.decay.ecold.c3 <<- 0.3
 if (! "vm.decay.ehot.c3"  %in% ls()) vm.decay.ehot.c3  <<- 0.6
 if (! "vm.decay.ecold.c4" %in% ls()) vm.decay.ecold.c4 <<- 0.3
 if (! "vm.decay.ehot.c4"  %in% ls()) vm.decay.ehot.c4  <<- 0.6
-if (! "jm.q10.c3"         %in% ls()) jm.q10.c3         <<- vm.q10.c3
-if (! "jm.q10.c4"         %in% ls()) jm.q10.c4         <<- vm.q10.c4
+if (! "jm.q10.c3"         %in% ls()) jm.q10.c3         <<- 1.65
+if (! "jm.q10.c4"         %in% ls()) jm.q10.c4         <<- 1.65
 if (! "jm.tcold.c3temp"   %in% ls()) jm.tcold.c3temp   <<- vm.tcold.c3temp
 if (! "jm.tcold.c3trop"   %in% ls()) jm.tcold.c3trop   <<- vm.tcold.c3trop
 if (! "jm.tcold.aa"       %in% ls()) jm.tcold.aa       <<- vm.tcold.aa
@@ -159,8 +164,8 @@ if (! "jm.decay.ecold.c3" %in% ls()) jm.decay.ecold.c3 <<- vm.decay.ecold.c3
 if (! "jm.decay.ehot.c3"  %in% ls()) jm.decay.ehot.c3  <<- vm.decay.ehot.c3
 if (! "jm.decay.ecold.c4" %in% ls()) jm.decay.ecold.c4 <<- vm.decay.ecold.c4
 if (! "jm.decay.ehot.c4"  %in% ls()) jm.decay.ehot.c4  <<- vm.decay.ehot.c4
-if (! "lr.q10.c3"         %in% ls()) lr.q10.c3         <<- vm.q10.c3
-if (! "lr.q10.c4"         %in% ls()) lr.q10.c4         <<- vm.q10.c4
+if (! "lr.q10.c3"         %in% ls()) lr.q10.c3         <<- 2.46
+if (! "lr.q10.c4"         %in% ls()) lr.q10.c4         <<- 2.46
 if (! "lr.tcold.c3temp"   %in% ls()) lr.tcold.c3temp   <<- vm.tcold.c3temp
 if (! "lr.tcold.c3trop"   %in% ls()) lr.tcold.c3trop   <<- vm.tcold.c3trop
 if (! "lr.tcold.aa"       %in% ls()) lr.tcold.aa       <<- vm.tcold.aa
@@ -316,7 +321,7 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = 42.574 # 47.173
    b1Ht.trop    = 0.0482 # 0.044037
    b2Ht.trop    = 0.8307 # 0.80248
-   hgt.max.trop = 37.5
+   hgt.max.trop = 42.0   # 37.5
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
@@ -347,9 +352,10 @@ if (iallom %in% c(0,1)){
 #      Oct 2014. doi:10.1111/gcb.12629 (C14).                                              #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-c14l83.bl.lg  = c(2.1878178,0.5361171)
-c14l83.bs.lg  = c(0.0770616,0.9933637)
-xgrass.bs.lg  = c(0.0000219,0.5361171)
+c14l83.bl.xx  = c(1.41507180,0.5718238)
+c14l83.bs.tf  = c(0.03438721,1.0495558)
+c14l83.bs.sv  = c(0.02689847,1.0674310)
+c14l83.bs.gr  = c(1.e-5,1.0) * c14l83.bl.xx
 SLA.ref       = 22.93
 rho.ref       = 0.615
 #------------------------------------------------------------------------------------------#
@@ -369,12 +375,12 @@ pft01 = list( name               = "C4 grass"
             , liana              = FALSE
             , pathway            = 4
             , rho                = if(iallom==3){0.08}else{0.20}
-            , SLA                = if(iallom==3){24.4}else{22.7}
+            , SLA                = if(iallom==3){NA_real_}else{22.7}
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , vm0                = if(iallom==3){NA_real_}else{12.500}
             , mort3              = if(iallom==3){0.124}else{0.066}
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{2.0}
+            , leaf.turnover.rate = 2.0
             , root.turnover.rate = NA
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
@@ -401,8 +407,8 @@ pft02 = list( name               = "Early tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.436}else{0.53}
-            , SLA                = if(iallom==3){23.51}else{NA_real_}
+            , rho                = if(iallom==3){0.408}else{0.53}
+            , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , vm0                = if(iallom==3){NA_real_}else{18.75}
@@ -434,8 +440,8 @@ pft03 = list( name               = "Mid tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.610}else{0.71}
-            , SLA                = if(iallom==3){21.61}else{NA_real_}
+            , rho                = if(iallom==3){0.604}else{0.71}
+            , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , vm0                = if(iallom==3){NA_real_}else{12.50}
@@ -467,8 +473,8 @@ pft04 = list( name               = "Late tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.770}else{0.90}
-            , SLA                = if(iallom==3){18.67}else{NA_real_}
+            , rho                = if(iallom==3){0.763}else{0.90}
+            , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , vm0                = if(iallom==3){NA_real_}else{6.25}
@@ -722,17 +728,17 @@ pft11 = list( name               = "Late hardwood"
             , veg.hcap.min       = 1.60601E-01
             )
 
-pft12 = list( name               = "Early shade-intolerant"
-            , key                = "ESI"
+pft12 = list( name               = "Early savannah"
+            , key                = "ESV"
             , colour             = "#CC839B"
             , tropical           = TRUE
-            , savannah           = FALSE
+            , savannah           = TRUE
             , conifer            = FALSE
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.520}else{0.53}
-            , SLA                = if(iallom==3){40.33}else{NA_real_}
+            , rho                = if(iallom==3){0.461}else{0.53}
+            , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , vm0                = if(iallom==3){NA_real_}else{18.75}
@@ -744,8 +750,6 @@ pft12 = list( name               = "Early shade-intolerant"
             , b2Ht               = b2Ht.trop
             , b1Bl               = NA
             , b2Bl               = NA
-            , b1Bl.large         = NA
-            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -757,17 +761,17 @@ pft12 = list( name               = "Early shade-intolerant"
             , veg.hcap.min       = 9.53226E+00
             )
 
-pft13 = list( name               = "Mid shade-intolerant"
-            , key                = "MSI"
+pft13 = list( name               = "Mid savannah"
+            , key                = "MSV"
             , colour             = "#AA4466"
             , tropical           = TRUE
-            , savannah           = FALSE
+            , savannah           = TRUE
             , conifer            = FALSE
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.718}else{0.71}
-            , SLA                = if(iallom==3){32.01}else{NA_real_}
+            , rho                = if(iallom==3){0.612}else{0.71}
+            , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , vm0                = if(iallom==3){NA_real_}else{12.50}
@@ -790,17 +794,17 @@ pft13 = list( name               = "Mid shade-intolerant"
             , veg.hcap.min       = 9.53226E+00
             )
 
-pft14 = list( name               = "Median tropical"
-            , key                = "MED"
+pft14 = list( name               = "Late Savannah"
+            , key                = "LSV"
             , colour             = "#661832"
             , tropical           = TRUE
-            , savannah           = FALSE
+            , savannah           = TRUE
             , conifer            = FALSE
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){rho.ref}else{0.90}
-            , SLA                = if(iallom==3){SLA.ref}else{NA_real_}
+            , rho                = if(iallom==3){0.756}else{0.90}
+            , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , vm0                = if(iallom==3){NA_real_}else{6.25}
@@ -832,14 +836,14 @@ pft15 = list( name               = "Araucaria"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = 0.42
-            , SLA                = 4.80
-            , c2n.leaf           = 50./1.18
+            , rho                = 0.52
+            , SLA                = 6.324555
+            , c2n.leaf           = 86.29189
             , leaf.width         = NA_real_
-            , leaf.turnover.rate = 1./6.
+            , leaf.turnover.rate = 0.04160842
             , root.turnover.rate = NA
             , vm0                = 15.625
-            , mort3              = 0.001
+            , mort3              = 0.001111
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -866,10 +870,10 @@ pft16 = list( name               = "C3 grass"
             , liana              = FALSE
             , pathway            = 3
             , rho                = if(iallom==3){0.08}else{0.20}
-            , SLA                = if(iallom==3){33.58}else{22.7}
+            , SLA                = if(iallom==3){NA_real_}else{22.7}
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{2.0}
+            , leaf.turnover.rate = 2.0
             , root.turnover.rate = NA
             , vm0                = if(iallom==3){NA_real_}else{18.75}
             , mort3              = if(iallom==3){0.124}else{0.066}
@@ -922,11 +926,13 @@ pft17 = list( name               = "Liana"
             , veg.hcap.min       = 2.19242E+01
             )
 
-#----- Derived PFTs. ----------------------------------------------------------------------#
-pft18 = modifyList( x   = pft15
+#----- PFT 18 has the median wood density and SLA for tropical PFTs. ----------------------#
+pft18 = modifyList( x   = pft03
                   , val = list( name     = "Total"
                               , key      = "ALL"
                               , colour   = "#404040"
+                              , rho      = rho.ref
+                              , SLA      = SLA.ref
                               )#end list
                   )#end modifyList
 #------------------------------------------------------------------------------------------#
@@ -982,36 +988,51 @@ pft$vm0 = ifelse( test = pft$pathway == 4
 #    doi:10.1111/j.1461-0248.2009.01285.x (C09).                                           #
 #------------------------------------------------------------------------------------------#
 bltree  = pft$tropical & (! pft$conifer) & (! pft$liana) & (! pft$grass)
-ltor.s0 = ifelse( test = pft$grass & iallom == 3
-                , yes  = 0.0429591
-                , no   = ifelse( test = bltree & iallom == 3
-                               , yes  = 0.00178063
-                               , no   = exp(log(.1*C2B)+2.4*log(10.)-.46*log(12.))^(-1/.46)
-                               )#end ifelse
-                )#end ltor.s0
-ltor.s1 = ifelse( test = pft$grass & iallom == 3
-                , yes  = 1.15777
-                , no   = ifelse( test = bltree & iallom == 3
-                               , yes  = 2.013
-                               , no   = 1./.46
-                               )#end ifelse
-                )#end ltor.s0
-sla.s0  = (1./ltor.s0)^(1./ltor.s1)
-sla.s1  = 1./ltor.s1
+ltor.s0 = ifelse( test = rep(iallom,npft+1) == 3
+                , yes  = 2.2349
+                , no   = NA_real_
+                )#end ifelse
+ltor.s1 = ifelse( test = rep(iallom,npft+1) == 3
+                , yes  = -3.98423
+                , no   = NA_real_
+                )#end ifelse
+sla.s0  = ifelse( test = rep(iallom,npft+1) == 3
+                , yes  = ifelse( test = pft$grass
+                               , yes  = 15.15900
+                               , no   = 20.27623
+                               )#end if
+                , no   = ifelse( test = pft$grass
+                               , yes  = 22.7
+                               , no   = exp(log(.1*C2B) + 2.4 * log(10.) - 0.46 * log(12.))
+                               )#end if
+                )#end ifelse
+sla.s1  = ifelse( test = rep(iallom,npft+1) == 3
+                , yes  = ifelse( test = pft$grass
+                               , yes  = 0.8637294
+                               , no   = 0.4501726
+                               )#end if
+                , no   = ifelse( test = pft$grass
+                               , yes  = 0.0
+                               , no   = 0.46
+                               )#end if
+                )#end ifelse
 vm0.s0  = ifelse( test = pft$grass & iallom == 3
                 , yes  = ifelse( test = pft$pathway == 4
-                               , yes  = 3.16 / gamma.c4 / vm.q10.c4
-                               , no   = 2.30 / gamma.c3 / vm.q10.c3
+                               , yes  = 51.6/vm.q10.c4
+                               , no   = 78.2/vm.q10.c3
                                )#end ifelse
                 , no   = ifelse( test = bltree & iallom == 3
-                               , yes  = 5.04425 - log(vm.q10.c3)
+                               , yes  = 9.22326 / vm.q10.c3
                                , no   = NA_real_
                                )#end ifelse
                 )#end ltor.s0
 vm0.s1  = ifelse( test = pft$grass & iallom == 3
-                , yes  = 0.0
+                , yes  = ifelse( test = pft$pathway == 4
+                               , yes  = 0.0
+                               , no   = 0.0
+                               )#end ifelse
                 , no   = ifelse( test = bltree & iallom == 3
-                               , yes  = -2.58096
+                               , yes  = 1.50175 - 1.0 # -1 is to convert to area based.
                                , no   = NA_real_
                                )#end ifelse
                 )#end ltor.s0
@@ -1023,14 +1044,26 @@ vm0.ref = ifelse( test = pft$tropical | pft$grass
                                )#end mapply
                 )#end ifelse
 #---- Tree and grasses had almost the same curve for SLA and C:N ratio. Fit one curve. ----#
-c2nl.s0 = ifelse( test = (pft$grass | bltree) & iallom == 3
-                , yes  = 337.959
-                , no   = 1000./ ( 0.11289 + 0.129470 * vm0.ref )
-                )#end ltor.s0
-c2nl.s1 = ifelse( test = (pft$grass | bltree) & iallom == 3
-                , yes  = -0.834527
-                , no   = -1.0
-                )#end ltor.s0
+c2nl.s0                = ifelse( test = (pft$grass | bltree) & iallom == 3
+                               , yes  = 327.124
+                               , no   = 1000./ ( 0.11289 + 0.129470 * vm0.ref )
+                               )#end ltor.s0
+c2nl.s1                = ifelse( test = (pft$grass | bltree) & iallom == 3
+                               , yes  = -0.823498
+                               , no   = -1.0
+                               )#end ltor.s0
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Define traits that are scaled using standard major axis. ---------------------------#
+pft$leaf.turnover.rate = ifelse( test = is.finite(pft$leaf.turnover.rate)
+                               , yes  = pft$leaf.turnover.rate
+                               , no   = ifelse( test = is.finite(pft$SLA)
+                                              , yes  = (pft$SLA/sla.s0)^(1./sla.s1)
+                                              , no   = exp(ltor.s0 + ltor.s1 * pft$rho)
+                                              )#end ifelse
+                               )#end ifelse
 pft$SLA                = ifelse( test = is.finite(pft$SLA)
                                , yes  = pft$SLA
                                , no   = sla.s0 * pft$leaf.turnover.rate ^ sla.s1
@@ -1041,14 +1074,7 @@ pft$c2n.leaf           = ifelse( test = is.finite(pft$c2n.leaf)
                                )#end ifelse
 pft$vm0                = ifelse( test = is.finite(pft$vm0)
                                , yes  = pft$vm0
-                               , no   = ifelse( test = bltree & iallom == 3
-                                              , yes  = exp(vm0.s0 + vm0.s1 * pft$rho)
-                                              , no   = vm0.s0 * pft$SLA ^ vm0.s1
-                                              )#end ifelse
-                               )#end ifelse
-pft$leaf.turnover.rate = ifelse( test = is.finite(pft$leaf.turnover.rate)
-                               , yes  = pft$leaf.turnover.rate
-                               , no   = ltor.s0 * pft$SLA ^ ltor.s1
+                               , no   = vm0.s0 * pft$SLA ^ vm0.s1
                                )#end ifelse
 pft$root.turnover.rate = ifelse( test = is.finite(pft$root.turnover.rate)
                                , yes  = pft$root.turnover.rate
@@ -1066,7 +1092,7 @@ pft$bark.turnover.rate = ifelse( test = bltree & iallom == 3, yes = 0.4,no = 0.0
 pft$mort3  = ifelse( test = is.finite(pft$mort3)
                    , yes  = pft$mort3
                    , no   = if (iallom == 3){
-                               exp(-0.382-5.21*pft$rho) - 1/126.
+                               exp(-0.396-5.20*pft$rho) - 1/126.
                             }else{
                                0.15 * (1. - pft$rho/0.9)
                             }#end if (iallom == 3)
@@ -1332,7 +1358,7 @@ pft$hgt.max = ifelse( test = pft$tropical
 #     Set qsw according to the allometry and the PFT.                                      #
 #------------------------------------------------------------------------------------------#
 pft$qsw = pft$SLA / sapwood.ratio.orig
-for (ipft in sequence(npft)){
+for (ipft in sequence(npft+1)){
    #---- Check PFT and allometry. ---------------------------------------------------------#
    if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% 3){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["aa"]
@@ -1380,11 +1406,11 @@ pft$qrhob        = rep(NA_real_,times=npft+1)
 pft$qwatdry.leaf = ifelse(pft$tropical,1.85,2.50)
 pft$qwatdry.wood = rep(NA_real_,times=npft+1)
 pft$qwatdry.bark = rep(NA_real_,times=npft+1)
-pft$c.leaf.dry   = c(rep(3218.,times=npft),NA)
-pft$c.wood.dry   = c(rep(103.1+3.867*spht.tref,times=npft),NA)
+pft$c.leaf.dry   = rep(3218.,times=npft+1)
+pft$c.wood.dry   = rep(103.1+3.867*spht.tref,times=npft+1)
 pft$c.bark.dry   = pft$c.wood.dry
 pft$brf.wd       = ifelse(pft$grass,0.0,0.16)
-for (ipft in sequence(npft)){
+for (ipft in sequence(npft+1)){
    usedef = with(pft,grass[ipft] || liana[ipft] || conifer[ipft] || (! tropical[ipft]))
    if (usedef){
       #----- Default values. --------------------------------------------------------------#
@@ -1454,7 +1480,7 @@ pft$c.bark = ( (pft$c.bark.dry + pft$qwatdry.bark * cliq) / (1. + pft$qwatdry.ba
 pft$b1Xs  = 0.315769481
 pft$b1Xb  = 0.
 pft$qbark = 0.
-for (ipft in sequence(npft)){
+for (ipft in sequence(npft+1)){
    skip = pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft]) || (iallom != 3)
    if (! skip){
       #------------------------------------------------------------------------------------#
@@ -1489,15 +1515,6 @@ for (ipft in sequence(npft)){
                         )#end abas
       pft$qbark[ipft] = pft$qrhob[ipft] * abas * pft$qsw[ipft]
       #------------------------------------------------------------------------------------#
-
-
-
-
-
-      #------ For the time being, set bark and sapwood to zero. ---------------------------#
-      pft$qsw  [ipft] = 0.
-      pft$qbark[ipft] = 0.
-      #------------------------------------------------------------------------------------#
    }#end if (skip)
    #---------------------------------------------------------------------------------------#
 }#end for (ipft in sequence(npft))
@@ -1508,7 +1525,7 @@ for (ipft in sequence(npft)){
 #----- Minimum and Maximum DBH. -----------------------------------------------------------#
 pft$dbh.min   = rep(NA,times=npft+1)
 pft$dbh.crit  = rep(NA,times=npft+1)
-for (ipft in sequence(npft)){
+for (ipft in sequence(npft+1)){
    if (pft$tropical[ipft]){
       if (iallom %in% c(0,1)){
          pft$dbh.min  [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
@@ -1558,7 +1575,7 @@ d2l   =   0.438
 #pft$b2Bs.large = rep(NA,times=npft+1)
 #pft$b1Ca       = rep(NA,times=npft+1)
 #pft$b2Ca       = rep(NA,times=npft+1)
-for (ipft in sequence(npft)){
+for (ipft in sequence(npft+1)){
    if (pft$tropical[ipft]){
       #------------------------------------------------------------------------------------#
       #      Fill in the structural biomass parameters.                                    #
@@ -1590,10 +1607,16 @@ for (ipft in sequence(npft)){
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(3)){
-         pftnow.bs.lg   = if(pft$grass[ipft]){xgrass.bs.lg}else{c14l83.bs.lg}
+         if (pft$grass[ipft]){
+            c14l83.bs.xx = c14l83.bs.gr
+         }else if (pft$savannah[ipft]){
+            c14l83.bs.xx = c14l83.bs.sv
+         }else{
+            c14l83.bs.xx = c14l83.bs.tf
+         }#end if (pft$grass[ipft])
          #---- Based on Chave/Lescure based allometry, with single coefficients. ----------#
-         pft$b1Bs.small[ipft] = pftnow.bs.lg[1] * pft$rho[ipft]^pftnow.bs.lg[2]
-         pft$b2Bs.small[ipft] = pftnow.bs.lg[2]
+         pft$b1Bs.small[ipft] = c14l83.bs.xx[1] * pft$rho[ipft]^c14l83.bs.xx[2]
+         pft$b2Bs.small[ipft] = c14l83.bs.xx[2]
          pft$b1Bs.large[ipft] = pft$b1Bs.small[ipft]
          pft$b2Bs.large[ipft] = pft$b2Bs.small[ipft]
          #---------------------------------------------------------------------------------#
@@ -1699,8 +1722,8 @@ for (ipft in sequence(npft)){
          #    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).                     #
          #                                                                                 #
          #---------------------------------------------------------------------------------#
-         pft$b1Bl[ipft] = c14l83.bl.lg[1] / pft$SLA[ipft] 
-         pft$b2Bl[ipft] = c14l83.bl.lg[2]
+         pft$b1Bl[ipft] = c14l83.bl.xx[1] / pft$SLA[ipft] 
+         pft$b2Bl[ipft] = c14l83.bl.xx[2]
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1709,18 +1732,6 @@ for (ipft in sequence(npft)){
 }#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
 
-
-#------------------------------------------------------------------------------------------#
-#    Ratio between WAI and maximum LAI, based on Olivas et al. (2013).  Currently this is  #
-# applied to all PFTs.                                                                     #
-#                                                                                          #
-# Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan, J. J. O'Brien, and #
-#    H. Ordonez. Comparison of direct and indirect methods for assessing leaf area index   #
-#    across a tropical rain forest landscape. Agric. For. Meteorol., 177:110-116,          #
-#    Aug 2013. doi:10.1016/j.agrformet.2013.04.010.                                        #
-#------------------------------------------------------------------------------------------#
-pft$qwai = c(ifelse(pft$grass[-(npft+1)],0.00,0.11),NA)
-#------------------------------------------------------------------------------------------#
 
 
 
@@ -1736,7 +1747,7 @@ pft$qwai = c(ifelse(pft$grass[-(npft+1)],0.00,0.11),NA)
 #------------------------------------------------------------------------------------------#
 pft$b1Vol = rep(NA,times=npft+1)
 pft$b2Vol = rep(NA,times=npft+1)
-for (ipft in sequence(npft)){
+for (ipft in sequence(npft+1)){
    if (pft$grass[ipft]){
       #----- Grasses have no commercial volume. -------------------------------------------#
       pft$b1Vol[ipft] = 0.0
@@ -1764,7 +1775,7 @@ pft$b1Rd = rep(NA,times=npft+1)
 pft$b2Rd = rep(NA,times=npft+1)
 if (iallom %in% c(0)){
    #----- Original ED-2.1 scheme, based on standing volume. -------------------------------#
-   for (ipft in sequence(npft)){
+   for (ipft in sequence(npft+1)){
       if (pft$grass[ipft]){
          #----- Grasses have fixed rooting depth (70 cm). ---------------------------------#
          pft$b2Rd[ipft] = 0.0
@@ -1781,21 +1792,87 @@ if (iallom %in% c(0)){
    #---------------------------------------------------------------------------------------#
 }else{
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
-   pft$b1Rd[1:npft]  = -1.1140580
-   pft$b2Rd[1:npft]  =  0.4223014
+   pft$b1Rd[sequence(npft+1)]  = -1.1140580
+   pft$b2Rd[sequence(npft+1)]  =  0.4223014
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
 
 
+
+#------------------------------------------------------------------------------------------#
+#      Parameters to estimate wood area index.  Use the equation by:                       #
+#                                                                                          #
+# Hormann, G., S. Irrgan, H. Jochheim, M. Lukes, H. Meesenburg, J. Muller, B. Scheler,     #
+#    J. Scherzer, G. Schuler, B. Schultze, B. Strohbach, F. Suckow, M. Wegehenkel,         #
+#    and G. Wessolek.   Wasserhaushalt von waldokosystemen: methodenleitfaden zur          #
+#    bestimmung der wasserhaushaltskomponenten auf level II-flachen. Technical note,       #
+#    Bundesministerium fur Verbraucherschutz, Ernahrung und Landwirtschaft (BMVEL),        #
+#    Bonn, Germany, 2003.                                                                  #
+#    URL http://www.wasklim.de/download/Methodenband.pdf.                                  #
+#                                                                                          #
+# In the case of allometry 3 and tropical trees, use coefficients that scale WAI with      #
+# dbh*dbh*height.                                                                          #
+#------------------------------------------------------------------------------------------#
+pft$b1WAI = ifelse( test = pft$grass
+                  , yes  = 0.0
+                  , no   = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                                 , yes  = ifelse( test = pft$conifer
+                                                , yes  = 0.01757882
+                                                , no   = 0.00594221
+                                                )#end ifelse
+                                 , no   = ifelse( test = pft$conifer
+                                                , yes  = 0.0553 * 0.5
+                                                , no   = 0.0192 * 0.5
+                                                )#end ifelse
+                                 )#end ifelse
+                  )#end ifelse
+pft$b2WAI = ifelse( test = pft$grass
+                  , yes  = 0.0
+                  , no   = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                                 , yes  = ifelse( test = pft$conifer
+                                                , yes  = 0.71986449
+                                                , no   = 0.76275995
+                                                )#end ifelse
+                                 , no   = ifelse( test = pft$conifer
+                                                , yes  = 1.9769
+                                                , no   = 2.0947
+                                                )#end ifelse
+                                 )#end ifelse
+                  )#end ifelse
+#------------------------------------------------------------------------------------------#
+
+
+
+
 #------------------------------------------------------------------------------------------#
 #    Minimum bleaf and leaf area index that is resolvable.                                 #
 #------------------------------------------------------------------------------------------#
-pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=sequence(npft)),NA)
+pft$bleaf.min = dbh2bl(dbh=pft$dbh.min[sequence(npft+1)],ipft=sequence(npft+1))
 pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
 #------------------------------------------------------------------------------------------#
 
 
 #----- Make it global. --------------------------------------------------------------------#
 pft <<- pft
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Global variables to define plant properties.                                         #
+#------------------------------------------------------------------------------------------#
+bltree = ( pft$tropical 
+         & (! (pft$grass | pft$savannah | pft$conifer | pft$liana | (pft$key %in% "ALL")))
+         )#end bltree
+if (! "mypfts"     %in% ls()) mypfts     <<- which(bltree)
+if (! "n.pfts"     %in% ls()) n.pfts     <<- length(mypfts)
+if (! "pft.dens"   %in% ls()) pft.dens   <<- pft$rho[mypfts]
+if (! "pft.breaks" %in% ls()) pft.breaks <<- c(-Inf,mid.points(pft.dens),Inf)
+if (! "pft.cols"   %in% ls()) pft.cols   <<- pft$colour[mypfts]
+if (! "pft.pch"    %in% ls()) pft.pch    <<- pch.stock(n=n.pfts)
+if (! "pft.lwd"    %in% ls()) pft.lwd    <<- rep(1.5,n.pfts)
+if (! "pft.names"  %in% ls()) pft.names  <<- pft$name[mypfts]
 #------------------------------------------------------------------------------------------#

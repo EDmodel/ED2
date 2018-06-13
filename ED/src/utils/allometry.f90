@@ -874,9 +874,15 @@ module allometry
    ! the actual bark biomass with on-allometry bark biomass.                               !
    !---------------------------------------------------------------------------------------!
    real function size2xb(dbh,hgt,bbark,ipft)
-      use pft_coms   , only : qbark       & ! intent(in)
-                            , b1Xb        ! ! intent(in)
-      use consts_coms, only : tiny_num    ! ! intent(in)
+      use pft_coms    , only : is_grass       & ! intent(in)
+                             , is_liana       & ! intent(in)
+                             , qbark          & ! intent(in)
+                             , dbh_crit       & ! intent(in)
+                             , hgt_max        & ! intent(in)
+                             , liana_dbh_crit & ! intent(in)
+                             , b1Xb           ! ! intent(in)
+      use consts_coms , only : tiny_num       ! ! intent(in)
+      use ed_misc_coms, only : igrass         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=4), intent(in) :: dbh
@@ -884,6 +890,7 @@ module allometry
       real(kind=4), intent(in) :: bbark
       integer     , intent(in) :: ipft
       !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: mdbh
       real(kind=4)             :: bleaf_max
       real(kind=4)             :: bbark_max
       !------------------------------------------------------------------------------------!
@@ -895,13 +902,24 @@ module allometry
       if (qbark(ipft) < tiny_num) then
          size2xb = 0.0
       else
+         !----- Check whether this is grass, liana or tree, impose maximum DBH. -----------!
+         if (is_grass(ipft) .and. igrass == 1) then
+            mdbh = min(dbh,h2dbh(hgt_max(ipft),ipft) )
+         elseif (is_liana(ipft)) then
+            mdbh = min(dbh,liana_dbh_crit)
+         else
+            mdbh = min(dbh,dbh_crit(ipft))
+         end if
+         !---------------------------------------------------------------------------------!
+
+
          !----- Find on-allometry bark biomass. -------------------------------------------!
-         bleaf_max = size2bl(dbh,hgt,ipft) 
+         bleaf_max = size2bl(mdbh,hgt,ipft) 
          bbark_max = qbark(ipft) * hgt * bleaf_max
          !---------------------------------------------------------------------------------!
 
          !----- Scale bark thickness with the ratio between actual and on-allometry. ------!
-         size2xb   = b1Xb(ipft) * dbh * bbark / bbark_max
+         size2xb   = b1Xb(ipft) * mdbh * bbark / bbark_max
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!

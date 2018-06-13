@@ -227,21 +227,37 @@ dbh2ca <<- function(dbh,ipft){
 #    Wood area index.                                                                      #
 #------------------------------------------------------------------------------------------#
 dbh2wai <<- function(dbh,ipft,chambers=FALSE){
+   #----- Make sure the size of variable ipft matches the number of dbh entries. ----------#
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
      zpft = ipft
    }#end if
+   #---------------------------------------------------------------------------------------#
 
 
-   dbh.use  = pmin(pft$dbh.crit[zpft],dbh)
-   wai      = pft$qwai[zpft] * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
-   if (any(is.na(wai))) browser()
+   #----- Cap dbh size to not exceed dbh.crit. --------------------------------------------#
+   dbhuse  = pmin(pft$dbh.crit[zpft],dbh)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+                    , yes  = dbhuse * dbhuse * dbh2h(dbhuse,ipft=zpft)
+                    , no   = dbhuse
+                    )#end ifelse
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the wood area index. -------------------------------------------------------#
+   wai      = pft$b1WAI[zpft] * size ^ pft$b2WAI[zpft]
    #---------------------------------------------------------------------------------------#
    
 
    return(wai)
-}#end function dbh2ca
+}#end function dbh2wai
 #==========================================================================================#
 #==========================================================================================#
 

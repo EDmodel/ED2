@@ -44,9 +44,9 @@ subroutine load_ed_ecosystem_params()
    !   9 | Early hardwood                  |    no |    no |       no |       no |      no !
    !  10 | Mid hardwood                    |    no |    no |       no |       no |      no !
    !  11 | Late hardwood                   |    no |    no |       no |       no |      no !
-   !  12 | Early thin-leaved               |    no |    no |      yes |       no |      no !
-   !  13 | Mid thin-leaved                 |    no |    no |      yes |       no |      no !
-   !  14 | Median tropical                 |    no |    no |      yes |       no |      no !
+   !  12 | Early savannah                  |    no |    no |      yes |       no |      no !
+   !  13 | Mid savannah                    |    no |    no |      yes |       no |      no !
+   !  14 | Late savannah                   |    no |    no |      yes |       no |      no !
    !  15 | Araucaria                       |    no |    no |      yes |       no |     yes !
    !  16 | Tropical C3 grass               |   yes |    no |      yes |       no |      no !
    !  17 | Liana                           |    no |   yes |      yes |       no |     yes !
@@ -65,9 +65,9 @@ subroutine load_ed_ecosystem_params()
    pft_name16( 9) = 'Early_hardwood  '
    pft_name16(10) = 'Mid_hardwood    '
    pft_name16(11) = 'Late_hardwood   '
-   pft_name16(12) = 'Early_thin_leaf '
-   pft_name16(13) = 'Mid_thin_leaf   '
-   pft_name16(14) = 'Median_tropical '
+   pft_name16(12) = 'Early_savannah  '
+   pft_name16(13) = 'Mid_savannah    '
+   pft_name16(14) = 'Late_savannah   '
    pft_name16(15) = 'Araucaria       '
    pft_name16(16) = 'Subtrop_C3_grass'
    pft_name16(17) = 'Liana           '
@@ -95,7 +95,7 @@ subroutine load_ed_ecosystem_params()
    ! parameters.  Grasses are not set as savannah because they have no bark                !
    !---------------------------------------------------------------------------------------! 
    is_savannah(1:11)  = .false.
-   is_savannah(12:14) = .false.
+   is_savannah(12:14) = .true.
    is_savannah(15:17) = .false.
    !---------------------------------------------------------------------------------------!
 
@@ -2217,7 +2217,7 @@ subroutine init_pft_alloc_params()
    real                      :: eta_c_f16
    real                      :: asal_bar
    real                      :: hgt_max_trop
-   real, dimension(2)        :: params_bs_lg
+   real, dimension(2)        :: c14l83_bs_xx
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
    real                  , parameter :: b1          =   1.047
@@ -2279,12 +2279,10 @@ subroutine init_pft_alloc_params()
    !      3177-3190, Oct 2014. doi:10.1111/gcb.12629 (C14).                                !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   ! real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 2.1878178,0.5361171 /)
-   ! real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.0243364,1.0782521 /)
-   ! real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 0.0000219,0.5361171 /)
-   real, dimension(2)    , parameter :: c14l83_bl_lg  = (/ 0.90260980,0.6055996 /)
-   real, dimension(2)    , parameter :: c14l83_bs_lg  = (/ 0.04508606,1.0279430 /)
-   real, dimension(2)    , parameter :: xgrass_bs_lg  = (/ 1.0e-5, 1.0 /) * c14l83_bl_lg
+   real, dimension(2)    , parameter :: c14l83_bl_xx  = (/ 1.41507180,0.5718238 /)
+   real, dimension(2)    , parameter :: c14l83_bs_tf  = (/ 0.03438721,1.0495558 /)
+   real, dimension(2)    , parameter :: c14l83_bs_sv  = (/ 0.02689847,1.0674310 /)
+   real, dimension(2)    , parameter :: c14l83_bs_gr  = (/ 1.0e-5, 1.0 /) * c14l83_bl_xx
    real                  , parameter :: SLA_ref       = 22.93
    real                  , parameter :: rho_ref       = 0.615
    !---------------------------------------------------------------------------------------!
@@ -2313,7 +2311,7 @@ subroutine init_pft_alloc_params()
       elseif (is_liana(ipft)) then ! BCI traits
          rho(ipft) = 0.46
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
-         rho(ipft) = 0.54
+         rho(ipft) = 0.52 ! From TRY
       elseif (.not. is_tropical(ipft)) then ! Mid-latitude PFTs, currently not used
          rho(ipft) = 0.00
       else
@@ -2321,32 +2319,26 @@ subroutine init_pft_alloc_params()
          select case (iallom)
          case (2,3)
             !------------------------------------------------------------------------------!
-            !     Test: use TRY+GLOPNET data base and cluster analysis 0to define PFTs.    !
+            !     Test: use TRY+GLOPNET data base and cluster analysis to define PFTs.     !
             !------------------------------------------------------------------------------!
             select case (ipft)
-            case ( 2) ! Early-successional tropical
-               rho(ipft) = 0.436
-            case ( 3) ! Mid-successional tropical
-               rho(ipft) = 0.610
-            case ( 4) ! Late-successional tropical
-               rho(ipft) = 0.770
-            case (12) ! Early-successional thin-leaved
-               rho(ipft) = 0.510
-            case (13) ! Early-successional thin-leaved
-               rho(ipft) = 0.718
-            case (14) ! Medoid tropical
-               rho(ipft) = rho_ref
+            case ( 2,12) ! Early-successional tropical/savannah.
+               rho(ipft) = 0.461
+            case ( 3,13) ! Mid-successional tropical/savannah.
+               rho(ipft) = 0.612
+            case ( 4,14) ! Late-successional tropical/savannah.
+               rho(ipft) = 0.756
             case default ! Just in case some PFT was forgotten, use global average
                rho(ipft) = rho_ref
             end select
             !------------------------------------------------------------------------------!
          case default
             select case (ipft)
-            case (2,12)  ! Early-successional tropical.
+            case (2,12)  ! Early-successional tropical/savannah.
                rho(ipft) = 0.53 ! 0.40
-            case (3,13)  ! Mid-successional tropical.
+            case (3,13)  ! Mid-successional tropical/savannah.
                rho(ipft) = 0.71 ! 0.60
-            case (4,14)  ! Late-successional tropical.
+            case (4,14)  ! Late-successional tropical/savannah.
                rho(ipft) = 0.90 ! 0.87
             case default ! Just in case some PFT was forgotten, use global average
                rho(ipft) = rho_ref
@@ -2367,7 +2359,7 @@ subroutine init_pft_alloc_params()
       if (is_liana(ipft)) then ! Lianas
          leaf_turnover_rate(ipft) = 1.27
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
-         leaf_turnover_rate(ipft) = onesixth
+         leaf_turnover_rate(ipft) = 0.04160842 ! From TRY
       elseif (is_conifer(ipft)) then ! Temperate conifers
          leaf_turnover_rate(ipft) = onethird
       elseif (is_grass(ipft) .and. (.not. is_tropical(ipft))) then ! Temperate grasses
@@ -2384,24 +2376,16 @@ subroutine init_pft_alloc_params()
          ! We must set case by case.                                                       !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (1)     ! C4 grass
-            leaf_turnover_rate(ipft) = 1.735136
-         case (2)     ! Early tropical
-            leaf_turnover_rate(ipft) = 1.4275285
-         case (3)     ! Mid tropical
-            leaf_turnover_rate(ipft) = 1.2888647
-         case (4)     ! Late tropical
-            leaf_turnover_rate(ipft) = 0.7478274
-         case (12)    ! Early thin-leaved
-            leaf_turnover_rate(ipft) = 4.7551878
-         case (13)    ! Mid thin-leaved
-            leaf_turnover_rate(ipft) = 2.7573663
-         case (14)    ! Medoid tropical
-            leaf_turnover_rate(ipft) = 1.3141919
-         case (16)    ! C3 grass
-            leaf_turnover_rate(ipft) = 2.5113406
+         case (1,16)     ! C4 grass
+            leaf_turnover_rate(ipft) = 2.0
+         case (2,12)     ! Early-successional tropical/savannah.
+            leaf_turnover_rate(ipft) = 1.4890971
+         case (3,13)     ! Mid-successional tropical/savannah.
+            leaf_turnover_rate(ipft) = 0.8159120
+         case (4,14)     ! Late-successional tropical/savannah.
+            leaf_turnover_rate(ipft) = 0.4597015
          case default ! Just in case
-            leaf_turnover_rate(ipft) = 1.3141919
+            leaf_turnover_rate(ipft) = 1.3141913
          end select
          !---------------------------------------------------------------------------------!
       else
@@ -2460,24 +2444,35 @@ subroutine init_pft_alloc_params()
    !    spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).      !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      if (is_tropical(ipft)) then
-         !----- Assign life-type specific SMA coefficients based on trait data bases. -----!
-         if (is_conifer(ipft)) then ! Sub-tropical conifers
-            sla_s0(ipft) = 10.0
-            sla_s1(ipft) = 0.0
-         elseif (is_grass(ipft)) then ! Grasses, use trait data base
-            sla_s0(ipft) = 15.159000
-            sla_s1(ipft) = 0.8637294
-         else ! Broadleaf trees, use trait data base
-            sla_s0(ipft) = 20.276230
-            sla_s1(ipft) = 0.4501726
-         end if
+      if (is_tropical(ipft) .and. is_conifer(ipft)) then
+         !----- Sub-tropical conifers, use median from TRY. -------------------------------!
+         sla_s0(ipft) = 6.324555
+         sla_s1(ipft) = 0.0
          !---------------------------------------------------------------------------------!
-
-
-
-         !----- Use SMA relationship to derive SLA. ---------------------------------------!
-         SLA   (ipft) = sla_s0(ipft) * leaf_turnover_rate(ipft) ** sla_s1(ipft)
+      elseif (is_tropical(ipft)) then
+         !----- Tropical trees, check iallom. ---------------------------------------------!
+         select case (iallom)
+         case (2,3)
+            !----- Standard Major Axis derived from TRY/GLOPNET/RAINFOR/NGEE-Tropics. -----!
+            if (is_grass(ipft)) then ! Grasses, use trait data base
+               sla_s0(ipft) = 15.159000
+               sla_s1(ipft) = 0.8637294
+            else ! Broadleaf trees, use trait data base
+               sla_s0(ipft) = 20.276230
+               sla_s1(ipft) = 0.4501726
+            end if
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Original ED-2.1 scheme. ------------------------------------------------!
+            if (is_grass(ipft)) then
+               sla_s0(ipft) = 22.7
+               sla_s1(ipft) = 0.0
+            else ! Broadleaf trees, use trait data base
+               sla_s0(ipft) = exp(log(.1*C2B) + 2.4 * log(10.) - 0.46 * log(12.))
+               sla_s1(ipft) = 0.46
+            end if
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
@@ -2485,29 +2480,37 @@ subroutine init_pft_alloc_params()
          !---------------------------------------------------------------------------------!
          select case (ipft)
          case (5)     ! Temperate C3 grass.
-            SLA(ipft) = 22.0
+            sla_s0(ipft) = 22.0
          case (6)     ! Northern pines. 
-            SLA(ipft) = 6.0
+            sla_s0(ipft) = 6.0
          case (7)     ! Southern pines.
-            SLA(ipft) = 9.0
+            sla_s0(ipft) = 9.0
          case (8)     ! Late conifers. 
-            SLA(ipft) = 10.0
+            sla_s0(ipft) = 10.0
          case (9)     ! Early hardwood.
-            SLA(ipft) = 30.0
+            sla_s0(ipft) = 30.0
          case (10)    ! Mid hardwood. 
-            SLA(ipft) = 24.2
+            sla_s0(ipft) = 24.2
          case (11)    ! Late hardwood. 
-            SLA(ipft) = 60.0 ! Does it make sense to be much higher than Early- and Mid-?
+            sla_s0(ipft) = 60.0 ! Possible unit conversion issue? In ED-1 it used to be 30.
          case default ! Just in case. 
-            SLA(ipft) = 15.0
+            sla_s0(ipft) = SLA_ref
          end select
          !---------------------------------------------------------------------------------!
 
-         sla_s0(ipft) = SLA(ipft)
+         !----- Ensure SLA = sla_s0. ------------------------------------------------------!
          sla_s1(ipft) = 0.0
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Apply turnover:SLA relationship (but check for zero turnover to avoid FPE). -----!
+   SLA(:) = merge( sla_s0(:)                                                               &
+                 , sla_s0(:) * leaf_turnover_rate(:)**sla_s1(:)                            &
+                 , leaf_turnover_rate(:)*sla_s1(:) == 0.        )
    !---------------------------------------------------------------------------------------!
 
 
@@ -3108,8 +3111,8 @@ subroutine init_pft_alloc_params()
             !      shade-tolerance. J. Ecol., 97(2), 311-325, 2009.                        !
             !      doi:10.1111/j.1365-2745.2008.01466.x (M09).                             !
             !------------------------------------------------------------------------------!
-            b1Bl(ipft) = c14l83_bl_lg(1) / SLA(ipft)
-            b2Bl(ipft) = c14l83_bl_lg(2)
+            b1Bl(ipft) = c14l83_bl_xx(1) / SLA(ipft)
+            b2Bl(ipft) = c14l83_bl_xx(2)
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3232,12 +3235,14 @@ subroutine init_pft_alloc_params()
             !    Biol., 20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.                 !
             !------------------------------------------------------------------------------!
             if (is_grass(ipft)) then
-               params_bs_lg = xgrass_bs_lg
+               c14l83_bs_xx = c14l83_bs_gr
+            elseif (is_savannah(ipft)) then
+               c14l83_bs_xx = c14l83_bs_sv
             else
-               params_bs_lg = c14l83_bs_lg
+               c14l83_bs_xx = c14l83_bs_tf
             end if
-            b1Bs_small(ipft) = params_bs_lg(1) * rho(ipft) ** params_bs_lg(2)
-            b2Bs_small(ipft) = params_bs_lg(2)
+            b1Bs_small(ipft) = c14l83_bs_xx(1) * rho(ipft) ** c14l83_bs_xx(2)
+            b2Bs_small(ipft) = c14l83_bs_xx(2)
             b1Bs_large(ipft) = b1Bs_small(ipft)
             b2Bs_large(ipft) = b2Bs_small(ipft)
             !------------------------------------------------------------------------------!
@@ -3535,7 +3540,6 @@ subroutine init_pft_photo_params()
                              , is_conifer                & ! intent(in)
                              , is_grass                  & ! intent(in)
                              , is_liana                  & ! intent(in)
-                             , rho                       & ! intent(in)
                              , SLA                       & ! intent(in)
                              , C2B                       & ! intent(in)
                              , D0                        & ! intent(out)
@@ -3690,12 +3694,13 @@ subroutine init_pft_photo_params()
          select case (iallom)
          case (2,3)
             !------------------------------------------------------------------------------!
-            ! Tropical parameters based on multiple data sets (K11,W04, B17, and N17).     !
-            ! Most traits tested turned out to be poorly correlated with area-based Vcmax  !
-            ! (umol m-2 s-1).   Using the mass-based Vcmax (umol kgC-1 s-1) and SLA        !
-            ! (m2 kgC-1), the fit is considerably better (R2 = 0.389 and slope > 1, as     !
-            ! expected).  We use this relationship and convert the equation back to        !
-            ! area-based by reducing the exponent by 1 unit.                               !
+            !     New tropical parameters based on multiple data sets (K11,W04, B17, and   !
+            ! N17) and using a standard major axis on log-transformed SLA and              !
+            ! photosynthesis traits.  The area-based photosynthesis traits were poorly     !
+            ! correlated with SLA, but the mass-based showed stronger correlation.         !
+            ! Because ED-2 needs the area-based parameters, converted the relationship     !
+            ! to area based by dividing the mass-based Vcmax with SLA (tooking care of     !
+            ! the necessary unit conversions).                                             !
             !                                                                              !
             ! References                                                                   !
             !                                                                              !
@@ -3729,7 +3734,6 @@ subroutine init_pft_photo_params()
             case (16)    ! Subtropical C3 grass.  Use CLM defaults
                Vm0(ipft) = 35.384615
             case default 
-               Vm0(ipft) = exp(4.335387 - 2.58938 * rho(ipft))
                Vm0(ipft) = 4.173421 * SLA(ipft) ** 0.50175
             end select
             !------------------------------------------------------------------------------!
@@ -4346,7 +4350,7 @@ subroutine init_pft_mort_params()
       if (is_liana(ipft)) then ! Lianas, taken from O. Phillips (2005). 
          mort3(ipft) = 0.06311576
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then
-         mort3(ipft) = 0.00100 ! Based on the TRY data base
+         mort3(ipft) = 0.00111 ! Based on TRY (but likely guesstimated).
       elseif (is_tropical(ipft)) then
           select case (iallom)
           case (2,3)
@@ -4643,9 +4647,13 @@ subroutine init_pft_nitro_params()
       !----- Ratio. -----------------------------------------------------------------------!
       select case (iallom)
       case (2,3)
-         if (is_conifer(ipft) .or. is_liana(ipft) .or. (.not. is_tropical(ipft))) then
+         if (is_liana(ipft) .or. (.not. is_tropical(ipft))) then
             !----- Use ED-1 default. ------------------------------------------------------!
             c2n_leaf(ipft) = 1000.0 / ( (0.11289 + 0.12947 *   vm0_ref) * SLA(ipft) )
+            !------------------------------------------------------------------------------!
+         elseif (is_conifer(ipft)) then
+            !----- Araucaria, use values from TRY. ----------------------------------------!
+            c2n_leaf(ipft) = 86.29189
             !------------------------------------------------------------------------------!
          else
             !------------------------------------------------------------------------------!
@@ -6666,7 +6674,7 @@ subroutine init_derived_params_after_xml()
          !     New method, each PFT has a minimum resolvable density. The fraction ensures !
          ! that plants start as resolvable.                                                !
          !---------------------------------------------------------------------------------!
-         nplant_res_min     = 0.5 * init_density(ipft)
+         nplant_res_min     = 0.1 * init_density(ipft)
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
@@ -6699,22 +6707,17 @@ subroutine init_derived_params_after_xml()
          !    Minimum size (measured as biomass of living and structural tissues) allowed  !
          ! in a cohort.  Cohorts with less biomass than this are going to be terminated.   !
          !---------------------------------------------------------------------------------!
-         min_cohort_size(ipft)  = 0.75 * nplant_res_min * one_plant_c(ipft)
+         min_cohort_size(ipft)  = 0.5 * nplant_res_min * one_plant_c(ipft)
          !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
          !    Seed_rain is the density of seedling that will be added from somewhere else. !
          ! By default, this variable is initialised as a function of the cohort's minimum  !
-         ! size to ensure it allows for reintroduction.  The fraction of 0.25 means that   !
-         ! an extinct plant may be introduced 1/fraction times a year.  The default 1/4    !
-         ! allows it to be introduced in each season, to avoid the reintroduction to       !
-         ! occur only in a bad time of the year (winter in temperate zones or at the       !
-         ! beginning of dry season in semi-arid areas).  In case this has been initialised !
-         ! through xml, then don't change the values.                                      !
+         ! size.                                                                           !
          !---------------------------------------------------------------------------------! 
          if (seed_rain(ipft) == undef_real) then
-            seed_rain(ipft)  = 0.25 * min_recruit_size(ipft) / one_plant_c(ipft)
+            seed_rain(ipft)  = min_recruit_size(ipft) / one_plant_c(ipft) / 12.
          end if
          !---------------------------------------------------------------------------------! 
       case default

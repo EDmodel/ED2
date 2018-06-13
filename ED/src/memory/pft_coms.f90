@@ -25,9 +25,9 @@ module pft_coms
    !   9 | Early temperate deciduous       |    no |    no |       no |       no |      no !
    !  10 | Mid temperate deciduous         |    no |    no |       no |       no |      no !
    !  11 | Late temperate deciduous        |    no |    no |       no |       no |      no !
-   !  12 | Early thin-leaved               |    no |    no |      yes |       no |      no !
-   !  13 | Mid thin-leaved                 |    no |    no |      yes |       no |      no !
-   !  14 | Median tropical                 |    no |    no |      yes |       no |      no !
+   !  12 | Early tropical savannah         |    no |    no |      yes |       no |      no !
+   !  13 | Mid tropical savannah           |    no |    no |      yes |       no |      no !
+   !  14 | Late tropical savannah          |    no |    no |      yes |       no |      no !
    !  15 | Araucaria                       |    no |    no |      yes |       no |     yes !
    !  16 | Tropical C3 grass               |   yes |    no |      yes |       no |      no !
    !  17 | Liana                           |    no |   yes |      yes |       no |     yes !
