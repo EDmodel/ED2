@@ -1091,7 +1091,6 @@ module allometry
    !     This function finds the actual rooting depth, which mlimited by soil depth.       !
    !---------------------------------------------------------------------------------------!
    integer function size2krdepth(hite,dbh,ipft,lsl)
-      use ed_misc_coms, only : iallom      ! ! intent(in)
       use grid_coms   , only : nzg         ! ! intent(in)
       use soil_coms   , only : slz         ! ! intent(in)
       implicit none

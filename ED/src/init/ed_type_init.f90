@@ -25,7 +25,8 @@ module ed_type_init
                                 , leaf_turnover_rate & ! intent(in)
                                 , Vm0                & ! intent(in)
                                 , sla                ! ! intent(in)
-      use rk4_coms       , only : effarea_transp     ! ! intent(in)
+      use rk4_coms       , only : effarea_transp     & ! intent(in)
+                                , tiny_offset        ! ! intent(in)
       use ed_misc_coms   , only : writing_long       & ! intent(in)
                                 , writing_eorq       & ! intent(in)
                                 , writing_dcyc       ! ! intent(in)
@@ -38,11 +39,13 @@ module ed_type_init
                                 , mmdry              ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target     :: cpatch     ! Current patch
-      integer        , intent(in) :: ico        ! Index of the current cohort
-      integer        , intent(in) :: lsl        ! Lowest soil level layer
+      type(patchtype), target     :: cpatch  ! Current patch
+      integer        , intent(in) :: ico     ! Index of the current cohort
+      integer        , intent(in) :: lsl     ! Lowest soil level layer
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: ipft       ! PFT index
+      integer                     :: ipft    ! PFT index
+      !----- External function. -----------------------------------------------------------!
+      real(kind=4)    , external  :: sngloff ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
 
 
@@ -132,7 +135,8 @@ module ed_type_init
 
 
       !----- Stomatal conductance is initially set to the cuticular conductance. ----------!
-      cpatch%leaf_gsw(ico) = cuticular_cond(ipft) * umol_2_mol *mmdry / effarea_transp(ipft)
+      cpatch%leaf_gsw(ico) = cuticular_cond(ipft) * umol_2_mol *mmdry                      &
+                           / sngloff(effarea_transp(ipft),tiny_offset)
       !------------------------------------------------------------------------------------!
 
 

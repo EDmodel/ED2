@@ -3745,7 +3745,7 @@ subroutine init_pft_photo_params()
       Vm_low_temp (:) = merge( 4.7137                                                      &
                              , merge(15.0,10.0,photosyn_pathway(:) == 4)                   &
                              , is_conifer(:) .or. (.not. is_tropical(:)) )
-      Vm_high_temp(:) = merge(40.0,37.5,photosyn_pathway(:) == 4)
+      Vm_high_temp(:) = merge(42.5,40.0,photosyn_pathway(:) == 4)
    end select
    !---------------------------------------------------------------------------------------!
 
