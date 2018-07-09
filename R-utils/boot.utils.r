@@ -20,13 +20,14 @@ boot.expected <<- function(data,statistic,R,...){
 #     This is just a wrapper for boot.ci, in which we retrieve the lower bound of the      #
 # confidence interval only.                                                                #
 #------------------------------------------------------------------------------------------#
-boot.ci.lower <<- function(boot.out,...){
-    ci.now = boot.ci(boot.out,...)$percent
+boot.ci.lower <<- function(boot.out,conf=0.95,...){
+    ci.now = boot.ci(boot.out,conf=conf,...)$percent
     if (length(ci.now) == 5){
        ans = ci.now[4]
     }else{
-       ans = NA
-       warning(" Failed using bootstrap...")
+       qlev = 0.5 - 0.5 * conf
+       ans = quantile(boot.out$t,probs=qlev,na.rm=TRUE,names=FALSE)
+       warning(" Confidence interval from \"boot.ci\". failed.  Used \"quantile\" instead.")
     }#end if
     return(ans)
 }#end boot.ci.lower
@@ -43,13 +44,14 @@ boot.ci.lower <<- function(boot.out,...){
 #     This is just a wrapper for boot.ci, in which we retrieve the upper bound of the      #
 # confidence interval only.                                                                #
 #------------------------------------------------------------------------------------------#
-boot.ci.upper <<- function(boot.out,...){
-    ci.now = boot.ci(boot.out,...)$percent
+boot.ci.upper <<- function(boot.out,conf=0.95,...){
+    ci.now = boot.ci(boot.out,conf=conf,...)$percent
     if (length(ci.now) == 5){
        ans = ci.now[5]
     }else{
-       ans = NA
-       warning(" Failed using bootstrap...")
+       qlev = 0.5 + 0.5 * conf
+       ans = quantile(boot.out$t,probs=qlev,na.rm=TRUE,names=FALSE)
+       warning(" Confidence interval from \"boot.ci\". failed.  Used \"quantile\" instead.")
     }#end if
     return(ans)
 }#end boot.ci.upper

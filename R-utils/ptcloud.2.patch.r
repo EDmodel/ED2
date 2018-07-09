@@ -21,14 +21,26 @@ ptcloud.2.patch <<- function( pt.cloud
                             , dist.type
                             , dist.age
                             , syear
-                            , tall.at.zh    = TRUE
-                            , use.intensity = FALSE
-                            , lai.pst       = 2.0
-                            , pft.pst       = 1
-                            , dbh0.min      = 5.0
-                            , pft.def       = 3
-                            , use.lookup    = FALSE
+                            , tall.at.zh     = TRUE
+                            , use.intensity  = FALSE
+                            , lai.pst        = 2.0
+                            , pft.pst        = 1
+                            , dbh0.min       = 5.0
+                            , pft.def        = 3
+                            , use.lookup     = FALSE
+                            , use.net.method = c("linear","ratio","no_scaling")
                             ){
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Standardise the net method. "Linear" is default as it seems less biased for        #
+   # biomass and basal area (but more biased for stem density).                            #
+   #---------------------------------------------------------------------------------------#
+   use.net.method = match.arg(use.net.method)
+   #---------------------------------------------------------------------------------------#
+
+
+
 
    #------ Run MacArthur-Horn (1969) correction to profiles. ------------------------------#
    mh.now = macarthur.horn( pt.cloud = pt.cloud
@@ -39,6 +51,9 @@ ptcloud.2.patch <<- function( pt.cloud
                           , use.intensity = use.intensity
                           )#end macarthur.horn 
    #---------------------------------------------------------------------------------------#
+
+
+
 
    #----- Swap order of profiles. ---------------------------------------------------------#
    nzprof     = nrow(mh.now)
@@ -306,12 +321,14 @@ ptcloud.2.patch <<- function( pt.cloud
 
 
 
-         #----- Find uncalibrated properties. ---------------------------------------------#
-         uhgt.bnd = pmin(uhgt,pft$hgt.max[pft.def])
-         udbh     = ( h2dbh(h=uhgt.bnd,ipft=pft.def)
-                    * sqrt(pmax(uhgt,pft$hgt.max[pft.def])/pft$hgt.max[pft.def])
-                    )#end udbh
-         unpl     = ulai / (pft$SLA[pft.def] * dbh2bl(dbh=udbh,ipft=pft.def))
+         #---------------------------------------------------------------------------------#
+         #      Find uncalibrated properties.  Because ED2 has a cap in height and leaf    #
+         # biomass, we find the equivalent DBH that would produce the same above-ground    #
+         # biomass when the lidar height exceeds ED2 maximum height.                       #
+         #---------------------------------------------------------------------------------#
+         uhgt.bnd = pmin(uhgt,pft$hgt.max[pft.def]) + 0. * uhgt
+         udbh     = h2dbh(h=uhgt.bnd,ipft=pft.def) * sqrt(uhgt/uhgt.bnd)
+         unpl     = ulai / (pft$SLA[pft.def] * size2bl(dbh=udbh,hgt=uhgt.bnd,ipft=pft.def))
          #---------------------------------------------------------------------------------#
 
 
@@ -324,14 +341,16 @@ ptcloud.2.patch <<- function( pt.cloud
          hgt.pft    = rep(uhgt.bnd       , times= npfts) + 0. * fpft
          ipft.pft   = rep(mypfts         , each = ncoh ) + 0L * fpft
          wdns.pft   = rep(pft$rho[mypfts], each = ncoh ) + 0. * fpft
-         bleaf.pft  = dbh2bl(dbh=dbh.pft,ipft=ipft.pft)  + 0. * fpft
+         sla.pft    = rep(pft$SLA[mypfts], each = ncoh ) + 0. * fpft
+         bleaf.pft  = size2bl(dbh=dbh.pft,hgt=hgt.pft,ipft=ipft.pft)  + 0. * fpft
+         bdead.pft  = size2bd(dbh=dbh.pft,hgt=hgt.pft,ipft=ipft.pft)
          broot.pft  = rep(pft$qroot[mypfts],each = ncoh) * bleaf.pft
          bsw.pft    = rep(pft$qsw  [mypfts],each = ncoh) * hgt.pft   * bleaf.pft
-         balive.pft = bleaf.pft + broot.pft + bsw.pft
-         bdead.pft  = dbh2bd(dbh=dbh.pft,ipft=ipft.pft)
+         bbark.pft  = rep(pft$qbark[mypfts],each = ncoh) * hgt.pft   * bleaf.pft
+         balive.pft = bleaf.pft + broot.pft + bsw.pft + bbark.pft
          agb.pft    = npl.pft * agb.SL(dbh=dbh.pft,height=hgt.pft,wdens=wdns.pft)
          bsa.pft    = npl.pft * pi/4 * dbh.pft^2
-         lai.pft    = npl.pft * rep(pft$SLA[mypfts], each = ncoh ) * bleaf.pft
+         lai.pft    = npl.pft * sla.pft * bleaf.pft
          #---------------------------------------------------------------------------------#
 
 
@@ -366,15 +385,19 @@ ptcloud.2.patch <<- function( pt.cloud
                f.agb = agb.goal / sum(agb.pft)
             }#end if (sum(agb.pft) == 0)
             #----- Net, check for singularities. ------------------------------------------#
-            if ( (w.npl+w.bsa+w.agb) == 0){
+            if ( (use.net.method %in% "no_scaling") ||  ((w.npl+w.bsa+w.agb) == 0)){
                f.net = 1.
-            }else{
+            }else if (use.net.method %in% "ratio"){
                s.bsa = f.bsa^2
                s.agb = f.agb^2
                s.npl = f.npl^2
                f.net = ( f.npl * f.bsa * f.agb
                        * (w.npl*f.bsa*f.agb+f.npl*w.bsa*f.agb+f.npl*f.bsa*w.agb)
                        / (w.npl*s.bsa*s.agb+s.npl*w.bsa*s.agb+s.npl*s.bsa*w.agb)
+                       )#end f.net
+            }else{
+               f.net = ( (w.npl*f.npl+w.bsa*f.bsa+w.agb*f.agb)
+                       / (w.npl+w.bsa+w.agb)
                        )#end f.net
             }#end if( (w.npl+w.bsa+w.agb) == 0)
             #------------------------------------------------------------------------------#

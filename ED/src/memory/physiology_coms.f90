@@ -99,6 +99,9 @@ module physiology_coms
    !                      where psi is the matric potentital at layer k, z is the layer    !
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
    !                      matric potentials at wilting point and field capacity.           !
+   !                  3.  Similar to 2, however available water modifies the D0 parameter  !
+   !                      used to find gsw.  This is intended to avoid penalising stomatal !
+   !                      conductance twice (in both gsw and fsw).                         !
    !---------------------------------------------------------------------------------------!
    integer               :: h2o_plant_lim 
    !---------------------------------------------------------------------------------------!

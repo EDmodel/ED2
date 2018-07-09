@@ -248,6 +248,7 @@ Module ed_misc_coms
    !---------------------------------------------------------------------------------------!
 
 
+
    !----- Namelist option for the new grass scheme. (ALS, Feb 2012) -----------------------!
    integer :: igrass ! 0 -- Original ED-2.1 grasses (aka bonzai grass)
                      ! 1 -- New grass scheme which has bdead = 0, height = f(bleaf), and   
@@ -259,6 +260,12 @@ Module ed_misc_coms
 
    logical :: suppress_h5_warnings
 
+
+   !----- Temporary flag: which method to use for estimating rooting depth. --------------!
+   logical :: use_efrd_trtree ! TRUE  - Use efective functional rooting depth based on 
+                              !         delta 18O, following Brum et al. (2018)
+                              ! FALSE - Use direct size-dependent.
+   !---------------------------------------------------------------------------------------!
 
 
 

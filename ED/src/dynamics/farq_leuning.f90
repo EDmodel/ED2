@@ -78,7 +78,7 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    subroutine lphysiol_full(ib,can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp   &
                            ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
-                           ,leaf_gbw,A_open,A_closed,A_light,A_rubp,A_co2,gsw_open         &
+                           ,leaf_gbw,leaf_D0,A_open,A_closed,A_light,A_rubp,A_co2,gsw_open &
                            ,gsw_closed,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open         &
                            ,lsfc_co2_closed,lint_co2_open,lint_co2_closed,leaf_resp,vmout  &
                            ,jmout,tpmout,jactout,comppout,limit_flag)
@@ -94,7 +94,6 @@ module farq_leuning
                                 , thirdlim                 ! ! intent(inout)
       use pft_coms       , only : photosyn_pathway         & ! intent(in)
                                 , phenology                & ! intent(in)
-                                , D0                       & ! intent(in)
                                 , Vm0                      & ! intent(in)
                                 , vm_low_temp              & ! intent(in)
                                 , vm_high_temp             & ! intent(in)
@@ -155,6 +154,7 @@ module farq_leuning
       real(kind=4), intent(in)    :: llspan            ! Leaf life span         [     mnth]
       real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [umol/m2/s]
       real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m2/s]
+      real(kind=4), intent(in)    :: leaf_D0           ! VPD factor for closure [  mol/mol]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [umol/m2/s]
       real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [umol/m2/s]
       real(kind=4), intent(out)   :: A_light           ! Photosyn. rate (light) [umol/m2/s]
@@ -225,7 +225,7 @@ module farq_leuning
       ! Convert all variables to mol and Kelvin, when needed.                              !
       !------------------------------------------------------------------------------------!
       thispft(ib)%photo_pathway    = photosyn_pathway(ipft)
-      thispft(ib)%D0               = dble(D0(ipft))
+      thispft(ib)%D0               = dble(leaf_D0)
       thispft(ib)%b                = dble(cuticular_cond(ipft)) * umol_2_mol8
       thispft(ib)%m                = dble(stomatal_slope(ipft))
       thispft(ib)%vm_low_temp      = dble(vm_low_temp(ipft))  + t008

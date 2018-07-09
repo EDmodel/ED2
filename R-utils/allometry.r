@@ -12,16 +12,20 @@ h2dbh <<- function(h,ipft){
    tropn = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe = ! pft$tropical[zpft]
 
-   ztropo        = zpft[tropo]
-   ztropn        = zpft[tropn]
-   ztempe        = zpft[tempe]
 
-   dbh = NA * h
-   dbh[tropo] = exp((log(h[tropo])-pft$b1Ht[ztropo])/pft$b2Ht[ztropo])
-   dbh[tropn] = ( log( pft$hgt.ref[ztropn] / ( pft$hgt.ref[ztropn] - h[tropn] ) )
-                / pft$b1Ht[ztropn] ) ^ ( 1. / pft$b2Ht[ztropn])
-   dbh[tempe] = log( 1.0 - ( h[tempe] - pft$hgt.ref[ztempe])
-                   / pft$b1Ht[ztempe] ) / pft$b2Ht[ztempe]
+   huse    = pmin(pft$hgt.max[zpft],h)
+
+   hgt.ref = pft$hgt.ref[zpft]
+   b1Ht    = pft$b1Ht   [zpft]
+   b2Ht    = pft$b2Ht   [zpft]
+
+   dbh = ifelse( test = tempe
+               , yes  = log( 1.0 - ( huse - hgt.ref) / b1Ht ) / b2Ht
+               , no   = ifelse ( test = tropn
+                               , yes  = (log(hgt.ref / (hgt.ref-huse))/b1Ht ) ^ (1./b2Ht)
+                               , no   = exp((log(huse)-b1Ht)/b2Ht)
+                               )#end ifelse
+               )#end ifelse
 
    return(dbh)
 }#end function h2dbh
@@ -35,7 +39,7 @@ h2dbh <<- function(h,ipft){
 
 #==========================================================================================!
 #==========================================================================================!
-dbh2h <<- function(ipft,dbh){
+dbh2h <<- function(dbh,ipft,use.crit=TRUE){
 
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
@@ -43,24 +47,28 @@ dbh2h <<- function(ipft,dbh){
      zpft = ipft
    }#end if
 
-   dbhuse        = dbh
-   large         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
-   dbhuse[large] = pft$dbh.crit[zpft[large]]
+
+   if (use.crit){
+      dbhuse = pmin(pft$dbh.crit[zpft],dbh) + 0. * dbh
+   }else{
+      dbhuse = dbh
+   }#end if (use.crit)
 
    tropo         = pft$tropical[zpft] & iallom %in% c(0,1)
    tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe         = ! pft$tropical[zpft]
 
-   ztropo        = zpft[tropo]
-   ztropn        = zpft[tropn]
-   ztempe        = zpft[tempe]
+   hgt.ref = pft$hgt.ref[zpft]
+   b1Ht    = pft$b1Ht   [zpft]
+   b2Ht    = pft$b2Ht   [zpft]
 
-   h         = NA * dbh
-   h[tropo]  = exp(pft$b1Ht[ztropo] + pft$b2Ht[ztropo] * log(dbhuse[tropo]) )
-   h[tropn]  = ( pft$hgt.ref[ztropn] 
-               * (1.0 - exp( -pft$b1Ht[ztropn] * dbhuse[tropn]^pft$b2Ht[ztropn])))
-   h[tempe]  = ( pft$hgt.ref[ztempe] + pft$b1Ht[ztempe] 
-               * (1.0 - exp(pft$b2Ht[ztempe] * dbhuse[tempe] ) ) )
+   h = ifelse( test = tempe
+             , yes  = hgt.ref + b1Ht * (1. - exp(b2Ht * dbhuse) )
+             , no   = ifelse( test = tropn
+                            , yes  = hgt.ref * (1.-exp(-b1Ht * dbhuse^b2Ht ) )
+                            , no   = exp(b1Ht + b2Ht * log(dbhuse) )
+                            )#end ifelse
+             )#end ifelse
 
    return(h)
 }#end function dbh2h
@@ -74,7 +82,7 @@ dbh2h <<- function(ipft,dbh){
 
 #==========================================================================================#
 #==========================================================================================#
-dbh2bl <<- function(dbh,ipft){
+size2bl <<- function(dbh,hgt,ipft,use.crit=TRUE){
    #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
@@ -85,13 +93,17 @@ dbh2bl <<- function(dbh,ipft){
 
 
    #----- Limit dbh to dbh.crit. ----------------------------------------------------------#
-   dbhuse  = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   if (use.crit){
+      dbhuse  = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   }else{
+      dbhuse  = dbh
+   }#end if (use.crit)
    #---------------------------------------------------------------------------------------#
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
    size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
-                    , yes  = dbhuse * dbhuse * dbh2h(dbhuse,ipft=zpft)
+                    , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
    #---------------------------------------------------------------------------------------#
@@ -104,7 +116,7 @@ dbh2bl <<- function(dbh,ipft){
 
 
    return(bleaf)
-}# end function dbh2bl
+}# end function size2bl
 #==========================================================================================#
 #==========================================================================================#
 
@@ -115,7 +127,7 @@ dbh2bl <<- function(dbh,ipft){
 
 #==========================================================================================#
 #==========================================================================================#
-dbh2bd <<- function(dbh,ipft){
+size2bd <<- function(dbh,hgt,ipft){
    #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
@@ -142,7 +154,7 @@ dbh2bd <<- function(dbh,ipft){
    #---------------------------------------------------------------------------------------#
 
    return(bdead)
-}# end function dbh2bd
+}# end function size2bd
 #==========================================================================================#
 #==========================================================================================#
 
@@ -153,7 +165,7 @@ dbh2bd <<- function(dbh,ipft){
 
 #==========================================================================================#
 #==========================================================================================#
-dbh2bw <<- function(dbh,ipft){
+size2bw <<- function(dbh,hgt,ipft,use.crit=TRUE){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
@@ -161,15 +173,76 @@ dbh2bw <<- function(dbh,ipft){
    }#end if
 
 
-   if (iallom %in% 3){
-      bwood = dbh2bd(dbh=dbh,ipft=zpft)
-   }else{
-      bdead  = dbh2bd(dbh=dbh,ipft=zpft)
-      bsapw  = pft$qsw[ipft] * dbh2h(dbh=dbh,ipft=zpft) * dbh2bl(dbh=dbh,ipft=zpft)
-      bwood  = bdead + bsapw
-   }#end if
+   bdead  = size2bd(dbh=dbh,hgt=hgt,ipft=zpft)
+   bleaf  = size2bl(dbh=dbh,hgt=hgt,ipft=zpft,use.crit=use.crit)
+   bsapw  = pft$qsw  [ipft] * hgt * bleaf
+   bbark  = pft$qbark[ipft] * hgt * bleaf
+   bwood  = bdead + bsapw + bbark
+
    return(bwood)
-}# end function dbh2bw
+}# end function size2bw
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    This function finds the equivalent on-allometry DBH given observed height and dbh.    #
+#------------------------------------------------------------------------------------------#
+size2de <<- function(dbh,hgt,ipft,dbh.by=0.1,...){
+   #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
+   if (length(ipft) == 1){
+     zpft = rep(ipft,times=length(dbh))
+   }else{
+     zpft = ipft
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Identify cohorts with size that outside resolvable height range. ----------------#
+   large = (dbh*dbh*hgt) %>=% (pft$dbh.crit[zpft]*pft$dbh.crit[zpft]*pft$hgt.max[zpft])
+   small = (dbh*dbh*hgt) %<=% (pft$dbh.min [zpft]*pft$dbh.min [zpft]*pft$hgt.min[zpft])
+   heq   = ifelse( test = large
+                 , yes  = pft$hgt.max[zpft]
+                 , no   = ifelse(test = small,yes=pft$hgt.min[zpft],no=NA_real_)
+                 )#end ifelse
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- First solve the equivalent dbh for the simplest cases. --------------------------#
+   dbheq = sqrt(hgt/heq) * dbh
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find "size" (dbh^2 * hgt). ------------------------------------------------------#
+   size = dbh * dbh * hgt
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Go through each PFT type that must be filled. , then use interpolation to find    #
+   # the best match.                                                                       #
+   #---------------------------------------------------------------------------------------#
+   loop.pft = sort(unique(zpft[is.na(dbheq)]))
+   for (wpft in loop.pft){
+       dbh.lut  = seq(from=pft$dbh.min[wpft],to=pft$dbh.crit[wpft],by=dbh.by)
+       hgt.lut  = dbh2h(dbh=dbh.lut,ipft=wpft)
+       size.lut = dbh.lut*dbh.lut*hgt.lut
+
+       sel        = is.na(dbheq) & (zpft %in% wpft)
+       idx        = mapply(FUN=which.closest,x=size[sel], MoreArgs=list(A=size.lut))
+       dbheq[sel] = dbh.lut[idx]
+   }#end for (wpft in loop.pft)
+   #---------------------------------------------------------------------------------------#
+
+
+   return(dbheq)
+}# end function size2de
 #==========================================================================================#
 #==========================================================================================#
 
@@ -182,7 +255,7 @@ dbh2bw <<- function(dbh,ipft){
 #==========================================================================================#
 #    Canopy Area allometry from Dietze and Clark (2008).                                   #
 #------------------------------------------------------------------------------------------#
-dbh2ca <<- function(dbh,ipft){
+size2ca <<- function(dbh,hgt,ipft,use.crit=TRUE){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
@@ -190,18 +263,22 @@ dbh2ca <<- function(dbh,ipft){
    }#end if
 
    #----- Find local LAI, the minimum size for a crown area. ------------------------------#
-   loclai = pft$SLA[zpft] * dbh2bl(dbh,ipft)
+   loclai = pft$SLA[zpft] * size2bl(dbh,hgt,ipft)
    #---------------------------------------------------------------------------------------#
 
 
    #----- Limit dbh to dbh.crit. ----------------------------------------------------------#
-   dbhuse  = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   if (use.crit){
+      dbhuse  = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   }else{
+      dbhuse  = dbh
+   }#end if (use.crit)
    #---------------------------------------------------------------------------------------#
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
    size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
-                    , yes  = dbhuse * dbhuse * dbh2h(dbhuse,ipft=zpft)
+                    , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
    #---------------------------------------------------------------------------------------#
@@ -213,7 +290,7 @@ dbh2ca <<- function(dbh,ipft){
    #---------------------------------------------------------------------------------------#
 
    return(crown)
-}#end function dbh2ca
+}#end function size2ca
 #==========================================================================================#
 #==========================================================================================#
 
@@ -226,7 +303,7 @@ dbh2ca <<- function(dbh,ipft){
 #==========================================================================================#
 #    Wood area index.                                                                      #
 #------------------------------------------------------------------------------------------#
-dbh2wai <<- function(dbh,ipft,chambers=FALSE){
+size2wai <<- function(dbh,hgt,ipft,use.crit=TRUE){
    #----- Make sure the size of variable ipft matches the number of dbh entries. ----------#
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
@@ -237,14 +314,18 @@ dbh2wai <<- function(dbh,ipft,chambers=FALSE){
 
 
    #----- Cap dbh size to not exceed dbh.crit. --------------------------------------------#
-   dbhuse  = pmin(pft$dbh.crit[zpft],dbh)
+   if (use.crit){
+      dbhuse  = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   }else{
+      dbhuse  = dbh
+   }#end if (use.crit)
    #---------------------------------------------------------------------------------------#
 
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
    size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
-                    , yes  = dbhuse * dbhuse * dbh2h(dbhuse,ipft=zpft)
+                    , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
    #---------------------------------------------------------------------------------------#
@@ -270,7 +351,7 @@ dbh2wai <<- function(dbh,ipft,chambers=FALSE){
 #==========================================================================================#
 #    Standing volume of a tree.                                                            #
 #------------------------------------------------------------------------------------------#
-dbh2vol <<- function(hgt,dbh,ipft){
+size2vol <<- function(hgt,dbh,ipft){
    vol  = pft$b1Vol[ipft] * ( hgt * dbh * dbh ) ^ pft$b2Vol[ipft]
    return(vol)
 }#end function dbh2ca
@@ -287,20 +368,19 @@ dbh2vol <<- function(hgt,dbh,ipft){
 #==========================================================================================#
 #    Above-ground biomass.                                                                 #
 #------------------------------------------------------------------------------------------#
-ed.biomass <<- function(dbh,ipft){
+ed.biomass <<- function(dbh,ipft,use.crit=TRUE){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
      zpft = ipft
    }#end if
 
-   bleaf  = dbh2bl(dbh=dbh,ipft=zpft)
-   height = dbh2h(dbh=dbh,ipft=zpft)
-   bsapa  = pft$agf.bs[zpft] * pft$qsw[zpft] * height * bleaf
-   bdeada = pft$agf.bs[zpft] * dbh2bd(dbh=dbh,ipft=zpft)
-   bwooda = bsapa + bdeada
-
-   agb    = bleaf + bwooda
+   hgt    = dbh2h(dbh=dbh,ipft=zpft)
+   bleaf  = size2bl(dbh=dbh,hgt=hgt,ipft=zpft,use.crit=use.crit)
+   bsapa  = pft$agf.bs[zpft] * pft$qsw  [zpft] * hgt * bleaf
+   bbarka = pft$agf.bs[zpft] * pft$qbark[zpft] * hgt * bleaf
+   bdeada = pft$agf.bs[zpft] * size2bd(dbh=dbh,hgt=hgt,ipft=zpft)
+   agb    = bleaf + bsapa + bbarka + bdeada
    return(agb)
 }#end function ed.biomass
 #==========================================================================================#
@@ -322,16 +402,18 @@ size2bt <<- function(dbh,hgt,ipft){
    }#end if
 
    #----- Find bdead and bsapwooda. -------------------------------------------------------#
-   bdead    = dbh2bd(dbh=dbh,ipft=zpft)
-   bsapwood = pft$agf.bs[zpft] * dbh2bl(dbh=dbh,ipft=zpft) * pft$qsw[zpft] * hgt
+   bdead    = size2bd(dbh=dbh,hgt=hgt,ipft=zpft)
+   bleaf    = size2bl(dbh=dbh,hgt=hgt,ipft=zpft)
+   bsapwood = pft$agf.bs[zpft] * pft$qsw  [zpft] * hgt * bleaf
+   bbark    = pft$agf.bs[zpft] * pft$qbark[zpft] * hgt * bleaf
    #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
    #      Find tropical timber and above-ground biomass.                                   #
    #---------------------------------------------------------------------------------------#
-   btimber = 1000. * pft$rho[zpft] * dbh2vol(dbh=dbh,hgt=hgt,ipft=zpft) / C2B
-   bagwood = pft$agf.bs[zpft] * (bdead + bsapwood)
+   btimber = 1000. * pft$rho[zpft] * size2vol(dbh=dbh,hgt=hgt,ipft=zpft) / C2B
+   bagwood = pft$agf.bs[zpft] * (bdead + bsapwood + bbark)
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
@@ -360,23 +442,76 @@ size2bt <<- function(dbh,hgt,ipft){
 #==========================================================================================#
 #    Rooting depth.                                                                        #
 #------------------------------------------------------------------------------------------#
-dbh2rd <<- function(hgt,dbh,ipft){
+size2rd <<- function(hgt,dbh,ipft){
+   if (length(ipft) == 1){
+     zpft = rep(ipft,times=length(dbh))
+   }else{
+     zpft = ipft
+   }#end if
+
+
+
+
    if (iallom %in% c(0)){
       #------------------------------------------------------------------------------------#
       #    Original ED-2.1 (I don't know the source for this equation, though).            #
       #------------------------------------------------------------------------------------#
-      vol  = dbh2vol(hgt,dbh,ipft)
-      rd   = pft$b1Rd[ipft] * (hgt * dbh * dbh) ^ pft$b2Rd[ipft]
+      vol  = size2vol(hgt=hgt,dbh=dbh,ipft=zpft)
+      rd   = pft$b1Rd[zpft] * (hgt * dbh * dbh) ^ pft$b2Rd[zpft]
+   }else if (iallom %in% c(1,2)){
+      #------------------------------------------------------------------------------------#
+      #    This is just a test allometry, that imposes root depth to be 0.5 m for          #
+      # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.              #
+      #------------------------------------------------------------------------------------#
+      rd = pft$b1Rd[zpft] * hgt ^ pft$b2Rd[zpft]
+      #------------------------------------------------------------------------------------#
    }else{
-       #-----------------------------------------------------------------------------------#
-       #    This is just a test allometry, that imposes root depth to be 0.5 m for         #
-       # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.             #
-       #-----------------------------------------------------------------------------------#
-       rd = pft$b1Rd[ipft] * hgt ^ pft$b2Rd[ipft]
-       #-----------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
+      #    For tropical trees, use the allometric model to obtain the Effective            #
+      # Functional Rooting Depth based on B18.  We made a slight modification in their     #
+      # equation relating delta 18O and depth:                                             #
+      #                                                                                    #
+      #    depth = exp(a + b * d18O^2)                                                     #
+      #                                                                                    #
+      # because it fits the data better than the original equation without the square,     #
+      # and it avoids extremely shallow soils for small trees.  We also use a              #
+      # heteroscedastic least squares, using the algorithm developed by L16.               #
+      #                                                                                    #
+      # References:                                                                        #
+      #                                                                                    #
+      # Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,     #
+      #    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018.    #
+      #    Hydrological niche segregation defines forest structure and drought             #
+      #    tolerance strategies in a seasonal Amazonian forest. J. Ecol., in press.        #
+      #    doi:10.1111/1365-2745.13022 (B18).                                              #
+      #                                                                                    #
+      # Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,      #
+      #    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability    #
+      #    across intact and degraded forests in the Brazilian Amazon.                     #
+      #    Global Biogeochem. Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16).    #
+      #------------------------------------------------------------------------------------#
+      dbhuse = pmin(dbh,pft$dbh.crit[zpft])
+      d18O   = pft$d18O.ref[zpft] * (1. - exp(-pft$b1d18O[zpft] * dbhuse^pft$b2d18O[zpft]))
+      trtree = pft$tropical[zpft] & (! pft$liana[zpft]) & (! pft$grass[zpft])
+
+
+      #------------------------------------------------------------------------------------#
+      #    For tropical trees, use an allometry loosely based on B18.  The original        #
+      # approach by B18 yields extremely shallow roots for small- and medium-sized trees,  #
+      # causing excessive water stress and poor agreement with GPP estimated from towers.  #
+      #------------------------------------------------------------------------------------#
+      size   = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft])
+                     , yes  = dbhuse * dbhuse * hgt
+                     , no   = hgt
+                     )#end ifelse
+      rd     = ifelse( test = trtree & use.efrd.trtree
+                     , yes  = -exp(pft$b1Efrd[zpft] + pft$b2Efrd[zpft] * d18O * d18O)
+                     , no   = pft$b1Rd[zpft] * size ^ pft$b2Rd[zpft]
+                     )#end ifelse
+      #------------------------------------------------------------------------------------#
    }#end if
    return(rd)
-}#end function dbh2rd
+}#end function size2rd
 #==========================================================================================#
 #==========================================================================================#
 
@@ -438,7 +573,7 @@ dbh2bl.alt <<- function (dbh,genus){
 
    #---------------------------------------------------------------------------------------#
    #     Decide which equation to use based on the genus, or if it is to call ED-2.1, just #
-   # call the good old dbh2bl...                                                           #
+   # call size2bl...                                                                       #
    #---------------------------------------------------------------------------------------#
    if (genushere == "cedrela"){
       h = dbh2h(3,dbh)
@@ -490,16 +625,20 @@ dbh2bl.alt <<- function (dbh,genus){
       bleaf = 0.958 / C2B * dbh ^ 0.757
 
    }else if(genushere == "grass"){
-      bleaf = dbh2bl(dbh,1)
+      hgt   = dbh2h  (dbh=dbh,ipft=1)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=1)
 
    }else if(genushere == "early"){
-      bleaf = dbh2bl(dbh,2)
+      hgt   = dbh2h  (dbh=dbh,ipft=2)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=2)
 
    }else if(genushere == "mid"){
-      bleaf = dbh2bl(dbh,3)
+      hgt   = dbh2h  (dbh=dbh,ipft=3)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=3)
 
    }else if(genushere == "late"){
-      bleaf = dbh2bl(dbh,4)
+      hgt   = dbh2h  (dbh=dbh,ipft=4)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=4)
 
    }else{
       stop (paste("Genus ",genus," wasn't found.  ",

@@ -1049,7 +1049,7 @@ solve.aofixed.case <<- function(met,thispft,aparms){
    answer$lsfc.shv = ( ( answer$stom.cond.h2o * met$lint.shv
                        + met$blyr.cond.h2o    * met$can.shv  )
                      / ( met$blyr.cond.h2o + answer$stom.cond.h2o) )
-   answer$transp   = answer$stom.cond.h2o * ( answer$lsfc.shv - met$can.shv )
+   answer$transp   = met$blyr.cond.h2o * ( answer$lsfc.shv - met$can.shv )
    #---------------------------------------------------------------------------------------#
 
    #----- In case we reach this point, we successfully found the solution. ----------------#

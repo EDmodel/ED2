@@ -35,6 +35,14 @@ c34smax.gsw      <<- 1.e+4              # Max. stomatal conductance (water)     
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#     Flag to decide whether to use effective functional rooting depth (sensu Brum et al.  #
+# 2018).                                                                                   #
+#------------------------------------------------------------------------------------------#
+if (! "use.efrd.tree" %in% ls()) use.efrd.trtree <<- TRUE
+#------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #     This is an alternative way to express the temperature dependence, which is used by   #
@@ -118,9 +126,9 @@ if (! "tpmfact.c3"        %in% ls()) tpmfact.c3        <<- 0.110
 if (! "mphoto.c3"         %in% ls()) mphoto.c3         <<- 9.0
 if (! "mphoto.aa"         %in% ls()) mphoto.aa         <<- 7.2
 if (! "mphoto.c4"         %in% ls()) mphoto.c4         <<- 4.0
-if (! "gamma.c3"          %in% ls()) gamma.c3          <<- 0.020
-if (! "gamma.aa"          %in% ls()) gamma.aa          <<- 0.020
-if (! "gamma.c4"          %in% ls()) gamma.c4          <<- 0.030
+if (! "gamma.c3"          %in% ls()) gamma.c3          <<- 0.015
+if (! "gamma.aa"          %in% ls()) gamma.aa          <<- 0.015
+if (! "gamma.c4"          %in% ls()) gamma.c4          <<- 0.025
 if (! "d0.grass"          %in% ls()) d0.grass          <<- 0.016
 if (! "d0.tree"           %in% ls()) d0.tree           <<- 0.016
 if (! "klowin"            %in% ls()) klowin            <<- 0.7 / 39 * 1.e6
@@ -139,17 +147,17 @@ if (! "lwidth.nltree"     %in% ls()) lwidth.nltree     <<- 0.05
 if (! "vm.q10.c3"         %in% ls()) vm.q10.c3         <<- 2.21
 if (! "vm.q10.c4"         %in% ls()) vm.q10.c4         <<- 2.21
 if (! "vm.tcold.c3temp"   %in% ls()) vm.tcold.c3temp   <<- 4.7137
-if (! "vm.tcold.c3trop"   %in% ls()) vm.tcold.c3trop   <<- 10.
+if (! "vm.tcold.c3trop"   %in% ls()) vm.tcold.c3trop   <<- 10.0
 if (! "vm.tcold.aa"       %in% ls()) vm.tcold.aa       <<- 4.7137
-if (! "vm.tcold.c4"       %in% ls()) vm.tcold.c4       <<- 10.
-if (! "vm.thot.c3temp"    %in% ls()) vm.thot.c3temp    <<- 45.0
-if (! "vm.thot.c3trop"    %in% ls()) vm.thot.c3trop    <<- 45.0
-if (! "vm.thot.aa"        %in% ls()) vm.thot.aa        <<- 45.0
-if (! "vm.thot.c4"        %in% ls()) vm.thot.c4        <<- 45.0
+if (! "vm.tcold.c4"       %in% ls()) vm.tcold.c4       <<- 15.0
+if (! "vm.thot.c3temp"    %in% ls()) vm.thot.c3temp    <<- 37.5
+if (! "vm.thot.c3trop"    %in% ls()) vm.thot.c3trop    <<- 37.5
+if (! "vm.thot.aa"        %in% ls()) vm.thot.aa        <<- 37.5
+if (! "vm.thot.c4"        %in% ls()) vm.thot.c4        <<- 40.0
 if (! "vm.decay.ecold.c3" %in% ls()) vm.decay.ecold.c3 <<- 0.3
-if (! "vm.decay.ehot.c3"  %in% ls()) vm.decay.ehot.c3  <<- 0.6
+if (! "vm.decay.ehot.c3"  %in% ls()) vm.decay.ehot.c3  <<- 0.3
 if (! "vm.decay.ecold.c4" %in% ls()) vm.decay.ecold.c4 <<- 0.3
-if (! "vm.decay.ehot.c4"  %in% ls()) vm.decay.ehot.c4  <<- 0.6
+if (! "vm.decay.ehot.c4"  %in% ls()) vm.decay.ehot.c4  <<- 0.3
 if (! "jm.q10.c3"         %in% ls()) jm.q10.c3         <<- 1.65
 if (! "jm.q10.c4"         %in% ls()) jm.q10.c4         <<- 1.65
 if (! "jm.tcold.c3temp"   %in% ls()) jm.tcold.c3temp   <<- vm.tcold.c3temp
@@ -173,11 +181,11 @@ if (! "lr.tcold.c4"       %in% ls()) lr.tcold.c4       <<- vm.tcold.c4
 if (! "lr.thot.c3temp"    %in% ls()) lr.thot.c3temp    <<- vm.thot.c3temp
 if (! "lr.thot.c3trop"    %in% ls()) lr.thot.c3trop    <<- vm.thot.c3trop
 if (! "lr.thot.aa"        %in% ls()) lr.thot.aa        <<- vm.thot.aa
-if (! "lr.thot.c4"        %in% ls()) lr.thot.c4        <<- vm.thot.c4
+if (! "lr.thot.c4"        %in% ls()) lr.thot.c4        <<- vm.thot.c4 + 5.0
 if (! "lr.decay.ecold.c3" %in% ls()) lr.decay.ecold.c3 <<- vm.decay.ecold.c3
 if (! "lr.decay.ehot.c3"  %in% ls()) lr.decay.ehot.c3  <<- vm.decay.ehot.c3
 if (! "lr.decay.ecold.c4" %in% ls()) lr.decay.ecold.c4 <<- vm.decay.ecold.c4
-if (! "lr.decay.ehot.c4"  %in% ls()) lr.decay.ehot.c4  <<- vm.decay.ehot.c4
+if (! "lr.decay.ehot.c4"  %in% ls()) lr.decay.ehot.c4  <<- 2.0 * vm.decay.ehot.c4
 #------------------------------------------------------------------------------------------#
 
 
@@ -321,7 +329,7 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = 42.574 # 47.173
    b1Ht.trop    = 0.0482 # 0.044037
    b2Ht.trop    = 0.8307 # 0.80248
-   hgt.max.trop = 42.0   # 37.5
+   hgt.max.trop = 40.0   # 37.5
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
@@ -332,10 +340,8 @@ if (iallom %in% c(0,1)){
 #------------------------------------------------------------------------------------------#
 #   Coefficients for leaf and structural biomass (iallom = 3).  For adult individuals,     #
 # we use the pantropical allometric equation from C14 that estimates AGB and the leaf      #
-# biomass from L83.  These equations are not constrained for seedlings, and leaf biomass   #
-# can be severely underestimated.  Therefore, we assume that seedlings are 20cm and have   #
-# biomass of 0.001kgC, roughly the same number observed by M09 in moist forests in         #
-# Bolivia and fit the coefficients to match L83 at dbh.crit.                               #
+# biomass from L83.  The allometric equation from L83 was slightly modified to account for #
+# variations of SLA amongst PFTs.                                                          #
 #                                                                                          #
 #  References:                                                                             #
 #                                                                                          #
@@ -343,18 +349,14 @@ if (iallom %in% c(0,1)){
 #      phytomasse epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen.,     #
 #      4(3), 237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089 (L83)       #
 #                                                                                          #
-#   Markesteijn, L. and L. Poorter. Seedling root morphology and biomass allocation of 62  #
-#      tropical tree species in relation to drought- and shade-tolerance. J. Ecol., 97(2), #
-#      311-325, 2009. doi:10.1111/j.1365- 2745.2008.01466.x (M09).                         #
-#                                                                                          #
 #   Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to estimate  #
 #      the aboveground biomass of tropical trees. Glob. Change Biol., 20(10), 3177-3190,   #
 #      Oct 2014. doi:10.1111/gcb.12629 (C14).                                              #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-c14l83.bl.xx  = c(1.41507180,0.5718238)
-c14l83.bs.tf  = c(0.03438721,1.0495558)
-c14l83.bs.sv  = c(0.02689847,1.0674310)
+c14l83.bl.xx  = c(0.12830780,0.7587000)
+c14l83.bs.tf  = c(0.07871283,0.9829948)
+c14l83.bs.sv  = c(0.07610888,0.9838431)
 c14l83.bs.gr  = c(1.e-5,1.0) * c14l83.bl.xx
 SLA.ref       = 22.93
 rho.ref       = 0.615
@@ -1771,31 +1773,81 @@ for (ipft in sequence(npft+1)){
 # not SI units?), so I am replacing with commercial volume and making rooting depth self-  #
 # -contained.                                                                              #
 #------------------------------------------------------------------------------------------#
-pft$b1Rd = rep(NA,times=npft+1)
-pft$b2Rd = rep(NA,times=npft+1)
+pft$b1Rd     = rep(NA,times=npft+1)
+pft$b2Rd     = rep(NA,times=npft+1)
 if (iallom %in% c(0)){
    #----- Original ED-2.1 scheme, based on standing volume. -------------------------------#
    for (ipft in sequence(npft+1)){
       if (pft$grass[ipft]){
          #----- Grasses have fixed rooting depth (70 cm). ---------------------------------#
-         pft$b2Rd[ipft] = 0.0
-         pft$b1Rd[ipft] = -0.700
+         pft$b2Rd   [ipft] = 0.0
+         pft$b1Rd   [ipft] = -0.700
          #---------------------------------------------------------------------------------#
       }else{
          #----- Volume-based allometry for trees. -----------------------------------------#
-         pft$b2Rd[ipft] = 0.277
-         pft$b1Rd[ipft] = -exp(0.545 *log(10.)) * (0.65*pi*0.11*0.11)^pft$b2Rd[ipft]
+         pft$b2Rd   [ipft] = 0.277
+         pft$b1Rd   [ipft] = -exp(0.545 *log(10.)) * (0.65*pi*0.11*0.11)^pft$b2Rd[ipft]
          #---------------------------------------------------------------------------------#
       }#end if (pft$grass[ipft])
       #------------------------------------------------------------------------------------#
    }#end for (ipft %in% sequence(npft))
    #---------------------------------------------------------------------------------------#
-}else{
+}else if (iallom %in% c(1,2)){
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
-   pft$b1Rd[sequence(npft+1)]  = -1.1140580
-   pft$b2Rd[sequence(npft+1)]  =  0.4223014
+   pft$b1Rd  [sequence(npft+1)] = -1.1140580
+   pft$b2Rd  [sequence(npft+1)] =  0.4223014
+   #---------------------------------------------------------------------------------------#
+}else if (iallom %in% 3){
+   #---------------------------------------------------------------------------------------#
+   #     Allometry loosely based on Brum et al. (2018).  Attempts to implement their       #
+   # actual functions were unsucessful because the rooting depth for small- and medium-    #
+   # sized trees were extremely shallow, causing significant drought stress not captured   #
+   # by GPP estimated from towers.  We use their end points for small and large trees, and #
+   # apply a log-linear interpolation as a function of size.  This may be updated in the   #
+   # future to leverage from more isotopic data.                                           #
+   #---------------------------------------------------------------------------------------#
+   pft$b1Rd = ifelse( test = pft$tropical & (! pft$liana)
+                    , yes  = ifelse(test=pft$grass,yes=-1.877408,no=-0.3152709)
+                    , no   = -1.1140580
+                    )#end ifelse
+   pft$b2Rd = ifelse( test = pft$tropical & (! pft$liana)
+                    , yes  = ifelse(test=pft$grass,yes=0.7334514,no=0.2777185)
+                    , no   =  0.4223014
+                    )#end ifelse
    #---------------------------------------------------------------------------------------#
 }#end if
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Alternative rooting depth parameter for tropical trees.  Use the allometric model     #
+# to obtain the Effective Functional Rooting Depth based on B18.  We made a slight         #
+# modification in their equation relating delta 18O and depth:                             #
+#                                                                                          #
+#    depth = exp(a + b * d18O^2)                                                           #
+#                                                                                          #
+# because it fits the data better than the original equation without the square, and it    #
+# avoids extremely shallow soils for small trees.  We also use a heteroscedastic least     #
+# squares, using the algorithm developed by L16.                                           #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,           #
+#    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018.          #
+#    Hydrological niche segregation defines forest structure and drought tolerance         #
+#    strategies in a seasonal Amazonian forest. J. Ecol., in press.                        #
+#    doi:10.1111/1365-2745.13022 (B18).                                                    #
+#                                                                                          #
+# Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,            #
+#    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability          #
+#    across intact and degraded forests in the Brazilian Amazon.  Global Biogeochem.       #
+#    Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16).                             #
+#------------------------------------------------------------------------------------------#
+pft$d18O.ref = rep(x=-5.356,times=npft+1)
+pft$b1d18O   = rep(x=0.0516,times=npft+1)
+pft$b2d18O   = rep(x=1.0   ,times=npft+1)
+pft$b1Efrd   = rep(x=-2.436,times=npft+1)
+pft$b2Efrd   = rep(x=0.1822,times=npft+1)
 #------------------------------------------------------------------------------------------#
 
 
@@ -1848,8 +1900,27 @@ pft$b2WAI = ifelse( test = pft$grass
 #------------------------------------------------------------------------------------------#
 #    Minimum bleaf and leaf area index that is resolvable.                                 #
 #------------------------------------------------------------------------------------------#
-pft$bleaf.min = dbh2bl(dbh=pft$dbh.min[sequence(npft+1)],ipft=sequence(npft+1))
+pft$bleaf.min = size2bl( dbh  = pft$dbh.min[sequence(npft+1)]
+                       , hgt  = pft$hgt.min[sequence(npft+1)]
+                       , ipft = sequence(npft+1)
+                       )#end size2bl
 pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#    Minimum and maximum rooting depth.                                                    #
+#------------------------------------------------------------------------------------------#
+pft$rdp.min = size2rd( dbh  = pft$dbh.min[sequence(npft+1)]
+                     , hgt  = pft$hgt.min[sequence(npft+1)]
+                     , ipft = sequence(npft+1)
+                     )#end size2bl
+pft$rdp.max = size2rd( dbh  = pft$dbh.crit[sequence(npft+1)]
+                     , hgt  = pft$hgt.max [sequence(npft+1)]
+                     , ipft = sequence(npft+1)
+                     )#end size2bl
 #------------------------------------------------------------------------------------------#
 
 

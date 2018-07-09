@@ -22,14 +22,29 @@
 #                  is the default).                                                        #
 #                                                                                          #
 # - data:          Data frame with predictors for both lsq.formula and sig.formula         #
-# - sy.data:       Error associated with the observed 'y' variable.   Three options are    #
-#                  possible:                                                               #
+# - se.data:       Error associated with the observed variable.   The following options    #
+#                  are possible:                                                           #
 #                     1. NULL, which skips error evaluation altogether                     #
 #                     2. Vector of same length as nrow(data).  Assume this is the          #
-#                        standard error, and that the errors are Gaussian.                 #
-#                     3. Matrix with same number of rows as nrow(data).  Assume these are  #
-#                        pre-processed replications of the response variable using which-  #
-#                        ever distribution the user considers appropriate.                 #
+#                        standard error of the 'y' variable, and that the errors are       #
+#                        Gaussian.                                                         #
+#                     3. Matrix. Assume these are pre-processed replications of the 'y'    #
+#                        variable using whichever distribution the user considers          #
+#                        appropriate.  The script will check whether the columns are not   #
+#                        standard errors for variables (e.g. if they have names, see case  #
+#                        4).  In case these are indeed the replicates for the y variable,  #
+#                        n.seobs will be ignored.                                          #
+#                     4. Data frame with the same variable names as predictors and y       #
+#                        variable.  Assume that this data frame contains the (Gaussian)    #
+#                        standard error for each variable present in se.data, and any      #
+#                        missing variable has error zero.                                  #
+#                     5. List.  Assume these are pre-processed replications of the         #
+#                        variables (names of list elements must match variable names),     #
+#                        using whichever distribution the user considers appropriate.      #
+#                        Any missing variable will be assumed to be error-free.  Present   #
+#                        Present variables must have matrices with the same number of rows #
+#                        as data, and the same number of columns (in this case n.seobs     #
+#                        will be ignored).                                                 #
 # - lsq.first:     First guess for all parameters of lsq.formula to be fitted              #
 # - sig.first:     First guess for all parameters of sig.formula to be fitted              #
 #                  Required unless sig.formula = NULL                                      #
@@ -42,10 +57,12 @@
 # - tol.optim:     Aimed tolerance for optimisation (full model).                          #
 # - maxit:         Maximum number of optim calls (full model).                             #
 # - n.boot:        Number of bootstrap realisations.                                       #
-# - n.syobs:       Number of replicates for error in the observed y values.                #
-#                  This number is ignored in case sy.data is a matrix.                     #
-# - yrdm.min:      Minimum acceptable value for y when adding random noise to y.           #
-# - yrdm.max:      Maximum acceptable value for y when adding random noise to y.           #
+# - n.seobs:       Number of replicates for error (used only when se.data is a vector or   #
+#                  a data frame). This number is ignored in case se.data is a list with    #
+#                  matrices.                                                               #
+# - rdm.range:     If present, it must be a list or a data frame containing the minimum    #
+#                  and maximum acceptable values for when adding random noise to vari-     #
+#                  ables.                                                                  #
 # - ci.level:      Confidence interval for error estimate (bootstrap only)                 #
 # - verbose:       Show information whilst it is optimising.                               #
 #                                                                                          #
@@ -85,7 +102,7 @@
 optim.lsq.htscd <<- function( lsq.formula
                             , sig.formula    = NULL
                             , data
-                            , sy.data        = NULL
+                            , se.data        = NULL
                             , lsq.first
                             , sig.first
                             , err.method     = c("hessian","hess","bootstrap","boot")
@@ -96,9 +113,8 @@ optim.lsq.htscd <<- function( lsq.formula
                             , is.debug       = FALSE
                             , maxit          = 100
                             , n.boot         = 1000
-                            , n.syobs        = 10000
-                            , yrdm.min       = -Inf
-                            , yrdm.max       = +Inf
+                            , n.seobs        = 10000
+                            , rdm.range      = NULL
                             , ci.level       = 0.95
                             , i1st.max       = 5
                             , verbose        = FALSE
@@ -134,6 +150,7 @@ optim.lsq.htscd <<- function( lsq.formula
 
 
 
+
    #---------------------------------------------------------------------------------------#
    #      Set variables for homoscedastic fit in case sig.formula is NULL.                 #
    #---------------------------------------------------------------------------------------#
@@ -144,6 +161,7 @@ optim.lsq.htscd <<- function( lsq.formula
       skip.sigma = FALSE
    }#end if
    #---------------------------------------------------------------------------------------#
+
 
 
 
@@ -161,10 +179,12 @@ optim.lsq.htscd <<- function( lsq.formula
       lsq.formula = as.formula(eval(lsq.formula))
    }#end if
    lsq.vars       = all.vars(lsq.formula)
+   n.lsq.vars     = length(lsq.vars)
    yname          = lsq.vars[1]
    names.lsq.1st  = names(lsq.first)
    n.lsq.1st      = length(lsq.first)
    #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -197,6 +217,7 @@ optim.lsq.htscd <<- function( lsq.formula
          zero      = optim.lsq.htscd( lsq.formula = lsq.formula
                                     , sig.formula = NULL
                                     , data        = data
+                                    , se.data     = NULL
                                     , lsq.first   = lsq.first
                                     , err.method  = "hess"
                                     )#end optim.lsq.htscd
@@ -219,67 +240,6 @@ optim.lsq.htscd <<- function( lsq.formula
 
 
 
-   #---------------------------------------------------------------------------------------#
-   #      Set parameters for evaluating the impact of the uncertainty in the reference     #
-   # response variable on model predictions.                                               #
-   #---------------------------------------------------------------------------------------#
-   if (is.null(sy.data)){
-      #----- Skip evaluation of the impact of errors in observations on predictions. ------#
-      skip.syobs = TRUE
-      n.syobs    = 0
-      #------------------------------------------------------------------------------------#
-   }else{
-      #----- Find the impact of errors in observations on predictions. --------------------#
-      skip.syobs = FALSE
-      #------------------------------------------------------------------------------------#
-   
-      #----- Coerce sy.data to matrix. ----------------------------------------------------#
-      if (is.list(sy.data)){
-         #----- Transform list in data frame before converting it to matrix. --------------#
-         sy.data = try(as.matrix(data.frame(sy.data)),silent=TRUE)
-         #---------------------------------------------------------------------------------#
-      }else if (! is.matrix(sy.data)){
-         #----- Transform list in data frame before converting it to matrix. --------------#
-         sy.data = try(as.matrix(sy.data),silent=TRUE)
-         #---------------------------------------------------------------------------------#
-      }#end if (is.list(sy.data))
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Make sure the transformation was successful. ---------------------------------#
-      if ("try-error" %in% is(sy.data)){
-         stop("Argument sy.data cannot be coerced into a matrix.")
-      }else if (nrow(sy.data) != nrow(data)){
-         stop("Number of entries of 'sy.data' must match 'data'.")
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #     Check what to do depending on the size of sy.data.                             #
-      #------------------------------------------------------------------------------------#
-      #----- Check the number of rows, make sure they match data. -------------------------#
-      if (ncol(sy.data) == 1){
-         y.eval  = rnorm( n    = nrow(data)*n.syobs
-                        , mean = rep(x=data[[yname]],times=n.syobs)
-                        , sd   = rep(x=sy.data[,1]  ,times=n.syobs)
-                        )#
-         sy.data = matrix( data     = pmin(yrdm.max,pmax(yrdm.min,y.eval))
-                         , nrow     = nrow(data)
-                         , ncol     = n.syobs
-                         , dimnames = list(rownames(data),NULL)
-                         )#end matrix
-         rm(y.eval)
-      }else{
-         sy.data = 0.*sy.data + pmin(yrdm.max,pmax(yrdm.min,sy.data))
-         n.syobs = ncol(sy.data)
-      }#end if (ncol(sy.data) == 1)
-      #------------------------------------------------------------------------------------#
-   }#end if (is.null(sy.data))
-   #---------------------------------------------------------------------------------------#
-
-
-   
 
    #---------------------------------------------------------------------------------------#
    #      Sanity check: lsq.first and sig.first must be named lists or named vectors, and  #
@@ -328,9 +288,188 @@ optim.lsq.htscd <<- function( lsq.formula
    #---------------------------------------------------------------------------------------#
    names.data    = names(data)
    names.data    = names.data[names.data %in% c(lsq.vars,sig.vars)]
+   xnames        = names.data[! (names.data %in% yname)]
    opt.data      = data[,names.data,drop=FALSE]
    #---------------------------------------------------------------------------------------#
 
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Set parameters for evaluating the impact of the uncertainty in the reference     #
+   # response variable on model predictions.                                               #
+   #---------------------------------------------------------------------------------------#
+   skip.sxobs = TRUE
+   skip.syobs = TRUE
+   sx.data    = NULL
+   sy.data    = NULL
+   n.sxobs    = 0
+   n.syobs    = 0
+   if (! is.null(se.data)){
+      #------------------------------------------------------------------------------------#
+      #    Make sure that we have bounds for all variables.                                #
+      #------------------------------------------------------------------------------------#
+      rdm.bounds = matrix( data    = c(-Inf,Inf)
+                         , nrow    = 2
+                         , ncol    = n.lsq.vars
+                         , dimnames = list(c("lwr","upr"),lsq.vars)
+                         )#end matrix
+      rdm.bounds = as.data.frame(rdm.bounds)
+      if (! is.null(rdm.range)){
+         #----- Make sure we can coerce rdm.range to a data frame. ------------------------#
+         if ((! is.list(rdm.range)) && (! is.matrix(rdm.range))){
+            rdm.range        = data.frame(y=rdm.range)
+            names(rdm.range) = yname
+         }else{
+            rdm.range = try(as.data.frame(rdm.range),silent=TRUE)
+            if ("try-error" %in% is(rdm.range)){
+               stop(" - Variable \"rdm.range\" could not be coerced to a data frame.")
+            }#end if ("try-error" %in% is(rdm.range))
+         }#end if (is.vector(rdm.range))
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Sort values. --------------------------------------------------------------#
+         rdm.range             = sapply(X=rdm.range,FUN=range,na.rm=TRUE)
+         idx                   = match(names(rdm.range),names(rdm.bounds))
+         sel                   = is.finite(idx)
+         rdm.bounds[,idx[sel]] = rdm.range[,sel,drop=FALSE]
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Standardise the input values as list or data frames.                          #
+      #------------------------------------------------------------------------------------#
+      if ((! is.list(se.data)) && (! is.matrix(se.data))){
+         se.xyvar        = data.frame( y = se.data)
+         names(se.xyvar) = yname
+      }else if (is.matrix(se.data) && (! any(colnames(se.data) %in% lsq.vars))){
+         se.xyvar        = list(y = se.data)
+         names(se.xyvar) = yname
+      }else if (is.matrix(se.data)){
+         se.xyvar        = as.data.frame(se.data)
+      }else{
+         se.xyvar        = se.data
+      }#end if if ((! is.list(se.data)) && (! is.matrix(se.data)))
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Separate x and y variables. --------------------------------------------------#
+      e.names    = names(se.xyvar)
+      skip.sxobs = ! any(e.names %in% xnames)
+      skip.syobs = ! any(e.names %in% yname)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- In case the y variable is one values, process it. ----------------------------#
+      if (! skip.syobs){
+         n.syobs  = n.seobs
+         yrdm.min = rdm.bounds[[yname]][1]
+         yrdm.max = rdm.bounds[[yname]][2]
+         se.yname = se.xyvar[[yname]]
+
+         #---------------------------------------------------------------------------------#
+         #    Find out which type of error was provided (SE or replicates).                #
+         #---------------------------------------------------------------------------------#
+         if (is.matrix(se.yname)){
+            #----- Replicates, just make sure the values are bounded. ---------------------#
+            sy.data    = 0.*se.yname + pmin(yrdm.max,pmax(yrdm.min,se.yname))
+            n.syobs    = ncol(sy.data)
+            #------------------------------------------------------------------------------#
+         }else{
+            #----- Standard error, use Gaussian distribution. -----------------------------#
+            y.eval   = rnorm( n    = nrow(data)*n.syobs
+                            , mean = rep(x=data[[yname]],times=n.syobs)
+                            , sd   = rep(x=se.yname     ,times=n.syobs)
+                            )#end rnorm
+            sy.data  = matrix( data     = pmin(yrdm.max,pmax(yrdm.min,y.eval))
+                             , nrow     = nrow(data)
+                             , ncol     = n.syobs
+                             , dimnames = list(rownames(data),NULL)
+                             )#end matrix
+            rm(y.eval)
+            #------------------------------------------------------------------------------#
+         }#end if (is.vector(se.yname))
+         #---------------------------------------------------------------------------------#
+         rm(se.yname)
+      }#end if (! skip.syobs)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      We only process x data in case at least one predictor has SE.  In case we do  #
+      # process, we create an array with replicates.                                       #
+      #------------------------------------------------------------------------------------#
+      if (! skip.sxobs){
+         #----- Find the number of replicates, and make sure the input is consistent. -----#
+         if (is.data.frame(se.xyvar)){
+            se.xyvar = se.xyvar[e.names %in% xnames,drop=FALSE]
+         }else{
+            se.xyvar = se.xyvar[e.names %in% xnames]
+         }#end if (is.data.frame(se.xyvar))
+         e.names  = names(se.xyvar)
+         se.ncol  = sapply(X=se.xyvar,FUN=length) / nrow(data)
+         se.ncol  = unique(se.ncol[se.ncol > 1])
+         if (length(se.ncol) == 0){
+            n.sxobs = n.seobs
+         }else if(length(se.ncol) == 1){
+            n.sxobs = se.ncol
+         }else{
+            stop(" Input variable \"se.data\" has matrices with different sizes.")
+         }#end if (length(se.ncol) == 0)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Initialise the array of replicates. ---------------------------------------#
+         xdata   = data[,xnames,drop=FALSE]
+         sx.data = array( data     = c(unlist(xdata))
+                        , dim      = c(nrow(xdata),ncol(xdata),n.sxobs)
+                        , dimnames = list(rownames(xdata),names(xdata),NULL)
+                        )#end array
+         sx.data = aperm(a=sx.data,perm=c(1,3,2))
+         rm(xdata)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Add random noise to X variables with uncertainty. -------------------------#
+         for (e in seq_along(e.names)){
+            xname    = e.names[e]
+            x        = match(xname,dimnames(sx.data)[[3]])
+            se.xname = se.xyvar[[xname]]
+            xrdm.min = rdm.bounds[[xname]][1]
+            xrdm.max = rdm.bounds[[xname]][2]
+
+            #------------------------------------------------------------------------------#
+            #    Find out which type of error was provided (SE or replicates).             #
+            #------------------------------------------------------------------------------#
+            if (is.matrix(se.xname)){
+               #----- Replicates, just make sure the values are bounded. ------------------#
+               sx.data[,,x] = 0.*se.xname + pmin(xrdm.max,pmax(xrdm.min,se.xname))
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Standard error, use Gaussian distribution. --------------------------#
+               x.eval       = rnorm( n    = nrow(data)*n.sxobs
+                                   , mean = rep(x=data[[xname]],times=n.sxobs)
+                                   , sd   = rep(x=se.xname     ,times=n.sxobs)
+                                   )#end rnorm
+               sx.data[,,x] = pmin(xrdm.max,pmax(xrdm.min,x.eval))
+               rm(x.eval)
+               #---------------------------------------------------------------------------#
+            }#end if (is.vector(se.yname))
+            #------------------------------------------------------------------------------#
+            rm(se.xname)
+         }#end for (e in seq_along(e.names))
+         #---------------------------------------------------------------------------------#
+      }#end if (! skip.sxobs)
+      #------------------------------------------------------------------------------------#
+      rm (se.xyvar)
+   }#end if (! is.null(se.data))
+   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
@@ -351,16 +490,21 @@ optim.lsq.htscd <<- function( lsq.formula
    #---------------------------------------------------------------------------------------#
    #     Data selection and total number of parameters.                                    #
    #---------------------------------------------------------------------------------------#
-   if (skip.syobs){
-      use      = apply(X=opt.data,MARGIN=1,FUN=function(x) all(is.finite(x)))
-      opt.data = opt.data[use,,drop=FALSE]
+   use.main = apply(X=opt.data,MARGIN=1,FUN=function(x) all(is.finite(c(unlist(x)))))
+   if (skip.sxobs){
+      use.sxobs = use.main
    }else{
-      use      = ( apply(X=opt.data,MARGIN=1,FUN=function(x) all(is.finite(x)))
-                 & apply(X=sy.data ,MARGIN=1,FUN=function(x) all(is.finite(x)))
-                 )#end use
-      opt.data = opt.data[use,,drop=FALSE]
-      sy.obs   = sy.data [use,,drop=FALSE]
-   }#end if (! skip.syobs)
+      use.sxobs = apply(X=sx.data ,MARGIN=1,FUN=function(x) all(is.finite(c(unlist(x)))))
+   }#end if (skip.syobs)
+   if (skip.syobs){
+      use.syobs = use.main
+   }else{
+      use.syobs = apply(X=sy.data ,MARGIN=1,FUN=function(x) all(is.finite(c(unlist(x)))))
+   }#end if (skip.syobs)
+   use      = use.main & use.sxobs & use.syobs
+   opt.data = opt.data[use,,drop=FALSE]
+   if (! skip.sxobs) sx.obs = sx.data[use,,,drop=FALSE]
+   if (! skip.syobs) sy.obs = sy.data[use, ,drop=FALSE]
    n.use    = nrow(opt.data)
    #---------------------------------------------------------------------------------------#
 
@@ -819,6 +963,144 @@ optim.lsq.htscd <<- function( lsq.formula
 
 
    #---------------------------------------------------------------------------------------#
+   #     Find errors associated with predictor uncertainties.                              #
+   #---------------------------------------------------------------------------------------#
+   if (! skip.sxobs){
+      #------------------------------------------------------------------------------------#
+      #      Estimate parameters and errors for every simulation.                          #
+      #------------------------------------------------------------------------------------#
+
+      #----- Initialise arrays that will store the data. ----------------------------------#
+      coeff.sxobs   = matrix( data     = NA
+                            , nrow     = n.sxobs
+                            , ncol     = n.par
+                            , dimnames = list(NULL,names(x.1st))
+                            )#end matrix
+      support.sxobs = rep(NA,times=n.sxobs)
+      eval.sxobs    = matrix( data     = NA
+                            , ncol     = n.sxobs
+                            , nrow     = nrow(opt.data)
+                            , dimnames = list(rownames(opt.data),NULL)
+                            )#end matrix
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Change tolerance for evaluation: use the same parameters as bootstrap.         #
+      #------------------------------------------------------------------------------------#
+      ctrl.optim  = modifyList( x   = ctrl.optim
+                              , val = list( reltol= boot.tol.optim
+                                          , ndeps = rep(sqrt(boot.tol.optim),times=n.par)
+                                          )#end list
+                              )#end modifyList
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Loop through all simulated values.                                             #
+      #------------------------------------------------------------------------------------#
+      for (isx in sequence(n.sxobs)){
+         #---------------------------------------------------------------------------------#
+         #     Replace observation by simulated values.                                    #
+         #---------------------------------------------------------------------------------#
+         sim.data          = as.data.frame(sx.data[,isx,,drop=FALSE])
+         names(sim.data)   = dimnames(sx.data)[[3]]
+         sim.data[[yname]] = opt.data[[yname]]
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Call the optimisation procedure.                                            #
+         #---------------------------------------------------------------------------------#
+         opt.sxobs   = try( optim( par         = x.1st
+                                 , fn          = support.lsq.htscd
+                                 , lsq.formula = lsq.formula
+                                 , sig.formula = sig.formula
+                                 , data        = sim.data
+                                 , control     = ctrl.optim
+                                 , hessian     = FALSE
+                                 , ...
+                                 )#end optim
+                          , silent = TRUE
+                          )#end try
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check whether this realisation worked.                                      #
+         #---------------------------------------------------------------------------------#
+         if ("try-error" %in% is(opt.sxobs)){
+            success     = FALSE
+         }else{
+            #------------------------------------------------------------------------------#
+            #     Accept step only if it converged and if the log-likelihood is negative.  #
+            # The negative requirement is to make sure the step did not converge to a      #
+            # bogus solution, as the likelihood is a product of probabilities, which       #
+            # should be less than 1, hence the negative requirement.                       #
+            #------------------------------------------------------------------------------#
+            success     = opt.sxobs$convergence %==% 0
+            nsteps.now  = opt.sxobs$counts["function"]
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Check whether to append to the data set.                                   #
+         #---------------------------------------------------------------------------------#
+         if (success){
+            coeff.sxobs  [isx,] = opt.sxobs$par
+            support.sxobs[isx ] = opt.sxobs$value
+            #----- Run evaluation. --------------------------------------------------------#
+            xpred            = evaluate.lsq.htscd( x           = opt.sxobs$par
+                                                 , lsq.formula = lsq.formula
+                                                 , sig.formula = sig.formula
+                                                 , data        = sim.data
+                                                 , ...
+                                                 )#end evaluate.lsq.htscd
+            eval.sxobs[,isx] = xpred$yhat
+            #------------------------------------------------------------------------------#
+
+            if (verbose){
+               cat( "             > Sigma-x  ",isx
+                  , ";   Support: ",sprintf("%.3f",opt.sxobs$value )
+                  , ";   Parameters:  "
+                  ,  paste( paste(names(x.1st),sprintf("%.3f",opt.sxobs$par),sep=" = ")
+                          , collapse=";   "
+                          )#end paste
+                  , "\n"
+                  , sep=""
+                  )#end cat
+            }#end if (verbose)
+            #------------------------------------------------------------------------------#
+         }else if (verbose){
+            cat("             > Sigma-y realisation failed, skip it.","\n",sep="")
+         }#end if (success)
+         #---------------------------------------------------------------------------------#
+      }#end for (isy in n.syobs)
+      #------------------------------------------------------------------------------------#
+  
+
+      #------------------------------------------------------------------------------------#
+      #     Copy the results to ans.                                                       #
+      #------------------------------------------------------------------------------------#
+      keep.sxobs        = is.finite(support.sxobs)
+      ans$sx.data       = sx.data      [,keep.sxobs,,drop=FALSE]
+      ans$coeff.sxobs   = coeff.sxobs  [ keep.sxobs,,drop=FALSE]
+      ans$support.sxobs = support.sxobs[ keep.sxobs]
+      ans$eval.sxobs    = eval.sxobs   [,keep.sxobs ,drop=FALSE]
+      ans$n.sxobs       = sum(keep.sxobs)
+      #------------------------------------------------------------------------------------#
+   }#end if (! skip.sxobs)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
    #     Find errors associated with coefficients; decide whether to use Hessian matrix    #
    # or bootstrap.                                                                         #
    #---------------------------------------------------------------------------------------#
@@ -1085,6 +1367,7 @@ predict.lsq.htscd <<- function( object
                               , se.fit      = FALSE
                               , pred.boot   = FALSE
                               , pred.sigma  = FALSE
+                              , pred.sxobs  = FALSE
                               , pred.syobs  = FALSE
                               , verbose     = FALSE
                               , progshow    = seq(from=5,to=100,by=5)
@@ -1103,6 +1386,7 @@ predict.lsq.htscd <<- function( object
    #     Handy aliases for bootstrap and uncertainty in calibration.                       #
    #---------------------------------------------------------------------------------------#
    has.boot  = object$err.method %in% "Bootstrap"
+   has.sxobs = "coeff.sxobs" %in% names(object)
    has.syobs = "coeff.syobs" %in% names(object)
    #---------------------------------------------------------------------------------------#
 
@@ -1316,6 +1600,139 @@ predict.lsq.htscd <<- function( object
    #---------------------------------------------------------------------------------------#
    #     Check whether to run predictions based on observed y uncertainty.                 #
    #---------------------------------------------------------------------------------------#
+   if (pred.sxobs  && (! has.sxobs)){
+      warning("Model fit did not include sigma-xobs, ignoring pred.sxobs option.")
+      pred.sxobs = FALSE
+   }else if (pred.sxobs){
+
+
+      #----- Initialise prediction matrix. ------------------------------------------------#
+      coeff.sxobs = object$coeff.sxobs
+      n.sxobs     = nrow(coeff.sxobs)
+      yhat.sxobs  = matrix( nrow     = nrow(data)
+                          , ncol     = n.sxobs
+                          , dimnames = list(rownames(data),NULL)
+                          )#end matrix
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Find indices for when to report progress. ------------------------------------#
+      isx.show = round(progshow*n.sxobs/max(progshow))
+      show.lab = paste0("     > ",sprintf("%.0f",progshow),"% completed.")
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Run prediction realisations with random error in the response variable.        #
+      #------------------------------------------------------------------------------------#
+      if (verbose) cat("   - Find predictions with errors in predictors.","\n")
+      if (use.mapply){
+         ia.full = seq(from=1,to=n.sxobs,by=chnk.mapply)
+         iz.full = c(ia.full[-1]-1,n.sxobs)
+         nchunks = length(ia.full)
+
+         for (ib in sequence(nchunks)){
+            #----- Show progress to entertain bored users staring at the screen. ----------#
+            if (verbose) cat("     > Processing chunk ",ib," of ",nchunks,".","\n")
+            #------------------------------------------------------------------------------#
+
+            #----- Select chunk. ----------------------------------------------------------#
+            ia         = ia.full[ib]
+            iz         = iz.full[ib]
+            islab      = seq(from=ia,to=iz,by=1)
+            coeff.now  = coeff.sxobs[islab,,drop=FALSE]
+            coeff.list = split(coeff.now,row(coeff.now))
+            coeff.list = lapply( X   = coeff.list
+                               , FUN = function(x,nx){
+                                          names(x) = nx
+                                          return(x)
+                                       }#end function
+                               , nx  = colnames(coeff.sxobs)
+                               )#end lapply
+            #------------------------------------------------------------------------------#
+
+
+            #----- Find predictions. ------------------------------------------------------#
+            now        = mapply( FUN      = yhat.lsq.htscd
+                               , x        = coeff.list
+                               , MoreArgs = list( lsq.formula = lsq.formula
+                                                , data        = data
+                                                , ...
+                                                )#end list
+                               )#end mapply
+            #------------------------------------------------------------------------------#
+
+
+            #------ Copy results to the output. -------------------------------------------#
+            yhat.sxobs[,islab] = now
+            rm(now)
+            #------------------------------------------------------------------------------#
+         }#end for (ib in seq_along(ia.full))
+         #---------------------------------------------------------------------------------#
+      }else{
+         for (isx in sequence(n.sxobs)){
+            #----- Show progress to entertain bored users staring at the screen. ----------#
+            if (verbose && (isx %in% isx.show)){
+               ish = match(isx,isx.show)
+               cat(show.lab[ish],"\n")
+            }#end if (verbose && (ib %in% ib.show))
+            #------------------------------------------------------------------------------#
+         
+         
+            #----- Evaluate model for this set of coefficients. ---------------------------#
+            xnow             = coeff.sxobs[isx,]
+            yhat.sxobs[,isx] = yhat.lsq.htscd( x           = xnow
+                                             , lsq.formula = lsq.formula
+                                             , data        = data
+                                             , ...
+                                             )#end yhat.lsq.htscd
+            #------------------------------------------------------------------------------#
+         }#end for (isx in sequence(n.sxobs))
+         #---------------------------------------------------------------------------------#
+      }#end if (use.mapply)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Using quantiles to obtain estimates for lower and upper limits.                #
+      #------------------------------------------------------------------------------------#
+      if (confint){
+         if (verbose) cat("   - Find sigma-x-based confidence interval.","\n")
+         sx.ci.lwr = 0.5 - 0.5 * level
+         sx.ci.upr = 0.5 + 0.5 * level
+         sx.ylwr   = apply(X=yhat.sxobs,MARGIN=1,FUN=quantile,probs=sx.ci.lwr,na.rm=TRUE)
+         sx.yupr   = apply(X=yhat.sxobs,MARGIN=1,FUN=quantile,probs=sx.ci.upr,na.rm=TRUE)
+         sx.yfit   = matrix( data     = cbind(yhat,sx.ylwr,sx.yupr)
+                           , ncol     = 3
+                           , nrow     = length(yhat)
+                           , dimnames = list(rownames(data),c("fit","lwr","upr"))
+                           )#end matrix
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Standard error obtained by standard deviation of the realisation estimates.    #
+      #------------------------------------------------------------------------------------#
+      if (se.fit){
+         if (verbose) cat("   - Find sigma-x-based standard error.","\n")
+         sx.yste        = apply(X=yhat.sxobs,MARGIN=1,FUN=sd,na.rm=TRUE)
+         names(sx.yste) = rownames(data)
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if (pred.sxobs)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check whether to run predictions based on observed y uncertainty.                 #
+   #---------------------------------------------------------------------------------------#
    if (pred.syobs  && (! has.syobs)){
       warning("Model fit did not include sigma-yobs, ignoring pred.syobs option.")
       pred.syobs = FALSE
@@ -1448,7 +1865,7 @@ predict.lsq.htscd <<- function( object
    #     Define answer depending on the requests.                                          #
    #---------------------------------------------------------------------------------------#
    if (verbose) cat("   - Build prediction object.","\n")
-   if (confint || se.fit || pred.boot || pred.sigma || pred.syobs){
+   if (confint || se.fit || pred.boot || pred.sigma || pred.sxobs || pred.syobs){
       #----- Include fit to answer. -------------------------------------------------------#
       if (confint){
          ans = list(fit = yfit)
@@ -1484,6 +1901,22 @@ predict.lsq.htscd <<- function( object
 
 
       #----- Append predictions based on errors on observations. --------------------------#
+      if (pred.sxobs){
+         ans = modifyList(x = ans, val=list(sxobs=yhat.sxobs))
+
+         if (confint){
+            ans = modifyList(x = ans, val = list(sx.yfit=sx.yfit))
+         }#end if (confint)
+
+         if (se.fit){
+            ans = modifyList(x = ans, val = list(sx.se.fit=sx.yste))
+         }#end if (confint)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Append predictions based on errors on observations. --------------------------#
       if (pred.syobs){
          ans = modifyList(x = ans, val=list(syobs=yhat.syobs))
 
@@ -1500,7 +1933,7 @@ predict.lsq.htscd <<- function( object
       #----- Simple prediction output. ----------------------------------------------------#
       ans = yhat
       #------------------------------------------------------------------------------------#
-   }#end if (confint || se.fit || pred.boot || pred.sigma)
+   }#end if (confint || se.fit || pred.boot || pred.sigma || pred.sxobs || pred.syobs)
    #---------------------------------------------------------------------------------------#
 
    return(ans)
@@ -2038,6 +2471,7 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
 
 
 
+
    #----- Find yhat (fitted) and yres (residuals). ----------------------------------------#
    yhat     = eval(expr=parse(text=lsq.expr),envir=modeval)
    resp     = all.vars(lsq.formula)[1]
@@ -2048,6 +2482,7 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
    }#end if
    yres     = yact - yhat
    #---------------------------------------------------------------------------------------#
+
 
 
 
@@ -2066,6 +2501,7 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
 
 
 
+
    #---------------------------------------------------------------------------------------#
    #     Find the scale for sigma (aka sigma0), and add to the model evaluation            #
    # environment.                                                                          #
@@ -2077,6 +2513,7 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
       sigma   = eval(expr=parse(text=sig.expr),envir=modeval)
    }#end if
    #---------------------------------------------------------------------------------------#
+
 
    #----- Append data to a data frame. ----------------------------------------------------#
    ans = data.frame( yhat = yhat, yact = yact, yres = yres, sigma = sigma)

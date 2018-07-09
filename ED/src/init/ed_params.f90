@@ -1958,7 +1958,8 @@ subroutine init_ed_misc_coms
                            , max_thsums_dist      & ! intent(out)
                            , max_poihist_dist     & ! intent(out)
                            , max_poi99_dist       & ! intent(out)
-                           , suppress_h5_warnings ! ! intent(out)
+                           , suppress_h5_warnings & ! intent(out)
+                           , use_efrd_trtree      ! ! intent(out)
    implicit none
 
 
@@ -2045,6 +2046,14 @@ subroutine init_ed_misc_coms
    suppress_h5_warnings = .true.
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !      Temporary flag: decide whether to use the effective functional rooting depth     !
+   ! based on delta 18O (true) following Brum et al. (2018); or the direct size-rooting    !
+   ! depth function (false).  Note that both approaches ultimately depend on size.         !
+   !---------------------------------------------------------------------------------------!
+   use_efrd_trtree = .true.
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_ed_misc_coms
@@ -2171,6 +2180,11 @@ subroutine init_pft_alloc_params()
                              , b2Cl                  & ! intent(out)
                              , b1Rd                  & ! intent(out)
                              , b2Rd                  & ! intent(out)
+                             , d18O_ref              & ! intent(out)
+                             , b1d18O                & ! intent(out)
+                             , b2d18O                & ! intent(out)
+                             , b1Efrd                & ! intent(out)
+                             , b2Efrd                & ! intent(out)
                              , b1Vol                 & ! intent(out)
                              , b2Vol                 & ! intent(out)
                              , b1Bl                  & ! intent(out)
@@ -2259,10 +2273,8 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !   Coefficients for leaf and structural biomass (iallom = 3).  For adult individuals,  !
    ! we use the pantropical allometric equation from C14 that estimates AGB and the leaf   !
-   ! biomass from L83.  These equations are not constrained for seedlings, and leaf bio-   !
-   ! mass can be severely underestimated.  Therefore, we assume that seedlings are 20cm    !
-   ! and have biomass of 0.001kgC, roughly the same number observed by M09 in moist        !
-   ! forests in Bolivia and fit the coefficients to match L83 at dbh.crit.                 !
+   ! biomass from L83.  The leaf allometry coefficient was adjusted to be dependent upon   !
+   ! SLA.                                                                                  !
    !                                                                                       !
    !  References:                                                                          !
    !                                                                                       !
@@ -2270,18 +2282,14 @@ subroutine init_pft_alloc_params()
    !      phytomasse epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen.,  !
    !      4(3), 237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089 (L83)    !
    !                                                                                       !
-   !   Markesteijn, L. and L. Poorter. Seedling root morphology and biomass allocation of  !
-   !      62 tropical tree species in relation to drought- and shade-tolerance. J. Ecol.,  !
-   !      97(2), 311-325, 2009. doi:10.1111/j.1365-2745.2008.01466.x (M09).                !
-   !                                                                                       !
    !   Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to        !
    !      estimate the aboveground biomass of tropical trees. Glob. Change Biol., 20(10),  !
    !      3177-3190, Oct 2014. doi:10.1111/gcb.12629 (C14).                                !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   real, dimension(2)    , parameter :: c14l83_bl_xx  = (/ 1.41507180,0.5718238 /)
-   real, dimension(2)    , parameter :: c14l83_bs_tf  = (/ 0.03438721,1.0495558 /)
-   real, dimension(2)    , parameter :: c14l83_bs_sv  = (/ 0.02689847,1.0674310 /)
+   real, dimension(2)    , parameter :: c14l83_bl_xx  = (/ 0.12830780,0.7587000 /)
+   real, dimension(2)    , parameter :: c14l83_bs_tf  = (/ 0.07871283,0.9829948 /)
+   real, dimension(2)    , parameter :: c14l83_bs_sv  = (/ 0.07610888,0.9838431 /)
    real, dimension(2)    , parameter :: c14l83_bs_gr  = (/ 1.0e-5, 1.0 /) * c14l83_bl_xx
    real                  , parameter :: SLA_ref       = 22.93
    real                  , parameter :: rho_ref       = 0.615
@@ -2865,7 +2873,7 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      hgt_max_trop = 42.0
+      hgt_max_trop = 40.0
    case default
       hgt_max_trop = 35.0
    end select
@@ -3449,15 +3457,82 @@ subroutine init_pft_alloc_params()
                      , is_grass(:) )
       b2Rd(:) = merge( 0.000,0.277,is_grass(:))
       !------------------------------------------------------------------------------------!
-   case default
+   case (1,2)
       !------------------------------------------------------------------------------------!
-      !     Simple fit based on that most of the extracted water  maximum extraction of water at This is just a test, not based on any paper.  This is simply a fit that would  !
-      ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
+      !     Simple fit, based on that the soil  moisture depletion during the dry season   !
+      ! in Tapajos is most noticeable down to 4-6 m (C13, p. 187, Fig. 3).  These          !
+      ! coefficients make rooting depth to be 0.5m for recruits and 5m for 35-m tall       !
+      ! trees.                                                                             !
+      !                                                                                    !
+      ! References:                                                                        !
+      !                                                                                    !
+      ! Christoffersen BO. 2013. The ecohydrological mechanisms of resilience and          !
+      !    vulnerability of Amazonian tropical forests to water stress. Ph.d.              !
+      !    dissertation, University of Arizona, Tucson, AZ, USA.                           !
+      !    URL http://hdl.handle.net/10150/293566 (C13).                                   !
       !------------------------------------------------------------------------------------!
       b1Rd(:)  = -1.1140580
       b2Rd(:)  =  0.4223014
       !------------------------------------------------------------------------------------!
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !    For tropical trees, use the allometric model loosely based on B18:  we used     !
+      ! their data to define extreme points and made a simple log-linear interpolation as  !
+      ! a function of size (dbh*dbh*hgt).  We apply a similar functional form for tropical !
+      ! grasses. We use the same coefficients and functional form as iallom=2 for          !
+      ! non-tropical plants and for tropical lianas.  An alternative method for tropical   !
+      ! trees that follows B18 more closely is also available, check b?d18O and b?Efrd     !
+      ! parameters, and flag use_efrd_trtree.                                              !
+      !                                                                                    !
+      ! Reference:                                                                         !
+      !                                                                                    !
+      ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,     !
+      !    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018.    !
+      !    Hydrological niche segregation defines forest structure and drought             !
+      !    tolerance strategies in a seasonal Amazonian forest. J. Ecol., in press.        !
+      !    doi:10.1111/1365-2745.13022 (B18).                                              !
+      !------------------------------------------------------------------------------------!
+      b1Rd(:) = merge( merge(-1.877408,-0.3152709,is_grass(:))                             &
+                     , -1.1140580                                                          &
+                     , is_tropical(:) .and. (.not. is_liana(:)) )
+      b2Rd(:) = merge( merge(0.7334514,0.2777185,is_grass(:))                              &
+                     , +0.4223014                                                          &
+                     , is_tropical(:) .and. (.not. is_liana(:)) )
+      !------------------------------------------------------------------------------------!
+
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Alternative rooting depth parameter for tropical trees.  Use the allometric model  !
+   ! to obtain the Effective Functional Rooting Depth based on B18.  We made a slight      !
+   ! modification in their equation relating delta 18O and depth:                          !
+   !                                                                                       !
+   !    depth = exp(a + b * d18O^2)                                                        !
+   !                                                                                       !
+   ! because it fits the data better than the original equation without the square, and it !
+   ! avoids extremely shallow soils for small trees.  We also use a heteroscedastic least  !
+   ! squares, using the algorithm developed by L16.                                        !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,        !
+   !    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018.       !
+   !    Hydrological niche segregation defines forest structure and drought tolerance      !
+   !    strategies in a seasonal Amazonian forest. J. Ecol., in press.                     !
+   !    doi:10.1111/1365-2745.13022 (B18).                                                 !
+   !                                                                                       !
+   ! Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,         !
+   !    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability       !
+   !    across intact and degraded forests in the Brazilian Amazon.  Global Biogeochem.    !
+   !    Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16).                          !
+   !---------------------------------------------------------------------------------------!
+   d18O_ref(:) = -5.356
+   b1d18O  (:) = 0.0516
+   b2d18O  (:) = 1.0
+   b1Efrd  (:) = -2.436
+   b2Efrd  (:) = 0.1822
    !---------------------------------------------------------------------------------------!
 
 
@@ -3650,8 +3725,16 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !     Temperature thresholds for photosynthetic capacity.                               !
    !---------------------------------------------------------------------------------------!
-   Vm_low_temp (:) = merge(4.7137,10.0,is_conifer(:) .or. (.not. is_tropical(:)))
-   Vm_high_temp(:) = 45.0
+   select case (iphysiol)
+   case (0,2)
+      Vm_low_temp (:) = merge(4.7137,10.0,is_conifer(:) .or. (.not. is_tropical(:)))
+      Vm_high_temp(:) = 45.0
+   case (1,3)
+      Vm_low_temp (:) = merge( 4.7137                                                      &
+                             , merge(15.0,10.0,photosyn_pathway(:) == 4)                   &
+                             , is_conifer(:) .or. (.not. is_tropical(:)) )
+      Vm_high_temp(:) = merge(40.0,37.5,photosyn_pathway(:) == 4)
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -3662,14 +3745,30 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
    case (0,2)
-      !----- Use the default values from Moorcroft et al. (2001). -------------------------!
       Vm_decay_elow (:) = 0.4
       Vm_decay_ehigh(:) = 0.4
+   case (1,3)
+      Vm_decay_elow (:) = 0.3
+      Vm_decay_ehigh(:) = 0.3
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Vm_hor is the Arrhenius "activation energy" divided by the universal gas         !
+   ! constant.  Vm_q10 is the base for the Collatz approach.                               !
+   !---------------------------------------------------------------------------------------!
+   select case (iphysiol)
+   case (0,2)
+      !----- Default parameters (Moorcroft et al. 2001; Longo 2014). ----------------------!
+      vm_hor(:) = 3000.
+      vm_q10(:) = merge(q10_c4,q10_c3,photosyn_pathway(:) == 4)
       !------------------------------------------------------------------------------------!
    case (1,3)
-      !----- Impose rapid decay at warm temperatures. -------------------------------------!
-      Vm_decay_elow (:) = 0.3
-      Vm_decay_ehigh(:) = 0.6
+      !----- Use values from von Caemmerer (2000). ----------------------------------------!
+      vm_hor(:) = 58520. * tphysref / (rmol * (t00+25.))
+      vm_q10(:) = 2.21
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -3733,8 +3832,8 @@ subroutine init_pft_photo_params()
                Vm0(ipft) = 23.348416
             case (16)    ! Subtropical C3 grass.  Use CLM defaults
                Vm0(ipft) = 35.384615
-            case default 
-               Vm0(ipft) = 4.173421 * SLA(ipft) ** 0.50175
+            case default ! Tropical trees.  Divide by Q10 to bring it to 15C.
+               Vm0(ipft) = 9.22326 / vm_q10(ipft) * SLA(ipft) ** 0.50175
             end select
             !------------------------------------------------------------------------------!
          case default
@@ -3793,26 +3892,6 @@ subroutine init_pft_photo_params()
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Vm_hor is the Arrhenius "activation energy" divided by the universal gas         !
-   ! constant.  Vm_q10 is the base for the Collatz approach.                               !
-   !---------------------------------------------------------------------------------------!
-   select case (iphysiol)
-   case (0,2)
-      !----- Default parameters (Moorcroft et al. 2001; Longo 2014). ----------------------!
-      vm_hor(:) = 3000.
-      vm_q10(:) = merge(q10_c4,q10_c3,photosyn_pathway(:) == 4)
-      !------------------------------------------------------------------------------------!
-   case (1,3)
-      !----- Use values from von Caemmerer (2000). ----------------------------------------!
-      vm_hor(:) = 58520. * tphysref / (rmol * (t00+25.))
-      vm_q10(:) = 2.21
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -3851,9 +3930,8 @@ subroutine init_pft_photo_params()
 
 
       !------------------------------------------------------------------------------------!
-      ! Rd: use Q10/hor from von Caemmerer (2000) and assume that respiration continues to !
-      ! increase to warmer temperatures than Vm, as in CLM-4.5.  Fill other terms after    !
-      ! xml initialisation.                                                                !
+      ! Rd: use Q10/hor from von Caemmerer (2000).  Fill other terms after xml             !
+      ! initialisation.                                                                    !
       !------------------------------------------------------------------------------------!
       Rd_low_temp   (:) = undef_real
       Rd_high_temp  (:) = undef_real
@@ -6315,6 +6393,13 @@ subroutine init_derived_params_after_xml()
                                    , b2WAI                     & ! intent(in)
                                    , b1Xs                      & ! intent(in)
                                    , b1Xb                      & ! intent(in)
+                                   , b1Rd                      & ! intent(in)
+                                   , b2Rd                      & ! intent(in)
+                                   , d18O_ref                  & ! intent(in)
+                                   , b1d18O                    & ! intent(in)
+                                   , b2d18O                    & ! intent(in)
+                                   , b1Efrd                    & ! intent(in)
+                                   , b2Efrd                    & ! intent(in)
                                    , min_dbh                   & ! intent(in)
                                    , dbh_bigleaf               & ! intent(in)
                                    , q                         & ! intent(in)
@@ -6431,7 +6516,8 @@ subroutine init_derived_params_after_xml()
    use allometry            , only : h2dbh                     & ! function
                                    , dbh2h                     & ! function
                                    , size2bl                   & ! function
-                                   , size2bd                   ! ! function
+                                   , size2bd                   & ! function
+                                   , size2prd                  ! ! function
    use ed_therm_lib         , only : calc_veg_hcap             ! ! function
    use canopy_radiation_coms, only : ihrzrad                   & ! intent(in)
                                    , cci_hmax                  & ! intent(in)
@@ -6488,6 +6574,7 @@ subroutine init_derived_params_after_xml()
    real                              :: bstorage_min
    real                              :: bfast_min
    real                              :: bstruct_min
+   real                              :: rdepth_min
    real                              :: bleaf_max
    real                              :: broot_max
    real                              :: bsapwood_max
@@ -6495,6 +6582,7 @@ subroutine init_derived_params_after_xml()
    real                              :: balive_max
    real                              :: bdead_max
    real                              :: bstorage_max
+   real                              :: rdepth_max
    real                              :: bleaf_bl
    real                              :: broot_bl
    real                              :: bsapwood_bl
@@ -6565,24 +6653,25 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(37(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(39(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
-                                              ,'   BLEAF_MIN','   BROOT_MIN'               &
-                                              ,'BSAPWOOD_MIN','   BBARK_MIN'               &
-                                              ,'  BALIVE_MIN','   BDEAD_MIN'               &
-                                              ,'BSTORAGE_MIN','    BLEAF_BL'               &
-                                              ,'    BROOT_BL',' BSAPWOOD_BL'               &
-                                              ,'    BBARK_BL','   BALIVE_BL'               &
-                                              ,'    BDEAD_BL',' BSTORAGE_BL'               &
-                                              ,'   BLEAF_MAX','   BROOT_MAX'               &
-                                              ,'BSAPWOOD_MAX','   BBARK_MAX'               &
-                                              ,'  BALIVE_MAX','   BDEAD_MAX'               &
-                                              ,'BSTORAGE_MAX','   INIT_DENS'               &
-                                              ,'   SEED_RAIN','MIN_REC_SIZE'               &
-                                              ,'MIN_COH_SIZE','         SLA'               &
-                                              ,'VEG_HCAP_MIN','     LAI_MIN'               &
-                                              ,' REPRO_MIN_H','     HGT_MAX'               &
-                                              ,'    DBH_CRIT',' ONE_PLANT_C'               &
+                                              ,'  RDEPTH_MIN','   BLEAF_MIN'               &
+                                              ,'   BROOT_MIN','BSAPWOOD_MIN'               &
+                                              ,'   BBARK_MIN','  BALIVE_MIN'               &
+                                              ,'   BDEAD_MIN','BSTORAGE_MIN'               &
+                                              ,'    BLEAF_BL','    BROOT_BL'               &
+                                              ,' BSAPWOOD_BL','    BBARK_BL'               &
+                                              ,'   BALIVE_BL','    BDEAD_BL'               &
+                                              ,' BSTORAGE_BL','   BLEAF_MAX'               &
+                                              ,'   BROOT_MAX','BSAPWOOD_MAX'               &
+                                              ,'   BBARK_MAX','  BALIVE_MAX'               &
+                                              ,'   BDEAD_MAX','BSTORAGE_MAX'               &
+                                              ,'   INIT_DENS','   SEED_RAIN'               &
+                                              ,'MIN_REC_SIZE','MIN_COH_SIZE'               &
+                                              ,'         SLA','VEG_HCAP_MIN'               &
+                                              ,'     LAI_MIN',' REPRO_MIN_H'               &
+                                              ,'     HGT_MAX','    DBH_CRIT'               &
+                                              , ' RDEPTH_MAX',' ONE_PLANT_C'               &
                                               ,' NEGL_NPLANT'
                                               
    end if
@@ -6608,6 +6697,7 @@ subroutine init_derived_params_after_xml()
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh          = h2dbh(hgt_min(ipft),ipft)
+      rdepth_min   = size2prd(hgt_min(ipft),dbh,ipft)
       bleaf_min    = size2bl(dbh,hgt_min(ipft),ipft) 
       broot_min    = bleaf_min * q(ipft)
       bsapwood_min = bleaf_min * qsw(ipft)   * hgt_min(ipft)
@@ -6625,6 +6715,7 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
       huge_dbh     = 3. * dbh_crit(ipft)
       huge_height  = dbh2h(ipft, dbh_crit(ipft))
+      rdepth_max   = size2prd(hgt_max(ipft),dbh_crit(ipft),ipft)
       bleaf_max    = size2bl(huge_dbh,huge_height,ipft)
       broot_max    = bleaf_max * q(ipft)
       bsapwood_max = bleaf_max * qsw(ipft)   * huge_height
@@ -6798,23 +6889,23 @@ subroutine init_derived_params_after_xml()
       !     Add PFT parameters to the reference table.                                     !
       !------------------------------------------------------------------------------------! 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,9(f12.8,1x),25(f12.5,1x),1(es12.5,1x))')        &
+         write (unit=61,fmt='(i5,1x,a16,1x,9(f12.8,1x),27(f12.5,1x),1(es12.5,1x))')        &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
-                                                    ,dbh,bleaf_min,broot_min,bsapwood_min  &
-                                                    ,bbark_min,balive_min,bdead_min        &
-                                                    ,bstorage_min,bleaf_bl,broot_bl        &
-                                                    ,bsapwood_bl,bbark_bl,balive_bl        &
-                                                    ,bdead_bl,bstorage_bl,bleaf_max        &
-                                                    ,broot_max,bsapwood_max,bbark_max      &
-                                                    ,balive_max,bdead_max,bstorage_max     &
-                                                    ,init_density(ipft)                    &
+                                                    ,dbh,rdepth_min,bleaf_min,broot_min    &
+                                                    ,bsapwood_min,bbark_min,balive_min     &
+                                                    ,bdead_min,bstorage_min,bleaf_bl       &
+                                                    ,broot_bl,bsapwood_bl,bbark_bl         &
+                                                    ,balive_bl,bdead_bl,bstorage_bl        &
+                                                    ,bleaf_max,broot_max,bsapwood_max      &
+                                                    ,bbark_max,balive_max,bdead_max        &
+                                                    ,bstorage_max,init_density(ipft)       &
                                                     ,seed_rain(ipft)                       &
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
                                                     ,sla(ipft),veg_hcap_min(ipft)          &
                                                     ,lai_min,repro_min_h(ipft)             &
                                                     ,hgt_max(ipft),dbh_crit(ipft)          &
-                                                    ,one_plant_c(ipft)                     &
+                                                    ,rdepth_max,one_plant_c(ipft)          &
                                                     ,negligible_nplant(ipft)
       end if
       !------------------------------------------------------------------------------------!
@@ -7197,31 +7288,35 @@ subroutine init_derived_params_after_xml()
    !----- Print allometric coefficients. --------------------------------------------------!
    if (print_zero_table) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(39(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=18,fmt='(46(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
                                      ,'         RHO','        B1HT','        B2HT'         &
                                      ,'     HGT_REF','        B1BL','        B2BL'         &
                                      ,'  B1BS_SMALL','  B2BS_SMALL','  B1BS_LARGE'         &
                                      ,'  B2BS_LARGE','        B1CA','        B2CA'         &
-                                     ,'       B1WAI','       B2WAI','        B1XS'         &
-                                     ,'        B1XB','     HGT_MIN','     HGT_MAX'         &
-                                     ,'     MIN_DBH','    DBH_CRIT',' DBH_BIGLEAF'         &
-                                     ,'  BDEAD_CRIT','  BLEAF_CRIT',' BALIVE_CRIT'         &
-                                     ,' BEVERY_CRIT','   INIT_DENS','         SLA'         &
-                                     ,'F_BSTOR_INIT','           Q','         QSW'         &
-                                     ,'       QBARK','       QRHOB',' INIT_LAIMAX'
+                                     ,'       B1WAI','       B2WAI','        B1RD'         &
+                                     ,'        B2RD','        B1XS','        B1XB'         &
+                                     ,'     HGT_MIN','     HGT_MAX','     MIN_DBH'         &
+                                     ,'    DBH_CRIT',' DBH_BIGLEAF','  BDEAD_CRIT'         &
+                                     ,'  BLEAF_CRIT',' BALIVE_CRIT',' BEVERY_CRIT'         &
+                                     ,'   INIT_DENS','         SLA','F_BSTOR_INIT'         &
+                                     ,'           Q','         QSW','       QBARK'         &
+                                     ,'       QRHOB','    d18O_REF','     B1_D18O'         &
+                                     ,'     B2_D18O','     B1_EFRD','     B2_EFRD'         &
+                                     ,' INIT_LAIMAX'
 
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,5(12x,l1),32(1x,f12.6),1(1x,es12.5))')                 &
+         write (unit=18,fmt='(8x,i5,5(12x,l1),39(1x,f12.6),1(1x,es12.5))')                 &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft)   &
                        ,hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)               &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
-                       ,b2Ca(ipft),b1WAI(ipft),b2WAI(ipft),b1Xs(ipft),b1Xb(ipft)           &
-                       ,hgt_min(ipft),hgt_max(ipft),min_dbh(ipft),dbh_crit(ipft)           &
-                       ,dbh_bigleaf(ipft),bdead_crit(ipft),bleaf_crit(ipft)                &
+                       ,b2Ca(ipft),b1WAI(ipft),b2WAI(ipft),b1Rd(ipft),b2Rd(ipft)           &
+                       ,b1Xs(ipft),b1Xb(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)    &
+                       ,dbh_crit(ipft),dbh_bigleaf(ipft),bdead_crit(ipft),bleaf_crit(ipft) &
                        ,balive_crit(ipft),bevery_crit(ipft),init_density(ipft),sla(ipft)   &
                        ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)    &
+                       ,d18O_ref(ipft),b1d18O(ipft),b2d18O(ipft),b1Efrd(ipft),b2Efrd(ipft) &
                        ,init_laimax(ipft)
       end do
       close(unit=18,status='keep')

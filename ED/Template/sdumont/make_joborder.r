@@ -174,7 +174,7 @@ default = list( run           = "unnamed"
               , kw.grass      = 900.
               , kw.tree       = 600.
               , gamma.c3      = 0.015
-              , gamma.c4      = 0.030
+              , gamma.c4      = 0.025
               , d0.grass      = 0.016
               , d0.tree       = 0.016
               , alpha.c3      = 0.080
@@ -182,7 +182,7 @@ default = list( run           = "unnamed"
               , klowco2       = round(0.7/39 * 1.e6)
               , decomp.scheme = 2
               , rrffact       = 1.000
-              , growthresp    = 0.3333333
+              , growthresp    = 0.300
               , lwidth.grass  = 0.05
               , lwidth.bltree = 0.05
               , lwidth.nltree = 0.05
@@ -209,7 +209,7 @@ default = list( run           = "unnamed"
               , ipercol       = 0
               , runoff.time   = 3600.
               , imetrad       = 5
-              , ibranch       = 1
+              , ibranch       = 1 
               , icanrad       = 2
               , ihrzrad       = 0
               , crown.mod     = 0
@@ -219,7 +219,7 @@ default = list( run           = "unnamed"
               , lreflect.nir  = 0.400
               , orient.tree   = +0.100
               , orient.grass  = -0.300
-              , clump.tree    = 0.66
+              , clump.tree    = 0.75
               , clump.grass   = 0.75
               , igoutput      = 0
               , ivegtdyn      = 1
@@ -231,7 +231,7 @@ default = list( run           = "unnamed"
               , integ.scheme  = 1
               , nsub.euler    = 50
               , irepro        = 2
-              , treefall      = 0.0140
+              , treefall      = 0.0100
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
               , sl.scale      = 0
@@ -277,6 +277,12 @@ for (n in sequence(nvars)){
    }else if (name.now %in% "labsorb.nir"){
       joborder$ltrans.nir   = 1. * (1. - myruns$labsorb.nir) / 3.
       joborder$lreflect.nir = 2. * (1. - myruns$labsorb.nir) / 3.
+   }else if (name.now %in% "kwfact"){
+      joborder$kw.grass = round(myruns$kwfact * as.numeric(default$kw.grass),1)
+      joborder$kw.tree  = round(myruns$kwfact * as.numeric(default$kw.tree ),1)
+   }else if (name.now %in% "fclump"){
+      joborder$clump.grass = myruns$fclump
+      joborder$clump.tree  = myruns$fclump
    }else if (name.now %in% "sl.type"){
       joborder$skid.area     = sapply(myruns$sl.type,FUN=switch,ril=0.60,cvl=1.20,NA)
       joborder$skid.small    = sapply(myruns$sl.type,FUN=switch,ril=0.60,cvl=0.30,NA)
@@ -342,10 +348,16 @@ if (is.null(lonlat)){
    #---------------------------------------------------------------------------------------#
    #    Fix the initial year in case it was a negative number.                             #
    #---------------------------------------------------------------------------------------#
-   if ("yeara" %in% names(joborder)){
+   if ("yeara" %in% names(myruns)){
       joborder$yeara = ifelse( test = joborder$yeara > 0
                              , yes  = joborder$yeara
                              , no   = poitout$yeara + 5 + joborder$yeara
+                             )#end ifelse
+   }#end if
+   if ("yearz" %in% names(myruns)){
+      joborder$yearz = ifelse( test = joborder$yearz > 0
+                             , yes  = joborder$yearz
+                             , no   = poitout$yearz + joborder$yearz
                              )#end ifelse
    }#end if
    #---------------------------------------------------------------------------------------#

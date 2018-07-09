@@ -936,12 +936,164 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
+   !    This function find the potential rooting depth (i.e. based only on allometry, and  !
+   ! ignoring soil depth.).                                                                !
+   !---------------------------------------------------------------------------------------!
+   real function size2prd(hite,dbh,ipft)
+      use ed_misc_coms, only : iallom          & ! intent(in)
+                             , use_efrd_trtree ! ! intent(in)
+      use pft_coms    , only : is_tropical     & ! intent(in)
+                             , is_grass        & ! intent(in)
+                             , is_liana        & ! intent(in)
+                             , dbh_crit        & ! intent(in)
+                             , b1Rd            & ! intent(in)
+                             , b2Rd            & ! intent(in)
+                             , d18O_ref        & ! intent(in)
+                             , b1d18O          & ! intent(in)
+                             , b2d18O          & ! intent(in)
+                             , b1Efrd          & ! intent(in)
+                             , b2Efrd          ! ! intent(in)
+      implicit none
+
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: hite
+      real   , intent(in) :: dbh
+      integer, intent(in) :: ipft
+      !----- Local variables --------------------------------------------------------------!
+      logical             :: is_efrd
+      real                :: dbhuse
+      real                :: size
+      real                :: d18O
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Decide whether to use the delta-18O based allometry or size-dependent only. --!
+      is_efrd = use_efrd_trtree        .and. is_tropical(ipft)      .and.                  &
+                (.not. is_liana(ipft)) .and. (.not. is_grass(ipft))
+      !------------------------------------------------------------------------------------!
+
+
+
+      if (is_efrd) then
+         !---------------------------------------------------------------------------------!
+         !    For tropical trees, use the allometric model to obtain the Effective         !
+         ! Functional Rooting Depth based on B18.  We made a slight modification in their  !
+         ! equation relating delta 18O and depth:                                          !
+         !                                                                                 !
+         !    depth = exp(a + b * d18O^2)                                                  !
+         !                                                                                 !
+         ! because it fits the data better than the original equation without the square,  !
+         ! and it avoids extremely shallow soils for small trees.  We also use a           !
+         ! heteroscedastic least squares, using the algorithm developed by L16.            !
+         !                                                                                 !
+         ! References:                                                                     !
+         !                                                                                 !
+         ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,  !
+         !    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018. !
+         !    Hydrological niche segregation defines forest structure and drought          !
+         !    tolerance strategies in a seasonal Amazonian forest. J. Ecol., in press.     !
+         !    doi:10.1111/1365-2745.13022 (B18).                                           !
+         !                                                                                 !
+         ! Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,   !
+         !    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability !
+         !    across intact and degraded forests in the Brazilian Amazon.                  !
+         !    Global Biogeochem. Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16). !
+         !---------------------------------------------------------------------------------!
+         dbhuse   = min(dbh_crit(ipft),dbh)
+         d18O     = d18O_ref(ipft) * (1. - exp(- b1d18O(ipft) * dbhuse ** b2d18O(ipft)))
+         size2prd = - exp(b1Efrd(ipft) + b2Efrd(ipft) * d18O * d18O)
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Standard size-dependent rooting depth.                                      !
+         !---------------------------------------------------------------------------------!
+         select case (iallom)
+         case (0)
+            !---------------------------------------------------------------------------------!
+            !    Original ED-2.1 (I don't know the source for this equation, though).         !
+            ! Grasses get a fixed rooting depth of 70cm.                                      !
+            !---------------------------------------------------------------------------------!
+            size     = dbh * dbh * hite
+            !---------------------------------------------------------------------------------!
+         case (1,2)
+            !---------------------------------------------------------------------------------!
+            !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
+            ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
+            !---------------------------------------------------------------------------------!
+            size     = hite
+            !---------------------------------------------------------------------------------!
+         case (3)
+            !---------------------------------------------------------------------------------!
+            !    For tropical trees, use size-based parameters loosely based on B18, applying !
+            ! a simple log-linear interpolation as a function of size (dbh*dbh*hgt) that      !
+            ! makes the minimum and maximum rooting depths match the values predicted with    !
+            ! the modified B18 equations.  For grasses, we also use a log-linear size inter-  !
+            ! polation that makes their seedling rooting depth the same as seedling trees,    !
+            ! and puts the depth at 1.5m when they are at maximum height.  We use the same    !
+            ! coefficients and functional form as iallom=2 for non-tropical plants and for tropical        !
+            ! lianas.                                                                         !
+            !                                                                                 !
+            !    depth = exp(a + b * d18O^2)                                                  !
+            !                                                                                 !
+            ! because it fits the data better than the original (no square for d18O), and     !
+            ! avoids extremely shallow soils for small trees.  We also use a heteroscedastic  !
+            ! least squares, using the algorithm developed by L16.  For grasses, we applied   !
+            ! a simple log-linear interpolation as a function of size (dbh*dbh*hgt) that      !
+            ! makes their seedling rooting depth the same as seedling trees, and puts the     !
+            ! depth at 1.5m when they are at maximum height.  We use the same coefficients    !
+            ! and functional form as iallom=2 for non-tropical plants and for tropical        !
+            ! lianas.                                                                         !
+            !                                                                                 !
+            ! References:                                                                     !
+            !                                                                                 !
+            ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,  !
+            !    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018. !
+            !    Hydrological niche segregation defines forest structure and drought          !
+            !    tolerance strategies in a seasonal Amazonian forest. J. Ecol., in press.     !
+            !    doi:10.1111/1365-2745.13022 (B18).                                           !
+            !                                                                                 !
+            ! Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,   !
+            !    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability !
+            !    across intact and degraded forests in the Brazilian Amazon.                  !
+            !    Global Biogeochem. Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16). !
+            !---------------------------------------------------------------------------------!
+            if ( is_tropical(ipft) .and. (.not. is_liana(ipft)) ) then
+               dbhuse   = min(dbh_crit(ipft),dbh)
+               size     = dbhuse * dbhuse * hite
+            else
+               size     = hite
+            end if
+            !---------------------------------------------------------------------------------!
+         end select
+         !------------------------------------------------------------------------------------!
+
+
+
+         !----- Find rooting depth based on selected size variable. -----------------------!
+         size2prd = b1Rd(ipft)  * size ** b2Rd(ipft)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function size2prd
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the actual rooting depth, which mlimited by soil depth.       !
+   !---------------------------------------------------------------------------------------!
    integer function size2krdepth(hite,dbh,ipft,lsl)
-      use ed_misc_coms, only : iallom   ! ! intent(in)
-      use grid_coms   , only : nzg      ! ! intent(in)
-      use soil_coms   , only : slz      ! ! intent(in)
-      use pft_coms    , only : b1Rd     & ! intent(in)
-                             , b2Rd     ! ! intent(in)
+      use ed_misc_coms, only : iallom      ! ! intent(in)
+      use grid_coms   , only : nzg         ! ! intent(in)
+      use soil_coms   , only : slz         ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -950,26 +1102,16 @@ module allometry
       integer, intent(in) :: ipft
       integer, intent(in) :: lsl
       !----- Local variables --------------------------------------------------------------!
-      real                :: root_depth
+      real                :: pot_root_depth
       integer             :: k
       !------------------------------------------------------------------------------------!
 
 
-      select case (iallom)
-      case (0)
-         !---------------------------------------------------------------------------------!
-         !    Original ED-2.1 (I don't know the source for this equation, though).         !
-         ! Grasses get a fixed rooting depth of 70cm.                                      !
-         !---------------------------------------------------------------------------------!
-         root_depth = b1Rd(ipft)  * (hite * dbh * dbh) ** b2Rd(ipft)
-         !---------------------------------------------------------------------------------!
-      case default
-         !---------------------------------------------------------------------------------!
-         !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
-         ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
-         !---------------------------------------------------------------------------------!
-         root_depth = b1Rd(ipft) * hite ** b2Rd(ipft)
-      end select
+
+      !------------------------------------------------------------------------------------!
+      !    Find the potential rooting depth, which is only based on allometric equations.  !
+      !------------------------------------------------------------------------------------!
+      pot_root_depth = size2prd(hite,dbh,ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -979,7 +1121,7 @@ module allometry
       !------------------------------------------------------------------------------------!
       size2krdepth = nzg
       do k=nzg,lsl+1,-1
-         if (root_depth < slz(k)) size2krdepth = k-1
+         if (pot_root_depth < slz(k)) size2krdepth = k-1
       end do
       !------------------------------------------------------------------------------------!
 

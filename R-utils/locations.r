@@ -465,10 +465,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["h2o.plant.limit"]] = list( descr   = "Water limitation"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=2,by=1)
+                                      , values  = seq(from=0,to=3,by=1)
                                       , names   = c("No limitation"
                                                   ,"Demand/Supply"
-                                                  ,"Matric potential")
+                                                  ,"Matric potl. on fsw"
+                                                  ,"Matric potl. on gsw")
                                       )#end list
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["dd.mort.control"]] = list( descr   = "Dens.-dep. mortality"
@@ -983,6 +984,16 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.0f"          
                                      , off   =    0.0
                                      , mult  =    1.0  )
+   numvar[["kwfact"         ]] = list( descr = "Kw scale factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   =    0.0
+                                     , mult  =    0.001  )
+   numvar[["fclump"         ]] = list( descr = "Clumping factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   =    0.0
+                                     , mult  =    0.001  )
    numvar[["soil.depth"     ]] = list( descr = "Soil depth"                 
                                      , unit  = "m"                     
                                      , fmt   = "%.1f"          
@@ -1097,7 +1108,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , unit  = "--"
                                      , fmt   = "%.1f"
                                      , off   =    0.0
-                                     , mult  =    1.0)
+                                     , mult  =    0.1)
    numvar[["ubmin"          ]] = list( descr = "Min. Wind"
                                      , unit  = "m/s"
                                      , fmt   = "%.2f"
@@ -1234,21 +1245,46 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("met.forcing","isas")
          na     = c(            6,    10)
          nz     = c(            8,    12)
-      }else if (lenici == 13){
+      }else if (lenici == 13 && grepl(pattern="iphen",x=ici)){
          nparms = 1
          param  = c("iphen.scheme")
          na     = c(            11)
          nz     = c(            13)
-      }else if (lenici == 14){
+      }else if (lenici == 13 && grepl(pattern="istext",x=ici)){
+         nparms = 1
+         param  = c("isoil.text")
+         na     = c(          12)
+         nz     = c(          13)
+      }else if (lenici == 14 && grepl(pattern="ibranch",x=ici)){
+         nparms = 1
+         param  = c("ibranch.thermo")
+         na     = c(              13)
+         nz     = c(              14)
+      }else if (lenici == 14 && grepl(pattern="mslope",x=ici)){
+         nparms = 1
+         param  = c("mslope")
+         na     = c(        12)
+         nz     = c(        14)
+      }else if (lenici == 15 && grepl(pattern="icanrad",x=ici)){
          nparms = 1
          param  = c("icanrad")
          na     = c(        13)
          nz     = c(        15)
-      }else if (lenici == 15){
+      }else if (lenici == 15 && grepl(pattern="h2olimit",x=ici)){
          nparms = 1
-         param  = c("revision")
-         na     = c(        13)
-         nz     = c(        15)
+         param  = c("h2o.plant.limit")
+         na     = c(               14)
+         nz     = c(               15)
+      }else if (lenici == 15 && grepl(pattern="kwfact",x=ici)){
+         nparms = 1
+         param  = c("kwfact")
+         na     = c(      12)
+         nz     = c(      15)
+      }else if (lenici == 15 && grepl(pattern="fclump",x=ici)){
+         nparms = 1
+         param  = c("fclump")
+         na     = c(      12)
+         nz     = c(      15)
       }else if (lenici == 16){
          nparms = 2
          param  = c("dhist","include.fire")
@@ -1503,9 +1539,9 @@ poitmp[[u]] = list( short           = "allpahuayo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1524,9 +1560,9 @@ poitmp[[u]] = list( short           = "alta_floresta"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1545,9 +1581,9 @@ poitmp[[u]] = list( short           = "andiroba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -1566,9 +1602,9 @@ poitmp[[u]] = list( short           = "angra_dos_reis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1587,9 +1623,9 @@ poitmp[[u]] = list( short           = "araguaiana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1608,9 +1644,9 @@ poitmp[[u]] = list( short           = "araracuara"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1629,9 +1665,9 @@ poitmp[[u]] = list( short           = "asuncion"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1671,9 +1707,9 @@ poitmp[[u]] = list( short           = "barro_colorado"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1692,9 +1728,9 @@ poitmp[[u]] = list( short           = "belem"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1713,9 +1749,9 @@ poitmp[[u]] = list( short           = "belo_horizonte"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1734,9 +1770,9 @@ poitmp[[u]] = list( short           = "belterra"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1755,9 +1791,9 @@ poitmp[[u]] = list( short           = "benjamin_constant"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1776,9 +1812,9 @@ poitmp[[u]] = list( short           = "blumenau"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1797,9 +1833,9 @@ poitmp[[u]] = list( short           = "boa_vista"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1818,9 +1854,9 @@ poitmp[[u]] = list( short           = "bogota"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1839,9 +1875,9 @@ poitmp[[u]] = list( short           = "bom_jesus"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1860,9 +1896,9 @@ poitmp[[u]] = list( short           = "bonal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -1902,9 +1938,9 @@ poitmp[[u]] = list( short           = "bridgetown"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1923,9 +1959,9 @@ poitmp[[u]] = list( short           = "cabo_frio"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1944,9 +1980,9 @@ poitmp[[u]] = list( short           = "cacoal_grande"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1986,9 +2022,9 @@ poitmp[[u]] = list( short           = "cajazeiras"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2007,9 +2043,9 @@ poitmp[[u]] = list( short           = "calabozo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2049,9 +2085,9 @@ poitmp[[u]] = list( short           = "canarana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2070,9 +2106,9 @@ poitmp[[u]] = list( short           = "carajas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2091,9 +2127,9 @@ poitmp[[u]] = list( short           = "cardoso"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2112,9 +2148,9 @@ poitmp[[u]] = list( short           = "carolina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2133,9 +2169,9 @@ poitmp[[u]] = list( short           = "cauaxi"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -2154,9 +2190,9 @@ poitmp[[u]] = list( short           = "cauaxi_und"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -2175,9 +2211,9 @@ poitmp[[u]] = list( short           = "cauaxi_ril"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -2217,9 +2253,9 @@ poitmp[[u]] = list( short           = "cayenne"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2238,9 +2274,9 @@ poitmp[[u]] = list( short           = "chaiten"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2259,9 +2295,9 @@ poitmp[[u]] = list( short           = "ciudad_bolivar"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2280,9 +2316,9 @@ poitmp[[u]] = list( short           = "ciudad_guayana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2301,9 +2337,9 @@ poitmp[[u]] = list( short           = "cochabamba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2343,9 +2379,9 @@ poitmp[[u]] = list( short           = "curacao"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2364,9 +2400,9 @@ poitmp[[u]] = list( short           = "curitiba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2385,9 +2421,9 @@ poitmp[[u]] = list( short           = "curua_una"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2406,9 +2442,9 @@ poitmp[[u]] = list( short           = "cruzeiro_do_sul"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2427,9 +2463,9 @@ poitmp[[u]] = list( short           = "diamantino"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2469,30 +2505,30 @@ poitmp[[u]] = list( short           = "dourados"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "ducke"            
                   , longname        = "Ducke , AM"                  
                   , iata            = "duc"
-                  , lon             = -59.925
-                  , lat             =  -2.955
-                  , alt             = 111
+                  , lon             = -59.940
+                  , lat             =  -2.951
+                  , alt             = 117
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.682
+                  , clay            = 0.298
                   , depth           = "F"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2511,9 +2547,9 @@ poitmp[[u]] = list( short           = "east_belterra"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2532,9 +2568,9 @@ poitmp[[u]] = list( short           = "east_feliz_natal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2553,9 +2589,9 @@ poitmp[[u]] = list( short           = "east_sao_felix"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2574,9 +2610,9 @@ poitmp[[u]] = list( short           = "el_triunfo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2595,9 +2631,9 @@ poitmp[[u]] = list( short           = "el_zafire"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2616,9 +2652,9 @@ poitmp[[u]] = list( short           = "emas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2637,9 +2673,9 @@ poitmp[[u]] = list( short           = "erechim"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2658,9 +2694,9 @@ poitmp[[u]] = list( short           = "eunapolis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2686,23 +2722,23 @@ poitmp[[u]] = list( short           = "fazendans"
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "feliz_natal"
-                  , longname        = "Feliz Natal (Vitoria), MT"
-                  , iata            = "fna"
-                  , lon             = -55.019
-                  , lat             = -12.501
-                  , alt             = 392.
+                  , longname        = "Feliz Natal, MT"
+                  , iata            = "fnz"
+                  , lon             = -54.692
+                  , lat             = -12.146
+                  , alt             = 350.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 3
+                  , sand            = 0.767
+                  , clay            = 0.194
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2721,9 +2757,9 @@ poitmp[[u]] = list( short           = "floriano"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2742,9 +2778,9 @@ poitmp[[u]] = list( short           = "fortaleza"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2763,9 +2799,9 @@ poitmp[[u]] = list( short           = "guarana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2805,9 +2841,9 @@ poitmp[[u]] = list( short           = "humaita"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2826,9 +2862,9 @@ poitmp[[u]] = list( short           = "iguape"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2847,9 +2883,9 @@ poitmp[[u]] = list( short           = "imperatriz"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2868,9 +2904,9 @@ poitmp[[u]] = list( short           = "iquique"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2889,9 +2925,9 @@ poitmp[[u]] = list( short           = "iquitos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2910,9 +2946,9 @@ poitmp[[u]] = list( short           = "itabaiana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2931,9 +2967,9 @@ poitmp[[u]] = list( short           = "itapeva"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2952,9 +2988,9 @@ poitmp[[u]] = list( short           = "itirapina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2973,9 +3009,9 @@ poitmp[[u]] = list( short           = "jacareacanga"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2994,9 +3030,9 @@ poitmp[[u]] = list( short           = "jamaraqua"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3004,20 +3040,20 @@ poitmp[[u]] = list( short           = "jamari"
                   , longname        = "Jamari Natl. Forest, RO"
                   , iata            = "jam"
                   , lon             = -63.007
-                  , lat             =  -9.113
-                  , alt             = 111
+                  , lat             =  -9.116
+                  , alt             = 112.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.622
+                  , clay            = 0.305
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3036,9 +3072,9 @@ poitmp[[u]] = list( short           = "jiparana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3057,9 +3093,9 @@ poitmp[[u]] = list( short           = "joao_pessoa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3099,9 +3135,9 @@ poitmp[[u]] = list( short           = "kenia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3120,9 +3156,9 @@ poitmp[[u]] = list( short           = "las_gaviotas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3141,9 +3177,9 @@ poitmp[[u]] = list( short           = "la_esmeralda"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3162,9 +3198,9 @@ poitmp[[u]] = list( short           = "la_lorena"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3183,9 +3219,9 @@ poitmp[[u]] = list( short           = "la_planada"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3204,9 +3240,9 @@ poitmp[[u]] = list( short           = "la_selva"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3225,9 +3261,9 @@ poitmp[[u]] = list( short           = "labrea"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3246,9 +3282,9 @@ poitmp[[u]] = list( short           = "lencois"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3267,9 +3303,9 @@ poitmp[[u]] = list( short           = "leticia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3288,9 +3324,9 @@ poitmp[[u]] = list( short           = "lima"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3309,9 +3345,9 @@ poitmp[[u]] = list( short           = "linden"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3330,9 +3366,9 @@ poitmp[[u]] = list( short           = "llochegua"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3351,9 +3387,9 @@ poitmp[[u]] = list( short           = "macapa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3372,9 +3408,9 @@ poitmp[[u]] = list( short           = "malalcahuello"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3393,9 +3429,9 @@ poitmp[[u]] = list( short           = "manaus"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3435,9 +3471,9 @@ poitmp[[u]] = list( short           = "manaus_bdffp"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3456,9 +3492,9 @@ poitmp[[u]] = list( short           = "manicore"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3477,9 +3513,9 @@ poitmp[[u]] = list( short           = "maracay"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3498,9 +3534,9 @@ poitmp[[u]] = list( short           = "maringa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3519,9 +3555,9 @@ poitmp[[u]] = list( short           = "mariscal_estigarribia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3540,9 +3576,9 @@ poitmp[[u]] = list( short           = "maracarume"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3561,9 +3597,9 @@ poitmp[[u]] = list( short           = "montes_claros"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3582,9 +3618,9 @@ poitmp[[u]] = list( short           = "mojui_dos_campos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3624,9 +3660,9 @@ poitmp[[u]] = list( short           = "neuquen"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3645,9 +3681,9 @@ poitmp[[u]] = list( short           = "oeiras"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3666,9 +3702,9 @@ poitmp[[u]] = list( short           = "palmas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3687,9 +3723,9 @@ poitmp[[u]] = list( short           = "panama"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3708,9 +3744,9 @@ poitmp[[u]] = list( short           = "paramaribo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3750,24 +3786,24 @@ poitmp[[u]] = list( short           = "neonita"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "paragominas"
                   , longname        = "Paragominas, PA"
                   , iata            = "prg"
-                  , lon             = -47.340
-                  , lat             =  -3.010
-                  , alt             = 84
+                  , lon             = -47.792
+                  , lat             =  -3.020
+                  , alt             = 81
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.00
-                  , clay            = -1.00
-                  , depth           = "H"
+                  , isoilflg        = 2
+                  , ntext           = 9
+                  , sand            = 0.525
+                  , clay            = 0.410
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -3834,9 +3870,9 @@ poitmp[[u]] = list( short           = "piura"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3855,9 +3891,9 @@ poitmp[[u]] = list( short           = "port_of_spain"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3876,9 +3912,9 @@ poitmp[[u]] = list( short           = "porto_de_moz"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3897,9 +3933,9 @@ poitmp[[u]] = list( short           = "porto_velho"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3918,9 +3954,9 @@ poitmp[[u]] = list( short           = "pucallpa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3939,9 +3975,9 @@ poitmp[[u]] = list( short           = "puerto_suarez"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3960,9 +3996,9 @@ poitmp[[u]] = list( short           = "quibdo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4002,9 +4038,9 @@ poitmp[[u]] = list( short           = "recife"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4023,9 +4059,9 @@ poitmp[[u]] = list( short           = "redencao"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4044,30 +4080,30 @@ poitmp[[u]] = list( short           = "ribeirao_preto"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "rio_branco"        
                   , longname        = "Rio Branco, AC"              
                   , iata            = "rbr"
-                  , lon             = -67.890
-                  , lat             =  -9.870
-                  , alt             = 142
+                  , lon             = -67.752
+                  , lat             =  -9.824
+                  , alt             = 199.
                   , wmo             = 82917
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 5
+                  , sand            = 0.358
+                  , clay            = 0.248
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4086,9 +4122,9 @@ poitmp[[u]] = list( short           = "riohacha"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4107,9 +4143,9 @@ poitmp[[u]] = list( short           = "salta"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4128,9 +4164,9 @@ poitmp[[u]] = list( short           = "salvador"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4149,9 +4185,9 @@ poitmp[[u]] = list( short           = "san_andres"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4170,9 +4206,9 @@ poitmp[[u]] = list( short           = "san_antonio_del_tachira"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4191,9 +4227,9 @@ poitmp[[u]] = list( short           = "san_jose"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4212,9 +4248,9 @@ poitmp[[u]] = list( short           = "san_fernando_de_apure"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4233,9 +4269,9 @@ poitmp[[u]] = list( short           = "san_pedro"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4254,9 +4290,9 @@ poitmp[[u]] = list( short           = "sao_carlos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4275,30 +4311,30 @@ poitmp[[u]] = list( short           = "sao_felix_araguaia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "sao_felix_xingu"   
-                  , longname        = "Sao Felix do Xingu, PA"      
+poitmp[[u]] = list( short           = "sao_felix_xingu"
+                  , longname        = "Sao Felix do Xingu, PA"
                   , iata            = "sfx"
-                  , lon             = -51.801
-                  , lat             =  -6.599
-                  , alt             = 216
+                  , lon             = -52,349
+                  , lat             =  -6.507
+                  , alt             = 197.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.597
+                  , clay            = 0.244
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4317,9 +4353,9 @@ poitmp[[u]] = list( short           = "sao_gabriel"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4338,9 +4374,9 @@ poitmp[[u]] = list( short           = "sao_jorge"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4359,9 +4395,9 @@ poitmp[[u]] = list( short           = "sao_luis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4401,9 +4437,9 @@ poitmp[[u]] = list( short           = "santa_fe"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4422,9 +4458,9 @@ poitmp[[u]] = list( short           = "santarem"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4439,7 +4475,7 @@ poitmp[[u]] = list( short           = "santarem_km67"
                   , ntext           = 16
                   , sand            = 0.390
                   , clay            = 0.590
-                  , depth           = "H"
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -4460,7 +4496,7 @@ poitmp[[u]] = list( short           = "santarem_km77"
                   , ntext           = 16
                   , sand            = 0.390
                   , clay            = 0.590
-                  , depth           = "H"
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -4481,7 +4517,7 @@ poitmp[[u]] = list( short           = "santarem_km83"
                   , ntext           = 16
                   , sand            = 0.390
                   , clay            = 0.590
-                  , depth           = "H"
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -4506,30 +4542,30 @@ poitmp[[u]] = list( short           = "santarem_km117"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "saraca-taquera"     
                   , longname        = "Saraca-Taquera Natl. Forest, PA"
                   , iata            = "fst"
-                  , lon             = -56.217
-                  , lat             = -1.620
-                  , alt             = 102.
+                  , lon             = -56.223
+                  , lat             = -1.622
+                  , alt             = 104.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "H"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.682
+                  , clay            = 0.298
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4548,9 +4584,9 @@ poitmp[[u]] = list( short           = "serra_do_navio"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4569,9 +4605,9 @@ poitmp[[u]] = list( short           = "sinop"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4590,9 +4626,9 @@ poitmp[[u]] = list( short           = "sobral"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4611,9 +4647,9 @@ poitmp[[u]] = list( short           = "tabatinga"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4632,9 +4668,9 @@ poitmp[[u]] = list( short           = "talisma"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4653,30 +4689,30 @@ poitmp[[u]] = list( short           = "tambopata"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "tanguro"     
                   , longname        = "Fazenda Tanguro, MT"
                   , iata            = "tan"
-                  , lon             = -52.401
-                  , lat             = -13.086
-                  , alt             = 359.
+                  , lon             = -52.409
+                  , lat             = -13.081
+                  , alt             = 349.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "H"
+                  , isoilflg        = 2
+                  , ntext           = 3
+                  , sand            = 0.762
+                  , clay            = 0.192
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4704,15 +4740,15 @@ u           = u + 1
 poitmp[[u]] = list( short           = "tapajos"     
                   , longname        = "Tapajos Natl. Forest, PA"
                   , iata            = "tnf"
-                  , lon             = -54.955
-                  , lat             =  -2.857
-                  , alt             = 199.
+                  , lon             = -54.941
+                  , lat             = -3.129
+                  , alt             = 110.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
-                  , sand            = 0.390
-                  , clay            = 0.590
-                  , depth           = "H"
+                  , ntext           = 9
+                  , sand            = 0.574
+                  , clay            = 0.406
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -4737,9 +4773,9 @@ poitmp[[u]] = list( short           = "tarauaca"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4758,9 +4794,9 @@ poitmp[[u]] = list( short           = "tefe"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4779,9 +4815,9 @@ poitmp[[u]] = list( short           = "teresina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4800,9 +4836,9 @@ poitmp[[u]] = list( short           = "tirios"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4821,9 +4857,9 @@ poitmp[[u]] = list( short           = "tolhuin"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4842,9 +4878,9 @@ poitmp[[u]] = list( short           = "tome-acu"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4884,9 +4920,9 @@ poitmp[[u]] = list( short           = "vina_del_mar"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4905,9 +4941,9 @@ poitmp[[u]] = list( short           = "vila_franca"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4926,9 +4962,9 @@ poitmp[[u]] = list( short           = "vilhena"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4947,9 +4983,30 @@ poitmp[[u]] = list( short           = "vitoria"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "west_feliz_natal"
+                  , longname        = "Feliz Natal (Vitoria), MT"
+                  , iata            = "fna"
+                  , lon             = -55.019
+                  , lat             = -12.501
+                  , alt             = 392.
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4968,9 +5025,9 @@ poitmp[[u]] = list( short           = "west_sao_felix"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4989,9 +5046,9 @@ poitmp[[u]] = list( short           = "xingu"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -5010,9 +5067,9 @@ poitmp[[u]] = list( short           = "yasuni"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "WFDEI_CRUP"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 #----- Make the table global. -------------------------------------------------------------#

@@ -1759,9 +1759,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 3.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

@@ -21,6 +21,17 @@ R.major <<- as.numeric(R.version$major)
 
 
 #------------------------------------------------------------------------------------------#
+#      Make the screen output as wide as the screen permits.                               #
+#------------------------------------------------------------------------------------------#
+ncstring = as.integer(Sys.getenv("COLUMNS"))
+if (! is.na(ncstring)){
+   if (ncstring > 80 & ncstring < 500) options(width=ncstring)
+}#end if (! is.na(ncstring))
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
 #      Define the default colours for a white background and black foreground.             #
 #------------------------------------------------------------------------------------------#
 grid.colour   = "grey66"

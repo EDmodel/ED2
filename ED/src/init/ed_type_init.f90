@@ -18,27 +18,35 @@ module ed_type_init
    ! in which case there will be a note explaining the reason.                             !
    !---------------------------------------------------------------------------------------!
    subroutine init_ed_cohort_vars(cpatch,ico, lsl)
-      use ed_state_vars  , only : patchtype           ! ! structure
-      use allometry      , only : size2krdepth        ! ! function
-      use pft_coms       , only : phenology           & ! intent(in)
-                                , leaf_turnover_rate  & ! intent(in)
-                                , Vm0                 & ! intent(in)
-                                , sla                 ! ! intent(in)
-      use ed_misc_coms   , only : writing_long        & ! intent(in)
-                                , writing_eorq        & ! intent(in)
-                                , writing_dcyc        ! ! intent(in)
-      use phenology_coms , only : vm0_tran            & ! intent(in)
-                                , vm0_slope           & ! intent(in)
-                                , vm0_amp             & ! intent(in)
-                                , vm0_min             & ! intent(in)
-                                , llspan_inf          ! ! intent(in)
+      use ed_state_vars  , only : patchtype          ! ! structure
+      use allometry      , only : size2krdepth       ! ! function
+      use pft_coms       , only : phenology          & ! intent(in)
+                                , cuticular_cond     & ! intent(in)
+                                , leaf_turnover_rate & ! intent(in)
+                                , Vm0                & ! intent(in)
+                                , sla                ! ! intent(in)
+      use rk4_coms       , only : effarea_transp     ! ! intent(in)
+      use ed_misc_coms   , only : writing_long       & ! intent(in)
+                                , writing_eorq       & ! intent(in)
+                                , writing_dcyc       ! ! intent(in)
+      use phenology_coms , only : vm0_tran           & ! intent(in)
+                                , vm0_slope          & ! intent(in)
+                                , vm0_amp            & ! intent(in)
+                                , vm0_min            & ! intent(in)
+                                , llspan_inf         ! ! intent(in)
+      use consts_coms    , only : umol_2_mol         & ! intent(in)
+                                , mmdry              ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target     :: cpatch     ! Current patch
       integer        , intent(in) :: ico        ! Index of the current cohort
       integer        , intent(in) :: lsl        ! Lowest soil level layer
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: ipft       ! PFT index
       !------------------------------------------------------------------------------------!
 
+
+      ipft = cpatch%pft(ico)
 
       !------------------------------------------------------------------------------------!
       !    Set all cohorts to not have enough leaf area index or wood area index to be     !
@@ -58,8 +66,8 @@ module ed_type_init
       ! in which case we assign a meaningless number just to make sure the variable is     !
       ! initialised.                                                                       !
       !------------------------------------------------------------------------------------!
-      if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
-         cpatch%llspan(ico) = 12.0 / leaf_turnover_rate(cpatch%pft(ico))
+      if (leaf_turnover_rate(ipft) > 0.0) then
+         cpatch%llspan(ico) = 12.0 / leaf_turnover_rate(ipft)
       else
          cpatch%llspan(ico) = llspan_inf
       end if
@@ -71,14 +79,14 @@ module ed_type_init
       ! the specific leaf area (SLA) must be assigned with the default values.  These      !
       ! numbers will change only if the PFT uses a light-controlled phenology.             !
       !------------------------------------------------------------------------------------!
-      select case(phenology(cpatch%pft(ico)))
+      select case(phenology(ipft))
       case (3)
          cpatch%vm_bar(ico) = vm0_amp / (1.0 + (cpatch%llspan(ico)/vm0_tran)**vm0_slope)   &
                             + vm0_min
       case default
-         cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
+         cpatch%vm_bar(ico) = Vm0(ipft)
       end select
-      cpatch%sla(ico) = sla(cpatch%pft(ico))
+      cpatch%sla(ico) = sla(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -104,8 +112,7 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       !      The root depth should be the actual level for the roots.                      !
       !------------------------------------------------------------------------------------!
-      cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico)                  &
-                                        ,cpatch%pft(ico),lsl)
+      cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
       !------------------------------------------------------------------------------------!
 
 
@@ -121,6 +128,12 @@ module ed_type_init
       cpatch%census_status (ico) = 0
       !------------------------------------------------------------------------------------!
 
+
+
+
+      !----- Stomatal conductance is initially set to the cuticular conductance. ----------!
+      cpatch%leaf_gsw(ico) = cuticular_cond(ipft) * umol_2_mol *mmdry / effarea_transp(ipft)
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -198,7 +211,6 @@ module ed_type_init
       cpatch%water_supply          (ico) = 0.0
       cpatch%gsw_open              (ico) = 0.0
       cpatch%gsw_closed            (ico) = 0.0
-      cpatch%leaf_gsw              (ico) = 0.0
       cpatch%leaf_maintenance      (ico) = 0.0
       cpatch%root_maintenance      (ico) = 0.0
       cpatch%bark_maintenance      (ico) = 0.0

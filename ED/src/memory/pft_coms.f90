@@ -605,6 +605,24 @@ module pft_coms
    real, dimension(n_pft) :: b2Vol
    real, dimension(n_pft) :: b1Rd
    real, dimension(n_pft) :: b2Rd
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to find the effective functional root depth, following B18.  This is   !
+   ! used only by tropical trees and only when variable use_efrd_trtree is set to .true.   !
+   !                                                                                       !
+   ! Reference:                                                                            !
+   !                                                                                       !
+   ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,        !
+   !    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018.       !
+   !    Hydrological niche segregation defines forest structure and drought                !
+   !    tolerance strategies in a seasonal Amazonian forest. J. Ecol., in press.           !
+   !    doi:10.1111/1365-2745.13022 (B18).                                                 !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: d18O_ref
+   real, dimension(n_pft) :: b1d18O
+   real, dimension(n_pft) :: b2d18O
+   real, dimension(n_pft) :: b1Efrd
+   real, dimension(n_pft) :: b2Efrd
    !=======================================================================================!
    !=======================================================================================!
 

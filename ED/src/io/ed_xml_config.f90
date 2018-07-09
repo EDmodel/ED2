@@ -258,6 +258,8 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigINT  ('vary_hyd','ed_misc',i,ival,texist)
         if(texist) vary_hyd = ival
         
+        call getConfigINT  ('use_efrd_trtree','ed_misc',i,ival,texist)
+        if(texist) use_efrd_trtree = ival == 1
         
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -662,6 +664,16 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) b1Rd(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('b2Rd','pft',i,rval,texist)
            if(texist) b2Rd(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('d18O_ref','pft',i,rval,texist)
+           if(texist) d18O_ref(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1d18O','pft',i,rval,texist)
+           if(texist) b1d18O(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2d18O','pft',i,rval,texist)
+           if(texist) b2d18O(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1Efrd','pft',i,rval,texist)
+           if(texist) b1Efrd(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2Efrd','pft',i,rval,texist)
+           if(texist) b2Efrd(myPFT) = sngloff(rval,tiny_offset)
 
            call getConfigREAL  ('init_laimax','pft',i,rval,texist)
            if(texist) init_laimax(myPFT) = sngloff(rval,tiny_offset)
@@ -1755,11 +1767,17 @@ subroutine write_ed_xml_config
         call putConfigREAL("b1Xs",    b1Xs(i))
 
      !! COARSE ROOTS
-        call putConfigREAL("agf_bs",     agf_bs(i))
-        call putConfigREAL("b1Vol",      b1Vol(i))
-        call putConfigREAL("b2Vol",      b2Vol(i))
-        call putConfigREAL("b1Rd",       b1Rd(i))
-        call putConfigREAL("b2Rd",       b2Rd(i))
+        call putConfigREAL("agf_bs"  , agf_bs  (i))
+        call putConfigREAL("b1Vol"   , b1Vol   (i))
+        call putConfigREAL("b2Vol"   , b2Vol   (i))
+        call putConfigREAL("b1Rd"    , b1Rd    (i))
+        call putConfigREAL("b2Rd"    , b2Rd    (i))
+        call putConfigREAL("d18O_ref", d18O_ref(i))
+        call putConfigREAL("b1d18O"  , b1d18O  (i))
+        call putConfigREAL("b2d18O"  , b2d18O  (i))
+        call putConfigREAL("b1Efrd"  , b1Efrd  (i))
+        call putConfigREAL("b2Efrd"  , b2Efrd  (i))
+        
         call putConfigREAL("init_laimax",init_laimax(i))
 
      !! NITRO

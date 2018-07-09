@@ -199,7 +199,8 @@ macarthur.horn <<- function( pt.cloud
    #     Assume fraction between backscatterings in case none is provided.                 #
    #---------------------------------------------------------------------------------------#
    if (is.na(rvorg)){
-     kuse = 0.825 # Mean value by Antonarakis et al. (2014).
+     #kuse = 0.825 # Mean value by Antonarakis et al. (2014).
+     kuse = 1.03  # Mean value by Tang and Dubayah (2017).
    }else{
      kuse = rvorg
    }#end if

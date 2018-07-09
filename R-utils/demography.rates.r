@@ -515,6 +515,7 @@ acc.recruitment.rate <<- function( property
                                  , taxon
                                  , dtime
                                  , R             = 1000
+                                 , itb.max       = 50
                                  ){
 
 
@@ -623,10 +624,17 @@ acc.recruitment.rate <<- function( property
                        , FUN      = data.frame
                        , MoreArgs = list(stringsAsFactors = FALSE)
                        )#end lapply
-   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.recruit,R=R)
-   expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
-   q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
-   q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
+   fine = FALSE
+   it   = 0
+   while ((! fine) && (it < itb.max)){
+      it          = it + 1
+      boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.recruit,R=R)
+      expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
+      q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
+      q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
+      fine        = all(expected.tx %>=% q025.tx) && all(expected.tx %<=% q975.tx)
+   }#end while ((! fine) && (it < itb.max))
+   if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
 
 
@@ -668,10 +676,17 @@ acc.recruitment.rate <<- function( property
                               , dtime            = dtime.gb
                               , stringsAsFactors = FALSE
                               )#end data.frame
-   boot.gb     = boot         (data=datum.gb,statistic=boot.acc.recruit,R=R)
-   expected.gb = boot.gb$t0
-   q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
-   q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
+   fine = FALSE
+   it   = 0
+   while ((! fine) && (it < itb.max)){
+      it          = it + 1
+      boot.gb     = boot         (data=datum.gb,statistic=boot.acc.recruit,R=R)
+      expected.gb = boot.gb$t0
+      q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
+      q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
+      fine        = all(expected.gb %>=% q025.gb) && all(expected.gb %<=% q975.gb)
+   }#end while ((! fine) && (it < itb.max))
+   if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
 
 
@@ -714,6 +729,7 @@ acc.mortality.rate <<- function( property
                                , taxon
                                , dtime
                                , R          = 1000
+                               , itb.max    = 50
                                ){
 
 
@@ -835,11 +851,17 @@ acc.mortality.rate <<- function( property
                     , FUN      = data.frame
                     , MoreArgs = list(stringsAsFactors = FALSE)
                     )#end lapply
-   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.mortality,R=R)
-   expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
-   q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
-   q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
-   if (any(expected.tx %>% q975.tx | expected.tx %<% q025.tx,na.rm=TRUE)) browser()
+   fine = FALSE
+   it   = 0
+   while ((! fine) && (it < itb.max)){
+      it          = it + 1
+      boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.mortality,R=R)
+      expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
+      q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
+      q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
+      fine        = all(expected.tx %>=% q025.tx) && all(expected.tx %<=% q975.tx)
+   }#end while ((! fine) && (it < itb.max))
+   if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
 
 
@@ -881,11 +903,17 @@ acc.mortality.rate <<- function( property
                               , dtime            = dtime.gb
                               , stringsAsFactors = FALSE
                               )#end data.frame
-   boot.gb     = boot         (data=datum.gb,statistic=boot.acc.mortality,R=R)
-   expected.gb = boot.gb$t0
-   q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
-   q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
-   if (any(expected.gb %>% q975.gb | expected.gb %<% q025.gb,na.rm=TRUE)) browser()
+   fine = FALSE
+   it   = 0
+   while ((! fine) && (it < itb.max)){
+      it          = it + 1
+      boot.gb     = boot         (data=datum.gb,statistic=boot.acc.mortality,R=R)
+      expected.gb = boot.gb$t0
+      q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
+      q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
+      fine        = all(expected.gb %>=% q025.gb) && all(expected.gb %<=% q975.gb)
+   }#end while ((! fine) && (it < itb.max))
+   if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
 
 
@@ -922,7 +950,7 @@ acc.mortality.rate <<- function( property
 #      This function computes the expected accumulated growth rate and the confidence      #
 # interval, using bootstrap so we do not need to assume any distribution.                  #
 #------------------------------------------------------------------------------------------#
-acc.growth.rate <<- function(nok,lok,pop,gpop=pop,dtime,taxon,R=1000){
+acc.growth.rate <<- function(nok,lok,pop,gpop=pop,dtime,taxon,R=100,itb.max=50){
 
    #------ Split the data according to the class. -----------------------------------------#
    nok.tx    = split(x = nok   , f = taxon)
@@ -950,10 +978,17 @@ acc.growth.rate <<- function(nok,lok,pop,gpop=pop,dtime,taxon,R=1000){
    #---------------------------------------------------------------------------------------#
    #     Find the statistics.                                                              #
    #---------------------------------------------------------------------------------------#
-   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.growth,R=R)
-   expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
-   q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
-   q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
+   fine = FALSE
+   it   = 0
+   while ((! fine) && (it < itb.max)){
+      it          = it + 1
+      boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.acc.growth,R=R)
+      expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
+      q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
+      q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
+      fine        = all(expected.tx %>=% q025.tx) && all(expected.tx %<=% q975.tx)
+   }#end while ((! fine) && (it < itb.max))
+   if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
 
 
@@ -973,10 +1008,17 @@ acc.growth.rate <<- function(nok,lok,pop,gpop=pop,dtime,taxon,R=1000){
    #---------------------------------------------------------------------------------------#
    #     Find the global rates.                                                            #
    #---------------------------------------------------------------------------------------#
-   boot.gb     = boot(data=datum.gb,statistic=boot.acc.growth,R=R)
-   expected.gb = boot.gb$t0
-   q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
-   q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
+   fine = FALSE
+   it   = 0
+   while ((! fine) && (it < itb.max)){
+      it          = it + 1
+      boot.gb     = boot(data=datum.gb,statistic=boot.acc.growth,R=R)
+      expected.gb = boot.gb$t0
+      q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
+      q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
+      fine        = all(expected.gb %>=% q025.gb) && all(expected.gb %<=% q975.gb)
+   }#end while ((! fine) && (it < itb.max))
+   if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
 
 

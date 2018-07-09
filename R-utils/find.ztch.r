@@ -59,7 +59,7 @@ find.ztch <<- function(x0,y0,dbh,height,carea,cdepth,ipft,nx,ny,xyres,nretn=30){
 
 
    #----- Find dimensions. ----------------------------------------------------------------#
-   nseed = 8
+   nseed = 24
    seed  = sample.int(n=.Machine$integer.max,size=nseed,replace=TRUE)
    #---------------------------------------------------------------------------------------#
 

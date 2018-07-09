@@ -666,6 +666,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
          #----- Define the land use classes. ----------------------------------------------#
          luconow    = rep(lupa,times=ncohorts)
+         #---------------------------------------------------------------------------------#
+
+         #----- Define the PFT classes. ---------------------------------------------------#
+         pftconow          = mymont$PFT
+         #---------------------------------------------------------------------------------#
 
          #----- Define the DBH classes. ---------------------------------------------------#
          dbhconow        = mymont$DBH
@@ -678,7 +683,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
          #----- Define the previous DBH class (for recruitment). --------------------------#
          dbhconow.lmon = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT/12))
+         hgtconow.lmon = dbh2h(dbh=dbhconow.lmon,ipft=pftconow)
          dbhconow.1ago = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT))
+         hgtconow.1ago = dbh2h(dbh=dbhconow.1ago,ipft=pftconow)
          dbhcut.1ago   = cut   (dbhconow.1ago,breaks=breakdbh)
          dbhlevs.1ago  = levels(dbhcut.1ago)
          dbhfac.1ago   = match (dbhcut.1ago,dbhlevs.1ago)
@@ -695,7 +702,6 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Read the cohort level variables. ------------------------------------------#
-         pftconow          = mymont$PFT
          nplantconow       = mymont$NPLANT
          heightconow       = mymont$HITE
          thbarkconow       = mymont$MMEAN.THBARK.CO
@@ -705,7 +711,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          agbconow          = mymont$AGB.CO
          laiconow          = mymont$MMEAN.LAI.CO
          waiconow          = mymont$WAI.CO
-         caiconow          = pmin(1.,nplantconow * dbh2ca(dbh=dbhconow,ipft=pftconow))
+         caiconow          = pmin(1., nplantconow
+                                    * size2ca(dbh=dbhconow,hgt=heightconow,ipft=pftconow)
+                                 )#end pmin
          taiconow          = laiconow + waiconow
          #------ Auxiliary variables for mean diurnal cycle. ------------------------------#
          q.pftconow        = matrix( data  = pftconow
@@ -745,7 +753,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
          bbarkconow        = mymont$MMEAN.BBARK.CO
          if (all(mymont$MMEAN.BROOT.CO == 0)){
-            bfrootconow    = ( dbh2bl(dbh=dbhconow.lmon,ipft=pftconow)
+            bfrootconow    = ( size2bl(dbh=dbhconow.lmon,hgt=hgtconow.lmon,ipft=pftconow)
                              * pft$qroot[pftconow] )
          }else{
             bfrootconow    = mymont$MMEAN.BROOT.CO

@@ -18,6 +18,7 @@ module photosyn_driv
       use pft_coms       , only : water_conductance  & ! intent(in)
                                 , include_pft        & ! intent(in)
                                 , vm0                & ! intent(in)
+                                , D0                 & ! intent(in)
                                 , leaf_turnover_rate ! ! intent(in)
       use soil_coms      , only : soil               & ! intent(in)
                                 , slzt               & ! intent(in)
@@ -63,6 +64,7 @@ module photosyn_driv
       real   , dimension(:)    , allocatable  :: avail_h2o_coh
       real                                    :: leaf_par
       real                                    :: leaf_resp
+      real                                    :: leaf_D0
       real                                    :: d_A_light_max
       real                                    :: d_A_rubp_max
       real                                    :: d_A_co2_max
@@ -148,7 +150,7 @@ module photosyn_driv
          end do
          !---------------------------------------------------------------------------------!
 
-      case (2)
+      case (2,3)
          !---------------------------------------------------------------------------------!
          !     The available water factor is the soil moisture at field capacity minus     !
          ! wilting point, scaled by the wilting factor, defined as a function of soil      !
@@ -310,6 +312,7 @@ module photosyn_driv
                 , llspan_tuco              & ! Leaf life span                   [       yr]
                 , vm0_tuco                 & ! Average Vm function              [umol/m2/s]
                 , cpatch%leaf_gbw(tuco)    & ! Aerodyn. condct. of water vapour [  kg/m2/s]
+                , D0(ipft)                 & ! VPD scale for stomatal closure   [  mol/mol]
                 , csite%A_o_max(ipft,ipa)  & ! Photosynthesis rate     (open)   [umol/m2/s]
                 , csite%A_c_max(ipft,ipa)  & ! Photosynthesis rate     (closed) [umol/m2/s]
                 , d_A_light_max            & ! Photosynthesis rate     (light)  [umol/m2/s]
@@ -374,6 +377,29 @@ module photosyn_driv
                leaf_par = cpatch%par_l(ico) / cpatch%lai(ico)
                !---------------------------------------------------------------------------!
 
+               !----- Root biomass [kg/m2]. -----------------------------------------------!
+               broot_loc = cpatch%broot(ico)  * cpatch%nplant(ico)
+
+               !----- Supply of water. ----------------------------------------------------!
+               cpatch%water_supply      (ico) = water_conductance       (ipft) * broot_loc &
+                                              * avail_h2o_coh            (ico)
+               cpatch%fmean_water_supply(ico) = cpatch%fmean_water_supply(ico)             &
+                                              + cpatch%water_supply      (ico)             &
+                                              * dtlsm_o_frqsum
+ 
+               !----- Find the VPD limitation factor (aka Leuning's D0). ------------------!
+               select case (h2o_plant_lim)
+               case(3)
+                  leaf_D0 = max( 0.005 * D0(ipft)                                          &
+                               , epi * cpatch%water_supply(ico)                            &
+                               / (cpatch%lai(ico) * cpatch%leaf_gsw(ico) ) )
+               case default
+                  leaf_D0 = D0(ipft)
+               end select
+               !---------------------------------------------------------------------------!
+
+
+
 
                !---------------------------------------------------------------------------!
                !    Call the photosynthesis for actual photosynthetic rates.  The units    !
@@ -396,6 +422,7 @@ module photosyn_driv
                 , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
                 , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
                 , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
+                , leaf_D0                     & ! VPD scale for stom. closure   [  mol/mol]
                 , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
                 , cpatch%A_closed(ico)        & ! Photosynthesis rate (closed)  [umol/m2/s]
                 , cpatch%A_light(ico)         & ! Photosynthesis rate (light)   [umol/m2/s]
@@ -428,16 +455,6 @@ module photosyn_driv
                                             * dtlsm_o_frqsum * umols_2_kgCyr               &
                                             / cpatch%nplant          (ico)
 
-               !----- Root biomass [kg/m2]. -----------------------------------------------!
-               broot_loc = cpatch%broot(ico)  * cpatch%nplant(ico)
-
-               !----- Supply of water. ----------------------------------------------------!
-               cpatch%water_supply      (ico) = water_conductance       (ipft) * broot_loc &
-                                              * avail_h2o_coh            (ico)
-               cpatch%fmean_water_supply(ico) = cpatch%fmean_water_supply(ico)             &
-                                              + cpatch%water_supply      (ico)             &
-                                              * dtlsm_o_frqsum
-
                root_depth_indices(kroot) = .true.
                broot_tot                 = broot_tot + broot_loc
                pss_available_water       = pss_available_water                             &
@@ -462,6 +479,10 @@ module photosyn_driv
                      cpatch%fsw(ico) = 1.0                                                 &
                                      / (1.0 + water_demand / cpatch%water_supply(ico))
                   end if
+               case (3)
+                  !---- Water limitation is embedded in gsw, so fsw must remain 1.0. ------!
+                  cpatch%fsw(ico) = 1.0
+                  
                end select
                !---------------------------------------------------------------------------!
 

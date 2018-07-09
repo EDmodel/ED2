@@ -268,7 +268,7 @@ module rk4_derivs
          end do
          !---------------------------------------------------------------------------------!
 
-      case (2)
+      case (2,3)
          !---------------------------------------------------------------------------------!
          !     The available water factor is the soil moisture at field capacity minus     !
          ! wilting, scaled by the wilting factor, defined as a function of soil potential. !

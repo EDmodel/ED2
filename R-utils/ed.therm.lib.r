@@ -12,7 +12,7 @@
 #      energy storages on the land surface fluxes and radiative temperature.               #
 #      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                                #
 #------------------------------------------------------------------------------------------#
-calc.ind.veg.hcap <<- function(dbh,ipft,hout=c("leaf","wood","veg")){
+calc.ind.veg.hcap <<- function(dbh,ipft,hout=c("leaf","wood","veg"),use.crit=TRUE){
 
    #---- Standardise heat capacity output. ------------------------------------------------#
    hout = match.arg(hout)
@@ -20,12 +20,12 @@ calc.ind.veg.hcap <<- function(dbh,ipft,hout=c("leaf","wood","veg")){
 
 
    #----- Find biomass of all pools. ------------------------------------------------------#
-   bleaf  = dbh2bl(dbh=dbh,ipft=ipft)
+   hgt    = dbh2h  (dbh=dbh,ipft=ipft)
+   bleaf  = size2bl(dbh=dbh,hgt=hgt,ipft=ipft)
    if (hout %in% c("wood","veg")){
-      height = dbh2h (dbh=dbh,ipft=ipft)
-      bdeada = pft$brf.wd[ipft] * pft$agf.bs[ipft] * dbh2bd(dbh=dbh,ipft=ipft)
-      bsapa  = pft$brf.wd[ipft] * pft$agf.bs[ipft] * bleaf * pft$qsw  [ipft] * height
-      bbarka = pft$brf.wd[ipft] * pft$agf.bs[ipft] * bleaf * pft$qbark[ipft] * height
+      bdeada = pft$brf.wd[ipft] * pft$agf.bs[ipft] * size2bd(dbh=dbh,hgt=hgt,ipft=ipft)
+      bsapa  = pft$brf.wd[ipft] * pft$agf.bs[ipft] * bleaf * pft$qsw  [ipft] * hgt
+      bbarka = pft$brf.wd[ipft] * pft$agf.bs[ipft] * bleaf * pft$qbark[ipft] * hgt
       bwooda = bdeada + bsapa
    }#end if (hout %in% c("wood","veg"))
    #---------------------------------------------------------------------------------------#
