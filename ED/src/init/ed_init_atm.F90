@@ -400,9 +400,29 @@ subroutine ed_init_atm()
       !----- Compute some derived properties at the polygon level. ------------------------!
       call update_polygon_derived_props(cgrid)
 
+
+
+      !------------------------------------------------------------------------------------!
+      !    MLO. 2018-07-09.                                                                !
+      !    Terminate patches with unrealistic patch-level LAI.  It is rare, but airborne   !
+      ! lidar initialisation may create cohorts with unrealistic number of plants and      !
+      ! consequently unrealistic LAI.  Because they are so few (2-3 in tens of thousands), !
+      ! we simply delete the unreasonable patches.  We discard them first so they cannot   !
+      ! participate in the patch fusion routine.                                           !
+      !------------------------------------------------------------------------------------!
+      do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         do isi = 1, cpoly%nsites
+            call terminate_patches(cpoly%site(isi),lai_criterion=.true.)
+         end do
+      end do
+      !------------------------------------------------------------------------------------!
+
       !----- Fuse similar patches to speed up the run. ------------------------------------!
       select case(ibigleaf)
       case (0)
+
+
          !---------------------------------------------------------------------------------!
          !    Size and age structure.  Start by fusing similar patches.                    !
          !---------------------------------------------------------------------------------!

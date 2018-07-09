@@ -1108,6 +1108,8 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) coh_size_tol_max = sngloff(rval,tiny_offset)
         call getConfigREAL  ('coh_size_tol_mult','fusefiss',i,rval,texist)
         if(texist) coh_size_tol_mult = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_laimax_fine','fusefiss',i,rval,texist)
+        if(texist) pat_laimax_fine = sngloff(rval,tiny_offset)
 
         call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
         if(texist) lai_tol = sngloff(rval,tiny_offset)
@@ -1954,6 +1956,7 @@ subroutine write_ed_xml_config
      call putConfigREAL ("coh_size_tol_min"   ,coh_size_tol_min   )
      call putConfigREAL ("coh_size_tol_max"   ,coh_size_tol_max   )
      call putConfigREAL ("coh_size_tol_mult"  ,coh_size_tol_mult  )
+     call putConfigREAL ("pat_laimax_fine"    ,pat_laimax_fine    )
      call putConfigREAL ("lai_tol"            ,lai_tol            )
   call libxml2f90_ll_closetag("fusefiss")
 

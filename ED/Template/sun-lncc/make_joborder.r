@@ -18,7 +18,7 @@ graphics.off()
 here       = getwd()                                  # Current directory
 srcdir     = c("/prj/prjidfca/marcosl/Util/Rsc"       # Possible paths with libraries
               ,"/prj/bramsolam/marcos.longo/Util/Rsc" #    R will select the first one that
-              ,"/n/home00/mlongo/util/Rsc"            #    is found, or issue an error
+              ,"/n/home00/mlongo/Util/Rsc"            #    is found, or issue an error
               ,"/Users/mlongo/Util/Rsc"               #    message in case none of them
               ,"/home/b14275/Util/Rsc"                #    exist.
               )#end c                                 #

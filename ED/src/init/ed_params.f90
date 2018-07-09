@@ -432,7 +432,8 @@ subroutine init_ff_coms
                                  , corr_patch                & ! intent(out)
                                  , corr_cohort               & ! intent(out)
                                  , print_fuse_details        & ! intent(out)
-                                 , fuse_prefix               ! ! intent(out)
+                                 , fuse_prefix               & ! intent(out)
+                                 , pat_laimax_fine           ! ! intent(out)
    use consts_coms        , only : onethird                  & ! intent(out)
                                  , twothirds                 & ! intent(in)
                                  , onesixth                  ! ! intent(in)
@@ -575,6 +576,17 @@ subroutine init_ff_coms
    !----- The following flag switches detailed debugging on. ------------------------------!
    print_fuse_details = .false.
    fuse_prefix        = 'patch_fusion_'
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Maximum patch-level LAI to be considered realistic during initialisation.  In     !
+   ! very few cases, the airborne lidar initialisation algorithm predicts unreasonable     !
+   ! total LAI (often in places with barely any return above the minimum height            !
+   ! considered).  Because airborne lidar has tens of thousands of patches, it is hard to  !
+   ! spot individual patches that didn't work, so we terminate these patches.              !
+   !---------------------------------------------------------------------------------------!
+   pat_laimax_fine = 20.
    !---------------------------------------------------------------------------------------!
 
    return

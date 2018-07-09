@@ -236,24 +236,44 @@ module fuse_fiss_utils
    !    This subroutine will eliminate tiny or empty patches. This is intended to          !
    ! eliminate patches that have little contribution and thus we can speed up the run.     !
    !---------------------------------------------------------------------------------------!
-   subroutine terminate_patches(csite)
+   subroutine terminate_patches(csite,lai_criterion)
 
-      use ed_state_vars, only : polygontype        & ! Structure
-                              , sitetype           & ! Structure
-                              , patchtype          ! ! Structure
-      use disturb_coms , only : min_patch_area     ! ! intent(in)
+      use ed_state_vars      , only : polygontype        & ! Structure
+                                    , sitetype           & ! Structure
+                                    , patchtype          ! ! Structure
+      use allometry          , only : size2bl            ! ! function
+      use fusion_fission_coms, only : pat_laimax_fine    ! ! intent(in)
+      use disturb_coms       , only : min_patch_area     ! ! intent(in)
+      use pft_coms           , only : SLA                ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)       , target      :: csite        ! Current site
+      type(sitetype)       , target      :: csite         ! Current site
+      logical              , optional    :: lai_criterion ! Use LAI to decide patch term.
       !----- Local variables --------------------------------------------------------------!
-      type(sitetype)       , pointer     :: tempsite     ! Scratch site
-      integer                            :: ipa          ! Counters
-      logical, dimension(:), allocatable :: remain_table ! Flag: this patch will remain.
-      real                               :: total_area   ! Area of removed patches
-      real                               :: elim_area    ! Area of removed patches
-      real                               :: new_area     ! Just to make sure area is 1.
-      real                               :: area_scale   ! Scaling area factor.
+      type(sitetype)       , pointer     :: tempsite      ! Scratch site
+      type(patchtype)      , pointer     :: cpatch        ! Current patch
+      integer                            :: ipa           ! Patch counter
+      integer                            :: ico           ! Cohort counter
+      integer                            :: ipft          ! PFT index
+      logical, dimension(:), allocatable :: remain_table  ! Flag: this patch will remain.
+      real                               :: total_area    ! Area of removed patches
+      real                               :: elim_area     ! Area of removed patches
+      real                               :: new_area      ! Just to make sure area is 1.
+      real                               :: area_scale    ! Scaling area factor.
+      real                               :: bleaf_max     ! Maximum leaf biomass
+      real                               :: pat_lai_max   ! Maximum patch LAI
+      logical                            :: check_lai     ! Local version of lai_criterion
       !------------------------------------------------------------------------------------!
+
+
+      !----- Check whether we should check area (default) or LAI. -------------------------!
+      if (present(lai_criterion)) then
+         check_lai = lai_criterion
+      else
+         check_lai = .false.
+      end if
+      !------------------------------------------------------------------------------------!
+
 
       allocate (remain_table(csite%npatches))
       remain_table(:) = .true.
@@ -267,9 +287,28 @@ module fuse_fiss_utils
       elim_area  = 0.0
       total_area = 0.0
       do ipa = 1,csite%npatches
-         if (csite%area(ipa) < min_patch_area) then
-            elim_area = elim_area + csite%area(ipa)
+         if (check_lai) then
+            !----- Compute the maximum patch-level LAI (i.e. all cohorts fully flushed) ---!
+            cpatch      => csite%patch(ipa)
+            pat_lai_max = 0.0
+            do ico=1,cpatch%ncohorts
+               ipft        = cpatch%pft(ico)
+               bleaf_max   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+               pat_lai_max = pat_lai_max + cpatch%nplant(ico) * SLA(ipft) * bleaf_max
+            end do
+            !------------------------------------------------------------------------------!
+
+            !----- In case the patch is unreasonably leafy, get rid of it. ----------------!
+            if (pat_lai_max > pat_laimax_fine) then
+               elim_area         = elim_area + csite%area(ipa)
+               remain_table(ipa) = .false.
+            end if
+            !------------------------------------------------------------------------------!
+         elseif (csite%area(ipa) < min_patch_area) then
+            !----- In case this patch has a very small area, get rid of it. ---------------!
+            elim_area         = elim_area + csite%area(ipa)
             remain_table(ipa) = .false.
+            !------------------------------------------------------------------------------!
          end if
          total_area = total_area + csite%area(ipa)
       end do

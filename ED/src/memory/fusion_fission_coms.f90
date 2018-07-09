@@ -116,6 +116,17 @@ module fusion_fission_coms
    character(len=str_len) :: fuse_prefix
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Maximum patch-level LAI to be considered realistic during initialisation.  In     !
+   ! very few cases, the airborne lidar initialisation algorithm predicts unreasonable     !
+   ! total LAI (often in places with barely any return above the minimum height            !
+   ! considered).  Because airborne lidar has tens of thousands of patches, it is hard to  !
+   ! spot individual patches that didn't work, so we terminate these patches.              !
+   !---------------------------------------------------------------------------------------!
+   real :: pat_laimax_fine
+   !---------------------------------------------------------------------------------------!
+
 end Module fusion_fission_coms
 !==========================================================================================!
 !==========================================================================================!
