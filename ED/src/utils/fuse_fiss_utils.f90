@@ -245,6 +245,7 @@ module fuse_fiss_utils
       use fusion_fission_coms, only : pat_laimax_fine    ! ! intent(in)
       use disturb_coms       , only : min_patch_area     ! ! intent(in)
       use pft_coms           , only : SLA                ! ! intent(in)
+      use rk4_coms           , only : tiny_offset        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)       , target      :: csite         ! Current site
@@ -256,13 +257,15 @@ module fuse_fiss_utils
       integer                            :: ico           ! Cohort counter
       integer                            :: ipft          ! PFT index
       logical, dimension(:), allocatable :: remain_table  ! Flag: this patch will remain.
-      real                               :: total_area    ! Area of removed patches
-      real                               :: elim_area     ! Area of removed patches
-      real                               :: new_area      ! Just to make sure area is 1.
+      real(kind=8)                       :: total_area    ! Area of removed patches
+      real(kind=8)                       :: elim_area     ! Area of removed patches
+      real(kind=8)                       :: new_area      ! Just to make sure area is 1.
       real                               :: area_scale    ! Scaling area factor.
       real                               :: bleaf_max     ! Maximum leaf biomass
       real                               :: pat_lai_max   ! Maximum patch LAI
       logical                            :: check_lai     ! Local version of lai_criterion
+      !----- External functions. ----------------------------------------------------------!
+      real                 , external    :: sngloff       ! Safe dble-sngl conversion
       !------------------------------------------------------------------------------------!
 
 
@@ -284,8 +287,8 @@ module fuse_fiss_utils
       ! Realocate a new site with only the valid patches, and normalize their areas and    !
       ! plant densities to reflect the area loss.                                          !
       !------------------------------------------------------------------------------------!
-      elim_area  = 0.0
-      total_area = 0.0
+      elim_area  = 0.d0
+      total_area = 0.d0
       do ipa = 1,csite%npatches
          if (check_lai) then
             !----- Compute the maximum patch-level LAI (i.e. all cohorts fully flushed) ---!
@@ -300,17 +303,17 @@ module fuse_fiss_utils
 
             !----- In case the patch is unreasonably leafy, get rid of it. ----------------!
             if (pat_lai_max > pat_laimax_fine) then
-               elim_area         = elim_area + csite%area(ipa)
+               elim_area         = elim_area + dble(csite%area(ipa))
                remain_table(ipa) = .false.
             end if
             !------------------------------------------------------------------------------!
          elseif (csite%area(ipa) < min_patch_area) then
             !----- In case this patch has a very small area, get rid of it. ---------------!
-            elim_area         = elim_area + csite%area(ipa)
+            elim_area         = elim_area + dble(csite%area(ipa))
             remain_table(ipa) = .false.
             !------------------------------------------------------------------------------!
          end if
-         total_area = total_area + csite%area(ipa)
+         total_area = total_area + dble(csite%area(ipa))
       end do
 
       !----- Use the mask to resize the patch vectors in the current site. ----------------!
@@ -332,14 +335,14 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Renormalize the total area.                                                     !
       !------------------------------------------------------------------------------------!
-      new_area   = 0.
-      area_scale = 1.0 / (total_area - elim_area)
+      new_area   = 0.d0
+      area_scale = sngloff(1.d0 / (total_area - elim_area),tiny_offset)
       do ipa = 1,csite%npatches
          csite%area(ipa) = csite%area(ipa) * area_scale
-         new_area        = new_area + csite%area(ipa)
+         new_area        = new_area + dble(csite%area(ipa))
       end do
 
-      if (abs(new_area-1.0) > 1.e-5) then
+      if (abs(new_area-1.d0) > 1.d-5) then
          write (unit=*,fmt='(a,1x,es12.5)') ' + ELIM_AREA:',elim_area
          write (unit=*,fmt='(a,1x,es12.5)') ' + NEW_AREA: ',new_area
          call fatal_error('New_area should be 1 but it isn''t!!!','terminate_patches'      &
