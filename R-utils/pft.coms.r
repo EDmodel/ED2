@@ -172,8 +172,8 @@ if (! "jm.decay.ecold.c3" %in% ls()) jm.decay.ecold.c3 <<- vm.decay.ecold.c3
 if (! "jm.decay.ehot.c3"  %in% ls()) jm.decay.ehot.c3  <<- vm.decay.ehot.c3
 if (! "jm.decay.ecold.c4" %in% ls()) jm.decay.ecold.c4 <<- vm.decay.ecold.c4
 if (! "jm.decay.ehot.c4"  %in% ls()) jm.decay.ehot.c4  <<- vm.decay.ehot.c4
-if (! "lr.q10.c3"         %in% ls()) lr.q10.c3         <<- 2.46
-if (! "lr.q10.c4"         %in% ls()) lr.q10.c4         <<- 2.46
+if (! "lr.q10.c3"         %in% ls()) lr.q10.c3         <<- vm.q10.c3 # 2.46
+if (! "lr.q10.c4"         %in% ls()) lr.q10.c4         <<- vm.q10.c4 # 2.46
 if (! "lr.tcold.c3temp"   %in% ls()) lr.tcold.c3temp   <<- vm.tcold.c3temp
 if (! "lr.tcold.c3trop"   %in% ls()) lr.tcold.c3trop   <<- vm.tcold.c3trop
 if (! "lr.tcold.aa"       %in% ls()) lr.tcold.aa       <<- vm.tcold.aa

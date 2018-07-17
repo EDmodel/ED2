@@ -1,8 +1,13 @@
 #----- List of flags for undetermined species. --------------------------------------------#
-unknown.wildcard     <<- c("aff","cf","deleteme","ind","indet","na","ni","sp","sp1"
-                          ,"sp1cay-atdn","sp11cay-atdn","sp19","sp2","sp21cay-atdn"
-                          ,"sp2cay-atdn","sp3","sp30cay-atdn","sp4","spb1","spb7","spnov"
-                          ,"spp","spp1","unknown","unidentified")
+unknown.wildcard     <<- c("aff","cf","deleteme","ind","indet","na","ni","sp","spp"
+                          ,"spnov","unknown","unidentified"
+                          ,paste0("sp"  ,sequence(99))
+                          ,paste0("spb" ,sequence(99))
+                          ,paste0("spp" ,sequence(99))
+                          ,paste0("sp"  ,sequence(99),"cay-atdn")
+                          ,paste0("sp"  ,sequence(99),"guyafor")
+                          ,paste0("spfg",sequence(99),"-holst")
+                          )#end c
 unknown.common       <<- "mato"
 unk.liana.common     <<- "cipo"
 unknown.phylum       <<- "Ignotophyta"
@@ -1001,6 +1006,116 @@ scientific.lookup.BCI <<- function(datum,lookup.path){
 
    #----- Read in the look-up table. ------------------------------------------------------#
    lookup.file        = file.path(lookup.path,"BCI_taxon_lookup.csv")
+   look.up            = read.csv(file=lookup.file,stringsAsFactors=FALSE)
+   look.up$common     = tolower(trim(look.up$common    ))
+   look.up$scientific = trim(look.up$scientific)
+   look.up$family     = trim(look.up$family    )
+   #---------------------------------------------------------------------------------------#
+        
+        
+        
+   #----- Break into genus and species. ---------------------------------------------------#
+   gs.list                  = sapply(X = tolower(look.up$scientific),FUN=strsplit,split=" ")
+   gs.length                = sapply(X = gs.list, FUN = length)
+   gs.mat                   = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                                   , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                                   )#end cbind
+   g                        = capwords(gs.mat[,1],strict=TRUE)
+   s                        = tolower(gs.mat[,2])
+   g.s                      = paste(g,s,sep=" ")
+   g.s[is.na(g) & is.na(s)] = NA_character_
+   look.up$scientific       = g.s
+   look.up$genus            = g
+   #---------------------------------------------------------------------------------------#
+   
+   
+   
+   #----- Trim the common names, and simplify/replace some names. -------------------------#
+   datum$common                      = tolower(trim(datum$common))
+   datum$common[is.na(datum$common)] = unknown.common
+   #---------------------------------------------------------------------------------------#
+        
+        
+       
+   #----- Find all unique common names. ---------------------------------------------------#
+   unique.common = unique(datum$common)
+   n.common      = length(unique.common)
+   notfound      = NULL
+   for (n in sequence(n.common)){
+      #----- Find the trees that have the same common name as this one. -------------------#
+      cat0(" - ",n,"/",n.common," -- ",unique.common[n])
+      w.dat  = which(datum$common %in% unique.common[n])
+      n.dat  = length(w.dat)
+      #------------------------------------------------------------------------------------#
+      
+      
+      #----- Find the trees in the look-up table with the same common name. ---------------#
+      w.look = which(look.up$common %in% unique.common[n])
+      n.look = length(w.look)
+      #------------------------------------------------------------------------------------#
+      
+      
+      
+      #------------------------------------------------------------------------------------#
+      #      Check how many trees have the same common name in the look-up table.          #
+      #------------------------------------------------------------------------------------#
+      if (n.look >= 1){
+         #---------------------------------------------------------------------------------#
+         #   In case only one scientific name has been matched, this will allocate the     #
+         # same scientific name for all selected individuals, otherwise this will randomly #
+         # attribute the scientific names.                                                 #
+         #---------------------------------------------------------------------------------#
+         w.look                     = lit.sample(x=w.look,size=n.dat,replace=TRUE)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Only one.  Use it. --------------------------------------------------------#
+         datum$scientific   [w.dat] = look.up$scientific[w.look]
+         datum$genus        [w.dat] = look.up$genus     [w.look]
+         datum$gf.scientific[w.dat] = 1
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Not found in the data base, warn the user. --------------------------------#
+         notfound                   = c(notfound,unique.common[n])
+         datum$scientific   [w.dat] = unknown.scientific
+         datum$genus        [w.dat] = unknown.genus
+         datum$gf.scientific[w.dat] = 0
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
+   return(datum)
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This attributes scientific names based on common names for surveys carried out at   #
+# La Selva.                                                                                #
+#------------------------------------------------------------------------------------------#
+scientific.lookup.LSE <<- function(datum,lookup.path){
+   #----- Append columns in case they don't exist. ----------------------------------------#
+   if (! "scientific"    %in% names(datum)){
+      datum$scientific    = rep(NA_character_, nrow(datum))
+   }#end if (! "scientific"    %in% names(datum))
+   if (! "genus"         %in% names(datum)){
+      datum$genus         = rep(NA_character_, nrow(datum)) 
+   }#end if (! "scientific"    %in% names(datum))
+   if (! "gf.scientific" %in% names(datum)){
+      datum$gf.scientific = rep(0, nrow(datum))
+   }#end if (! "gf.scientific" %in% names(datum))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Read in the look-up table. ------------------------------------------------------#
+   lookup.file        = file.path(lookup.path,"LSE_taxon_lookup.csv")
    look.up            = read.csv(file=lookup.file,stringsAsFactors=FALSE)
    look.up$common     = tolower(trim(look.up$common    ))
    look.up$scientific = trim(look.up$scientific)

@@ -215,8 +215,8 @@ case ${global_queue} in
       ;;
    huce_intel)
       n_nodes_max=276
-      n_cpt_max=12
-      n_cpn=24
+      n_cpt=1
+      n_tpn=24
       runtime="14-00:00:00"
       node_memory=126820
       ;;

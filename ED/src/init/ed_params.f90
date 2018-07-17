@@ -333,13 +333,18 @@ subroutine init_decomp_params()
       decay_rate_fsc  =  11.0 / yr_day    ! former K2
       decay_rate_stsc =   4.5 / yr_day    ! former K1
       decay_rate_ssc  = 100.2 / yr_day    ! former K3
+      r_fsc           = 1.0
+      r_stsc          = 0.3
+      r_ssc           = 1.0
    case (2)
-      decay_rate_fsc  =  11.0 / yr_day    ! former K2
-      decay_rate_stsc =   4.5 / yr_day    ! former K1
-      decay_rate_ssc  = 0.096 / yr_day    ! former K3
-                                          ! Trying a mean half-life of 15 years, the
-                                          ! lower limit of life time of slow (not 
-                                          ! passive) soil carbon in the Amazon
+      decay_rate_fsc  =  16.6 / yr_day    ! From CENTURY model
+      decay_rate_stsc =   4.2 / yr_day    ! From CENTURY model
+      decay_rate_ssc  =  0.02 / yr_day    ! This is representing both the slow and the 
+                                          ! passive pool, hence the low decay rate
+                                          ! compared to CENTURY.
+      r_fsc           = 1.00 ! Fraction of litter lost through respiration.
+      r_stsc          = 0.48 ! Respiration from structural.
+      r_ssc           = 1.00 ! This has to be 1 because there is no passive pool.
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -359,14 +364,14 @@ subroutine init_decomp_params()
    !      Parameters used for the ED-1.0/CENTURY based functions of temperature and soil   !
    ! moisture.                                                                             !
    !---------------------------------------------------------------------------------------!
-   rh_decay_low   = 0.24
-   rh_decay_high  = 0.60
-   rh_low_temp    = 18.0 + t00
-   rh_high_temp   = 45.0 + t00
+   rh_decay_low   = 0.30
+   rh_decay_high  = 0.30
+   rh_low_temp    = 10.0 + t00
+   rh_high_temp   = 40.0 + t00
    rh_decay_dry   = 12.0 ! 18.0
-   rh_decay_wet   = 36.0 ! 36.0
-   rh_dry_smoist  = 0.48 ! 0.36
-   rh_wet_smoist  = 0.98 ! 0.96
+   rh_decay_wet   = 72.0 ! 36.0
+   rh_dry_smoist  = 0.60 ! 0.36
+   rh_wet_smoist  = 0.95 ! 0.96
    !---------------------------------------------------------------------------------------!
 
 
@@ -376,7 +381,7 @@ subroutine init_decomp_params()
          rh_active_depth = slz(nzg)
          k_rh_active     = nzg
       case (2)
-         rh_active_depth = -0.20
+         rh_active_depth = -0.10
          k_rh_loop: do k_rh_active=nzg-1,1,-1
             if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
          end do k_rh_loop
@@ -2113,7 +2118,7 @@ subroutine init_hrzshade_params()
    cci_pixres   =  1.0 ! Pixel resolution for TCH and CCI                          [     m]
    cci_gapsize  = 14.0 ! Gap size                                                  [     m]
    cci_gapmin   = 30.0 ! # of gaps associated with the smallest area               [   ---]
-   cci_nretn    = 30.0 ! "Return density" to generate the TCH map                  [  1/m2]
+   cci_nretn    = 30   ! "Return density" to generate the TCH map                  [  1/m2]
    cci_hmax     = 70.0 ! Maximum height allowed in the CCI scheme                  [     m]
    !---------------------------------------------------------------------------------------!
 
@@ -3950,7 +3955,7 @@ subroutine init_pft_photo_params()
       Rd_decay_elow (:) = undef_real
       Rd_decay_ehigh(:) = undef_real
       Rd_hor        (:) = 66400. * tphysref / (rmol * (t00+25.))
-      Rd_q10        (:) = 2.46
+      Rd_q10        (:) = Vm_q10(:)
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -4242,7 +4247,7 @@ subroutine init_pft_resp_params()
    !    Storage turnover rate.  Number for tropical trees is based on tuning for the time  !
    ! being.                                                                                !
    !---------------------------------------------------------------------------------------!
-   storage_turnover_rate(:) = merge( merge(onethird,onesixth,is_grass(:))                  &
+   storage_turnover_rate(:) = merge( merge(0.2,0.1,is_grass(:))                            &
                                    , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))      &
                                    , is_tropical(:) )
    !---------------------------------------------------------------------------------------!
@@ -4292,8 +4297,8 @@ subroutine init_pft_resp_params()
       root_respiration_factor(:) = 0.528 * rrffact
       !------------------------------------------------------------------------------------!
    case (2,3)
-      !----- Arrhenius function. ----------------------------------------------------------!
-      root_respiration_factor(:) = 0.280 * rrffact
+      !----- Q10 function. ----------------------------------------------------------------!
+      root_respiration_factor(:) = 0.2455212 * rrffact
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -5047,7 +5052,7 @@ subroutine init_pft_repro_params()
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      st_fract(:) = merge(0.0,onesixth                                                     &
+      st_fract(:) = merge(0.0,0.1                                                          &
                          ,is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:)))
    case default
       st_fract(:) = 0.0
@@ -6447,6 +6452,7 @@ subroutine init_derived_params_after_xml()
                                    , qyield_psII               & ! intent(in)
                                    , photosyn_pathway          & ! intent(in)
                                    , dark_respiration_factor   & ! intent(in)
+                                   , root_respiration_factor   & ! intent(in)
                                    , electron_transport_factor & ! intent(in)
                                    , triose_phosphate_factor   & ! intent(in)
                                    , water_conductance         & ! intent(in)
@@ -7261,7 +7267,7 @@ subroutine init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
          !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(35(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(36(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
                                         ,'         VM0','         JM0','        TPM0'      &
                                         ,'         RD0','     RD0:VM0','     JM0:VM0'      &
@@ -7272,11 +7278,11 @@ subroutine init_derived_params_after_xml()
                                         ,'     RD_THOT','  RD_EXP_LOW',' RD_EXP_HIGH'      &
                                         ,'      RD_Q10','    ST_SLOPE','         GS0'      &
                                         ,'Q_EFFICIENCY',' CV_ELECTRON',' QYIELD_PSII'      &
-                                        ,'      KWROOT','  LEAF_WIDTH'
+                                        ,'      KWROOT','  LEAF_WIDTH','       RRFF0'
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,31(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,32(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
                           ,D0(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft)               &
                           ,dark_respiration_factor(ipft),electron_transport_factor(ipft)   &
@@ -7288,7 +7294,8 @@ subroutine init_derived_params_after_xml()
                           ,Rd_decay_ehigh(ipft),Rd_q10(ipft),stomatal_slope(ipft)          &
                           ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
                           ,curvpar_electron(ipft),qyield_psII(ipft)                        &
-                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
+                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)                 &
+                          ,root_respiration_factor(ipft)
          end do
          !---------------------------------------------------------------------------------!
       end select

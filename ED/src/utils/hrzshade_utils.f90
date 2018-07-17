@@ -518,7 +518,7 @@ module hrzshade_utils
             !----- Decide the height based on ihrzrad. ------------------------------------!
             select case (ihrzrad)
             case (2,4)
-               sz_fact = max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft)
+               sz_fact = cpatch%dbh(ico) / min(cpatch%dbh(ico),dbh_crit(ipft))
                hgt_eff = min(cci_hmax, cpatch%hite(ico) * sz_fact * sz_fact)
             case default
                hgt_eff = cpatch%hite(ico)
@@ -824,10 +824,10 @@ module hrzshade_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     Overwrite fbeam_ipa when ihrzrad is set to 3.                                  !
+      !     Overwrite fbeam_ipa when ihrzrad is set to 3 or 4.                             !
       !------------------------------------------------------------------------------------!
       select case (ihrzrad)
-      case (3)
+      case (3,4)
          if (verbose) write(unit=*,fmt='(a)') '    -> Make illumination homogeneous...'
          fbeam_ipa(:,:) = 1.0
       end select

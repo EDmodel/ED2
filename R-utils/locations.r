@@ -46,7 +46,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
        lon      = kzlist[[testpoi]]$lon
        lat      = kzlist[[testpoi]]$lat
 
-   }else if( substring(ici,1,1) %in% c("t","s","e","z") & substring(ici,5,5) == "_"){
+   }else if( ( substring(ici,1,1) %in% c("t","s","e","z") )
+           & ( ( substring(ici,5,5) == "_" ) | ( nchar(ici) == 4 ) ) ){
       #---- IATA-based name with model configuration. -------------------------------------#
       metflag = substring(ici,1,1)
       if (tolower(metflag) == "s"){
@@ -928,7 +929,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    flagvar[["dhist" ]]           = list( descr  = "LCLU history"
                                        , numeric = FALSE
                                        , values = c("int","ril","cl1","cl2","bn1","bn2"
-                                                   ,"bn3","lb1","blb","sec","sb2")
+                                                   ,"bn3","bn6","lb1","lb2","blb"
+                                                   ,"sec","sb2","lwr","upr")
                                        , names  = c("Intact"
                                                    ,"Reduced-Impact Logging"
                                                    ,"Conventional Logging"
@@ -936,10 +938,14 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Burned once"
                                                    ,"Burned twice"
                                                    ,"Burned three times"
+                                                   ,"Burned six times"
                                                    ,"Logged and burned once"
+                                                   ,"Logged and burned twice"
                                                    ,"Burned, logged, burned"
                                                    ,"Secondary growth"
                                                    ,"Secondary and burned twice"
+                                                   ,"Bottomland"
+                                                   ,"Plateau"
                                                    )#end c
                                        )#end list
    flagvar[["sl.scale"     ]]    = list( descr  = "Logging scale"
@@ -1114,6 +1120,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.2f"
                                      , off   =    0.0
                                      , mult  =    0.01)
+   numvar[["ustmin"         ]] = list( descr = "Min. u*"
+                                     , unit  = "m/s"
+                                     , fmt   = "%.2f"
+                                     , off   =    0.0
+                                     , mult  =    0.01)
    numvar[["ddmort.fac"     ]] = list( descr = "DD mortality factor"
                                      , unit  = "--"
                                      , fmt   = "%.2f"
@@ -1214,6 +1225,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.1f"
                                      , off   = 0.0
                                      , mult  = -0.1)
+   numvar[["rrffact" ]]        = list( descr = "Root respiration factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   = 0.0
+                                     , mult  = 0.001)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1225,11 +1241,16 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #---------------------------------------------------------------------------------------#
    if (iata){
       lenici = nchar(ici)
-      if (lenici == 8){
+      if (lenici == 4){
+         nparms = 0
+         params = character(0)
+         na     = integer(0)
+         nz     = integer(0)
+      }else if (lenici == 8){
          nparms = 1
-         param  = c("user")
-         na     = c(     6)
-         nz     = c(     8)
+         param  = c("dhist")
+         na     = c(      6)
+         nz     = c(      8)
       }else if (lenici == 10){
          nparms = 1
          param  = c("nzs")
@@ -1285,7 +1306,17 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("fclump")
          na     = c(      12)
          nz     = c(      15)
-      }else if (lenici == 16){
+      }else if (lenici == 15 && grepl(pattern="ustmin",x=ici)){
+         nparms = 1
+         param  = c("ustmin")
+         na     = c(      12)
+         nz     = c(      15)
+      }else if (lenici == 16 && grepl(pattern="rrffact",x=ici)){
+         nparms = 1
+         param  = c("rrffact")
+         na     = c(       13)
+         nz     = c(       16)
+      }else if (lenici == 16 && grepl(pattern="ifire",x=ici)){
          nparms = 2
          param  = c("dhist","include.fire")
          na     = c(      6,            15)

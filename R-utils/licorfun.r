@@ -46,7 +46,7 @@
 # - kco2      - Michaelis-Mentel coefficient for CO2                                       #
 # - ko2       - Michaelis-Mentel coefficient for O2.                                       #
 #------------------------------------------------------------------------------------------#
-comp.photo.tempfun <<- function(thispft,met,quantum.t){
+comp.photo.tempfun <<- function(thispft,met,quantum.t=FALSE){
 
    #------ Initialise aparms data frame. --------------------------------------------------#
    aparms    = data.frame(matrix(nrow=1,ncol=0))
