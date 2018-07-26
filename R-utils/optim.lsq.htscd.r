@@ -113,6 +113,7 @@ optim.lsq.htscd <<- function( lsq.formula
                             , is.debug       = FALSE
                             , maxit          = 100
                             , n.boot         = 1000
+                            , boot.class     = NULL
                             , n.seobs        = 10000
                             , rdm.range      = NULL
                             , ci.level       = 0.95
@@ -857,6 +858,15 @@ optim.lsq.htscd <<- function( lsq.formula
       #------------------------------------------------------------------------------------#
 
 
+      #------------------------------------------------------------------------------------#
+      #      Decide the classes for bootstrap.                                             #
+      #------------------------------------------------------------------------------------#
+      if (! is.null(boot.class)){
+         uniq.class   = sort(unique(boot.class))
+         n.uniq.class = length(uniq.class)
+      }#end if (! is.null (boot.class))
+      #------------------------------------------------------------------------------------#
+
 
       #------------------------------------------------------------------------------------#
       #     Loop until we reach the sought number of bootstrap realisations.  In case some #
@@ -865,8 +875,19 @@ optim.lsq.htscd <<- function( lsq.formula
       ib           = 0
       while (ib < n.boot){
          #----- Select samples for this realisation. --------------------------------------#
-         idx         = sample.int(n=n.use,replace=TRUE)
-         ixval       = which(! (sequence(n.use) %in% idx))
+         if (is.null (boot.class)){
+            idx         = sample.int(n=n.use,replace=TRUE)
+            ixval       = which(! (sequence(n.use) %in% idx))
+         }else{
+            use.class   = lit.sample(x=uniq.class,size=n.uniq.class,replace=TRUE)
+            use.sample  = mapply( FUN      = function(x,y) which(y %in% x)
+                                , x        = use.class
+                                , MoreArgs = list(y=boot.class)
+                                )#end mapply
+            use.sample  = c(unlist(use.sample))
+            idx         = lit.sample(x=use.sample,size=n.use,replace=TRUE)
+            ixval       = which(! boot.class %in% use.class)
+         }#end if
          #---------------------------------------------------------------------------------#
 
 

@@ -123,7 +123,7 @@ options(locatorBell=FALSE)
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v8.RData",sep="/")
+obsrfile = file.path(srcdir,"LBA_MIP.v9.RData")
 load(file=obsrfile)
 #------------------------------------------------------------------------------------------#
 

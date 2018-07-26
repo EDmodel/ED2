@@ -137,15 +137,23 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    #---------------------------------------------------------------------------------------#
    emean = list()
    emean$wood.dens               = rep(NA,times=ntimes)
+   emean$fast.grnd.c             = rep(NA,times=ntimes)
    emean$fast.soil.c             = rep(NA,times=ntimes)
-   emean$slow.soil.c             = rep(NA,times=ntimes)
+   emean$struct.grnd.c           = rep(NA,times=ntimes)
    emean$struct.soil.c           = rep(NA,times=ntimes)
+   emean$microbe.soil.c          = rep(NA,times=ntimes)
+   emean$slow.soil.c             = rep(NA,times=ntimes)
    emean$crop.yield              = rep(NA,times=ntimes)
    emean$crop.harvest            = rep(NA,times=ntimes)
    emean$logging.harvest         = rep(NA,times=ntimes)
    emean$combusted.fuel          = rep(NA,times=ntimes)
    emean$het.resp                = rep(NA,times=ntimes)
-   emean$cwd.resp                = rep(NA,times=ntimes)
+   emean$fgc.resp                = rep(NA,times=ntimes)
+   emean$fsc.resp                = rep(NA,times=ntimes)
+   emean$stgc.resp               = rep(NA,times=ntimes)
+   emean$stsc.resp               = rep(NA,times=ntimes)
+   emean$msc.resp                = rep(NA,times=ntimes)
+   emean$ssc.resp                = rep(NA,times=ntimes)
    emean$soil.resp               = rep(NA,times=ntimes)
    emean$gpp                     = rep(NA,times=ntimes)
    emean$last.1yr.gpp            = rep(NA,times=ntimes)
@@ -168,6 +176,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$froot.resp              = rep(NA,times=ntimes)
    emean$croot.resp              = rep(NA,times=ntimes)
    emean$stem.resp               = rep(NA,times=ntimes)
+   emean$aerobic.resp            = rep(NA,times=ntimes)
    emean$growth.resp             = rep(NA,times=ntimes)
    emean$storage.resp            = rep(NA,times=ntimes)
    emean$reco                    = rep(NA,times=ntimes)
@@ -417,7 +426,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emsqu$leaf.resp         = rep(NA,times=ntimes)
    emsqu$froot.resp        = rep(NA,times=ntimes)
    emsqu$het.resp          = rep(NA,times=ntimes)
-   emsqu$cwd.resp          = rep(NA,times=ntimes)
+   emsqu$fgc.resp          = rep(NA,times=ntimes)
+   emsqu$fsc.resp          = rep(NA,times=ntimes)
+   emsqu$stgc.resp         = rep(NA,times=ntimes)
+   emsqu$stsc.resp         = rep(NA,times=ntimes)
+   emsqu$msc.resp          = rep(NA,times=ntimes)
+   emsqu$ssc.resp          = rep(NA,times=ntimes)
    emsqu$reco              = rep(NA,times=ntimes)
    emsqu$cflxca            = rep(NA,times=ntimes)
    emsqu$cflxst            = rep(NA,times=ntimes)
@@ -496,6 +510,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$froot.resp        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$croot.resp        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$stem.resp         = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$aerobic.resp      = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$growth.resp       = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$storage.resp      = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$plant.resp        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
@@ -647,7 +662,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$root.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$froot.resp     = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$het.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
-   qmean$cwd.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$fgc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$fsc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$stgc.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$stsc.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$msc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$ssc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$soil.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$assim.light    = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$assim.rubp     = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
@@ -739,7 +759,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmsqu$froot.resp     = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$root.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$het.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
-   qmsqu$cwd.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmsqu$fgc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmsqu$fsc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmsqu$stgc.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmsqu$stsc.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmsqu$msc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmsqu$ssc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$nep            = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$reco           = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$cflxca         = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
@@ -768,86 +793,89 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    #---------------------------------------------------------------------------------------#
    #  PATCH -- patch level variables, we save as lists because the dimensions vary.    #
    #---------------------------------------------------------------------------------------#
-   patch               = list()
-   patch$ipa           = list()
-   patch$age           = list()
-   patch$area          = list()
-   patch$lu            = list()
-   patch$nep           = list()
-   patch$het.resp      = list()
-   patch$soil.resp     = list()
-   patch$can.temp      = list()
-   patch$gnd.temp      = list()
-   patch$can.shv       = list()
-   patch$gnd.shv       = list()
-   patch$can.vpd       = list()
-   patch$can.co2       = list()
-   patch$can.prss      = list()
-   patch$cflxca        = list()
-   patch$cflxst        = list()
-   patch$nee           = list()
-   patch$hflxca        = list()
-   patch$hflxgc        = list()
-   patch$qwflxca       = list()
-   patch$wflxca        = list()
-   patch$wflxgc        = list()
-   patch$ustar         = list()
-   patch$albedo        = list()
-   patch$rshortup      = list()
-   patch$rlongup       = list()
-   patch$parup         = list()
-   patch$rshort.gnd    = list()
-   patch$par.gnd       = list()
-   patch$par.leaf      = list()
-   patch$par.leaf.beam = list()
-   patch$par.leaf.diff = list()
-   patch$rnet          = list()
-   patch$lai           = list()
-   patch$wai           = list()
-   patch$tai           = list()
-   patch$agb           = list()
-   patch$ba            = list()
-   patch$wood.dens     = list()
-   patch$can.depth     = list()
-   patch$can.area      = list()
-   patch$veg.height    = list()
-   patch$veg.displace  = list()
-   patch$veg.rough     = list()
-   patch$can.rough     = list()
-   patch$phap.lpar     = list()
-   patch$phap.ltemp    = list()
-   patch$phap.lwater   = list()
-   patch$phap.lvpd     = list()
-   patch$phap.sms      = list()
-   patch$phap.lgbw     = list()
-   patch$phap.lgsw     = list()
-   patch$sm.stress     = list()
-   patch$leaf.temp     = list()
-   patch$leaf.water    = list()
-   patch$leaf.vpd      = list()
-   patch$leaf.gpp      = list()
-   patch$leaf.gsw      = list()
-   patch$leaf.par      = list()
-   patch$leaf.par.beam = list()
-   patch$leaf.par.diff = list()
-   patch$assim.light   = list()
-   patch$assim.rubp    = list()
-   patch$assim.co2     = list()
-   patch$wood.temp     = list()
-   patch$gpp           = list()
-   patch$npp           = list()
-   patch$plant.resp    = list()
-   patch$cba           = list()
-   patch$reco          = list()
-   patch$hflxlc        = list()
-   patch$hflxwc        = list()
-   patch$wflxlc        = list()
-   patch$wflxwc        = list()
-   patch$transp        = list()
-   patch$fast.soil.c   = list()
-   patch$slow.soil.c   = list()
-   patch$struct.soil.c = list()
-   patch$rk4step       = list()
+   patch                = list()
+   patch$ipa            = list()
+   patch$age            = list()
+   patch$area           = list()
+   patch$lu             = list()
+   patch$nep            = list()
+   patch$het.resp       = list()
+   patch$soil.resp      = list()
+   patch$can.temp       = list()
+   patch$gnd.temp       = list()
+   patch$can.shv        = list()
+   patch$gnd.shv        = list()
+   patch$can.vpd        = list()
+   patch$can.co2        = list()
+   patch$can.prss       = list()
+   patch$cflxca         = list()
+   patch$cflxst         = list()
+   patch$nee            = list()
+   patch$hflxca         = list()
+   patch$hflxgc         = list()
+   patch$qwflxca        = list()
+   patch$wflxca         = list()
+   patch$wflxgc         = list()
+   patch$ustar          = list()
+   patch$albedo         = list()
+   patch$rshortup       = list()
+   patch$rlongup        = list()
+   patch$parup          = list()
+   patch$rshort.gnd     = list()
+   patch$par.gnd        = list()
+   patch$par.leaf       = list()
+   patch$par.leaf.beam  = list()
+   patch$par.leaf.diff  = list()
+   patch$rnet           = list()
+   patch$lai            = list()
+   patch$wai            = list()
+   patch$tai            = list()
+   patch$agb            = list()
+   patch$ba             = list()
+   patch$wood.dens      = list()
+   patch$can.depth      = list()
+   patch$can.area       = list()
+   patch$veg.height     = list()
+   patch$veg.displace   = list()
+   patch$veg.rough      = list()
+   patch$can.rough      = list()
+   patch$phap.lpar      = list()
+   patch$phap.ltemp     = list()
+   patch$phap.lwater    = list()
+   patch$phap.lvpd      = list()
+   patch$phap.sms       = list()
+   patch$phap.lgbw      = list()
+   patch$phap.lgsw      = list()
+   patch$sm.stress      = list()
+   patch$leaf.temp      = list()
+   patch$leaf.water     = list()
+   patch$leaf.vpd       = list()
+   patch$leaf.gpp       = list()
+   patch$leaf.gsw       = list()
+   patch$leaf.par       = list()
+   patch$leaf.par.beam  = list()
+   patch$leaf.par.diff  = list()
+   patch$assim.light    = list()
+   patch$assim.rubp     = list()
+   patch$assim.co2      = list()
+   patch$wood.temp      = list()
+   patch$gpp            = list()
+   patch$npp            = list()
+   patch$plant.resp     = list()
+   patch$cba            = list()
+   patch$reco           = list()
+   patch$hflxlc         = list()
+   patch$hflxwc         = list()
+   patch$wflxlc         = list()
+   patch$wflxwc         = list()
+   patch$transp         = list()
+   patch$fast.grnd.c    = list()
+   patch$fast.soil.c    = list()
+   patch$struct.grnd.c  = list()
+   patch$struct.soil.c  = list()
+   patch$microbe.soil.c = list()
+   patch$slow.soil.c    = list()
+   patch$rk4step        = list()
    #---------------------------------------------------------------------------------------#
 
 
@@ -937,6 +965,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$froot.resp     = list()
    cohort$croot.resp     = list()
    cohort$stem.resp      = list()
+   cohort$aerobic.resp   = list()
    cohort$growth.resp    = list()
    cohort$storage.resp   = list()
    cohort$plant.resp     = list()
@@ -1067,15 +1096,23 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    #          plotted in simple time series (with no PFT or DBH information).              #
    #---------------------------------------------------------------------------------------#
    new.datum$emean$wood.dens         [idx ] = old.datum$emean$wood.dens           [sel ]
+   new.datum$emean$fast.grnd.c       [idx ] = old.datum$emean$fast.grnd.c         [sel ]
    new.datum$emean$fast.soil.c       [idx ] = old.datum$emean$fast.soil.c         [sel ]
-   new.datum$emean$slow.soil.c       [idx ] = old.datum$emean$slow.soil.c         [sel ]
+   new.datum$emean$struct.grnd.c     [idx ] = old.datum$emean$struct.grnd.c       [sel ]
    new.datum$emean$struct.soil.c     [idx ] = old.datum$emean$struct.soil.c       [sel ]
+   new.datum$emean$microbe.soil.c    [idx ] = old.datum$emean$microbe.soil.c      [sel ]
+   new.datum$emean$slow.soil.c       [idx ] = old.datum$emean$slow.soil.c         [sel ]
    new.datum$emean$crop.yield        [idx ] = old.datum$emean$crop.yield          [sel ]
    new.datum$emean$crop.harvest      [idx ] = old.datum$emean$crop.harvest        [sel ]
    new.datum$emean$logging.harvest   [idx ] = old.datum$emean$logging.harvest     [sel ]
    new.datum$emean$combusted.fuel    [idx ] = old.datum$emean$combusted.fuel      [sel ]
    new.datum$emean$het.resp          [idx ] = old.datum$emean$het.resp            [sel ]
-   new.datum$emean$cwd.resp          [idx ] = old.datum$emean$cwd.resp            [sel ]
+   new.datum$emean$fgc.resp          [idx ] = old.datum$emean$fgc.resp            [sel ]
+   new.datum$emean$fsc.resp          [idx ] = old.datum$emean$fsc.resp            [sel ]
+   new.datum$emean$stgc.resp         [idx ] = old.datum$emean$stgc.resp           [sel ]
+   new.datum$emean$stsc.resp         [idx ] = old.datum$emean$stsc.resp           [sel ]
+   new.datum$emean$msc.resp          [idx ] = old.datum$emean$msc.resp            [sel ]
+   new.datum$emean$ssc.resp          [idx ] = old.datum$emean$ssc.resp            [sel ]
    new.datum$emean$soil.resp         [idx ] = old.datum$emean$soil.resp           [sel ]
    new.datum$emean$gpp               [idx ] = old.datum$emean$gpp                 [sel ]
    new.datum$emean$last.1yr.gpp      [idx ] = old.datum$emean$last.1yr.gpp        [sel ]
@@ -1106,6 +1143,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$froot.resp        [idx ] = old.datum$emean$froot.resp          [sel ]
    new.datum$emean$croot.resp        [idx ] = old.datum$emean$croot.resp          [sel ]
    new.datum$emean$stem.resp         [idx ] = old.datum$emean$stem.resp           [sel ]
+   new.datum$emean$aerobic.resp      [idx ] = old.datum$emean$aerobic.resp        [sel ]
    new.datum$emean$growth.resp       [idx ] = old.datum$emean$growth.resp         [sel ]
    new.datum$emean$storage.resp      [idx ] = old.datum$emean$storage.resp        [sel ]
    new.datum$emean$reco              [idx ] = old.datum$emean$reco                [sel ]
@@ -1341,7 +1379,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emsqu$gpp            [idx] = old.datum$emsqu$gpp            [sel]
    new.datum$emsqu$plant.resp     [idx] = old.datum$emsqu$plant.resp     [sel]
    new.datum$emsqu$het.resp       [idx] = old.datum$emsqu$het.resp       [sel]
-   new.datum$emsqu$cwd.resp       [idx] = old.datum$emsqu$cwd.resp       [sel]
+   new.datum$emsqu$fgc.resp       [idx] = old.datum$emsqu$fgc.resp       [sel]
+   new.datum$emsqu$fsc.resp       [idx] = old.datum$emsqu$fsc.resp       [sel]
+   new.datum$emsqu$stgc.resp      [idx] = old.datum$emsqu$stgc.resp      [sel]
+   new.datum$emsqu$stsc.resp      [idx] = old.datum$emsqu$stsc.resp      [sel]
+   new.datum$emsqu$msc.resp       [idx] = old.datum$emsqu$msc.resp       [sel]
+   new.datum$emsqu$ssc.resp       [idx] = old.datum$emsqu$ssc.resp       [sel]
    new.datum$emsqu$soil.resp      [idx] = old.datum$emsqu$soil.resp      [sel]
    new.datum$emsqu$cflxca         [idx] = old.datum$emsqu$cflxca         [sel]
    new.datum$emsqu$cflxst         [idx] = old.datum$emsqu$cflxst         [sel]
@@ -1385,6 +1428,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$froot.resp     [idx,,] = old.datum$szpft$froot.resp      [sel,,]
    new.datum$szpft$croot.resp     [idx,,] = old.datum$szpft$croot.resp      [sel,,]
    new.datum$szpft$stem.resp      [idx,,] = old.datum$szpft$stem.resp       [sel,,]
+   new.datum$szpft$aerobic.resp   [idx,,] = old.datum$szpft$aerobic.resp    [sel,,]
    new.datum$szpft$growth.resp    [idx,,] = old.datum$szpft$growth.resp     [sel,,]
    new.datum$szpft$storage.resp   [idx,,] = old.datum$szpft$storage.resp    [sel,,]
    new.datum$szpft$plant.resp     [idx,,] = old.datum$szpft$plant.resp      [sel,,]
@@ -1546,7 +1590,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$root.resp     [idx,] = old.datum$qmean$root.resp      [sel,]
    new.datum$qmean$froot.resp    [idx,] = old.datum$qmean$froot.resp     [sel,]
    new.datum$qmean$het.resp      [idx,] = old.datum$qmean$het.resp       [sel,]
-   new.datum$qmean$cwd.resp      [idx,] = old.datum$qmean$cwd.resp       [sel,]
+   new.datum$qmean$fgc.resp      [idx,] = old.datum$qmean$fgc.resp       [sel,]
+   new.datum$qmean$fsc.resp      [idx,] = old.datum$qmean$fsc.resp       [sel,]
+   new.datum$qmean$stgc.resp     [idx,] = old.datum$qmean$stgc.resp      [sel,]
+   new.datum$qmean$stsc.resp     [idx,] = old.datum$qmean$stsc.resp      [sel,]
+   new.datum$qmean$msc.resp      [idx,] = old.datum$qmean$msc.resp       [sel,]
+   new.datum$qmean$ssc.resp      [idx,] = old.datum$qmean$ssc.resp       [sel,]
    new.datum$qmean$soil.resp     [idx,] = old.datum$qmean$soil.resp      [sel,]
    new.datum$qmean$assim.light   [idx,] = old.datum$qmean$assim.light    [sel,]
    new.datum$qmean$assim.rubp    [idx,] = old.datum$qmean$assim.rubp     [sel,]
@@ -1630,34 +1679,39 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    # QMSQU -- Polygon-level variables, containing the mean sum of squares for the diel     #
    #          (diurnal cycle).                                                             #
    #---------------------------------------------------------------------------------------#
-   new.datum$qmsqu$gpp           [idx,] = old.datum$qmsqu$gpp           [sel,] 
-   new.datum$qmsqu$npp           [idx,] = old.datum$qmsqu$npp           [sel,] 
-   new.datum$qmsqu$plant.resp    [idx,] = old.datum$qmsqu$plant.resp    [sel,] 
-   new.datum$qmsqu$leaf.resp     [idx,] = old.datum$qmsqu$leaf.resp     [sel,] 
-   new.datum$qmsqu$root.resp     [idx,] = old.datum$qmsqu$root.resp     [sel,] 
-   new.datum$qmsqu$froot.resp    [idx,] = old.datum$qmsqu$froot.resp    [sel,] 
-   new.datum$qmsqu$het.resp      [idx,] = old.datum$qmsqu$het.resp      [sel,] 
-   new.datum$qmsqu$cwd.resp      [idx,] = old.datum$qmsqu$cwd.resp      [sel,] 
-   new.datum$qmsqu$soil.resp     [idx,] = old.datum$qmsqu$soil.resp     [sel,] 
-   new.datum$qmsqu$nep           [idx,] = old.datum$qmsqu$nep           [sel,] 
-   new.datum$qmsqu$cflxca        [idx,] = old.datum$qmsqu$cflxca        [sel,] 
-   new.datum$qmsqu$cflxst        [idx,] = old.datum$qmsqu$cflxst        [sel,] 
-   new.datum$qmsqu$hflxca        [idx,] = old.datum$qmsqu$hflxca        [sel,] 
-   new.datum$qmsqu$hflxlc        [idx,] = old.datum$qmsqu$hflxlc        [sel,] 
-   new.datum$qmsqu$hflxwc        [idx,] = old.datum$qmsqu$hflxwc        [sel,] 
-   new.datum$qmsqu$hflxgc        [idx,] = old.datum$qmsqu$hflxgc        [sel,] 
-   new.datum$qmsqu$qwflxca       [idx,] = old.datum$qmsqu$qwflxca       [sel,] 
-   new.datum$qmsqu$wflxca        [idx,] = old.datum$qmsqu$wflxca        [sel,] 
-   new.datum$qmsqu$wflxlc        [idx,] = old.datum$qmsqu$wflxlc        [sel,] 
-   new.datum$qmsqu$wflxwc        [idx,] = old.datum$qmsqu$wflxwc        [sel,] 
-   new.datum$qmsqu$wflxgc        [idx,] = old.datum$qmsqu$wflxgc        [sel,] 
-   new.datum$qmsqu$transp        [idx,] = old.datum$qmsqu$transp        [sel,] 
-   new.datum$qmsqu$ustar         [idx,] = old.datum$qmsqu$ustar         [sel,] 
-   new.datum$qmsqu$albedo        [idx,] = old.datum$qmsqu$albedo        [sel,] 
-   new.datum$qmsqu$rshortup      [idx,] = old.datum$qmsqu$rshortup      [sel,] 
-   new.datum$qmsqu$rlongup       [idx,] = old.datum$qmsqu$rlongup       [sel,] 
-   new.datum$qmsqu$parup         [idx,] = old.datum$qmsqu$parup         [sel,] 
-   new.datum$qmsqu$rnet          [idx,] = old.datum$qmsqu$rnet          [sel,] 
+   new.datum$qmsqu$gpp           [idx,] = old.datum$qmsqu$gpp           [sel,]
+   new.datum$qmsqu$npp           [idx,] = old.datum$qmsqu$npp           [sel,]
+   new.datum$qmsqu$plant.resp    [idx,] = old.datum$qmsqu$plant.resp    [sel,]
+   new.datum$qmsqu$leaf.resp     [idx,] = old.datum$qmsqu$leaf.resp     [sel,]
+   new.datum$qmsqu$root.resp     [idx,] = old.datum$qmsqu$root.resp     [sel,]
+   new.datum$qmsqu$froot.resp    [idx,] = old.datum$qmsqu$froot.resp    [sel,]
+   new.datum$qmsqu$het.resp      [idx,] = old.datum$qmsqu$het.resp      [sel,]
+   new.datum$qmsqu$fgc.resp      [idx,] = old.datum$qmsqu$fgc.resp      [sel,]
+   new.datum$qmsqu$fsc.resp      [idx,] = old.datum$qmsqu$fsc.resp      [sel,]
+   new.datum$qmsqu$stgc.resp     [idx,] = old.datum$qmsqu$stgc.resp     [sel,]
+   new.datum$qmsqu$stsc.resp     [idx,] = old.datum$qmsqu$stsc.resp     [sel,]
+   new.datum$qmsqu$msc.resp      [idx,] = old.datum$qmsqu$msc.resp      [sel,]
+   new.datum$qmsqu$ssc.resp      [idx,] = old.datum$qmsqu$ssc.resp      [sel,]
+   new.datum$qmsqu$soil.resp     [idx,] = old.datum$qmsqu$soil.resp     [sel,]
+   new.datum$qmsqu$nep           [idx,] = old.datum$qmsqu$nep           [sel,]
+   new.datum$qmsqu$cflxca        [idx,] = old.datum$qmsqu$cflxca        [sel,]
+   new.datum$qmsqu$cflxst        [idx,] = old.datum$qmsqu$cflxst        [sel,]
+   new.datum$qmsqu$hflxca        [idx,] = old.datum$qmsqu$hflxca        [sel,]
+   new.datum$qmsqu$hflxlc        [idx,] = old.datum$qmsqu$hflxlc        [sel,]
+   new.datum$qmsqu$hflxwc        [idx,] = old.datum$qmsqu$hflxwc        [sel,]
+   new.datum$qmsqu$hflxgc        [idx,] = old.datum$qmsqu$hflxgc        [sel,]
+   new.datum$qmsqu$qwflxca       [idx,] = old.datum$qmsqu$qwflxca       [sel,]
+   new.datum$qmsqu$wflxca        [idx,] = old.datum$qmsqu$wflxca        [sel,]
+   new.datum$qmsqu$wflxlc        [idx,] = old.datum$qmsqu$wflxlc        [sel,]
+   new.datum$qmsqu$wflxwc        [idx,] = old.datum$qmsqu$wflxwc        [sel,]
+   new.datum$qmsqu$wflxgc        [idx,] = old.datum$qmsqu$wflxgc        [sel,]
+   new.datum$qmsqu$transp        [idx,] = old.datum$qmsqu$transp        [sel,]
+   new.datum$qmsqu$ustar         [idx,] = old.datum$qmsqu$ustar         [sel,]
+   new.datum$qmsqu$albedo        [idx,] = old.datum$qmsqu$albedo        [sel,]
+   new.datum$qmsqu$rshortup      [idx,] = old.datum$qmsqu$rshortup      [sel,]
+   new.datum$qmsqu$rlongup       [idx,] = old.datum$qmsqu$rlongup       [sel,]
+   new.datum$qmsqu$parup         [idx,] = old.datum$qmsqu$parup         [sel,]
+   new.datum$qmsqu$rnet          [idx,] = old.datum$qmsqu$rnet          [sel,]
    #---------------------------------------------------------------------------------------#
 
 
@@ -1666,85 +1720,88 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    #---------------------------------------------------------------------------------------#
    #  PATCH -- patch level variables, we save as lists because the dimensions vary.    #
    #---------------------------------------------------------------------------------------#
-   new.datum$patch$ipa           = old.datum$patch$ipa
-   new.datum$patch$age           = old.datum$patch$age
-   new.datum$patch$area          = old.datum$patch$area
-   new.datum$patch$lu            = old.datum$patch$lu
-   new.datum$patch$nep           = old.datum$patch$nep
-   new.datum$patch$het.resp      = old.datum$patch$het.resp
-   new.datum$patch$soil.resp     = old.datum$patch$soil.resp
-   new.datum$patch$can.temp      = old.datum$patch$can.temp
-   new.datum$patch$gnd.temp      = old.datum$patch$gnd.temp
-   new.datum$patch$can.shv       = old.datum$patch$can.shv
-   new.datum$patch$gnd.shv       = old.datum$patch$gnd.shv
-   new.datum$patch$can.vpd       = old.datum$patch$can.vpd
-   new.datum$patch$can.co2       = old.datum$patch$can.co2
-   new.datum$patch$can.prss      = old.datum$patch$can.prss
-   new.datum$patch$cflxca        = old.datum$patch$cflxca
-   new.datum$patch$cflxst        = old.datum$patch$cflxst
-   new.datum$patch$nee           = old.datum$patch$nee
-   new.datum$patch$hflxca        = old.datum$patch$hflxca
-   new.datum$patch$hflxgc        = old.datum$patch$hflxgc
-   new.datum$patch$qwflxca       = old.datum$patch$qwflxca
-   new.datum$patch$wflxca        = old.datum$patch$wflxca
-   new.datum$patch$wflxgc        = old.datum$patch$wflxgc
-   new.datum$patch$ustar         = old.datum$patch$ustar
-   new.datum$patch$albedo        = old.datum$patch$albedo
-   new.datum$patch$rshortup      = old.datum$patch$rshortup
-   new.datum$patch$rlongup       = old.datum$patch$rlongup
-   new.datum$patch$parup         = old.datum$patch$parup
-   new.datum$patch$rshort.gnd    = old.datum$patch$rshort.gnd
-   new.datum$patch$par.gnd       = old.datum$patch$par.gnd
-   new.datum$patch$par.leaf      = old.datum$patch$par.leaf
-   new.datum$patch$par.leaf.beam = old.datum$patch$par.leaf.beam
-   new.datum$patch$par.leaf.diff = old.datum$patch$par.leaf.diff
-   new.datum$patch$rnet          = old.datum$patch$rnet
-   new.datum$patch$lai           = old.datum$patch$lai
-   new.datum$patch$wai           = old.datum$patch$wai
-   new.datum$patch$tai           = old.datum$patch$tai
-   new.datum$patch$agb           = old.datum$patch$agb
-   new.datum$patch$ba            = old.datum$patch$ba
-   new.datum$patch$wood.dens     = old.datum$patch$wood.dens
-   new.datum$patch$can.depth     = old.datum$patch$can.depth
-   new.datum$patch$can.area      = old.datum$patch$can.area
-   new.datum$patch$veg.height    = old.datum$patch$veg.height
-   new.datum$patch$veg.displace  = old.datum$patch$veg.displace
-   new.datum$patch$veg.rough     = old.datum$patch$veg.rough
-   new.datum$patch$can.rough     = old.datum$patch$can.rough
-   new.datum$patch$phap.lpar     = old.datum$patch$phap.lpar
-   new.datum$patch$phap.ltemp    = old.datum$patch$phap.ltemp
-   new.datum$patch$phap.lwater   = old.datum$patch$phap.lwater
-   new.datum$patch$phap.lvpd     = old.datum$patch$phap.lvpd
-   new.datum$patch$phap.sms      = old.datum$patch$phap.sms
-   new.datum$patch$phap.lgbw     = old.datum$patch$phap.lgbw
-   new.datum$patch$phap.lgsw     = old.datum$patch$phap.lgsw
-   new.datum$patch$sm.stress     = old.datum$patch$sm.stress
-   new.datum$patch$leaf.temp     = old.datum$patch$leaf.temp
-   new.datum$patch$leaf.water    = old.datum$patch$leaf.water
-   new.datum$patch$leaf.vpd      = old.datum$patch$leaf.vpd
-   new.datum$patch$leaf.gpp      = old.datum$patch$leaf.gpp
-   new.datum$patch$leaf.gsw      = old.datum$patch$leaf.gsw
-   new.datum$patch$leaf.par      = old.datum$patch$leaf.par
-   new.datum$patch$leaf.par.beam = old.datum$patch$leaf.par.beam
-   new.datum$patch$leaf.par.diff = old.datum$patch$leaf.par.diff
-   new.datum$patch$assim.light   = old.datum$patch$assim.light
-   new.datum$patch$assim.rubp    = old.datum$patch$assim.rubp
-   new.datum$patch$assim.co2     = old.datum$patch$assim.co2
-   new.datum$patch$wood.temp     = old.datum$patch$wood.temp
-   new.datum$patch$gpp           = old.datum$patch$gpp
-   new.datum$patch$npp           = old.datum$patch$npp
-   new.datum$patch$cba           = old.datum$patch$cba
-   new.datum$patch$plant.resp    = old.datum$patch$plant.resp
-   new.datum$patch$reco          = old.datum$patch$reco
-   new.datum$patch$hflxlc        = old.datum$patch$hflxlc
-   new.datum$patch$hflxwc        = old.datum$patch$hflxwc
-   new.datum$patch$wflxlc        = old.datum$patch$wflxlc
-   new.datum$patch$wflxwc        = old.datum$patch$wflxwc
-   new.datum$patch$transp        = old.datum$patch$transp
-   new.datum$patch$fast.soil.c   = old.datum$patch$fast.soil.c
-   new.datum$patch$slow.soil.c   = old.datum$patch$slow.soil.c
-   new.datum$patch$struct.soil.c = old.datum$patch$struct.soil.c
-   new.datum$patch$rk4step       = old.datum$patch$rk4step
+   new.datum$patch$ipa            = old.datum$patch$ipa
+   new.datum$patch$age            = old.datum$patch$age
+   new.datum$patch$area           = old.datum$patch$area
+   new.datum$patch$lu             = old.datum$patch$lu
+   new.datum$patch$nep            = old.datum$patch$nep
+   new.datum$patch$het.resp       = old.datum$patch$het.resp
+   new.datum$patch$soil.resp      = old.datum$patch$soil.resp
+   new.datum$patch$can.temp       = old.datum$patch$can.temp
+   new.datum$patch$gnd.temp       = old.datum$patch$gnd.temp
+   new.datum$patch$can.shv        = old.datum$patch$can.shv
+   new.datum$patch$gnd.shv        = old.datum$patch$gnd.shv
+   new.datum$patch$can.vpd        = old.datum$patch$can.vpd
+   new.datum$patch$can.co2        = old.datum$patch$can.co2
+   new.datum$patch$can.prss       = old.datum$patch$can.prss
+   new.datum$patch$cflxca         = old.datum$patch$cflxca
+   new.datum$patch$cflxst         = old.datum$patch$cflxst
+   new.datum$patch$nee            = old.datum$patch$nee
+   new.datum$patch$hflxca         = old.datum$patch$hflxca
+   new.datum$patch$hflxgc         = old.datum$patch$hflxgc
+   new.datum$patch$qwflxca        = old.datum$patch$qwflxca
+   new.datum$patch$wflxca         = old.datum$patch$wflxca
+   new.datum$patch$wflxgc         = old.datum$patch$wflxgc
+   new.datum$patch$ustar          = old.datum$patch$ustar
+   new.datum$patch$albedo         = old.datum$patch$albedo
+   new.datum$patch$rshortup       = old.datum$patch$rshortup
+   new.datum$patch$rlongup        = old.datum$patch$rlongup
+   new.datum$patch$parup          = old.datum$patch$parup
+   new.datum$patch$rshort.gnd     = old.datum$patch$rshort.gnd
+   new.datum$patch$par.gnd        = old.datum$patch$par.gnd
+   new.datum$patch$par.leaf       = old.datum$patch$par.leaf
+   new.datum$patch$par.leaf.beam  = old.datum$patch$par.leaf.beam
+   new.datum$patch$par.leaf.diff  = old.datum$patch$par.leaf.diff
+   new.datum$patch$rnet           = old.datum$patch$rnet
+   new.datum$patch$lai            = old.datum$patch$lai
+   new.datum$patch$wai            = old.datum$patch$wai
+   new.datum$patch$tai            = old.datum$patch$tai
+   new.datum$patch$agb            = old.datum$patch$agb
+   new.datum$patch$ba             = old.datum$patch$ba
+   new.datum$patch$wood.dens      = old.datum$patch$wood.dens
+   new.datum$patch$can.depth      = old.datum$patch$can.depth
+   new.datum$patch$can.area       = old.datum$patch$can.area
+   new.datum$patch$veg.height     = old.datum$patch$veg.height
+   new.datum$patch$veg.displace   = old.datum$patch$veg.displace
+   new.datum$patch$veg.rough      = old.datum$patch$veg.rough
+   new.datum$patch$can.rough      = old.datum$patch$can.rough
+   new.datum$patch$phap.lpar      = old.datum$patch$phap.lpar
+   new.datum$patch$phap.ltemp     = old.datum$patch$phap.ltemp
+   new.datum$patch$phap.lwater    = old.datum$patch$phap.lwater
+   new.datum$patch$phap.lvpd      = old.datum$patch$phap.lvpd
+   new.datum$patch$phap.sms       = old.datum$patch$phap.sms
+   new.datum$patch$phap.lgbw      = old.datum$patch$phap.lgbw
+   new.datum$patch$phap.lgsw      = old.datum$patch$phap.lgsw
+   new.datum$patch$sm.stress      = old.datum$patch$sm.stress
+   new.datum$patch$leaf.temp      = old.datum$patch$leaf.temp
+   new.datum$patch$leaf.water     = old.datum$patch$leaf.water
+   new.datum$patch$leaf.vpd       = old.datum$patch$leaf.vpd
+   new.datum$patch$leaf.gpp       = old.datum$patch$leaf.gpp
+   new.datum$patch$leaf.gsw       = old.datum$patch$leaf.gsw
+   new.datum$patch$leaf.par       = old.datum$patch$leaf.par
+   new.datum$patch$leaf.par.beam  = old.datum$patch$leaf.par.beam
+   new.datum$patch$leaf.par.diff  = old.datum$patch$leaf.par.diff
+   new.datum$patch$assim.light    = old.datum$patch$assim.light
+   new.datum$patch$assim.rubp     = old.datum$patch$assim.rubp
+   new.datum$patch$assim.co2      = old.datum$patch$assim.co2
+   new.datum$patch$wood.temp      = old.datum$patch$wood.temp
+   new.datum$patch$gpp            = old.datum$patch$gpp
+   new.datum$patch$npp            = old.datum$patch$npp
+   new.datum$patch$cba            = old.datum$patch$cba
+   new.datum$patch$plant.resp     = old.datum$patch$plant.resp
+   new.datum$patch$reco           = old.datum$patch$reco
+   new.datum$patch$hflxlc         = old.datum$patch$hflxlc
+   new.datum$patch$hflxwc         = old.datum$patch$hflxwc
+   new.datum$patch$wflxlc         = old.datum$patch$wflxlc
+   new.datum$patch$wflxwc         = old.datum$patch$wflxwc
+   new.datum$patch$transp         = old.datum$patch$transp
+   new.datum$patch$fast.grnd.c    = old.datum$patch$fast.grnd.c
+   new.datum$patch$fast.soil.c    = old.datum$patch$fast.soil.c
+   new.datum$patch$struct.grnd.c  = old.datum$patch$struct.grnd.c
+   new.datum$patch$struct.soil.c  = old.datum$patch$struct.soil.c
+   new.datum$patch$microbe.soil.c = old.datum$patch$microbe.soil.c
+   new.datum$patch$slow.soil.c    = old.datum$patch$slow.soil.c
+   new.datum$patch$rk4step        = old.datum$patch$rk4step
    #---------------------------------------------------------------------------------------#
 
 

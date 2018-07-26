@@ -63,6 +63,7 @@ module update_derived_utils
                                , size2bl             & ! function
                                , size2bt             & ! function
                                , size2xb             & ! function
+                               , ed_balive           & ! function
                                , ed_biomass          & ! function
                                , area_indices        ! ! subroutine
       use consts_coms   , only : pio4                ! ! intent(in)
@@ -107,8 +108,8 @@ module update_derived_utils
           cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft)
       else
           !---- Trees and old grasses get dbh from bdead. ---------------------------------!
-          cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdead(ico))
-          cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico))
+          cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdeada(ico), cpatch%bdeadb(ico))
+          cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh   (ico))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -151,13 +152,14 @@ module update_derived_utils
 
 
       !----- Update derived properties (AGB, BA, timber stocks and bark thickness). -------!
+      cpatch%balive (ico) = ed_balive (cpatch, ico)
       cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
-      cpatch%agb(ico)    = ed_biomass(cpatch, ico)
-      cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bdead(ico)     &
-                                   ,cpatch%bsapwooda(ico),cpatch%bbark(ico)                &
+      cpatch%agb    (ico) = ed_biomass(cpatch, ico)
+      cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bdeada(ico)    &
+                                   ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)               &
                                    ,cpatch%pft(ico))
-      cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bbark(ico)     &
-                                   ,cpatch%pft(ico))
+      cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bbarka(ico)    &
+                                   ,cpatch%bbarkb(ico),cpatch%pft(ico))
       !------------------------------------------------------------------------------------!
 
 
@@ -714,10 +716,7 @@ module update_derived_utils
       use pft_coms              , only : c2n_leaf           & ! intent(in)
                                        , c2n_stem           & ! intent(in)
                                        , c2n_storage        & ! intent(in)
-                                       , c2n_recruit        & ! intent(in)
-                                       , c2n_slow           & ! intent(in)
-                                       , c2n_structural     ! ! intent(in)
-      use decomp_coms           , only : cwd_frac           ! ! intent(in)
+                                       , c2n_recruit        ! ! intent(in)
       use consts_coms           , only : tiny_num           ! ! intent(in)
 
       implicit none
@@ -781,38 +780,48 @@ module update_derived_utils
          cgrid%wai                 (:,:,ipy) = 0.0
          cgrid%basal_area          (:,:,ipy) = 0.0
          cgrid%thbark              (:,:,ipy) = 0.0
-         cgrid%bdead               (:,:,ipy) = 0.0
+         cgrid%bdeada              (:,:,ipy) = 0.0
+         cgrid%bdeadb              (:,:,ipy) = 0.0
          cgrid%btimber             (:,:,ipy) = 0.0
          cgrid%balive              (:,:,ipy) = 0.0
          cgrid%bleaf               (:,:,ipy) = 0.0
          cgrid%broot               (:,:,ipy) = 0.0
          cgrid%bsapwooda           (:,:,ipy) = 0.0
          cgrid%bsapwoodb           (:,:,ipy) = 0.0
-         cgrid%bbark               (:,:,ipy) = 0.0
+         cgrid%bbarka              (:,:,ipy) = 0.0
+         cgrid%bbarkb              (:,:,ipy) = 0.0
          cgrid%bseeds              (:,:,ipy) = 0.0
          cgrid%byield              (:,:,ipy) = 0.0
          cgrid%bstorage            (:,:,ipy) = 0.0
-         cgrid%bdead_n             (:,:,ipy) = 0.0
+         cgrid%bdeada_n            (:,:,ipy) = 0.0
+         cgrid%bdeadb_n            (:,:,ipy) = 0.0
          cgrid%balive_n            (:,:,ipy) = 0.0
          cgrid%bleaf_n             (:,:,ipy) = 0.0
          cgrid%broot_n             (:,:,ipy) = 0.0
          cgrid%bsapwooda_n         (:,:,ipy) = 0.0
          cgrid%bsapwoodb_n         (:,:,ipy) = 0.0
-         cgrid%bbark_n             (:,:,ipy) = 0.0
+         cgrid%bbarka_n            (:,:,ipy) = 0.0
+         cgrid%bbarkb_n            (:,:,ipy) = 0.0
          cgrid%bseeds_n            (:,:,ipy) = 0.0
          cgrid%bstorage_n          (:,:,ipy) = 0.0
          cgrid%leaf_maintenance    (:,:,ipy) = 0.0
          cgrid%root_maintenance    (:,:,ipy) = 0.0
-         cgrid%bark_maintenance    (:,:,ipy) = 0.0
+         cgrid%barka_maintenance   (:,:,ipy) = 0.0
+         cgrid%barkb_maintenance   (:,:,ipy) = 0.0
          cgrid%leaf_drop           (:,:,ipy) = 0.0
+         cgrid%fast_grnd_c             (ipy) = 0.0
          cgrid%fast_soil_c             (ipy) = 0.0
+         cgrid%microbe_soil_c          (ipy) = 0.0
          cgrid%slow_soil_c             (ipy) = 0.0
+         cgrid%struct_grnd_c           (ipy) = 0.0
+         cgrid%struct_grnd_l           (ipy) = 0.0
          cgrid%struct_soil_c           (ipy) = 0.0
          cgrid%struct_soil_l           (ipy) = 0.0
-         cgrid%cwd_c                   (ipy) = 0.0
+         cgrid%fast_grnd_n             (ipy) = 0.0
          cgrid%fast_soil_n             (ipy) = 0.0
+         cgrid%struct_grnd_n           (ipy) = 0.0
+         cgrid%struct_soil_n           (ipy) = 0.0
          cgrid%mineral_soil_n          (ipy) = 0.0
-         cgrid%cwd_n                   (ipy) = 0.0
          !---------------------------------------------------------------------------------!
          !     Some of these variables are redundant with variables above.  Perhaps we     !
          ! should find a single way to report them.                                        !
@@ -863,37 +872,45 @@ module update_derived_utils
 
 
                !----- Integrate soil properties. ------------------------------------------!
+               cgrid%fast_grnd_c   (ipy) = cgrid%fast_grnd_c        (ipy)                  &
+                                         + csite%fast_grnd_c        (ipa)                  &
+                                         * patch_wgt
                cgrid%fast_soil_c   (ipy) = cgrid%fast_soil_c        (ipy)                  &
                                          + csite%fast_soil_c        (ipa)                  &
+                                         * patch_wgt
+               cgrid%microbe_soil_c(ipy) = cgrid%microbe_soil_c     (ipy)                  &
+                                         + csite%microbial_soil_c   (ipa)                  &
                                          * patch_wgt
                cgrid%slow_soil_c   (ipy) = cgrid%slow_soil_c        (ipy)                  &
                                          + csite%slow_soil_c        (ipa)                  &
                                          * patch_wgt
+               cgrid%struct_grnd_c (ipy) = cgrid%struct_grnd_c      (ipy)                  &
+                                         + csite%structural_grnd_c  (ipa)                  &
+                                         * patch_wgt
                cgrid%struct_soil_c (ipy) = cgrid%struct_soil_c      (ipy)                  &
                                          + csite%structural_soil_c  (ipa)                  &
+                                         * patch_wgt
+               cgrid%struct_grnd_l (ipy) = cgrid%struct_grnd_l      (ipy)                  &
+                                         + csite%structural_grnd_l  (ipa)                  &
                                          * patch_wgt
                cgrid%struct_soil_l (ipy) = cgrid%struct_soil_l      (ipy)                  &
                                          + csite%structural_soil_l  (ipa)                  &
                                          * patch_wgt
+               cgrid%fast_grnd_n   (ipy) = cgrid%fast_grnd_n        (ipy)                  &
+                                         + csite%fast_grnd_n        (ipa)                  &
+                                         * patch_wgt
                cgrid%fast_soil_n   (ipy) = cgrid%fast_soil_n        (ipy)                  &
                                          + csite%fast_soil_n        (ipa)                  &
+                                         * patch_wgt
+               cgrid%struct_grnd_n (ipy) = cgrid%struct_grnd_n      (ipy)                  &
+                                         + csite%structural_grnd_n  (ipa)                  &
+                                         * patch_wgt
+               cgrid%struct_soil_n (ipy) = cgrid%struct_soil_n      (ipy)                  &
+                                         + csite%structural_soil_n  (ipa)                  &
                                          * patch_wgt
                cgrid%mineral_soil_n(ipy) = cgrid%mineral_soil_n     (ipy)                  &
                                          + csite%mineralized_soil_n (ipa)                  &
                                          * patch_wgt
-               !---------------------------------------------------------------------------!
-               !     I am definitely not sure about the way I did CWD.  I just used the    !
-               ! same fraction used to compute cwd_rh in soil_rh (soil_respiration.f90) to !
-               ! determine the fraction of the pools that are CWD.                         !
-               !---------------------------------------------------------------------------!
-               cgrid%cwd_c(ipy) = cgrid%cwd_c              (ipy)                           &
-                                + ( csite%slow_soil_c      (ipa)                           &
-                                  + csite%structural_soil_c(ipa) )                         &
-                                * cwd_frac * patch_wgt
-               cgrid%cwd_n(ipy) = cgrid%cwd_n              (ipy)                           &
-                                + ( csite%slow_soil_c      (ipa) / c2n_slow                &
-                                  + csite%structural_soil_c(ipa) / c2n_structural )        &
-                                * cwd_frac * patch_wgt
                !---------------------------------------------------------------------------!
 
 
@@ -931,133 +948,156 @@ module update_derived_utils
                   !    Integrate cohort-based properties.  Make sure that the polygon-     !
                   ! -level gets the right units (i.e., no /plant, but /m2).                !
                   !------------------------------------------------------------------------!
-                  cgrid%nplant          (p,d,ipy) = cgrid%nplant          (p,d,ipy)        &
-                                                  + cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%lai             (p,d,ipy) = cgrid%lai             (p,d,ipy)        &
-                                                  + cpatch%lai                (ico)        &
-                                                  * patch_wgt
-                  cgrid%wai             (p,d,ipy) = cgrid%wai             (p,d,ipy)        &
-                                                  + cpatch%wai                (ico)        &
-                                                  * patch_wgt
-                  cgrid%agb             (p,d,ipy) = cgrid%agb             (p,d,ipy)        &
-                                                  + cpatch%agb                (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%basal_area      (p,d,ipy) = cgrid%basal_area      (p,d,ipy)        &
-                                                  + cpatch%basarea            (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bdead           (p,d,ipy) = cgrid%bdead           (p,d,ipy)        &
-                                                  + cpatch%bdead              (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%btimber         (p,d,ipy) = cgrid%btimber         (p,d,ipy)        &
-                                                  + cpatch%btimber            (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%balive          (p,d,ipy) = cgrid%balive          (p,d,ipy)        &
-                                                  + cpatch%balive             (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bleaf           (p,d,ipy) = cgrid%bleaf           (p,d,ipy)        &
-                                                  + cpatch%bleaf              (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%broot           (p,d,ipy) = cgrid%broot           (p,d,ipy)        &
-                                                  + cpatch%broot              (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bsapwooda       (p,d,ipy) = cgrid%bsapwooda       (p,d,ipy)        &
-                                                  + cpatch%bsapwooda          (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bsapwoodb       (p,d,ipy) = cgrid%bsapwoodb       (p,d,ipy)        &
-                                                  + cpatch%bsapwoodb          (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bbark           (p,d,ipy) = cgrid%bbark           (p,d,ipy)        &
-                                                  + cpatch%bbark              (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bseeds          (p,d,ipy) = cgrid%bseeds          (p,d,ipy)        &
-                                                  + cpatch%bseeds             (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%byield          (p,d,ipy) = cgrid%byield          (p,d,ipy)        &
-                                                  + cpatch%byield             (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bstorage        (p,d,ipy) = cgrid%bstorage        (p,d,ipy)        &
-                                                  + cpatch%bstorage           (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bdead_n         (p,d,ipy) = cgrid%bdead_n         (p,d,ipy)        &
-                                                  + cpatch%bdead              (ico)        &
-                                                  / c2n_stem                    (p)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%balive_n        (p,d,ipy) = cgrid%balive_n        (p,d,ipy)        &
-                                                  + ( ( cpatch%bleaf          (ico)        &
-                                                      + cpatch%broot          (ico) )      &
-                                                      / c2n_leaf                (p)        &
-                                                    + ( cpatch%bsapwooda      (ico)        &
-                                                      + cpatch%bsapwoodb      (ico)        &
-                                                      + cpatch%bbark          (ico) )      &
-                                                      / c2n_stem                (p)   )    &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bleaf_n         (p,d,ipy) = cgrid%bleaf_n         (p,d,ipy)        &
-                                                  + cpatch%bleaf              (ico)        &
-                                                  / c2n_leaf                    (p)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%broot_n         (p,d,ipy) = cgrid%broot_n         (p,d,ipy)        &
-                                                  + cpatch%broot              (ico)        &
-                                                  / c2n_leaf                    (p)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bsapwooda_n     (p,d,ipy) = cgrid%bsapwooda_n     (p,d,ipy)        &
-                                                  + cpatch%bsapwooda          (ico)        &
-                                                  / c2n_stem                    (p)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bsapwoodb_n     (p,d,ipy) = cgrid%bsapwoodb_n     (p,d,ipy)        &
-                                                  + cpatch%bsapwoodb          (ico)        &
-                                                  / c2n_stem                    (p)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bbark_n         (p,d,ipy) = cgrid%bbark_n         (p,d,ipy)        &
-                                                  + cpatch%bbark              (ico)        &
-                                                  / c2n_stem                    (p)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bseeds_n        (p,d,ipy) = cgrid%bseeds_n        (p,d,ipy)        &
-                                                  + cpatch%bseeds             (ico)        &
-                                                  / c2n_recruit                 (p)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bstorage_n      (p,d,ipy) = cgrid%bstorage_n      (p,d,ipy)        &
-                                                  + cpatch%bstorage           (ico)        &
-                                                  / c2n_storage                            &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%leaf_maintenance(p,d,ipy) = cgrid%leaf_maintenance(p,d,ipy)        &
-                                                  + cpatch%leaf_maintenance   (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%root_maintenance(p,d,ipy) = cgrid%root_maintenance(p,d,ipy)        &
-                                                  + cpatch%root_maintenance   (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%bark_maintenance(p,d,ipy) = cgrid%bark_maintenance(p,d,ipy)        &
-                                                  + cpatch%bark_maintenance   (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
-                  cgrid%leaf_drop       (p,d,ipy) = cgrid%leaf_drop       (p,d,ipy)        &
-                                                  + cpatch%leaf_drop          (ico)        &
-                                                  * cpatch%nplant             (ico)        &
-                                                  * patch_wgt
+                  cgrid%nplant           (p,d,ipy) = cgrid%nplant            (p,d,ipy)     &
+                                                   + cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%lai              (p,d,ipy) = cgrid%lai               (p,d,ipy)     &
+                                                   + cpatch%lai                  (ico)     &
+                                                   * patch_wgt
+                  cgrid%wai              (p,d,ipy) = cgrid%wai               (p,d,ipy)     &
+                                                   + cpatch%wai                  (ico)     &
+                                                   * patch_wgt
+                  cgrid%agb              (p,d,ipy) = cgrid%agb               (p,d,ipy)     &
+                                                   + cpatch%agb                  (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%basal_area       (p,d,ipy) = cgrid%basal_area        (p,d,ipy)     &
+                                                   + cpatch%basarea              (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bdeada           (p,d,ipy) = cgrid%bdeada            (p,d,ipy)     &
+                                                   + cpatch%bdeada               (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bdeadb           (p,d,ipy) = cgrid%bdeadb            (p,d,ipy)     &
+                                                   + cpatch%bdeadb               (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%btimber          (p,d,ipy) = cgrid%btimber           (p,d,ipy)     &
+                                                   + cpatch%btimber              (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%balive           (p,d,ipy) = cgrid%balive            (p,d,ipy)     &
+                                                   + cpatch%balive               (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bleaf            (p,d,ipy) = cgrid%bleaf             (p,d,ipy)     &
+                                                   + cpatch%bleaf                (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%broot            (p,d,ipy) = cgrid%broot             (p,d,ipy)     &
+                                                   + cpatch%broot                (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bsapwooda        (p,d,ipy) = cgrid%bsapwooda         (p,d,ipy)     &
+                                                   + cpatch%bsapwooda            (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bsapwoodb        (p,d,ipy) = cgrid%bsapwoodb         (p,d,ipy)     &
+                                                   + cpatch%bsapwoodb            (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bbarka           (p,d,ipy) = cgrid%bbarka            (p,d,ipy)     &
+                                                   + cpatch%bbarka               (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bbarkb           (p,d,ipy) = cgrid%bbarkb            (p,d,ipy)     &
+                                                   + cpatch%bbarkb               (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bseeds           (p,d,ipy) = cgrid%bseeds            (p,d,ipy)     &
+                                                   + cpatch%bseeds               (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%byield           (p,d,ipy) = cgrid%byield            (p,d,ipy)     &
+                                                   + cpatch%byield               (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bstorage         (p,d,ipy) = cgrid%bstorage          (p,d,ipy)     &
+                                                   + cpatch%bstorage             (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bdeada_n         (p,d,ipy) = cgrid%bdeada_n          (p,d,ipy)     &
+                                                   + cpatch%bdeada               (ico)     &
+                                                   / c2n_stem                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bdeadb_n         (p,d,ipy) = cgrid%bdeadb_n          (p,d,ipy)     &
+                                                   + cpatch%bdeadb               (ico)     &
+                                                   / c2n_stem                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%balive_n         (p,d,ipy) = cgrid%balive_n          (p,d,ipy)     &
+                                                   + ( ( cpatch%bleaf            (ico)     &
+                                                       + cpatch%broot            (ico) )   &
+                                                       / c2n_leaf                  (p)     &
+                                                     + ( cpatch%bsapwooda        (ico)     &
+                                                       + cpatch%bsapwoodb        (ico)     &
+                                                       + cpatch%bbarka           (ico)     &
+                                                       + cpatch%bbarkb           (ico) )   &
+                                                       / c2n_stem                  (p)   ) &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bleaf_n          (p,d,ipy) = cgrid%bleaf_n           (p,d,ipy)     &
+                                                   + cpatch%bleaf                (ico)     &
+                                                   / c2n_leaf                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%broot_n          (p,d,ipy) = cgrid%broot_n           (p,d,ipy)     &
+                                                   + cpatch%broot                (ico)     &
+                                                   / c2n_leaf                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bsapwooda_n      (p,d,ipy) = cgrid%bsapwooda_n       (p,d,ipy)     &
+                                                   + cpatch%bsapwooda            (ico)     &
+                                                   / c2n_stem                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bsapwoodb_n      (p,d,ipy) = cgrid%bsapwoodb_n       (p,d,ipy)     &
+                                                   + cpatch%bsapwoodb            (ico)     &
+                                                   / c2n_stem                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bbarka_n         (p,d,ipy) = cgrid%bbarka_n          (p,d,ipy)     &
+                                                   + cpatch%bbarka               (ico)     &
+                                                   / c2n_stem                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bbarkb_n         (p,d,ipy) = cgrid%bbarkb_n          (p,d,ipy)     &
+                                                   + cpatch%bbarkb               (ico)     &
+                                                   / c2n_stem                      (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bseeds_n         (p,d,ipy) = cgrid%bseeds_n          (p,d,ipy)     &
+                                                   + cpatch%bseeds               (ico)     &
+                                                   / c2n_recruit                   (p)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%bstorage_n       (p,d,ipy) = cgrid%bstorage_n        (p,d,ipy)     &
+                                                   + cpatch%bstorage             (ico)     &
+                                                   / c2n_storage                           &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%leaf_maintenance (p,d,ipy) = cgrid%leaf_maintenance  (p,d,ipy)     &
+                                                   + cpatch%leaf_maintenance     (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%root_maintenance (p,d,ipy) = cgrid%root_maintenance  (p,d,ipy)     &
+                                                   + cpatch%root_maintenance     (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%barka_maintenance(p,d,ipy) = cgrid%barka_maintenance (p,d,ipy)     &
+                                                   + cpatch%barka_maintenance    (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%barkb_maintenance(p,d,ipy) = cgrid%barkb_maintenance (p,d,ipy)     &
+                                                   + cpatch%barkb_maintenance    (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%leaf_drop        (p,d,ipy) = cgrid%leaf_drop         (p,d,ipy)     &
+                                                   + cpatch%leaf_drop            (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
                   !------------------------------------------------------------------------!
 
 

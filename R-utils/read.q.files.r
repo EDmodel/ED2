@@ -135,31 +135,42 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       mymont$QMEAN.ATM.NIR.BEAM.PY    = ( mymont$QMEAN.ATM.RSHORT.BEAM.PY
                                         - mymont$QMEAN.ATM.PAR.BEAM.PY     )
       #----- Add bark stuff. --------------------------------------------------------------#
-      if (  ! "MMEAN.BARK.MAINTENANCE.PY" %in% names(mymont)){
-         mymont$MMEAN.BARK.MAINTENANCE.PY = 0. * mymont$MMEAN.LEAF.MAINTENANCE.PY
+      if (  ! "MMEAN.BARKA.MAINTENANCE.PY" %in% names(mymont)){
+         mymont$MMEAN.BARKA.MAINTENANCE.PY = 0. * mymont$MMEAN.LEAF.MAINTENANCE.PY
+         mymont$MMEAN.BARKB.MAINTENANCE.PY = 0. * mymont$MMEAN.LEAF.MAINTENANCE.PY
          #----- Add cohort variables in case this is not a bare ground polygon. -----------#
          if (mymont$NCOHORTS.GLOBAL > 0){
-            mymont$MMEAN.THBARK.CO           = 0. * mymont$DBH
-            mymont$MMEAN.BBARK.CO            = 0. * mymont$MMEAN.BLEAF.CO
-            mymont$MMEAN.BARK.MAINTENANCE.CO = 0. * mymont$MMEAN.LEAF.MAINTENANCE.CO
+            mymont$MMEAN.THBARK.CO            = 0. * mymont$DBH
+            mymont$MMEAN.BBARKA.CO            = 0. * mymont$MMEAN.BLEAF.CO
+            mymont$MMEAN.BBARKB.CO            = 0. * mymont$MMEAN.BLEAF.CO
+            mymont$MMEAN.BARKA.MAINTENANCE.CO = 0. * mymont$MMEAN.LEAF.MAINTENANCE.CO
+            mymont$MMEAN.BARKB.MAINTENANCE.CO = 0. * mymont$MMEAN.LEAF.MAINTENANCE.CO
          }#end if (mymont$NCOHORTS.GLOBAL > 0)
          #---------------------------------------------------------------------------------#
 
 
          #----- In case leaf growth respiration exists, include bark respiration too. -----#
          if (  "MMEAN.LEAF.GROWTH.RESP.PY" %in% names(mymont)){
-            mymont$MMEAN.BARK.GROWTH.RESP.PY  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.PY
-            mymont$QMEAN.BARK.GROWTH.RESP.PY  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.PY
-            mymont$MMEAN.BARK.STORAGE.RESP.PY = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.PY
-            mymont$QMEAN.BARK.STORAGE.RESP.PY = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.PY
+            mymont$MMEAN.BARKA.GROWTH.RESP.PY  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.PY
+            mymont$MMEAN.BARKB.GROWTH.RESP.PY  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.PY
+            mymont$QMEAN.BARKA.GROWTH.RESP.PY  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.PY
+            mymont$QMEAN.BARKB.GROWTH.RESP.PY  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.PY
+            mymont$MMEAN.BARKA.STORAGE.RESP.PY = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.PY
+            mymont$MMEAN.BARKB.STORAGE.RESP.PY = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.PY
+            mymont$QMEAN.BARKA.STORAGE.RESP.PY = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.PY
+            mymont$QMEAN.BARKB.STORAGE.RESP.PY = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.PY
 
 
             #----- Add cohort variables in case this is not a bare ground polygon. --------#
             if (mymont$NCOHORTS.GLOBAL > 0){
-               mymont$MMEAN.BARK.GROWTH.RESP.CO  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.CO
-               mymont$QMEAN.BARK.GROWTH.RESP.CO  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.CO
-               mymont$MMEAN.BARK.STORAGE.RESP.CO = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.CO
-               mymont$QMEAN.BARK.STORAGE.RESP.CO = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.CO
+               mymont$MMEAN.BARKA.GROWTH.RESP.CO  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.CO
+               mymont$MMEAN.BARKB.GROWTH.RESP.CO  = 0. * mymont$MMEAN.LEAF.GROWTH.RESP.CO
+               mymont$QMEAN.BARKA.GROWTH.RESP.CO  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.CO
+               mymont$QMEAN.BARKB.GROWTH.RESP.CO  = 0. * mymont$QMEAN.LEAF.GROWTH.RESP.CO
+               mymont$MMEAN.BARKA.STORAGE.RESP.CO = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.CO
+               mymont$MMEAN.BARKB.STORAGE.RESP.CO = 0. * mymont$MMEAN.LEAF.STORAGE.RESP.CO
+               mymont$QMEAN.BARKA.STORAGE.RESP.CO = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.CO
+               mymont$QMEAN.BARKB.STORAGE.RESP.CO = 0. * mymont$QMEAN.LEAF.STORAGE.RESP.CO
             }#end if (mymont$NCOHORTS.GLOBAL > 0)
             #------------------------------------------------------------------------------#
          }#end if
@@ -170,25 +181,29 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.GROWTH.RESP.PY  = ( mymont$MMEAN.LEAF.GROWTH.RESP.PY
                                         + mymont$MMEAN.ROOT.GROWTH.RESP.PY
                                         + mymont$MMEAN.SAPA.GROWTH.RESP.PY
-                                        + mymont$MMEAN.SAPB.GROWTH.RESP.PY 
-                                        + mymont$MMEAN.BARK.GROWTH.RESP.PY)
+                                        + mymont$MMEAN.SAPB.GROWTH.RESP.PY
+                                        + mymont$MMEAN.BARKA.GROWTH.RESP.PY
+                                        + mymont$MMEAN.BARKB.GROWTH.RESP.PY )
          mymont$QMEAN.GROWTH.RESP.PY  = ( mymont$QMEAN.LEAF.GROWTH.RESP.PY
                                         + mymont$QMEAN.ROOT.GROWTH.RESP.PY
                                         + mymont$QMEAN.SAPA.GROWTH.RESP.PY
                                         + mymont$QMEAN.SAPB.GROWTH.RESP.PY
-                                        + mymont$QMEAN.BARK.GROWTH.RESP.PY )
+                                        + mymont$QMEAN.BARKA.GROWTH.RESP.PY
+                                        + mymont$QMEAN.BARKB.GROWTH.RESP.PY )
          #----- Apply the same correction term to cohort-level variables. -----------------#
          if (mymont$NCOHORTS.GLOBAL > 0){
             mymont$MMEAN.GROWTH.RESP.CO  = ( mymont$MMEAN.LEAF.GROWTH.RESP.CO
                                            + mymont$MMEAN.ROOT.GROWTH.RESP.CO
                                            + mymont$MMEAN.SAPA.GROWTH.RESP.CO
                                            + mymont$MMEAN.SAPB.GROWTH.RESP.CO
-                                           + mymont$MMEAN.BARK.GROWTH.RESP.CO )
+                                           + mymont$MMEAN.BARKA.GROWTH.RESP.CO
+                                           + mymont$MMEAN.BARKB.GROWTH.RESP.CO )
             mymont$QMEAN.GROWTH.RESP.CO  = ( mymont$QMEAN.LEAF.GROWTH.RESP.CO
                                            + mymont$QMEAN.ROOT.GROWTH.RESP.CO
                                            + mymont$QMEAN.SAPA.GROWTH.RESP.CO
                                            + mymont$QMEAN.SAPB.GROWTH.RESP.CO
-                                           + mymont$QMEAN.BARK.GROWTH.RESP.CO )
+                                           + mymont$QMEAN.BARKA.GROWTH.RESP.CO
+                                           + mymont$QMEAN.BARKB.GROWTH.RESP.CO )
          }#end if
          #---------------------------------------------------------------------------------#
       }#end if (! "MMEAN.GROWTH.RESP.PY" %in% names(mymont))
@@ -198,24 +213,28 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                          + mymont$MMEAN.ROOT.STORAGE.RESP.PY
                                          + mymont$MMEAN.SAPA.STORAGE.RESP.PY
                                          + mymont$MMEAN.SAPB.STORAGE.RESP.PY
-                                         + mymont$MMEAN.BARK.STORAGE.RESP.PY )
+                                         + mymont$MMEAN.BARKA.STORAGE.RESP.PY
+                                         + mymont$MMEAN.BARKB.STORAGE.RESP.PY )
          mymont$QMEAN.STORAGE.RESP.PY  = ( mymont$QMEAN.LEAF.STORAGE.RESP.PY
                                          + mymont$QMEAN.ROOT.STORAGE.RESP.PY
                                          + mymont$QMEAN.SAPA.STORAGE.RESP.PY
                                          + mymont$QMEAN.SAPB.STORAGE.RESP.PY
-                                         + mymont$QMEAN.BARK.STORAGE.RESP.PY )
+                                         + mymont$QMEAN.BARKA.STORAGE.RESP.PY
+                                         + mymont$QMEAN.BARKB.STORAGE.RESP.PY )
          #----- Apply the same correction term to cohort-level variables. -----------------#
          if (mymont$NCOHORTS.GLOBAL > 0){
             mymont$MMEAN.STORAGE.RESP.CO  = ( mymont$MMEAN.LEAF.STORAGE.RESP.CO
                                             + mymont$MMEAN.ROOT.STORAGE.RESP.CO
                                             + mymont$MMEAN.SAPA.STORAGE.RESP.CO
                                             + mymont$MMEAN.SAPB.STORAGE.RESP.CO
-                                            + mymont$MMEAN.BARK.STORAGE.RESP.CO )
+                                            + mymont$MMEAN.BARKA.STORAGE.RESP.CO
+                                            + mymont$MMEAN.BARKB.STORAGE.RESP.CO )
             mymont$QMEAN.STORAGE.RESP.CO  = ( mymont$QMEAN.LEAF.STORAGE.RESP.CO
                                             + mymont$QMEAN.ROOT.STORAGE.RESP.CO
                                             + mymont$QMEAN.SAPA.STORAGE.RESP.CO
                                             + mymont$QMEAN.SAPB.STORAGE.RESP.CO
-                                            + mymont$QMEAN.BARK.STORAGE.RESP.CO )
+                                            + mymont$QMEAN.BARKA.STORAGE.RESP.CO
+                                            + mymont$QMEAN.BARKB.STORAGE.RESP.CO )
          }#end if
          #---------------------------------------------------------------------------------#
       }#end if (! "MMEAN.STORAGE.RESP.PY" %in% names(mymont))
@@ -225,6 +244,53 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$CROP.YIELD.PY      = rep(0.,times=12)
          mymont$CROP.HARVEST.PY    = 0. * mymont$MMEAN.ATM.TEMP.PY
          mymont$LOGGING.HARVEST.PY = 0. * mymont$MMEAN.ATM.TEMP.PY
+      }#end if (! "COMBUSTED.FUEL.PY" %in% names(mymont))
+      #----- Append PA identifier to soil carbon pools in case they are missing. ----------#
+      if (! "MMEAN.FAST.SOIL.C.PA" %in% names(mymont)){
+         mymont$MMEAN.FAST.SOIL.C.PA    = mymont$MMEAN.FAST.SOIL.C
+         mymont$MMEAN.STRUCT.SOIL.C.PA  = mymont$MMEAN.STRUCT.SOIL.C
+         mymont$MMEAN.STRUCT.SOIL.L.PA  = mymont$MMEAN.STRUCT.SOIL.L
+         mymont$MMEAN.SLOW.SOIL.C.PA    = mymont$MMEAN.SLOW.SOIL.C
+         mymont$MMEAN.FAST.SOIL.N.PA    = mymont$MMEAN.FAST.SOIL.N
+         mymont$MMEAN.MINERAL.SOIL.N.PA = mymont$MMEAN.MINERAL.SOIL.N
+         mymont$MMEAN.FAST.SOIL.C       = NULL
+         mymont$MMEAN.STRUCT.SOIL.C     = NULL
+         mymont$MMEAN.STRUCT.SOIL.L     = NULL
+         mymont$MMEAN.SLOW.SOIL.C       = NULL
+         mymont$MMEAN.FAST.SOIL.N       = NULL
+         mymont$MMEAN.MINERAL.SOIL.N    = NULL
+         #---------------------------------------------------------------------------------#
+         #    Ground pools and microbial soil were added at the same time the above- and   #
+         # below-ground pools were split.  Define them according to standard allometry.    #
+         #---------------------------------------------------------------------------------#
+         mymont$MMEAN.FAST.GRND.C.PA    =       agf.fast    * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.FAST.SOIL.C.PA    = (1. - agf.fast  ) * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.FAST.GRND.N.PA    =       agf.fast    * mymont$MMEAN.FAST.SOIL.N.PA
+         mymont$MMEAN.FAST.SOIL.N.PA    = (1. - agf.fast  ) * mymont$MMEAN.FAST.SOIL.N.PA
+         mymont$MMEAN.STRUCT.GRND.C.PA  =       agf.struct  * mymont$MMEAN.STRUCT.SOIL.C.PA
+         mymont$MMEAN.STRUCT.SOIL.C.PA  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.C.PA
+         mymont$MMEAN.STRUCT.GRND.N.PA  = mymont$MMEAN.STRUCT.GRND.C.PA / c2n.structural
+         mymont$MMEAN.STRUCT.SOIL.N.PA  = mymont$MMEAN.STRUCT.SOIL.C.PA / c2n.structural
+         mymont$MMEAN.STRUCT.GRND.L.PA  =       agf.struct  * mymont$MMEAN.STRUCT.GRND.L.PA
+         mymont$MMEAN.STRUCT.SOIL.L.PA  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PA
+         mymont$MMEAN.MICROBE.SOIL.C.PA = 0. * mymont$MMEAN.FAST.SOIL.C.PA 
+      }#end if (! "MMEAN.FAST.SOIL.C.PA" %in% names(mymont))
+      #------------------------------------------------------------------------------------#
+      #    Ground pools and microbial soil were added at the same time the above- and      #
+      # below-ground pools were split.  Define them according to standard allometry.       #
+      #------------------------------------------------------------------------------------#
+      if (! "MMEAN.MICROBE.SOIL.C.PY" %in% names(mymont)){
+         mymont$MMEAN.FAST.GRND.C.PY    =       agf.fast    * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.FAST.SOIL.C.PY    = (1. - agf.fast  ) * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.FAST.GRND.N.PY    =       agf.fast    * mymont$MMEAN.FAST.SOIL.N.PY
+         mymont$MMEAN.FAST.SOIL.N.PY    = (1. - agf.fast  ) * mymont$MMEAN.FAST.SOIL.N.PY
+         mymont$MMEAN.STRUCT.GRND.C.PY  =       agf.struct  * mymont$MMEAN.STRUCT.SOIL.C.PY
+         mymont$MMEAN.STRUCT.SOIL.C.PY  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.C.PY
+         mymont$MMEAN.STRUCT.GRND.N.PY  = mymont$MMEAN.STRUCT.GRND.C.PY / c2n.structural
+         mymont$MMEAN.STRUCT.SOIL.N.PY  = mymont$MMEAN.STRUCT.SOIL.C.PY / c2n.structural
+         mymont$MMEAN.STRUCT.GRND.L.PY  =       agf.struct  * mymont$MMEAN.STRUCT.GRND.L.PY
+         mymont$MMEAN.STRUCT.SOIL.L.PY  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PY
+         mymont$MMEAN.MICROBE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
       }#end if (! "COMBUSTED.FUEL.PY" %in% names(mymont))
       #------------------------------------------------------------------------------------#
 
@@ -262,20 +328,29 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
       #----- Load the simple variables. ---------------------------------------------------#
+      emean$fast.grnd.c     [m] =   mymont$MMEAN.FAST.GRND.C.PY
       emean$fast.soil.c     [m] =   mymont$MMEAN.FAST.SOIL.C.PY
-      emean$slow.soil.c     [m] =   mymont$MMEAN.SLOW.SOIL.C.PY
+      emean$struct.grnd.c   [m] =   mymont$MMEAN.STRUCT.GRND.C.PY
       emean$struct.soil.c   [m] =   mymont$MMEAN.STRUCT.SOIL.C.PY
+      emean$microbe.soil.c  [m] =   mymont$MMEAN.MICROBE.SOIL.C.PY
+      emean$slow.soil.c     [m] =   mymont$MMEAN.SLOW.SOIL.C.PY
       emean$crop.yield      [m] =   mymont$CROP.YIELD.PY[thismonth]
       emean$crop.harvest    [m] =   mymont$CROP.HARVEST.PY
       emean$logging.harvest [m] =   mymont$LOGGING.HARVEST.PY
       emean$combusted.fuel  [m] =   mymont$COMBUSTED.FUEL.PY
       emean$het.resp        [m] =   mymont$MMEAN.RH.PY
-      emean$cwd.resp        [m] =   mymont$MMEAN.CWD.RH.PY
+      emean$fgc.resp        [m] =   mymont$MMEAN.FGC.RH.PY
+      emean$fsc.resp        [m] =   mymont$MMEAN.FSC.RH.PY
+      emean$stgc.resp       [m] =   mymont$MMEAN.STGC.RH.PY
+      emean$stsc.resp       [m] =   mymont$MMEAN.STSC.RH.PY
+      emean$msc.resp        [m] =   mymont$MMEAN.MSC.RH.PY
+      emean$ssc.resp        [m] =   mymont$MMEAN.SSC.RH.PY
       emean$gpp             [m] =   mymont$MMEAN.GPP.PY
       emean$npp             [m] =   mymont$MMEAN.NPP.PY
       emean$nep             [m] =   mymont$MMEAN.NEP.PY
       emean$nee             [m] =   mymont$MMEAN.CARBON.ST.PY - mymont$MMEAN.CARBON.AC.PY
       emean$plant.resp      [m] =   mymont$MMEAN.PLRESP.PY
+      emean$aerobic.resp    [m] =   mymont$MMEAN.LEAF.RESP.PY + mymont$MMEAN.ROOT.RESP.PY
       emean$growth.resp     [m] =   mymont$MMEAN.GROWTH.RESP.PY
       emean$storage.resp    [m] =   mymont$MMEAN.STORAGE.RESP.PY
       emean$assim.light     [m] =   mymont$MMEAN.A.LIGHT.PY
@@ -376,7 +451,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
       emean$mco             [m] = apply( X      = ( mymont$MMEAN.LEAF.MAINTENANCE.PY
                                                   + mymont$MMEAN.ROOT.MAINTENANCE.PY
-                                                  + mymont$MMEAN.BARK.MAINTENANCE.PY
+                                                  + mymont$MMEAN.BARKA.MAINTENANCE.PY
+                                                  + mymont$MMEAN.BARKB.MAINTENANCE.PY
                                                   ) * yr.day
                                        , MARGIN = 1
                                        , FUN    = sum
@@ -423,7 +499,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emsqu$gpp       [m] =   mymont$MMSQU.GPP.PY
       emsqu$plant.resp[m] =   mymont$MMSQU.PLRESP.PY
       emsqu$het.resp  [m] =   mymont$MMSQU.RH.PY
-      emsqu$cwd.resp  [m] =   mymont$MMSQU.CWD.RH.PY
+      emsqu$fgc.resp  [m] =   mymont$MMSQU.FGC.RH.PY
+      emsqu$fsc.resp  [m] =   mymont$MMSQU.FSC.RH.PY
+      emsqu$stgc.resp [m] =   mymont$MMSQU.STGC.RH.PY
+      emsqu$stsc.resp [m] =   mymont$MMSQU.STSC.RH.PY
+      emsqu$msc.resp  [m] =   mymont$MMSQU.MSC.RH.PY
+      emsqu$ssc.resp  [m] =   mymont$MMSQU.SSC.RH.PY
       emsqu$cflxca    [m] =   mymont$MMSQU.CARBON.AC.PY
       emsqu$cflxst    [m] =   mymont$MMSQU.CARBON.ST.PY
       emsqu$hflxca    [m] =   mymont$MMSQU.SENSIBLE.AC.PY
@@ -451,7 +532,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$gpp          [m,] =   mymont$QMEAN.GPP.PY
       qmean$npp          [m,] =   mymont$QMEAN.NPP.PY
       qmean$het.resp     [m,] =   mymont$QMEAN.RH.PY
-      qmean$cwd.resp     [m,] =   mymont$QMEAN.CWD.RH.PY
+      qmean$fgc.resp     [m,] =   mymont$QMEAN.FGC.RH.PY
+      qmean$fsc.resp     [m,] =   mymont$QMEAN.FSC.RH.PY
+      qmean$stgc.resp    [m,] =   mymont$QMEAN.STGC.RH.PY
+      qmean$stsc.resp    [m,] =   mymont$QMEAN.STSC.RH.PY
+      qmean$msc.resp     [m,] =   mymont$QMEAN.MSC.RH.PY
+      qmean$ssc.resp     [m,] =   mymont$QMEAN.SSC.RH.PY
       qmean$assim.light  [m,] =   mymont$QMEAN.A.LIGHT.PY
       qmean$assim.rubp   [m,] =   mymont$QMEAN.A.RUBP.PY
       qmean$assim.co2    [m,] =   mymont$QMEAN.A.CO2.PY
@@ -549,7 +635,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmsqu$npp         [m,] =   mymont$QMSQU.NPP.PY
       qmsqu$plant.resp  [m,] =   mymont$QMSQU.PLRESP.PY
       qmsqu$het.resp    [m,] =   mymont$QMSQU.RH.PY
-      qmsqu$cwd.resp    [m,] =   mymont$QMSQU.CWD.RH.PY
+      qmsqu$fgc.resp    [m,] =   mymont$QMSQU.FGC.RH.PY
+      qmsqu$fsc.resp    [m,] =   mymont$QMSQU.FSC.RH.PY
+      qmsqu$stgc.resp   [m,] =   mymont$QMSQU.STGC.RH.PY
+      qmsqu$stsc.resp   [m,] =   mymont$QMSQU.STSC.RH.PY
+      qmsqu$msc.resp    [m,] =   mymont$QMSQU.MSC.RH.PY
+      qmsqu$ssc.resp    [m,] =   mymont$QMSQU.SSC.RH.PY
       qmsqu$nep         [m,] =   mymont$QMSQU.NEP.PY
       qmsqu$cflxca      [m,] =   mymont$QMSQU.CARBON.AC.PY
       qmsqu$cflxst      [m,] =   mymont$QMSQU.CARBON.ST.PY
@@ -747,19 +838,19 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
          #     Find biomass of all tissues.                                                #
          #---------------------------------------------------------------------------------#
-         bdeadconow        = mymont$BDEAD
+         bdeadconow        = mymont$BDEADA + mymont$BDEADB
          btimberconow      = mymont$BTIMBER
          bleafconow        = mymont$MMEAN.BLEAF.CO
          bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
-         bbarkconow        = mymont$MMEAN.BBARK.CO
+         bbarkconow        = mymont$MMEAN.BBARKA.CO + mymont$MMEAN.BBARKB.CO
          if (all(mymont$MMEAN.BROOT.CO == 0)){
             bfrootconow    = ( size2bl(dbh=dbhconow.lmon,hgt=hgtconow.lmon,ipft=pftconow)
                              * pft$qroot[pftconow] )
          }else{
             bfrootconow    = mymont$MMEAN.BROOT.CO
          }#end if
-         bcrootconow       = mymont$BSAPWOODB + (1. - agf.bsconow) * bdeadconow
-         bstemconow        = mymont$BSAPWOODA +       agf.bsconow  * bdeadconow
+         bcrootconow       = mymont$BSAPWOODB + mymont$BDEADB
+         bstemconow        = mymont$BSAPWOODA + mymont$BDEADA
          brootconow        = bfrootconow + bcrootconow
          baliveconow       = bleafconow + bfrootconow + bsapwoodconow + bbarkconow
          bstorageconow     = mymont$MMEAN.BSTORAGE.CO
@@ -777,6 +868,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          gppconow           = mymont$MMEAN.GPP.CO
          nppconow           = mymont$MMEAN.NPP.CO
          plant.respconow    = mymont$MMEAN.PLRESP.CO
+         aerobic.respconow  = mymont$MMEAN.LEAF.RESP.CO    + mymont$MMEAN.ROOT.RESP.CO
          growth.respconow   = mymont$MMEAN.GROWTH.RESP.CO
          storage.respconow  = mymont$MMEAN.STORAGE.RESP.CO
          gs.respconow       = growth.respconow + storage.respconow
@@ -784,6 +876,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          q.gppconow           = mymont$QMEAN.GPP.CO
          q.nppconow           = mymont$QMEAN.NPP.CO
          q.plant.respconow    = mymont$QMEAN.PLRESP.CO
+         q.aerobic.respconow  = mymont$QMEAN.LEAF.RESP.CO    + mymont$QMEAN.ROOT.RESP.CO
          q.growth.respconow   = mymont$QMEAN.GROWTH.RESP.CO
          q.storage.respconow  = mymont$QMEAN.STORAGE.RESP.CO
          q.gs.respconow       = q.growth.respconow + q.storage.respconow
@@ -824,9 +917,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                               )#end leaf.respconow
             stem.respconow  = ( mymont$MMEAN.SAPA.GROWTH.RESP.CO
                               + mymont$MMEAN.SAPA.STORAGE.RESP.CO
-                              + agf.bsconow * ( mymont$MMEAN.BARK.GROWTH.RESP.CO
-                                              + mymont$MMEAN.BARK.STORAGE.RESP.CO
-                                              )#end bark
+                              + mymont$MMEAN.BARKA.GROWTH.RESP.CO
+                              + mymont$MMEAN.BARKA.STORAGE.RESP.CO
                               )#end leaf.respconow
             froot.respconow = ( mymont$MMEAN.ROOT.RESP.CO
                               + mymont$MMEAN.ROOT.GROWTH.RESP.CO
@@ -834,9 +926,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                               )#end leaf.respconow
             croot.respconow = ( mymont$MMEAN.SAPB.GROWTH.RESP.CO
                               + mymont$MMEAN.SAPB.STORAGE.RESP.CO
-                              + (1. - agf.bsconow) * ( mymont$MMEAN.BARK.GROWTH.RESP.CO
-                                                     + mymont$MMEAN.BARK.STORAGE.RESP.CO
-                                                     )#end bark
+                              + mymont$MMEAN.BARKB.GROWTH.RESP.CO
+                              + mymont$MMEAN.BARKB.STORAGE.RESP.CO
                               )#end leaf.respconow
             root.respconow  = froot.respconow + croot.respconow
             #----- Mean diurnal cycle. ----------------------------------------------------#
@@ -846,9 +937,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                 )#end q.leaf.respconow
             q.stem.respconow  = ( mymont$QMEAN.SAPA.GROWTH.RESP.CO
                                 + mymont$QMEAN.SAPA.STORAGE.RESP.CO
-                                + q.agf.bs * ( mymont$QMEAN.BARK.GROWTH.RESP.CO
-                                             + mymont$QMEAN.BARK.STORAGE.RESP.CO
-                                             )#end bark
+                                + mymont$QMEAN.BARKA.GROWTH.RESP.CO
+                                + mymont$QMEAN.BARKA.STORAGE.RESP.CO
                                 )#end q.leaf.respconow
             q.froot.respconow = ( mymont$QMEAN.ROOT.RESP.CO
                                 + mymont$QMEAN.ROOT.GROWTH.RESP.CO
@@ -856,9 +946,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                 )#end q.leaf.respconow
             q.croot.respconow = ( mymont$QMEAN.SAPB.GROWTH.RESP.CO
                                 + mymont$QMEAN.SAPB.STORAGE.RESP.CO
-                                + (1. - q.agf.bs) * ( mymont$QMEAN.BARK.GROWTH.RESP.CO
-                                                    + mymont$QMEAN.BARK.STORAGE.RESP.CO
-                                                    )#end bark
+                                + mymont$QMEAN.BARKB.GROWTH.RESP.CO
+                                + mymont$QMEAN.BARKB.STORAGE.RESP.CO
                                 )#end q.leaf.respconow
             q.root.respconow  = q.froot.respconow + q.croot.respconow
          }else{
@@ -933,7 +1022,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cbarelconow       = mymont$CBR.BAR
          mcostconow        = ( mymont$MMEAN.LEAF.MAINTENANCE.CO
                              + mymont$MMEAN.ROOT.MAINTENANCE.CO
-                             + mymont$MMEAN.BARK.MAINTENANCE.CO ) * yr.day
+                             + mymont$MMEAN.BARKA.MAINTENANCE.CO
+                             + mymont$MMEAN.BARKB.MAINTENANCE.CO ) * yr.day
          ldropconow        = mymont$MMEAN.LEAF.DROP.CO * yr.day
 
 
@@ -1378,6 +1468,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          root.respconow      = NA
          froot.respconow     = NA
          croot.respconow     = NA
+         aerobic.respconow   = NA
          growth.respconow    = NA
          storage.respconow   = NA
          plant.respconow     = NA
@@ -1552,49 +1643,52 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
       #     Initialise patch-level properties that are derived from cohort-level.          #
       #------------------------------------------------------------------------------------#
-      patch$lai          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wai          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$agb          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$ba           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wood.dens    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$can.depth    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$can.area     [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$sm.stress    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.temp    [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
-      patch$leaf.water   [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.vpd     [[plab]] = mymont$MMEAN.CAN.VPDEF.PA * 0.01
-      patch$wood.temp    [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
-      patch$par.leaf     [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$par.leaf.beam[[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$par.leaf.diff[[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lpar    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.ltemp   [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lwater  [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lvpd    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.sms     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lgbw    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lgsw    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.gpp     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.gsw     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.par     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.par.beam[[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.par.diff[[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$assim.light  [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$assim.rubp   [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$assim.co2    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$gpp          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$npp          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$cba          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$plant.resp   [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$hflxlc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$hflxwc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wflxlc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wflxwc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$transp       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$soil.resp    [[plab]] = mymont$MMEAN.RH.PA
-      patch$fast.soil.c  [[plab]] = mymont$MMEAN.FAST.SOIL.C
-      patch$slow.soil.c  [[plab]] = mymont$MMEAN.SLOW.SOIL.C
-      patch$struct.soil.c[[plab]] = mymont$MMEAN.STRUCT.SOIL.C
+      patch$lai           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wai           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$agb           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$ba            [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wood.dens     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$can.depth     [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$can.area      [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$sm.stress     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.temp     [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
+      patch$leaf.water    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.vpd      [[plab]] = mymont$MMEAN.CAN.VPDEF.PA * 0.01
+      patch$wood.temp     [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
+      patch$par.leaf      [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$par.leaf.beam [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$par.leaf.diff [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lpar     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.ltemp    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lwater   [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lvpd     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.sms      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lgbw     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lgsw     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.gpp      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.gsw      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.par      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.par.beam [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.par.diff [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$assim.light   [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$assim.rubp    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$assim.co2     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$gpp           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$npp           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$cba           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$plant.resp    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$hflxlc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$hflxwc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wflxlc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wflxwc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$transp        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$soil.resp     [[plab]] = mymont$MMEAN.RH.PA
+      patch$fast.grnd.c   [[plab]] = mymont$MMEAN.FAST.GRND.C.PA
+      patch$fast.soil.c   [[plab]] = mymont$MMEAN.FAST.SOIL.C.PA
+      patch$struct.grnd.c [[plab]] = mymont$MMEAN.STRUCT.GRND.C.PA
+      patch$struct.soil.c [[plab]] = mymont$MMEAN.STRUCT.SOIL.C.PA
+      patch$microbe.soil.c[[plab]] = mymont$MMEAN.MICROBE.SOIL.C.PA
+      patch$slow.soil.c   [[plab]] = mymont$MMEAN.SLOW.SOIL.C.PA
       #------ Mean diurnal cycle. ---------------------------------------------------------#
       zero.qpatch = matrix(data=0., nrow=mymont$NPATCHES.GLOBAL,ncol=mymont$NDCYC)
       na.qpatch   = matrix(data=NA, nrow=mymont$NPATCHES.GLOBAL,ncol=mymont$NDCYC)
@@ -2449,6 +2543,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                                )#end sum
                szpft$croot.resp   [m,d,p] = sum( w.nplant          [sel]
                                                * croot.respconow   [sel]
+                                               , na.rm = TRUE
+                                               )#end sum
+               szpft$aerobic.resp [m,d,p] = sum( w.nplant          [sel]
+                                               * aerobic.respconow [sel]
                                                , na.rm = TRUE
                                                )#end sum
                szpft$growth.resp  [m,d,p] = sum( w.nplant          [sel]

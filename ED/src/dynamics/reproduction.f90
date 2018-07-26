@@ -97,6 +97,7 @@ module reproduction
       real                                :: bsapwood_plant
       real                                :: bbark_plant
       real                                :: balive_plant
+      real                                :: rec_bdead
       real                                :: rec_biomass
       logical          , parameter        :: printout  = .false.
       character(len=17), parameter        :: fracfile  = 'repro_details.txt'
@@ -282,7 +283,9 @@ module reproduction
                         rectest%dbh       = h2dbh(rectest%hite, ipft)
                         rectest%krdepth   = size2krdepth(rectest%hite,rectest%dbh          &
                                                         ,rectest%pft,cpoly%lsl(isi))
-                        rectest%bdead     = size2bd(rectest%dbh,rectest%hite,ipft)
+                        rec_bdead         = size2bd(rectest%dbh,rectest%hite,ipft)
+                        rectest%bdeada    =         agf_bs(ipft)   * rec_bdead
+                        rectest%bdeadb    = ( 1.0 - agf_bs(ipft) ) * rec_bdead
 
                         call pheninit_balive_bstorage(nzg,rectest%pft,rectest%krdepth      &
                                                      ,rectest%hite,rectest%dbh             &
@@ -292,11 +295,20 @@ module reproduction
                                                      ,rectest%phenology_status             &
                                                      ,rectest%bleaf,rectest%broot          &
                                                      ,rectest%bsapwooda,rectest%bsapwoodb  &
-                                                     ,rectest%bbark,rectest%balive         &
+                                                     ,rectest%bbarka,rectest%bbarkb        &
                                                      ,rectest%bstorage,rectest%cb          &
                                                      ,rectest%cb_lightmax                  &
                                                      ,rectest%cb_moistmax                  &
                                                      ,rectest%cb_mlmax,rectest%cbr_bar)
+
+                        !------------------------------------------------------------------!
+                        !     Find balive: we cannot use the allometry built-in function   !
+                        ! because rectest is not a patchtype structure.                    !
+                        !------------------------------------------------------------------!
+                        rectest%balive = rectest%bleaf     + rectest%broot                 &
+                                       + rectest%bsapwooda + rectest%bsapwoodb             &
+                                       + rectest%bbarka    + rectest%bbarkb
+                        !------------------------------------------------------------------!
 
                         !------------------------------------------------------------------!
                         !     Find the expected population from the reproduction stocks.   !
@@ -304,15 +316,17 @@ module reproduction
                         ! routine seed_dispersal).                                         !
                         !------------------------------------------------------------------!
                         rectest%nplant    = csite%repro(ipft,ipa)                          &
-                                          / ( rectest%balive + rectest%bdead               &
+                                          / ( rectest%balive                               &
+                                            + rectest%bdeada + rectest%bdeadb              &
                                             + rectest%bstorage)
                         !------------------------------------------------------------------!
 
 
 
                         !----- Find the total biomass for this potential new cohort. ------!
-                        rec_biomass = rectest%nplant * ( rectest%balive + rectest%bdead    &
-                                                       + rectest%bstorage )
+                        rec_biomass = rectest%nplant * ( rectest%balive                    &
+                                                       + rectest%bdeada + rectest%bdeadb   &
+                                                       + rectest%bstorage                )
                         !------------------------------------------------------------------!
 
                         !----- Decide whether it is possible to build a recruit. ----------!
@@ -362,9 +376,9 @@ module reproduction
                         !       Perhaps when we convert bseeds to repro, we should ask     !
                         !       how much of the seed pool should be lost to harvest.       !
                         !-------------------------------------------- ---------------------!
-                        csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                    &
+                        csite%fast_grnd_N(ipa) = csite%fast_grnd_N(ipa)                    &
                                                + csite%repro(ipft,ipa) / c2n_recruit(ipft)
-                        csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                    &
+                        csite%fast_grnd_C(ipa) = csite%fast_grnd_C(ipa)                    &
                                                + csite%repro(ipft,ipa)
                         csite%repro(ipft,ipa)  = 0.0
                         !------------------------------------------------------------------!
@@ -435,7 +449,8 @@ module reproduction
 
                         !----- Copy from recruitment table (II). --------------------------!
                         cpatch%nplant             (ico) = recruit(inew)%nplant 
-                        cpatch%bdead              (ico) = recruit(inew)%bdead 
+                        cpatch%bdeada             (ico) = recruit(inew)%bdeada
+                        cpatch%bdeadb             (ico) = recruit(inew)%bdeadb
                         cpatch%paw_avg            (ico) = recruit(inew)%paw_avg
                         cpatch%elongf             (ico) = recruit(inew)%elongf
                         cpatch%phenology_status   (ico) = recruit(inew)%phenology_status
@@ -443,7 +458,8 @@ module reproduction
                         cpatch%broot              (ico) = recruit(inew)%broot
                         cpatch%bsapwooda          (ico) = recruit(inew)%bsapwooda
                         cpatch%bsapwoodb          (ico) = recruit(inew)%bsapwoodb
-                        cpatch%bbark              (ico) = recruit(inew)%bbark
+                        cpatch%bbarka             (ico) = recruit(inew)%bbarka
+                        cpatch%bbarkb             (ico) = recruit(inew)%bbarkb
                         cpatch%balive             (ico) = recruit(inew)%balive
                         cpatch%bstorage           (ico) = recruit(inew)%bstorage
                         cpatch%leaf_temp          (ico) = recruit(inew)%leaf_temp
@@ -476,13 +492,14 @@ module reproduction
                         cpatch%agb      (ico) = ed_biomass(cpatch, ico)
                         cpatch%btimber  (ico) = size2bt   ( cpatch%dbh       (ico)         &
                                                           , cpatch%hite      (ico)         &
-                                                          , cpatch%bdead     (ico)         &
+                                                          , cpatch%bdeada    (ico)         &
                                                           , cpatch%bsapwooda (ico)         &
-                                                          , cpatch%bbark     (ico)         &
+                                                          , cpatch%bbarka    (ico)         &
                                                           , cpatch%pft       (ico) )
                         cpatch%thbark   (ico) = size2xb   ( cpatch%dbh       (ico)         &
                                                           , cpatch%hite      (ico)         &
-                                                          , cpatch%bbark     (ico)         &
+                                                          , cpatch%bbarka    (ico)         &
+                                                          , cpatch%bbarkb    (ico)         &
                                                           , cpatch%pft       (ico) )
                         cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                         cpatch%dagb_dt  (ico) = 0.0
@@ -509,8 +526,8 @@ module reproduction
                         !----- Find LAI, WAI, and CAI. ------------------------------------!
                         call area_indices(cpatch, ico)
                         !----- Find heat capacity and vegetation internal energy. ---------!
-                        call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)             &
-                                          ,cpatch%bsapwooda(ico),cpatch%bbark(ico)         &
+                        call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)            &
+                                          ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)        &
                                           ,cpatch%nplant(ico),cpatch%pft(ico)              &
                                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
 
@@ -740,8 +757,8 @@ module reproduction
                         !----- Find LAI, WAI, and CAI. ------------------------------------!
                         call area_indices(cpatch, ico)
                         !----- Find heat capacity and vegetation internal energy. ---------!
-                        call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)             &
-                                          ,cpatch%bsapwooda(ico),cpatch%bbark(ico)         &
+                        call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)            &
+                                          ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)        &
                                           ,cpatch%nplant(ico),cpatch%pft(ico)              &
                                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
                         cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)         &
@@ -766,9 +783,9 @@ module reproduction
                         !       Perhaps when we convert bseeds to repro, we should ask     !
                         !       how much of the seed pool should be lost to harvest.       !
                         !------------------------------------------------------------------!
-                        csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                    &
+                        csite%fast_grnd_N(ipa) = csite%fast_grnd_N(ipa)                    &
                                                + csite%repro(ipft,ipa) / c2n_recruit(ipft)
-                        csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                    &
+                        csite%fast_grnd_C(ipa) = csite%fast_grnd_C(ipa)                    &
                                                + csite%repro(ipft,ipa)
                         csite%repro(ipft,ipa)  = 0.0
                         !------------------------------------------------------------------!

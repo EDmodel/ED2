@@ -75,14 +75,14 @@ module ed_cn_utils
                                , polygontype    & ! structure
                                , sitetype       & ! structure
                                , patchtype      ! ! structure
-      use ed_max_dims      , only : n_pft          ! ! intent(in)
+      use ed_max_dims   , only : n_pft          ! ! intent(in)
       use pft_coms      , only : include_pft    & ! intent(in)
                                , c2n_recruit    & ! intent(in)
                                , c2n_stem       & ! intent(in)
                                , c2n_leaf       & ! intent(in)
                                , c2n_storage    & ! intent(in)
-                               , c2n_slow       & ! intent(in)
-                               , c2n_structural ! ! intent(in)
+                               , f_labile_leaf  & ! intent(in)
+                               , f_labile_stem  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)      , target      :: cgrid
@@ -99,6 +99,8 @@ module ed_cn_utils
       integer                         :: ipa
       integer                         :: ico
       integer                         :: ipft
+      real                            :: bfast_C
+      real                            :: bstruct_C
       real(kind=8)                    :: area_factor
       real(kind=8)                    :: this_carbon
       real(kind=8)                    :: this_nitrogen
@@ -129,12 +131,17 @@ module ed_cn_utils
             area_factor   = dble(cpoly%area(isi)) * dble(csite%area(ipa))
 
             !----- Find carbon and nitrogen soil pools for this patch. --------------------!
-            this_carbon   = dble(csite%fast_soil_C(ipa)) + dble(csite%slow_soil_C(ipa))    &
-                          + dble(csite%structural_soil_C(ipa))
-            this_nitrogen = dble(csite%fast_soil_N(ipa))                                   &
-                          + dble(csite%mineralized_soil_N(ipa))                            &
-                          + dble(csite%slow_soil_C(ipa)) / dble(c2n_slow)                  &
-                          + dble(csite%structural_soil_C(ipa)) / dble(c2n_structural)
+            this_carbon   = dble(csite%fast_grnd_C       (ipa))                            &
+                          + dble(csite%fast_soil_C       (ipa))                            &
+                          + dble(csite%structural_grnd_C (ipa))                            &
+                          + dble(csite%structural_soil_C (ipa))                            &
+                          + dble(csite%microbial_soil_C  (ipa))                            &
+                          + dble(csite%slow_soil_C       (ipa))
+            this_nitrogen = dble(csite%fast_grnd_N       (ipa))                            &
+                          + dble(csite%fast_soil_N       (ipa))                            &
+                          + dble(csite%structural_grnd_N (ipa))                            &
+                          + dble(csite%structural_grnd_N (ipa))                            &
+                          + dble(csite%mineralized_soil_N(ipa))
 
             !----- Add to the full counter. -----------------------------------------------!
             soil_C8 = soil_C8 + area_factor * this_carbon
@@ -150,16 +157,30 @@ module ed_cn_utils
             end do pftloop
 
             cohortloop: do ico = 1,cpatch%ncohorts
+               ipft = cpatch%pft(ico)
 
                !----- Get the carbon and nitrogen in vegetation. --------------------------!
-               veg_C8 = veg_C8 + area_factor                                               &
-                               * ( dble(cpatch%balive(ico)) + dble(cpatch%bdead(ico))      &
-                                 + dble(cpatch%bstorage(ico)) ) * dble(cpatch%nplant(ico))
+               veg_C8 = veg_C8 + area_factor * dble(cpatch%nplant(ico))                    &
+                               * ( dble(cpatch%balive  (ico))                              &
+                                 + dble(cpatch%bdeada  (ico))                              &
+                                 + dble(cpatch%bdeadb  (ico))                              &
+                                 + dble(cpatch%bstorage(ico)) ) 
+                               
+               bfast_C   = f_labile_leaf(ipft)                                             &
+                         * ( cpatch%bleaf(ico) + cpatch%broot(ico))                        &
+                         + f_labile_stem(ipft)                                             &
+                         * ( cpatch%bsapwooda(ico)+cpatch%bbarka(ico)+cpatch%bdeada(ico)   &
+                           + cpatch%bsapwoodb(ico)+cpatch%bbarkb(ico)+cpatch%bdeadb(ico))
+               bstruct_C = (1.0 - f_labile_leaf(ipft))                                     &
+                         * ( cpatch%bleaf(ico) + cpatch%broot(ico))                        &
+                         + (1.0 - f_labile_stem(ipft))                                     &
+                         * ( cpatch%bsapwooda(ico)+cpatch%bbarka(ico)+cpatch%bdeada(ico)   &
+                           + cpatch%bsapwoodb(ico)+cpatch%bbarkb(ico)+cpatch%bdeadb(ico))
 
                veg_N8 = veg_N8 + area_factor                                               &
-                      * ( dble(cpatch%balive(ico)) / dble(c2n_leaf(cpatch%pft(ico)))       &
-                        + dble(cpatch%bdead(ico)) / dble(c2n_stem(cpatch%pft(ico)))        &
-                        + dble(cpatch%bstorage(ico)) / dble(c2n_storage))                  &
+                      * ( dble(bfast_C  ) / dble(c2n_leaf(cpatch%pft(ico)))                &
+                        + dble(bstruct_C) / dble(c2n_stem(cpatch%pft(ico)))                &
+                        + dble(cpatch%bstorage (ico)) / dble(c2n_storage))                 &
                       * dble(cpatch%nplant(ico))
             end do cohortloop
          end do patchloop

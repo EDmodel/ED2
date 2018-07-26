@@ -111,6 +111,7 @@ module phenology_driv
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
       use ed_misc_coms   , only : current_time             ! ! intent(in)
       use allometry      , only : area_indices             & ! subroutine
+                                , ed_balive                & ! function
                                 , ed_biomass               & ! function
                                 , size2bl                  ! ! function
       use phenology_aux  , only : daylength                ! ! function
@@ -141,6 +142,8 @@ module phenology_driv
       real                                  :: elongf_grow
       real                                  :: bleaf_in
       real                                  :: bstorage_in
+      real                                  :: fast_n_drop
+      real                                  :: struct_n_drop
       !----- Variables used only for debugging purposes. ----------------------------------!
       logical                  , parameter  :: printphen=.false.
       logical, dimension(n_pft), save       :: first_time=.true.
@@ -160,10 +163,16 @@ module phenology_driv
          cpatch => csite%patch(ipa)
 
          !----- Re-initialize litter inputs. ----------------------------------------------!
-         csite%fsc_in(ipa) = 0.0
-         csite%fsn_in(ipa) = 0.0
-         csite%ssc_in(ipa) = 0.0
-         csite%ssl_in(ipa) = 0.0
+         csite%fgc_in (ipa) = 0.0
+         csite%fsc_in (ipa) = 0.0
+         csite%fgn_in (ipa) = 0.0
+         csite%fsn_in (ipa) = 0.0
+         csite%stgc_in(ipa) = 0.0
+         csite%stsc_in(ipa) = 0.0
+         csite%stgl_in(ipa) = 0.0
+         csite%stsl_in(ipa) = 0.0
+         csite%stgn_in(ipa) = 0.0
+         csite%stsn_in(ipa) = 0.0
 
          !----- Determine what phenology thresholds have been crossed. --------------------!
          call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa)                &
@@ -235,52 +244,58 @@ module phenology_driv
 
 
                if (elongf_try < 1.0 .and. cpatch%phenology_status(ico) /= -2) then
-                  !----- It is time to drop leaves.  Drop all leaves. ---------------------!
-                  cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction)                 &
-                                        * cpatch%bleaf(ico)
+
+
+                  !------------------------------------------------------------------------!
+                  !     Environment is drier, shed all leaves. Find leaf drop in terms of  !
+                  ! carbon and nitrogen.  Nitrogen drop must account for different C:N     !
+                  ! ratios between leaves and storage.                                     !
+                  !------------------------------------------------------------------------!
+                  delta_bleaf           = cpatch%bleaf(ico)
+                  cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+                  fast_n_drop           = f_labile_leaf(ipft) * delta_bleaf                &
+                                        * ( 1./c2n_leaf(ipft)                              &
+                                          - retained_carbon_fraction   / c2n_storage )
+                  struct_n_drop         = (1.0 - f_labile_leaf(ipft)) * delta_bleaf        &
+                                        * ( 1. / c2n_stem(ipft)                            &
+                                          - retained_carbon_fraction   / c2n_storage )
+                  !------------------------------------------------------------------------!
+
+
+
+                  !----- Update storage only if vegetation dynamics is on. ----------------!
+                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
+                                       + delta_bleaf * retained_carbon_fraction
                   !------------------------------------------------------------------------!
 
 
 
                   !----- Update plant carbon pools. ---------------------------------------!
-                  cpatch%bleaf   (ico) = 0.0
-                  cpatch%elongf  (ico) = 0.0
+                  cpatch%bleaf           (ico) = 0.0
+                  cpatch%elongf          (ico) = 0.0
                   cpatch%phenology_status(ico) = -2
                   !------------------------------------------------------------------------!
 
-                  !----- Update storage only if vegetation dynamics is on. ----------------!
-                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
-                                       + cpatch%bleaf(ico) * retained_carbon_fraction
-                  !------------------------------------------------------------------------!
-
 
                   !------------------------------------------------------------------------!
-                  !     Send the lost leaves to soil carbon and nitrogen pools.            !
+                  !     Send the dropped leaves to soil carbon and nitrogen pools.         !
+                  ! To conserve nitrogen, we assume all the lost nitrogen goes to the fast !
+                  ! pool.                                                                  !
                   !------------------------------------------------------------------------!
-                  csite%fsc_in(ipa) = csite%fsc_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * f_labile_leaf(ipft)
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * f_labile_leaf(ipft) / c2n_leaf(ipft)
-                  csite%ssc_in(ipa) = csite%ssc_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * (1.0 - f_labile_leaf(ipft))
-                  csite%ssl_in(ipa) = csite%ssl_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * (1.0 - f_labile_leaf(ipft))                          &
-                                    * l2n_stem / c2n_stem(ipft)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !     Contribution due to the fact that c2n_leaf and c2n_storage may be  !
-                  ! different.                                                             !
-                  !------------------------------------------------------------------------!
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa)                                    &
-                                    + cpatch%leaf_drop(ico) * cpatch%nplant(ico)           &
-                                    * (1.0 / c2n_leaf(ipft) - 1.0 / c2n_storage)
+                  csite%fgc_in(ipa)  = csite%fgc_in(ipa)                                   &
+                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)          &
+                                     * f_labile_leaf(ipft)
+                  csite%fgn_in(ipa)  = csite%fgn_in(ipa)                                   &
+                                     + cpatch%nplant(ico) * fast_n_drop
+                  csite%stgc_in(ipa) = csite%stgc_in(ipa)                                  &
+                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)          &
+                                     * (1.0 - f_labile_leaf(ipft))
+                  csite%stgl_in(ipa) = csite%stgl_in(ipa)                                  &
+                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)          &
+                                     * (1.0 - f_labile_leaf(ipft))                         &
+                                     * l2n_stem / c2n_stem(ipft)
+                  csite%stgn_in(ipa) = csite%stgn_in(ipa)                                  &
+                                     + cpatch%nplant(ico) * struct_n_drop
                   !------------------------------------------------------------------------!
 
 
@@ -295,9 +310,6 @@ module phenology_driv
                                                - cpatch%leaf_drop      (ico)
                   cpatch%cb_mlmax (13,ico)     = cpatch%cb_mlmax (13,ico)                  &
                                                - cpatch%leaf_drop (ico)
-                  
-
-
                   !------------------------------------------------------------------------!
 
                elseif(elongf_try > 1.0 .and. cpatch%phenology_status(ico) == -2) then
@@ -327,40 +339,55 @@ module phenology_driv
                   delta_bleaf = cpatch%bleaf(ico) - bl_max
 
                   if (delta_bleaf > 0.0) then
-                     !---------------------------------------------------------------------!
-                     !    Phenology_status = 0 means that the plant has leaves, but they   !
-                     ! are not growing (not necessarily because the leaves are fully       !
-                     ! flushed).                                                           !
-                     !---------------------------------------------------------------------!
+                     !----- Set flag to -1 (dropping leaves). -----------------------------!
                      cpatch%phenology_status(ico) = -1
-                     cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
-                     csite%fsc_in(ipa) = csite%fsc_in(ipa)                                 &
-                                       + cpatch%nplant(ico) * cpatch%leaf_drop(ico)        &
-                                       * f_labile_leaf(ipft)
-                     csite%fsn_in(ipa) = csite%fsn_in(ipa)                                 &
-                                       + cpatch%nplant(ico) * cpatch%leaf_drop(ico)        &
-                                       * f_labile_leaf(ipft) / c2n_leaf(ipft)
-                     csite%ssc_in(ipa) = csite%ssc_in(ipa)                                 &
-                                       + cpatch%nplant(ico) * cpatch%leaf_drop(ico)        &
-                                       * (1.0 - f_labile_leaf(ipft))
-                     csite%ssl_in(ipa) = csite%ssl_in(ipa)                                 &
-                                       + cpatch%nplant(ico) * cpatch%leaf_drop(ico)        &
-                                       * (1.0 - f_labile_leaf(ipft))                       &
-                                       * l2n_stem / c2n_stem(ipft)
-                     
-                     !----- Adjust plant carbon pools. ------------------------------------!
-                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
-                                          + retained_carbon_fraction * delta_bleaf
+                     !---------------------------------------------------------------------!
+
 
                      !---------------------------------------------------------------------!
-                     !     Contribution due to the fact that c2n_leaf and c2n_storage may  !
-                     ! be different.                                                       !
+                     !     Find leaf drop in terms of carbon and nitrogen.  Nitrogen drop  !
+                     ! must account for different C:N ratios between leaves and storage.   !
                      !---------------------------------------------------------------------!
-                     csite%fsn_in(ipa)     = csite%fsn_in(ipa)                             &
-                                           + delta_bleaf * cpatch%nplant(ico)              &
-                                           * retained_carbon_fraction                      &
-                                           * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
-                     cpatch%bleaf(ico)     = bl_max
+                     cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+                     fast_n_drop           = f_labile_leaf(ipft) * delta_bleaf             &
+                                           * ( 1./c2n_leaf(ipft)                           &
+                                             - retained_carbon_fraction   / c2n_storage )
+                     struct_n_drop         = (1.0 - f_labile_leaf(ipft)) * delta_bleaf     &
+                                           * ( 1. / c2n_stem(ipft)                         &
+                                             - retained_carbon_fraction   / c2n_storage )
+                     !---------------------------------------------------------------------!
+
+
+
+                     !----- Adjust plant carbon pools. ------------------------------------!
+                     cpatch%bleaf(ico)    = cpatch%bleaf(ico) - delta_bleaf
+                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
+                                          + retained_carbon_fraction * delta_bleaf
+                     !------------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     Send the dropped leaves to soil carbon and nitrogen pools.      !
+                     ! To conserve nitrogen, we assume all the lost nitrogen goes to the   !
+                     ! fast pool.                                                          !
+                     !---------------------------------------------------------------------!
+                     csite%fgc_in(ipa)  = csite%fgc_in(ipa)                                &
+                                        + cpatch%nplant(ico) * cpatch%leaf_drop(ico)       &
+                                        * f_labile_leaf(ipft)
+                     csite%fgn_in(ipa)  = csite%fgn_in(ipa)                                &
+                                        + cpatch%nplant(ico) * fast_n_drop
+                     csite%stgc_in(ipa) = csite%stgc_in(ipa)                               &
+                                        + cpatch%nplant(ico) * cpatch%leaf_drop(ico)       &
+                                        * (1.0 - f_labile_leaf(ipft))
+                     csite%stgl_in(ipa) = csite%stgl_in(ipa)                               &
+                                        + cpatch%nplant(ico) * cpatch%leaf_drop(ico)       &
+                                        * (1.0 - f_labile_leaf(ipft))                      &
+                                        * l2n_stem / c2n_stem(ipft)
+                     csite%stgn_in(ipa) = csite%stgn_in(ipa)                               &
+                                        + cpatch%nplant(ico) * struct_n_drop
+                     !------------------------------------------------------------------------!
+
 
                      !---------------------------------------------------------------------!
                      !      Deduct the leaf drop from the carbon balance.                  !
@@ -385,7 +412,8 @@ module phenology_driv
                   else
                      cpatch%elongf(ico) = 1.0 ! It should become green_leaf_factor...
                   end if
-                  
+                  !------------------------------------------------------------------------!
+
                elseif (.not. drop_cold .and. cpatch%phenology_status(ico) == -2            &
                        .and. leaf_out_cold) then
                   !------------------------------------------------------------------------!
@@ -395,6 +423,7 @@ module phenology_driv
                   cpatch%elongf          (ico) = 1.0 
                   !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
 
 
             case (3,4) 
@@ -444,43 +473,57 @@ module phenology_driv
                   else
                      cpatch%phenology_status(ico) = -2
                   end if
-                  cpatch%leaf_drop (ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
-                  cpatch%elongf    (ico) = elongf_try
-                  !----- Adjust plant carbon pools. ---------------------------------------!
-                  cpatch%bleaf     (ico) = bl_max
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Find leaf drop in terms of carbon and nitrogen.  Nitrogen drop     !
+                  ! must account for different C:N ratios between leaves and storage.      !
+                  !------------------------------------------------------------------------!
+                  cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+                  fast_n_drop           = f_labile_leaf(ipft) * delta_bleaf                &
+                                        * ( 1./c2n_leaf(ipft)                              &
+                                          - retained_carbon_fraction   / c2n_storage )
+                  struct_n_drop         = (1.0 - f_labile_leaf(ipft)) * delta_bleaf        &
+                                        * ( 1. / c2n_stem(ipft)                            &
+                                          - retained_carbon_fraction   / c2n_storage )
+                  !------------------------------------------------------------------------!
+
+
+
+
+                  !----- Adjust plant carbon pools and elongation factor. -----------------!
+                  cpatch%bleaf     (ico) = cpatch%bleaf(ico) - delta_bleaf
                   cpatch%bstorage  (ico) = cpatch%bstorage(ico)                            &
                                          + retained_carbon_fraction * delta_bleaf
+                  cpatch%elongf    (ico) = elongf_try
                   !------------------------------------------------------------------------!
 
 
 
                   !------------------------------------------------------------------------!
-                  !     Send the lost leaves to soil carbon and nitrogen pools.            !
+                  !     Send the dropped leaves to soil carbon and nitrogen pools.         !
+                  ! To conserve nitrogen, we assume all the lost nitrogen goes to the      !
+                  ! fast pool.                                                             !
                   !------------------------------------------------------------------------!
-                  csite%fsc_in(ipa) = csite%fsc_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * f_labile_leaf(ipft)
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * f_labile_leaf(ipft) / c2n_leaf(ipft)
-                  csite%ssc_in(ipa) = csite%ssc_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * ( 1.0 - f_labile_leaf(ipft) )
-                  csite%ssl_in(ipa) = csite%ssl_in(ipa)                                    &
-                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * ( 1.0 - f_labile_leaf(ipft) )                        &
-                                    * l2n_stem / c2n_stem(ipft)
+                  csite%fgc_in(ipa)  = csite%fgc_in(ipa)                                   &
+                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)          &
+                                     * f_labile_leaf(ipft)
+                  csite%fgn_in(ipa)  = csite%fgn_in(ipa)                                   &
+                                     + cpatch%nplant(ico) * fast_n_drop
+                  csite%stgc_in(ipa) = csite%stgc_in(ipa)                                  &
+                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)          &
+                                     * (1.0 - f_labile_leaf(ipft))
+                  csite%stgl_in(ipa) = csite%stgl_in(ipa)                                  &
+                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)          &
+                                     * (1.0 - f_labile_leaf(ipft))                         &
+                                     * l2n_stem / c2n_stem(ipft)
+                  csite%stgn_in(ipa) = csite%stgn_in(ipa)                                  &
+                                     + cpatch%nplant(ico) * struct_n_drop
                   !------------------------------------------------------------------------!
 
 
-                  !------------------------------------------------------------------------!
-                  !     Contribution due to the fact that c2n_leaf and c2n_storage may be  !
-                  ! different.                                                             !
-                  !------------------------------------------------------------------------!
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + delta_bleaf*cpatch%nplant(ico)   &
-                                    * retained_carbon_fraction                             &
-                                    * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
-                  !------------------------------------------------------------------------!
+
 
                   !------------------------------------------------------------------------!
                   !      Deduct the leaf drop from the carbon balance.                     !
@@ -493,8 +536,8 @@ module phenology_driv
                                               - cpatch%leaf_drop      (ico)
                   cpatch%cb_mlmax (13,ico)    = cpatch%cb_mlmax    (13,ico)                &
                                               - cpatch%leaf_drop      (ico)
-
                   !------------------------------------------------------------------------!
+
                elseif (cpatch%phenology_status(ico) /= 0) then
                   !------------------------------------------------------------------------!
                   !       Elongation factor could increase, but we first check whether it  !
@@ -546,7 +589,7 @@ module phenology_driv
 
 
             !----- Update balive. ---------------------------------------------------------!
-            cpatch%balive(ico) = cpatch%balive(ico) + cpatch%bleaf(ico) - bleaf_in
+            cpatch%balive(ico) = ed_balive(cpatch,ico)
             !------------------------------------------------------------------------------!
 
 
@@ -569,8 +612,8 @@ module phenology_driv
             !------------------------------------------------------------------------------!
             old_leaf_hcap       = cpatch%leaf_hcap(ico)
             old_wood_hcap       = cpatch%wood_hcap(ico)
-            call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)   &
-                              ,cpatch%bbark(ico),cpatch%nplant(ico),cpatch%pft(ico)        &
+            call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico),cpatch%bsapwooda(ico)  &
+                              ,cpatch%bbarka(ico),cpatch%nplant(ico),cpatch%pft(ico)       &
                               ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
             call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
             call is_resolvable(csite,ipa,ico)

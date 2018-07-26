@@ -344,13 +344,39 @@ tspftdbh[[n]]     = list( vnam     = "root.resp"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "aerobic.resp"
+                        , desc     = "Aerobic respiration"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = FALSE
+                        , pftdbh   = FALSE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "growth.resp"
                         , desc     = "Growth respiration"
                         , e.unit   = untab$kgcom2oyr
                         , i.unit   = untab$kgcoployr
                         , plog     = FALSE
-                        , pft      = TRUE
-                        , pftdbh   = TRUE
+                        , pft      = FALSE
+                        , pftdbh   = FALSE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "storage.resp"
+                        , desc     = "Storage respiration"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = FALSE
+                        , pftdbh   = FALSE
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -1362,6 +1388,60 @@ squeeze[[n]] = list( vnam       = "het.resp"
                    , box.plot   = FALSE
                    )#end list
 n            = n + 1
+squeeze[[n]] = list( vnam       = "fgc.resp"
+                   , desc       = "Surface litter respiration"
+                   , unit       = untab$kgcom2oyr
+                   , col.scheme = "panoply"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "fsc.resp"
+                   , desc       = "Sub-surface litter respiration"
+                   , unit       = untab$kgcom2oyr
+                   , col.scheme = "panoply"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "stgc.resp"
+                   , desc       = "Surface woody debris respiration"
+                   , unit       = untab$kgcom2oyr
+                   , col.scheme = "panoply"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "stsc.resp"
+                   , desc       = "Sub-surface woody debris respiration"
+                   , unit       = untab$kgcom2oyr
+                   , col.scheme = "panoply"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "msc.resp"
+                   , desc       = "Microbial soil respiration"
+                   , unit       = untab$kgcom2oyr
+                   , col.scheme = "panoply"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "ssc.resp"
+                   , desc       = "Humified soil respiration"
+                   , unit       = untab$kgcom2oyr
+                   , col.scheme = "panoply"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
 squeeze[[n]] = list( vnam       = "nep"
                    , desc       = "Net ecosystem production"
                    , unit       = untab$kgcom2oyr
@@ -1983,18 +2063,70 @@ theme[[n]] = list( vnam      = c(                "rk4step")
                  , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c(          "reco",    "plant.resp",      "het.resp"
-                                ,     "leaf.resp",     "stem.resp",     "root.resp")
-                 , desc      = c(     "Ecosystem",   "Autotrophic", "Heterotrophic"
-                                ,          "Leaf",          "Stem",          "Root")
-                 , colour    = c(       "#2996CC",       "#143305",       "#3B24B3"
-                                ,       "#A3CC52",       "#E65C17",       "#990F0F")
+theme[[n]] = list( vnam      = c(    "plant.resp",     "leaf.resp",     "stem.resp"
+                                ,     "root.resp")
+                 , desc      = c(   "Autotrophic",          "Leaf",          "Stem"
+                                ,          "Root")
+                 , colour    = c(       "#143305",       "#A3CC52",       "#E65C17"
+                                ,       "#990F0F")
                  , lwd       = c(             2.5,             2.5,             2.5
-                                ,             2.5,             2.5,             2.5)
+                                ,             2.5)
                  , type      = "o"
                  , plog      = FALSE
-                 , prefix    = "respiration"
-                 , title     = "Respiration fluxes"
+                 , prefix    = "pltissueresp"
+                 , title     = "Auto. respiration fluxes"
+                 , unit      = untab$kgcom2oyr
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = FALSE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(0.,4.5)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(0.,4.5)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(    "plant.resp",  "aerobic.resp",   "growth.resp"
+                                ,  "storage.resp")
+                 , desc      = c(   "Autotrophic",       "Aerobic",        "Growth"
+                                ,       "Storage")
+                 , colour    = c(       "#143305",       "#2996CC",       "#3B24B3"
+                                ,       "#B49ED2")
+                 , lwd       = c(             2.5,             2.5,             2.5
+                                ,             2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "plprocresp"
+                 , title     = "Auto. respiration fluxes"
+                 , unit      = untab$kgcom2oyr
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = FALSE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(0.,4.5)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(0.,4.5)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(       "het.resp",       "fgc.resp",       "fsc.resp"
+                                ,      "stgc.resp",      "stsc.resp",       "msc.resp"
+                                ,       "ssc.resp")
+                 , desc      = c(  "Heterotrophic",      "AG Litter",      "BG Litter"
+                                ,"AG Woody Debris","BG Woody Debris",      "Microbial"
+                                ,  "Humified soil")
+                 , colour    = c(        "#143305",        "#A3CC52",        "#E65C17"
+                                ,        "#990F0F",        "#3B24B3",        "#2996CC"
+                                ,        "#B49ED2")
+                 , lwd       = c(              2.5,              2.5,              2.5
+                                ,              2.5,              2.5,              2.5
+                                ,              2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "hetresp"
+                 , title     = "Het. Respiration fluxes"
                  , unit      = untab$kgcom2oyr
                  , legpos    = "topleft"
                  , emean     = TRUE
@@ -2027,10 +2159,18 @@ theme[[n]] = list( vnam      = c(  "atm.vels",            "ustar")
                  , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c("fast.soil.c","slow.soil.c","struct.soil.c")
-                 , desc      = c(       "Fast",       "Slow",   "Structural")
-                 , colour    = c("chartreuse3","dodgerblue3",    "orangered")
-                 , lwd       = c(          2.5,          2.5,            2.5)
+theme[[n]] = list( vnam      = c(    "fast.grnd.c",    "fast.soil.c"
+                                ,  "struct.grnd.c",  "struct.soil.c"
+                                , "microbe.soil.c",    "slow.soil.c")
+                 , desc      = c(      "AG Litter",      "BG Litter"
+                                ,"AG Woody Debris","BG Woody Debris"
+                                ,     "Microbial",        "Humified")
+                 , colour    = c(       "#A3CC52",         "#1E4C08"
+                                ,       "#E65C17",         "#990F0F"
+                                ,       "#2996CC",         "#3B24B3")
+                 , lwd       = c(             2.5,               2.5
+                                ,             2.5,               2.5
+                                ,             2.5,               2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "soil_carbon"
@@ -2640,8 +2780,8 @@ compmodel[[n]] = list( vnam   = "reco"
                      , desc   = "Ecosystem respiration"
                      , unit   = untab$kgcom2oyr
                      , plotsd = TRUE
-                     , colour = c(yellow.mg,grey.fg)
-                     , errcol = c(yellow.bg,grey.bg)
+                     , colour = c(orange.mg,grey.fg)
+                     , errcol = c(orange.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
                      , lwd    = c(          2.5,     2.5)
@@ -2659,8 +2799,8 @@ compmodel[[n]] = list( vnam   = "albedo"
                      , desc   = "Albedo"
                      , unit   = untab$empty
                      , plotsd = TRUE
-                     , colour = c(orange.fg,grey.fg)
-                     , errcol = c(orange.bg,grey.bg)
+                     , colour = c(yellow.fg,grey.fg)
+                     , errcol = c(yellow.bg,grey.bg)
                      , angle  = c(         45,     -45)
                      , dens   = c(         40,      40)
                      , lwd    = c(        2.5,     2.5)
@@ -3160,8 +3300,8 @@ plotpatch[[n]] = list( vnam       = "reco"
                      , ymean      = TRUE
                      )#end list
 n              = n + 1
-plotpatch[[n]] = list( vnam       = "fast.soil.c"
-                     , desc       = "Fast soil carbon"
+plotpatch[[n]] = list( vnam       = "fast.grnd.c"
+                     , desc       = "Aboveground litter"
                      , unit       = untab$kgcom2
                      , col.scheme = "panoply"
                      , plog       = TRUE
@@ -3170,8 +3310,18 @@ plotpatch[[n]] = list( vnam       = "fast.soil.c"
                      , ymean      = TRUE
                      )#end list
 n              = n + 1
-plotpatch[[n]] = list( vnam       = "slow.soil.c"
-                     , desc       = "Slow soil carbon"
+plotpatch[[n]] = list( vnam       = "fast.soil.c"
+                     , desc       = "Belowground litter"
+                     , unit       = untab$kgcom2
+                     , col.scheme = "panoply"
+                     , plog       = TRUE
+                     , emean      = TRUE
+                     , mmean      = TRUE
+                     , ymean      = TRUE
+                     )#end list
+n              = n + 1
+plotpatch[[n]] = list( vnam       = "struct.grnd.c"
+                     , desc       = "Aboveground woody debris"
                      , unit       = untab$kgcom2
                      , col.scheme = "panoply"
                      , plog       = TRUE
@@ -3181,7 +3331,27 @@ plotpatch[[n]] = list( vnam       = "slow.soil.c"
                      )#end list
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "struct.soil.c"
-                     , desc       = "Structural soil carbon"
+                     , desc       = "Belowground woody debris"
+                     , unit       = untab$kgcom2
+                     , col.scheme = "panoply"
+                     , plog       = TRUE
+                     , emean      = TRUE
+                     , mmean      = TRUE
+                     , ymean      = TRUE
+                     )#end list
+n              = n + 1
+plotpatch[[n]] = list( vnam       = "microbe.soil.c"
+                     , desc       = "Microbial soil carbon"
+                     , unit       = untab$kgcom2
+                     , col.scheme = "panoply"
+                     , plog       = TRUE
+                     , emean      = TRUE
+                     , mmean      = TRUE
+                     , ymean      = TRUE
+                     )#end list
+n              = n + 1
+plotpatch[[n]] = list( vnam       = "slow.soil.c"
+                     , desc       = "Humified soil carbon"
                      , unit       = untab$kgcom2
                      , col.scheme = "panoply"
                      , plog       = TRUE

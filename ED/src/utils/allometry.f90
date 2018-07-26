@@ -194,7 +194,7 @@ module allometry
    ! only used for the new allometry, because we must solve an iterative root-finding      !
    ! method.                                                                               !
    !---------------------------------------------------------------------------------------!
-   real function bd2dbh(ipft, bdead)
+   real function bd2dbh(ipft, bdeada,bdeadb)
       use pft_coms    , only : b1Bs_small  & ! intent(in)
                              , b2Bs_small  & ! intent(in)
                              , b1Bs_large  & ! intent(in)
@@ -217,11 +217,13 @@ module allometry
 
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in)  :: ipft      ! PFT type                           [         ---]
-      real   , intent(in)  :: bdead     ! Structural (dead) biomass          [   kgC/plant]
+      real   , intent(in)  :: bdeada    ! Aboveground heartwood biomass      [   kgC/plant]
+      real   , intent(in)  :: bdeadb    ! Belowground heartwood biomass      [   kgC/plant]
       !----- Local variables. -------------------------------------------------------------!
       integer              :: ilwr      ! Lower index of the lookup table
       integer              :: iupr      ! Upper index of the lookup table
       integer              :: it        ! Iteration counter
+      real                 :: bdead     ! Total heartwood biomass
       real                 :: dbha      ! Lower guess for DBH
       real                 :: dbhz      ! Upper guess for DBH
       real                 :: hgta      ! Lower guess for height
@@ -234,6 +236,10 @@ module allometry
       logical              :: converged ! Iterative method converged
       !------------------------------------------------------------------------------------!
 
+
+      !----- Total heartwood biomass. -----------------------------------------------------!
+      bdead = bdeada + bdeadb
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -810,20 +816,19 @@ module allometry
    !=======================================================================================!
    !    This function computes the commercial timber biomass for different PFTs.           !
    !---------------------------------------------------------------------------------------!
-   real function size2bt(dbh,hgt,bdead,bsapwooda,bbark,ipft)
+   real function size2bt(dbh,hgt,bdeada,bsapwooda,bbarka,ipft)
       use pft_coms    , only : is_grass    & ! intent(in)
                              , is_tropical & ! intent(in)
                              , rho         & ! intent(in)
-                             , agf_bs      & ! intent(in)
                              , C2B         ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=4), intent(in) :: dbh
       real(kind=4), intent(in) :: hgt
-      real(kind=4), intent(in) :: bdead
+      real(kind=4), intent(in) :: bdeada
       real(kind=4), intent(in) :: bsapwooda
-      real(kind=4), intent(in) :: bbark
+      real(kind=4), intent(in) :: bbarka
       integer     , intent(in) :: ipft
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)             :: btimber
@@ -845,7 +850,7 @@ module allometry
          !     Tropical trees.  We use the tree volume scaled with typical wood density.   !
          !---------------------------------------------------------------------------------!
          btimber  = 1000. * rho(ipft) * size2vol(dbh,hgt,ipft) / C2B
-         bagwood  = agf_bs(ipft) * (bdead + bbark) + bsapwooda
+         bagwood  = bdeada + bbarka + bsapwooda
          size2bt  = min(btimber,bagwood)
          !---------------------------------------------------------------------------------!
       else
@@ -853,7 +858,7 @@ module allometry
          !     Temperate trees.  For the time being we use total aboveground wood biomass, !
          ! so results are consistent with former implementation.                           !
          !---------------------------------------------------------------------------------!
-         size2bt  = agf_bs(ipft) * (bdead + bbark) + bsapwooda
+         size2bt  = bdeada + bbarka + bsapwooda
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -873,7 +878,7 @@ module allometry
    !    This function computes bark thickness.  To obtain the actual thickness, we compare !
    ! the actual bark biomass with on-allometry bark biomass.                               !
    !---------------------------------------------------------------------------------------!
-   real function size2xb(dbh,hgt,bbark,ipft)
+   real function size2xb(dbh,hgt,bbarka,bbarkb,ipft)
       use pft_coms    , only : is_grass       & ! intent(in)
                              , is_liana       & ! intent(in)
                              , qbark          & ! intent(in)
@@ -887,7 +892,8 @@ module allometry
       !----- Arguments --------------------------------------------------------------------!
       real(kind=4), intent(in) :: dbh
       real(kind=4), intent(in) :: hgt
-      real(kind=4), intent(in) :: bbark
+      real(kind=4), intent(in) :: bbarka
+      real(kind=4), intent(in) :: bbarkb
       integer     , intent(in) :: ipft
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)             :: mdbh
@@ -919,7 +925,7 @@ module allometry
          !---------------------------------------------------------------------------------!
 
          !----- Scale bark thickness with the ratio between actual and on-allometry. ------!
-         size2xb   = b1Xb(ipft) * mdbh * bbark / bbark_max
+         size2xb   = b1Xb(ipft) * mdbh * ( bbarka + bbarkb ) / bbark_max
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1174,7 +1180,6 @@ module allometry
    !     This subroutine finds the total above ground biomass (wood + leaves)              !
    !---------------------------------------------------------------------------------------!
    real function ed_biomass(cpatch,ico)
-      use pft_coms,      only : agf_bs     ! ! intent(in)
       use ed_state_vars, only : patchtype  ! ! Structure
       implicit none 
 
@@ -1183,11 +1188,38 @@ module allometry
       integer, intent(in)     :: ico
       !------------------------------------------------------------------------------------!
 
-      ed_biomass = cpatch%bleaf(ico) + cpatch%bsapwooda(ico)                               &
-                 + ( cpatch%bdead(ico) + cpatch%bbark(ico) ) * agf_bs(cpatch%pft(ico))
+      ed_biomass = cpatch%bleaf (ico) + cpatch%bsapwooda(ico) + cpatch%bbarka(ico)         &
+                 + cpatch%bdeada(ico)
 
       return
    end function ed_biomass
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine finds the total biomass of living tissues.                        !
+   !---------------------------------------------------------------------------------------!
+   real function ed_balive(cpatch,ico)
+      use ed_state_vars, only : patchtype  ! ! Structure
+      implicit none 
+
+      !----- Arguments --------------------------------------------------------------------!
+      type(patchtype), target :: cpatch
+      integer, intent(in)     :: ico
+      !------------------------------------------------------------------------------------!
+
+      ed_balive = cpatch%bleaf    (ico) + cpatch%broot    (ico)                            &
+                + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                            &
+                + cpatch%bbarka   (ico) + cpatch%bbarkb   (ico)
+
+      return
+   end function ed_balive
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1239,7 +1271,8 @@ module allometry
    !     This function decomposes total biomass (except for storage) into biomass of each  !
    ! tissue, plus the dbh and height.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine expand_bevery(ipft,bevery,dbh,hite,bleaf,broot,bsapa,bsapb,bbark,balive,bdead)
+   subroutine expand_bevery(ipft,bevery,dbh,hite,bleaf,broot,bsapa,bsapb,bbarka,bbarkb     &
+                           ,balive,bdeada,bdeadb)
       use pft_coms    , only : bevery_crit & ! intent(in)
                              , balive_crit & ! intent(in)
                              , agf_bs      & ! intent(in)
@@ -1268,9 +1301,11 @@ module allometry
       real   , intent(out) :: broot     ! Root biomass                        [  kgC/plant]
       real   , intent(out) :: bsapa     ! Above-ground sapwood biomass        [  kgC/plant]
       real   , intent(out) :: bsapb     ! Below-ground sapwood biomass        [  kgC/plant]
-      real   , intent(out) :: bbark     ! Bark biomass                        [  kgC/plant]
+      real   , intent(out) :: bbarka    ! Above-ground Bark biomass           [  kgC/plant]
+      real   , intent(out) :: bbarkb    ! Below-ground Bark biomass           [  kgC/plant]
       real   , intent(out) :: balive    ! Live biomass                        [  kgC/plant]
-      real   , intent(out) :: bdead     ! Heartwood biomass                   [  kgC/plant]
+      real   , intent(out) :: bdeada    ! Above-ground Heartwood biomass      [  kgC/plant]
+      real   , intent(out) :: bdeadb    ! Below-ground Heartwood biomass      [  kgC/plant]
       !----- Local variables. -------------------------------------------------------------!
       integer              :: ilwr      ! Lower index of the lookup table
       integer              :: iupr      ! Upper index of the lookup table
@@ -1284,6 +1319,7 @@ module allometry
       real                 :: funa      ! Function evaluation for lower guess
       real                 :: funz      ! Function evaluation for upper guess
       real                 :: fun       ! Function evaluation for new   guess
+      real                 :: bdeadx    ! Heartwood biomass
       logical              :: zside     ! Last update was on zside
       logical              :: converged ! Iterative method converged
       !------------------------------------------------------------------------------------!
@@ -1298,30 +1334,35 @@ module allometry
          finterp = bevery / bevery_lut(1,ipft)
          dbh     = dbh_lut(1,ipft)    * bevery / bevery_lut(1,ipft)
          hite    = dbh2h(ipft,dbh)
-         bdead   = bdead_lut(1,ipft)  * bevery / bevery_lut(1,ipft)
+         bdeadx  = bdead_lut(1,ipft)  * bevery / bevery_lut(1,ipft)
+         bdeada  =       agf_bs(ipft)  * bdeadx
+         bdeadb  = (1. - agf_bs(ipft)) * bdeadx
          balive  = balive_lut(1,ipft) * bevery / bevery_lut(1,ipft)
          salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
          bleaf   =                                            salloci * balive
          broot   =                       q    (ipft)        * salloci * balive
          bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
          bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
-         bbark   =                       qbark(ipft) * hite * salloci * balive
+         bbarka  =       agf_bs(ipft)  * qbark(ipft) * hite * salloci * balive
+         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * hite * salloci * balive
          !---------------------------------------------------------------------------------!
       else if (bevery >= bevery_crit(ipft)) then
          !---------------------------------------------------------------------------------!
          !     Bdead is above critical value, height is known.                             !
          !---------------------------------------------------------------------------------!
          balive  = balive_crit(ipft)
-         bdead   = bevery - balive
-         dbh     = bd2dbh(ipft,bdead)
+         bdeadx  = bevery - balive
+         bdeada  =       agf_bs(ipft)  * bdeadx
+         bdeadb  = (1. - agf_bs(ipft)) * bdeadx
+         dbh     = bd2dbh(ipft,bdeada,bdeadb)
          hite    = hgt_max(ipft)
          salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
          bleaf   =                                            salloci * balive
          broot   =                       q    (ipft)        * salloci * balive
          bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
          bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
-         bbark   =                       qbark(ipft) * hite * salloci * balive
-
+         bbarka  =       agf_bs(ipft)  * qbark(ipft) * hite * salloci * balive
+         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * hite * salloci * balive
          !---------------------------------------------------------------------------------!
       else
          !----- Use the look-up table to find the best dbh. -------------------------------!
@@ -1461,14 +1502,17 @@ module allometry
 
 
          !------ Solution for dbh was determined, derive tissue biomass. ------------------!
-         bdead   = size2bd(dbh,hite,ipft)
-         balive  = bevery - bdead
+         bdeadx  = size2bd(dbh,hite,ipft)
+         bdeada  =       agf_bs(ipft)  * bdeadx
+         bdeadb  = (1. - agf_bs(ipft)) * bdeadx
+         balive  = bevery - bdeadx
          salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
          bleaf   =                                            salloci * balive
          broot   =                       q    (ipft)        * salloci * balive
          bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
          bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
-         bbark   =                       qbark(ipft) * hite * salloci * balive
+         bbarka  =       agf_bs(ipft)  * qbark(ipft) * hite * salloci * balive
+         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * hite * salloci * balive
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!

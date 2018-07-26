@@ -286,13 +286,18 @@ subroutine init_decomp_params()
                           , resp_water_above_opt        & ! intent(out)
                           , resp_temperature_increase   & ! intent(out)
                           , N_immobil_supply_scale      & ! intent(out)
-                          , cwd_frac                    & ! intent(out)
                           , r_fsc                       & ! intent(out)
                           , r_stsc                      & ! intent(out)
-                          , r_ssc                       & ! intent(out)
+                          , r_msc                       & ! intent(out)
                           , decay_rate_stsc             & ! intent(out)
                           , decay_rate_fsc              & ! intent(out)
+                          , decay_rate_msc              & ! intent(out)
                           , decay_rate_ssc              & ! intent(out)
+                          , fx_msc                      & ! intent(out)
+                          , xrothc_a                    & ! intent(out)
+                          , xrothc_b                    & ! intent(out)
+                          , xrothc_c                    & ! intent(out)
+                          , xrothc_d                    & ! intent(out)
                           , rh_lloyd_1                  & ! intent(out)
                           , rh_lloyd_2                  & ! intent(out)
                           , rh_lloyd_3                  & ! intent(out)
@@ -305,7 +310,9 @@ subroutine init_decomp_params()
                           , rh_dry_smoist               & ! intent(out)
                           , rh_wet_smoist               & ! intent(out)
                           , rh_active_depth             & ! intent(out)
-                          , k_rh_active                 ! ! intent(out)
+                          , k_rh_active                 & ! intent(out)
+                          , agf_fsc                     & ! intent(out)
+                          , agf_stsc                    ! ! intent(out)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -315,39 +322,89 @@ subroutine init_decomp_params()
    resp_water_above_opt      = 4.5139
    resp_temperature_increase = 0.0757
    N_immobil_supply_scale    = 40.0 / yr_day
-   cwd_frac                  = 0.2
-   r_fsc                     = 1.0
-   r_stsc                    = 0.3
-   r_ssc                     = 1.0
+
+   !---------------------------------------------------------------------------------------!
+   !      Fraction of decay that is lost as CO2 (used only when decomposition scheme is 0  !
+   ! or 1).                                                                                !
+   !---------------------------------------------------------------------------------------!
+   r_fsc           = 1.0
+   r_stsc          = 0.3
+   r_msc           = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    ! MLO.  After talking to Paul, it seems the decay rate for the slow carbon pool is      !
    !       artificially high for when nitrogen limitation is turned on.  If it is turned   !
    !       off, however, then the slow carbon will disappear very quickly.  I don't want   !
    !       to mess other people's results, so I will change the rate only when             !
-   !       decomp_scheme is 2, and only when nitrogen limitation is off.  I think this     !
-   !       should be applied to all schemes, but I will let the users of these schemes to  !
-   !       decide.                                                                         !
+   !       decomp_scheme is 2.  I think this should be applied to all schemes, but I will  !
+   !       let the users of these schemes to decide.                                       !
    !---------------------------------------------------------------------------------------!
    select case (decomp_scheme)
    case (0,1)
       decay_rate_fsc  =  11.0 / yr_day    ! former K2
       decay_rate_stsc =   4.5 / yr_day    ! former K1
+      decay_rate_msc  =   0.0 / yr_day    ! Inexistent.  Microbes are not solved here.
       decay_rate_ssc  = 100.2 / yr_day    ! former K3
-      r_fsc           = 1.0
-      r_stsc          = 0.3
-      r_ssc           = 1.0
    case (2)
-      decay_rate_fsc  =  16.6 / yr_day    ! From CENTURY model
-      decay_rate_stsc =   4.2 / yr_day    ! From CENTURY model
-      decay_rate_ssc  =  0.02 / yr_day    ! This is representing both the slow and the 
-                                          ! passive pool, hence the low decay rate
-                                          ! compared to CENTURY.
-      r_fsc           = 1.00 ! Fraction of litter lost through respiration.
-      r_stsc          = 0.48 ! Respiration from structural.
-      r_ssc           = 1.00 ! This has to be 1 because there is no passive pool.
+      !------------------------------------------------------------------------------------!
+      !    Redefine decay rates and pools to match the Rothamsted carbon (RothC) model,    !
+      ! following S12, with some important changes.                                        !
+      !                                                                                    !
+      ! 1.  The passive soil carbon is completely skipped;                                 !
+      ! 2.  The typical decay rates are closer to CENTURY (B98) because the values are     !
+      !     based on observations (Fig. 3 of B98, note the typo in their definition of     !
+      !     half-life, it should be ln(2), not log2(e).  The rates are approximate, and    !
+      !     intentionally shifted low to avoid excessive respiration.  These values could  !
+      !     be optimised in the future.                                                    !
+      ! 3.  The actual decay rates are modulated by temperature and soil moisture, using   !
+      !     functions adapted from the CENTURY model.                                      !
+      !                                                                                    !
+      ! References:                                                                        !
+      !                                                                                    !
+      ! Bolker BM, Pacala SW, and Parton WJ. 1998. Linear analysis of soil decomposition:  !
+      !    insights from the CENTURY model. Ecol. Appl., 8(2):425-439.                     !
+      !    doi:10.1890/1051- 0761(1998)008[0425:LAOSDI]2.0.CO;2 (B98).                     !
+      !                                                                                    !
+      ! Sierra CA, Mueller M, and Trumbore SE. 2012. Models of soil organic matter         !!
+      !    decomposition: the SoilR package, version 1.0. Geosci. Model Dev. 5(4),         !
+      !    1045-1060. doi:10.5194/gmd-5-1045-2012 (S12).                                   !
+      !------------------------------------------------------------------------------------!
+      decay_rate_fsc  =  10.0 / yr_day
+      decay_rate_stsc =  1.00 / yr_day
+      decay_rate_msc  =  3.00 / yr_day
+      decay_rate_ssc  =  0.10 / yr_day
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !      When soil decays, a fraction is lost as CO2 (heterotrophic respiration).  The    !
+   ! remaining decayed carbon is partitioned between microbial carbon (fx_msc) and         !
+   ! humified ("slow") carbon (1 - fx_msc).                                                !
+   !---------------------------------------------------------------------------------------!
+   fx_msc          = 0.46
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Coefficients that relate clay fraction to fraction of soil C lost as CO2.  This  !
+   ! is used only when decomp_scheme is set to 2.  Values came from S12, equation 23.      !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Sierra CA, Mueller M, and Trumbore SE. 2012. Models of soil organic matter            !
+   !    decomposition: the SoilR package, version 1.0. Geosci. Model Dev. 5(4),            !
+   !    1045-1060. doi:10.5194/gmd-5-1045-2012 (S12).                                      !
+   !---------------------------------------------------------------------------------------!
+   xrothc_a =  1.67
+   xrothc_b =  1.85
+   xrothc_c =  1.60
+   xrothc_d = -7.86 ! 100x original because we use fraction of clay instead of percentage.
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -364,14 +421,14 @@ subroutine init_decomp_params()
    !      Parameters used for the ED-1.0/CENTURY based functions of temperature and soil   !
    ! moisture.                                                                             !
    !---------------------------------------------------------------------------------------!
-   rh_decay_low   = 0.30
-   rh_decay_high  = 0.30
-   rh_low_temp    = 10.0 + t00
-   rh_high_temp   = 40.0 + t00
-   rh_decay_dry   = 12.0 ! 18.0
-   rh_decay_wet   = 72.0 ! 36.0
-   rh_dry_smoist  = 0.60 ! 0.36
-   rh_wet_smoist  = 0.95 ! 0.96
+   rh_decay_low   = 0.24
+   rh_decay_high  = 0.60
+   rh_low_temp    = 18.0 + t00
+   rh_high_temp   = 45.0 + t00
+   rh_decay_dry   = 15.0 ! 18.0
+   rh_decay_wet   = 30.0 ! 36.0
+   rh_dry_smoist  = 0.30 ! 0.36
+   rh_wet_smoist  = 0.85 ! 0.96
    !---------------------------------------------------------------------------------------!
 
 
@@ -387,6 +444,17 @@ subroutine init_decomp_params()
          end do k_rh_loop
          k_rh_active = k_rh_active + 1
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are used for initialisation of above- and below-ground necromass  !
+   ! pools.                                                                                !
+   !---------------------------------------------------------------------------------------!
+   agf_fsc            = 0.5
+   agf_stsc           = 0.7
    !---------------------------------------------------------------------------------------!
 
    return
@@ -622,10 +690,10 @@ subroutine init_disturb_params
                            , fire_dryness_threshold    & ! intent(out)
                            , fire_smoist_depth         & ! intent(out)
                            , fuel_height_max           & ! intent(out)
-                           , f_combusted_fast          & ! intent(out)
-                           , f_combusted_struct        & ! intent(out)
-                           , agf_fsc                   & ! intent(out)
-                           , agf_stsc                  & ! intent(out)
+                           , f_combusted_fast_c        & ! intent(out)
+                           , f_combusted_struct_c      & ! intent(out)
+                           , f_combusted_fast_n        & ! intent(out)
+                           , f_combusted_struct_n      & ! intent(out)
                            , k_fire_first              & ! intent(out)
                            , min_plantation_frac       & ! intent(out)
                            , max_plantation_dist       ! ! intent(out)
@@ -679,17 +747,16 @@ subroutine init_disturb_params
    !----- Fraction of biomass and necromass that are combusted and lost to air. -----------!
    select case (include_fire)
    case (3)
-      f_combusted_fast   = 0.8
-      f_combusted_struct = 0.5
+      f_combusted_fast_c   = 0.8
+      f_combusted_struct_c = 0.5
+      f_combusted_fast_n   = 0.72
+      f_combusted_struct_n = 0.45
    case default
-      f_combusted_fast   = 0.0
-      f_combusted_struct = 0.0
+      f_combusted_fast_c   = 0.0
+      f_combusted_struct_c = 0.0
+      f_combusted_fast_n   = 0.0
+      f_combusted_struct_n = 0.0
    end select
-   !---------------------------------------------------------------------------------------!
-
-   !----- Estimate of aboveground fractions of fast and structural carbon. ----------------!
-   agf_fsc            = 0.5
-   agf_stsc           = 0.7
    !---------------------------------------------------------------------------------------!
 
 
@@ -2233,7 +2300,8 @@ subroutine init_pft_alloc_params()
                              , str_len               & ! intent(in)
                              , undef_real            ! ! intent(in)
    use ed_misc_coms   , only : iallom                & ! intent(in)
-                             , ibigleaf              ! ! intent(in)
+                             , ibigleaf              & ! intent(in)
+                             , ivegt_dynamics        ! ! intent(in)
    use canopy_air_coms, only : lwidth_grass          & ! intent(in)
                              , lwidth_bltree         & ! intent(in)
                              , lwidth_nltree         ! ! intent(in)
@@ -3557,7 +3625,12 @@ subroutine init_pft_alloc_params()
    !    Initial storage pool, relative to on-allometry living biomass, to be given to the  !
    ! PFTs when the model is run using INITIAL conditions.                                  !
    !---------------------------------------------------------------------------------------!
-   f_bstorage_init(:) = 3.00
+   select case (ivegt_dynamics)
+   case (0)
+      f_bstorage_init(:) = onesixth
+   case default
+      f_bstorage_init(:) = 1.00
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -4247,9 +4320,9 @@ subroutine init_pft_resp_params()
    !    Storage turnover rate.  Number for tropical trees is based on tuning for the time  !
    ! being.                                                                                !
    !---------------------------------------------------------------------------------------!
-   storage_turnover_rate(:) = merge( merge(0.2,0.1,is_grass(:))                            &
-                                   , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))      &
-                                   , is_tropical(:) )
+    storage_turnover_rate(:) = merge( merge(onethird,onesixth,is_grass(:))                 &
+                                    , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))     &
+                                    , is_tropical(:) )
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -4260,23 +4333,38 @@ subroutine init_pft_resp_params()
    select case (iallom)
    case (2,3)
       !------------------------------------------------------------------------------------!
-      !   Use the numbers from previous CENTURY model publications (e.g B98, S09).         !
-      ! These are not directly based on observations, so they may need updates.            !
+      !   For tropical leaves/fine roots, assume the metabolic/structural ratio obtained   !
+      ! by B17.  For grasses and temperate plants, use B17 equation anf R96 values for     !
+      !lignin and C:N ratio. For now, assume sapwood, bark, and heartwood are 100%         !
+      ! structural (even though some studies use mixed structural and metabolic, see S09). !
       !                                                                                    !
       ! References:                                                                        !
       !                                                                                    !
-      ! Bolker, B. M., S. W. Pacala, and W. J. Parton. Linear analysis of soil             !
-      !    decomposition: in- sights from the CENTURY model. Ecol. Appl., 8(2):425-439,    !
-      !    May 1998. doi:10.1890/1051- 0761(1998)008[0425:LAOSDI]2.0.CO;2 (B98).           !
+      ! Brechet L, Le Dantec V, Ponton S , Goret JY, Sayer E, Bonal D, Freycon V, Roy J,   !
+      !    Epron D. 2017. Short- and long-term influence of litter quality and quantity on !
+      !    simulated heterotrophic soil respiration in a lowland tropical forest.          !
+      !    Ecosystems, 20(6):1190-1204. doi:10.1007/s10021-016-0104-x (B17).               !
       !                                                                                    !
-      ! Shevliakova, E., S. W. Pacala, S. Malyshev, G. C. Hurtt, P. C. D. Milly,           !
-      !    J. P. Caspersen, L. T. Sent- man, J. P. Fisk, C. Wirth, and C. Crevoisier.      !
-      !    Carbon cycling under 300 years of land use change: Importance of the secondary  !
-      !    vegetation sink. Global Biogeochem. Cycles, 23(2):GB2022, Jun 2009.             !
-      !    doi:10.1029/2007GB003176 (S09).                                                 !
+      ! Bolker BM, Pacala SW, and Parton WJ. 1998. Linear analysis of soil decomposition:  !
+      !    insights from the CENTURY model. Ecol. Appl., 8(2):425-439.                     !
+      !    doi:10.1890/1051- 0761(1998)008[0425:LAOSDI]2.0.CO;2 (B98).                     !
+      !                                                                                    !
+      ! Randerson JT, Thompson MV, Malmstrom CM, Field CB, and Fung IY. 1996. Substrate    !
+      !    limitations for heterotrophs: Implications for models that estimate the         !
+      !    seasonal cycle of atmospheric CO2. Global Biogeochem. Cycles, 10(4):585-602.    !
+      !    doi:10.1029/96GB01981 (R96).                                                    !
+      !                                                                                    !
+      ! Shevliakova E, Pacala SW, Malyshev S, Hurtt GC, Milly PCD, Caspersen JP,           !
+      !    Sentman LT, Fisk JP, Wirth C, and Crevoisier C. 2009.  Carbon cycling under 300 !
+      !    years of land use change: Importance of the secondary vegetation sink. Global   !
+      !    Biogeochem. Cycles, 23(2):GB2022. doi:10.1029/2007GB003176 (S09).               !
       !------------------------------------------------------------------------------------!
-      f_labile_leaf(:) = 0.80
-      f_labile_stem(:) = 0.20
+      f_labile_leaf(:) = merge( 0.78                                                       &
+                              , merge( 0.32                                                &
+                                     , merge(0.75,0.50,is_conifer(:))                      &
+                                     , is_tropical(:)                 )                    &
+                              , is_grass(:)                             )
+      f_labile_stem(:) = 0.0
       !------------------------------------------------------------------------------------!
    case default
       f_labile_leaf(:) = merge( 0.79                                                       &
@@ -4706,12 +4794,12 @@ subroutine init_pft_nitro_params()
                           , is_tropical          & ! intent(in)
                           , is_liana             & ! intent(in)
                           , c2n_leaf             & ! intent(out)
-                          , c2n_slow             & ! intent(out)
-                          , c2n_structural       & ! intent(out)
                           , c2n_storage          & ! intent(out)
                           , c2n_stem             & ! intent(out)
                           , l2n_stem             & ! intent(out)
                           , plant_N_supply_scale ! ! intent(out)
+   use decomp_coms , only : c2n_slow             & ! intent(out)
+                          , c2n_structural       ! ! intent(out)
    use ed_max_dims , only : n_pft                ! ! intent(in)
    use ed_misc_coms, only : iallom               ! ! intent(in)
    implicit none
@@ -4788,14 +4876,14 @@ subroutine init_pft_nitro_params()
    end do pftloop
    !---------------------------------------------------------------------------------------!
 
-   c2n_slow             = 10.0  ! Carbon to Nitrogen ratio, slow pool.
-   c2n_structural       = 150.0 ! Carbon to Nitrogen ratio, structural pool.
+   c2n_stem(:)          = 150.0 ! Carbon to Nitrogen ratio, structural stem.
    c2n_storage          = 150.0 ! Carbon to Nitrogen ratio, storage pool.
-   l2n_stem             = 150.0 ! Carbon to Nitrogen ratio, structural stem.
+   l2n_stem             = 150.0 ! Carbon to Lignin ratio, structural stem.
    plant_N_supply_scale = 0.5 
 
-   c2n_stem(:)          = 150.0 ! Carbon to Nitrogen ratio, structural stem.
 
+   c2n_slow             = 10.0  ! Carbon to Nitrogen ratio, slow pool.
+   c2n_structural       = 150.0 ! Carbon to Nitrogen ratio, structural pool.
 
    return
 end subroutine init_pft_nitro_params
@@ -5052,7 +5140,7 @@ subroutine init_pft_repro_params()
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      st_fract(:) = merge(0.0,0.1                                                          &
+      st_fract(:) = merge(0.0,onesixth                                                     &
                          ,is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:)))
    case default
       st_fract(:) = 0.0
@@ -6419,6 +6507,7 @@ subroutine init_derived_params_after_xml()
                                    , b2Efrd                    & ! intent(in)
                                    , min_dbh                   & ! intent(in)
                                    , dbh_bigleaf               & ! intent(in)
+                                   , agf_bs                    & ! intent(in)
                                    , q                         & ! intent(in)
                                    , qsw                       & ! intent(in)
                                    , qrhob                     & ! intent(in)
@@ -6661,9 +6750,6 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
 
 
-
-
-
    !---------------------------------------------------------------------------------------!
    !     The minimum recruitment size and the recruit carbon to nitrogen ratio.  Both      !
    ! parameters actually depend on which PFT we are solving, since grasses always have     !
@@ -6793,8 +6879,9 @@ subroutine init_derived_params_after_xml()
          ! tree, and all PFTs have leaves (but not branches), we only consider the leaf    !
          ! heat capacity only for the minimum value.                                       !
          !---------------------------------------------------------------------------------!
-         call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,bbark_min,nplant_res_min,ipft &
-                           ,leaf_hcap_min,wood_hcap_min)
+         call calc_veg_hcap(bleaf_min,agf_bs(ipft)*bdead_min,agf_bs(ipft)*bsapwood_min     &
+                           ,agf_bs(ipft)*bbark_min,nplant_res_min,ipft,leaf_hcap_min       &
+                           ,wood_hcap_min)
          veg_hcap_min(ipft) = leaf_hcap_min
          lai_min            = nplant_res_min * bleaf_min * sla(ipft)
          !---------------------------------------------------------------------------------!
@@ -6861,8 +6948,9 @@ subroutine init_derived_params_after_xml()
          ! tree, and all PFTs have leaves (but not branches), we only consider the leaf    !
          ! heat capacity only for the minimum value.                                       !
          !---------------------------------------------------------------------------------!
-         call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,bbark_min,init_density(ipft)  &
-                           ,ipft,leaf_hcap_min,wood_hcap_min)
+         call calc_veg_hcap(bleaf_min,agf_bs(ipft)*bdead_min,agf_bs(ipft)*bsapwood_min     &
+                           ,agf_bs(ipft)*bbark_min,init_density(ipft),ipft,leaf_hcap_min   &
+                           ,wood_hcap_min)
          veg_hcap_min(ipft) = onesixth * leaf_hcap_min
          lai_min            = onesixth * init_density(ipft) * bleaf_min * sla(ipft)
          !---------------------------------------------------------------------------------!

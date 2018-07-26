@@ -746,10 +746,6 @@ recursive subroutine read_ed_xml_config(filename)
      do i=1,ntag
         call libxml2f90__ll_selecttag('DOWN','pftconst',i)
         
-        call getConfigREAL  ('c2n_slow','pftconst',i,rval,texist)
-        if(texist) c2n_slow = sngloff(rval,tiny_offset)
-        call getConfigREAL  ('c2n_structural','pftconst',i,rval,texist)
-        if(texist) c2n_structural = sngloff(rval,tiny_offset)
 !        call getConfigREAL  ('c2n_stem','pftconst',i,rval,texist)
 !        if(texist) c2n_stem = sngloff(rval,tiny_offset)
         call getConfigREAL  ('l2n_stem','pftconst',i,rval,texist)
@@ -983,8 +979,6 @@ recursive subroutine read_ed_xml_config(filename)
         
         call libxml2f90__ll_selecttag('DOWN','decomposition',i)
         
-        call getConfigREAL  ('cwd_frac','decomposition',i,rval,texist)
-        if(texist) cwd_frac = sngloff(rval,tiny_offset)
 
         call getConfigREAL  ('resp_opt_water','decomposition',i,rval,texist)
         if(texist)  resp_opt_water = sngloff(rval,tiny_offset)
@@ -1000,8 +994,10 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist)  r_fsc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('r_stsc','decomposition',i,rval,texist)
         if(texist)  r_stsc = sngloff(rval,tiny_offset)
-        call getConfigREAL  ('r_ssc','decomposition',i,rval,texist)
-        if(texist)  r_ssc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('r_msc','decomposition',i,rval,texist)
+        if(texist)  r_msc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fx_msc','decomposition',i,rval,texist)
+        if(texist)  fx_msc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('K1','decomposition',i,rval,texist)
         if(texist)  decay_rate_stsc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('K2','decomposition',i,rval,texist)
@@ -1012,6 +1008,8 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist)  decay_rate_stsc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('decay_rate_fsc','decomposition',i,rval,texist)
         if(texist)  decay_rate_fsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('decay_rate_msc','decomposition',i,rval,texist)
+        if(texist)  decay_rate_msc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('decay_rate_ssc','decomposition',i,rval,texist)
         if(texist)  decay_rate_ssc = sngloff(rval,tiny_offset)
         call getConfigINT   ('N_decomp_lim','decomposition',i,ival,texist)
@@ -1032,8 +1030,24 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist)  rh_dry_smoist = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_wet_smoist','decomposition',i,rval,texist)
         if(texist)  rh_wet_smoist = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('agf_fsc','decomposition',i,rval,texist)
+        if(texist) agf_fsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('agf_stsc','decomposition',i,rval,texist)
+        if(texist) agf_stsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('xrothc_a','decomposition',i,rval,texist)
+        if(texist) xrothc_a = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('xrothc_b','decomposition',i,rval,texist)
+        if(texist) xrothc_b = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('xrothc_c','decomposition',i,rval,texist)
+        if(texist) xrothc_c = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('xrothc_d','decomposition',i,rval,texist)
+        if(texist) xrothc_d = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('c2n_slow','pftconst',i,rval,texist)
+        if(texist) c2n_slow = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('c2n_structural','pftconst',i,rval,texist)
+        if(texist) c2n_structural = sngloff(rval,tiny_offset)
 
-        
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
@@ -1203,14 +1217,14 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) fire_smoist_depth = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fuel_height_max','disturbance',i,rval,texist)
         if(texist) fuel_height_max = sngloff(rval,tiny_offset)
-        call getConfigREAL  ('f_combusted_fast','disturbance',i,rval,texist)
-        if(texist) f_combusted_fast = sngloff(rval,tiny_offset)
-        call getConfigREAL  ('f_combusted_struct','disturbance',i,rval,texist)
-        if(texist) f_combusted_struct = sngloff(rval,tiny_offset)
-        call getConfigREAL  ('agf_fsc','disturbance',i,rval,texist)
-        if(texist) agf_fsc = sngloff(rval,tiny_offset)
-        call getConfigREAL  ('agf_stsc','disturbance',i,rval,texist)
-        if(texist) agf_stsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_fast_c','disturbance',i,rval,texist)
+        if(texist) f_combusted_fast_c = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_struct_c','disturbance',i,rval,texist)
+        if(texist) f_combusted_struct_c = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_fast_n','disturbance',i,rval,texist)
+        if(texist) f_combusted_fast_n = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_struct_n','disturbance',i,rval,texist)
+        if(texist) f_combusted_struct_n = sngloff(rval,tiny_offset)
 
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -1283,12 +1297,17 @@ recursive subroutine read_ed_xml_config(filename)
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
   call libxml2f90__ll_exist('DOWN','initcond',ntag)    !get number of pft tags
-  init_fsc = -1.0
+  init_fgc  = -1.0
+  init_fsc  = -1.0
+  init_stgc = -1.0
   init_stsc = -1.0
-  init_ssc = -1.0
+  init_msc  = -1.0
+  init_ssc  = -1.0
+  init_stgl = -1.0
   init_stsl = -1.0
-  init_fsn = -1.0
-  init_msn = -1.0
+  init_fgn  = -1.0
+  init_fsn  = -1.0
+  init_msn  = -1.0
   
   print*,"INITCOND READ FROM FILE ::",ntag
   if(ntag .ge. 1) then
@@ -1296,14 +1315,24 @@ recursive subroutine read_ed_xml_config(filename)
         
         call libxml2f90__ll_selecttag('DOWN','initcond',i)
 
+        call getConfigREAL  ('fgc','initcond',i,rval,texist)
+        if(texist) init_fgc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fsc','initcond',i,rval,texist)
         if(texist) init_fsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('stgc','initcond',i,rval,texist)
+        if(texist) init_stgc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('stsc','initcond',i,rval,texist)
         if(texist) init_stsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('msc','initcond',i,rval,texist)
+        if(texist) init_msc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('ssc','initcond',i,rval,texist)
         if(texist) init_ssc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('stgl','initcond',i,rval,texist)
+        if(texist) init_stgl = sngloff(rval,tiny_offset)
         call getConfigREAL  ('stsl','initcond',i,rval,texist)
         if(texist) init_stsl = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fgn','initcond',i,rval,texist)
+        if(texist) init_fgn = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fsn','initcond',i,rval,texist)
         if(texist) init_fsn = sngloff(rval,tiny_offset)
         call getConfigREAL  ('msn','initcond',i,rval,texist)
@@ -1818,8 +1847,6 @@ subroutine write_ed_xml_config
  
   !************   PFT CONSTANTS  *****************
   call libxml2f90_ll_opentag("pftconst")
-     call putConfigREAL("c2n_slow",c2n_slow)
-     call putConfigREAL("c2n_structural",c2n_structural)
      call putConfigREAL("l2n_stem",l2n_stem)
      call putConfigREAL("C2B",C2B)
      call putConfigREAL("h_edge",h_edge)
@@ -1893,30 +1920,36 @@ subroutine write_ed_xml_config
 
   !************   DECOMPOSITION  *****************
   call libxml2f90_ll_opentag("decomposition")
-     call putConfigREAL("cwd_frac",cwd_frac)
-     call putConfigREAL("resp_opt_water",resp_opt_water)
-     call putConfigREAL("resp_water_below_opt",resp_water_below_opt)
-     call putConfigREAL("resp_water_above_opt",resp_water_above_opt)
+     call putConfigREAL("resp_opt_water"           ,resp_opt_water           )
+     call putConfigREAL("resp_water_below_opt"     ,resp_water_below_opt     )
+     call putConfigREAL("resp_water_above_opt"     ,resp_water_above_opt     )
      call putConfigREAL("resp_temperature_increase",resp_temperature_increase)
-     call putConfigREAL("N_immobil_supply_scale",N_immobil_supply_scale)
-     call putConfigREAL("r_fsc",r_fsc)
-     call putConfigREAL("r_stsc",r_stsc)
-     call putConfigREAL("r_ssc",r_ssc)
-     call putConfigREAL("K1",decay_rate_stsc)
-     call putConfigREAL("K2",decay_rate_fsc)
-     call putConfigREAL("K3",decay_rate_ssc)
-     call putConfigREAL("decay_rate_stsc",decay_rate_stsc)
-     call putConfigREAL("decay_rate_fsc",decay_rate_fsc)
-     call putConfigREAL("decay_rate_ssc",decay_rate_ssc)
-     call putConfigINT ("N_decomp_lim",N_decomp_lim)
-     call putConfigREAL("rh_decay_low",rh_decay_low)
-     call putConfigREAL("rh_decay_high",rh_decay_high)
-     call putConfigREAL("rh_low_temp",rh_low_temp)
-     call putConfigREAL("rh_high_temp",rh_high_temp)
-     call putConfigREAL("rh_decay_dry",rh_decay_dry)
-     call putConfigREAL("rh_decay_wet",rh_decay_wet)
-     call putConfigREAL("rh_dry_smoist",rh_dry_smoist)
-     call putConfigREAL("rh_wet_smoist",rh_wet_smoist)
+     call putConfigREAL("N_immobil_supply_scale"   ,N_immobil_supply_scale   )
+     call putConfigREAL("r_fsc"                    ,r_fsc                    )
+     call putConfigREAL("r_stsc"                   ,r_stsc                   )
+     call putConfigREAL("r_msc"                    ,r_msc                    )
+     call putConfigREAL("fx_msc"                   ,fx_msc                   )
+     call putConfigREAL("decay_rate_fsc"           ,decay_rate_fsc           )
+     call putConfigREAL("decay_rate_stsc"          ,decay_rate_stsc          )
+     call putConfigREAL("decay_rate_msc"           ,decay_rate_msc           )
+     call putConfigREAL("decay_rate_ssc"           ,decay_rate_ssc           )
+     call putConfigINT ("N_decomp_lim"             ,N_decomp_lim             )
+     call putConfigREAL("rh_decay_low"             ,rh_decay_low             )
+     call putConfigREAL("rh_decay_high"            ,rh_decay_high            )
+     call putConfigREAL("rh_low_temp"              ,rh_low_temp              )
+     call putConfigREAL("rh_high_temp"             ,rh_high_temp             )
+     call putConfigREAL("rh_decay_dry"             ,rh_decay_dry             )
+     call putConfigREAL("rh_decay_wet"             ,rh_decay_wet             )
+     call putConfigREAL("rh_dry_smoist"            ,rh_dry_smoist            )
+     call putConfigREAL("rh_wet_smoist"            ,rh_wet_smoist            )
+     call putConfigREAL("agf_fsc"                  ,agf_fsc                  )
+     call putConfigREAL("agf_stsc"                 ,agf_stsc                 )
+     call putConfigREAL("xrothc_a"                 ,xrothc_a                 )
+     call putConfigREAL("xrothc_b"                 ,xrothc_b                 )
+     call putConfigREAL("xrothc_c"                 ,xrothc_c                 )
+     call putConfigREAL("xrothc_d"                 ,xrothc_d                 )
+     call putConfigREAL("c2n_slow"                 ,c2n_slow                 )
+     call putConfigREAL("c2n_structural"           ,c2n_structural           )
 
   call libxml2f90_ll_closetag("decomposition")
 
@@ -1998,10 +2031,10 @@ subroutine write_ed_xml_config
      call putConfigREAL("fire_parameter"        ,fire_parameter        )
      call putConfigREAL("fire_smoist_depth"     ,fire_smoist_depth     )
      call putConfigREAL("fuel_height_max"       ,fuel_height_max       )
-     call putConfigREAL("f_combusted_fast"      ,f_combusted_fast      )
-     call putConfigREAL("f_combusted_struct"    ,f_combusted_struct    )
-     call putConfigREAL("agf_fsc"               ,agf_fsc               )
-     call putConfigREAL("agf_stsc"              ,agf_stsc              )
+     call putConfigREAL("f_combusted_fast_c"    ,f_combusted_fast_c    )
+     call putConfigREAL("f_combusted_struct_c"  ,f_combusted_struct_c  )
+     call putConfigREAL("f_combusted_fast_n"    ,f_combusted_fast_n    )
+     call putConfigREAL("f_combusted_struct_n"  ,f_combusted_struct_n  )
   call libxml2f90_ll_closetag("disturbance")
 
   !************   PHENOLOGY  *****************
@@ -2028,12 +2061,17 @@ subroutine write_ed_xml_config
 
   !************   INITIAL CONDITIONS  *****************
   call libxml2f90_ll_opentag("initcond")
-     call putConfigREAL("fsc",init_fsc)
-     call putConfigREAL("stsc",init_stsc)
-     call putConfigREAL("ssc",init_ssc)
-     call putConfigREAL("stsl",init_stsl)
-     call putConfigREAL("fsn",init_fsn)
-     call putConfigREAL("msn",init_msn)
+     call putConfigREAL("fgc"  ,init_fgc )
+     call putConfigREAL("fsc"  ,init_fsc )
+     call putConfigREAL("stgc" ,init_stgc)
+     call putConfigREAL("stsc" ,init_stsc)
+     call putConfigREAL("msc"  ,init_msc )
+     call putConfigREAL("ssc"  ,init_ssc )
+     call putConfigREAL("stgl" ,init_stgl)
+     call putConfigREAL("stsl" ,init_stsl)
+     call putConfigREAL("fgn"  ,init_fgn )
+     call putConfigREAL("fsn"  ,init_fsn )
+     call putConfigREAL("msn"  ,init_msn )
   call libxml2f90_ll_closetag("initcond")
 
   !-----------------------------------------------------

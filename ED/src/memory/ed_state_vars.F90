@@ -185,8 +185,11 @@ module ed_state_vars
       real ,pointer,dimension(:) :: thbark
       !< Plant bark thickness (cm)
 
-      real ,pointer,dimension(:) :: bdead
-      !<Biomass of the structural wood (kgC/plant)
+      real ,pointer,dimension(:) :: bdeada
+      !<Biomass of the structural wood (aboveground) (kgC/plant)
+
+      real ,pointer,dimension(:) :: bdeadb
+      !<Biomass of the structural wood (belowground) (kgC/plant)
 
       real ,pointer,dimension(:) :: btimber
       !< Biomass of commercial timber wood (kgC/plant)
@@ -206,8 +209,11 @@ module ed_state_vars
       real, pointer, dimension(:) :: bsapwoodb
       !<Biomass of sapwood below ground (kgC/plant)
 
-      real, pointer, dimension(:) :: bbark
-      !< Bark biomass (kgC/plant)
+      real, pointer, dimension(:) :: bbarka
+      !< Aboveground bark biomass (kgC/plant)
+
+      real, pointer, dimension(:) :: bbarkb
+      !< Belowground bark biomass (kgC/plant)
 
       real ,pointer,dimension(:) :: bstorage
       !<Plant storage pool of carbon [kgC/plant]
@@ -377,8 +383,11 @@ module ed_state_vars
       real ,pointer,dimension(:) :: sapb_growth_resp
       !< Below-ground sapwood  growth respiration (kgC/plant/day)
 
-      real ,pointer,dimension(:) :: bark_growth_resp
-      !< Bark growth respiration (kgC/plant/day)
+      real ,pointer,dimension(:) :: barka_growth_resp
+      !< Above-ground bark growth respiration (kgC/plant/day)
+
+      real ,pointer,dimension(:) :: barkb_growth_resp
+      !< Below-ground bark growth respiration (kgC/plant/day)
 
       real ,pointer,dimension(:) :: leaf_storage_resp
       !< Leaf storage respiration (kgC/plant/day)
@@ -392,8 +401,11 @@ module ed_state_vars
       real ,pointer,dimension(:) :: sapb_storage_resp
       !< Below-ground sapwood  storage respiration (kgC/plant/day)
 
-      real ,pointer,dimension(:) :: bark_storage_resp
-      !< Bark storage respiration (kgC/plant/day)
+      real ,pointer,dimension(:) :: barka_storage_resp
+      !< Above-ground bark storage respiration (kgC/plant/day)
+
+      real ,pointer,dimension(:) :: barkb_storage_resp
+      !< Below-ground bark storage respiration (kgC/plant/day)
 
       real ,pointer,dimension(:) :: monthly_dndt
       !<Plant density change rate (plants/m2/month)
@@ -539,8 +551,10 @@ module ed_state_vars
       !<Plant maintenance costs due to turnover of leaves [kgC/plant/day]
       real ,pointer,dimension(:) :: root_maintenance
       !<Plant maintenance costs due to turnover of fine roots [kgC/plant/day]
-      real ,pointer,dimension(:) :: bark_maintenance
-      !<Plant maintenance costs due to turnover of bark [kgC/plant/day]
+      real ,pointer,dimension(:) :: barka_maintenance
+      !<Plant maintenance costs due to turnover of AG bark [kgC/plant/day]
+      real ,pointer,dimension(:) :: barkb_maintenance
+      !<Plant maintenance costs due to turnover of BG bark [kgC/plant/day]
      
       real , pointer, dimension(:) :: leaf_drop
       !<Leaf loss to litter layer due to phenology [kgC/plant]
@@ -587,12 +601,14 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_root_growth_resp !<Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapa_growth_resp !<Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapb_growth_resp !<Growth resp.      [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_bark_growth_resp !< Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_barka_growth_resp!<Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_barkb_growth_resp!<Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_leaf_storage_resp!<Storage resp.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_root_storage_resp!<Storage resp.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapa_storage_resp!<Storage resp.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapb_storage_resp!<Storage resp.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_bark_storage_resp!<Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_barka_storage_resp!<Storage resp.    [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_barkb_storage_resp!<Storage resp.    [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_plresp           !<Plant resp.       [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_leaf_energy      !<Leaf int. energy  [     J/m2g]
       real,pointer,dimension(:)   :: fmean_leaf_water       !<Leaf sfc. water   [    kg/m2g]
@@ -644,7 +660,8 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_intercepted_aw   !<Wood interception [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_wshed_wg         !<Wood shedding     [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_lai              !<LAI               [     m2/m2]
-      real,pointer,dimension(:)   :: fmean_bdead            !<Bdead             [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_bdeada           !<Bdead (AG)        [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_bdeadb           !<Bdead (AG)        [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:)   :: dmean_nppleaf          !<Leaf NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppfroot         !<Fine root NPP     [ kgC/pl/yr]
@@ -655,19 +672,21 @@ module ed_state_vars
       real,pointer,dimension(:)   :: dmean_nppwood          !<Wood NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppdaily         !<Daily NPP         [ kgC/pl/yr]
       !----- Monthly means of variables that are integrated daily. ------------------------!
-      real,pointer,dimension(:)   :: mmean_thbark           !<Bark thickness    [        cm]
-      real,pointer,dimension(:)   :: mmean_lai              !<Leaf area index   [   m2l/m2g]
-      real,pointer,dimension(:)   :: mmean_bleaf            !<Leaf biomass      [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_broot            !<Root biomass      [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_bbark            !<Bark biomass      [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_balive           !<Live biomass      [    kgC/pl]
-      real,pointer,dimension(:)   :: mmean_bstorage         !<Storage biomass   [    kgC/pl]
-      real,pointer,dimension(:,:) :: mmean_mort_rate        !<Mortality rate    [      1/yr]
-      real,pointer,dimension(:)   :: mmean_leaf_maintenance !<Leaf maintenance  [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_root_maintenance !<Root mainten.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_bark_maintenance !<Bark mainten.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_leaf_drop        !<Leaf drop         [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_cb               !<12-mon C balance  [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_thbark            !<Bark thickness   [        cm]
+      real,pointer,dimension(:)   :: mmean_lai               !<Leaf area index  [   m2l/m2g]
+      real,pointer,dimension(:)   :: mmean_bleaf             !<Leaf biomass     [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_broot             !<Root biomass     [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_bbarka            !<AG Bark biomass  [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_bbarkb            !<BG Bark biomass  [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_balive            !<Live biomass     [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_bstorage          !<Storage biomass  [    kgC/pl]
+      real,pointer,dimension(:,:) :: mmean_mort_rate         !<Mortality rate   [      1/yr]
+      real,pointer,dimension(:)   :: mmean_leaf_maintenance  !<Leaf maintenance [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_root_maintenance  !<Root mainten.    [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_barka_maintenance !<AG Bark mainten. [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_barkb_maintenance !<BG Bark mainten. [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_leaf_drop         !<Leaf drop        [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_cb                !<12-mon C balance [    kgC/pl]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -677,12 +696,14 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_root_growth_resp
       real,pointer,dimension(:)     :: dmean_sapa_growth_resp
       real,pointer,dimension(:)     :: dmean_sapb_growth_resp
-      real,pointer,dimension(:)     :: dmean_bark_growth_resp
+      real,pointer,dimension(:)     :: dmean_barka_growth_resp
+      real,pointer,dimension(:)     :: dmean_barkb_growth_resp
       real,pointer,dimension(:)     :: dmean_leaf_storage_resp
       real,pointer,dimension(:)     :: dmean_root_storage_resp
       real,pointer,dimension(:)     :: dmean_sapa_storage_resp
       real,pointer,dimension(:)     :: dmean_sapb_storage_resp
-      real,pointer,dimension(:)     :: dmean_bark_storage_resp
+      real,pointer,dimension(:)     :: dmean_barka_storage_resp
+      real,pointer,dimension(:)     :: dmean_barkb_storage_resp
       real,pointer,dimension(:)     :: dmean_plresp
       real,pointer,dimension(:)     :: dmean_leaf_energy
       real,pointer,dimension(:)     :: dmean_leaf_water
@@ -744,12 +765,14 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_root_growth_resp
       real,pointer,dimension(:)     :: mmean_sapa_growth_resp
       real,pointer,dimension(:)     :: mmean_sapb_growth_resp
-      real,pointer,dimension(:)     :: mmean_bark_growth_resp
+      real,pointer,dimension(:)     :: mmean_barka_growth_resp
+      real,pointer,dimension(:)     :: mmean_barkb_growth_resp
       real,pointer,dimension(:)     :: mmean_leaf_storage_resp
       real,pointer,dimension(:)     :: mmean_root_storage_resp
       real,pointer,dimension(:)     :: mmean_sapa_storage_resp
       real,pointer,dimension(:)     :: mmean_sapb_storage_resp
-      real,pointer,dimension(:)     :: mmean_bark_storage_resp
+      real,pointer,dimension(:)     :: mmean_barka_storage_resp
+      real,pointer,dimension(:)     :: mmean_barkb_storage_resp
       real,pointer,dimension(:)     :: mmean_plresp
       real,pointer,dimension(:)     :: mmean_leaf_energy
       real,pointer,dimension(:)     :: mmean_leaf_water
@@ -828,12 +851,14 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_root_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_growth_resp
-      real,pointer,dimension(:,:)   :: qmean_bark_growth_resp
+      real,pointer,dimension(:,:)   :: qmean_barka_growth_resp
+      real,pointer,dimension(:,:)   :: qmean_barkb_growth_resp
       real,pointer,dimension(:,:)   :: qmean_leaf_storage_resp
       real,pointer,dimension(:,:)   :: qmean_root_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_storage_resp
-      real,pointer,dimension(:,:)   :: qmean_bark_storage_resp
+      real,pointer,dimension(:,:)   :: qmean_barka_storage_resp
+      real,pointer,dimension(:,:)   :: qmean_barkb_storage_resp
       real,pointer,dimension(:,:)   :: qmean_plresp
       real,pointer,dimension(:,:)   :: qmean_leaf_energy
       real,pointer,dimension(:,:)   :: qmean_leaf_water
@@ -985,23 +1010,44 @@ module ed_state_vars
       !! the site (1 - bright, 2 - intermediate, 3 - dark).  This is only assigned in case
       !! ihrzrad /= 0, otherwise all patches will be flagged as 1.
 
-      real , pointer,dimension(:) :: fast_soil_C 
-      !<Soil carbon concentration, fast pool (kg/m2)
+      real , pointer,dimension(:) :: fast_grnd_C 
+      !<Ground carbon density, fast (litter) pool (kg/m2)
 
-      real , pointer,dimension(:) :: slow_soil_C 
-      !<Soil carbon concentration, slow pool (kg/m2)
+      real , pointer,dimension(:) :: fast_soil_C 
+      !<Soil carbon density, fast (litter) pool (kg/m2)
+
+      real , pointer,dimension(:) :: structural_grnd_C
+      !<Ground carbon density, structural (woody debris) pool (kg/m2)
 
       real , pointer,dimension(:) :: structural_soil_C
-      !<Soil carbon concentration, structural pool (kg/m2)
+      !<Soil carbon density, structural (woody debris) pool (kg/m2)
+
+      real , pointer,dimension(:) :: structural_grnd_L
+      !<Ground lignin density, structural pool (kg/m2)
 
       real , pointer,dimension(:) :: structural_soil_L
-      !<Soil lignin concentration, structural pool (kg/m2)
+      !<Soil lignin density, structural pool (kg/m2)
 
-      real , pointer,dimension(:) :: mineralized_soil_N  
-      !<Soil nitrogen concentration, mineralized pool (kg/m2)
+      real , pointer,dimension(:) :: microbial_soil_C 
+      !<Soil carbon density, microbial pool (kg/m2)
+
+      real , pointer,dimension(:) :: slow_soil_C 
+      !<Soil carbon density, slow (humified) pool (kg/m2)
+
+      real , pointer,dimension(:) :: fast_grnd_N 
+      !<Ground nitrogen density, fast pool (kg/m2)
 
       real , pointer,dimension(:) :: fast_soil_N 
-      !<Soil nitrogen concentration, fast pool (kg/m2)
+      !<Soil nitrogen density, fast pool (kg/m2)
+
+      real , pointer,dimension(:) :: structural_grnd_N
+      !<Ground nitrogen density, structural (woody debris) pool (kg/m2)
+
+      real , pointer,dimension(:) :: structural_soil_N
+      !<Soil nitrogen density, structural (woody debris) pool (kg/m2)
+
+      real , pointer,dimension(:) :: mineralized_soil_N  
+      !<Soil nitrogen density, mineralized pool (kg/m2)
 
       real , pointer,dimension(:) :: sum_dgd
       !<Number of degree days
@@ -1239,12 +1285,22 @@ module ed_state_vars
 
       real , pointer,dimension(:) :: today_A_decomp
       !<Daily average of A_decomp, the temperature and moisture dependence
-      !<of heterotrophic respiration.  The "today" variable is used in the
+      !<of heterotrophic respiration (aboveground).  The "today" variable is used in the
+      !<model, whereas dmean and mmean are for output only.
+
+      real , pointer,dimension(:) :: today_B_decomp
+      !<Daily average of A_decomp, the temperature and moisture dependence
+      !<of heterotrophic respiration (belowground).  The "today" variable is used in the
       !<model, whereas dmean and mmean are for output only.
 
       real , pointer,dimension(:) :: today_Af_decomp
       !<Daily average of the product A_decomp * f_decomp, which incorporates
-      !<temperature, moisture, and N dependence of decomposition.  The "today" 
+      !<temperature, moisture, and N dependence of decomposition (aboveground).  The "today" 
+      !<variable is used in the model, whereas dmean and mmean are for output only.
+
+      real , pointer,dimension(:) :: today_Bf_decomp
+      !<Daily average of the product B_decomp * f_decomp, which incorporates
+      !<temperature, moisture, and N dependence of decomposition (belowground).  The "today" 
       !<variable is used in the model, whereas dmean and mmean are for output only.
 
       real, pointer,dimension(:,:) :: repro    !(n_pft,npatches)  
@@ -1259,17 +1315,35 @@ module ed_state_vars
       real , pointer,dimension(:) :: veg_displace
       !<0-plane displacement height (m)
 
+      real , pointer,dimension(:) :: fgc_in
+      !<Input to fast ground carbon pool [kgC/m2/day]
+
       real , pointer,dimension(:) :: fsc_in
       !<Input to fast soil carbon pool [kgC/m2/day]
 
-      real , pointer,dimension(:) :: ssc_in
+      real , pointer,dimension(:) :: stgc_in
+      !<Input to structural ground carbon pool [kgC/m2/day]
+
+      real , pointer,dimension(:) :: stsc_in
       !<Input to structural soil carbon pool [kgC/m2/day]
 
-      real , pointer,dimension(:) :: ssl_in  
+      real , pointer,dimension(:) :: stgl_in  
+      !<Input to ground lignin pool [kgC/m2/day]
+
+      real , pointer,dimension(:) :: stsl_in  
       !<Input to soil lignin pool [kgC/m2/day]
+
+      real , pointer,dimension(:) :: fgn_in  
+      !<Input to fast soil nitrogen pool [kgN/m2/day]
 
       real , pointer,dimension(:) :: fsn_in  
       !<Input to fast soil nitrogen pool [kgN/m2/day]
+
+      real , pointer,dimension(:) :: stgn_in
+      !<Input to structural ground nitrogen pool [kgN/m2/day]
+
+      real , pointer,dimension(:) :: stsn_in
+      !<Input to structural soil nitrogen pool [kgN/m2/day]
 
       real , pointer,dimension(:) :: total_plant_nitrogen_uptake
       !<Plant nitrogen update summed over all cohorts [kgN/m2/day]
@@ -1360,7 +1434,11 @@ module ed_state_vars
 
       real , pointer,dimension(:) :: A_decomp
       !<limitation of heterotrophic respiration due to physical 
-      !<environmental factors (0-1 coefficient)
+      !<environmental factors (0-1 coefficient) (aboveground)
+
+      real , pointer,dimension(:) :: B_decomp
+      !<limitation of heterotrophic respiration due to physical 
+      !<environmental factors (0-1 coefficient) (belowground)
 
       real , pointer,dimension(:) :: f_decomp
       !<damping of decomposition due to nitrogen immobilization 
@@ -1369,8 +1447,23 @@ module ed_state_vars
       real , pointer,dimension(:) :: rh
       !<total heterotrophic respiration (&mu;mol/m2/s)
 
-      real , pointer,dimension(:) :: cwd_rh
-      !<coarse woody debris contribution to rh (&mu;mol/m2/s)
+      real , pointer,dimension(:) :: fgc_rh
+      !<rh due to fast ground carbon (litter) (&mu;mol/m2/s)
+
+      real , pointer,dimension(:) :: fsc_rh
+      !<rh due to fast soil carbon (litter) (&mu;mol/m2/s)
+
+      real , pointer,dimension(:) :: stgc_rh
+      !<rh due to structural ground carbon (woody debris) (&mu;mol/m2/s)
+
+      real , pointer,dimension(:) :: stsc_rh
+      !<rh due to structural soil carbon (woody debris) (&mu;mol/m2/s)
+
+      real , pointer,dimension(:) :: msc_rh
+      !<rh due to microbial soil carbon (&mu;mol/m2/s)
+
+      real , pointer,dimension(:) :: ssc_rh
+      !<rh due to (humified) slow soil carbon (&mu;mol/m2/s)
 
       real, pointer,dimension(:,:,:) :: cumlai_profile !(n_pft,ff_nhgt,npatches)
       !<Plant density broken down into size and PFT bins.  Used in patch fusion
@@ -1446,10 +1539,21 @@ module ed_state_vars
       !   LW        -- long wave                                                           !
       !   VPD       -- Vapour pressure deficit                                             !
       !   Theta_Eiv -- ice vapour equivalent potential temperature                         !
+      !   FGC       -- fast ground carbon (litter)                                         !
+      !   FSC       -- fast soil carbon (litter)                                           !
+      !   STGC      -- structural ground carbon (woody debris)                             !
+      !   STSC      -- structural soil carbon (woody debris)                               !
+      !   MSC       -- microbial soil carbon                                               !
+      !   SSC       -- slow (humified) soil carbon                                         !
       !------------------------------------------------------------------------------------!
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rh              !<Heterotr. resp.    [umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_cwd_rh          !<CWD respiration    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_fgc_rh          !<FGC respiration    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_fsc_rh          !<FSC respiration    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_stgc_rh         !<STGC respiration   [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_stsc_rh         !<STSC respiration   [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_msc_rh          !<MSC respiration    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_ssc_rh          !<SSC respiration    [umol/m2/s]
       real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [umol/m2/s]
       !----- State variables. -------------------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rk4step         !<RK4 time step      [        s]
@@ -1513,20 +1617,34 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_qdrainage    !<Drainage energy loss  [     W/m2]
       !----- Variables with no sub-daily means. -------------------------------------------!
       real,pointer,dimension(:) :: dmean_A_decomp         !<Decomposition fact. [       --]
+      real,pointer,dimension(:) :: dmean_B_decomp         !<Decomposition fact. [       --]
       real,pointer,dimension(:) :: dmean_Af_decomp        !<A with N immobil.   [       --]
+      real,pointer,dimension(:) :: dmean_Bf_decomp        !<A with N immobil.   [       --]
       real,pointer,dimension(:) :: dmean_co2_residual     !<CO2 residual        [  umol/m2]
       real,pointer,dimension(:) :: dmean_energy_residual  !<Enthalpy residual   [     J/m2]
       real,pointer,dimension(:) :: dmean_water_residual   !<Water residual      [    kg/m2]
       !----- Variables that are updated once a day. ---------------------------------------!
+      real,pointer,dimension(:) :: mmean_fast_grnd_c    !<Fast grnd carbon      [   kgC/m2]
       real,pointer,dimension(:) :: mmean_fast_soil_c    !<Fast soil carbon      [   kgC/m2]
-      real,pointer,dimension(:) :: mmean_slow_soil_c    !<Slow soil carbon      [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_struct_grnd_c  !<Struct. grnd carbon   [   kgC/m2]
       real,pointer,dimension(:) :: mmean_struct_soil_c  !<Struct. soil carbon   [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_struct_grnd_l  !<Struct. grnd lignin   [   kgL/m2]
       real,pointer,dimension(:) :: mmean_struct_soil_l  !<Struct. soil lignin   [   kgL/m2]
+      real,pointer,dimension(:) :: mmean_microbe_soil_c !<Microbial soil carbon [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_slow_soil_c    !<Slow soil carbon      [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_fast_grnd_n    !<Fast grnd nitrogen    [   kgN/m2]
       real,pointer,dimension(:) :: mmean_fast_soil_n    !<Fast soil nitrogen    [   kgN/m2]
+      real,pointer,dimension(:) :: mmean_struct_grnd_n  !<Struct. grnd carbon   [   kgN/m2]
+      real,pointer,dimension(:) :: mmean_struct_soil_n  !<Struct. soil carbon   [   kgN/m2]
       real,pointer,dimension(:) :: mmean_mineral_soil_n !<Mineralised soil N    [   kgN/m2]
       !----- Daily means.  Units are the same as the "avg" variables. ---------------------!
       real,pointer,dimension(:)     :: dmean_rh
-      real,pointer,dimension(:)     :: dmean_cwd_rh
+      real,pointer,dimension(:)     :: dmean_fgc_rh
+      real,pointer,dimension(:)     :: dmean_fsc_rh
+      real,pointer,dimension(:)     :: dmean_stgc_rh
+      real,pointer,dimension(:)     :: dmean_stsc_rh
+      real,pointer,dimension(:)     :: dmean_msc_rh
+      real,pointer,dimension(:)     :: dmean_ssc_rh
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
       real,pointer,dimension(:)     :: dmean_available_water
@@ -1586,7 +1704,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_qdrainage
       !----- Monthly means.  Units are the same as the "avg" variables. --------------------!
       real,pointer,dimension(:)     :: mmean_rh
-      real,pointer,dimension(:)     :: mmean_cwd_rh
+      real,pointer,dimension(:)     :: mmean_fgc_rh
+      real,pointer,dimension(:)     :: mmean_fsc_rh
+      real,pointer,dimension(:)     :: mmean_stgc_rh
+      real,pointer,dimension(:)     :: mmean_stsc_rh
+      real,pointer,dimension(:)     :: mmean_msc_rh
+      real,pointer,dimension(:)     :: mmean_ssc_rh
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
       real,pointer,dimension(:)     :: mmean_available_water
@@ -1645,13 +1768,20 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_qrunoff
       real,pointer,dimension(:)     :: mmean_qdrainage
       real,pointer,dimension(:)     :: mmean_A_decomp
+      real,pointer,dimension(:)     :: mmean_B_decomp
       real,pointer,dimension(:)     :: mmean_Af_decomp
+      real,pointer,dimension(:)     :: mmean_Bf_decomp
       real,pointer,dimension(:)     :: mmean_co2_residual
       real,pointer,dimension(:)     :: mmean_energy_residual
       real,pointer,dimension(:)     :: mmean_water_residual
       !----- Monthly means sum of squares.  Units are the square of "avg" variables. -------!
       real,pointer,dimension(:)     :: mmsqu_rh
-      real,pointer,dimension(:)     :: mmsqu_cwd_rh
+      real,pointer,dimension(:)     :: mmsqu_fgc_rh
+      real,pointer,dimension(:)     :: mmsqu_fsc_rh
+      real,pointer,dimension(:)     :: mmsqu_stgc_rh
+      real,pointer,dimension(:)     :: mmsqu_stsc_rh
+      real,pointer,dimension(:)     :: mmsqu_msc_rh
+      real,pointer,dimension(:)     :: mmsqu_ssc_rh
       real,pointer,dimension(:)     :: mmsqu_nep
       real,pointer,dimension(:)     :: mmsqu_rlongup
       real,pointer,dimension(:)     :: mmsqu_parup
@@ -1669,7 +1799,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmsqu_sensible_ac
       !----- Mean diel.  Units are the same as the "avg" variables. ------------------------!
       real,pointer,dimension(:,:)   :: qmean_rh
-      real,pointer,dimension(:,:)   :: qmean_cwd_rh
+      real,pointer,dimension(:,:)   :: qmean_fgc_rh
+      real,pointer,dimension(:,:)   :: qmean_fsc_rh
+      real,pointer,dimension(:,:)   :: qmean_stgc_rh
+      real,pointer,dimension(:,:)   :: qmean_stsc_rh
+      real,pointer,dimension(:,:)   :: qmean_msc_rh
+      real,pointer,dimension(:,:)   :: qmean_ssc_rh
       real,pointer,dimension(:,:)   :: qmean_nep
       real,pointer,dimension(:,:)   :: qmean_rk4step
       real,pointer,dimension(:,:)   :: qmean_available_water
@@ -1729,7 +1864,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_qdrainage
       !----- Means diel of the sum of squares.  Units are the square of "avg" variables. ---!
       real,pointer,dimension(:,:)   :: qmsqu_rh
-      real,pointer,dimension(:,:)   :: qmsqu_cwd_rh
+      real,pointer,dimension(:,:)   :: qmsqu_fgc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_fsc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_stgc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_stsc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_msc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_ssc_rh
       real,pointer,dimension(:,:)   :: qmsqu_nep
       real,pointer,dimension(:,:)   :: qmsqu_rlongup
       real,pointer,dimension(:,:)   :: qmsqu_parup
@@ -2323,29 +2463,34 @@ module ed_state_vars
       real,pointer,dimension(:,:,:) :: wai
       real,pointer,dimension(:,:,:) :: basal_area
       real,pointer,dimension(:,:,:) :: thbark
-      real,pointer,dimension(:,:,:) :: bdead
+      real,pointer,dimension(:,:,:) :: bdeada
+      real,pointer,dimension(:,:,:) :: bdeadb
       real,pointer,dimension(:,:,:) :: btimber
       real,pointer,dimension(:,:,:) :: balive
       real,pointer,dimension(:,:,:) :: bleaf
       real,pointer,dimension(:,:,:) :: broot
       real,pointer,dimension(:,:,:) :: bsapwooda
       real,pointer,dimension(:,:,:) :: bsapwoodb
-      real,pointer,dimension(:,:,:) :: bbark
+      real,pointer,dimension(:,:,:) :: bbarka
+      real,pointer,dimension(:,:,:) :: bbarkb
       real,pointer,dimension(:,:,:) :: bseeds
       real,pointer,dimension(:,:,:) :: byield
       real,pointer,dimension(:,:,:) :: bstorage
-      real,pointer,dimension(:,:,:) :: bdead_n
+      real,pointer,dimension(:,:,:) :: bdeada_n
+      real,pointer,dimension(:,:,:) :: bdeadb_n
       real,pointer,dimension(:,:,:) :: balive_n
       real,pointer,dimension(:,:,:) :: bleaf_n
       real,pointer,dimension(:,:,:) :: broot_n
       real,pointer,dimension(:,:,:) :: bsapwooda_n
       real,pointer,dimension(:,:,:) :: bsapwoodb_n
-      real,pointer,dimension(:,:,:) :: bbark_n
+      real,pointer,dimension(:,:,:) :: bbarka_n
+      real,pointer,dimension(:,:,:) :: bbarkb_n
       real,pointer,dimension(:,:,:) :: bseeds_n
       real,pointer,dimension(:,:,:) :: bstorage_n
       real,pointer,dimension(:,:,:) :: leaf_maintenance
       real,pointer,dimension(:,:,:) :: root_maintenance
-      real,pointer,dimension(:,:,:) :: bark_maintenance
+      real,pointer,dimension(:,:,:) :: barka_maintenance
+      real,pointer,dimension(:,:,:) :: barkb_maintenance
       real,pointer,dimension(:,:,:) :: leaf_drop
       !------------------------------------------------------------------------------------!
 
@@ -2353,14 +2498,19 @@ module ed_state_vars
 
 
       !----- Polygon-average of soil pools. -----------------------------------------------!
+      real,pointer,dimension(:)   :: fast_grnd_c
       real,pointer,dimension(:)   :: fast_soil_c
-      real,pointer,dimension(:)   :: slow_soil_c
+      real,pointer,dimension(:)   :: struct_grnd_c
       real,pointer,dimension(:)   :: struct_soil_c
+      real,pointer,dimension(:)   :: struct_grnd_l
       real,pointer,dimension(:)   :: struct_soil_l
-      real,pointer,dimension(:)   :: cwd_c
+      real,pointer,dimension(:)   :: microbe_soil_c
+      real,pointer,dimension(:)   :: slow_soil_c
+      real,pointer,dimension(:)   :: fast_grnd_n
       real,pointer,dimension(:)   :: fast_soil_n
+      real,pointer,dimension(:)   :: struct_grnd_n
+      real,pointer,dimension(:)   :: struct_soil_n
       real,pointer,dimension(:)   :: mineral_soil_n
-      real,pointer,dimension(:)   :: cwd_n
       !------------------------------------------------------------------------------------!
 
 
@@ -2427,12 +2577,14 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_root_growth_resp !<Growth resp.        [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_sapa_growth_resp !<Growth resp.        [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_sapb_growth_resp !<Growth resp.        [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_bark_growth_resp !<Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_barka_growth_resp !<Growth resp.       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_barkb_growth_resp !<Growth resp.       [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_leaf_storage_resp !<Storage resp.      [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_root_storage_resp !<Storage resp.      [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_sapa_storage_resp !<Storage resp.      [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_sapb_storage_resp !<Storage resp.      [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_bark_storage_resp !<Storage resp.      [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_barka_storage_resp!<Storage resp.      [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_barkb_storage_resp!<Storage resp.      [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_plresp           !<Plant respiration.  [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_leaf_energy      !<Leaf int. energy    [      J/m2]
       real,pointer,dimension(:) :: fmean_leaf_water       !<Leaf sfc. water     [     kg/m2]
@@ -2478,7 +2630,12 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_wshed_wg         !<Wood shedding       [   kg/m2/s]
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rh              !<Heterotr. resp.    [ kgC/m2/yr]
-      real,pointer,dimension(:)   :: fmean_cwd_rh          !<CWD respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_fgc_rh          !<FGC respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_fsc_rh          !<FSC respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_stgc_rh         !<STGC respiration   [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_stsc_rh         !<STSC respiration   [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_msc_rh          !<MSC respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_ssc_rh          !<SSC respiration    [ kgC/m2/yr]
       real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [ kgC/m2/yr]
       !----- State variables. -------------------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rk4step         !<RK4 time step      [         s]
@@ -2563,7 +2720,8 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_skin_temp        !<Skin temperature    [         K]
       !--------Variables required by PEcAn.  ----------------------------------------------!
       real,pointer,dimension(:) :: fmean_lai              !<LAI                 [     m2/m2]
-      real,pointer,dimension(:) :: fmean_bdead            !<Bdead               [     kg/pl]
+      real,pointer,dimension(:) :: fmean_bdeada           !<Bdead (AG)          [     kg/pl]
+      real,pointer,dimension(:) :: fmean_bdeadb           !<Bdead (BG)          [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:) :: dmean_nppleaf          !<Leaf NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppfroot         !<Fine root NPP       [ kgC/m2/yr]
@@ -2574,35 +2732,45 @@ module ed_state_vars
       real,pointer,dimension(:) :: dmean_nppwood          !<Wood NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppdaily         !<Daily NPP           [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_A_decomp         !<Decomposition fact. [        --]
+      real,pointer,dimension(:) :: dmean_B_decomp         !<Decomposition fact. [        --]
       real,pointer,dimension(:) :: dmean_Af_decomp        !<A with N immobil.   [        --]
+      real,pointer,dimension(:) :: dmean_Bf_decomp        !<A with N immobil.   [        --]
       real,pointer,dimension(:) :: dmean_co2_residual     !<CO2 residual        [   umol/m2]
       real,pointer,dimension(:) :: dmean_energy_residual  !<Enthalpy residual   [      J/m2]
       real,pointer,dimension(:) :: dmean_water_residual   !<Water residual      [     kg/m2]
       !----- Variables that are updated once a day. ---------------------------------------!
-      real,pointer,dimension(:,:,:) :: mmean_thbark           !<Bark thickness  [        cm]
-      real,pointer,dimension(:,:,:) :: mmean_lai              !<Leaf area index [     m2/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bleaf            !<Leaf biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_broot            !<Root biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bbark            !<Bark biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_balive           !<Live biomass    [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bstorage         !<Storage         [    kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bleaf_n          !<Leaf N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_broot_n          !<Root N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bbark_n          !<Root N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bstorage_n       !<Storage N       [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_balive_n         !<Live N mass     [    kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_leaf_maintenance !<Leaf maintenance[ kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_root_maintenance !<Root maintenance[ kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_bark_maintenance !<Bark maintenance[ kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_leaf_drop        !<Leaf shedding   [ kgC/m2/yr]
-      real,pointer,dimension(:)     :: mmean_fast_soil_c      !<Fast soil C     [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_slow_soil_c      !<Slow soil C     [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_struct_soil_c    !<Struct. soil C  [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_struct_soil_l    !<Struct. soil L  [    kgL/m2]
-      real,pointer,dimension(:)     :: mmean_cwd_c            !<CWD carbon      [    kgC/m2]
-      real,pointer,dimension(:)     :: mmean_fast_soil_n      !<Fast soil N     [    kgN/m2]
-      real,pointer,dimension(:)     :: mmean_mineral_soil_n   !<Mineral. soil N [    kgN/m2]
-      real,pointer,dimension(:)     :: mmean_cwd_n            !<CWD nitrogen    [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_thbark            !<Bark thickness  [       cm]
+      real,pointer,dimension(:,:,:) :: mmean_lai               !<Leaf area index [    m2/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bleaf             !<Leaf biomass    [   kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_broot             !<Root biomass    [   kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbarka            !<AG Bark biomass [   kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbarkb            !<BG Bark biomass [   kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_balive            !<Live biomass    [   kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bstorage          !<Storage         [   kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bleaf_n           !<Leaf N mass     [   kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_broot_n           !<Root N mass     [   kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbarka_n          !<AG bark N mass  [   kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbarkb_n          !<AG bark N mass  [   kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bstorage_n        !<Storage N       [   kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_balive_n          !<Live N mass     [   kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_leaf_maintenance  !<Leaf maintenance[kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_root_maintenance  !<Root maintenance[kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_barka_maintenance !<Bark maintenance[kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_barkb_maintenance !<Bark maintenance[kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_leaf_drop         !<Leaf shedding   [kgC/m2/yr]
+      real,pointer,dimension(:)     :: mmean_fast_grnd_c       !<Fast grnd C     [   kgC/m2]
+      real,pointer,dimension(:)     :: mmean_fast_soil_c       !<Fast soil C     [   kgC/m2]
+      real,pointer,dimension(:)     :: mmean_struct_grnd_c     !<Struct. grnd C  [   kgC/m2]
+      real,pointer,dimension(:)     :: mmean_struct_soil_c     !<Struct. soil C  [   kgC/m2]
+      real,pointer,dimension(:)     :: mmean_struct_grnd_l     !<Struct. grnd L  [   kgL/m2]
+      real,pointer,dimension(:)     :: mmean_struct_soil_l     !<Struct. soil L  [   kgL/m2]
+      real,pointer,dimension(:)     :: mmean_microbe_soil_c    !<Microb. soil C  [   kgC/m2]
+      real,pointer,dimension(:)     :: mmean_slow_soil_c       !<Slow soil C     [   kgC/m2]
+      real,pointer,dimension(:)     :: mmean_fast_grnd_n       !<Fast grnd N     [   kgN/m2]
+      real,pointer,dimension(:)     :: mmean_fast_soil_n       !<Fast soil N     [   kgN/m2]
+      real,pointer,dimension(:)     :: mmean_struct_grnd_n     !<Struct. grnd N  [   kgN/m2]
+      real,pointer,dimension(:)     :: mmean_struct_soil_n     !<Struct. soil N  [   kgN/m2]
+      real,pointer,dimension(:)     :: mmean_mineral_soil_n    !<Mineral. soil N [   kgN/m2]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -2612,12 +2780,14 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_root_growth_resp
       real,pointer,dimension(:)     :: dmean_sapa_growth_resp
       real,pointer,dimension(:)     :: dmean_sapb_growth_resp
-      real,pointer,dimension(:)     :: dmean_bark_growth_resp
+      real,pointer,dimension(:)     :: dmean_barka_growth_resp
+      real,pointer,dimension(:)     :: dmean_barkb_growth_resp
       real,pointer,dimension(:)     :: dmean_leaf_storage_resp
       real,pointer,dimension(:)     :: dmean_root_storage_resp
       real,pointer,dimension(:)     :: dmean_sapa_storage_resp
       real,pointer,dimension(:)     :: dmean_sapb_storage_resp
-      real,pointer,dimension(:)     :: dmean_bark_storage_resp
+      real,pointer,dimension(:)     :: dmean_barka_storage_resp
+      real,pointer,dimension(:)     :: dmean_barkb_storage_resp
       real,pointer,dimension(:)     :: dmean_plresp
       real,pointer,dimension(:)     :: dmean_leaf_energy
       real,pointer,dimension(:)     :: dmean_leaf_water
@@ -2662,7 +2832,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_intercepted_aw
       real,pointer,dimension(:)     :: dmean_wshed_wg
       real,pointer,dimension(:)     :: dmean_rh
-      real,pointer,dimension(:)     :: dmean_cwd_rh
+      real,pointer,dimension(:)     :: dmean_fgc_rh
+      real,pointer,dimension(:)     :: dmean_fsc_rh
+      real,pointer,dimension(:)     :: dmean_stgc_rh
+      real,pointer,dimension(:)     :: dmean_stsc_rh
+      real,pointer,dimension(:)     :: dmean_msc_rh
+      real,pointer,dimension(:)     :: dmean_ssc_rh
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
       real,pointer,dimension(:)     :: dmean_available_water
@@ -2746,12 +2921,14 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_root_growth_resp
       real,pointer,dimension(:)     :: mmean_sapa_growth_resp
       real,pointer,dimension(:)     :: mmean_sapb_growth_resp
-      real,pointer,dimension(:)     :: mmean_bark_growth_resp
+      real,pointer,dimension(:)     :: mmean_barka_growth_resp
+      real,pointer,dimension(:)     :: mmean_barkb_growth_resp
       real,pointer,dimension(:)     :: mmean_leaf_storage_resp
       real,pointer,dimension(:)     :: mmean_root_storage_resp
       real,pointer,dimension(:)     :: mmean_sapa_storage_resp
       real,pointer,dimension(:)     :: mmean_sapb_storage_resp
-      real,pointer,dimension(:)     :: mmean_bark_storage_resp
+      real,pointer,dimension(:)     :: mmean_barka_storage_resp
+      real,pointer,dimension(:)     :: mmean_barkb_storage_resp
       real,pointer,dimension(:)     :: mmean_plresp
       real,pointer,dimension(:)     :: mmean_leaf_energy
       real,pointer,dimension(:)     :: mmean_leaf_water
@@ -2796,7 +2973,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_intercepted_aw
       real,pointer,dimension(:)     :: mmean_wshed_wg
       real,pointer,dimension(:)     :: mmean_rh
-      real,pointer,dimension(:)     :: mmean_cwd_rh
+      real,pointer,dimension(:)     :: mmean_fgc_rh
+      real,pointer,dimension(:)     :: mmean_fsc_rh
+      real,pointer,dimension(:)     :: mmean_stgc_rh
+      real,pointer,dimension(:)     :: mmean_stsc_rh
+      real,pointer,dimension(:)     :: mmean_msc_rh
+      real,pointer,dimension(:)     :: mmean_ssc_rh
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
       real,pointer,dimension(:)     :: mmean_available_water
@@ -2863,7 +3045,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nppwood    
       real,pointer,dimension(:)     :: mmean_nppdaily   
       real,pointer,dimension(:)     :: mmean_A_decomp
+      real,pointer,dimension(:)     :: mmean_B_decomp
       real,pointer,dimension(:)     :: mmean_Af_decomp
+      real,pointer,dimension(:)     :: mmean_Bf_decomp
       real,pointer,dimension(:)     :: mmean_co2_residual
       real,pointer,dimension(:)     :: mmean_energy_residual
       real,pointer,dimension(:)     :: mmean_water_residual
@@ -2894,7 +3078,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmsqu_sensible_wc
       real,pointer,dimension(:)     :: mmsqu_vapor_wc
       real,pointer,dimension(:)     :: mmsqu_rh
-      real,pointer,dimension(:)     :: mmsqu_cwd_rh
+      real,pointer,dimension(:)     :: mmsqu_fgc_rh
+      real,pointer,dimension(:)     :: mmsqu_fsc_rh
+      real,pointer,dimension(:)     :: mmsqu_stgc_rh
+      real,pointer,dimension(:)     :: mmsqu_stsc_rh
+      real,pointer,dimension(:)     :: mmsqu_msc_rh
+      real,pointer,dimension(:)     :: mmsqu_ssc_rh
       real,pointer,dimension(:)     :: mmsqu_nep
       real,pointer,dimension(:)     :: mmsqu_rlongup
       real,pointer,dimension(:)     :: mmsqu_parup
@@ -2918,12 +3107,14 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_root_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_growth_resp
-      real,pointer,dimension(:,:)   :: qmean_bark_growth_resp
+      real,pointer,dimension(:,:)   :: qmean_barka_growth_resp
+      real,pointer,dimension(:,:)   :: qmean_barkb_growth_resp
       real,pointer,dimension(:,:)   :: qmean_leaf_storage_resp
       real,pointer,dimension(:,:)   :: qmean_root_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_storage_resp
-      real,pointer,dimension(:,:)   :: qmean_bark_storage_resp
+      real,pointer,dimension(:,:)   :: qmean_barka_storage_resp
+      real,pointer,dimension(:,:)   :: qmean_barkb_storage_resp
       real,pointer,dimension(:,:)   :: qmean_plresp
       real,pointer,dimension(:,:)   :: qmean_leaf_energy
       real,pointer,dimension(:,:)   :: qmean_leaf_water
@@ -2968,7 +3159,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_intercepted_aw
       real,pointer,dimension(:,:)   :: qmean_wshed_wg
       real,pointer,dimension(:,:)   :: qmean_rh
-      real,pointer,dimension(:,:)   :: qmean_cwd_rh
+      real,pointer,dimension(:,:)   :: qmean_fgc_rh
+      real,pointer,dimension(:,:)   :: qmean_fsc_rh
+      real,pointer,dimension(:,:)   :: qmean_stgc_rh
+      real,pointer,dimension(:,:)   :: qmean_stsc_rh
+      real,pointer,dimension(:,:)   :: qmean_msc_rh
+      real,pointer,dimension(:,:)   :: qmean_ssc_rh
       real,pointer,dimension(:,:)   :: qmean_nep
       real,pointer,dimension(:,:)   :: qmean_rk4step
       real,pointer,dimension(:,:)   :: qmean_available_water
@@ -3053,7 +3249,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmsqu_sensible_wc
       real,pointer,dimension(:,:)   :: qmsqu_vapor_wc
       real,pointer,dimension(:,:)   :: qmsqu_rh
-      real,pointer,dimension(:,:)   :: qmsqu_cwd_rh
+      real,pointer,dimension(:,:)   :: qmsqu_fgc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_fsc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_stgc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_stsc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_msc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_ssc_rh
       real,pointer,dimension(:,:)   :: qmsqu_nep
       real,pointer,dimension(:,:)   :: qmsqu_rlongup
       real,pointer,dimension(:,:)   :: qmsqu_parup
@@ -3305,38 +3506,48 @@ module ed_state_vars
       allocate(cgrid%wai                        (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%basal_area                 (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%thbark                     (   n_pft,     n_dbh,npolygons))
-      allocate(cgrid%bdead                      (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bdeada                     (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bdeadb                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%btimber                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%balive                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bleaf                      (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%broot                      (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwooda                  (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwoodb                  (   n_pft,     n_dbh,npolygons))
-      allocate(cgrid%bbark                      (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bbarka                     (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bbarkb                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bseeds                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%byield                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bstorage                   (   n_pft,     n_dbh,npolygons))
-      allocate(cgrid%bdead_n                    (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bdeada_n                   (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bdeadb_n                   (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%balive_n                   (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bleaf_n                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%broot_n                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwooda_n                (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwoodb_n                (   n_pft,     n_dbh,npolygons))
-      allocate(cgrid%bbark_n                    (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bbarka_n                   (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bbarkb_n                   (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bseeds_n                   (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bstorage_n                 (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%leaf_maintenance           (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%root_maintenance           (   n_pft,     n_dbh,npolygons))
-      allocate(cgrid%bark_maintenance           (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%barka_maintenance          (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%barkb_maintenance          (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%leaf_drop                  (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%fast_grnd_c                (                    npolygons))
       allocate(cgrid%fast_soil_c                (                    npolygons))
-      allocate(cgrid%slow_soil_c                (                    npolygons))
+      allocate(cgrid%struct_grnd_c              (                    npolygons))
       allocate(cgrid%struct_soil_c              (                    npolygons))
+      allocate(cgrid%struct_grnd_l              (                    npolygons))
       allocate(cgrid%struct_soil_l              (                    npolygons))
-      allocate(cgrid%cwd_c                      (                    npolygons))
+      allocate(cgrid%microbe_soil_c             (                    npolygons))
+      allocate(cgrid%slow_soil_c                (                    npolygons))
+      allocate(cgrid%fast_grnd_n                (                    npolygons))
       allocate(cgrid%fast_soil_n                (                    npolygons))
+      allocate(cgrid%struct_grnd_n              (                    npolygons))
+      allocate(cgrid%struct_soil_n              (                    npolygons))
       allocate(cgrid%mineral_soil_n             (                    npolygons))
-      allocate(cgrid%cwd_n                      (                    npolygons))
       allocate(cgrid%Cleaf_grow                 (                    npolygons))
       allocate(cgrid%Croot_grow                 (                    npolygons))
       allocate(cgrid%Cdead_grow                 (                    npolygons))
@@ -3364,12 +3575,14 @@ module ed_state_vars
       allocate(cgrid%fmean_root_growth_resp     (                    npolygons))
       allocate(cgrid%fmean_sapa_growth_resp     (                    npolygons))
       allocate(cgrid%fmean_sapb_growth_resp     (                    npolygons))
-      allocate(cgrid%fmean_bark_growth_resp     (                    npolygons))
+      allocate(cgrid%fmean_barka_growth_resp    (                    npolygons))
+      allocate(cgrid%fmean_barkb_growth_resp    (                    npolygons))
       allocate(cgrid%fmean_leaf_storage_resp    (                    npolygons))
       allocate(cgrid%fmean_root_storage_resp    (                    npolygons))
       allocate(cgrid%fmean_sapa_storage_resp    (                    npolygons))
       allocate(cgrid%fmean_sapb_storage_resp    (                    npolygons))
-      allocate(cgrid%fmean_bark_storage_resp    (                    npolygons))
+      allocate(cgrid%fmean_barka_storage_resp   (                    npolygons))
+      allocate(cgrid%fmean_barkb_storage_resp   (                    npolygons))
       allocate(cgrid%fmean_plresp               (                    npolygons))
       allocate(cgrid%fmean_leaf_energy          (                    npolygons))
       allocate(cgrid%fmean_leaf_water           (                    npolygons))
@@ -3414,7 +3627,12 @@ module ed_state_vars
       allocate(cgrid%fmean_intercepted_aw       (                    npolygons))
       allocate(cgrid%fmean_wshed_wg             (                    npolygons))
       allocate(cgrid%fmean_rh                   (                    npolygons))
-      allocate(cgrid%fmean_cwd_rh               (                    npolygons))
+      allocate(cgrid%fmean_fgc_rh               (                    npolygons))
+      allocate(cgrid%fmean_fsc_rh               (                    npolygons))
+      allocate(cgrid%fmean_stgc_rh              (                    npolygons))
+      allocate(cgrid%fmean_stsc_rh              (                    npolygons))
+      allocate(cgrid%fmean_msc_rh               (                    npolygons))
+      allocate(cgrid%fmean_ssc_rh               (                    npolygons))
       allocate(cgrid%fmean_nep                  (                    npolygons))
       allocate(cgrid%fmean_rk4step              (                    npolygons))
       allocate(cgrid%fmean_available_water      (                    npolygons))
@@ -3492,7 +3710,8 @@ module ed_state_vars
       allocate(cgrid%fmean_soil_wetness         (                    npolygons))
       allocate(cgrid%fmean_skin_temp            (                    npolygons))
       allocate(cgrid%fmean_lai                  (                    npolygons))
-      allocate(cgrid%fmean_bdead                (                    npolygons))
+      allocate(cgrid%fmean_bdeada               (                    npolygons))
+      allocate(cgrid%fmean_bdeadb               (                    npolygons))
 
 
 
@@ -3501,152 +3720,161 @@ module ed_state_vars
       ! cycles are requested by the user.                                                  !
       !------------------------------------------------------------------------------------!
       if (writing_long) then
-         allocate(cgrid%dmean_nppleaf          (                     npolygons))
-         allocate(cgrid%dmean_nppfroot         (                     npolygons))
-         allocate(cgrid%dmean_nppsapwood       (                     npolygons))
-         allocate(cgrid%dmean_nppbark          (                     npolygons))
-         allocate(cgrid%dmean_nppcroot         (                     npolygons))
-         allocate(cgrid%dmean_nppseeds         (                     npolygons))
-         allocate(cgrid%dmean_nppwood          (                     npolygons))
-         allocate(cgrid%dmean_nppdaily         (                     npolygons))
-         allocate(cgrid%dmean_A_decomp         (                     npolygons))
-         allocate(cgrid%dmean_Af_decomp        (                     npolygons))
-         allocate(cgrid%dmean_co2_residual     (                     npolygons))
-         allocate(cgrid%dmean_energy_residual  (                     npolygons))
-         allocate(cgrid%dmean_water_residual   (                     npolygons))
-         allocate(cgrid%dmean_gpp              (                     npolygons))
-         allocate(cgrid%dmean_npp              (                     npolygons))
-         allocate(cgrid%dmean_leaf_resp        (                     npolygons))
-         allocate(cgrid%dmean_root_resp        (                     npolygons))
-         allocate(cgrid%dmean_leaf_growth_resp (                     npolygons))
-         allocate(cgrid%dmean_root_growth_resp (                     npolygons))
-         allocate(cgrid%dmean_sapa_growth_resp (                     npolygons))
-         allocate(cgrid%dmean_sapb_growth_resp (                     npolygons))
-         allocate(cgrid%dmean_bark_growth_resp (                     npolygons))
-         allocate(cgrid%dmean_leaf_storage_resp(                     npolygons))
-         allocate(cgrid%dmean_root_storage_resp(                     npolygons))
-         allocate(cgrid%dmean_sapa_storage_resp(                     npolygons))
-         allocate(cgrid%dmean_sapb_storage_resp(                     npolygons))
-         allocate(cgrid%dmean_bark_storage_resp(                     npolygons))
-         allocate(cgrid%dmean_plresp           (                     npolygons))
-         allocate(cgrid%dmean_leaf_energy      (                     npolygons))
-         allocate(cgrid%dmean_leaf_water       (                     npolygons))
-         allocate(cgrid%dmean_leaf_hcap        (                     npolygons))
-         allocate(cgrid%dmean_leaf_vpdef       (                     npolygons))
-         allocate(cgrid%dmean_leaf_temp        (                     npolygons))
-         allocate(cgrid%dmean_leaf_fliq        (                     npolygons))
-         allocate(cgrid%dmean_leaf_gsw         (                     npolygons))
-         allocate(cgrid%dmean_leaf_gbw         (                     npolygons))
-         allocate(cgrid%dmean_wood_energy      (                     npolygons))
-         allocate(cgrid%dmean_wood_water       (                     npolygons))
-         allocate(cgrid%dmean_wood_hcap        (                     npolygons))
-         allocate(cgrid%dmean_wood_temp        (                     npolygons))
-         allocate(cgrid%dmean_wood_fliq        (                     npolygons))
-         allocate(cgrid%dmean_wood_gbw         (                     npolygons))
-         allocate(cgrid%dmean_fs_open          (                     npolygons))
-         allocate(cgrid%dmean_fsw              (                     npolygons))
-         allocate(cgrid%dmean_fsn              (                     npolygons))
-         allocate(cgrid%dmean_a_open           (                     npolygons))
-         allocate(cgrid%dmean_a_closed         (                     npolygons))
-         allocate(cgrid%dmean_a_net            (                     npolygons))
-         allocate(cgrid%dmean_a_light          (                     npolygons))
-         allocate(cgrid%dmean_a_rubp           (                     npolygons))
-         allocate(cgrid%dmean_a_co2            (                     npolygons))
-         allocate(cgrid%dmean_psi_open         (                     npolygons))
-         allocate(cgrid%dmean_psi_closed       (                     npolygons))
-         allocate(cgrid%dmean_water_supply     (                     npolygons))
-         allocate(cgrid%dmean_par_l            (                     npolygons))
-         allocate(cgrid%dmean_par_l_beam       (                     npolygons))
-         allocate(cgrid%dmean_par_l_diff       (                     npolygons))
-         allocate(cgrid%dmean_rshort_l         (                     npolygons))
-         allocate(cgrid%dmean_rlong_l          (                     npolygons))
-         allocate(cgrid%dmean_sensible_lc      (                     npolygons))
-         allocate(cgrid%dmean_vapor_lc         (                     npolygons))
-         allocate(cgrid%dmean_transp           (                     npolygons))
-         allocate(cgrid%dmean_intercepted_al   (                     npolygons))
-         allocate(cgrid%dmean_wshed_lg         (                     npolygons))
-         allocate(cgrid%dmean_rshort_w         (                     npolygons))
-         allocate(cgrid%dmean_rlong_w          (                     npolygons))
-         allocate(cgrid%dmean_sensible_wc      (                     npolygons))
-         allocate(cgrid%dmean_vapor_wc         (                     npolygons))
-         allocate(cgrid%dmean_intercepted_aw   (                     npolygons))
-         allocate(cgrid%dmean_wshed_wg         (                     npolygons))
-         allocate(cgrid%dmean_rh               (                     npolygons))
-         allocate(cgrid%dmean_cwd_rh           (                     npolygons))
-         allocate(cgrid%dmean_nep              (                     npolygons))
-         allocate(cgrid%dmean_rk4step          (                     npolygons))
-         allocate(cgrid%dmean_available_water  (                     npolygons))
-         allocate(cgrid%dmean_veg_displace     (                     npolygons))
-         allocate(cgrid%dmean_rough            (                     npolygons))
-         allocate(cgrid%dmean_can_theiv        (                     npolygons))
-         allocate(cgrid%dmean_can_theta        (                     npolygons))
-         allocate(cgrid%dmean_can_vpdef        (                     npolygons))
-         allocate(cgrid%dmean_can_temp         (                     npolygons))
-         allocate(cgrid%dmean_can_shv          (                     npolygons))
-         allocate(cgrid%dmean_can_co2          (                     npolygons))
-         allocate(cgrid%dmean_can_rhos         (                     npolygons))
-         allocate(cgrid%dmean_can_prss         (                     npolygons))
-         allocate(cgrid%dmean_gnd_temp         (                     npolygons))
-         allocate(cgrid%dmean_gnd_shv          (                     npolygons))
-         allocate(cgrid%dmean_can_ggnd         (                     npolygons))
-         allocate(cgrid%dmean_sfcw_depth       (                     npolygons))
-         allocate(cgrid%dmean_sfcw_energy      (                     npolygons))
-         allocate(cgrid%dmean_sfcw_mass        (                     npolygons))
-         allocate(cgrid%dmean_sfcw_temp        (                     npolygons))
-         allocate(cgrid%dmean_sfcw_fliq        (                     npolygons))
-         allocate(cgrid%dmean_soil_energy      (                 nzg,npolygons))
-         allocate(cgrid%dmean_soil_mstpot      (                 nzg,npolygons))
-         allocate(cgrid%dmean_soil_water       (                 nzg,npolygons))
-         allocate(cgrid%dmean_soil_temp        (                 nzg,npolygons))
-         allocate(cgrid%dmean_soil_fliq        (                 nzg,npolygons))
-         allocate(cgrid%dmean_rshort_gnd       (                     npolygons))
-         allocate(cgrid%dmean_par_gnd          (                     npolygons))
-         allocate(cgrid%dmean_rlong_gnd        (                     npolygons))
-         allocate(cgrid%dmean_rlongup          (                     npolygons))
-         allocate(cgrid%dmean_parup            (                     npolygons))
-         allocate(cgrid%dmean_nirup            (                     npolygons))
-         allocate(cgrid%dmean_rshortup         (                     npolygons))
-         allocate(cgrid%dmean_rnet             (                     npolygons))
-         allocate(cgrid%dmean_albedo           (                     npolygons))
-         allocate(cgrid%dmean_albedo_par       (                     npolygons))
-         allocate(cgrid%dmean_albedo_nir       (                     npolygons))
-         allocate(cgrid%dmean_rlong_albedo     (                     npolygons))
-         allocate(cgrid%dmean_ustar            (                     npolygons))
-         allocate(cgrid%dmean_tstar            (                     npolygons))
-         allocate(cgrid%dmean_qstar            (                     npolygons))
-         allocate(cgrid%dmean_cstar            (                     npolygons))
-         allocate(cgrid%dmean_carbon_ac        (                     npolygons))
-         allocate(cgrid%dmean_carbon_st        (                     npolygons))
-         allocate(cgrid%dmean_vapor_gc         (                     npolygons))
-         allocate(cgrid%dmean_vapor_ac         (                     npolygons))
-         allocate(cgrid%dmean_smoist_gg        (                 nzg,npolygons))
-         allocate(cgrid%dmean_throughfall      (                     npolygons))
-         allocate(cgrid%dmean_transloss        (                 nzg,npolygons))
-         allocate(cgrid%dmean_runoff           (                     npolygons))
-         allocate(cgrid%dmean_drainage         (                     npolygons))
-         allocate(cgrid%dmean_sensible_gc      (                     npolygons))
-         allocate(cgrid%dmean_sensible_ac      (                     npolygons))
-         allocate(cgrid%dmean_sensible_gg      (                 nzg,npolygons))
-         allocate(cgrid%dmean_qthroughfall     (                     npolygons))
-         allocate(cgrid%dmean_qrunoff          (                     npolygons))
-         allocate(cgrid%dmean_qdrainage        (                     npolygons))
-         allocate(cgrid%dmean_atm_theiv        (                     npolygons))
-         allocate(cgrid%dmean_atm_theta        (                     npolygons))
-         allocate(cgrid%dmean_atm_temp         (                     npolygons))
-         allocate(cgrid%dmean_atm_vpdef        (                     npolygons))
-         allocate(cgrid%dmean_atm_shv          (                     npolygons))
-         allocate(cgrid%dmean_atm_rshort       (                     npolygons))
-         allocate(cgrid%dmean_atm_rshort_diff  (                     npolygons))
-         allocate(cgrid%dmean_atm_par          (                     npolygons))
-         allocate(cgrid%dmean_atm_par_diff     (                     npolygons))
-         allocate(cgrid%dmean_atm_rlong        (                     npolygons))
-         allocate(cgrid%dmean_atm_vels         (                     npolygons))
-         allocate(cgrid%dmean_atm_rhos         (                     npolygons))
-         allocate(cgrid%dmean_atm_prss         (                     npolygons))
-         allocate(cgrid%dmean_atm_co2          (                     npolygons))
-         allocate(cgrid%dmean_pcpg             (                     npolygons))
-         allocate(cgrid%dmean_qpcpg            (                     npolygons))
-         allocate(cgrid%dmean_dpcpg            (                     npolygons))
+         allocate(cgrid%dmean_nppleaf           (                     npolygons))
+         allocate(cgrid%dmean_nppfroot          (                     npolygons))
+         allocate(cgrid%dmean_nppsapwood        (                     npolygons))
+         allocate(cgrid%dmean_nppbark           (                     npolygons))
+         allocate(cgrid%dmean_nppcroot          (                     npolygons))
+         allocate(cgrid%dmean_nppseeds          (                     npolygons))
+         allocate(cgrid%dmean_nppwood           (                     npolygons))
+         allocate(cgrid%dmean_nppdaily          (                     npolygons))
+         allocate(cgrid%dmean_A_decomp          (                     npolygons))
+         allocate(cgrid%dmean_B_decomp          (                     npolygons))
+         allocate(cgrid%dmean_Af_decomp         (                     npolygons))
+         allocate(cgrid%dmean_Bf_decomp         (                     npolygons))
+         allocate(cgrid%dmean_co2_residual      (                     npolygons))
+         allocate(cgrid%dmean_energy_residual   (                     npolygons))
+         allocate(cgrid%dmean_water_residual    (                     npolygons))
+         allocate(cgrid%dmean_gpp               (                     npolygons))
+         allocate(cgrid%dmean_npp               (                     npolygons))
+         allocate(cgrid%dmean_leaf_resp         (                     npolygons))
+         allocate(cgrid%dmean_root_resp         (                     npolygons))
+         allocate(cgrid%dmean_leaf_growth_resp  (                     npolygons))
+         allocate(cgrid%dmean_root_growth_resp  (                     npolygons))
+         allocate(cgrid%dmean_sapa_growth_resp  (                     npolygons))
+         allocate(cgrid%dmean_sapb_growth_resp  (                     npolygons))
+         allocate(cgrid%dmean_barka_growth_resp (                     npolygons))
+         allocate(cgrid%dmean_barkb_growth_resp (                     npolygons))
+         allocate(cgrid%dmean_leaf_storage_resp (                     npolygons))
+         allocate(cgrid%dmean_root_storage_resp (                     npolygons))
+         allocate(cgrid%dmean_sapa_storage_resp (                     npolygons))
+         allocate(cgrid%dmean_sapb_storage_resp (                     npolygons))
+         allocate(cgrid%dmean_barka_storage_resp(                     npolygons))
+         allocate(cgrid%dmean_barkb_storage_resp(                     npolygons))
+         allocate(cgrid%dmean_plresp            (                     npolygons))
+         allocate(cgrid%dmean_leaf_energy       (                     npolygons))
+         allocate(cgrid%dmean_leaf_water        (                     npolygons))
+         allocate(cgrid%dmean_leaf_hcap         (                     npolygons))
+         allocate(cgrid%dmean_leaf_vpdef        (                     npolygons))
+         allocate(cgrid%dmean_leaf_temp         (                     npolygons))
+         allocate(cgrid%dmean_leaf_fliq         (                     npolygons))
+         allocate(cgrid%dmean_leaf_gsw          (                     npolygons))
+         allocate(cgrid%dmean_leaf_gbw          (                     npolygons))
+         allocate(cgrid%dmean_wood_energy       (                     npolygons))
+         allocate(cgrid%dmean_wood_water        (                     npolygons))
+         allocate(cgrid%dmean_wood_hcap         (                     npolygons))
+         allocate(cgrid%dmean_wood_temp         (                     npolygons))
+         allocate(cgrid%dmean_wood_fliq         (                     npolygons))
+         allocate(cgrid%dmean_wood_gbw          (                     npolygons))
+         allocate(cgrid%dmean_fs_open           (                     npolygons))
+         allocate(cgrid%dmean_fsw               (                     npolygons))
+         allocate(cgrid%dmean_fsn               (                     npolygons))
+         allocate(cgrid%dmean_a_open            (                     npolygons))
+         allocate(cgrid%dmean_a_closed          (                     npolygons))
+         allocate(cgrid%dmean_a_net             (                     npolygons))
+         allocate(cgrid%dmean_a_light           (                     npolygons))
+         allocate(cgrid%dmean_a_rubp            (                     npolygons))
+         allocate(cgrid%dmean_a_co2             (                     npolygons))
+         allocate(cgrid%dmean_psi_open          (                     npolygons))
+         allocate(cgrid%dmean_psi_closed        (                     npolygons))
+         allocate(cgrid%dmean_water_supply      (                     npolygons))
+         allocate(cgrid%dmean_par_l             (                     npolygons))
+         allocate(cgrid%dmean_par_l_beam        (                     npolygons))
+         allocate(cgrid%dmean_par_l_diff        (                     npolygons))
+         allocate(cgrid%dmean_rshort_l          (                     npolygons))
+         allocate(cgrid%dmean_rlong_l           (                     npolygons))
+         allocate(cgrid%dmean_sensible_lc       (                     npolygons))
+         allocate(cgrid%dmean_vapor_lc          (                     npolygons))
+         allocate(cgrid%dmean_transp            (                     npolygons))
+         allocate(cgrid%dmean_intercepted_al    (                     npolygons))
+         allocate(cgrid%dmean_wshed_lg          (                     npolygons))
+         allocate(cgrid%dmean_rshort_w          (                     npolygons))
+         allocate(cgrid%dmean_rlong_w           (                     npolygons))
+         allocate(cgrid%dmean_sensible_wc       (                     npolygons))
+         allocate(cgrid%dmean_vapor_wc          (                     npolygons))
+         allocate(cgrid%dmean_intercepted_aw    (                     npolygons))
+         allocate(cgrid%dmean_wshed_wg          (                     npolygons))
+         allocate(cgrid%dmean_rh                (                     npolygons))
+         allocate(cgrid%dmean_fgc_rh            (                     npolygons))
+         allocate(cgrid%dmean_fsc_rh            (                     npolygons))
+         allocate(cgrid%dmean_stgc_rh           (                     npolygons))
+         allocate(cgrid%dmean_stsc_rh           (                     npolygons))
+         allocate(cgrid%dmean_msc_rh            (                     npolygons))
+         allocate(cgrid%dmean_ssc_rh            (                     npolygons))
+         allocate(cgrid%dmean_nep               (                     npolygons))
+         allocate(cgrid%dmean_rk4step           (                     npolygons))
+         allocate(cgrid%dmean_available_water   (                     npolygons))
+         allocate(cgrid%dmean_veg_displace      (                     npolygons))
+         allocate(cgrid%dmean_rough             (                     npolygons))
+         allocate(cgrid%dmean_can_theiv         (                     npolygons))
+         allocate(cgrid%dmean_can_theta         (                     npolygons))
+         allocate(cgrid%dmean_can_vpdef         (                     npolygons))
+         allocate(cgrid%dmean_can_temp          (                     npolygons))
+         allocate(cgrid%dmean_can_shv           (                     npolygons))
+         allocate(cgrid%dmean_can_co2           (                     npolygons))
+         allocate(cgrid%dmean_can_rhos          (                     npolygons))
+         allocate(cgrid%dmean_can_prss          (                     npolygons))
+         allocate(cgrid%dmean_gnd_temp          (                     npolygons))
+         allocate(cgrid%dmean_gnd_shv           (                     npolygons))
+         allocate(cgrid%dmean_can_ggnd          (                     npolygons))
+         allocate(cgrid%dmean_sfcw_depth        (                     npolygons))
+         allocate(cgrid%dmean_sfcw_energy       (                     npolygons))
+         allocate(cgrid%dmean_sfcw_mass         (                     npolygons))
+         allocate(cgrid%dmean_sfcw_temp         (                     npolygons))
+         allocate(cgrid%dmean_sfcw_fliq         (                     npolygons))
+         allocate(cgrid%dmean_soil_energy       (                 nzg,npolygons))
+         allocate(cgrid%dmean_soil_mstpot       (                 nzg,npolygons))
+         allocate(cgrid%dmean_soil_water        (                 nzg,npolygons))
+         allocate(cgrid%dmean_soil_temp         (                 nzg,npolygons))
+         allocate(cgrid%dmean_soil_fliq         (                 nzg,npolygons))
+         allocate(cgrid%dmean_rshort_gnd        (                     npolygons))
+         allocate(cgrid%dmean_par_gnd           (                     npolygons))
+         allocate(cgrid%dmean_rlong_gnd         (                     npolygons))
+         allocate(cgrid%dmean_rlongup           (                     npolygons))
+         allocate(cgrid%dmean_parup             (                     npolygons))
+         allocate(cgrid%dmean_nirup             (                     npolygons))
+         allocate(cgrid%dmean_rshortup          (                     npolygons))
+         allocate(cgrid%dmean_rnet              (                     npolygons))
+         allocate(cgrid%dmean_albedo            (                     npolygons))
+         allocate(cgrid%dmean_albedo_par        (                     npolygons))
+         allocate(cgrid%dmean_albedo_nir        (                     npolygons))
+         allocate(cgrid%dmean_rlong_albedo      (                     npolygons))
+         allocate(cgrid%dmean_ustar             (                     npolygons))
+         allocate(cgrid%dmean_tstar             (                     npolygons))
+         allocate(cgrid%dmean_qstar             (                     npolygons))
+         allocate(cgrid%dmean_cstar             (                     npolygons))
+         allocate(cgrid%dmean_carbon_ac         (                     npolygons))
+         allocate(cgrid%dmean_carbon_st         (                     npolygons))
+         allocate(cgrid%dmean_vapor_gc          (                     npolygons))
+         allocate(cgrid%dmean_vapor_ac          (                     npolygons))
+         allocate(cgrid%dmean_smoist_gg         (                 nzg,npolygons))
+         allocate(cgrid%dmean_throughfall       (                     npolygons))
+         allocate(cgrid%dmean_transloss         (                 nzg,npolygons))
+         allocate(cgrid%dmean_runoff            (                     npolygons))
+         allocate(cgrid%dmean_drainage          (                     npolygons))
+         allocate(cgrid%dmean_sensible_gc       (                     npolygons))
+         allocate(cgrid%dmean_sensible_ac       (                     npolygons))
+         allocate(cgrid%dmean_sensible_gg       (                 nzg,npolygons))
+         allocate(cgrid%dmean_qthroughfall      (                     npolygons))
+         allocate(cgrid%dmean_qrunoff           (                     npolygons))
+         allocate(cgrid%dmean_qdrainage         (                     npolygons))
+         allocate(cgrid%dmean_atm_theiv         (                     npolygons))
+         allocate(cgrid%dmean_atm_theta         (                     npolygons))
+         allocate(cgrid%dmean_atm_temp          (                     npolygons))
+         allocate(cgrid%dmean_atm_vpdef         (                     npolygons))
+         allocate(cgrid%dmean_atm_shv           (                     npolygons))
+         allocate(cgrid%dmean_atm_rshort        (                     npolygons))
+         allocate(cgrid%dmean_atm_rshort_diff   (                     npolygons))
+         allocate(cgrid%dmean_atm_par           (                     npolygons))
+         allocate(cgrid%dmean_atm_par_diff      (                     npolygons))
+         allocate(cgrid%dmean_atm_rlong         (                     npolygons))
+         allocate(cgrid%dmean_atm_vels          (                     npolygons))
+         allocate(cgrid%dmean_atm_rhos          (                     npolygons))
+         allocate(cgrid%dmean_atm_prss          (                     npolygons))
+         allocate(cgrid%dmean_atm_co2           (                     npolygons))
+         allocate(cgrid%dmean_pcpg              (                     npolygons))
+         allocate(cgrid%dmean_qpcpg             (                     npolygons))
+         allocate(cgrid%dmean_dpcpg             (                     npolygons))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -3658,200 +3886,222 @@ module ed_state_vars
       ! requested by the user.                                                             !
       !------------------------------------------------------------------------------------!
       if (writing_eorq) then
-         allocate(cgrid%mmean_thbark           (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_lai              (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_bleaf            (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_broot            (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_bbark            (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_balive           (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_bstorage         (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_bleaf_n          (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_broot_n          (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_bbark_n          (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_balive_n         (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_bstorage_n       (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_leaf_maintenance (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_root_maintenance (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_bark_maintenance (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_leaf_drop        (   n_pft,      n_dbh,npolygons))
-         allocate(cgrid%mmean_fast_soil_c      (                     npolygons)) 
-         allocate(cgrid%mmean_slow_soil_c      (                     npolygons)) 
-         allocate(cgrid%mmean_struct_soil_c    (                     npolygons)) 
-         allocate(cgrid%mmean_struct_soil_l    (                     npolygons)) 
-         allocate(cgrid%mmean_cwd_c            (                     npolygons)) 
-         allocate(cgrid%mmean_fast_soil_n      (                     npolygons)) 
-         allocate(cgrid%mmean_mineral_soil_n   (                     npolygons)) 
-         allocate(cgrid%mmean_cwd_n            (                     npolygons)) 
-         allocate(cgrid%mmean_gpp              (                     npolygons)) 
-         allocate(cgrid%mmean_npp              (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_resp        (                     npolygons)) 
-         allocate(cgrid%mmean_root_resp        (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_growth_resp (                     npolygons)) 
-         allocate(cgrid%mmean_root_growth_resp (                     npolygons)) 
-         allocate(cgrid%mmean_sapa_growth_resp (                     npolygons)) 
-         allocate(cgrid%mmean_sapb_growth_resp (                     npolygons)) 
-         allocate(cgrid%mmean_bark_growth_resp (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_storage_resp(                     npolygons)) 
-         allocate(cgrid%mmean_root_storage_resp(                     npolygons)) 
-         allocate(cgrid%mmean_sapa_storage_resp(                     npolygons)) 
-         allocate(cgrid%mmean_sapb_storage_resp(                     npolygons)) 
-         allocate(cgrid%mmean_bark_storage_resp(                     npolygons)) 
-         allocate(cgrid%mmean_plresp           (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_energy      (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_water       (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_hcap        (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_vpdef       (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_temp        (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_fliq        (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_gsw         (                     npolygons)) 
-         allocate(cgrid%mmean_leaf_gbw         (                     npolygons)) 
-         allocate(cgrid%mmean_wood_energy      (                     npolygons)) 
-         allocate(cgrid%mmean_wood_water       (                     npolygons)) 
-         allocate(cgrid%mmean_wood_hcap        (                     npolygons)) 
-         allocate(cgrid%mmean_wood_temp        (                     npolygons)) 
-         allocate(cgrid%mmean_wood_fliq        (                     npolygons)) 
-         allocate(cgrid%mmean_wood_gbw         (                     npolygons)) 
-         allocate(cgrid%mmean_fs_open          (                     npolygons)) 
-         allocate(cgrid%mmean_fsw              (                     npolygons)) 
-         allocate(cgrid%mmean_fsn              (                     npolygons)) 
-         allocate(cgrid%mmean_a_open           (                     npolygons))
-         allocate(cgrid%mmean_a_closed         (                     npolygons))
-         allocate(cgrid%mmean_a_net            (                     npolygons))
-         allocate(cgrid%mmean_a_light          (                     npolygons))
-         allocate(cgrid%mmean_a_rubp           (                     npolygons))
-         allocate(cgrid%mmean_a_co2            (                     npolygons))
-         allocate(cgrid%mmean_psi_open         (                     npolygons)) 
-         allocate(cgrid%mmean_psi_closed       (                     npolygons)) 
-         allocate(cgrid%mmean_water_supply     (                     npolygons)) 
-         allocate(cgrid%mmean_par_l            (                     npolygons)) 
-         allocate(cgrid%mmean_par_l_beam       (                     npolygons)) 
-         allocate(cgrid%mmean_par_l_diff       (                     npolygons)) 
-         allocate(cgrid%mmean_rshort_l         (                     npolygons)) 
-         allocate(cgrid%mmean_rlong_l          (                     npolygons)) 
-         allocate(cgrid%mmean_sensible_lc      (                     npolygons)) 
-         allocate(cgrid%mmean_vapor_lc         (                     npolygons)) 
-         allocate(cgrid%mmean_transp           (                     npolygons)) 
-         allocate(cgrid%mmean_intercepted_al   (                     npolygons)) 
-         allocate(cgrid%mmean_wshed_lg         (                     npolygons)) 
-         allocate(cgrid%mmean_rshort_w         (                     npolygons)) 
-         allocate(cgrid%mmean_rlong_w          (                     npolygons)) 
-         allocate(cgrid%mmean_sensible_wc      (                     npolygons)) 
-         allocate(cgrid%mmean_vapor_wc         (                     npolygons)) 
-         allocate(cgrid%mmean_intercepted_aw   (                     npolygons)) 
-         allocate(cgrid%mmean_wshed_wg         (                     npolygons)) 
-         allocate(cgrid%mmean_rh               (                     npolygons)) 
-         allocate(cgrid%mmean_cwd_rh           (                     npolygons)) 
-         allocate(cgrid%mmean_nep              (                     npolygons)) 
-         allocate(cgrid%mmean_rk4step          (                     npolygons)) 
-         allocate(cgrid%mmean_available_water  (                     npolygons)) 
-         allocate(cgrid%mmean_veg_displace     (                     npolygons)) 
-         allocate(cgrid%mmean_rough            (                     npolygons)) 
-         allocate(cgrid%mmean_can_theiv        (                     npolygons)) 
-         allocate(cgrid%mmean_can_theta        (                     npolygons)) 
-         allocate(cgrid%mmean_can_vpdef        (                     npolygons)) 
-         allocate(cgrid%mmean_can_temp         (                     npolygons)) 
-         allocate(cgrid%mmean_can_shv          (                     npolygons)) 
-         allocate(cgrid%mmean_can_co2          (                     npolygons)) 
-         allocate(cgrid%mmean_can_rhos         (                     npolygons)) 
-         allocate(cgrid%mmean_can_prss         (                     npolygons)) 
-         allocate(cgrid%mmean_gnd_temp         (                     npolygons)) 
-         allocate(cgrid%mmean_gnd_shv          (                     npolygons)) 
-         allocate(cgrid%mmean_can_ggnd         (                     npolygons)) 
-         allocate(cgrid%mmean_sfcw_depth       (                     npolygons)) 
-         allocate(cgrid%mmean_sfcw_energy      (                     npolygons)) 
-         allocate(cgrid%mmean_sfcw_mass        (                     npolygons)) 
-         allocate(cgrid%mmean_sfcw_temp        (                     npolygons)) 
-         allocate(cgrid%mmean_sfcw_fliq        (                     npolygons)) 
-         allocate(cgrid%mmean_soil_energy      (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_soil_mstpot      (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_soil_water       (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_soil_temp        (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_soil_fliq        (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_rshort_gnd       (                     npolygons)) 
-         allocate(cgrid%mmean_par_gnd          (                     npolygons)) 
-         allocate(cgrid%mmean_rlong_gnd        (                     npolygons)) 
-         allocate(cgrid%mmean_rlongup          (                     npolygons)) 
-         allocate(cgrid%mmean_parup            (                     npolygons)) 
-         allocate(cgrid%mmean_nirup            (                     npolygons)) 
-         allocate(cgrid%mmean_rshortup         (                     npolygons)) 
-         allocate(cgrid%mmean_rnet             (                     npolygons)) 
-         allocate(cgrid%mmean_albedo           (                     npolygons)) 
-         allocate(cgrid%mmean_albedo_par       (                     npolygons)) 
-         allocate(cgrid%mmean_albedo_nir       (                     npolygons)) 
-         allocate(cgrid%mmean_rlong_albedo     (                     npolygons)) 
-         allocate(cgrid%mmean_ustar            (                     npolygons)) 
-         allocate(cgrid%mmean_tstar            (                     npolygons)) 
-         allocate(cgrid%mmean_qstar            (                     npolygons)) 
-         allocate(cgrid%mmean_cstar            (                     npolygons)) 
-         allocate(cgrid%mmean_carbon_ac        (                     npolygons)) 
-         allocate(cgrid%mmean_carbon_st        (                     npolygons)) 
-         allocate(cgrid%mmean_vapor_gc         (                     npolygons)) 
-         allocate(cgrid%mmean_vapor_ac         (                     npolygons)) 
-         allocate(cgrid%mmean_smoist_gg        (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_throughfall      (                     npolygons)) 
-         allocate(cgrid%mmean_transloss        (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_runoff           (                     npolygons)) 
-         allocate(cgrid%mmean_drainage         (                     npolygons)) 
-         allocate(cgrid%mmean_sensible_gc      (                     npolygons)) 
-         allocate(cgrid%mmean_sensible_ac      (                     npolygons)) 
-         allocate(cgrid%mmean_sensible_gg      (                 nzg,npolygons)) 
-         allocate(cgrid%mmean_qthroughfall     (                     npolygons)) 
-         allocate(cgrid%mmean_qrunoff          (                     npolygons)) 
-         allocate(cgrid%mmean_qdrainage        (                     npolygons)) 
-         allocate(cgrid%mmean_nppleaf          (                     npolygons))
-         allocate(cgrid%mmean_nppfroot         (                     npolygons))
-         allocate(cgrid%mmean_nppsapwood       (                     npolygons))
-         allocate(cgrid%mmean_nppbark          (                     npolygons))
-         allocate(cgrid%mmean_nppcroot         (                     npolygons))
-         allocate(cgrid%mmean_nppseeds         (                     npolygons))
-         allocate(cgrid%mmean_nppwood          (                     npolygons))
-         allocate(cgrid%mmean_nppdaily         (                     npolygons))
-         allocate(cgrid%mmean_A_decomp         (                     npolygons)) 
-         allocate(cgrid%mmean_Af_decomp        (                     npolygons)) 
-         allocate(cgrid%mmean_co2_residual     (                     npolygons)) 
-         allocate(cgrid%mmean_energy_residual  (                     npolygons)) 
-         allocate(cgrid%mmean_water_residual   (                     npolygons)) 
-         allocate(cgrid%mmean_atm_theiv        (                     npolygons)) 
-         allocate(cgrid%mmean_atm_theta        (                     npolygons)) 
-         allocate(cgrid%mmean_atm_temp         (                     npolygons)) 
-         allocate(cgrid%mmean_atm_vpdef        (                     npolygons)) 
-         allocate(cgrid%mmean_atm_shv          (                     npolygons)) 
-         allocate(cgrid%mmean_atm_rshort       (                     npolygons)) 
-         allocate(cgrid%mmean_atm_rshort_diff  (                     npolygons)) 
-         allocate(cgrid%mmean_atm_par          (                     npolygons)) 
-         allocate(cgrid%mmean_atm_par_diff     (                     npolygons)) 
-         allocate(cgrid%mmean_atm_rlong        (                     npolygons)) 
-         allocate(cgrid%mmean_atm_vels         (                     npolygons)) 
-         allocate(cgrid%mmean_atm_rhos         (                     npolygons)) 
-         allocate(cgrid%mmean_atm_prss         (                     npolygons)) 
-         allocate(cgrid%mmean_atm_co2          (                     npolygons)) 
-         allocate(cgrid%mmean_pcpg             (                     npolygons)) 
-         allocate(cgrid%mmean_qpcpg            (                     npolygons)) 
-         allocate(cgrid%mmean_dpcpg            (                     npolygons)) 
-         allocate(cgrid%mmsqu_gpp              (                     npolygons)) 
-         allocate(cgrid%mmsqu_npp              (                     npolygons)) 
-         allocate(cgrid%mmsqu_plresp           (                     npolygons)) 
-         allocate(cgrid%mmsqu_sensible_lc      (                     npolygons)) 
-         allocate(cgrid%mmsqu_vapor_lc         (                     npolygons)) 
-         allocate(cgrid%mmsqu_transp           (                     npolygons)) 
-         allocate(cgrid%mmsqu_sensible_wc      (                     npolygons)) 
-         allocate(cgrid%mmsqu_vapor_wc         (                     npolygons)) 
-         allocate(cgrid%mmsqu_rh               (                     npolygons)) 
-         allocate(cgrid%mmsqu_cwd_rh           (                     npolygons)) 
-         allocate(cgrid%mmsqu_nep              (                     npolygons)) 
-         allocate(cgrid%mmsqu_rlongup          (                     npolygons)) 
-         allocate(cgrid%mmsqu_parup            (                     npolygons)) 
-         allocate(cgrid%mmsqu_nirup            (                     npolygons)) 
-         allocate(cgrid%mmsqu_rshortup         (                     npolygons)) 
-         allocate(cgrid%mmsqu_rnet             (                     npolygons)) 
-         allocate(cgrid%mmsqu_albedo           (                     npolygons)) 
-         allocate(cgrid%mmsqu_ustar            (                     npolygons)) 
-         allocate(cgrid%mmsqu_carbon_ac        (                     npolygons)) 
-         allocate(cgrid%mmsqu_carbon_st        (                     npolygons)) 
-         allocate(cgrid%mmsqu_vapor_gc         (                     npolygons)) 
-         allocate(cgrid%mmsqu_vapor_ac         (                     npolygons)) 
-         allocate(cgrid%mmsqu_sensible_gc      (                     npolygons)) 
-         allocate(cgrid%mmsqu_sensible_ac      (                     npolygons)) 
+         allocate(cgrid%mmean_thbark            (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_lai               (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bleaf             (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_broot             (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bbarka            (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bbarkb            (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_balive            (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bstorage          (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bleaf_n           (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_broot_n           (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bbarka_n          (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bbarkb_n          (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_balive_n          (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bstorage_n        (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_leaf_maintenance  (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_root_maintenance  (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_barka_maintenance (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_barkb_maintenance (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_leaf_drop         (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_fast_grnd_c       (                     npolygons)) 
+         allocate(cgrid%mmean_fast_soil_c       (                     npolygons)) 
+         allocate(cgrid%mmean_struct_grnd_c     (                     npolygons)) 
+         allocate(cgrid%mmean_struct_soil_c     (                     npolygons)) 
+         allocate(cgrid%mmean_struct_grnd_l     (                     npolygons)) 
+         allocate(cgrid%mmean_struct_soil_l     (                     npolygons)) 
+         allocate(cgrid%mmean_microbe_soil_c    (                     npolygons)) 
+         allocate(cgrid%mmean_slow_soil_c       (                     npolygons)) 
+         allocate(cgrid%mmean_fast_grnd_n       (                     npolygons)) 
+         allocate(cgrid%mmean_fast_soil_n       (                     npolygons)) 
+         allocate(cgrid%mmean_struct_grnd_n     (                     npolygons)) 
+         allocate(cgrid%mmean_struct_soil_n     (                     npolygons)) 
+         allocate(cgrid%mmean_mineral_soil_n    (                     npolygons)) 
+         allocate(cgrid%mmean_gpp               (                     npolygons)) 
+         allocate(cgrid%mmean_npp               (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_resp         (                     npolygons)) 
+         allocate(cgrid%mmean_root_resp         (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_growth_resp  (                     npolygons)) 
+         allocate(cgrid%mmean_root_growth_resp  (                     npolygons)) 
+         allocate(cgrid%mmean_sapa_growth_resp  (                     npolygons)) 
+         allocate(cgrid%mmean_sapb_growth_resp  (                     npolygons)) 
+         allocate(cgrid%mmean_barka_growth_resp (                     npolygons)) 
+         allocate(cgrid%mmean_barkb_growth_resp (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_storage_resp (                     npolygons)) 
+         allocate(cgrid%mmean_root_storage_resp (                     npolygons)) 
+         allocate(cgrid%mmean_sapa_storage_resp (                     npolygons)) 
+         allocate(cgrid%mmean_sapb_storage_resp (                     npolygons)) 
+         allocate(cgrid%mmean_barka_storage_resp(                     npolygons)) 
+         allocate(cgrid%mmean_barkb_storage_resp(                     npolygons)) 
+         allocate(cgrid%mmean_plresp            (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_energy       (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_water        (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_hcap         (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_vpdef        (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_temp         (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_fliq         (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_gsw          (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_gbw          (                     npolygons)) 
+         allocate(cgrid%mmean_wood_energy       (                     npolygons)) 
+         allocate(cgrid%mmean_wood_water        (                     npolygons)) 
+         allocate(cgrid%mmean_wood_hcap         (                     npolygons)) 
+         allocate(cgrid%mmean_wood_temp         (                     npolygons)) 
+         allocate(cgrid%mmean_wood_fliq         (                     npolygons)) 
+         allocate(cgrid%mmean_wood_gbw          (                     npolygons)) 
+         allocate(cgrid%mmean_fs_open           (                     npolygons)) 
+         allocate(cgrid%mmean_fsw               (                     npolygons)) 
+         allocate(cgrid%mmean_fsn               (                     npolygons)) 
+         allocate(cgrid%mmean_a_open            (                     npolygons))
+         allocate(cgrid%mmean_a_closed          (                     npolygons))
+         allocate(cgrid%mmean_a_net             (                     npolygons))
+         allocate(cgrid%mmean_a_light           (                     npolygons))
+         allocate(cgrid%mmean_a_rubp            (                     npolygons))
+         allocate(cgrid%mmean_a_co2             (                     npolygons))
+         allocate(cgrid%mmean_psi_open          (                     npolygons)) 
+         allocate(cgrid%mmean_psi_closed        (                     npolygons)) 
+         allocate(cgrid%mmean_water_supply      (                     npolygons)) 
+         allocate(cgrid%mmean_par_l             (                     npolygons)) 
+         allocate(cgrid%mmean_par_l_beam        (                     npolygons)) 
+         allocate(cgrid%mmean_par_l_diff        (                     npolygons)) 
+         allocate(cgrid%mmean_rshort_l          (                     npolygons)) 
+         allocate(cgrid%mmean_rlong_l           (                     npolygons)) 
+         allocate(cgrid%mmean_sensible_lc       (                     npolygons)) 
+         allocate(cgrid%mmean_vapor_lc          (                     npolygons)) 
+         allocate(cgrid%mmean_transp            (                     npolygons)) 
+         allocate(cgrid%mmean_intercepted_al    (                     npolygons)) 
+         allocate(cgrid%mmean_wshed_lg          (                     npolygons)) 
+         allocate(cgrid%mmean_rshort_w          (                     npolygons)) 
+         allocate(cgrid%mmean_rlong_w           (                     npolygons)) 
+         allocate(cgrid%mmean_sensible_wc       (                     npolygons)) 
+         allocate(cgrid%mmean_vapor_wc          (                     npolygons)) 
+         allocate(cgrid%mmean_intercepted_aw    (                     npolygons)) 
+         allocate(cgrid%mmean_wshed_wg          (                     npolygons)) 
+         allocate(cgrid%mmean_rh                (                     npolygons)) 
+         allocate(cgrid%mmean_fgc_rh            (                     npolygons))
+         allocate(cgrid%mmean_fsc_rh            (                     npolygons))
+         allocate(cgrid%mmean_stgc_rh           (                     npolygons))
+         allocate(cgrid%mmean_stsc_rh           (                     npolygons))
+         allocate(cgrid%mmean_msc_rh            (                     npolygons))
+         allocate(cgrid%mmean_ssc_rh            (                     npolygons))
+         allocate(cgrid%mmean_nep               (                     npolygons)) 
+         allocate(cgrid%mmean_rk4step           (                     npolygons)) 
+         allocate(cgrid%mmean_available_water   (                     npolygons)) 
+         allocate(cgrid%mmean_veg_displace      (                     npolygons)) 
+         allocate(cgrid%mmean_rough             (                     npolygons)) 
+         allocate(cgrid%mmean_can_theiv         (                     npolygons)) 
+         allocate(cgrid%mmean_can_theta         (                     npolygons)) 
+         allocate(cgrid%mmean_can_vpdef         (                     npolygons)) 
+         allocate(cgrid%mmean_can_temp          (                     npolygons)) 
+         allocate(cgrid%mmean_can_shv           (                     npolygons)) 
+         allocate(cgrid%mmean_can_co2           (                     npolygons)) 
+         allocate(cgrid%mmean_can_rhos          (                     npolygons)) 
+         allocate(cgrid%mmean_can_prss          (                     npolygons)) 
+         allocate(cgrid%mmean_gnd_temp          (                     npolygons)) 
+         allocate(cgrid%mmean_gnd_shv           (                     npolygons)) 
+         allocate(cgrid%mmean_can_ggnd          (                     npolygons)) 
+         allocate(cgrid%mmean_sfcw_depth        (                     npolygons)) 
+         allocate(cgrid%mmean_sfcw_energy       (                     npolygons)) 
+         allocate(cgrid%mmean_sfcw_mass         (                     npolygons)) 
+         allocate(cgrid%mmean_sfcw_temp         (                     npolygons)) 
+         allocate(cgrid%mmean_sfcw_fliq         (                     npolygons)) 
+         allocate(cgrid%mmean_soil_energy       (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_soil_mstpot       (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_soil_water        (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_soil_temp         (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_soil_fliq         (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_rshort_gnd        (                     npolygons)) 
+         allocate(cgrid%mmean_par_gnd           (                     npolygons)) 
+         allocate(cgrid%mmean_rlong_gnd         (                     npolygons)) 
+         allocate(cgrid%mmean_rlongup           (                     npolygons)) 
+         allocate(cgrid%mmean_parup             (                     npolygons)) 
+         allocate(cgrid%mmean_nirup             (                     npolygons)) 
+         allocate(cgrid%mmean_rshortup          (                     npolygons)) 
+         allocate(cgrid%mmean_rnet              (                     npolygons)) 
+         allocate(cgrid%mmean_albedo            (                     npolygons)) 
+         allocate(cgrid%mmean_albedo_par        (                     npolygons)) 
+         allocate(cgrid%mmean_albedo_nir        (                     npolygons)) 
+         allocate(cgrid%mmean_rlong_albedo      (                     npolygons)) 
+         allocate(cgrid%mmean_ustar             (                     npolygons)) 
+         allocate(cgrid%mmean_tstar             (                     npolygons)) 
+         allocate(cgrid%mmean_qstar             (                     npolygons)) 
+         allocate(cgrid%mmean_cstar             (                     npolygons)) 
+         allocate(cgrid%mmean_carbon_ac         (                     npolygons)) 
+         allocate(cgrid%mmean_carbon_st         (                     npolygons)) 
+         allocate(cgrid%mmean_vapor_gc          (                     npolygons)) 
+         allocate(cgrid%mmean_vapor_ac          (                     npolygons)) 
+         allocate(cgrid%mmean_smoist_gg         (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_throughfall       (                     npolygons)) 
+         allocate(cgrid%mmean_transloss         (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_runoff            (                     npolygons)) 
+         allocate(cgrid%mmean_drainage          (                     npolygons)) 
+         allocate(cgrid%mmean_sensible_gc       (                     npolygons)) 
+         allocate(cgrid%mmean_sensible_ac       (                     npolygons)) 
+         allocate(cgrid%mmean_sensible_gg       (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_qthroughfall      (                     npolygons)) 
+         allocate(cgrid%mmean_qrunoff           (                     npolygons)) 
+         allocate(cgrid%mmean_qdrainage         (                     npolygons)) 
+         allocate(cgrid%mmean_nppleaf           (                     npolygons))
+         allocate(cgrid%mmean_nppfroot          (                     npolygons))
+         allocate(cgrid%mmean_nppsapwood        (                     npolygons))
+         allocate(cgrid%mmean_nppbark           (                     npolygons))
+         allocate(cgrid%mmean_nppcroot          (                     npolygons))
+         allocate(cgrid%mmean_nppseeds          (                     npolygons))
+         allocate(cgrid%mmean_nppwood           (                     npolygons))
+         allocate(cgrid%mmean_nppdaily          (                     npolygons))
+         allocate(cgrid%mmean_A_decomp          (                     npolygons)) 
+         allocate(cgrid%mmean_B_decomp          (                     npolygons)) 
+         allocate(cgrid%mmean_Af_decomp         (                     npolygons)) 
+         allocate(cgrid%mmean_Bf_decomp         (                     npolygons)) 
+         allocate(cgrid%mmean_co2_residual      (                     npolygons)) 
+         allocate(cgrid%mmean_energy_residual   (                     npolygons)) 
+         allocate(cgrid%mmean_water_residual    (                     npolygons)) 
+         allocate(cgrid%mmean_atm_theiv         (                     npolygons)) 
+         allocate(cgrid%mmean_atm_theta         (                     npolygons)) 
+         allocate(cgrid%mmean_atm_temp          (                     npolygons)) 
+         allocate(cgrid%mmean_atm_vpdef         (                     npolygons)) 
+         allocate(cgrid%mmean_atm_shv           (                     npolygons)) 
+         allocate(cgrid%mmean_atm_rshort        (                     npolygons)) 
+         allocate(cgrid%mmean_atm_rshort_diff   (                     npolygons)) 
+         allocate(cgrid%mmean_atm_par           (                     npolygons)) 
+         allocate(cgrid%mmean_atm_par_diff      (                     npolygons)) 
+         allocate(cgrid%mmean_atm_rlong         (                     npolygons)) 
+         allocate(cgrid%mmean_atm_vels          (                     npolygons)) 
+         allocate(cgrid%mmean_atm_rhos          (                     npolygons)) 
+         allocate(cgrid%mmean_atm_prss          (                     npolygons)) 
+         allocate(cgrid%mmean_atm_co2           (                     npolygons)) 
+         allocate(cgrid%mmean_pcpg              (                     npolygons)) 
+         allocate(cgrid%mmean_qpcpg             (                     npolygons)) 
+         allocate(cgrid%mmean_dpcpg             (                     npolygons)) 
+         allocate(cgrid%mmsqu_gpp               (                     npolygons)) 
+         allocate(cgrid%mmsqu_npp               (                     npolygons)) 
+         allocate(cgrid%mmsqu_plresp            (                     npolygons)) 
+         allocate(cgrid%mmsqu_sensible_lc       (                     npolygons)) 
+         allocate(cgrid%mmsqu_vapor_lc          (                     npolygons)) 
+         allocate(cgrid%mmsqu_transp            (                     npolygons)) 
+         allocate(cgrid%mmsqu_sensible_wc       (                     npolygons)) 
+         allocate(cgrid%mmsqu_vapor_wc          (                     npolygons)) 
+         allocate(cgrid%mmsqu_rh                (                     npolygons)) 
+         allocate(cgrid%mmsqu_fgc_rh            (                     npolygons))
+         allocate(cgrid%mmsqu_fsc_rh            (                     npolygons))
+         allocate(cgrid%mmsqu_stgc_rh           (                     npolygons))
+         allocate(cgrid%mmsqu_stsc_rh           (                     npolygons))
+         allocate(cgrid%mmsqu_msc_rh            (                     npolygons))
+         allocate(cgrid%mmsqu_ssc_rh            (                     npolygons))
+         allocate(cgrid%mmsqu_nep               (                     npolygons)) 
+         allocate(cgrid%mmsqu_rlongup           (                     npolygons)) 
+         allocate(cgrid%mmsqu_parup             (                     npolygons)) 
+         allocate(cgrid%mmsqu_nirup             (                     npolygons)) 
+         allocate(cgrid%mmsqu_rshortup          (                     npolygons)) 
+         allocate(cgrid%mmsqu_rnet              (                     npolygons)) 
+         allocate(cgrid%mmsqu_albedo            (                     npolygons)) 
+         allocate(cgrid%mmsqu_ustar             (                     npolygons)) 
+         allocate(cgrid%mmsqu_carbon_ac         (                     npolygons)) 
+         allocate(cgrid%mmsqu_carbon_st         (                     npolygons)) 
+         allocate(cgrid%mmsqu_vapor_gc          (                     npolygons)) 
+         allocate(cgrid%mmsqu_vapor_ac          (                     npolygons)) 
+         allocate(cgrid%mmsqu_sensible_gc       (                     npolygons)) 
+         allocate(cgrid%mmsqu_sensible_ac       (                     npolygons)) 
       end if
       !------------------------------------------------------------------------------------!
 
@@ -3863,163 +4113,175 @@ module ed_state_vars
       ! by the user.                                                                       !
       !------------------------------------------------------------------------------------!
       if (writing_dcyc) then
-         allocate(cgrid%qmean_gpp              (             ndcycle,npolygons))
-         allocate(cgrid%qmean_npp              (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_resp        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_root_resp        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_growth_resp (             ndcycle,npolygons))
-         allocate(cgrid%qmean_root_growth_resp (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sapa_growth_resp (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sapb_growth_resp (             ndcycle,npolygons))
-         allocate(cgrid%qmean_bark_growth_resp (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_storage_resp(             ndcycle,npolygons))
-         allocate(cgrid%qmean_root_storage_resp(             ndcycle,npolygons))
-         allocate(cgrid%qmean_sapa_storage_resp(             ndcycle,npolygons))
-         allocate(cgrid%qmean_sapb_storage_resp(             ndcycle,npolygons))
-         allocate(cgrid%qmean_bark_storage_resp(             ndcycle,npolygons))
-         allocate(cgrid%qmean_plresp           (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_energy      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_water       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_hcap        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_vpdef       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_temp        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_fliq        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_gsw         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_leaf_gbw         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wood_energy      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wood_water       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wood_hcap        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wood_temp        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wood_fliq        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wood_gbw         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_fs_open          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_fsw              (             ndcycle,npolygons))
-         allocate(cgrid%qmean_fsn              (             ndcycle,npolygons))
-         allocate(cgrid%qmean_a_open           (             ndcycle,npolygons))
-         allocate(cgrid%qmean_a_closed         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_a_net            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_a_light          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_a_rubp           (             ndcycle,npolygons))
-         allocate(cgrid%qmean_a_co2            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_psi_open         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_psi_closed       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_water_supply     (             ndcycle,npolygons))
-         allocate(cgrid%qmean_par_l            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_par_l_beam       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_par_l_diff       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rshort_l         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rlong_l          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sensible_lc      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_vapor_lc         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_transp           (             ndcycle,npolygons))
-         allocate(cgrid%qmean_intercepted_al   (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wshed_lg         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rshort_w         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rlong_w          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sensible_wc      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_vapor_wc         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_intercepted_aw   (             ndcycle,npolygons))
-         allocate(cgrid%qmean_wshed_wg         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rh               (             ndcycle,npolygons))
-         allocate(cgrid%qmean_cwd_rh           (             ndcycle,npolygons))
-         allocate(cgrid%qmean_nep              (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rk4step          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_available_water  (             ndcycle,npolygons))
-         allocate(cgrid%qmean_veg_displace     (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rough            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_theiv        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_theta        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_vpdef        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_temp         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_shv          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_co2          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_rhos         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_prss         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_gnd_temp         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_gnd_shv          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_can_ggnd         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sfcw_depth       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sfcw_energy      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sfcw_mass        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sfcw_temp        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sfcw_fliq        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_soil_energy      (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_soil_mstpot      (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_soil_water       (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_soil_temp        (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_soil_fliq        (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_rshort_gnd       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_par_gnd          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rlong_gnd        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rlongup          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_parup            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_nirup            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rshortup         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rnet             (             ndcycle,npolygons))
-         allocate(cgrid%qmean_albedo           (             ndcycle,npolygons))
-         allocate(cgrid%qmean_albedo_par       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_albedo_nir       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_rlong_albedo     (             ndcycle,npolygons))
-         allocate(cgrid%qmean_ustar            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_tstar            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_qstar            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_cstar            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_carbon_ac        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_carbon_st        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_vapor_gc         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_vapor_ac         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_smoist_gg        (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_throughfall      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_transloss        (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_runoff           (             ndcycle,npolygons))
-         allocate(cgrid%qmean_drainage         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sensible_gc      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sensible_ac      (             ndcycle,npolygons))
-         allocate(cgrid%qmean_sensible_gg      (     nzg,    ndcycle,npolygons))
-         allocate(cgrid%qmean_qthroughfall     (             ndcycle,npolygons))
-         allocate(cgrid%qmean_qrunoff          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_qdrainage        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_theiv        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_theta        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_temp         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_vpdef        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_shv          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_rshort       (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_rshort_diff  (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_par          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_par_diff     (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_rlong        (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_vels         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_rhos         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_prss         (             ndcycle,npolygons))
-         allocate(cgrid%qmean_atm_co2          (             ndcycle,npolygons))
-         allocate(cgrid%qmean_pcpg             (             ndcycle,npolygons))
-         allocate(cgrid%qmean_qpcpg            (             ndcycle,npolygons))
-         allocate(cgrid%qmean_dpcpg            (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_gpp              (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_npp              (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_plresp           (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_sensible_lc      (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_vapor_lc         (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_transp           (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_sensible_wc      (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_vapor_wc         (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_rh               (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_cwd_rh           (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_nep              (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_rlongup          (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_parup            (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_nirup            (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_rshortup         (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_rnet             (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_albedo           (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_ustar            (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_carbon_ac        (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_carbon_st        (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_vapor_gc         (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_vapor_ac         (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_sensible_gc      (             ndcycle,npolygons))
-         allocate(cgrid%qmsqu_sensible_ac      (             ndcycle,npolygons))
+         allocate(cgrid%qmean_gpp               (             ndcycle,npolygons))
+         allocate(cgrid%qmean_npp               (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_resp         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_root_resp         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_growth_resp  (             ndcycle,npolygons))
+         allocate(cgrid%qmean_root_growth_resp  (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sapa_growth_resp  (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sapb_growth_resp  (             ndcycle,npolygons))
+         allocate(cgrid%qmean_barka_growth_resp (             ndcycle,npolygons))
+         allocate(cgrid%qmean_barkb_growth_resp (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_storage_resp (             ndcycle,npolygons))
+         allocate(cgrid%qmean_root_storage_resp (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sapa_storage_resp (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sapb_storage_resp (             ndcycle,npolygons))
+         allocate(cgrid%qmean_barka_storage_resp(             ndcycle,npolygons))
+         allocate(cgrid%qmean_barkb_storage_resp(             ndcycle,npolygons))
+         allocate(cgrid%qmean_plresp            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_energy       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_water        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_hcap         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_vpdef        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_temp         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_fliq         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_gsw          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_gbw          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wood_energy       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wood_water        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wood_hcap         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wood_temp         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wood_fliq         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wood_gbw          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_fs_open           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_fsw               (             ndcycle,npolygons))
+         allocate(cgrid%qmean_fsn               (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_open            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_closed          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_net             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_light           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_rubp            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_co2             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_psi_open          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_psi_closed        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_water_supply      (             ndcycle,npolygons))
+         allocate(cgrid%qmean_par_l             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_par_l_beam        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_par_l_diff        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rshort_l          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rlong_l           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sensible_lc       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_vapor_lc          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_transp            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_intercepted_al    (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wshed_lg          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rshort_w          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rlong_w           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sensible_wc       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_vapor_wc          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_intercepted_aw    (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wshed_wg          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rh                (             ndcycle,npolygons))
+         allocate(cgrid%qmean_fgc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_fsc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_stgc_rh           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_stsc_rh           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_msc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_ssc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_nep               (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rk4step           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_available_water   (             ndcycle,npolygons))
+         allocate(cgrid%qmean_veg_displace      (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rough             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_theiv         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_theta         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_vpdef         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_temp          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_shv           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_co2           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_rhos          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_prss          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_gnd_temp          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_gnd_shv           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_ggnd          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sfcw_depth        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sfcw_energy       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sfcw_mass         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sfcw_temp         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sfcw_fliq         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_soil_energy       (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_soil_mstpot       (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_soil_water        (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_soil_temp         (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_soil_fliq         (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_rshort_gnd        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_par_gnd           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rlong_gnd         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rlongup           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_parup             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_nirup             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rshortup          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rnet              (             ndcycle,npolygons))
+         allocate(cgrid%qmean_albedo            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_albedo_par        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_albedo_nir        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rlong_albedo      (             ndcycle,npolygons))
+         allocate(cgrid%qmean_ustar             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_tstar             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_qstar             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_cstar             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_carbon_ac         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_carbon_st         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_vapor_gc          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_vapor_ac          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_smoist_gg         (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_throughfall       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_transloss         (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_runoff            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_drainage          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sensible_gc       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sensible_ac       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_sensible_gg       (     nzg,    ndcycle,npolygons))
+         allocate(cgrid%qmean_qthroughfall      (             ndcycle,npolygons))
+         allocate(cgrid%qmean_qrunoff           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_qdrainage         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_theiv         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_theta         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_temp          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_vpdef         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_shv           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_rshort        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_rshort_diff   (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_par           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_par_diff      (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_rlong         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_vels          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_rhos          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_prss          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_atm_co2           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_pcpg              (             ndcycle,npolygons))
+         allocate(cgrid%qmean_qpcpg             (             ndcycle,npolygons))
+         allocate(cgrid%qmean_dpcpg             (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_gpp               (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_npp               (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_plresp            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_sensible_lc       (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_vapor_lc          (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_transp            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_sensible_wc       (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_vapor_wc          (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_rh                (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_fgc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_fsc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_stgc_rh           (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_stsc_rh           (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_msc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_ssc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_nep               (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_rlongup           (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_parup             (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_nirup             (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_rshortup          (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_rnet              (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_albedo            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_ustar             (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_carbon_ac         (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_carbon_st         (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_vapor_gc          (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_vapor_ac          (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_sensible_gc       (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_sensible_ac       (             ndcycle,npolygons))
       end if
       return
    end subroutine allocate_edtype
@@ -4284,12 +4546,19 @@ module ed_state_vars
       allocate(csite%dist_type                     (              npatches))
       allocate(csite%fbeam                         (              npatches))
       allocate(csite%light_type                    (              npatches))
+      allocate(csite%fast_grnd_C                   (              npatches))
       allocate(csite%fast_soil_C                   (              npatches))
-      allocate(csite%slow_soil_C                   (              npatches))
+      allocate(csite%structural_grnd_C             (              npatches))
       allocate(csite%structural_soil_C             (              npatches))
+      allocate(csite%structural_grnd_L             (              npatches))
       allocate(csite%structural_soil_L             (              npatches))
-      allocate(csite%mineralized_soil_N            (              npatches))
+      allocate(csite%microbial_soil_C              (              npatches))
+      allocate(csite%slow_soil_C                   (              npatches))
+      allocate(csite%fast_grnd_N                   (              npatches))
       allocate(csite%fast_soil_N                   (              npatches))
+      allocate(csite%structural_grnd_N             (              npatches))
+      allocate(csite%structural_soil_N             (              npatches))
+      allocate(csite%mineralized_soil_N            (              npatches))
       allocate(csite%sum_dgd                       (              npatches))
       allocate(csite%sum_chd                       (              npatches))
       allocate(csite%can_theiv                     (              npatches))
@@ -4362,15 +4631,23 @@ module ed_state_vars
       allocate(csite%co2budget_plresp              (              npatches))
       allocate(csite%co2budget_rh                  (              npatches))
       allocate(csite%today_A_decomp                (              npatches))
+      allocate(csite%today_B_decomp                (              npatches))
       allocate(csite%today_Af_decomp               (              npatches))
+      allocate(csite%today_Bf_decomp               (              npatches))
       allocate(csite%repro                         (        n_pft,npatches))
       allocate(csite%veg_rough                     (              npatches))
       allocate(csite%veg_height                    (              npatches))
       allocate(csite%veg_displace                  (              npatches))
+      allocate(csite%fgc_in                        (              npatches))
       allocate(csite%fsc_in                        (              npatches))
-      allocate(csite%ssc_in                        (              npatches))
-      allocate(csite%ssl_in                        (              npatches))
+      allocate(csite%stgc_in                       (              npatches))
+      allocate(csite%stsc_in                       (              npatches))
+      allocate(csite%stgl_in                       (              npatches))
+      allocate(csite%stsl_in                       (              npatches))
+      allocate(csite%fgn_in                        (              npatches))
       allocate(csite%fsn_in                        (              npatches))
+      allocate(csite%stgn_in                       (              npatches))
+      allocate(csite%stsn_in                       (              npatches))
       allocate(csite%total_plant_nitrogen_uptake   (              npatches))
       allocate(csite%mineralized_N_loss            (              npatches))
       allocate(csite%mineralized_N_input           (              npatches))
@@ -4400,9 +4677,15 @@ module ed_state_vars
       allocate(csite%total_sfcw_depth              (              npatches))
       allocate(csite%snowfac                       (              npatches))
       allocate(csite%A_decomp                      (              npatches))
+      allocate(csite%B_decomp                      (              npatches))
       allocate(csite%f_decomp                      (              npatches))
       allocate(csite%rh                            (              npatches))
-      allocate(csite%cwd_rh                        (              npatches))
+      allocate(csite%fgc_rh                        (              npatches))
+      allocate(csite%fsc_rh                        (              npatches))
+      allocate(csite%stgc_rh                       (              npatches))
+      allocate(csite%stsc_rh                       (              npatches))
+      allocate(csite%msc_rh                        (              npatches))
+      allocate(csite%ssc_rh                        (              npatches))
       allocate(csite%cumlai_profile                (n_pft,ff_nhgt,npatches))
       allocate(csite%plant_ag_biomass              (              npatches))
       allocate(csite%htry                          (              npatches))
@@ -4429,7 +4712,12 @@ module ed_state_vars
       allocate(csite%runoff                        (              npatches))
       allocate(csite%qrunoff                       (              npatches))
       allocate(csite%fmean_rh                      (              npatches))
-      allocate(csite%fmean_cwd_rh                  (              npatches))
+      allocate(csite%fmean_fgc_rh                  (              npatches))
+      allocate(csite%fmean_fsc_rh                  (              npatches))
+      allocate(csite%fmean_stgc_rh                 (              npatches))
+      allocate(csite%fmean_stsc_rh                 (              npatches))
+      allocate(csite%fmean_msc_rh                  (              npatches))
+      allocate(csite%fmean_ssc_rh                  (              npatches))
       allocate(csite%fmean_nep                     (              npatches))
       allocate(csite%fmean_rk4step                 (              npatches))
       allocate(csite%fmean_available_water         (              npatches))
@@ -4490,12 +4778,19 @@ module ed_state_vars
 
       if (writing_long) then
          allocate(csite%dmean_A_decomp             (              npatches))
+         allocate(csite%dmean_B_decomp             (              npatches))
          allocate(csite%dmean_Af_decomp            (              npatches))
+         allocate(csite%dmean_Bf_decomp            (              npatches))
          allocate(csite%dmean_co2_residual         (              npatches))
          allocate(csite%dmean_energy_residual      (              npatches))
          allocate(csite%dmean_water_residual       (              npatches))
          allocate(csite%dmean_rh                   (              npatches))
-         allocate(csite%dmean_cwd_rh               (              npatches))
+         allocate(csite%dmean_fgc_rh               (              npatches))
+         allocate(csite%dmean_fsc_rh               (              npatches))
+         allocate(csite%dmean_stgc_rh              (              npatches))
+         allocate(csite%dmean_stsc_rh              (              npatches))
+         allocate(csite%dmean_msc_rh               (              npatches))
+         allocate(csite%dmean_ssc_rh               (              npatches))
          allocate(csite%dmean_nep                  (              npatches))
          allocate(csite%dmean_rk4step              (              npatches))
          allocate(csite%dmean_available_water      (              npatches))
@@ -4555,20 +4850,34 @@ module ed_state_vars
          allocate(csite%dmean_qdrainage            (              npatches))
       end if
       if (writing_eorq) then
+         allocate(csite%mmean_fast_grnd_c          (              npatches))
          allocate(csite%mmean_fast_soil_c          (              npatches))
-         allocate(csite%mmean_slow_soil_c          (              npatches))
+         allocate(csite%mmean_struct_grnd_c        (              npatches))
          allocate(csite%mmean_struct_soil_c        (              npatches))
+         allocate(csite%mmean_struct_grnd_l        (              npatches))
          allocate(csite%mmean_struct_soil_l        (              npatches))
+         allocate(csite%mmean_microbe_soil_c       (              npatches))
+         allocate(csite%mmean_slow_soil_c          (              npatches))
+         allocate(csite%mmean_fast_grnd_n          (              npatches))
          allocate(csite%mmean_fast_soil_n          (              npatches))
+         allocate(csite%mmean_struct_grnd_n        (              npatches))
+         allocate(csite%mmean_struct_soil_n        (              npatches))
          allocate(csite%mmean_mineral_soil_n       (              npatches))
          allocate(csite%mmean_co2_residual         (              npatches))
          allocate(csite%mmean_energy_residual      (              npatches))
          allocate(csite%mmean_water_residual       (              npatches))
          allocate(csite%mmean_rh                   (              npatches))
-         allocate(csite%mmean_cwd_rh               (              npatches))
+         allocate(csite%mmean_fgc_rh               (              npatches))
+         allocate(csite%mmean_fsc_rh               (              npatches))
+         allocate(csite%mmean_stgc_rh              (              npatches))
+         allocate(csite%mmean_stsc_rh              (              npatches))
+         allocate(csite%mmean_msc_rh               (              npatches))
+         allocate(csite%mmean_ssc_rh               (              npatches))
          allocate(csite%mmean_nep                  (              npatches))
          allocate(csite%mmean_A_decomp             (              npatches))
+         allocate(csite%mmean_B_decomp             (              npatches))
          allocate(csite%mmean_Af_decomp            (              npatches))
+         allocate(csite%mmean_Bf_decomp            (              npatches))
          allocate(csite%mmean_rk4step              (              npatches))
          allocate(csite%mmean_available_water      (              npatches))
          allocate(csite%mmean_veg_displace         (              npatches))
@@ -4626,12 +4935,19 @@ module ed_state_vars
          allocate(csite%mmean_qrunoff              (              npatches))
          allocate(csite%mmean_qdrainage            (              npatches))
          allocate(csite%mmean_A_decomp             (              npatches))
+         allocate(csite%mmean_B_decomp             (              npatches))
          allocate(csite%mmean_Af_decomp            (              npatches))
+         allocate(csite%mmean_Bf_decomp            (              npatches))
          allocate(csite%mmean_co2_residual         (              npatches))
          allocate(csite%mmean_energy_residual      (              npatches))
          allocate(csite%mmean_water_residual       (              npatches))
          allocate(csite%mmsqu_rh                   (              npatches))
-         allocate(csite%mmsqu_cwd_rh               (              npatches))
+         allocate(csite%mmsqu_fgc_rh               (              npatches))
+         allocate(csite%mmsqu_fsc_rh               (              npatches))
+         allocate(csite%mmsqu_stgc_rh              (              npatches))
+         allocate(csite%mmsqu_stsc_rh              (              npatches))
+         allocate(csite%mmsqu_msc_rh               (              npatches))
+         allocate(csite%mmsqu_ssc_rh               (              npatches))
          allocate(csite%mmsqu_nep                  (              npatches))
          allocate(csite%mmsqu_rlongup              (              npatches))
          allocate(csite%mmsqu_parup                (              npatches))
@@ -4649,7 +4965,12 @@ module ed_state_vars
       end if
       if (writing_dcyc) then
          allocate(csite%qmean_rh                   (      ndcycle,npatches))
-         allocate(csite%qmean_cwd_rh               (      ndcycle,npatches))
+         allocate(csite%qmean_fgc_rh               (      ndcycle,npatches))
+         allocate(csite%qmean_fsc_rh               (      ndcycle,npatches))
+         allocate(csite%qmean_stgc_rh              (      ndcycle,npatches))
+         allocate(csite%qmean_stsc_rh              (      ndcycle,npatches))
+         allocate(csite%qmean_msc_rh               (      ndcycle,npatches))
+         allocate(csite%qmean_ssc_rh               (      ndcycle,npatches))
          allocate(csite%qmean_nep                  (      ndcycle,npatches))
          allocate(csite%qmean_rk4step              (      ndcycle,npatches))
          allocate(csite%qmean_available_water      (      ndcycle,npatches))
@@ -4708,7 +5029,12 @@ module ed_state_vars
          allocate(csite%qmean_qrunoff              (      ndcycle,npatches))
          allocate(csite%qmean_qdrainage            (      ndcycle,npatches))
          allocate(csite%qmsqu_rh                   (      ndcycle,npatches))
-         allocate(csite%qmsqu_cwd_rh               (      ndcycle,npatches))
+         allocate(csite%qmsqu_fgc_rh               (      ndcycle,npatches))
+         allocate(csite%qmsqu_fsc_rh               (      ndcycle,npatches))
+         allocate(csite%qmsqu_stgc_rh              (      ndcycle,npatches))
+         allocate(csite%qmsqu_stsc_rh              (      ndcycle,npatches))
+         allocate(csite%qmsqu_msc_rh               (      ndcycle,npatches))
+         allocate(csite%qmsqu_ssc_rh               (      ndcycle,npatches))
          allocate(csite%qmsqu_nep                  (      ndcycle,npatches))
          allocate(csite%qmsqu_rlongup              (      ndcycle,npatches))
          allocate(csite%qmsqu_parup                (      ndcycle,npatches))
@@ -4785,14 +5111,16 @@ module ed_state_vars
       allocate(cpatch%dlndbh_dt                    (                    ncohorts))
       allocate(cpatch%dbh                          (                    ncohorts))
       allocate(cpatch%thbark                       (                    ncohorts))
-      allocate(cpatch%bdead                        (                    ncohorts))
+      allocate(cpatch%bdeada                       (                    ncohorts))
+      allocate(cpatch%bdeadb                       (                    ncohorts))
       allocate(cpatch%btimber                      (                    ncohorts))
       allocate(cpatch%bleaf                        (                    ncohorts))
       allocate(cpatch%balive                       (                    ncohorts))
       allocate(cpatch%broot                        (                    ncohorts))
       allocate(cpatch%bsapwooda                    (                    ncohorts))
       allocate(cpatch%bsapwoodb                    (                    ncohorts))
-      allocate(cpatch%bbark                        (                    ncohorts))
+      allocate(cpatch%bbarka                       (                    ncohorts))
+      allocate(cpatch%bbarkb                       (                    ncohorts))
       allocate(cpatch%bstorage                     (                    ncohorts))
       allocate(cpatch%bseeds                       (                    ncohorts))
       allocate(cpatch%byield                       (                    ncohorts))
@@ -4846,12 +5174,14 @@ module ed_state_vars
       allocate(cpatch%root_growth_resp             (                    ncohorts))
       allocate(cpatch%sapa_growth_resp             (                    ncohorts))
       allocate(cpatch%sapb_growth_resp             (                    ncohorts))
-      allocate(cpatch%bark_growth_resp             (                    ncohorts))
+      allocate(cpatch%barka_growth_resp            (                    ncohorts))
+      allocate(cpatch%barkb_growth_resp            (                    ncohorts))
       allocate(cpatch%leaf_storage_resp            (                    ncohorts))
       allocate(cpatch%root_storage_resp            (                    ncohorts))
       allocate(cpatch%sapa_storage_resp            (                    ncohorts))
       allocate(cpatch%sapb_storage_resp            (                    ncohorts))
-      allocate(cpatch%bark_storage_resp            (                    ncohorts))
+      allocate(cpatch%barka_storage_resp           (                    ncohorts))
+      allocate(cpatch%barkb_storage_resp           (                    ncohorts))
       allocate(cpatch%monthly_dndt                 (                    ncohorts))
       allocate(cpatch%monthly_dlnndt               (                    ncohorts))
       allocate(cpatch%mort_rate                    (             n_mort,ncohorts))
@@ -4899,7 +5229,8 @@ module ed_state_vars
       allocate(cpatch%water_supply                 (                    ncohorts))
       allocate(cpatch%leaf_maintenance             (                    ncohorts))
       allocate(cpatch%root_maintenance             (                    ncohorts))
-      allocate(cpatch%bark_maintenance             (                    ncohorts))
+      allocate(cpatch%barka_maintenance            (                    ncohorts))
+      allocate(cpatch%barkb_maintenance            (                    ncohorts))
       allocate(cpatch%leaf_drop                    (                    ncohorts))
       allocate(cpatch%leaf_respiration             (                    ncohorts))
       allocate(cpatch%root_respiration             (                    ncohorts))
@@ -4918,12 +5249,14 @@ module ed_state_vars
       allocate(cpatch%fmean_root_growth_resp       (                    ncohorts))
       allocate(cpatch%fmean_sapa_growth_resp       (                    ncohorts))
       allocate(cpatch%fmean_sapb_growth_resp       (                    ncohorts))
-      allocate(cpatch%fmean_bark_growth_resp       (                    ncohorts))
+      allocate(cpatch%fmean_barka_growth_resp      (                    ncohorts))
+      allocate(cpatch%fmean_barkb_growth_resp      (                    ncohorts))
       allocate(cpatch%fmean_leaf_storage_resp      (                    ncohorts))
       allocate(cpatch%fmean_root_storage_resp      (                    ncohorts))
       allocate(cpatch%fmean_sapa_storage_resp      (                    ncohorts))
       allocate(cpatch%fmean_sapb_storage_resp      (                    ncohorts))
-      allocate(cpatch%fmean_bark_storage_resp      (                    ncohorts))
+      allocate(cpatch%fmean_barka_storage_resp     (                    ncohorts))
+      allocate(cpatch%fmean_barkb_storage_resp     (                    ncohorts))
       allocate(cpatch%fmean_plresp                 (                    ncohorts))
       allocate(cpatch%fmean_leaf_energy            (                    ncohorts))
       allocate(cpatch%fmean_leaf_water             (                    ncohorts))
@@ -4977,7 +5310,8 @@ module ed_state_vars
       allocate(cpatch%fmean_intercepted_aw         (                    ncohorts))
       allocate(cpatch%fmean_wshed_wg               (                    ncohorts))
       allocate(cpatch%fmean_lai                    (                    ncohorts))
-      allocate(cpatch%fmean_bdead                  (                    ncohorts))
+      allocate(cpatch%fmean_bdeada                 (                    ncohorts))
+      allocate(cpatch%fmean_bdeadb                 (                    ncohorts))
 
 
       if (writing_long) then
@@ -4997,12 +5331,14 @@ module ed_state_vars
          allocate(cpatch%dmean_root_growth_resp    (                    ncohorts))
          allocate(cpatch%dmean_sapa_growth_resp    (                    ncohorts))
          allocate(cpatch%dmean_sapb_growth_resp    (                    ncohorts))
-         allocate(cpatch%dmean_bark_growth_resp    (                    ncohorts))
+         allocate(cpatch%dmean_barka_growth_resp   (                    ncohorts))
+         allocate(cpatch%dmean_barkb_growth_resp   (                    ncohorts))
          allocate(cpatch%dmean_leaf_storage_resp   (                    ncohorts))
          allocate(cpatch%dmean_root_storage_resp   (                    ncohorts))
          allocate(cpatch%dmean_sapa_storage_resp   (                    ncohorts))
          allocate(cpatch%dmean_sapb_storage_resp   (                    ncohorts))
-         allocate(cpatch%dmean_bark_storage_resp   (                    ncohorts))
+         allocate(cpatch%dmean_barka_storage_resp  (                    ncohorts))
+         allocate(cpatch%dmean_barkb_storage_resp  (                    ncohorts))
          allocate(cpatch%dmean_plresp              (                    ncohorts))
          allocate(cpatch%dmean_leaf_energy         (                    ncohorts))
          allocate(cpatch%dmean_leaf_water          (                    ncohorts))
@@ -5062,13 +5398,15 @@ module ed_state_vars
          allocate(cpatch%mmean_lai                 (                    ncohorts))
          allocate(cpatch%mmean_bleaf               (                    ncohorts))
          allocate(cpatch%mmean_broot               (                    ncohorts))
-         allocate(cpatch%mmean_bbark               (                    ncohorts))
+         allocate(cpatch%mmean_bbarka              (                    ncohorts))
+         allocate(cpatch%mmean_bbarkb              (                    ncohorts))
          allocate(cpatch%mmean_balive              (                    ncohorts))
          allocate(cpatch%mmean_bstorage            (                    ncohorts))
          allocate(cpatch%mmean_mort_rate           (             n_mort,ncohorts))
          allocate(cpatch%mmean_leaf_maintenance    (                    ncohorts))
          allocate(cpatch%mmean_root_maintenance    (                    ncohorts))
-         allocate(cpatch%mmean_bark_maintenance    (                    ncohorts))
+         allocate(cpatch%mmean_barka_maintenance   (                    ncohorts))
+         allocate(cpatch%mmean_barkb_maintenance   (                    ncohorts))
          allocate(cpatch%mmean_leaf_drop           (                    ncohorts))
          allocate(cpatch%mmean_cb                  (                    ncohorts))
          allocate(cpatch%mmean_gpp                 (                    ncohorts))
@@ -5079,12 +5417,14 @@ module ed_state_vars
          allocate(cpatch%mmean_root_growth_resp    (                    ncohorts))
          allocate(cpatch%mmean_sapa_growth_resp    (                    ncohorts))
          allocate(cpatch%mmean_sapb_growth_resp    (                    ncohorts))
-         allocate(cpatch%mmean_bark_growth_resp    (                    ncohorts))
+         allocate(cpatch%mmean_barka_growth_resp   (                    ncohorts))
+         allocate(cpatch%mmean_barkb_growth_resp   (                    ncohorts))
          allocate(cpatch%mmean_leaf_storage_resp   (                    ncohorts))
          allocate(cpatch%mmean_root_storage_resp   (                    ncohorts))
          allocate(cpatch%mmean_sapa_storage_resp   (                    ncohorts))
          allocate(cpatch%mmean_sapb_storage_resp   (                    ncohorts))
-         allocate(cpatch%mmean_bark_storage_resp   (                    ncohorts))
+         allocate(cpatch%mmean_barka_storage_resp  (                    ncohorts))
+         allocate(cpatch%mmean_barkb_storage_resp  (                    ncohorts))
          allocate(cpatch%mmean_plresp              (                    ncohorts))
          allocate(cpatch%mmean_leaf_energy         (                    ncohorts))
          allocate(cpatch%mmean_leaf_water          (                    ncohorts))
@@ -5164,12 +5504,14 @@ module ed_state_vars
          allocate(cpatch%qmean_root_growth_resp    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapa_growth_resp    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapb_growth_resp    (            ndcycle,ncohorts))
-         allocate(cpatch%qmean_bark_growth_resp    (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_barka_growth_resp   (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_barkb_growth_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_storage_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_root_storage_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapa_storage_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapb_storage_resp   (            ndcycle,ncohorts))
-         allocate(cpatch%qmean_bark_storage_resp   (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_barka_storage_resp  (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_barkb_storage_resp  (            ndcycle,ncohorts))
          allocate(cpatch%qmean_plresp              (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_energy         (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_water          (            ndcycle,ncohorts))
@@ -5312,38 +5654,48 @@ module ed_state_vars
       nullify(cgrid%wai                     )
       nullify(cgrid%basal_area              )
       nullify(cgrid%thbark                  )
-      nullify(cgrid%bdead                   )
+      nullify(cgrid%bdeada                  )
+      nullify(cgrid%bdeadb                  )
       nullify(cgrid%btimber                 )
       nullify(cgrid%balive                  )
       nullify(cgrid%bleaf                   )
       nullify(cgrid%broot                   )
       nullify(cgrid%bsapwooda               )
       nullify(cgrid%bsapwoodb               )
-      nullify(cgrid%bbark                   )
+      nullify(cgrid%bbarka                  )
+      nullify(cgrid%bbarkb                  )
       nullify(cgrid%bseeds                  )
       nullify(cgrid%byield                  )
       nullify(cgrid%bstorage                )
-      nullify(cgrid%bdead_n                 )
+      nullify(cgrid%bdeada_n                )
+      nullify(cgrid%bdeadb_n                )
       nullify(cgrid%balive_n                )
       nullify(cgrid%bleaf_n                 )
       nullify(cgrid%broot_n                 )
       nullify(cgrid%bsapwooda_n             )
       nullify(cgrid%bsapwoodb_n             )
-      nullify(cgrid%bbark_n                 )
+      nullify(cgrid%bbarka_n                )
+      nullify(cgrid%bbarkb_n                )
       nullify(cgrid%bseeds_n                )
       nullify(cgrid%bstorage_n              )
       nullify(cgrid%leaf_maintenance        )
       nullify(cgrid%root_maintenance        )
-      nullify(cgrid%bark_maintenance        )
+      nullify(cgrid%barka_maintenance       )
+      nullify(cgrid%barkb_maintenance       )
       nullify(cgrid%leaf_drop               )
+      nullify(cgrid%fast_grnd_c             )
       nullify(cgrid%fast_soil_c             )
-      nullify(cgrid%slow_soil_c             )
+      nullify(cgrid%struct_grnd_c           )
       nullify(cgrid%struct_soil_c           )
+      nullify(cgrid%struct_grnd_l           )
       nullify(cgrid%struct_soil_l           )
-      nullify(cgrid%cwd_c                   )
+      nullify(cgrid%microbe_soil_c          )
+      nullify(cgrid%slow_soil_c             )
+      nullify(cgrid%fast_grnd_n             )
       nullify(cgrid%fast_soil_n             )
+      nullify(cgrid%struct_grnd_n           )
+      nullify(cgrid%struct_soil_n           )
       nullify(cgrid%mineral_soil_n          )
-      nullify(cgrid%cwd_n                   )
       nullify(cgrid%Cleaf_grow              )
       nullify(cgrid%Croot_grow              )
       nullify(cgrid%Cdead_grow              )
@@ -5370,12 +5722,14 @@ module ed_state_vars
       nullify(cgrid%fmean_root_growth_resp  )
       nullify(cgrid%fmean_sapa_growth_resp  )
       nullify(cgrid%fmean_sapb_growth_resp  )
-      nullify(cgrid%fmean_bark_growth_resp  )
+      nullify(cgrid%fmean_barka_growth_resp )
+      nullify(cgrid%fmean_barkb_growth_resp )
       nullify(cgrid%fmean_leaf_storage_resp )
       nullify(cgrid%fmean_root_storage_resp )
       nullify(cgrid%fmean_sapa_storage_resp )
       nullify(cgrid%fmean_sapb_storage_resp )
-      nullify(cgrid%fmean_bark_storage_resp )
+      nullify(cgrid%fmean_barka_storage_resp)
+      nullify(cgrid%fmean_barkb_storage_resp)
       nullify(cgrid%fmean_plresp            )
       nullify(cgrid%fmean_leaf_energy       )
       nullify(cgrid%fmean_leaf_water        )
@@ -5420,7 +5774,12 @@ module ed_state_vars
       nullify(cgrid%fmean_intercepted_aw    )
       nullify(cgrid%fmean_wshed_wg          )
       nullify(cgrid%fmean_rh                )
-      nullify(cgrid%fmean_cwd_rh            )
+      nullify(cgrid%fmean_fgc_rh            )
+      nullify(cgrid%fmean_fsc_rh            )
+      nullify(cgrid%fmean_stgc_rh           )
+      nullify(cgrid%fmean_stsc_rh           )
+      nullify(cgrid%fmean_msc_rh            )
+      nullify(cgrid%fmean_ssc_rh            )
       nullify(cgrid%fmean_nep               )
       nullify(cgrid%fmean_rk4step           )
       nullify(cgrid%fmean_available_water   )
@@ -5498,7 +5857,8 @@ module ed_state_vars
       nullify(cgrid%fmean_soil_wetness      )
       nullify(cgrid%fmean_skin_temp         )
       nullify(cgrid%fmean_lai               )
-      nullify(cgrid%fmean_bdead             )
+      nullify(cgrid%fmean_bdeada            )
+      nullify(cgrid%fmean_bdeadb            )
       nullify(cgrid%dmean_nppleaf           )
       nullify(cgrid%dmean_nppfroot          )
       nullify(cgrid%dmean_nppsapwood        )
@@ -5508,7 +5868,9 @@ module ed_state_vars
       nullify(cgrid%dmean_nppwood           )
       nullify(cgrid%dmean_nppdaily          )
       nullify(cgrid%dmean_A_decomp          )
+      nullify(cgrid%dmean_B_decomp          )
       nullify(cgrid%dmean_Af_decomp         )
+      nullify(cgrid%dmean_Bf_decomp         )
       nullify(cgrid%dmean_co2_residual      )
       nullify(cgrid%dmean_energy_residual   )
       nullify(cgrid%dmean_water_residual    )
@@ -5520,12 +5882,14 @@ module ed_state_vars
       nullify(cgrid%dmean_root_growth_resp  )
       nullify(cgrid%dmean_sapa_growth_resp  )
       nullify(cgrid%dmean_sapb_growth_resp  )
-      nullify(cgrid%dmean_bark_growth_resp  )
+      nullify(cgrid%dmean_barka_growth_resp )
+      nullify(cgrid%dmean_barkb_growth_resp )
       nullify(cgrid%dmean_leaf_storage_resp )
       nullify(cgrid%dmean_root_storage_resp )
       nullify(cgrid%dmean_sapa_storage_resp )
       nullify(cgrid%dmean_sapb_storage_resp )
-      nullify(cgrid%dmean_bark_storage_resp )
+      nullify(cgrid%dmean_barka_storage_resp)
+      nullify(cgrid%dmean_barkb_storage_resp)
       nullify(cgrid%dmean_plresp            )
       nullify(cgrid%dmean_leaf_energy       )
       nullify(cgrid%dmean_leaf_water        )
@@ -5570,7 +5934,12 @@ module ed_state_vars
       nullify(cgrid%dmean_intercepted_aw    )
       nullify(cgrid%dmean_wshed_wg          )
       nullify(cgrid%dmean_rh                )
-      nullify(cgrid%dmean_cwd_rh            )
+      nullify(cgrid%dmean_fgc_rh            )
+      nullify(cgrid%dmean_fsc_rh            )
+      nullify(cgrid%dmean_stgc_rh           )
+      nullify(cgrid%dmean_stsc_rh           )
+      nullify(cgrid%dmean_msc_rh            )
+      nullify(cgrid%dmean_ssc_rh            )
       nullify(cgrid%dmean_nep               )
       nullify(cgrid%dmean_rk4step           )
       nullify(cgrid%dmean_available_water   )
@@ -5649,26 +6018,34 @@ module ed_state_vars
       nullify(cgrid%mmean_lai               )
       nullify(cgrid%mmean_bleaf             )
       nullify(cgrid%mmean_broot             )
-      nullify(cgrid%mmean_bbark             )
+      nullify(cgrid%mmean_bbarka            )
+      nullify(cgrid%mmean_bbarkb            )
       nullify(cgrid%mmean_balive            )
       nullify(cgrid%mmean_bstorage          )
       nullify(cgrid%mmean_bleaf_n           )
       nullify(cgrid%mmean_broot_n           )
-      nullify(cgrid%mmean_bbark_n           )
+      nullify(cgrid%mmean_bbarka_n          )
+      nullify(cgrid%mmean_bbarkb_n          )
       nullify(cgrid%mmean_balive_n          )
       nullify(cgrid%mmean_bstorage_n        )
       nullify(cgrid%mmean_leaf_maintenance  )
       nullify(cgrid%mmean_root_maintenance  )
-      nullify(cgrid%mmean_bark_maintenance  )
+      nullify(cgrid%mmean_barka_maintenance )
+      nullify(cgrid%mmean_barkb_maintenance )
       nullify(cgrid%mmean_leaf_drop         )
+      nullify(cgrid%mmean_fast_grnd_c       )
       nullify(cgrid%mmean_fast_soil_c       )
-      nullify(cgrid%mmean_slow_soil_c       )
+      nullify(cgrid%mmean_struct_grnd_c     )
       nullify(cgrid%mmean_struct_soil_c     )
+      nullify(cgrid%mmean_struct_grnd_l     )
       nullify(cgrid%mmean_struct_soil_l     )
-      nullify(cgrid%mmean_cwd_c             )
+      nullify(cgrid%mmean_microbe_soil_c    )
+      nullify(cgrid%mmean_slow_soil_c       )
+      nullify(cgrid%mmean_fast_grnd_n       )
       nullify(cgrid%mmean_fast_soil_n       )
+      nullify(cgrid%mmean_struct_grnd_n     )
+      nullify(cgrid%mmean_struct_soil_n     )
       nullify(cgrid%mmean_mineral_soil_n    )
-      nullify(cgrid%mmean_cwd_n             )
       nullify(cgrid%mmean_gpp               )
       nullify(cgrid%mmean_npp               )
       nullify(cgrid%mmean_leaf_resp         )
@@ -5677,12 +6054,14 @@ module ed_state_vars
       nullify(cgrid%mmean_root_growth_resp  )
       nullify(cgrid%mmean_sapa_growth_resp  )
       nullify(cgrid%mmean_sapb_growth_resp  )
-      nullify(cgrid%mmean_bark_growth_resp  )
+      nullify(cgrid%mmean_barka_growth_resp )
+      nullify(cgrid%mmean_barkb_growth_resp )
       nullify(cgrid%mmean_leaf_storage_resp )
       nullify(cgrid%mmean_root_storage_resp )
       nullify(cgrid%mmean_sapa_storage_resp )
       nullify(cgrid%mmean_sapb_storage_resp )
-      nullify(cgrid%mmean_bark_storage_resp )
+      nullify(cgrid%mmean_barka_storage_resp)
+      nullify(cgrid%mmean_barkb_storage_resp)
       nullify(cgrid%mmean_plresp            )
       nullify(cgrid%mmean_leaf_energy       )
       nullify(cgrid%mmean_leaf_water        )
@@ -5727,7 +6106,12 @@ module ed_state_vars
       nullify(cgrid%mmean_intercepted_aw    )
       nullify(cgrid%mmean_wshed_wg          )
       nullify(cgrid%mmean_rh                )
-      nullify(cgrid%mmean_cwd_rh            )
+      nullify(cgrid%mmean_fgc_rh            )
+      nullify(cgrid%mmean_fsc_rh            )
+      nullify(cgrid%mmean_stgc_rh           )
+      nullify(cgrid%mmean_stsc_rh           )
+      nullify(cgrid%mmean_msc_rh            )
+      nullify(cgrid%mmean_ssc_rh            )
       nullify(cgrid%mmean_nep               )
       nullify(cgrid%mmean_rk4step           )
       nullify(cgrid%mmean_available_water   )
@@ -5794,7 +6178,9 @@ module ed_state_vars
       nullify(cgrid%mmean_nppwood           )
       nullify(cgrid%mmean_nppdaily          )
       nullify(cgrid%mmean_A_decomp          )
+      nullify(cgrid%mmean_B_decomp          )
       nullify(cgrid%mmean_Af_decomp         )
+      nullify(cgrid%mmean_Bf_decomp         )
       nullify(cgrid%mmean_co2_residual      )
       nullify(cgrid%mmean_energy_residual   )
       nullify(cgrid%mmean_water_residual    )
@@ -5824,7 +6210,12 @@ module ed_state_vars
       nullify(cgrid%mmsqu_sensible_wc       )
       nullify(cgrid%mmsqu_vapor_wc          )
       nullify(cgrid%mmsqu_rh                )
-      nullify(cgrid%mmsqu_cwd_rh            )
+      nullify(cgrid%mmsqu_fgc_rh            )
+      nullify(cgrid%mmsqu_fsc_rh            )
+      nullify(cgrid%mmsqu_stgc_rh           )
+      nullify(cgrid%mmsqu_stsc_rh           )
+      nullify(cgrid%mmsqu_msc_rh            )
+      nullify(cgrid%mmsqu_ssc_rh            )
       nullify(cgrid%mmsqu_nep               )
       nullify(cgrid%mmsqu_rlongup           )
       nullify(cgrid%mmsqu_parup             )
@@ -5847,12 +6238,14 @@ module ed_state_vars
       nullify(cgrid%qmean_root_growth_resp  )
       nullify(cgrid%qmean_sapa_growth_resp  )
       nullify(cgrid%qmean_sapb_growth_resp  )
-      nullify(cgrid%qmean_bark_growth_resp  )
+      nullify(cgrid%qmean_barka_growth_resp )
+      nullify(cgrid%qmean_barkb_growth_resp )
       nullify(cgrid%qmean_leaf_storage_resp )
       nullify(cgrid%qmean_root_storage_resp )
       nullify(cgrid%qmean_sapa_storage_resp )
       nullify(cgrid%qmean_sapb_storage_resp )
-      nullify(cgrid%qmean_bark_storage_resp )
+      nullify(cgrid%qmean_barka_storage_resp)
+      nullify(cgrid%qmean_barkb_storage_resp)
       nullify(cgrid%qmean_plresp            )
       nullify(cgrid%qmean_leaf_energy       )
       nullify(cgrid%qmean_leaf_water        )
@@ -5897,7 +6290,12 @@ module ed_state_vars
       nullify(cgrid%qmean_intercepted_aw    )
       nullify(cgrid%qmean_wshed_wg          )
       nullify(cgrid%qmean_rh                )
-      nullify(cgrid%qmean_cwd_rh            )
+      nullify(cgrid%qmean_fgc_rh            )
+      nullify(cgrid%qmean_fsc_rh            )
+      nullify(cgrid%qmean_stgc_rh           )
+      nullify(cgrid%qmean_stsc_rh           )
+      nullify(cgrid%qmean_msc_rh            )
+      nullify(cgrid%qmean_ssc_rh            )
       nullify(cgrid%qmean_nep               )
       nullify(cgrid%qmean_rk4step           )
       nullify(cgrid%qmean_available_water   )
@@ -5981,7 +6379,12 @@ module ed_state_vars
       nullify(cgrid%qmsqu_sensible_wc       )
       nullify(cgrid%qmsqu_vapor_wc          )
       nullify(cgrid%qmsqu_rh                )
-      nullify(cgrid%qmsqu_cwd_rh            )
+      nullify(cgrid%qmsqu_fgc_rh            )
+      nullify(cgrid%qmsqu_fsc_rh            )
+      nullify(cgrid%qmsqu_stgc_rh           )
+      nullify(cgrid%qmsqu_stsc_rh           )
+      nullify(cgrid%qmsqu_msc_rh            )
+      nullify(cgrid%qmsqu_ssc_rh            )
       nullify(cgrid%qmsqu_nep               )
       nullify(cgrid%qmsqu_rlongup           )
       nullify(cgrid%qmsqu_parup             )
@@ -6187,12 +6590,21 @@ module ed_state_vars
       nullify(csite%dist_type                  )
       nullify(csite%fbeam                      )
       nullify(csite%light_type                 )
+      nullify(csite%fast_grnd_C                )
       nullify(csite%fast_soil_C                )
+      nullify(csite%microbial_soil_C           )
       nullify(csite%slow_soil_C                )
+      nullify(csite%structural_grnd_C          )
       nullify(csite%structural_soil_C          )
+      nullify(csite%structural_grnd_L          )
       nullify(csite%structural_soil_L          )
-      nullify(csite%mineralized_soil_N         )
+      nullify(csite%microbial_soil_C           )
+      nullify(csite%slow_soil_C                )
+      nullify(csite%fast_grnd_N                )
       nullify(csite%fast_soil_N                )
+      nullify(csite%structural_grnd_N          )
+      nullify(csite%structural_soil_N          )
+      nullify(csite%mineralized_soil_N         )
       nullify(csite%sum_dgd                    )
       nullify(csite%sum_chd                    )
       nullify(csite%can_theiv                  )
@@ -6265,15 +6677,23 @@ module ed_state_vars
       nullify(csite%co2budget_plresp           )
       nullify(csite%co2budget_rh               )
       nullify(csite%today_A_decomp             )
+      nullify(csite%today_B_decomp             )
       nullify(csite%today_Af_decomp            )
+      nullify(csite%today_Bf_decomp            )
       nullify(csite%repro                      )
       nullify(csite%veg_rough                  )
       nullify(csite%veg_height                 )
       nullify(csite%veg_displace               )
+      nullify(csite%fgc_in                     )
       nullify(csite%fsc_in                     )
-      nullify(csite%ssc_in                     )
-      nullify(csite%ssl_in                     )
+      nullify(csite%stgc_in                    )
+      nullify(csite%stsc_in                    )
+      nullify(csite%stgl_in                    )
+      nullify(csite%stsl_in                    )
+      nullify(csite%fgn_in                     )
       nullify(csite%fsn_in                     )
+      nullify(csite%stgn_in                    )
+      nullify(csite%stsn_in                    )
       nullify(csite%total_plant_nitrogen_uptake)
       nullify(csite%mineralized_N_loss         )
       nullify(csite%mineralized_N_input        )
@@ -6303,9 +6723,15 @@ module ed_state_vars
       nullify(csite%total_sfcw_depth           )
       nullify(csite%snowfac                    )
       nullify(csite%A_decomp                   )
+      nullify(csite%B_decomp                   )
       nullify(csite%f_decomp                   )
       nullify(csite%rh                         )
-      nullify(csite%cwd_rh                     )
+      nullify(csite%fgc_rh                     )
+      nullify(csite%fsc_rh                     )
+      nullify(csite%stgc_rh                    )
+      nullify(csite%stsc_rh                    )
+      nullify(csite%msc_rh                     )
+      nullify(csite%ssc_rh                     )
       nullify(csite%cumlai_profile             )
       nullify(csite%plant_ag_biomass           )
       nullify(csite%htry                       )
@@ -6332,7 +6758,12 @@ module ed_state_vars
       nullify(csite%runoff                     )
       nullify(csite%qrunoff                    )
       nullify(csite%fmean_rh                   )
-      nullify(csite%fmean_cwd_rh               )
+      nullify(csite%fmean_fgc_rh               )
+      nullify(csite%fmean_fsc_rh               )
+      nullify(csite%fmean_stgc_rh              )
+      nullify(csite%fmean_stsc_rh              )
+      nullify(csite%fmean_msc_rh               )
+      nullify(csite%fmean_ssc_rh               )
       nullify(csite%fmean_nep                  )
       nullify(csite%fmean_rk4step              )
       nullify(csite%fmean_available_water      )
@@ -6391,12 +6822,19 @@ module ed_state_vars
       nullify(csite%fmean_qrunoff              )
       nullify(csite%fmean_qdrainage            )
       nullify(csite%dmean_A_decomp             )
+      nullify(csite%dmean_B_decomp             )
       nullify(csite%dmean_Af_decomp            )
+      nullify(csite%dmean_Bf_decomp            )
       nullify(csite%dmean_co2_residual         )
       nullify(csite%dmean_energy_residual      )
       nullify(csite%dmean_water_residual       )
       nullify(csite%dmean_rh                   )
-      nullify(csite%dmean_cwd_rh               )
+      nullify(csite%dmean_fgc_rh               )
+      nullify(csite%dmean_fsc_rh               )
+      nullify(csite%dmean_stgc_rh              )
+      nullify(csite%dmean_stsc_rh              )
+      nullify(csite%dmean_msc_rh               )
+      nullify(csite%dmean_ssc_rh               )
       nullify(csite%dmean_nep                  )
       nullify(csite%dmean_rk4step              )
       nullify(csite%dmean_available_water      )
@@ -6454,20 +6892,34 @@ module ed_state_vars
       nullify(csite%dmean_qthroughfall         )
       nullify(csite%dmean_qrunoff              )
       nullify(csite%dmean_qdrainage            )
+      nullify(csite%mmean_fast_grnd_c          )
       nullify(csite%mmean_fast_soil_c          )
-      nullify(csite%mmean_slow_soil_c          )
+      nullify(csite%mmean_struct_grnd_c        )
       nullify(csite%mmean_struct_soil_c        )
+      nullify(csite%mmean_struct_grnd_l        )
       nullify(csite%mmean_struct_soil_l        )
+      nullify(csite%mmean_microbe_soil_c       )
+      nullify(csite%mmean_slow_soil_c          )
+      nullify(csite%mmean_fast_grnd_n          )
       nullify(csite%mmean_fast_soil_n          )
+      nullify(csite%mmean_struct_grnd_n        )
+      nullify(csite%mmean_struct_soil_n        )
       nullify(csite%mmean_mineral_soil_n       )
       nullify(csite%mmean_co2_residual         )
       nullify(csite%mmean_energy_residual      )
       nullify(csite%mmean_water_residual       )
       nullify(csite%mmean_rh                   )
-      nullify(csite%mmean_cwd_rh               )
+      nullify(csite%mmean_fgc_rh               )
+      nullify(csite%mmean_fsc_rh               )
+      nullify(csite%mmean_stgc_rh              )
+      nullify(csite%mmean_stsc_rh              )
+      nullify(csite%mmean_msc_rh               )
+      nullify(csite%mmean_ssc_rh               )
       nullify(csite%mmean_nep                  )
       nullify(csite%mmean_A_decomp             )
+      nullify(csite%mmean_B_decomp             )
       nullify(csite%mmean_Af_decomp            )
+      nullify(csite%mmean_Bf_decomp            )
       nullify(csite%mmean_rk4step              )
       nullify(csite%mmean_available_water      )
       nullify(csite%mmean_veg_displace         )
@@ -6525,12 +6977,19 @@ module ed_state_vars
       nullify(csite%mmean_qrunoff              )
       nullify(csite%mmean_qdrainage            )
       nullify(csite%mmean_A_decomp             )
+      nullify(csite%mmean_B_decomp             )
       nullify(csite%mmean_Af_decomp            )
+      nullify(csite%mmean_Bf_decomp            )
       nullify(csite%mmean_co2_residual         )
       nullify(csite%mmean_energy_residual      )
       nullify(csite%mmean_water_residual       )
       nullify(csite%mmsqu_rh                   )
-      nullify(csite%mmsqu_cwd_rh               )
+      nullify(csite%mmsqu_fgc_rh               )
+      nullify(csite%mmsqu_fsc_rh               )
+      nullify(csite%mmsqu_stgc_rh              )
+      nullify(csite%mmsqu_stsc_rh              )
+      nullify(csite%mmsqu_msc_rh               )
+      nullify(csite%mmsqu_ssc_rh               )
       nullify(csite%mmsqu_nep                  )
       nullify(csite%mmsqu_rlongup              )
       nullify(csite%mmsqu_parup                )
@@ -6546,7 +7005,12 @@ module ed_state_vars
       nullify(csite%mmsqu_sensible_gc          )
       nullify(csite%mmsqu_sensible_ac          )
       nullify(csite%qmean_rh                   )
-      nullify(csite%qmean_cwd_rh               )
+      nullify(csite%qmean_fgc_rh               )
+      nullify(csite%qmean_fsc_rh               )
+      nullify(csite%qmean_stgc_rh              )
+      nullify(csite%qmean_stsc_rh              )
+      nullify(csite%qmean_msc_rh               )
+      nullify(csite%qmean_ssc_rh               )
       nullify(csite%qmean_nep                  )
       nullify(csite%qmean_rk4step              )
       nullify(csite%qmean_available_water      )
@@ -6605,7 +7069,12 @@ module ed_state_vars
       nullify(csite%qmean_qrunoff              )
       nullify(csite%qmean_qdrainage            )
       nullify(csite%qmsqu_rh                   )
-      nullify(csite%qmsqu_cwd_rh               )
+      nullify(csite%qmsqu_fgc_rh               )
+      nullify(csite%qmsqu_fsc_rh               )
+      nullify(csite%qmsqu_stgc_rh              )
+      nullify(csite%qmsqu_stsc_rh              )
+      nullify(csite%qmsqu_msc_rh               )
+      nullify(csite%qmsqu_ssc_rh               )
       nullify(csite%qmsqu_nep                  )
       nullify(csite%qmsqu_rlongup              )
       nullify(csite%qmsqu_parup                )
@@ -6644,457 +7113,473 @@ module ed_state_vars
       type(patchtype), target :: cpatch
       !------------------------------------------------------------------------------------!
 
-      nullify(cpatch%pft                   )
-      nullify(cpatch%nplant                )
-      nullify(cpatch%phenology_status      )
-      nullify(cpatch%recruit_dbh           )
-      nullify(cpatch%census_status         )
-      nullify(cpatch%hite                  )
-      nullify(cpatch%agb                   )
-      nullify(cpatch%basarea               )
-      nullify(cpatch%dagb_dt               )
-      nullify(cpatch%dlnagb_dt             )
-      nullify(cpatch%dba_dt                )
-      nullify(cpatch%dlnba_dt              )
-      nullify(cpatch%ddbh_dt               )
-      nullify(cpatch%dlndbh_dt             )
-      nullify(cpatch%dbh                   )
-      nullify(cpatch%thbark                )
-      nullify(cpatch%bdead                 )
-      nullify(cpatch%btimber               )
-      nullify(cpatch%bleaf                 )
-      nullify(cpatch%balive                )
-      nullify(cpatch%broot                 )
-      nullify(cpatch%bsapwooda             )
-      nullify(cpatch%bsapwoodb             )
-      nullify(cpatch%bbark                 )
-      nullify(cpatch%bstorage              )
-      nullify(cpatch%bseeds                )
-      nullify(cpatch%byield                )
-      nullify(cpatch%lai                   )
-      nullify(cpatch%wai                   )
-      nullify(cpatch%crown_area            )
-      nullify(cpatch%leaf_resolvable       )
-      nullify(cpatch%wood_resolvable       )
-      nullify(cpatch%cb                    )
-      nullify(cpatch%cb_lightmax           )
-      nullify(cpatch%cb_moistmax           )
-      nullify(cpatch%cb_mlmax              )
-      nullify(cpatch%cbr_bar               )
-      nullify(cpatch%leaf_energy           )
-      nullify(cpatch%leaf_temp             )
-      nullify(cpatch%leaf_vpdef            )
-      nullify(cpatch%leaf_temp_pv          )
-      nullify(cpatch%leaf_hcap             )
-      nullify(cpatch%leaf_fliq             )
-      nullify(cpatch%leaf_water            )
-      nullify(cpatch%wood_energy           )
-      nullify(cpatch%wood_temp             )
-      nullify(cpatch%wood_temp_pv          )
-      nullify(cpatch%wood_hcap             )
-      nullify(cpatch%wood_fliq             )
-      nullify(cpatch%wood_water            )
-      nullify(cpatch%veg_wind              )
-      nullify(cpatch%lsfc_shv_open         )
-      nullify(cpatch%lsfc_shv_closed       )
-      nullify(cpatch%lsfc_co2_open         )
-      nullify(cpatch%lsfc_co2_closed       )
-      nullify(cpatch%lint_shv              )
-      nullify(cpatch%lint_co2_open         )
-      nullify(cpatch%lint_co2_closed       )
-      nullify(cpatch%today_leaf_resp       )
-      nullify(cpatch%today_root_resp       )
-      nullify(cpatch%today_gpp             )
-      nullify(cpatch%today_gpp_pot         )
-      nullify(cpatch%today_gpp_lightmax    )
-      nullify(cpatch%today_gpp_moistmax    )
-      nullify(cpatch%today_gpp_mlmax       )
-      nullify(cpatch%today_nppleaf         )
-      nullify(cpatch%today_nppfroot        )
-      nullify(cpatch%today_nppsapwood      )
-      nullify(cpatch%today_nppbark         )
-      nullify(cpatch%today_nppcroot        )
-      nullify(cpatch%today_nppseeds        )
-      nullify(cpatch%today_nppwood         )
-      nullify(cpatch%today_nppdaily        )
-      nullify(cpatch%leaf_growth_resp      )
-      nullify(cpatch%root_growth_resp      )
-      nullify(cpatch%sapa_growth_resp      )
-      nullify(cpatch%sapb_growth_resp      )
-      nullify(cpatch%bark_growth_resp      )
-      nullify(cpatch%leaf_storage_resp     )
-      nullify(cpatch%root_storage_resp     )
-      nullify(cpatch%sapa_storage_resp     )
-      nullify(cpatch%sapb_storage_resp     )
-      nullify(cpatch%bark_storage_resp     )
-      nullify(cpatch%monthly_dndt          )
-      nullify(cpatch%monthly_dlnndt        )
-      nullify(cpatch%mort_rate             )
-      nullify(cpatch%krdepth               )
-      nullify(cpatch%first_census          )
-      nullify(cpatch%new_recruit_flag      )
-      nullify(cpatch%light_level           )
-      nullify(cpatch%light_level_beam      )
-      nullify(cpatch%light_level_diff      )
+      nullify(cpatch%pft                     )
+      nullify(cpatch%nplant                  )
+      nullify(cpatch%phenology_status        )
+      nullify(cpatch%recruit_dbh             )
+      nullify(cpatch%census_status           )
+      nullify(cpatch%hite                    )
+      nullify(cpatch%agb                     )
+      nullify(cpatch%basarea                 )
+      nullify(cpatch%dagb_dt                 )
+      nullify(cpatch%dlnagb_dt               )
+      nullify(cpatch%dba_dt                  )
+      nullify(cpatch%dlnba_dt                )
+      nullify(cpatch%ddbh_dt                 )
+      nullify(cpatch%dlndbh_dt               )
+      nullify(cpatch%dbh                     )
+      nullify(cpatch%thbark                  )
+      nullify(cpatch%bdeada                  )
+      nullify(cpatch%bdeadb                  )
+      nullify(cpatch%btimber                 )
+      nullify(cpatch%bleaf                   )
+      nullify(cpatch%balive                  )
+      nullify(cpatch%broot                   )
+      nullify(cpatch%bsapwooda               )
+      nullify(cpatch%bsapwoodb               )
+      nullify(cpatch%bbarka                  )
+      nullify(cpatch%bbarkb                  )
+      nullify(cpatch%bstorage                )
+      nullify(cpatch%bseeds                  )
+      nullify(cpatch%byield                  )
+      nullify(cpatch%lai                     )
+      nullify(cpatch%wai                     )
+      nullify(cpatch%crown_area              )
+      nullify(cpatch%leaf_resolvable         )
+      nullify(cpatch%wood_resolvable         )
+      nullify(cpatch%cb                      )
+      nullify(cpatch%cb_lightmax             )
+      nullify(cpatch%cb_moistmax             )
+      nullify(cpatch%cb_mlmax                )
+      nullify(cpatch%cbr_bar                 )
+      nullify(cpatch%leaf_energy             )
+      nullify(cpatch%leaf_temp               )
+      nullify(cpatch%leaf_vpdef              )
+      nullify(cpatch%leaf_temp_pv            )
+      nullify(cpatch%leaf_hcap               )
+      nullify(cpatch%leaf_fliq               )
+      nullify(cpatch%leaf_water              )
+      nullify(cpatch%wood_energy             )
+      nullify(cpatch%wood_temp               )
+      nullify(cpatch%wood_temp_pv            )
+      nullify(cpatch%wood_hcap               )
+      nullify(cpatch%wood_fliq               )
+      nullify(cpatch%wood_water              )
+      nullify(cpatch%veg_wind                )
+      nullify(cpatch%lsfc_shv_open           )
+      nullify(cpatch%lsfc_shv_closed         )
+      nullify(cpatch%lsfc_co2_open           )
+      nullify(cpatch%lsfc_co2_closed         )
+      nullify(cpatch%lint_shv                )
+      nullify(cpatch%lint_co2_open           )
+      nullify(cpatch%lint_co2_closed         )
+      nullify(cpatch%today_leaf_resp         )
+      nullify(cpatch%today_root_resp         )
+      nullify(cpatch%today_gpp               )
+      nullify(cpatch%today_gpp_pot           )
+      nullify(cpatch%today_gpp_lightmax      )
+      nullify(cpatch%today_gpp_moistmax      )
+      nullify(cpatch%today_gpp_mlmax         )
+      nullify(cpatch%today_nppleaf           )
+      nullify(cpatch%today_nppfroot          )
+      nullify(cpatch%today_nppsapwood        )
+      nullify(cpatch%today_nppbark           )
+      nullify(cpatch%today_nppcroot          )
+      nullify(cpatch%today_nppseeds          )
+      nullify(cpatch%today_nppwood           )
+      nullify(cpatch%today_nppdaily          )
+      nullify(cpatch%leaf_growth_resp        )
+      nullify(cpatch%root_growth_resp        )
+      nullify(cpatch%sapa_growth_resp        )
+      nullify(cpatch%sapb_growth_resp        )
+      nullify(cpatch%barka_growth_resp       )
+      nullify(cpatch%barkb_growth_resp       )
+      nullify(cpatch%leaf_storage_resp       )
+      nullify(cpatch%root_storage_resp       )
+      nullify(cpatch%sapa_storage_resp       )
+      nullify(cpatch%sapb_storage_resp       )
+      nullify(cpatch%barka_storage_resp      )
+      nullify(cpatch%barkb_storage_resp      )
+      nullify(cpatch%monthly_dndt            )
+      nullify(cpatch%monthly_dlnndt          )
+      nullify(cpatch%mort_rate               )
+      nullify(cpatch%krdepth                 )
+      nullify(cpatch%first_census            )
+      nullify(cpatch%new_recruit_flag        )
+      nullify(cpatch%light_level             )
+      nullify(cpatch%light_level_beam        )
+      nullify(cpatch%light_level_diff        )
 
-      nullify(cpatch%par_level_beam        )
-      nullify(cpatch%par_level_diffu       )
-      nullify(cpatch%par_level_diffd       )
+      nullify(cpatch%par_level_beam          )
+      nullify(cpatch%par_level_diffu         )
+      nullify(cpatch%par_level_diffd         )
 
-      nullify(cpatch%par_l                 )
-      nullify(cpatch%par_l_beam            )
-      nullify(cpatch%par_l_diffuse         )
-      nullify(cpatch%rshort_l              )
-      nullify(cpatch%rshort_l_beam         )
-      nullify(cpatch%rshort_l_diffuse      )
-      nullify(cpatch%rlong_l               )
-      nullify(cpatch%rshort_w              )
-      nullify(cpatch%rshort_w_beam         )
-      nullify(cpatch%rshort_w_diffuse      )
-      nullify(cpatch%rlong_w               )
-      nullify(cpatch%rad_profile           )
-      nullify(cpatch%leaf_gbh              )
-      nullify(cpatch%leaf_gbw              )
-      nullify(cpatch%wood_gbh              )
-      nullify(cpatch%wood_gbw              )
-      nullify(cpatch%A_open                )
-      nullify(cpatch%A_closed              )
-      nullify(cpatch%A_light               )
-      nullify(cpatch%A_rubp                )
-      nullify(cpatch%A_co2                 )
-      nullify(cpatch%psi_open              )
-      nullify(cpatch%psi_closed            )
-      nullify(cpatch%gsw_open              )
-      nullify(cpatch%gsw_closed            )
-      nullify(cpatch%leaf_gsw              )
-      nullify(cpatch%fsw                   )
-      nullify(cpatch%fsn                   )
-      nullify(cpatch%fs_open               )
-      nullify(cpatch%water_supply          )
-      nullify(cpatch%leaf_maintenance      )
-      nullify(cpatch%root_maintenance      )
-      nullify(cpatch%bark_maintenance      )
-      nullify(cpatch%leaf_drop             )
-      nullify(cpatch%leaf_respiration      )
-      nullify(cpatch%root_respiration      )
-      nullify(cpatch%gpp                   )
-      nullify(cpatch%paw_avg               )
-      nullify(cpatch%elongf                )
-      nullify(cpatch%turnover_amp          )
-      nullify(cpatch%llspan                )
-      nullify(cpatch%vm_bar                )
-      nullify(cpatch%sla                   )
-      nullify(cpatch%fmean_gpp             )
-      nullify(cpatch%fmean_npp             )
-      nullify(cpatch%fmean_leaf_resp       )
-      nullify(cpatch%fmean_root_resp       )
-      nullify(cpatch%fmean_leaf_growth_resp)
-      nullify(cpatch%fmean_root_growth_resp)
-      nullify(cpatch%fmean_sapa_growth_resp)
-      nullify(cpatch%fmean_sapb_growth_resp)
-      nullify(cpatch%fmean_bark_growth_resp)
-      nullify(cpatch%fmean_leaf_storage_resp)
-      nullify(cpatch%fmean_root_storage_resp)
-      nullify(cpatch%fmean_sapa_storage_resp)
-      nullify(cpatch%fmean_sapb_storage_resp)
-      nullify(cpatch%fmean_bark_storage_resp)
-      nullify(cpatch%fmean_plresp          )
-      nullify(cpatch%fmean_leaf_energy     )
-      nullify(cpatch%fmean_leaf_water      )
-      nullify(cpatch%fmean_leaf_hcap       )
-      nullify(cpatch%fmean_leaf_vpdef      )
-      nullify(cpatch%fmean_leaf_temp       )
-      nullify(cpatch%fmean_leaf_fliq       )
-      nullify(cpatch%fmean_leaf_gsw        )
-      nullify(cpatch%fmean_leaf_gbw        )
-      nullify(cpatch%fmean_wood_energy     )
-      nullify(cpatch%fmean_wood_water      )
-      nullify(cpatch%fmean_wood_hcap       )
-      nullify(cpatch%fmean_wood_temp       )
-      nullify(cpatch%fmean_wood_fliq       )
-      nullify(cpatch%fmean_wood_gbw        )
-      nullify(cpatch%fmean_fs_open         )
-      nullify(cpatch%fmean_fsw             )
-      nullify(cpatch%fmean_fsn             )
-      nullify(cpatch%fmean_a_open          )
-      nullify(cpatch%fmean_a_closed        )
-      nullify(cpatch%fmean_a_net           )
-      nullify(cpatch%fmean_A_light         )
-      nullify(cpatch%fmean_A_rubp          )
-      nullify(cpatch%fmean_A_co2           )
-      nullify(cpatch%fmean_psi_open        )
-      nullify(cpatch%fmean_psi_closed      )
-      nullify(cpatch%fmean_water_supply    )
-      nullify(cpatch%fmean_light_level     )
-      nullify(cpatch%fmean_light_level_beam)
-      nullify(cpatch%fmean_light_level_diff)
+      nullify(cpatch%par_l                   )
+      nullify(cpatch%par_l_beam              )
+      nullify(cpatch%par_l_diffuse           )
+      nullify(cpatch%rshort_l                )
+      nullify(cpatch%rshort_l_beam           )
+      nullify(cpatch%rshort_l_diffuse        )
+      nullify(cpatch%rlong_l                 )
+      nullify(cpatch%rshort_w                )
+      nullify(cpatch%rshort_w_beam           )
+      nullify(cpatch%rshort_w_diffuse        )
+      nullify(cpatch%rlong_w                 )
+      nullify(cpatch%rad_profile             )
+      nullify(cpatch%leaf_gbh                )
+      nullify(cpatch%leaf_gbw                )
+      nullify(cpatch%wood_gbh                )
+      nullify(cpatch%wood_gbw                )
+      nullify(cpatch%A_open                  )
+      nullify(cpatch%A_closed                )
+      nullify(cpatch%A_light                 )
+      nullify(cpatch%A_rubp                  )
+      nullify(cpatch%A_co2                   )
+      nullify(cpatch%psi_open                )
+      nullify(cpatch%psi_closed              )
+      nullify(cpatch%gsw_open                )
+      nullify(cpatch%gsw_closed              )
+      nullify(cpatch%leaf_gsw                )
+      nullify(cpatch%fsw                     )
+      nullify(cpatch%fsn                     )
+      nullify(cpatch%fs_open                 )
+      nullify(cpatch%water_supply            )
+      nullify(cpatch%leaf_maintenance        )
+      nullify(cpatch%root_maintenance        )
+      nullify(cpatch%barka_maintenance       )
+      nullify(cpatch%barkb_maintenance       )
+      nullify(cpatch%leaf_drop               )
+      nullify(cpatch%leaf_respiration        )
+      nullify(cpatch%root_respiration        )
+      nullify(cpatch%gpp                     )
+      nullify(cpatch%paw_avg                 )
+      nullify(cpatch%elongf                  )
+      nullify(cpatch%turnover_amp            )
+      nullify(cpatch%llspan                  )
+      nullify(cpatch%vm_bar                  )
+      nullify(cpatch%sla                     )
+      nullify(cpatch%fmean_gpp               )
+      nullify(cpatch%fmean_npp               )
+      nullify(cpatch%fmean_leaf_resp         )
+      nullify(cpatch%fmean_root_resp         )
+      nullify(cpatch%fmean_leaf_growth_resp  )
+      nullify(cpatch%fmean_root_growth_resp  )
+      nullify(cpatch%fmean_sapa_growth_resp  )
+      nullify(cpatch%fmean_sapb_growth_resp  )
+      nullify(cpatch%fmean_barka_growth_resp )
+      nullify(cpatch%fmean_barkb_growth_resp )
+      nullify(cpatch%fmean_leaf_storage_resp )
+      nullify(cpatch%fmean_root_storage_resp )
+      nullify(cpatch%fmean_sapa_storage_resp )
+      nullify(cpatch%fmean_sapb_storage_resp )
+      nullify(cpatch%fmean_barka_storage_resp)
+      nullify(cpatch%fmean_barkb_storage_resp)
+      nullify(cpatch%fmean_plresp            )
+      nullify(cpatch%fmean_leaf_energy       )
+      nullify(cpatch%fmean_leaf_water        )
+      nullify(cpatch%fmean_leaf_hcap         )
+      nullify(cpatch%fmean_leaf_vpdef        )
+      nullify(cpatch%fmean_leaf_temp         )
+      nullify(cpatch%fmean_leaf_fliq         )
+      nullify(cpatch%fmean_leaf_gsw          )
+      nullify(cpatch%fmean_leaf_gbw          )
+      nullify(cpatch%fmean_wood_energy       )
+      nullify(cpatch%fmean_wood_water        )
+      nullify(cpatch%fmean_wood_hcap         )
+      nullify(cpatch%fmean_wood_temp         )
+      nullify(cpatch%fmean_wood_fliq         )
+      nullify(cpatch%fmean_wood_gbw          )
+      nullify(cpatch%fmean_fs_open           )
+      nullify(cpatch%fmean_fsw               )
+      nullify(cpatch%fmean_fsn               )
+      nullify(cpatch%fmean_a_open            )
+      nullify(cpatch%fmean_a_closed          )
+      nullify(cpatch%fmean_a_net             )
+      nullify(cpatch%fmean_A_light           )
+      nullify(cpatch%fmean_A_rubp            )
+      nullify(cpatch%fmean_A_co2             )
+      nullify(cpatch%fmean_psi_open          )
+      nullify(cpatch%fmean_psi_closed        )
+      nullify(cpatch%fmean_water_supply      )
+      nullify(cpatch%fmean_light_level       )
+      nullify(cpatch%fmean_light_level_beam  )
+      nullify(cpatch%fmean_light_level_diff  )
       
-      nullify(cpatch%fmean_par_level_beam  )
-      nullify(cpatch%fmean_par_level_diffu )
-      nullify(cpatch%fmean_par_level_diffd )
+      nullify(cpatch%fmean_par_level_beam    )
+      nullify(cpatch%fmean_par_level_diffu   )
+      nullify(cpatch%fmean_par_level_diffd   )
 
-      nullify(cpatch%fmean_par_l           )
-      nullify(cpatch%fmean_par_l_beam      )
-      nullify(cpatch%fmean_par_l_diff      )
-      nullify(cpatch%fmean_rshort_l        )
-      nullify(cpatch%fmean_rlong_l         )
-      nullify(cpatch%fmean_sensible_lc     )
-      nullify(cpatch%fmean_vapor_lc        )
-      nullify(cpatch%fmean_transp          )
-      nullify(cpatch%fmean_intercepted_al  )
-      nullify(cpatch%fmean_wshed_lg        )
-      nullify(cpatch%fmean_rshort_w        )
-      nullify(cpatch%fmean_rlong_w         )
-      nullify(cpatch%fmean_rad_profile     )
-      nullify(cpatch%fmean_sensible_wc     )
-      nullify(cpatch%fmean_vapor_wc        )
-      nullify(cpatch%fmean_intercepted_aw  )
-      nullify(cpatch%fmean_wshed_wg        )
-      nullify(cpatch%fmean_lai             )
-      nullify(cpatch%fmean_bdead           )
-      nullify(cpatch%dmean_nppleaf         )
-      nullify(cpatch%dmean_nppfroot        )
-      nullify(cpatch%dmean_nppsapwood      )
-      nullify(cpatch%dmean_nppbark         )
-      nullify(cpatch%dmean_nppcroot        )
-      nullify(cpatch%dmean_nppseeds        )
-      nullify(cpatch%dmean_nppwood         )
-      nullify(cpatch%dmean_nppdaily        )
-      nullify(cpatch%dmean_gpp             )
-      nullify(cpatch%dmean_npp             )
-      nullify(cpatch%dmean_leaf_resp       )
-      nullify(cpatch%dmean_root_resp       )
-      nullify(cpatch%dmean_leaf_growth_resp)
-      nullify(cpatch%dmean_root_growth_resp)
-      nullify(cpatch%dmean_sapa_growth_resp)
-      nullify(cpatch%dmean_sapb_growth_resp)
-      nullify(cpatch%dmean_bark_growth_resp)
-      nullify(cpatch%dmean_leaf_storage_resp)
-      nullify(cpatch%dmean_root_storage_resp)
-      nullify(cpatch%dmean_sapa_storage_resp)
-      nullify(cpatch%dmean_sapb_storage_resp)
-      nullify(cpatch%dmean_bark_storage_resp)
-      nullify(cpatch%dmean_plresp          )
-      nullify(cpatch%dmean_leaf_energy     )
-      nullify(cpatch%dmean_leaf_water      )
-      nullify(cpatch%dmean_leaf_hcap       )
-      nullify(cpatch%dmean_leaf_vpdef      )
-      nullify(cpatch%dmean_leaf_temp       )
-      nullify(cpatch%dmean_leaf_fliq       )
-      nullify(cpatch%dmean_leaf_gsw        )
-      nullify(cpatch%dmean_leaf_gbw        )
-      nullify(cpatch%dmean_wood_energy     )
-      nullify(cpatch%dmean_wood_water      )
-      nullify(cpatch%dmean_wood_hcap       )
-      nullify(cpatch%dmean_wood_temp       )
-      nullify(cpatch%dmean_wood_fliq       )
-      nullify(cpatch%dmean_wood_gbw        )
-      nullify(cpatch%dmean_fs_open         )
-      nullify(cpatch%dmean_fsw             )
-      nullify(cpatch%dmean_fsn             )
-      nullify(cpatch%dmean_a_open          )
-      nullify(cpatch%dmean_a_closed        )
-      nullify(cpatch%dmean_a_net           )
-      nullify(cpatch%dmean_A_light         )
-      nullify(cpatch%dmean_A_rubp          )
-      nullify(cpatch%dmean_A_co2           )
-      nullify(cpatch%dmean_psi_open        )
-      nullify(cpatch%dmean_psi_closed      )
-      nullify(cpatch%dmean_water_supply    )
-      nullify(cpatch%dmean_light_level     )
-      nullify(cpatch%dmean_light_level_beam)
-      nullify(cpatch%dmean_light_level_diff)
+      nullify(cpatch%fmean_par_l             )
+      nullify(cpatch%fmean_par_l_beam        )
+      nullify(cpatch%fmean_par_l_diff        )
+      nullify(cpatch%fmean_rshort_l          )
+      nullify(cpatch%fmean_rlong_l           )
+      nullify(cpatch%fmean_sensible_lc       )
+      nullify(cpatch%fmean_vapor_lc          )
+      nullify(cpatch%fmean_transp            )
+      nullify(cpatch%fmean_intercepted_al    )
+      nullify(cpatch%fmean_wshed_lg          )
+      nullify(cpatch%fmean_rshort_w          )
+      nullify(cpatch%fmean_rlong_w           )
+      nullify(cpatch%fmean_rad_profile       )
+      nullify(cpatch%fmean_sensible_wc       )
+      nullify(cpatch%fmean_vapor_wc          )
+      nullify(cpatch%fmean_intercepted_aw    )
+      nullify(cpatch%fmean_wshed_wg          )
+      nullify(cpatch%fmean_lai               )
+      nullify(cpatch%fmean_bdeada            )
+      nullify(cpatch%fmean_bdeadb            )
+      nullify(cpatch%dmean_nppleaf           )
+      nullify(cpatch%dmean_nppfroot          )
+      nullify(cpatch%dmean_nppsapwood        )
+      nullify(cpatch%dmean_nppbark           )
+      nullify(cpatch%dmean_nppcroot          )
+      nullify(cpatch%dmean_nppseeds          )
+      nullify(cpatch%dmean_nppwood           )
+      nullify(cpatch%dmean_nppdaily          )
+      nullify(cpatch%dmean_gpp               )
+      nullify(cpatch%dmean_npp               )
+      nullify(cpatch%dmean_leaf_resp         )
+      nullify(cpatch%dmean_root_resp         )
+      nullify(cpatch%dmean_leaf_growth_resp  )
+      nullify(cpatch%dmean_root_growth_resp  )
+      nullify(cpatch%dmean_sapa_growth_resp  )
+      nullify(cpatch%dmean_sapb_growth_resp  )
+      nullify(cpatch%dmean_barka_growth_resp )
+      nullify(cpatch%dmean_barkb_growth_resp )
+      nullify(cpatch%dmean_leaf_storage_resp )
+      nullify(cpatch%dmean_root_storage_resp )
+      nullify(cpatch%dmean_sapa_storage_resp )
+      nullify(cpatch%dmean_sapb_storage_resp )
+      nullify(cpatch%dmean_barka_storage_resp)
+      nullify(cpatch%dmean_barkb_storage_resp)
+      nullify(cpatch%dmean_plresp            )
+      nullify(cpatch%dmean_leaf_energy       )
+      nullify(cpatch%dmean_leaf_water        )
+      nullify(cpatch%dmean_leaf_hcap         )
+      nullify(cpatch%dmean_leaf_vpdef        )
+      nullify(cpatch%dmean_leaf_temp         )
+      nullify(cpatch%dmean_leaf_fliq         )
+      nullify(cpatch%dmean_leaf_gsw          )
+      nullify(cpatch%dmean_leaf_gbw          )
+      nullify(cpatch%dmean_wood_energy       )
+      nullify(cpatch%dmean_wood_water        )
+      nullify(cpatch%dmean_wood_hcap         )
+      nullify(cpatch%dmean_wood_temp         )
+      nullify(cpatch%dmean_wood_fliq         )
+      nullify(cpatch%dmean_wood_gbw          )
+      nullify(cpatch%dmean_fs_open           )
+      nullify(cpatch%dmean_fsw               )
+      nullify(cpatch%dmean_fsn               )
+      nullify(cpatch%dmean_a_open            )
+      nullify(cpatch%dmean_a_closed          )
+      nullify(cpatch%dmean_a_net             )
+      nullify(cpatch%dmean_A_light           )
+      nullify(cpatch%dmean_A_rubp            )
+      nullify(cpatch%dmean_A_co2             )
+      nullify(cpatch%dmean_psi_open          )
+      nullify(cpatch%dmean_psi_closed        )
+      nullify(cpatch%dmean_water_supply      )
+      nullify(cpatch%dmean_light_level       )
+      nullify(cpatch%dmean_light_level_beam  )
+      nullify(cpatch%dmean_light_level_diff  )
 
-      nullify(cpatch%dmean_par_level_beam  )
-      nullify(cpatch%dmean_par_level_diffu )
-      nullify(cpatch%dmean_par_level_diffd )
+      nullify(cpatch%dmean_par_level_beam    )
+      nullify(cpatch%dmean_par_level_diffu   )
+      nullify(cpatch%dmean_par_level_diffd   )
 
-      nullify(cpatch%dmean_par_l           )
-      nullify(cpatch%dmean_par_l_beam      )
-      nullify(cpatch%dmean_par_l_diff      )
-      nullify(cpatch%dmean_rshort_l        )
-      nullify(cpatch%dmean_rlong_l         )
-      nullify(cpatch%dmean_sensible_lc     )
-      nullify(cpatch%dmean_vapor_lc        )
-      nullify(cpatch%dmean_transp          )
-      nullify(cpatch%dmean_intercepted_al  )
-      nullify(cpatch%dmean_wshed_lg        )
-      nullify(cpatch%dmean_rshort_w        )
-      nullify(cpatch%dmean_rlong_w         )
-      nullify(cpatch%dmean_rad_profile     )
-      nullify(cpatch%dmean_sensible_wc     )
-      nullify(cpatch%dmean_vapor_wc        )
-      nullify(cpatch%dmean_intercepted_aw  )
-      nullify(cpatch%dmean_wshed_wg        )
-      nullify(cpatch%mmean_thbark          )
-      nullify(cpatch%mmean_lai             )
-      nullify(cpatch%mmean_bleaf           )
-      nullify(cpatch%mmean_broot           )
-      nullify(cpatch%mmean_bbark           )
-      nullify(cpatch%mmean_balive          )
-      nullify(cpatch%mmean_bstorage        )
-      nullify(cpatch%mmean_mort_rate       )
-      nullify(cpatch%mmean_leaf_maintenance)
-      nullify(cpatch%mmean_root_maintenance)
-      nullify(cpatch%mmean_bark_maintenance)
-      nullify(cpatch%mmean_leaf_drop       )
-      nullify(cpatch%mmean_cb              )
-      nullify(cpatch%mmean_gpp             )
-      nullify(cpatch%mmean_npp             )
-      nullify(cpatch%mmean_leaf_resp       )
-      nullify(cpatch%mmean_root_resp       )
-      nullify(cpatch%mmean_leaf_growth_resp)
-      nullify(cpatch%mmean_root_growth_resp)
-      nullify(cpatch%mmean_sapa_growth_resp)
-      nullify(cpatch%mmean_sapb_growth_resp)
-      nullify(cpatch%mmean_bark_growth_resp)
-      nullify(cpatch%mmean_leaf_storage_resp)
-      nullify(cpatch%mmean_root_storage_resp)
-      nullify(cpatch%mmean_sapa_storage_resp)
-      nullify(cpatch%mmean_sapb_storage_resp)
-      nullify(cpatch%mmean_bark_storage_resp)
-      nullify(cpatch%mmean_plresp          )
-      nullify(cpatch%mmean_leaf_energy     )
-      nullify(cpatch%mmean_leaf_water      )
-      nullify(cpatch%mmean_leaf_hcap       )
-      nullify(cpatch%mmean_leaf_vpdef      )
-      nullify(cpatch%mmean_leaf_temp       )
-      nullify(cpatch%mmean_leaf_fliq       )
-      nullify(cpatch%mmean_leaf_gsw        )
-      nullify(cpatch%mmean_leaf_gbw        )
-      nullify(cpatch%mmean_wood_energy     )
-      nullify(cpatch%mmean_wood_water      )
-      nullify(cpatch%mmean_wood_hcap       )
-      nullify(cpatch%mmean_wood_temp       )
-      nullify(cpatch%mmean_wood_fliq       )
-      nullify(cpatch%mmean_wood_gbw        )
-      nullify(cpatch%mmean_fs_open         )
-      nullify(cpatch%mmean_fsw             )
-      nullify(cpatch%mmean_fsn             )
-      nullify(cpatch%mmean_a_open          )
-      nullify(cpatch%mmean_a_closed        )
-      nullify(cpatch%mmean_a_net           )
-      nullify(cpatch%mmean_A_light         )
-      nullify(cpatch%mmean_A_rubp          )
-      nullify(cpatch%mmean_A_co2           )
-      nullify(cpatch%mmean_psi_open        )
-      nullify(cpatch%mmean_psi_closed      )
-      nullify(cpatch%mmean_water_supply    )
-      nullify(cpatch%mmean_light_level     )
-      nullify(cpatch%mmean_light_level_beam)
-      nullify(cpatch%mmean_light_level_diff)
+      nullify(cpatch%dmean_par_l             )
+      nullify(cpatch%dmean_par_l_beam        )
+      nullify(cpatch%dmean_par_l_diff        )
+      nullify(cpatch%dmean_rshort_l          )
+      nullify(cpatch%dmean_rlong_l           )
+      nullify(cpatch%dmean_sensible_lc       )
+      nullify(cpatch%dmean_vapor_lc          )
+      nullify(cpatch%dmean_transp            )
+      nullify(cpatch%dmean_intercepted_al    )
+      nullify(cpatch%dmean_wshed_lg          )
+      nullify(cpatch%dmean_rshort_w          )
+      nullify(cpatch%dmean_rlong_w           )
+      nullify(cpatch%dmean_rad_profile       )
+      nullify(cpatch%dmean_sensible_wc       )
+      nullify(cpatch%dmean_vapor_wc          )
+      nullify(cpatch%dmean_intercepted_aw    )
+      nullify(cpatch%dmean_wshed_wg          )
+      nullify(cpatch%mmean_thbark            )
+      nullify(cpatch%mmean_lai               )
+      nullify(cpatch%mmean_bleaf             )
+      nullify(cpatch%mmean_broot             )
+      nullify(cpatch%mmean_bbarka            )
+      nullify(cpatch%mmean_bbarkb            )
+      nullify(cpatch%mmean_balive            )
+      nullify(cpatch%mmean_bstorage          )
+      nullify(cpatch%mmean_mort_rate         )
+      nullify(cpatch%mmean_leaf_maintenance  )
+      nullify(cpatch%mmean_root_maintenance  )
+      nullify(cpatch%mmean_barka_maintenance )
+      nullify(cpatch%mmean_barkb_maintenance )
+      nullify(cpatch%mmean_leaf_drop         )
+      nullify(cpatch%mmean_cb                )
+      nullify(cpatch%mmean_gpp               )
+      nullify(cpatch%mmean_npp               )
+      nullify(cpatch%mmean_leaf_resp         )
+      nullify(cpatch%mmean_root_resp         )
+      nullify(cpatch%mmean_leaf_growth_resp  )
+      nullify(cpatch%mmean_root_growth_resp  )
+      nullify(cpatch%mmean_sapa_growth_resp  )
+      nullify(cpatch%mmean_sapb_growth_resp  )
+      nullify(cpatch%mmean_barka_growth_resp )
+      nullify(cpatch%mmean_barkb_growth_resp )
+      nullify(cpatch%mmean_leaf_storage_resp )
+      nullify(cpatch%mmean_root_storage_resp )
+      nullify(cpatch%mmean_sapa_storage_resp )
+      nullify(cpatch%mmean_sapb_storage_resp )
+      nullify(cpatch%mmean_barka_storage_resp)
+      nullify(cpatch%mmean_barkb_storage_resp)
+      nullify(cpatch%mmean_plresp            )
+      nullify(cpatch%mmean_leaf_energy       )
+      nullify(cpatch%mmean_leaf_water        )
+      nullify(cpatch%mmean_leaf_hcap         )
+      nullify(cpatch%mmean_leaf_vpdef        )
+      nullify(cpatch%mmean_leaf_temp         )
+      nullify(cpatch%mmean_leaf_fliq         )
+      nullify(cpatch%mmean_leaf_gsw          )
+      nullify(cpatch%mmean_leaf_gbw          )
+      nullify(cpatch%mmean_wood_energy       )
+      nullify(cpatch%mmean_wood_water        )
+      nullify(cpatch%mmean_wood_hcap         )
+      nullify(cpatch%mmean_wood_temp         )
+      nullify(cpatch%mmean_wood_fliq         )
+      nullify(cpatch%mmean_wood_gbw          )
+      nullify(cpatch%mmean_fs_open           )
+      nullify(cpatch%mmean_fsw               )
+      nullify(cpatch%mmean_fsn               )
+      nullify(cpatch%mmean_a_open            )
+      nullify(cpatch%mmean_a_closed          )
+      nullify(cpatch%mmean_a_net             )
+      nullify(cpatch%mmean_A_light           )
+      nullify(cpatch%mmean_A_rubp            )
+      nullify(cpatch%mmean_A_co2             )
+      nullify(cpatch%mmean_psi_open          )
+      nullify(cpatch%mmean_psi_closed        )
+      nullify(cpatch%mmean_water_supply      )
+      nullify(cpatch%mmean_light_level       )
+      nullify(cpatch%mmean_light_level_beam  )
+      nullify(cpatch%mmean_light_level_diff  )
 
-      nullify(cpatch%mmean_par_level_beam  )
-      nullify(cpatch%mmean_par_level_diffu )
-      nullify(cpatch%mmean_par_level_diffd )
+      nullify(cpatch%mmean_par_level_beam    )
+      nullify(cpatch%mmean_par_level_diffu   )
+      nullify(cpatch%mmean_par_level_diffd   )
 
-      nullify(cpatch%mmean_par_l           )
-      nullify(cpatch%mmean_par_l_beam      )
-      nullify(cpatch%mmean_par_l_diff      )
-      nullify(cpatch%mmean_rshort_l        )
-      nullify(cpatch%mmean_rlong_l         )
-      nullify(cpatch%mmean_sensible_lc     )
-      nullify(cpatch%mmean_vapor_lc        )
-      nullify(cpatch%mmean_transp          )
-      nullify(cpatch%mmean_intercepted_al  )
-      nullify(cpatch%mmean_wshed_lg        )
-      nullify(cpatch%mmean_rshort_w        )
-      nullify(cpatch%mmean_rlong_w         )
-      nullify(cpatch%mmean_rad_profile     )
-      nullify(cpatch%mmean_sensible_wc     )
-      nullify(cpatch%mmean_vapor_wc        )
-      nullify(cpatch%mmean_intercepted_aw  )
-      nullify(cpatch%mmean_wshed_wg        )
-      nullify(cpatch%mmean_nppleaf         )
-      nullify(cpatch%mmean_nppfroot        )
-      nullify(cpatch%mmean_nppsapwood      )
-      nullify(cpatch%mmean_nppbark         )
-      nullify(cpatch%mmean_nppcroot        )
-      nullify(cpatch%mmean_nppseeds        )
-      nullify(cpatch%mmean_nppwood         )
-      nullify(cpatch%mmean_nppdaily        )
-      nullify(cpatch%mmsqu_gpp             )
-      nullify(cpatch%mmsqu_npp             )
-      nullify(cpatch%mmsqu_plresp          )
-      nullify(cpatch%mmsqu_sensible_lc     )
-      nullify(cpatch%mmsqu_vapor_lc        )
-      nullify(cpatch%mmsqu_transp          )
-      nullify(cpatch%mmsqu_sensible_wc     )
-      nullify(cpatch%mmsqu_vapor_wc        )
-      nullify(cpatch%qmean_gpp             )
-      nullify(cpatch%qmean_npp             )
-      nullify(cpatch%qmean_leaf_resp       )
-      nullify(cpatch%qmean_root_resp       )
-      nullify(cpatch%qmean_leaf_growth_resp)
-      nullify(cpatch%qmean_root_growth_resp)
-      nullify(cpatch%qmean_sapa_growth_resp)
-      nullify(cpatch%qmean_sapb_growth_resp)
-      nullify(cpatch%qmean_bark_growth_resp)
-      nullify(cpatch%qmean_leaf_storage_resp)
-      nullify(cpatch%qmean_root_storage_resp)
-      nullify(cpatch%qmean_sapa_storage_resp)
-      nullify(cpatch%qmean_sapb_storage_resp)
-      nullify(cpatch%qmean_bark_storage_resp)
-      nullify(cpatch%qmean_plresp          )
-      nullify(cpatch%qmean_leaf_energy     )
-      nullify(cpatch%qmean_leaf_water      )
-      nullify(cpatch%qmean_leaf_hcap       )
-      nullify(cpatch%qmean_leaf_vpdef      )
-      nullify(cpatch%qmean_leaf_temp       )
-      nullify(cpatch%qmean_leaf_fliq       )
-      nullify(cpatch%qmean_leaf_gsw        )
-      nullify(cpatch%qmean_leaf_gbw        )
-      nullify(cpatch%qmean_wood_energy     )
-      nullify(cpatch%qmean_wood_water      )
-      nullify(cpatch%qmean_wood_hcap       )
-      nullify(cpatch%qmean_wood_temp       )
-      nullify(cpatch%qmean_wood_fliq       )
-      nullify(cpatch%qmean_wood_gbw        )
-      nullify(cpatch%qmean_fs_open         )
-      nullify(cpatch%qmean_fsw             )
-      nullify(cpatch%qmean_fsn             )
-      nullify(cpatch%qmean_a_open          )
-      nullify(cpatch%qmean_a_closed        )
-      nullify(cpatch%qmean_a_net           )
-      nullify(cpatch%qmean_A_light         )
-      nullify(cpatch%qmean_A_rubp          )
-      nullify(cpatch%qmean_A_co2           )
-      nullify(cpatch%qmean_psi_open        )
-      nullify(cpatch%qmean_psi_closed      )
-      nullify(cpatch%qmean_water_supply    )
-      nullify(cpatch%qmean_light_level     )
-      nullify(cpatch%qmean_light_level_beam)
-      nullify(cpatch%qmean_light_level_diff)
+      nullify(cpatch%mmean_par_l             )
+      nullify(cpatch%mmean_par_l_beam        )
+      nullify(cpatch%mmean_par_l_diff        )
+      nullify(cpatch%mmean_rshort_l          )
+      nullify(cpatch%mmean_rlong_l           )
+      nullify(cpatch%mmean_sensible_lc       )
+      nullify(cpatch%mmean_vapor_lc          )
+      nullify(cpatch%mmean_transp            )
+      nullify(cpatch%mmean_intercepted_al    )
+      nullify(cpatch%mmean_wshed_lg          )
+      nullify(cpatch%mmean_rshort_w          )
+      nullify(cpatch%mmean_rlong_w           )
+      nullify(cpatch%mmean_rad_profile       )
+      nullify(cpatch%mmean_sensible_wc       )
+      nullify(cpatch%mmean_vapor_wc          )
+      nullify(cpatch%mmean_intercepted_aw    )
+      nullify(cpatch%mmean_wshed_wg          )
+      nullify(cpatch%mmean_nppleaf           )
+      nullify(cpatch%mmean_nppfroot          )
+      nullify(cpatch%mmean_nppsapwood        )
+      nullify(cpatch%mmean_nppbark           )
+      nullify(cpatch%mmean_nppcroot          )
+      nullify(cpatch%mmean_nppseeds          )
+      nullify(cpatch%mmean_nppwood           )
+      nullify(cpatch%mmean_nppdaily          )
+      nullify(cpatch%mmsqu_gpp               )
+      nullify(cpatch%mmsqu_npp               )
+      nullify(cpatch%mmsqu_plresp            )
+      nullify(cpatch%mmsqu_sensible_lc       )
+      nullify(cpatch%mmsqu_vapor_lc          )
+      nullify(cpatch%mmsqu_transp            )
+      nullify(cpatch%mmsqu_sensible_wc       )
+      nullify(cpatch%mmsqu_vapor_wc          )
+      nullify(cpatch%qmean_gpp               )
+      nullify(cpatch%qmean_npp               )
+      nullify(cpatch%qmean_leaf_resp         )
+      nullify(cpatch%qmean_root_resp         )
+      nullify(cpatch%qmean_leaf_growth_resp  )
+      nullify(cpatch%qmean_root_growth_resp  )
+      nullify(cpatch%qmean_sapa_growth_resp  )
+      nullify(cpatch%qmean_sapb_growth_resp  )
+      nullify(cpatch%qmean_barka_growth_resp )
+      nullify(cpatch%qmean_barkb_growth_resp )
+      nullify(cpatch%qmean_leaf_storage_resp )
+      nullify(cpatch%qmean_root_storage_resp )
+      nullify(cpatch%qmean_sapa_storage_resp )
+      nullify(cpatch%qmean_sapb_storage_resp )
+      nullify(cpatch%qmean_barka_storage_resp)
+      nullify(cpatch%qmean_barkb_storage_resp)
+      nullify(cpatch%qmean_plresp            )
+      nullify(cpatch%qmean_leaf_energy       )
+      nullify(cpatch%qmean_leaf_water        )
+      nullify(cpatch%qmean_leaf_hcap         )
+      nullify(cpatch%qmean_leaf_vpdef        )
+      nullify(cpatch%qmean_leaf_temp         )
+      nullify(cpatch%qmean_leaf_fliq         )
+      nullify(cpatch%qmean_leaf_gsw          )
+      nullify(cpatch%qmean_leaf_gbw          )
+      nullify(cpatch%qmean_wood_energy       )
+      nullify(cpatch%qmean_wood_water        )
+      nullify(cpatch%qmean_wood_hcap         )
+      nullify(cpatch%qmean_wood_temp         )
+      nullify(cpatch%qmean_wood_fliq         )
+      nullify(cpatch%qmean_wood_gbw          )
+      nullify(cpatch%qmean_fs_open           )
+      nullify(cpatch%qmean_fsw               )
+      nullify(cpatch%qmean_fsn               )
+      nullify(cpatch%qmean_a_open            )
+      nullify(cpatch%qmean_a_closed          )
+      nullify(cpatch%qmean_a_net             )
+      nullify(cpatch%qmean_A_light           )
+      nullify(cpatch%qmean_A_rubp            )
+      nullify(cpatch%qmean_A_co2             )
+      nullify(cpatch%qmean_psi_open          )
+      nullify(cpatch%qmean_psi_closed        )
+      nullify(cpatch%qmean_water_supply      )
+      nullify(cpatch%qmean_light_level       )
+      nullify(cpatch%qmean_light_level_beam  )
+      nullify(cpatch%qmean_light_level_diff  )
 
-      nullify(cpatch%qmean_par_level_beam  )
-      nullify(cpatch%qmean_par_level_diffu )
-      nullify(cpatch%qmean_par_level_diffd )
+      nullify(cpatch%qmean_par_level_beam    )
+      nullify(cpatch%qmean_par_level_diffu   )
+      nullify(cpatch%qmean_par_level_diffd   )
 
-      nullify(cpatch%qmean_par_l           )
-      nullify(cpatch%qmean_par_l_beam      )
-      nullify(cpatch%qmean_par_l_diff      )
-      nullify(cpatch%qmean_rshort_l        )
-      nullify(cpatch%qmean_rlong_l         )
-      nullify(cpatch%qmean_sensible_lc     )
-      nullify(cpatch%qmean_vapor_lc        )
-      nullify(cpatch%qmean_transp          )
-      nullify(cpatch%qmean_intercepted_al  )
-      nullify(cpatch%qmean_wshed_lg        )
-      nullify(cpatch%qmean_rshort_w        )
-      nullify(cpatch%qmean_rlong_w         )
-      nullify(cpatch%qmean_rad_profile     )
-      nullify(cpatch%qmean_sensible_wc     )
-      nullify(cpatch%qmean_vapor_wc        )
-      nullify(cpatch%qmean_intercepted_aw  )
-      nullify(cpatch%qmean_wshed_wg        )
-      nullify(cpatch%qmsqu_gpp             )
-      nullify(cpatch%qmsqu_npp             )
-      nullify(cpatch%qmsqu_plresp          )
-      nullify(cpatch%qmsqu_sensible_lc     )
-      nullify(cpatch%qmsqu_vapor_lc        )
-      nullify(cpatch%qmsqu_transp          )
-      nullify(cpatch%qmsqu_sensible_wc     )
-      nullify(cpatch%qmsqu_vapor_wc        )
+      nullify(cpatch%qmean_par_l             )
+      nullify(cpatch%qmean_par_l_beam        )
+      nullify(cpatch%qmean_par_l_diff        )
+      nullify(cpatch%qmean_rshort_l          )
+      nullify(cpatch%qmean_rlong_l           )
+      nullify(cpatch%qmean_sensible_lc       )
+      nullify(cpatch%qmean_vapor_lc          )
+      nullify(cpatch%qmean_transp            )
+      nullify(cpatch%qmean_intercepted_al    )
+      nullify(cpatch%qmean_wshed_lg          )
+      nullify(cpatch%qmean_rshort_w          )
+      nullify(cpatch%qmean_rlong_w           )
+      nullify(cpatch%qmean_rad_profile       )
+      nullify(cpatch%qmean_sensible_wc       )
+      nullify(cpatch%qmean_vapor_wc          )
+      nullify(cpatch%qmean_intercepted_aw    )
+      nullify(cpatch%qmean_wshed_wg          )
+      nullify(cpatch%qmsqu_gpp               )
+      nullify(cpatch%qmsqu_npp               )
+      nullify(cpatch%qmsqu_plresp            )
+      nullify(cpatch%qmsqu_sensible_lc       )
+      nullify(cpatch%qmsqu_vapor_lc          )
+      nullify(cpatch%qmsqu_transp            )
+      nullify(cpatch%qmsqu_sensible_wc       )
+      nullify(cpatch%qmsqu_vapor_wc          )
 
       return
    end subroutine nullify_patchtype
@@ -7128,451 +7613,513 @@ module ed_state_vars
       if (associated(csite%patch)) deallocate(csite%patch)
       !------------------------------------------------------------------------------------!
 
-      if(associated(csite%paco_id               )) deallocate(csite%paco_id               )
-      if(associated(csite%paco_n                )) deallocate(csite%paco_n                )
-      if(associated(csite%patch                 )) deallocate(csite%patch                 )
-      if(associated(csite%cohort_count          )) deallocate(csite%cohort_count          )
-      if(associated(csite%pname                 )) deallocate(csite%pname                 )
-      if(associated(csite%area                  )) deallocate(csite%area                  )
-      if(associated(csite%age                   )) deallocate(csite%age                   )
-      if(associated(csite%dist_type             )) deallocate(csite%dist_type             )
-      if(associated(csite%fbeam                 )) deallocate(csite%fbeam                 )
-      if(associated(csite%light_type            )) deallocate(csite%light_type            )
-      if(associated(csite%fast_soil_C           )) deallocate(csite%fast_soil_C           )
-      if(associated(csite%slow_soil_C           )) deallocate(csite%slow_soil_C           )
-      if(associated(csite%structural_soil_C     )) deallocate(csite%structural_soil_C     )
-      if(associated(csite%structural_soil_L     )) deallocate(csite%structural_soil_L     )
-      if(associated(csite%mineralized_soil_N    )) deallocate(csite%mineralized_soil_N    )
-      if(associated(csite%fast_soil_N           )) deallocate(csite%fast_soil_N           )
-      if(associated(csite%sum_dgd               )) deallocate(csite%sum_dgd               )
-      if(associated(csite%sum_chd               )) deallocate(csite%sum_chd               )
-      if(associated(csite%can_theiv             )) deallocate(csite%can_theiv             )
-      if(associated(csite%can_vpdef             )) deallocate(csite%can_vpdef             )
-      if(associated(csite%can_temp              )) deallocate(csite%can_temp              )
-      if(associated(csite%can_temp_pv           )) deallocate(csite%can_temp_pv           )
-      if(associated(csite%can_shv               )) deallocate(csite%can_shv               )
-      if(associated(csite%can_co2               )) deallocate(csite%can_co2               )
-      if(associated(csite%can_rhos              )) deallocate(csite%can_rhos              )
-      if(associated(csite%can_prss              )) deallocate(csite%can_prss              )
-      if(associated(csite%can_theta             )) deallocate(csite%can_theta             )
-      if(associated(csite%can_depth             )) deallocate(csite%can_depth             )
-      if(associated(csite%opencan_frac          )) deallocate(csite%opencan_frac          )
-      if(associated(csite%ggbare                )) deallocate(csite%ggbare                )
-      if(associated(csite%ggveg                 )) deallocate(csite%ggveg                 )
-      if(associated(csite%ggnet                 )) deallocate(csite%ggnet                 )
-      if(associated(csite%ggsoil                )) deallocate(csite%ggsoil                )
-      if(associated(csite%nlev_sfcwater         )) deallocate(csite%nlev_sfcwater         )
-      if(associated(csite%sfcwater_mass         )) deallocate(csite%sfcwater_mass         )
-      if(associated(csite%sfcwater_energy       )) deallocate(csite%sfcwater_energy       )
-      if(associated(csite%sfcwater_depth        )) deallocate(csite%sfcwater_depth        )
-      if(associated(csite%sfcwater_tempk        )) deallocate(csite%sfcwater_tempk        )
-      if(associated(csite%sfcwater_fracliq      )) deallocate(csite%sfcwater_fracliq      )
-      if(associated(csite%rshort_s              )) deallocate(csite%rshort_s              )
-      if(associated(csite%rshort_s_beam         )) deallocate(csite%rshort_s_beam         )
-      if(associated(csite%rshort_s_diffuse      )) deallocate(csite%rshort_s_diffuse      )
-      if(associated(csite%par_s                 )) deallocate(csite%par_s                 )
-      if(associated(csite%par_s_beam            )) deallocate(csite%par_s_beam            )
-      if(associated(csite%par_s_diffuse         )) deallocate(csite%par_s_diffuse         )
-      if(associated(csite%soil_energy           )) deallocate(csite%soil_energy           )
-      if(associated(csite%soil_mstpot           )) deallocate(csite%soil_mstpot           )
-      if(associated(csite%soil_water            )) deallocate(csite%soil_water            )
-      if(associated(csite%soil_tempk            )) deallocate(csite%soil_tempk            )
-      if(associated(csite%soil_fracliq          )) deallocate(csite%soil_fracliq          )
-      if(associated(csite%rootdense             )) deallocate(csite%rootdense             )
-      if(associated(csite%ground_shv            )) deallocate(csite%ground_shv            )
-      if(associated(csite%ground_ssh            )) deallocate(csite%ground_ssh            )
-      if(associated(csite%ground_temp           )) deallocate(csite%ground_temp           )
-      if(associated(csite%ground_fliq           )) deallocate(csite%ground_fliq           )
-      if(associated(csite%rough                 )) deallocate(csite%rough                 )
-      if(associated(csite%par_l_max             )) deallocate(csite%par_l_max             )
-      if(associated(csite%par_l_beam_max        )) deallocate(csite%par_l_beam_max        )
-      if(associated(csite%par_l_diffuse_max     )) deallocate(csite%par_l_diffuse_max     )
-      if(associated(csite%A_o_max               )) deallocate(csite%A_o_max               )
-      if(associated(csite%A_c_max               )) deallocate(csite%A_c_max               )
-      if(associated(csite%avg_daily_temp        )) deallocate(csite%avg_daily_temp        )
-      if(associated(csite%avg_monthly_gndwater  )) deallocate(csite%avg_monthly_gndwater  )
-      if(associated(csite%avg_monthly_waterdef  )) deallocate(csite%avg_monthly_waterdef  )
-      if(associated(csite%wbudget_loss2atm      )) deallocate(csite%wbudget_loss2atm      )
-      if(associated(csite%wbudget_denseffect    )) deallocate(csite%wbudget_denseffect    )
-      if(associated(csite%wbudget_precipgain    )) deallocate(csite%wbudget_precipgain    )
-      if(associated(csite%wbudget_loss2runoff   )) deallocate(csite%wbudget_loss2runoff   )
-      if(associated(csite%wbudget_loss2drainage )) deallocate(csite%wbudget_loss2drainage )
-      if(associated(csite%wbudget_initialstorage)) deallocate(csite%wbudget_initialstorage)
-      if(associated(csite%wbudget_residual      )) deallocate(csite%wbudget_residual      )
-      if(associated(csite%ebudget_loss2atm      )) deallocate(csite%ebudget_loss2atm      )
-      if(associated(csite%ebudget_denseffect    )) deallocate(csite%ebudget_denseffect    )
-      if(associated(csite%ebudget_prsseffect    )) deallocate(csite%ebudget_prsseffect    )
-      if(associated(csite%ebudget_loss2runoff   )) deallocate(csite%ebudget_loss2runoff   )
-      if(associated(csite%ebudget_loss2drainage )) deallocate(csite%ebudget_loss2drainage )
-      if(associated(csite%ebudget_netrad        )) deallocate(csite%ebudget_netrad        )
-      if(associated(csite%ebudget_precipgain    )) deallocate(csite%ebudget_precipgain    )
-      if(associated(csite%ebudget_initialstorage)) deallocate(csite%ebudget_initialstorage)
-      if(associated(csite%ebudget_residual      )) deallocate(csite%ebudget_residual      )
-      if(associated(csite%co2budget_initialstorage   ))                                    &
-                                              deallocate(csite%co2budget_initialstorage   )
-      if(associated(csite%co2budget_residual    )) deallocate(csite%co2budget_residual    )
-      if(associated(csite%co2budget_loss2atm    )) deallocate(csite%co2budget_loss2atm    )
-      if(associated(csite%co2budget_denseffect  )) deallocate(csite%co2budget_denseffect  )
-      if(associated(csite%co2budget_gpp         )) deallocate(csite%co2budget_gpp         )
-      if(associated(csite%co2budget_plresp      )) deallocate(csite%co2budget_plresp      )
-      if(associated(csite%co2budget_rh          )) deallocate(csite%co2budget_rh          )
-      if(associated(csite%today_A_decomp        )) deallocate(csite%today_A_decomp        )
-      if(associated(csite%today_Af_decomp       )) deallocate(csite%today_Af_decomp       )
-      if(associated(csite%repro                 )) deallocate(csite%repro                 )
-      if(associated(csite%veg_rough             )) deallocate(csite%veg_rough             )
-      if(associated(csite%veg_height            )) deallocate(csite%veg_height            )
-      if(associated(csite%veg_displace          )) deallocate(csite%veg_displace          )
-      if(associated(csite%fsc_in                )) deallocate(csite%fsc_in                )
-      if(associated(csite%ssc_in                )) deallocate(csite%ssc_in                )
-      if(associated(csite%ssl_in                )) deallocate(csite%ssl_in                )
-      if(associated(csite%fsn_in                )) deallocate(csite%fsn_in                )
-      if(associated(csite%total_plant_nitrogen_uptake))                                    &
-                                              deallocate(csite%total_plant_nitrogen_uptake)
-      if(associated(csite%mineralized_N_loss    )) deallocate(csite%mineralized_N_loss    )
-      if(associated(csite%mineralized_N_input   )) deallocate(csite%mineralized_N_input   )
-      if(associated(csite%rshort_g              )) deallocate(csite%rshort_g              )
-      if(associated(csite%rshort_g_beam         )) deallocate(csite%rshort_g_beam         )
-      if(associated(csite%rshort_g_diffuse      )) deallocate(csite%rshort_g_diffuse      )
-      if(associated(csite%par_g                 )) deallocate(csite%par_g                 )
-      if(associated(csite%par_g_beam            )) deallocate(csite%par_g_beam            )
-      if(associated(csite%par_g_diffuse         )) deallocate(csite%par_g_diffuse         )
-      if(associated(csite%par_b                 )) deallocate(csite%par_b                 )
-      if(associated(csite%par_b_beam            )) deallocate(csite%par_b_beam            )
-      if(associated(csite%par_b_diffuse         )) deallocate(csite%par_b_diffuse         )
-      if(associated(csite%nir_b                 )) deallocate(csite%nir_b                 )
-      if(associated(csite%nir_b_beam            )) deallocate(csite%nir_b_beam            )
-      if(associated(csite%nir_b_diffuse         )) deallocate(csite%nir_b_diffuse         )
-      if(associated(csite%rlong_g               )) deallocate(csite%rlong_g               )
-      if(associated(csite%rlong_s               )) deallocate(csite%rlong_s               )
-      if(associated(csite%albedo                )) deallocate(csite%albedo                )
-      if(associated(csite%albedo_par            )) deallocate(csite%albedo_par            )
-      if(associated(csite%albedo_nir            )) deallocate(csite%albedo_nir            )
-      if(associated(csite%rlong_albedo          )) deallocate(csite%rlong_albedo          )
-      if(associated(csite%rnet                  )) deallocate(csite%rnet                  )
-      if(associated(csite%rlongup               )) deallocate(csite%rlongup               )
-      if(associated(csite%parup                 )) deallocate(csite%parup                 )
-      if(associated(csite%nirup                 )) deallocate(csite%nirup                 )
-      if(associated(csite%rshortup              )) deallocate(csite%rshortup              )
-      if(associated(csite%total_sfcw_depth      )) deallocate(csite%total_sfcw_depth      )
-      if(associated(csite%snowfac               )) deallocate(csite%snowfac               )
-      if(associated(csite%A_decomp              )) deallocate(csite%A_decomp              )
-      if(associated(csite%f_decomp              )) deallocate(csite%f_decomp              )
-      if(associated(csite%rh                    )) deallocate(csite%rh                    )
-      if(associated(csite%cwd_rh                )) deallocate(csite%cwd_rh                )
-      if(associated(csite%cumlai_profile        )) deallocate(csite%cumlai_profile        )
-      if(associated(csite%plant_ag_biomass      )) deallocate(csite%plant_ag_biomass      )
-      if(associated(csite%htry                  )) deallocate(csite%htry                  )
-      if(associated(csite%hprev                 )) deallocate(csite%hprev                 )
-      if(associated(csite%ustar                 )) deallocate(csite%ustar                 )
-      if(associated(csite%tstar                 )) deallocate(csite%tstar                 )
-      if(associated(csite%qstar                 )) deallocate(csite%qstar                 )
-      if(associated(csite%cstar                 )) deallocate(csite%cstar                 )
-      if(associated(csite%zeta                  )) deallocate(csite%zeta                  )
-      if(associated(csite%ribulk                )) deallocate(csite%ribulk                )
-      if(associated(csite%upwp                  )) deallocate(csite%upwp                  )
-      if(associated(csite%qpwp                  )) deallocate(csite%qpwp                  )
-      if(associated(csite%cpwp                  )) deallocate(csite%cpwp                  )
-      if(associated(csite%tpwp                  )) deallocate(csite%tpwp                  )
-      if(associated(csite%wpwp                  )) deallocate(csite%wpwp                  )
-      if(associated(csite%watertable            )) deallocate(csite%watertable            )
-      if(associated(csite%moist_dz              )) deallocate(csite%moist_dz              )
-      if(associated(csite%ksat                  )) deallocate(csite%ksat                  )
-      if(associated(csite%soil_sat_energy       )) deallocate(csite%soil_sat_energy       )
-      if(associated(csite%soil_sat_water        )) deallocate(csite%soil_sat_water        )
-      if(associated(csite%soil_sat_heat         )) deallocate(csite%soil_sat_heat         )
-      if(associated(csite%runoff_A              )) deallocate(csite%runoff_A              )
-      if(associated(csite%runoff_rate           )) deallocate(csite%runoff_rate           )
-      if(associated(csite%runoff                )) deallocate(csite%runoff                )
-      if(associated(csite%qrunoff               )) deallocate(csite%qrunoff               )
-      if(associated(csite%fmean_rh              )) deallocate(csite%fmean_rh              )
-      if(associated(csite%fmean_cwd_rh          )) deallocate(csite%fmean_cwd_rh          )
-      if(associated(csite%fmean_nep             )) deallocate(csite%fmean_nep             )
-      if(associated(csite%fmean_rk4step         )) deallocate(csite%fmean_rk4step         )
-      if(associated(csite%fmean_available_water )) deallocate(csite%fmean_available_water )
-      if(associated(csite%fmean_veg_displace    )) deallocate(csite%fmean_veg_displace    )
-      if(associated(csite%fmean_rough           )) deallocate(csite%fmean_rough           )
-      if(associated(csite%fmean_can_theiv       )) deallocate(csite%fmean_can_theiv       )
-      if(associated(csite%fmean_can_theta       )) deallocate(csite%fmean_can_theta       )
-      if(associated(csite%fmean_can_vpdef       )) deallocate(csite%fmean_can_vpdef       )
-      if(associated(csite%fmean_can_temp        )) deallocate(csite%fmean_can_temp        )
-      if(associated(csite%fmean_can_shv         )) deallocate(csite%fmean_can_shv         )
-      if(associated(csite%fmean_can_co2         )) deallocate(csite%fmean_can_co2         )
-      if(associated(csite%fmean_can_rhos        )) deallocate(csite%fmean_can_rhos        )
-      if(associated(csite%fmean_can_prss        )) deallocate(csite%fmean_can_prss        )
-      if(associated(csite%fmean_gnd_temp        )) deallocate(csite%fmean_gnd_temp        )
-      if(associated(csite%fmean_gnd_shv         )) deallocate(csite%fmean_gnd_shv         )
-      if(associated(csite%fmean_can_ggnd        )) deallocate(csite%fmean_can_ggnd        )
-      if(associated(csite%fmean_sfcw_depth      )) deallocate(csite%fmean_sfcw_depth      )
-      if(associated(csite%fmean_sfcw_energy     )) deallocate(csite%fmean_sfcw_energy     )
-      if(associated(csite%fmean_sfcw_mass       )) deallocate(csite%fmean_sfcw_mass       )
-      if(associated(csite%fmean_sfcw_temp       )) deallocate(csite%fmean_sfcw_temp       )
-      if(associated(csite%fmean_sfcw_fliq       )) deallocate(csite%fmean_sfcw_fliq       )
-      if(associated(csite%fmean_soil_energy     )) deallocate(csite%fmean_soil_energy     )
-      if(associated(csite%fmean_soil_mstpot     )) deallocate(csite%fmean_soil_mstpot     )
-      if(associated(csite%fmean_soil_water      )) deallocate(csite%fmean_soil_water      )
-      if(associated(csite%fmean_soil_temp       )) deallocate(csite%fmean_soil_temp       )
-      if(associated(csite%fmean_soil_fliq       )) deallocate(csite%fmean_soil_fliq       )
-      if(associated(csite%fmean_rshort_gnd      )) deallocate(csite%fmean_rshort_gnd      )
-      if(associated(csite%fmean_par_gnd         )) deallocate(csite%fmean_par_gnd         )
-      if(associated(csite%fmean_rlong_gnd       )) deallocate(csite%fmean_rlong_gnd       )
-      if(associated(csite%fmean_rlongup         )) deallocate(csite%fmean_rlongup         )
-      if(associated(csite%fmean_parup           )) deallocate(csite%fmean_parup           )
-      if(associated(csite%fmean_nirup           )) deallocate(csite%fmean_nirup           )
-      if(associated(csite%fmean_rshortup        )) deallocate(csite%fmean_rshortup        )
-      if(associated(csite%fmean_rnet            )) deallocate(csite%fmean_rnet            )
-      if(associated(csite%fmean_albedo          )) deallocate(csite%fmean_albedo          )
-      if(associated(csite%fmean_albedo_par      )) deallocate(csite%fmean_albedo_par      )
-      if(associated(csite%fmean_albedo_nir      )) deallocate(csite%fmean_albedo_nir      )
-      if(associated(csite%fmean_rlong_albedo    )) deallocate(csite%fmean_rlong_albedo    )
-      if(associated(csite%fmean_ustar           )) deallocate(csite%fmean_ustar           )
-      if(associated(csite%fmean_tstar           )) deallocate(csite%fmean_tstar           )
-      if(associated(csite%fmean_qstar           )) deallocate(csite%fmean_qstar           )
-      if(associated(csite%fmean_cstar           )) deallocate(csite%fmean_cstar           )
-      if(associated(csite%fmean_carbon_ac       )) deallocate(csite%fmean_carbon_ac       )
-      if(associated(csite%fmean_carbon_st       )) deallocate(csite%fmean_carbon_st       )
-      if(associated(csite%fmean_vapor_gc        )) deallocate(csite%fmean_vapor_gc        )
-      if(associated(csite%fmean_vapor_ac        )) deallocate(csite%fmean_vapor_ac        )
-      if(associated(csite%fmean_smoist_gg       )) deallocate(csite%fmean_smoist_gg       )
-      if(associated(csite%fmean_throughfall     )) deallocate(csite%fmean_throughfall     )
-      if(associated(csite%fmean_transloss       )) deallocate(csite%fmean_transloss       )
-      if(associated(csite%fmean_runoff          )) deallocate(csite%fmean_runoff          )
-      if(associated(csite%fmean_drainage        )) deallocate(csite%fmean_drainage        )
-      if(associated(csite%fmean_sensible_gc     )) deallocate(csite%fmean_sensible_gc     )
-      if(associated(csite%fmean_sensible_ac     )) deallocate(csite%fmean_sensible_ac     )
-      if(associated(csite%fmean_sensible_gg     )) deallocate(csite%fmean_sensible_gg     )
-      if(associated(csite%fmean_qthroughfall    )) deallocate(csite%fmean_qthroughfall    )
-      if(associated(csite%fmean_qrunoff         )) deallocate(csite%fmean_qrunoff         )
-      if(associated(csite%fmean_qdrainage       )) deallocate(csite%fmean_qdrainage       )
-      if(associated(csite%dmean_A_decomp        )) deallocate(csite%dmean_A_decomp        )
-      if(associated(csite%dmean_Af_decomp       )) deallocate(csite%dmean_Af_decomp       )
-      if(associated(csite%dmean_co2_residual    )) deallocate(csite%dmean_co2_residual    )
-      if(associated(csite%dmean_energy_residual )) deallocate(csite%dmean_energy_residual )
-      if(associated(csite%dmean_water_residual  )) deallocate(csite%dmean_water_residual  )
-      if(associated(csite%dmean_rh              )) deallocate(csite%dmean_rh              )
-      if(associated(csite%dmean_cwd_rh          )) deallocate(csite%dmean_cwd_rh          )
-      if(associated(csite%dmean_nep             )) deallocate(csite%dmean_nep             )
-      if(associated(csite%dmean_rk4step         )) deallocate(csite%dmean_rk4step         )
-      if(associated(csite%dmean_available_water )) deallocate(csite%dmean_available_water )
-      if(associated(csite%dmean_veg_displace    )) deallocate(csite%dmean_veg_displace    )
-      if(associated(csite%dmean_rough           )) deallocate(csite%dmean_rough           )
-      if(associated(csite%dmean_can_theiv       )) deallocate(csite%dmean_can_theiv       )
-      if(associated(csite%dmean_can_theta       )) deallocate(csite%dmean_can_theta       )
-      if(associated(csite%dmean_can_vpdef       )) deallocate(csite%dmean_can_vpdef       )
-      if(associated(csite%dmean_can_temp        )) deallocate(csite%dmean_can_temp        )
-      if(associated(csite%dmean_can_shv         )) deallocate(csite%dmean_can_shv         )
-      if(associated(csite%dmean_can_co2         )) deallocate(csite%dmean_can_co2         )
-      if(associated(csite%dmean_can_rhos        )) deallocate(csite%dmean_can_rhos        )
-      if(associated(csite%dmean_can_prss        )) deallocate(csite%dmean_can_prss        )
-      if(associated(csite%dmean_gnd_temp        )) deallocate(csite%dmean_gnd_temp        )
-      if(associated(csite%dmean_gnd_shv         )) deallocate(csite%dmean_gnd_shv         )
-      if(associated(csite%dmean_can_ggnd        )) deallocate(csite%dmean_can_ggnd        )
-      if(associated(csite%dmean_sfcw_depth      )) deallocate(csite%dmean_sfcw_depth      )
-      if(associated(csite%dmean_sfcw_energy     )) deallocate(csite%dmean_sfcw_energy     )
-      if(associated(csite%dmean_sfcw_mass       )) deallocate(csite%dmean_sfcw_mass       )
-      if(associated(csite%dmean_sfcw_temp       )) deallocate(csite%dmean_sfcw_temp       )
-      if(associated(csite%dmean_sfcw_fliq       )) deallocate(csite%dmean_sfcw_fliq       )
-      if(associated(csite%dmean_soil_energy     )) deallocate(csite%dmean_soil_energy     )
-      if(associated(csite%dmean_soil_mstpot     )) deallocate(csite%dmean_soil_mstpot     )
-      if(associated(csite%dmean_soil_water      )) deallocate(csite%dmean_soil_water      )
-      if(associated(csite%dmean_soil_temp       )) deallocate(csite%dmean_soil_temp       )
-      if(associated(csite%dmean_soil_fliq       )) deallocate(csite%dmean_soil_fliq       )
-      if(associated(csite%dmean_rshort_gnd      )) deallocate(csite%dmean_rshort_gnd      )
-      if(associated(csite%dmean_par_gnd         )) deallocate(csite%dmean_par_gnd         )
-      if(associated(csite%dmean_rlong_gnd       )) deallocate(csite%dmean_rlong_gnd       )
-      if(associated(csite%dmean_rlongup         )) deallocate(csite%dmean_rlongup         )
-      if(associated(csite%dmean_parup           )) deallocate(csite%dmean_parup           )
-      if(associated(csite%dmean_nirup           )) deallocate(csite%dmean_nirup           )
-      if(associated(csite%dmean_rshortup        )) deallocate(csite%dmean_rshortup        )
-      if(associated(csite%dmean_rnet            )) deallocate(csite%dmean_rnet            )
-      if(associated(csite%dmean_albedo          )) deallocate(csite%dmean_albedo          )
-      if(associated(csite%dmean_albedo_par      )) deallocate(csite%dmean_albedo_par      )
-      if(associated(csite%dmean_albedo_nir      )) deallocate(csite%dmean_albedo_nir      )
-      if(associated(csite%dmean_rlong_albedo    )) deallocate(csite%dmean_rlong_albedo    )
-      if(associated(csite%dmean_ustar           )) deallocate(csite%dmean_ustar           )
-      if(associated(csite%dmean_tstar           )) deallocate(csite%dmean_tstar           )
-      if(associated(csite%dmean_qstar           )) deallocate(csite%dmean_qstar           )
-      if(associated(csite%dmean_cstar           )) deallocate(csite%dmean_cstar           )
-      if(associated(csite%dmean_carbon_ac       )) deallocate(csite%dmean_carbon_ac       )
-      if(associated(csite%dmean_carbon_st       )) deallocate(csite%dmean_carbon_st       )
-      if(associated(csite%dmean_vapor_gc        )) deallocate(csite%dmean_vapor_gc        )
-      if(associated(csite%dmean_vapor_ac        )) deallocate(csite%dmean_vapor_ac        )
-      if(associated(csite%dmean_smoist_gg       )) deallocate(csite%dmean_smoist_gg       )
-      if(associated(csite%dmean_throughfall     )) deallocate(csite%dmean_throughfall     )
-      if(associated(csite%dmean_transloss       )) deallocate(csite%dmean_transloss       )
-      if(associated(csite%dmean_runoff          )) deallocate(csite%dmean_runoff          )
-      if(associated(csite%dmean_drainage        )) deallocate(csite%dmean_drainage        )
-      if(associated(csite%dmean_sensible_gc     )) deallocate(csite%dmean_sensible_gc     )
-      if(associated(csite%dmean_sensible_ac     )) deallocate(csite%dmean_sensible_ac     )
-      if(associated(csite%dmean_sensible_gg     )) deallocate(csite%dmean_sensible_gg     )
-      if(associated(csite%dmean_qthroughfall    )) deallocate(csite%dmean_qthroughfall    )
-      if(associated(csite%dmean_qrunoff         )) deallocate(csite%dmean_qrunoff         )
-      if(associated(csite%dmean_qdrainage       )) deallocate(csite%dmean_qdrainage       )
-      if(associated(csite%mmean_fast_soil_c     )) deallocate(csite%mmean_fast_soil_c     )
-      if(associated(csite%mmean_slow_soil_c     )) deallocate(csite%mmean_slow_soil_c     )
-      if(associated(csite%mmean_struct_soil_c   )) deallocate(csite%mmean_struct_soil_c   )
-      if(associated(csite%mmean_struct_soil_l   )) deallocate(csite%mmean_struct_soil_l   )
-      if(associated(csite%mmean_fast_soil_n     )) deallocate(csite%mmean_fast_soil_n     )
-      if(associated(csite%mmean_mineral_soil_n  )) deallocate(csite%mmean_mineral_soil_n  )
-      if(associated(csite%mmean_co2_residual    )) deallocate(csite%mmean_co2_residual    )
-      if(associated(csite%mmean_energy_residual )) deallocate(csite%mmean_energy_residual )
-      if(associated(csite%mmean_water_residual  )) deallocate(csite%mmean_water_residual  )
-      if(associated(csite%mmean_rh              )) deallocate(csite%mmean_rh              )
-      if(associated(csite%mmean_cwd_rh          )) deallocate(csite%mmean_cwd_rh          )
-      if(associated(csite%mmean_nep             )) deallocate(csite%mmean_nep             )
-      if(associated(csite%mmean_A_decomp        )) deallocate(csite%mmean_A_decomp        )
-      if(associated(csite%mmean_Af_decomp       )) deallocate(csite%mmean_Af_decomp       )
-      if(associated(csite%mmean_rk4step         )) deallocate(csite%mmean_rk4step         )
-      if(associated(csite%mmean_available_water )) deallocate(csite%mmean_available_water )
-      if(associated(csite%mmean_veg_displace    )) deallocate(csite%mmean_veg_displace    )
-      if(associated(csite%mmean_rough           )) deallocate(csite%mmean_rough           )
-      if(associated(csite%mmean_can_theiv       )) deallocate(csite%mmean_can_theiv       )
-      if(associated(csite%mmean_can_theta       )) deallocate(csite%mmean_can_theta       )
-      if(associated(csite%mmean_can_vpdef       )) deallocate(csite%mmean_can_vpdef       )
-      if(associated(csite%mmean_can_temp        )) deallocate(csite%mmean_can_temp        )
-      if(associated(csite%mmean_can_shv         )) deallocate(csite%mmean_can_shv         )
-      if(associated(csite%mmean_can_co2         )) deallocate(csite%mmean_can_co2         )
-      if(associated(csite%mmean_can_rhos        )) deallocate(csite%mmean_can_rhos        )
-      if(associated(csite%mmean_can_prss        )) deallocate(csite%mmean_can_prss        )
-      if(associated(csite%mmean_gnd_temp        )) deallocate(csite%mmean_gnd_temp        )
-      if(associated(csite%mmean_gnd_shv         )) deallocate(csite%mmean_gnd_shv         )
-      if(associated(csite%mmean_can_ggnd        )) deallocate(csite%mmean_can_ggnd        )
-      if(associated(csite%mmean_sfcw_depth      )) deallocate(csite%mmean_sfcw_depth      )
-      if(associated(csite%mmean_sfcw_energy     )) deallocate(csite%mmean_sfcw_energy     )
-      if(associated(csite%mmean_sfcw_mass       )) deallocate(csite%mmean_sfcw_mass       )
-      if(associated(csite%mmean_sfcw_temp       )) deallocate(csite%mmean_sfcw_temp       )
-      if(associated(csite%mmean_sfcw_fliq       )) deallocate(csite%mmean_sfcw_fliq       )
-      if(associated(csite%mmean_soil_energy     )) deallocate(csite%mmean_soil_energy     )
-      if(associated(csite%mmean_soil_mstpot     )) deallocate(csite%mmean_soil_mstpot     )
-      if(associated(csite%mmean_soil_water      )) deallocate(csite%mmean_soil_water      )
-      if(associated(csite%mmean_soil_temp       )) deallocate(csite%mmean_soil_temp       )
-      if(associated(csite%mmean_soil_fliq       )) deallocate(csite%mmean_soil_fliq       )
-      if(associated(csite%mmean_rshort_gnd      )) deallocate(csite%mmean_rshort_gnd      )
-      if(associated(csite%mmean_par_gnd         )) deallocate(csite%mmean_par_gnd         )
-      if(associated(csite%mmean_rlong_gnd       )) deallocate(csite%mmean_rlong_gnd       )
-      if(associated(csite%mmean_rlongup         )) deallocate(csite%mmean_rlongup         )
-      if(associated(csite%mmean_parup           )) deallocate(csite%mmean_parup           )
-      if(associated(csite%mmean_nirup           )) deallocate(csite%mmean_nirup           )
-      if(associated(csite%mmean_rshortup        )) deallocate(csite%mmean_rshortup        )
-      if(associated(csite%mmean_rnet            )) deallocate(csite%mmean_rnet            )
-      if(associated(csite%mmean_albedo          )) deallocate(csite%mmean_albedo          )
-      if(associated(csite%mmean_albedo_par      )) deallocate(csite%mmean_albedo_par      )
-      if(associated(csite%mmean_albedo_nir      )) deallocate(csite%mmean_albedo_nir      )
-      if(associated(csite%mmean_rlong_albedo    )) deallocate(csite%mmean_rlong_albedo    )
-      if(associated(csite%mmean_ustar           )) deallocate(csite%mmean_ustar           )
-      if(associated(csite%mmean_tstar           )) deallocate(csite%mmean_tstar           )
-      if(associated(csite%mmean_qstar           )) deallocate(csite%mmean_qstar           )
-      if(associated(csite%mmean_cstar           )) deallocate(csite%mmean_cstar           )
-      if(associated(csite%mmean_carbon_ac       )) deallocate(csite%mmean_carbon_ac       )
-      if(associated(csite%mmean_carbon_st       )) deallocate(csite%mmean_carbon_st       )
-      if(associated(csite%mmean_vapor_gc        )) deallocate(csite%mmean_vapor_gc        )
-      if(associated(csite%mmean_vapor_ac        )) deallocate(csite%mmean_vapor_ac        )
-      if(associated(csite%mmean_smoist_gg       )) deallocate(csite%mmean_smoist_gg       )
-      if(associated(csite%mmean_throughfall     )) deallocate(csite%mmean_throughfall     )
-      if(associated(csite%mmean_transloss       )) deallocate(csite%mmean_transloss       )
-      if(associated(csite%mmean_runoff          )) deallocate(csite%mmean_runoff          )
-      if(associated(csite%mmean_drainage        )) deallocate(csite%mmean_drainage        )
-      if(associated(csite%mmean_sensible_gc     )) deallocate(csite%mmean_sensible_gc     )
-      if(associated(csite%mmean_sensible_ac     )) deallocate(csite%mmean_sensible_ac     )
-      if(associated(csite%mmean_sensible_gg     )) deallocate(csite%mmean_sensible_gg     )
-      if(associated(csite%mmean_qthroughfall    )) deallocate(csite%mmean_qthroughfall    )
-      if(associated(csite%mmean_qrunoff         )) deallocate(csite%mmean_qrunoff         )
-      if(associated(csite%mmean_qdrainage       )) deallocate(csite%mmean_qdrainage       )
-      if(associated(csite%mmean_A_decomp        )) deallocate(csite%mmean_A_decomp        )
-      if(associated(csite%mmean_Af_decomp       )) deallocate(csite%mmean_Af_decomp       )
-      if(associated(csite%mmean_co2_residual    )) deallocate(csite%mmean_co2_residual    )
-      if(associated(csite%mmean_energy_residual )) deallocate(csite%mmean_energy_residual )
-      if(associated(csite%mmean_water_residual  )) deallocate(csite%mmean_water_residual  )
-      if(associated(csite%mmsqu_rh              )) deallocate(csite%mmsqu_rh              )
-      if(associated(csite%mmsqu_cwd_rh          )) deallocate(csite%mmsqu_cwd_rh          )
-      if(associated(csite%mmsqu_nep             )) deallocate(csite%mmsqu_nep             )
-      if(associated(csite%mmsqu_rlongup         )) deallocate(csite%mmsqu_rlongup         )
-      if(associated(csite%mmsqu_parup           )) deallocate(csite%mmsqu_parup           )
-      if(associated(csite%mmsqu_nirup           )) deallocate(csite%mmsqu_nirup           )
-      if(associated(csite%mmsqu_rshortup        )) deallocate(csite%mmsqu_rshortup        )
-      if(associated(csite%mmsqu_rnet            )) deallocate(csite%mmsqu_rnet            )
-      if(associated(csite%mmsqu_albedo          )) deallocate(csite%mmsqu_albedo          )
-      if(associated(csite%mmsqu_ustar           )) deallocate(csite%mmsqu_ustar           )
-      if(associated(csite%mmsqu_carbon_ac       )) deallocate(csite%mmsqu_carbon_ac       )
-      if(associated(csite%mmsqu_carbon_st       )) deallocate(csite%mmsqu_carbon_st       )
-      if(associated(csite%mmsqu_vapor_gc        )) deallocate(csite%mmsqu_vapor_gc        )
-      if(associated(csite%mmsqu_vapor_ac        )) deallocate(csite%mmsqu_vapor_ac        )
-      if(associated(csite%mmsqu_sensible_gc     )) deallocate(csite%mmsqu_sensible_gc     )
-      if(associated(csite%mmsqu_sensible_ac     )) deallocate(csite%mmsqu_sensible_ac     )
-      if(associated(csite%qmean_rh              )) deallocate(csite%qmean_rh              )
-      if(associated(csite%qmean_cwd_rh          )) deallocate(csite%qmean_cwd_rh          )
-      if(associated(csite%qmean_nep             )) deallocate(csite%qmean_nep             )
-      if(associated(csite%qmean_rk4step         )) deallocate(csite%qmean_rk4step         )
-      if(associated(csite%qmean_available_water )) deallocate(csite%qmean_available_water )
-      if(associated(csite%qmean_veg_displace    )) deallocate(csite%qmean_veg_displace    )
-      if(associated(csite%qmean_rough           )) deallocate(csite%qmean_rough           )
-      if(associated(csite%qmean_can_theiv       )) deallocate(csite%qmean_can_theiv       )
-      if(associated(csite%qmean_can_theta       )) deallocate(csite%qmean_can_theta       )
-      if(associated(csite%qmean_can_vpdef       )) deallocate(csite%qmean_can_vpdef       )
-      if(associated(csite%qmean_can_temp        )) deallocate(csite%qmean_can_temp        )
-      if(associated(csite%qmean_can_shv         )) deallocate(csite%qmean_can_shv         )
-      if(associated(csite%qmean_can_co2         )) deallocate(csite%qmean_can_co2         )
-      if(associated(csite%qmean_can_rhos        )) deallocate(csite%qmean_can_rhos        )
-      if(associated(csite%qmean_can_prss        )) deallocate(csite%qmean_can_prss        )
-      if(associated(csite%qmean_gnd_temp        )) deallocate(csite%qmean_gnd_temp        )
-      if(associated(csite%qmean_gnd_shv         )) deallocate(csite%qmean_gnd_shv         )
-      if(associated(csite%qmean_can_ggnd        )) deallocate(csite%qmean_can_ggnd        )
-      if(associated(csite%qmean_sfcw_depth      )) deallocate(csite%qmean_sfcw_depth      )
-      if(associated(csite%qmean_sfcw_energy     )) deallocate(csite%qmean_sfcw_energy     )
-      if(associated(csite%qmean_sfcw_mass       )) deallocate(csite%qmean_sfcw_mass       )
-      if(associated(csite%qmean_sfcw_temp       )) deallocate(csite%qmean_sfcw_temp       )
-      if(associated(csite%qmean_sfcw_fliq       )) deallocate(csite%qmean_sfcw_fliq       )
-      if(associated(csite%qmean_soil_energy     )) deallocate(csite%qmean_soil_energy     )
-      if(associated(csite%qmean_soil_mstpot     )) deallocate(csite%qmean_soil_mstpot     )
-      if(associated(csite%qmean_soil_water      )) deallocate(csite%qmean_soil_water      )
-      if(associated(csite%qmean_soil_temp       )) deallocate(csite%qmean_soil_temp       )
-      if(associated(csite%qmean_soil_fliq       )) deallocate(csite%qmean_soil_fliq       )
-      if(associated(csite%qmean_rshort_gnd      )) deallocate(csite%qmean_rshort_gnd      )
-      if(associated(csite%qmean_par_gnd         )) deallocate(csite%qmean_par_gnd         )
-      if(associated(csite%qmean_rlong_gnd       )) deallocate(csite%qmean_rlong_gnd       )
-      if(associated(csite%qmean_rlongup         )) deallocate(csite%qmean_rlongup         )
-      if(associated(csite%qmean_parup           )) deallocate(csite%qmean_parup           )
-      if(associated(csite%qmean_nirup           )) deallocate(csite%qmean_nirup           )
-      if(associated(csite%qmean_rshortup        )) deallocate(csite%qmean_rshortup        )
-      if(associated(csite%qmean_rnet            )) deallocate(csite%qmean_rnet            )
-      if(associated(csite%qmean_albedo          )) deallocate(csite%qmean_albedo          )
-      if(associated(csite%qmean_albedo_par      )) deallocate(csite%qmean_albedo_par      )
-      if(associated(csite%qmean_albedo_nir      )) deallocate(csite%qmean_albedo_nir      )
-      if(associated(csite%qmean_rlong_albedo    )) deallocate(csite%qmean_rlong_albedo    )
-      if(associated(csite%qmean_ustar           )) deallocate(csite%qmean_ustar           )
-      if(associated(csite%qmean_tstar           )) deallocate(csite%qmean_tstar           )
-      if(associated(csite%qmean_qstar           )) deallocate(csite%qmean_qstar           )
-      if(associated(csite%qmean_cstar           )) deallocate(csite%qmean_cstar           )
-      if(associated(csite%qmean_carbon_ac       )) deallocate(csite%qmean_carbon_ac       )
-      if(associated(csite%qmean_carbon_st       )) deallocate(csite%qmean_carbon_st       )
-      if(associated(csite%qmean_vapor_gc        )) deallocate(csite%qmean_vapor_gc        )
-      if(associated(csite%qmean_vapor_ac        )) deallocate(csite%qmean_vapor_ac        )
-      if(associated(csite%qmean_smoist_gg       )) deallocate(csite%qmean_smoist_gg       )
-      if(associated(csite%qmean_throughfall     )) deallocate(csite%qmean_throughfall     )
-      if(associated(csite%qmean_transloss       )) deallocate(csite%qmean_transloss       )
-      if(associated(csite%qmean_runoff          )) deallocate(csite%qmean_runoff          )
-      if(associated(csite%qmean_drainage        )) deallocate(csite%qmean_drainage        )
-      if(associated(csite%qmean_sensible_gc     )) deallocate(csite%qmean_sensible_gc     )
-      if(associated(csite%qmean_sensible_ac     )) deallocate(csite%qmean_sensible_ac     )
-      if(associated(csite%qmean_sensible_gg     )) deallocate(csite%qmean_sensible_gg     )
-      if(associated(csite%qmean_qthroughfall    )) deallocate(csite%qmean_qthroughfall    )
-      if(associated(csite%qmean_qrunoff         )) deallocate(csite%qmean_qrunoff         )
-      if(associated(csite%qmean_qdrainage       )) deallocate(csite%qmean_qdrainage       )
-      if(associated(csite%qmsqu_rh              )) deallocate(csite%qmsqu_rh              )
-      if(associated(csite%qmsqu_cwd_rh          )) deallocate(csite%qmsqu_cwd_rh          )
-      if(associated(csite%qmsqu_nep             )) deallocate(csite%qmsqu_nep             )
-      if(associated(csite%qmsqu_rlongup         )) deallocate(csite%qmsqu_rlongup         )
-      if(associated(csite%qmsqu_parup           )) deallocate(csite%qmsqu_parup           )
-      if(associated(csite%qmsqu_nirup           )) deallocate(csite%qmsqu_nirup           )
-      if(associated(csite%qmsqu_rshortup        )) deallocate(csite%qmsqu_rshortup        )
-      if(associated(csite%qmsqu_rnet            )) deallocate(csite%qmsqu_rnet            )
-      if(associated(csite%qmsqu_albedo          )) deallocate(csite%qmsqu_albedo          )
-      if(associated(csite%qmsqu_ustar           )) deallocate(csite%qmsqu_ustar           )
-      if(associated(csite%qmsqu_carbon_ac       )) deallocate(csite%qmsqu_carbon_ac       )
-      if(associated(csite%qmsqu_carbon_st       )) deallocate(csite%qmsqu_carbon_st       )
-      if(associated(csite%qmsqu_vapor_gc        )) deallocate(csite%qmsqu_vapor_gc        )
-      if(associated(csite%qmsqu_vapor_ac        )) deallocate(csite%qmsqu_vapor_ac        )
-      if(associated(csite%qmsqu_sensible_gc     )) deallocate(csite%qmsqu_sensible_gc     )
-      if(associated(csite%qmsqu_sensible_ac     )) deallocate(csite%qmsqu_sensible_ac     )
+      if(associated(csite%paco_id                    )) deallocate(csite%paco_id                    )
+      if(associated(csite%paco_n                     )) deallocate(csite%paco_n                     )
+      if(associated(csite%patch                      )) deallocate(csite%patch                      )
+      if(associated(csite%cohort_count               )) deallocate(csite%cohort_count               )
+      if(associated(csite%pname                      )) deallocate(csite%pname                      )
+      if(associated(csite%area                       )) deallocate(csite%area                       )
+      if(associated(csite%age                        )) deallocate(csite%age                        )
+      if(associated(csite%dist_type                  )) deallocate(csite%dist_type                  )
+      if(associated(csite%fbeam                      )) deallocate(csite%fbeam                      )
+      if(associated(csite%light_type                 )) deallocate(csite%light_type                 )
+      if(associated(csite%fast_grnd_C                )) deallocate(csite%fast_grnd_C                )
+      if(associated(csite%fast_soil_C                )) deallocate(csite%fast_soil_C                )
+      if(associated(csite%structural_grnd_C          )) deallocate(csite%structural_grnd_C          )
+      if(associated(csite%structural_soil_C          )) deallocate(csite%structural_soil_C          )
+      if(associated(csite%structural_grnd_L          )) deallocate(csite%structural_grnd_L          )
+      if(associated(csite%structural_soil_L          )) deallocate(csite%structural_soil_L          )
+      if(associated(csite%microbial_soil_C           )) deallocate(csite%microbial_soil_C           )
+      if(associated(csite%slow_soil_C                )) deallocate(csite%slow_soil_C                )
+      if(associated(csite%fast_grnd_N                )) deallocate(csite%fast_grnd_N                )
+      if(associated(csite%fast_soil_N                )) deallocate(csite%fast_soil_N                )
+      if(associated(csite%structural_grnd_N          )) deallocate(csite%structural_grnd_N          )
+      if(associated(csite%structural_soil_N          )) deallocate(csite%structural_soil_N          )
+      if(associated(csite%mineralized_soil_N         )) deallocate(csite%mineralized_soil_N         )
+      if(associated(csite%sum_dgd                    )) deallocate(csite%sum_dgd                    )
+      if(associated(csite%sum_chd                    )) deallocate(csite%sum_chd                    )
+      if(associated(csite%can_theiv                  )) deallocate(csite%can_theiv                  )
+      if(associated(csite%can_vpdef                  )) deallocate(csite%can_vpdef                  )
+      if(associated(csite%can_temp                   )) deallocate(csite%can_temp                   )
+      if(associated(csite%can_temp_pv                )) deallocate(csite%can_temp_pv                )
+      if(associated(csite%can_shv                    )) deallocate(csite%can_shv                    )
+      if(associated(csite%can_co2                    )) deallocate(csite%can_co2                    )
+      if(associated(csite%can_rhos                   )) deallocate(csite%can_rhos                   )
+      if(associated(csite%can_prss                   )) deallocate(csite%can_prss                   )
+      if(associated(csite%can_theta                  )) deallocate(csite%can_theta                  )
+      if(associated(csite%can_depth                  )) deallocate(csite%can_depth                  )
+      if(associated(csite%opencan_frac               )) deallocate(csite%opencan_frac               )
+      if(associated(csite%ggbare                     )) deallocate(csite%ggbare                     )
+      if(associated(csite%ggveg                      )) deallocate(csite%ggveg                      )
+      if(associated(csite%ggnet                      )) deallocate(csite%ggnet                      )
+      if(associated(csite%ggsoil                     )) deallocate(csite%ggsoil                     )
+      if(associated(csite%nlev_sfcwater              )) deallocate(csite%nlev_sfcwater              )
+      if(associated(csite%sfcwater_mass              )) deallocate(csite%sfcwater_mass              )
+      if(associated(csite%sfcwater_energy            )) deallocate(csite%sfcwater_energy            )
+      if(associated(csite%sfcwater_depth             )) deallocate(csite%sfcwater_depth             )
+      if(associated(csite%sfcwater_tempk             )) deallocate(csite%sfcwater_tempk             )
+      if(associated(csite%sfcwater_fracliq           )) deallocate(csite%sfcwater_fracliq           )
+      if(associated(csite%rshort_s                   )) deallocate(csite%rshort_s                   )
+      if(associated(csite%rshort_s_beam              )) deallocate(csite%rshort_s_beam              )
+      if(associated(csite%rshort_s_diffuse           )) deallocate(csite%rshort_s_diffuse           )
+      if(associated(csite%par_s                      )) deallocate(csite%par_s                      )
+      if(associated(csite%par_s_beam                 )) deallocate(csite%par_s_beam                 )
+      if(associated(csite%par_s_diffuse              )) deallocate(csite%par_s_diffuse              )
+      if(associated(csite%soil_energy                )) deallocate(csite%soil_energy                )
+      if(associated(csite%soil_mstpot                )) deallocate(csite%soil_mstpot                )
+      if(associated(csite%soil_water                 )) deallocate(csite%soil_water                 )
+      if(associated(csite%soil_tempk                 )) deallocate(csite%soil_tempk                 )
+      if(associated(csite%soil_fracliq               )) deallocate(csite%soil_fracliq               )
+      if(associated(csite%rootdense                  )) deallocate(csite%rootdense                  )
+      if(associated(csite%ground_shv                 )) deallocate(csite%ground_shv                 )
+      if(associated(csite%ground_ssh                 )) deallocate(csite%ground_ssh                 )
+      if(associated(csite%ground_temp                )) deallocate(csite%ground_temp                )
+      if(associated(csite%ground_fliq                )) deallocate(csite%ground_fliq                )
+      if(associated(csite%rough                      )) deallocate(csite%rough                      )
+      if(associated(csite%par_l_max                  )) deallocate(csite%par_l_max                  )
+      if(associated(csite%par_l_beam_max             )) deallocate(csite%par_l_beam_max             )
+      if(associated(csite%par_l_diffuse_max          )) deallocate(csite%par_l_diffuse_max          )
+      if(associated(csite%A_o_max                    )) deallocate(csite%A_o_max                    )
+      if(associated(csite%A_c_max                    )) deallocate(csite%A_c_max                    )
+      if(associated(csite%avg_daily_temp             )) deallocate(csite%avg_daily_temp             )
+      if(associated(csite%avg_monthly_gndwater       )) deallocate(csite%avg_monthly_gndwater       )
+      if(associated(csite%avg_monthly_waterdef       )) deallocate(csite%avg_monthly_waterdef       )
+      if(associated(csite%wbudget_loss2atm           )) deallocate(csite%wbudget_loss2atm           )
+      if(associated(csite%wbudget_denseffect         )) deallocate(csite%wbudget_denseffect         )
+      if(associated(csite%wbudget_precipgain         )) deallocate(csite%wbudget_precipgain         )
+      if(associated(csite%wbudget_loss2runoff        )) deallocate(csite%wbudget_loss2runoff        )
+      if(associated(csite%wbudget_loss2drainage      )) deallocate(csite%wbudget_loss2drainage      )
+      if(associated(csite%wbudget_initialstorage     )) deallocate(csite%wbudget_initialstorage     )
+      if(associated(csite%wbudget_residual           )) deallocate(csite%wbudget_residual           )
+      if(associated(csite%ebudget_loss2atm           )) deallocate(csite%ebudget_loss2atm           )
+      if(associated(csite%ebudget_denseffect         )) deallocate(csite%ebudget_denseffect         )
+      if(associated(csite%ebudget_prsseffect         )) deallocate(csite%ebudget_prsseffect         )
+      if(associated(csite%ebudget_loss2runoff        )) deallocate(csite%ebudget_loss2runoff        )
+      if(associated(csite%ebudget_loss2drainage      )) deallocate(csite%ebudget_loss2drainage      )
+      if(associated(csite%ebudget_netrad             )) deallocate(csite%ebudget_netrad             )
+      if(associated(csite%ebudget_precipgain         )) deallocate(csite%ebudget_precipgain         )
+      if(associated(csite%ebudget_initialstorage     )) deallocate(csite%ebudget_initialstorage     )
+      if(associated(csite%ebudget_residual           )) deallocate(csite%ebudget_residual           )
+      if(associated(csite%co2budget_initialstorage   )) deallocate(csite%co2budget_initialstorage   )
+      if(associated(csite%co2budget_residual         )) deallocate(csite%co2budget_residual         )
+      if(associated(csite%co2budget_loss2atm         )) deallocate(csite%co2budget_loss2atm         )
+      if(associated(csite%co2budget_denseffect       )) deallocate(csite%co2budget_denseffect       )
+      if(associated(csite%co2budget_gpp              )) deallocate(csite%co2budget_gpp              )
+      if(associated(csite%co2budget_plresp           )) deallocate(csite%co2budget_plresp           )
+      if(associated(csite%co2budget_rh               )) deallocate(csite%co2budget_rh               )
+      if(associated(csite%today_A_decomp             )) deallocate(csite%today_A_decomp             )
+      if(associated(csite%today_B_decomp             )) deallocate(csite%today_B_decomp             )
+      if(associated(csite%today_Af_decomp            )) deallocate(csite%today_Af_decomp            )
+      if(associated(csite%today_Bf_decomp            )) deallocate(csite%today_Bf_decomp            )
+      if(associated(csite%repro                      )) deallocate(csite%repro                      )
+      if(associated(csite%veg_rough                  )) deallocate(csite%veg_rough                  )
+      if(associated(csite%veg_height                 )) deallocate(csite%veg_height                 )
+      if(associated(csite%veg_displace               )) deallocate(csite%veg_displace               )
+      if(associated(csite%fgc_in                     )) deallocate(csite%fgc_in                     )
+      if(associated(csite%fsc_in                     )) deallocate(csite%fsc_in                     )
+      if(associated(csite%stgc_in                    )) deallocate(csite%stgc_in                    )
+      if(associated(csite%stsc_in                    )) deallocate(csite%stsc_in                    )
+      if(associated(csite%stgl_in                    )) deallocate(csite%stgl_in                    )
+      if(associated(csite%stsl_in                    )) deallocate(csite%stsl_in                    )
+      if(associated(csite%fgn_in                     )) deallocate(csite%fgn_in                     )
+      if(associated(csite%fsn_in                     )) deallocate(csite%fsn_in                     )
+      if(associated(csite%stgn_in                    )) deallocate(csite%stgn_in                    )
+      if(associated(csite%stsn_in                    )) deallocate(csite%stsn_in                    )
+      if(associated(csite%total_plant_nitrogen_uptake)) deallocate(csite%total_plant_nitrogen_uptake)
+      if(associated(csite%mineralized_N_loss         )) deallocate(csite%mineralized_N_loss         )
+      if(associated(csite%mineralized_N_input        )) deallocate(csite%mineralized_N_input        )
+      if(associated(csite%rshort_g                   )) deallocate(csite%rshort_g                   )
+      if(associated(csite%rshort_g_beam              )) deallocate(csite%rshort_g_beam              )
+      if(associated(csite%rshort_g_diffuse           )) deallocate(csite%rshort_g_diffuse           )
+      if(associated(csite%par_g                      )) deallocate(csite%par_g                      )
+      if(associated(csite%par_g_beam                 )) deallocate(csite%par_g_beam                 )
+      if(associated(csite%par_g_diffuse              )) deallocate(csite%par_g_diffuse              )
+      if(associated(csite%par_b                      )) deallocate(csite%par_b                      )
+      if(associated(csite%par_b_beam                 )) deallocate(csite%par_b_beam                 )
+      if(associated(csite%par_b_diffuse              )) deallocate(csite%par_b_diffuse              )
+      if(associated(csite%nir_b                      )) deallocate(csite%nir_b                      )
+      if(associated(csite%nir_b_beam                 )) deallocate(csite%nir_b_beam                 )
+      if(associated(csite%nir_b_diffuse              )) deallocate(csite%nir_b_diffuse              )
+      if(associated(csite%rlong_g                    )) deallocate(csite%rlong_g                    )
+      if(associated(csite%rlong_s                    )) deallocate(csite%rlong_s                    )
+      if(associated(csite%albedo                     )) deallocate(csite%albedo                     )
+      if(associated(csite%albedo_par                 )) deallocate(csite%albedo_par                 )
+      if(associated(csite%albedo_nir                 )) deallocate(csite%albedo_nir                 )
+      if(associated(csite%rlong_albedo               )) deallocate(csite%rlong_albedo               )
+      if(associated(csite%rnet                       )) deallocate(csite%rnet                       )
+      if(associated(csite%rlongup                    )) deallocate(csite%rlongup                    )
+      if(associated(csite%parup                      )) deallocate(csite%parup                      )
+      if(associated(csite%nirup                      )) deallocate(csite%nirup                      )
+      if(associated(csite%rshortup                   )) deallocate(csite%rshortup                   )
+      if(associated(csite%total_sfcw_depth           )) deallocate(csite%total_sfcw_depth           )
+      if(associated(csite%snowfac                    )) deallocate(csite%snowfac                    )
+      if(associated(csite%A_decomp                   )) deallocate(csite%A_decomp                   )
+      if(associated(csite%B_decomp                   )) deallocate(csite%B_decomp                   )
+      if(associated(csite%f_decomp                   )) deallocate(csite%f_decomp                   )
+      if(associated(csite%rh                         )) deallocate(csite%rh                         )
+      if(associated(csite%fgc_rh                     )) deallocate(csite%fgc_rh                     )
+      if(associated(csite%fsc_rh                     )) deallocate(csite%fsc_rh                     )
+      if(associated(csite%stgc_rh                    )) deallocate(csite%stgc_rh                    )
+      if(associated(csite%stsc_rh                    )) deallocate(csite%stsc_rh                    )
+      if(associated(csite%msc_rh                     )) deallocate(csite%msc_rh                     )
+      if(associated(csite%ssc_rh                     )) deallocate(csite%ssc_rh                     )
+      if(associated(csite%cumlai_profile             )) deallocate(csite%cumlai_profile             )
+      if(associated(csite%plant_ag_biomass           )) deallocate(csite%plant_ag_biomass           )
+      if(associated(csite%htry                       )) deallocate(csite%htry                       )
+      if(associated(csite%hprev                      )) deallocate(csite%hprev                      )
+      if(associated(csite%ustar                      )) deallocate(csite%ustar                      )
+      if(associated(csite%tstar                      )) deallocate(csite%tstar                      )
+      if(associated(csite%qstar                      )) deallocate(csite%qstar                      )
+      if(associated(csite%cstar                      )) deallocate(csite%cstar                      )
+      if(associated(csite%zeta                       )) deallocate(csite%zeta                       )
+      if(associated(csite%ribulk                     )) deallocate(csite%ribulk                     )
+      if(associated(csite%upwp                       )) deallocate(csite%upwp                       )
+      if(associated(csite%qpwp                       )) deallocate(csite%qpwp                       )
+      if(associated(csite%cpwp                       )) deallocate(csite%cpwp                       )
+      if(associated(csite%tpwp                       )) deallocate(csite%tpwp                       )
+      if(associated(csite%wpwp                       )) deallocate(csite%wpwp                       )
+      if(associated(csite%watertable                 )) deallocate(csite%watertable                 )
+      if(associated(csite%moist_dz                   )) deallocate(csite%moist_dz                   )
+      if(associated(csite%ksat                       )) deallocate(csite%ksat                       )
+      if(associated(csite%soil_sat_energy            )) deallocate(csite%soil_sat_energy            )
+      if(associated(csite%soil_sat_water             )) deallocate(csite%soil_sat_water             )
+      if(associated(csite%soil_sat_heat              )) deallocate(csite%soil_sat_heat              )
+      if(associated(csite%runoff_A                   )) deallocate(csite%runoff_A                   )
+      if(associated(csite%runoff_rate                )) deallocate(csite%runoff_rate                )
+      if(associated(csite%runoff                     )) deallocate(csite%runoff                     )
+      if(associated(csite%qrunoff                    )) deallocate(csite%qrunoff                    )
+      if(associated(csite%fmean_rh                   )) deallocate(csite%fmean_rh                   )
+      if(associated(csite%fmean_fgc_rh               )) deallocate(csite%fmean_fgc_rh               )
+      if(associated(csite%fmean_fsc_rh               )) deallocate(csite%fmean_fsc_rh               )
+      if(associated(csite%fmean_stgc_rh              )) deallocate(csite%fmean_stgc_rh              )
+      if(associated(csite%fmean_stsc_rh              )) deallocate(csite%fmean_stsc_rh              )
+      if(associated(csite%fmean_msc_rh               )) deallocate(csite%fmean_msc_rh               )
+      if(associated(csite%fmean_ssc_rh               )) deallocate(csite%fmean_ssc_rh               )
+      if(associated(csite%fmean_nep                  )) deallocate(csite%fmean_nep                  )
+      if(associated(csite%fmean_rk4step              )) deallocate(csite%fmean_rk4step              )
+      if(associated(csite%fmean_available_water      )) deallocate(csite%fmean_available_water      )
+      if(associated(csite%fmean_veg_displace         )) deallocate(csite%fmean_veg_displace         )
+      if(associated(csite%fmean_rough                )) deallocate(csite%fmean_rough                )
+      if(associated(csite%fmean_can_theiv            )) deallocate(csite%fmean_can_theiv            )
+      if(associated(csite%fmean_can_theta            )) deallocate(csite%fmean_can_theta            )
+      if(associated(csite%fmean_can_vpdef            )) deallocate(csite%fmean_can_vpdef            )
+      if(associated(csite%fmean_can_temp             )) deallocate(csite%fmean_can_temp             )
+      if(associated(csite%fmean_can_shv              )) deallocate(csite%fmean_can_shv              )
+      if(associated(csite%fmean_can_co2              )) deallocate(csite%fmean_can_co2              )
+      if(associated(csite%fmean_can_rhos             )) deallocate(csite%fmean_can_rhos             )
+      if(associated(csite%fmean_can_prss             )) deallocate(csite%fmean_can_prss             )
+      if(associated(csite%fmean_gnd_temp             )) deallocate(csite%fmean_gnd_temp             )
+      if(associated(csite%fmean_gnd_shv              )) deallocate(csite%fmean_gnd_shv              )
+      if(associated(csite%fmean_can_ggnd             )) deallocate(csite%fmean_can_ggnd             )
+      if(associated(csite%fmean_sfcw_depth           )) deallocate(csite%fmean_sfcw_depth           )
+      if(associated(csite%fmean_sfcw_energy          )) deallocate(csite%fmean_sfcw_energy          )
+      if(associated(csite%fmean_sfcw_mass            )) deallocate(csite%fmean_sfcw_mass            )
+      if(associated(csite%fmean_sfcw_temp            )) deallocate(csite%fmean_sfcw_temp            )
+      if(associated(csite%fmean_sfcw_fliq            )) deallocate(csite%fmean_sfcw_fliq            )
+      if(associated(csite%fmean_soil_energy          )) deallocate(csite%fmean_soil_energy          )
+      if(associated(csite%fmean_soil_mstpot          )) deallocate(csite%fmean_soil_mstpot          )
+      if(associated(csite%fmean_soil_water           )) deallocate(csite%fmean_soil_water           )
+      if(associated(csite%fmean_soil_temp            )) deallocate(csite%fmean_soil_temp            )
+      if(associated(csite%fmean_soil_fliq            )) deallocate(csite%fmean_soil_fliq            )
+      if(associated(csite%fmean_rshort_gnd           )) deallocate(csite%fmean_rshort_gnd           )
+      if(associated(csite%fmean_par_gnd              )) deallocate(csite%fmean_par_gnd              )
+      if(associated(csite%fmean_rlong_gnd            )) deallocate(csite%fmean_rlong_gnd            )
+      if(associated(csite%fmean_rlongup              )) deallocate(csite%fmean_rlongup              )
+      if(associated(csite%fmean_parup                )) deallocate(csite%fmean_parup                )
+      if(associated(csite%fmean_nirup                )) deallocate(csite%fmean_nirup                )
+      if(associated(csite%fmean_rshortup             )) deallocate(csite%fmean_rshortup             )
+      if(associated(csite%fmean_rnet                 )) deallocate(csite%fmean_rnet                 )
+      if(associated(csite%fmean_albedo               )) deallocate(csite%fmean_albedo               )
+      if(associated(csite%fmean_albedo_par           )) deallocate(csite%fmean_albedo_par           )
+      if(associated(csite%fmean_albedo_nir           )) deallocate(csite%fmean_albedo_nir           )
+      if(associated(csite%fmean_rlong_albedo         )) deallocate(csite%fmean_rlong_albedo         )
+      if(associated(csite%fmean_ustar                )) deallocate(csite%fmean_ustar                )
+      if(associated(csite%fmean_tstar                )) deallocate(csite%fmean_tstar                )
+      if(associated(csite%fmean_qstar                )) deallocate(csite%fmean_qstar                )
+      if(associated(csite%fmean_cstar                )) deallocate(csite%fmean_cstar                )
+      if(associated(csite%fmean_carbon_ac            )) deallocate(csite%fmean_carbon_ac            )
+      if(associated(csite%fmean_carbon_st            )) deallocate(csite%fmean_carbon_st            )
+      if(associated(csite%fmean_vapor_gc             )) deallocate(csite%fmean_vapor_gc             )
+      if(associated(csite%fmean_vapor_ac             )) deallocate(csite%fmean_vapor_ac             )
+      if(associated(csite%fmean_smoist_gg            )) deallocate(csite%fmean_smoist_gg            )
+      if(associated(csite%fmean_throughfall          )) deallocate(csite%fmean_throughfall          )
+      if(associated(csite%fmean_transloss            )) deallocate(csite%fmean_transloss            )
+      if(associated(csite%fmean_runoff               )) deallocate(csite%fmean_runoff               )
+      if(associated(csite%fmean_drainage             )) deallocate(csite%fmean_drainage             )
+      if(associated(csite%fmean_sensible_gc          )) deallocate(csite%fmean_sensible_gc          )
+      if(associated(csite%fmean_sensible_ac          )) deallocate(csite%fmean_sensible_ac          )
+      if(associated(csite%fmean_sensible_gg          )) deallocate(csite%fmean_sensible_gg          )
+      if(associated(csite%fmean_qthroughfall         )) deallocate(csite%fmean_qthroughfall         )
+      if(associated(csite%fmean_qrunoff              )) deallocate(csite%fmean_qrunoff              )
+      if(associated(csite%fmean_qdrainage            )) deallocate(csite%fmean_qdrainage            )
+      if(associated(csite%dmean_A_decomp             )) deallocate(csite%dmean_A_decomp             )
+      if(associated(csite%dmean_B_decomp             )) deallocate(csite%dmean_B_decomp             )
+      if(associated(csite%dmean_Af_decomp            )) deallocate(csite%dmean_Af_decomp            )
+      if(associated(csite%dmean_Bf_decomp            )) deallocate(csite%dmean_Bf_decomp            )
+      if(associated(csite%dmean_co2_residual         )) deallocate(csite%dmean_co2_residual         )
+      if(associated(csite%dmean_energy_residual      )) deallocate(csite%dmean_energy_residual      )
+      if(associated(csite%dmean_water_residual       )) deallocate(csite%dmean_water_residual       )
+      if(associated(csite%dmean_rh                   )) deallocate(csite%dmean_rh                   )
+      if(associated(csite%dmean_fgc_rh               )) deallocate(csite%dmean_fgc_rh               )
+      if(associated(csite%dmean_fsc_rh               )) deallocate(csite%dmean_fsc_rh               )
+      if(associated(csite%dmean_stgc_rh              )) deallocate(csite%dmean_stgc_rh              )
+      if(associated(csite%dmean_stsc_rh              )) deallocate(csite%dmean_stsc_rh              )
+      if(associated(csite%dmean_msc_rh               )) deallocate(csite%dmean_msc_rh               )
+      if(associated(csite%dmean_ssc_rh               )) deallocate(csite%dmean_ssc_rh               )
+      if(associated(csite%dmean_nep                  )) deallocate(csite%dmean_nep                  )
+      if(associated(csite%dmean_rk4step              )) deallocate(csite%dmean_rk4step              )
+      if(associated(csite%dmean_available_water      )) deallocate(csite%dmean_available_water      )
+      if(associated(csite%dmean_veg_displace         )) deallocate(csite%dmean_veg_displace         )
+      if(associated(csite%dmean_rough                )) deallocate(csite%dmean_rough                )
+      if(associated(csite%dmean_can_theiv            )) deallocate(csite%dmean_can_theiv            )
+      if(associated(csite%dmean_can_theta            )) deallocate(csite%dmean_can_theta            )
+      if(associated(csite%dmean_can_vpdef            )) deallocate(csite%dmean_can_vpdef            )
+      if(associated(csite%dmean_can_temp             )) deallocate(csite%dmean_can_temp             )
+      if(associated(csite%dmean_can_shv              )) deallocate(csite%dmean_can_shv              )
+      if(associated(csite%dmean_can_co2              )) deallocate(csite%dmean_can_co2              )
+      if(associated(csite%dmean_can_rhos             )) deallocate(csite%dmean_can_rhos             )
+      if(associated(csite%dmean_can_prss             )) deallocate(csite%dmean_can_prss             )
+      if(associated(csite%dmean_gnd_temp             )) deallocate(csite%dmean_gnd_temp             )
+      if(associated(csite%dmean_gnd_shv              )) deallocate(csite%dmean_gnd_shv              )
+      if(associated(csite%dmean_can_ggnd             )) deallocate(csite%dmean_can_ggnd             )
+      if(associated(csite%dmean_sfcw_depth           )) deallocate(csite%dmean_sfcw_depth           )
+      if(associated(csite%dmean_sfcw_energy          )) deallocate(csite%dmean_sfcw_energy          )
+      if(associated(csite%dmean_sfcw_mass            )) deallocate(csite%dmean_sfcw_mass            )
+      if(associated(csite%dmean_sfcw_temp            )) deallocate(csite%dmean_sfcw_temp            )
+      if(associated(csite%dmean_sfcw_fliq            )) deallocate(csite%dmean_sfcw_fliq            )
+      if(associated(csite%dmean_soil_energy          )) deallocate(csite%dmean_soil_energy          )
+      if(associated(csite%dmean_soil_mstpot          )) deallocate(csite%dmean_soil_mstpot          )
+      if(associated(csite%dmean_soil_water           )) deallocate(csite%dmean_soil_water           )
+      if(associated(csite%dmean_soil_temp            )) deallocate(csite%dmean_soil_temp            )
+      if(associated(csite%dmean_soil_fliq            )) deallocate(csite%dmean_soil_fliq            )
+      if(associated(csite%dmean_rshort_gnd           )) deallocate(csite%dmean_rshort_gnd           )
+      if(associated(csite%dmean_par_gnd              )) deallocate(csite%dmean_par_gnd              )
+      if(associated(csite%dmean_rlong_gnd            )) deallocate(csite%dmean_rlong_gnd            )
+      if(associated(csite%dmean_rlongup              )) deallocate(csite%dmean_rlongup              )
+      if(associated(csite%dmean_parup                )) deallocate(csite%dmean_parup                )
+      if(associated(csite%dmean_nirup                )) deallocate(csite%dmean_nirup                )
+      if(associated(csite%dmean_rshortup             )) deallocate(csite%dmean_rshortup             )
+      if(associated(csite%dmean_rnet                 )) deallocate(csite%dmean_rnet                 )
+      if(associated(csite%dmean_albedo               )) deallocate(csite%dmean_albedo               )
+      if(associated(csite%dmean_albedo_par           )) deallocate(csite%dmean_albedo_par           )
+      if(associated(csite%dmean_albedo_nir           )) deallocate(csite%dmean_albedo_nir           )
+      if(associated(csite%dmean_rlong_albedo         )) deallocate(csite%dmean_rlong_albedo         )
+      if(associated(csite%dmean_ustar                )) deallocate(csite%dmean_ustar                )
+      if(associated(csite%dmean_tstar                )) deallocate(csite%dmean_tstar                )
+      if(associated(csite%dmean_qstar                )) deallocate(csite%dmean_qstar                )
+      if(associated(csite%dmean_cstar                )) deallocate(csite%dmean_cstar                )
+      if(associated(csite%dmean_carbon_ac            )) deallocate(csite%dmean_carbon_ac            )
+      if(associated(csite%dmean_carbon_st            )) deallocate(csite%dmean_carbon_st            )
+      if(associated(csite%dmean_vapor_gc             )) deallocate(csite%dmean_vapor_gc             )
+      if(associated(csite%dmean_vapor_ac             )) deallocate(csite%dmean_vapor_ac             )
+      if(associated(csite%dmean_smoist_gg            )) deallocate(csite%dmean_smoist_gg            )
+      if(associated(csite%dmean_throughfall          )) deallocate(csite%dmean_throughfall          )
+      if(associated(csite%dmean_transloss            )) deallocate(csite%dmean_transloss            )
+      if(associated(csite%dmean_runoff               )) deallocate(csite%dmean_runoff               )
+      if(associated(csite%dmean_drainage             )) deallocate(csite%dmean_drainage             )
+      if(associated(csite%dmean_sensible_gc          )) deallocate(csite%dmean_sensible_gc          )
+      if(associated(csite%dmean_sensible_ac          )) deallocate(csite%dmean_sensible_ac          )
+      if(associated(csite%dmean_sensible_gg          )) deallocate(csite%dmean_sensible_gg          )
+      if(associated(csite%dmean_qthroughfall         )) deallocate(csite%dmean_qthroughfall         )
+      if(associated(csite%dmean_qrunoff              )) deallocate(csite%dmean_qrunoff              )
+      if(associated(csite%dmean_qdrainage            )) deallocate(csite%dmean_qdrainage            )
+      if(associated(csite%mmean_fast_grnd_c          )) deallocate(csite%mmean_fast_grnd_c          )
+      if(associated(csite%mmean_fast_soil_c          )) deallocate(csite%mmean_fast_soil_c          )
+      if(associated(csite%mmean_struct_grnd_c        )) deallocate(csite%mmean_struct_grnd_c        )
+      if(associated(csite%mmean_struct_soil_c        )) deallocate(csite%mmean_struct_soil_c        )
+      if(associated(csite%mmean_struct_grnd_l        )) deallocate(csite%mmean_struct_grnd_l        )
+      if(associated(csite%mmean_struct_soil_l        )) deallocate(csite%mmean_struct_soil_l        )
+      if(associated(csite%mmean_microbe_soil_c       )) deallocate(csite%mmean_microbe_soil_c       )
+      if(associated(csite%mmean_slow_soil_c          )) deallocate(csite%mmean_slow_soil_c          )
+      if(associated(csite%mmean_fast_grnd_n          )) deallocate(csite%mmean_fast_grnd_n          )
+      if(associated(csite%mmean_fast_soil_n          )) deallocate(csite%mmean_fast_soil_n          )
+      if(associated(csite%mmean_struct_grnd_n        )) deallocate(csite%mmean_struct_grnd_n        )
+      if(associated(csite%mmean_struct_soil_n        )) deallocate(csite%mmean_struct_soil_n        )
+      if(associated(csite%mmean_mineral_soil_n       )) deallocate(csite%mmean_mineral_soil_n       )
+      if(associated(csite%mmean_co2_residual         )) deallocate(csite%mmean_co2_residual         )
+      if(associated(csite%mmean_energy_residual      )) deallocate(csite%mmean_energy_residual      )
+      if(associated(csite%mmean_water_residual       )) deallocate(csite%mmean_water_residual       )
+      if(associated(csite%mmean_rh                   )) deallocate(csite%mmean_rh                   )
+      if(associated(csite%mmean_fgc_rh               )) deallocate(csite%mmean_fgc_rh               )
+      if(associated(csite%mmean_fsc_rh               )) deallocate(csite%mmean_fsc_rh               )
+      if(associated(csite%mmean_stgc_rh              )) deallocate(csite%mmean_stgc_rh              )
+      if(associated(csite%mmean_stsc_rh              )) deallocate(csite%mmean_stsc_rh              )
+      if(associated(csite%mmean_msc_rh               )) deallocate(csite%mmean_msc_rh               )
+      if(associated(csite%mmean_ssc_rh               )) deallocate(csite%mmean_ssc_rh               )
+      if(associated(csite%mmean_nep                  )) deallocate(csite%mmean_nep                  )
+      if(associated(csite%mmean_A_decomp             )) deallocate(csite%mmean_A_decomp             )
+      if(associated(csite%mmean_B_decomp             )) deallocate(csite%mmean_B_decomp             )
+      if(associated(csite%mmean_Af_decomp            )) deallocate(csite%mmean_Af_decomp            )
+      if(associated(csite%mmean_Bf_decomp            )) deallocate(csite%mmean_Bf_decomp            )
+      if(associated(csite%mmean_rk4step              )) deallocate(csite%mmean_rk4step              )
+      if(associated(csite%mmean_available_water      )) deallocate(csite%mmean_available_water      )
+      if(associated(csite%mmean_veg_displace         )) deallocate(csite%mmean_veg_displace         )
+      if(associated(csite%mmean_rough                )) deallocate(csite%mmean_rough                )
+      if(associated(csite%mmean_can_theiv            )) deallocate(csite%mmean_can_theiv            )
+      if(associated(csite%mmean_can_theta            )) deallocate(csite%mmean_can_theta            )
+      if(associated(csite%mmean_can_vpdef            )) deallocate(csite%mmean_can_vpdef            )
+      if(associated(csite%mmean_can_temp             )) deallocate(csite%mmean_can_temp             )
+      if(associated(csite%mmean_can_shv              )) deallocate(csite%mmean_can_shv              )
+      if(associated(csite%mmean_can_co2              )) deallocate(csite%mmean_can_co2              )
+      if(associated(csite%mmean_can_rhos             )) deallocate(csite%mmean_can_rhos             )
+      if(associated(csite%mmean_can_prss             )) deallocate(csite%mmean_can_prss             )
+      if(associated(csite%mmean_gnd_temp             )) deallocate(csite%mmean_gnd_temp             )
+      if(associated(csite%mmean_gnd_shv              )) deallocate(csite%mmean_gnd_shv              )
+      if(associated(csite%mmean_can_ggnd             )) deallocate(csite%mmean_can_ggnd             )
+      if(associated(csite%mmean_sfcw_depth           )) deallocate(csite%mmean_sfcw_depth           )
+      if(associated(csite%mmean_sfcw_energy          )) deallocate(csite%mmean_sfcw_energy          )
+      if(associated(csite%mmean_sfcw_mass            )) deallocate(csite%mmean_sfcw_mass            )
+      if(associated(csite%mmean_sfcw_temp            )) deallocate(csite%mmean_sfcw_temp            )
+      if(associated(csite%mmean_sfcw_fliq            )) deallocate(csite%mmean_sfcw_fliq            )
+      if(associated(csite%mmean_soil_energy          )) deallocate(csite%mmean_soil_energy          )
+      if(associated(csite%mmean_soil_mstpot          )) deallocate(csite%mmean_soil_mstpot          )
+      if(associated(csite%mmean_soil_water           )) deallocate(csite%mmean_soil_water           )
+      if(associated(csite%mmean_soil_temp            )) deallocate(csite%mmean_soil_temp            )
+      if(associated(csite%mmean_soil_fliq            )) deallocate(csite%mmean_soil_fliq            )
+      if(associated(csite%mmean_rshort_gnd           )) deallocate(csite%mmean_rshort_gnd           )
+      if(associated(csite%mmean_par_gnd              )) deallocate(csite%mmean_par_gnd              )
+      if(associated(csite%mmean_rlong_gnd            )) deallocate(csite%mmean_rlong_gnd            )
+      if(associated(csite%mmean_rlongup              )) deallocate(csite%mmean_rlongup              )
+      if(associated(csite%mmean_parup                )) deallocate(csite%mmean_parup                )
+      if(associated(csite%mmean_nirup                )) deallocate(csite%mmean_nirup                )
+      if(associated(csite%mmean_rshortup             )) deallocate(csite%mmean_rshortup             )
+      if(associated(csite%mmean_rnet                 )) deallocate(csite%mmean_rnet                 )
+      if(associated(csite%mmean_albedo               )) deallocate(csite%mmean_albedo               )
+      if(associated(csite%mmean_albedo_par           )) deallocate(csite%mmean_albedo_par           )
+      if(associated(csite%mmean_albedo_nir           )) deallocate(csite%mmean_albedo_nir           )
+      if(associated(csite%mmean_rlong_albedo         )) deallocate(csite%mmean_rlong_albedo         )
+      if(associated(csite%mmean_ustar                )) deallocate(csite%mmean_ustar                )
+      if(associated(csite%mmean_tstar                )) deallocate(csite%mmean_tstar                )
+      if(associated(csite%mmean_qstar                )) deallocate(csite%mmean_qstar                )
+      if(associated(csite%mmean_cstar                )) deallocate(csite%mmean_cstar                )
+      if(associated(csite%mmean_carbon_ac            )) deallocate(csite%mmean_carbon_ac            )
+      if(associated(csite%mmean_carbon_st            )) deallocate(csite%mmean_carbon_st            )
+      if(associated(csite%mmean_vapor_gc             )) deallocate(csite%mmean_vapor_gc             )
+      if(associated(csite%mmean_vapor_ac             )) deallocate(csite%mmean_vapor_ac             )
+      if(associated(csite%mmean_smoist_gg            )) deallocate(csite%mmean_smoist_gg            )
+      if(associated(csite%mmean_throughfall          )) deallocate(csite%mmean_throughfall          )
+      if(associated(csite%mmean_transloss            )) deallocate(csite%mmean_transloss            )
+      if(associated(csite%mmean_runoff               )) deallocate(csite%mmean_runoff               )
+      if(associated(csite%mmean_drainage             )) deallocate(csite%mmean_drainage             )
+      if(associated(csite%mmean_sensible_gc          )) deallocate(csite%mmean_sensible_gc          )
+      if(associated(csite%mmean_sensible_ac          )) deallocate(csite%mmean_sensible_ac          )
+      if(associated(csite%mmean_sensible_gg          )) deallocate(csite%mmean_sensible_gg          )
+      if(associated(csite%mmean_qthroughfall         )) deallocate(csite%mmean_qthroughfall         )
+      if(associated(csite%mmean_qrunoff              )) deallocate(csite%mmean_qrunoff              )
+      if(associated(csite%mmean_qdrainage            )) deallocate(csite%mmean_qdrainage            )
+      if(associated(csite%mmean_A_decomp             )) deallocate(csite%mmean_A_decomp             )
+      if(associated(csite%mmean_B_decomp             )) deallocate(csite%mmean_B_decomp             )
+      if(associated(csite%mmean_Af_decomp            )) deallocate(csite%mmean_Af_decomp            )
+      if(associated(csite%mmean_Bf_decomp            )) deallocate(csite%mmean_Bf_decomp            )
+      if(associated(csite%mmean_co2_residual         )) deallocate(csite%mmean_co2_residual         )
+      if(associated(csite%mmean_energy_residual      )) deallocate(csite%mmean_energy_residual      )
+      if(associated(csite%mmean_water_residual       )) deallocate(csite%mmean_water_residual       )
+      if(associated(csite%mmsqu_rh                   )) deallocate(csite%mmsqu_rh                   )
+      if(associated(csite%mmsqu_fgc_rh               )) deallocate(csite%mmsqu_fgc_rh               )
+      if(associated(csite%mmsqu_fsc_rh               )) deallocate(csite%mmsqu_fsc_rh               )
+      if(associated(csite%mmsqu_stgc_rh              )) deallocate(csite%mmsqu_stgc_rh              )
+      if(associated(csite%mmsqu_stsc_rh              )) deallocate(csite%mmsqu_stsc_rh              )
+      if(associated(csite%mmsqu_msc_rh               )) deallocate(csite%mmsqu_msc_rh               )
+      if(associated(csite%mmsqu_ssc_rh               )) deallocate(csite%mmsqu_ssc_rh               )
+      if(associated(csite%mmsqu_nep                  )) deallocate(csite%mmsqu_nep                  )
+      if(associated(csite%mmsqu_rlongup              )) deallocate(csite%mmsqu_rlongup              )
+      if(associated(csite%mmsqu_parup                )) deallocate(csite%mmsqu_parup                )
+      if(associated(csite%mmsqu_nirup                )) deallocate(csite%mmsqu_nirup                )
+      if(associated(csite%mmsqu_rshortup             )) deallocate(csite%mmsqu_rshortup             )
+      if(associated(csite%mmsqu_rnet                 )) deallocate(csite%mmsqu_rnet                 )
+      if(associated(csite%mmsqu_albedo               )) deallocate(csite%mmsqu_albedo               )
+      if(associated(csite%mmsqu_ustar                )) deallocate(csite%mmsqu_ustar                )
+      if(associated(csite%mmsqu_carbon_ac            )) deallocate(csite%mmsqu_carbon_ac            )
+      if(associated(csite%mmsqu_carbon_st            )) deallocate(csite%mmsqu_carbon_st            )
+      if(associated(csite%mmsqu_vapor_gc             )) deallocate(csite%mmsqu_vapor_gc             )
+      if(associated(csite%mmsqu_vapor_ac             )) deallocate(csite%mmsqu_vapor_ac             )
+      if(associated(csite%mmsqu_sensible_gc          )) deallocate(csite%mmsqu_sensible_gc          )
+      if(associated(csite%mmsqu_sensible_ac          )) deallocate(csite%mmsqu_sensible_ac          )
+      if(associated(csite%qmean_rh                   )) deallocate(csite%qmean_rh                   )
+      if(associated(csite%qmean_fgc_rh               )) deallocate(csite%qmean_fgc_rh               )
+      if(associated(csite%qmean_fsc_rh               )) deallocate(csite%qmean_fsc_rh               )
+      if(associated(csite%qmean_stgc_rh              )) deallocate(csite%qmean_stgc_rh              )
+      if(associated(csite%qmean_stsc_rh              )) deallocate(csite%qmean_stsc_rh              )
+      if(associated(csite%qmean_msc_rh               )) deallocate(csite%qmean_msc_rh               )
+      if(associated(csite%qmean_ssc_rh               )) deallocate(csite%qmean_ssc_rh               )
+      if(associated(csite%qmean_nep                  )) deallocate(csite%qmean_nep                  )
+      if(associated(csite%qmean_rk4step              )) deallocate(csite%qmean_rk4step              )
+      if(associated(csite%qmean_available_water      )) deallocate(csite%qmean_available_water      )
+      if(associated(csite%qmean_veg_displace         )) deallocate(csite%qmean_veg_displace         )
+      if(associated(csite%qmean_rough                )) deallocate(csite%qmean_rough                )
+      if(associated(csite%qmean_can_theiv            )) deallocate(csite%qmean_can_theiv            )
+      if(associated(csite%qmean_can_theta            )) deallocate(csite%qmean_can_theta            )
+      if(associated(csite%qmean_can_vpdef            )) deallocate(csite%qmean_can_vpdef            )
+      if(associated(csite%qmean_can_temp             )) deallocate(csite%qmean_can_temp             )
+      if(associated(csite%qmean_can_shv              )) deallocate(csite%qmean_can_shv              )
+      if(associated(csite%qmean_can_co2              )) deallocate(csite%qmean_can_co2              )
+      if(associated(csite%qmean_can_rhos             )) deallocate(csite%qmean_can_rhos             )
+      if(associated(csite%qmean_can_prss             )) deallocate(csite%qmean_can_prss             )
+      if(associated(csite%qmean_gnd_temp             )) deallocate(csite%qmean_gnd_temp             )
+      if(associated(csite%qmean_gnd_shv              )) deallocate(csite%qmean_gnd_shv              )
+      if(associated(csite%qmean_can_ggnd             )) deallocate(csite%qmean_can_ggnd             )
+      if(associated(csite%qmean_sfcw_depth           )) deallocate(csite%qmean_sfcw_depth           )
+      if(associated(csite%qmean_sfcw_energy          )) deallocate(csite%qmean_sfcw_energy          )
+      if(associated(csite%qmean_sfcw_mass            )) deallocate(csite%qmean_sfcw_mass            )
+      if(associated(csite%qmean_sfcw_temp            )) deallocate(csite%qmean_sfcw_temp            )
+      if(associated(csite%qmean_sfcw_fliq            )) deallocate(csite%qmean_sfcw_fliq            )
+      if(associated(csite%qmean_soil_energy          )) deallocate(csite%qmean_soil_energy          )
+      if(associated(csite%qmean_soil_mstpot          )) deallocate(csite%qmean_soil_mstpot          )
+      if(associated(csite%qmean_soil_water           )) deallocate(csite%qmean_soil_water           )
+      if(associated(csite%qmean_soil_temp            )) deallocate(csite%qmean_soil_temp            )
+      if(associated(csite%qmean_soil_fliq            )) deallocate(csite%qmean_soil_fliq            )
+      if(associated(csite%qmean_rshort_gnd           )) deallocate(csite%qmean_rshort_gnd           )
+      if(associated(csite%qmean_par_gnd              )) deallocate(csite%qmean_par_gnd              )
+      if(associated(csite%qmean_rlong_gnd            )) deallocate(csite%qmean_rlong_gnd            )
+      if(associated(csite%qmean_rlongup              )) deallocate(csite%qmean_rlongup              )
+      if(associated(csite%qmean_parup                )) deallocate(csite%qmean_parup                )
+      if(associated(csite%qmean_nirup                )) deallocate(csite%qmean_nirup                )
+      if(associated(csite%qmean_rshortup             )) deallocate(csite%qmean_rshortup             )
+      if(associated(csite%qmean_rnet                 )) deallocate(csite%qmean_rnet                 )
+      if(associated(csite%qmean_albedo               )) deallocate(csite%qmean_albedo               )
+      if(associated(csite%qmean_albedo_par           )) deallocate(csite%qmean_albedo_par           )
+      if(associated(csite%qmean_albedo_nir           )) deallocate(csite%qmean_albedo_nir           )
+      if(associated(csite%qmean_rlong_albedo         )) deallocate(csite%qmean_rlong_albedo         )
+      if(associated(csite%qmean_ustar                )) deallocate(csite%qmean_ustar                )
+      if(associated(csite%qmean_tstar                )) deallocate(csite%qmean_tstar                )
+      if(associated(csite%qmean_qstar                )) deallocate(csite%qmean_qstar                )
+      if(associated(csite%qmean_cstar                )) deallocate(csite%qmean_cstar                )
+      if(associated(csite%qmean_carbon_ac            )) deallocate(csite%qmean_carbon_ac            )
+      if(associated(csite%qmean_carbon_st            )) deallocate(csite%qmean_carbon_st            )
+      if(associated(csite%qmean_vapor_gc             )) deallocate(csite%qmean_vapor_gc             )
+      if(associated(csite%qmean_vapor_ac             )) deallocate(csite%qmean_vapor_ac             )
+      if(associated(csite%qmean_smoist_gg            )) deallocate(csite%qmean_smoist_gg            )
+      if(associated(csite%qmean_throughfall          )) deallocate(csite%qmean_throughfall          )
+      if(associated(csite%qmean_transloss            )) deallocate(csite%qmean_transloss            )
+      if(associated(csite%qmean_runoff               )) deallocate(csite%qmean_runoff               )
+      if(associated(csite%qmean_drainage             )) deallocate(csite%qmean_drainage             )
+      if(associated(csite%qmean_sensible_gc          )) deallocate(csite%qmean_sensible_gc          )
+      if(associated(csite%qmean_sensible_ac          )) deallocate(csite%qmean_sensible_ac          )
+      if(associated(csite%qmean_sensible_gg          )) deallocate(csite%qmean_sensible_gg          )
+      if(associated(csite%qmean_qthroughfall         )) deallocate(csite%qmean_qthroughfall         )
+      if(associated(csite%qmean_qrunoff              )) deallocate(csite%qmean_qrunoff              )
+      if(associated(csite%qmean_qdrainage            )) deallocate(csite%qmean_qdrainage            )
+      if(associated(csite%qmsqu_rh                   )) deallocate(csite%qmsqu_rh                   )
+      if(associated(csite%qmsqu_fgc_rh               )) deallocate(csite%qmsqu_fgc_rh               )
+      if(associated(csite%qmsqu_fsc_rh               )) deallocate(csite%qmsqu_fsc_rh               )
+      if(associated(csite%qmsqu_stgc_rh              )) deallocate(csite%qmsqu_stgc_rh              )
+      if(associated(csite%qmsqu_stsc_rh              )) deallocate(csite%qmsqu_stsc_rh              )
+      if(associated(csite%qmsqu_msc_rh               )) deallocate(csite%qmsqu_msc_rh               )
+      if(associated(csite%qmsqu_ssc_rh               )) deallocate(csite%qmsqu_ssc_rh               )
+      if(associated(csite%qmsqu_nep                  )) deallocate(csite%qmsqu_nep                  )
+      if(associated(csite%qmsqu_rlongup              )) deallocate(csite%qmsqu_rlongup              )
+      if(associated(csite%qmsqu_parup                )) deallocate(csite%qmsqu_parup                )
+      if(associated(csite%qmsqu_nirup                )) deallocate(csite%qmsqu_nirup                )
+      if(associated(csite%qmsqu_rshortup             )) deallocate(csite%qmsqu_rshortup             )
+      if(associated(csite%qmsqu_rnet                 )) deallocate(csite%qmsqu_rnet                 )
+      if(associated(csite%qmsqu_albedo               )) deallocate(csite%qmsqu_albedo               )
+      if(associated(csite%qmsqu_ustar                )) deallocate(csite%qmsqu_ustar                )
+      if(associated(csite%qmsqu_carbon_ac            )) deallocate(csite%qmsqu_carbon_ac            )
+      if(associated(csite%qmsqu_carbon_st            )) deallocate(csite%qmsqu_carbon_st            )
+      if(associated(csite%qmsqu_vapor_gc             )) deallocate(csite%qmsqu_vapor_gc             )
+      if(associated(csite%qmsqu_vapor_ac             )) deallocate(csite%qmsqu_vapor_ac             )
+      if(associated(csite%qmsqu_sensible_gc          )) deallocate(csite%qmsqu_sensible_gc          )
+      if(associated(csite%qmsqu_sensible_ac          )) deallocate(csite%qmsqu_sensible_ac          )
 
       return
    end subroutine deallocate_sitetype
@@ -7601,468 +8148,473 @@ module ed_state_vars
     
       if (cpatch%ncohorts == 0) return
 
-      if(associated(cpatch%pft                 )) deallocate(cpatch%pft                 )
-      if(associated(cpatch%nplant              )) deallocate(cpatch%nplant              )
-      if(associated(cpatch%phenology_status    )) deallocate(cpatch%phenology_status    )
-      if(associated(cpatch%recruit_dbh         )) deallocate(cpatch%recruit_dbh         )
-      if(associated(cpatch%census_status       )) deallocate(cpatch%census_status       )
-      if(associated(cpatch%hite                )) deallocate(cpatch%hite                )
-      if(associated(cpatch%agb                 )) deallocate(cpatch%agb                 )
-      if(associated(cpatch%basarea             )) deallocate(cpatch%basarea             )
-      if(associated(cpatch%dagb_dt             )) deallocate(cpatch%dagb_dt             )
-      if(associated(cpatch%dlnagb_dt           )) deallocate(cpatch%dlnagb_dt           )
-      if(associated(cpatch%dba_dt              )) deallocate(cpatch%dba_dt              )
-      if(associated(cpatch%dlnba_dt            )) deallocate(cpatch%dlnba_dt            )
-      if(associated(cpatch%ddbh_dt             )) deallocate(cpatch%ddbh_dt             )
-      if(associated(cpatch%dlndbh_dt           )) deallocate(cpatch%dlndbh_dt           )
-      if(associated(cpatch%dbh                 )) deallocate(cpatch%dbh                 )
-      if(associated(cpatch%thbark              )) deallocate(cpatch%thbark              )
-      if(associated(cpatch%bdead               )) deallocate(cpatch%bdead               )
-      if(associated(cpatch%btimber             )) deallocate(cpatch%btimber             )
-      if(associated(cpatch%bleaf               )) deallocate(cpatch%bleaf               )
-      if(associated(cpatch%balive              )) deallocate(cpatch%balive              )
-      if(associated(cpatch%broot               )) deallocate(cpatch%broot               )
-      if(associated(cpatch%bsapwooda           )) deallocate(cpatch%bsapwooda           )
-      if(associated(cpatch%bsapwoodb           )) deallocate(cpatch%bsapwoodb           )
-      if(associated(cpatch%bbark               )) deallocate(cpatch%bbark               )
-      if(associated(cpatch%bstorage            )) deallocate(cpatch%bstorage            )
-      if(associated(cpatch%bseeds              )) deallocate(cpatch%bseeds              )
-      if(associated(cpatch%byield              )) deallocate(cpatch%byield              )
-      if(associated(cpatch%lai                 )) deallocate(cpatch%lai                 )
-      if(associated(cpatch%wai                 )) deallocate(cpatch%wai                 )
-      if(associated(cpatch%crown_area          )) deallocate(cpatch%crown_area          )
-      if(associated(cpatch%leaf_resolvable     )) deallocate(cpatch%leaf_resolvable     )
-      if(associated(cpatch%wood_resolvable     )) deallocate(cpatch%wood_resolvable     )
-      if(associated(cpatch%cb                  )) deallocate(cpatch%cb                  )
-      if(associated(cpatch%cb_lightmax         )) deallocate(cpatch%cb_lightmax         )
-      if(associated(cpatch%cb_moistmax         )) deallocate(cpatch%cb_moistmax         )
-      if(associated(cpatch%cb_mlmax            )) deallocate(cpatch%cb_mlmax            )
-      if(associated(cpatch%cbr_bar             )) deallocate(cpatch%cbr_bar             )
-      if(associated(cpatch%leaf_energy         )) deallocate(cpatch%leaf_energy         )
-      if(associated(cpatch%leaf_temp           )) deallocate(cpatch%leaf_temp           )
-      if(associated(cpatch%leaf_vpdef          )) deallocate(cpatch%leaf_vpdef          )
-      if(associated(cpatch%leaf_temp_pv        )) deallocate(cpatch%leaf_temp_pv        )
-      if(associated(cpatch%leaf_hcap           )) deallocate(cpatch%leaf_hcap           )
-      if(associated(cpatch%leaf_fliq           )) deallocate(cpatch%leaf_fliq           )
-      if(associated(cpatch%leaf_water          )) deallocate(cpatch%leaf_water          )
-      if(associated(cpatch%wood_energy         )) deallocate(cpatch%wood_energy         )
-      if(associated(cpatch%wood_temp           )) deallocate(cpatch%wood_temp           )
-      if(associated(cpatch%wood_temp_pv        )) deallocate(cpatch%wood_temp_pv        )
-      if(associated(cpatch%wood_hcap           )) deallocate(cpatch%wood_hcap           )
-      if(associated(cpatch%wood_fliq           )) deallocate(cpatch%wood_fliq           )
-      if(associated(cpatch%wood_water          )) deallocate(cpatch%wood_water          )
-      if(associated(cpatch%veg_wind            )) deallocate(cpatch%veg_wind            )
-      if(associated(cpatch%lsfc_shv_open       )) deallocate(cpatch%lsfc_shv_open       )
-      if(associated(cpatch%lsfc_shv_closed     )) deallocate(cpatch%lsfc_shv_closed     )
-      if(associated(cpatch%lsfc_co2_open       )) deallocate(cpatch%lsfc_co2_open       )
-      if(associated(cpatch%lsfc_co2_closed     )) deallocate(cpatch%lsfc_co2_closed     )
-      if(associated(cpatch%lint_shv            )) deallocate(cpatch%lint_shv            )
-      if(associated(cpatch%lint_co2_open       )) deallocate(cpatch%lint_co2_open       )
-      if(associated(cpatch%lint_co2_closed     )) deallocate(cpatch%lint_co2_closed     )
-      if(associated(cpatch%today_leaf_resp     )) deallocate(cpatch%today_leaf_resp     )
-      if(associated(cpatch%today_root_resp     )) deallocate(cpatch%today_root_resp     )
-      if(associated(cpatch%today_gpp           )) deallocate(cpatch%today_gpp           )
-      if(associated(cpatch%today_gpp_pot       )) deallocate(cpatch%today_gpp_pot       )
-      if(associated(cpatch%today_gpp_lightmax  )) deallocate(cpatch%today_gpp_lightmax  )
-      if(associated(cpatch%today_gpp_moistmax  )) deallocate(cpatch%today_gpp_moistmax  )
-      if(associated(cpatch%today_gpp_mlmax     )) deallocate(cpatch%today_gpp_mlmax     )
-      if(associated(cpatch%today_nppleaf       )) deallocate(cpatch%today_nppleaf       )
-      if(associated(cpatch%today_nppfroot      )) deallocate(cpatch%today_nppfroot      )
-      if(associated(cpatch%today_nppsapwood    )) deallocate(cpatch%today_nppsapwood    )
-      if(associated(cpatch%today_nppbark       )) deallocate(cpatch%today_nppbark       )
-      if(associated(cpatch%today_nppcroot      )) deallocate(cpatch%today_nppcroot      )
-      if(associated(cpatch%today_nppseeds      )) deallocate(cpatch%today_nppseeds      )
-      if(associated(cpatch%today_nppwood       )) deallocate(cpatch%today_nppwood       )
-      if(associated(cpatch%today_nppdaily      )) deallocate(cpatch%today_nppdaily      )
-      if(associated(cpatch%leaf_growth_resp    )) deallocate(cpatch%leaf_growth_resp    )
-      if(associated(cpatch%root_growth_resp    )) deallocate(cpatch%root_growth_resp    )
-      if(associated(cpatch%sapa_growth_resp    )) deallocate(cpatch%sapa_growth_resp    )
-      if(associated(cpatch%sapb_growth_resp    )) deallocate(cpatch%sapb_growth_resp    )
-      if(associated(cpatch%bark_growth_resp    )) deallocate(cpatch%bark_growth_resp    )
-      if(associated(cpatch%leaf_storage_resp   )) deallocate(cpatch%leaf_storage_resp   )
-      if(associated(cpatch%root_storage_resp   )) deallocate(cpatch%root_storage_resp   )
-      if(associated(cpatch%sapa_storage_resp   )) deallocate(cpatch%sapa_storage_resp   )
-      if(associated(cpatch%sapb_storage_resp   )) deallocate(cpatch%sapb_storage_resp   )
-      if(associated(cpatch%bark_storage_resp   )) deallocate(cpatch%bark_storage_resp   )
-      if(associated(cpatch%monthly_dndt        )) deallocate(cpatch%monthly_dndt        )
-      if(associated(cpatch%monthly_dlnndt      )) deallocate(cpatch%monthly_dlnndt      )
-      if(associated(cpatch%mort_rate           )) deallocate(cpatch%mort_rate           )
-      if(associated(cpatch%krdepth             )) deallocate(cpatch%krdepth             )
-      if(associated(cpatch%first_census        )) deallocate(cpatch%first_census        )
-      if(associated(cpatch%new_recruit_flag    )) deallocate(cpatch%new_recruit_flag    )
-      if(associated(cpatch%light_level         )) deallocate(cpatch%light_level         )
-      if(associated(cpatch%light_level_beam    )) deallocate(cpatch%light_level_beam    )
-      if(associated(cpatch%light_level_diff    )) deallocate(cpatch%light_level_diff    )
+      if(associated(cpatch%pft                     )) deallocate(cpatch%pft                     )
+      if(associated(cpatch%nplant                  )) deallocate(cpatch%nplant                  )
+      if(associated(cpatch%phenology_status        )) deallocate(cpatch%phenology_status        )
+      if(associated(cpatch%recruit_dbh             )) deallocate(cpatch%recruit_dbh             )
+      if(associated(cpatch%census_status           )) deallocate(cpatch%census_status           )
+      if(associated(cpatch%hite                    )) deallocate(cpatch%hite                    )
+      if(associated(cpatch%agb                     )) deallocate(cpatch%agb                     )
+      if(associated(cpatch%basarea                 )) deallocate(cpatch%basarea                 )
+      if(associated(cpatch%dagb_dt                 )) deallocate(cpatch%dagb_dt                 )
+      if(associated(cpatch%dlnagb_dt               )) deallocate(cpatch%dlnagb_dt               )
+      if(associated(cpatch%dba_dt                  )) deallocate(cpatch%dba_dt                  )
+      if(associated(cpatch%dlnba_dt                )) deallocate(cpatch%dlnba_dt                )
+      if(associated(cpatch%ddbh_dt                 )) deallocate(cpatch%ddbh_dt                 )
+      if(associated(cpatch%dlndbh_dt               )) deallocate(cpatch%dlndbh_dt               )
+      if(associated(cpatch%dbh                     )) deallocate(cpatch%dbh                     )
+      if(associated(cpatch%thbark                  )) deallocate(cpatch%thbark                  )
+      if(associated(cpatch%bdeada                  )) deallocate(cpatch%bdeada                  )
+      if(associated(cpatch%bdeadb                  )) deallocate(cpatch%bdeadb                  )
+      if(associated(cpatch%btimber                 )) deallocate(cpatch%btimber                 )
+      if(associated(cpatch%bleaf                   )) deallocate(cpatch%bleaf                   )
+      if(associated(cpatch%balive                  )) deallocate(cpatch%balive                  )
+      if(associated(cpatch%broot                   )) deallocate(cpatch%broot                   )
+      if(associated(cpatch%bsapwooda               )) deallocate(cpatch%bsapwooda               )
+      if(associated(cpatch%bsapwoodb               )) deallocate(cpatch%bsapwoodb               )
+      if(associated(cpatch%bbarka                  )) deallocate(cpatch%bbarka                  )
+      if(associated(cpatch%bbarkb                  )) deallocate(cpatch%bbarkb                  )
+      if(associated(cpatch%bstorage                )) deallocate(cpatch%bstorage                )
+      if(associated(cpatch%bseeds                  )) deallocate(cpatch%bseeds                  )
+      if(associated(cpatch%byield                  )) deallocate(cpatch%byield                  )
+      if(associated(cpatch%lai                     )) deallocate(cpatch%lai                     )
+      if(associated(cpatch%wai                     )) deallocate(cpatch%wai                     )
+      if(associated(cpatch%crown_area              )) deallocate(cpatch%crown_area              )
+      if(associated(cpatch%leaf_resolvable         )) deallocate(cpatch%leaf_resolvable         )
+      if(associated(cpatch%wood_resolvable         )) deallocate(cpatch%wood_resolvable         )
+      if(associated(cpatch%cb                      )) deallocate(cpatch%cb                      )
+      if(associated(cpatch%cb_lightmax             )) deallocate(cpatch%cb_lightmax             )
+      if(associated(cpatch%cb_moistmax             )) deallocate(cpatch%cb_moistmax             )
+      if(associated(cpatch%cb_mlmax                )) deallocate(cpatch%cb_mlmax                )
+      if(associated(cpatch%cbr_bar                 )) deallocate(cpatch%cbr_bar                 )
+      if(associated(cpatch%leaf_energy             )) deallocate(cpatch%leaf_energy             )
+      if(associated(cpatch%leaf_temp               )) deallocate(cpatch%leaf_temp               )
+      if(associated(cpatch%leaf_vpdef              )) deallocate(cpatch%leaf_vpdef              )
+      if(associated(cpatch%leaf_temp_pv            )) deallocate(cpatch%leaf_temp_pv            )
+      if(associated(cpatch%leaf_hcap               )) deallocate(cpatch%leaf_hcap               )
+      if(associated(cpatch%leaf_fliq               )) deallocate(cpatch%leaf_fliq               )
+      if(associated(cpatch%leaf_water              )) deallocate(cpatch%leaf_water              )
+      if(associated(cpatch%wood_energy             )) deallocate(cpatch%wood_energy             )
+      if(associated(cpatch%wood_temp               )) deallocate(cpatch%wood_temp               )
+      if(associated(cpatch%wood_temp_pv            )) deallocate(cpatch%wood_temp_pv            )
+      if(associated(cpatch%wood_hcap               )) deallocate(cpatch%wood_hcap               )
+      if(associated(cpatch%wood_fliq               )) deallocate(cpatch%wood_fliq               )
+      if(associated(cpatch%wood_water              )) deallocate(cpatch%wood_water              )
+      if(associated(cpatch%veg_wind                )) deallocate(cpatch%veg_wind                )
+      if(associated(cpatch%lsfc_shv_open           )) deallocate(cpatch%lsfc_shv_open           )
+      if(associated(cpatch%lsfc_shv_closed         )) deallocate(cpatch%lsfc_shv_closed         )
+      if(associated(cpatch%lsfc_co2_open           )) deallocate(cpatch%lsfc_co2_open           )
+      if(associated(cpatch%lsfc_co2_closed         )) deallocate(cpatch%lsfc_co2_closed         )
+      if(associated(cpatch%lint_shv                )) deallocate(cpatch%lint_shv                )
+      if(associated(cpatch%lint_co2_open           )) deallocate(cpatch%lint_co2_open           )
+      if(associated(cpatch%lint_co2_closed         )) deallocate(cpatch%lint_co2_closed         )
+      if(associated(cpatch%today_leaf_resp         )) deallocate(cpatch%today_leaf_resp         )
+      if(associated(cpatch%today_root_resp         )) deallocate(cpatch%today_root_resp         )
+      if(associated(cpatch%today_gpp               )) deallocate(cpatch%today_gpp               )
+      if(associated(cpatch%today_gpp_pot           )) deallocate(cpatch%today_gpp_pot           )
+      if(associated(cpatch%today_gpp_lightmax      )) deallocate(cpatch%today_gpp_lightmax      )
+      if(associated(cpatch%today_gpp_moistmax      )) deallocate(cpatch%today_gpp_moistmax      )
+      if(associated(cpatch%today_gpp_mlmax         )) deallocate(cpatch%today_gpp_mlmax         )
+      if(associated(cpatch%today_nppleaf           )) deallocate(cpatch%today_nppleaf           )
+      if(associated(cpatch%today_nppfroot          )) deallocate(cpatch%today_nppfroot          )
+      if(associated(cpatch%today_nppsapwood        )) deallocate(cpatch%today_nppsapwood        )
+      if(associated(cpatch%today_nppbark           )) deallocate(cpatch%today_nppbark           )
+      if(associated(cpatch%today_nppcroot          )) deallocate(cpatch%today_nppcroot          )
+      if(associated(cpatch%today_nppseeds          )) deallocate(cpatch%today_nppseeds          )
+      if(associated(cpatch%today_nppwood           )) deallocate(cpatch%today_nppwood           )
+      if(associated(cpatch%today_nppdaily          )) deallocate(cpatch%today_nppdaily          )
+      if(associated(cpatch%leaf_growth_resp        )) deallocate(cpatch%leaf_growth_resp        )
+      if(associated(cpatch%root_growth_resp        )) deallocate(cpatch%root_growth_resp        )
+      if(associated(cpatch%sapa_growth_resp        )) deallocate(cpatch%sapa_growth_resp        )
+      if(associated(cpatch%sapb_growth_resp        )) deallocate(cpatch%sapb_growth_resp        )
+      if(associated(cpatch%barka_growth_resp       )) deallocate(cpatch%barka_growth_resp       )
+      if(associated(cpatch%barkb_growth_resp       )) deallocate(cpatch%barkb_growth_resp       )
+      if(associated(cpatch%leaf_storage_resp       )) deallocate(cpatch%leaf_storage_resp       )
+      if(associated(cpatch%root_storage_resp       )) deallocate(cpatch%root_storage_resp       )
+      if(associated(cpatch%sapa_storage_resp       )) deallocate(cpatch%sapa_storage_resp       )
+      if(associated(cpatch%sapb_storage_resp       )) deallocate(cpatch%sapb_storage_resp       )
+      if(associated(cpatch%barka_storage_resp      )) deallocate(cpatch%barka_storage_resp      )
+      if(associated(cpatch%barkb_storage_resp      )) deallocate(cpatch%barkb_storage_resp      )
+      if(associated(cpatch%monthly_dndt            )) deallocate(cpatch%monthly_dndt            )
+      if(associated(cpatch%monthly_dlnndt          )) deallocate(cpatch%monthly_dlnndt          )
+      if(associated(cpatch%mort_rate               )) deallocate(cpatch%mort_rate               )
+      if(associated(cpatch%krdepth                 )) deallocate(cpatch%krdepth                 )
+      if(associated(cpatch%first_census            )) deallocate(cpatch%first_census            )
+      if(associated(cpatch%new_recruit_flag        )) deallocate(cpatch%new_recruit_flag        )
+      if(associated(cpatch%light_level             )) deallocate(cpatch%light_level             )
+      if(associated(cpatch%light_level_beam        )) deallocate(cpatch%light_level_beam        )
+      if(associated(cpatch%light_level_diff        )) deallocate(cpatch%light_level_diff        )
 
-      if(associated(cpatch%par_level_beam      )) deallocate(cpatch%par_level_beam      )
-      if(associated(cpatch%par_level_diffu     )) deallocate(cpatch%par_level_diffu     )
-      if(associated(cpatch%par_level_diffd     )) deallocate(cpatch%par_level_diffd     )
+      if(associated(cpatch%par_level_beam          )) deallocate(cpatch%par_level_beam          )
+      if(associated(cpatch%par_level_diffu         )) deallocate(cpatch%par_level_diffu         )
+      if(associated(cpatch%par_level_diffd         )) deallocate(cpatch%par_level_diffd         )
 
-      if(associated(cpatch%par_l               )) deallocate(cpatch%par_l               )
-      if(associated(cpatch%par_l_beam          )) deallocate(cpatch%par_l_beam          )
-      if(associated(cpatch%par_l_diffuse       )) deallocate(cpatch%par_l_diffuse       )
-      if(associated(cpatch%rshort_l            )) deallocate(cpatch%rshort_l            )
-      if(associated(cpatch%rshort_l_beam       )) deallocate(cpatch%rshort_l_beam       )
-      if(associated(cpatch%rshort_l_diffuse    )) deallocate(cpatch%rshort_l_diffuse    )
-      if(associated(cpatch%rlong_l             )) deallocate(cpatch%rlong_l             )
-      if(associated(cpatch%rshort_w            )) deallocate(cpatch%rshort_w            )
-      if(associated(cpatch%rshort_w_beam       )) deallocate(cpatch%rshort_w_beam       )
-      if(associated(cpatch%rshort_w_diffuse    )) deallocate(cpatch%rshort_w_diffuse    )
-      if(associated(cpatch%rlong_w             )) deallocate(cpatch%rlong_w             )
-      if(associated(cpatch%rad_profile         )) deallocate(cpatch%rad_profile         )
-      if(associated(cpatch%leaf_gbh            )) deallocate(cpatch%leaf_gbh            )
-      if(associated(cpatch%leaf_gbw            )) deallocate(cpatch%leaf_gbw            )
-      if(associated(cpatch%wood_gbh            )) deallocate(cpatch%wood_gbh            )
-      if(associated(cpatch%wood_gbw            )) deallocate(cpatch%wood_gbw            )
-      if(associated(cpatch%A_open              )) deallocate(cpatch%A_open              )
-      if(associated(cpatch%A_closed            )) deallocate(cpatch%A_closed            )
-      if(associated(cpatch%A_light             )) deallocate(cpatch%A_light             )
-      if(associated(cpatch%A_rubp              )) deallocate(cpatch%A_rubp              )
-      if(associated(cpatch%A_co2               )) deallocate(cpatch%A_co2               )
-      if(associated(cpatch%psi_open            )) deallocate(cpatch%psi_open            )
-      if(associated(cpatch%psi_closed          )) deallocate(cpatch%psi_closed          )
-      if(associated(cpatch%gsw_open            )) deallocate(cpatch%gsw_open            )
-      if(associated(cpatch%gsw_closed          )) deallocate(cpatch%gsw_closed          )
-      if(associated(cpatch%leaf_gsw            )) deallocate(cpatch%leaf_gsw            )
-      if(associated(cpatch%fsw                 )) deallocate(cpatch%fsw                 )
-      if(associated(cpatch%fsn                 )) deallocate(cpatch%fsn                 )
-      if(associated(cpatch%fs_open             )) deallocate(cpatch%fs_open             )
-      if(associated(cpatch%water_supply        )) deallocate(cpatch%water_supply        )
-      if(associated(cpatch%leaf_maintenance    )) deallocate(cpatch%leaf_maintenance    )
-      if(associated(cpatch%root_maintenance    )) deallocate(cpatch%root_maintenance    )
-      if(associated(cpatch%bark_maintenance    )) deallocate(cpatch%bark_maintenance    )
-      if(associated(cpatch%leaf_drop           )) deallocate(cpatch%leaf_drop           )
-      if(associated(cpatch%leaf_respiration    )) deallocate(cpatch%leaf_respiration    )
-      if(associated(cpatch%root_respiration    )) deallocate(cpatch%root_respiration    )
-      if(associated(cpatch%gpp                 )) deallocate(cpatch%gpp                 )
-      if(associated(cpatch%paw_avg             )) deallocate(cpatch%paw_avg             )
-      if(associated(cpatch%elongf              )) deallocate(cpatch%elongf              )
-      if(associated(cpatch%turnover_amp        )) deallocate(cpatch%turnover_amp        )
-      if(associated(cpatch%llspan              )) deallocate(cpatch%llspan              )
-      if(associated(cpatch%vm_bar              )) deallocate(cpatch%vm_bar              )
-      if(associated(cpatch%sla                 )) deallocate(cpatch%sla                 )
-      if(associated(cpatch%fmean_gpp           )) deallocate(cpatch%fmean_gpp           )
-      if(associated(cpatch%fmean_npp           )) deallocate(cpatch%fmean_npp           )
-      if(associated(cpatch%fmean_leaf_resp     )) deallocate(cpatch%fmean_leaf_resp     )
-      if(associated(cpatch%fmean_root_resp     )) deallocate(cpatch%fmean_root_resp     )
-      if(associated(cpatch%fmean_leaf_growth_resp)) deallocate(cpatch%fmean_leaf_growth_resp)
-      if(associated(cpatch%fmean_root_growth_resp)) deallocate(cpatch%fmean_root_growth_resp)
-      if(associated(cpatch%fmean_sapa_growth_resp)) deallocate(cpatch%fmean_sapa_growth_resp)
-      if(associated(cpatch%fmean_sapb_growth_resp)) deallocate(cpatch%fmean_sapb_growth_resp)
-      if(associated(cpatch%fmean_bark_growth_resp)) deallocate(cpatch%fmean_bark_growth_resp)
-      if(associated(cpatch%fmean_leaf_storage_resp)) deallocate(cpatch%fmean_leaf_storage_resp)
-      if(associated(cpatch%fmean_root_storage_resp)) deallocate(cpatch%fmean_root_storage_resp)
-      if(associated(cpatch%fmean_sapa_storage_resp)) deallocate(cpatch%fmean_sapa_storage_resp)
-      if(associated(cpatch%fmean_sapb_storage_resp)) deallocate(cpatch%fmean_sapb_storage_resp)
-      if(associated(cpatch%fmean_bark_storage_resp)) deallocate(cpatch%fmean_bark_storage_resp)
-      if(associated(cpatch%fmean_plresp        )) deallocate(cpatch%fmean_plresp        )
-      if(associated(cpatch%fmean_leaf_energy   )) deallocate(cpatch%fmean_leaf_energy   )
-      if(associated(cpatch%fmean_leaf_water    )) deallocate(cpatch%fmean_leaf_water    )
-      if(associated(cpatch%fmean_leaf_hcap     )) deallocate(cpatch%fmean_leaf_hcap     )
-      if(associated(cpatch%fmean_leaf_vpdef    )) deallocate(cpatch%fmean_leaf_vpdef    )
-      if(associated(cpatch%fmean_leaf_temp     )) deallocate(cpatch%fmean_leaf_temp     )
-      if(associated(cpatch%fmean_leaf_fliq     )) deallocate(cpatch%fmean_leaf_fliq     )
-      if(associated(cpatch%fmean_leaf_gsw      )) deallocate(cpatch%fmean_leaf_gsw      )
-      if(associated(cpatch%fmean_leaf_gbw      )) deallocate(cpatch%fmean_leaf_gbw      )
-      if(associated(cpatch%fmean_wood_energy   )) deallocate(cpatch%fmean_wood_energy   )
-      if(associated(cpatch%fmean_wood_water    )) deallocate(cpatch%fmean_wood_water    )
-      if(associated(cpatch%fmean_wood_hcap     )) deallocate(cpatch%fmean_wood_hcap     )
-      if(associated(cpatch%fmean_wood_temp     )) deallocate(cpatch%fmean_wood_temp     )
-      if(associated(cpatch%fmean_wood_fliq     )) deallocate(cpatch%fmean_wood_fliq     )
-      if(associated(cpatch%fmean_wood_gbw      )) deallocate(cpatch%fmean_wood_gbw      )
-      if(associated(cpatch%fmean_fs_open       )) deallocate(cpatch%fmean_fs_open       )
-      if(associated(cpatch%fmean_fsw           )) deallocate(cpatch%fmean_fsw           )
-      if(associated(cpatch%fmean_fsn           )) deallocate(cpatch%fmean_fsn           )
-      if(associated(cpatch%fmean_a_open        )) deallocate(cpatch%fmean_a_open        )
-      if(associated(cpatch%fmean_a_closed      )) deallocate(cpatch%fmean_a_closed      )
-      if(associated(cpatch%fmean_a_net         )) deallocate(cpatch%fmean_a_net         )
-      if(associated(cpatch%fmean_A_light       )) deallocate(cpatch%fmean_A_light       )
-      if(associated(cpatch%fmean_A_rubp        )) deallocate(cpatch%fmean_A_rubp        )
-      if(associated(cpatch%fmean_A_co2         )) deallocate(cpatch%fmean_A_co2         )
-      if(associated(cpatch%fmean_psi_open      )) deallocate(cpatch%fmean_psi_open      )
-      if(associated(cpatch%fmean_psi_closed    )) deallocate(cpatch%fmean_psi_closed    )
-      if(associated(cpatch%fmean_water_supply  )) deallocate(cpatch%fmean_water_supply  )
-      if(associated(cpatch%fmean_light_level   )) deallocate(cpatch%fmean_light_level   )
-      if(associated(cpatch%fmean_light_level_beam))                                        &
-                                                deallocate(cpatch%fmean_light_level_beam)
-      if(associated(cpatch%fmean_light_level_diff))                                        &
-                                                deallocate(cpatch%fmean_light_level_diff)
+      if(associated(cpatch%par_l                   )) deallocate(cpatch%par_l                   )
+      if(associated(cpatch%par_l_beam              )) deallocate(cpatch%par_l_beam              )
+      if(associated(cpatch%par_l_diffuse           )) deallocate(cpatch%par_l_diffuse           )
+      if(associated(cpatch%rshort_l                )) deallocate(cpatch%rshort_l                )
+      if(associated(cpatch%rshort_l_beam           )) deallocate(cpatch%rshort_l_beam           )
+      if(associated(cpatch%rshort_l_diffuse        )) deallocate(cpatch%rshort_l_diffuse        )
+      if(associated(cpatch%rlong_l                 )) deallocate(cpatch%rlong_l                 )
+      if(associated(cpatch%rshort_w                )) deallocate(cpatch%rshort_w                )
+      if(associated(cpatch%rshort_w_beam           )) deallocate(cpatch%rshort_w_beam           )
+      if(associated(cpatch%rshort_w_diffuse        )) deallocate(cpatch%rshort_w_diffuse        )
+      if(associated(cpatch%rlong_w                 )) deallocate(cpatch%rlong_w                 )
+      if(associated(cpatch%rad_profile             )) deallocate(cpatch%rad_profile             )
+      if(associated(cpatch%leaf_gbh                )) deallocate(cpatch%leaf_gbh                )
+      if(associated(cpatch%leaf_gbw                )) deallocate(cpatch%leaf_gbw                )
+      if(associated(cpatch%wood_gbh                )) deallocate(cpatch%wood_gbh                )
+      if(associated(cpatch%wood_gbw                )) deallocate(cpatch%wood_gbw                )
+      if(associated(cpatch%A_open                  )) deallocate(cpatch%A_open                  )
+      if(associated(cpatch%A_closed                )) deallocate(cpatch%A_closed                )
+      if(associated(cpatch%A_light                 )) deallocate(cpatch%A_light                 )
+      if(associated(cpatch%A_rubp                  )) deallocate(cpatch%A_rubp                  )
+      if(associated(cpatch%A_co2                   )) deallocate(cpatch%A_co2                   )
+      if(associated(cpatch%psi_open                )) deallocate(cpatch%psi_open                )
+      if(associated(cpatch%psi_closed              )) deallocate(cpatch%psi_closed              )
+      if(associated(cpatch%gsw_open                )) deallocate(cpatch%gsw_open                )
+      if(associated(cpatch%gsw_closed              )) deallocate(cpatch%gsw_closed              )
+      if(associated(cpatch%leaf_gsw                )) deallocate(cpatch%leaf_gsw                )
+      if(associated(cpatch%fsw                     )) deallocate(cpatch%fsw                     )
+      if(associated(cpatch%fsn                     )) deallocate(cpatch%fsn                     )
+      if(associated(cpatch%fs_open                 )) deallocate(cpatch%fs_open                 )
+      if(associated(cpatch%water_supply            )) deallocate(cpatch%water_supply            )
+      if(associated(cpatch%leaf_maintenance        )) deallocate(cpatch%leaf_maintenance        )
+      if(associated(cpatch%root_maintenance        )) deallocate(cpatch%root_maintenance        )
+      if(associated(cpatch%barka_maintenance       )) deallocate(cpatch%barka_maintenance       )
+      if(associated(cpatch%barkb_maintenance       )) deallocate(cpatch%barkb_maintenance       )
+      if(associated(cpatch%leaf_drop               )) deallocate(cpatch%leaf_drop               )
+      if(associated(cpatch%leaf_respiration        )) deallocate(cpatch%leaf_respiration        )
+      if(associated(cpatch%root_respiration        )) deallocate(cpatch%root_respiration        )
+      if(associated(cpatch%gpp                     )) deallocate(cpatch%gpp                     )
+      if(associated(cpatch%paw_avg                 )) deallocate(cpatch%paw_avg                 )
+      if(associated(cpatch%elongf                  )) deallocate(cpatch%elongf                  )
+      if(associated(cpatch%turnover_amp            )) deallocate(cpatch%turnover_amp            )
+      if(associated(cpatch%llspan                  )) deallocate(cpatch%llspan                  )
+      if(associated(cpatch%vm_bar                  )) deallocate(cpatch%vm_bar                  )
+      if(associated(cpatch%sla                     )) deallocate(cpatch%sla                     )
+      if(associated(cpatch%fmean_gpp               )) deallocate(cpatch%fmean_gpp               )
+      if(associated(cpatch%fmean_npp               )) deallocate(cpatch%fmean_npp               )
+      if(associated(cpatch%fmean_leaf_resp         )) deallocate(cpatch%fmean_leaf_resp         )
+      if(associated(cpatch%fmean_root_resp         )) deallocate(cpatch%fmean_root_resp         )
+      if(associated(cpatch%fmean_leaf_growth_resp  )) deallocate(cpatch%fmean_leaf_growth_resp  )
+      if(associated(cpatch%fmean_root_growth_resp  )) deallocate(cpatch%fmean_root_growth_resp  )
+      if(associated(cpatch%fmean_sapa_growth_resp  )) deallocate(cpatch%fmean_sapa_growth_resp  )
+      if(associated(cpatch%fmean_sapb_growth_resp  )) deallocate(cpatch%fmean_sapb_growth_resp  )
+      if(associated(cpatch%fmean_barka_growth_resp )) deallocate(cpatch%fmean_barka_growth_resp )
+      if(associated(cpatch%fmean_barkb_growth_resp )) deallocate(cpatch%fmean_barkb_growth_resp )
+      if(associated(cpatch%fmean_leaf_storage_resp )) deallocate(cpatch%fmean_leaf_storage_resp )
+      if(associated(cpatch%fmean_root_storage_resp )) deallocate(cpatch%fmean_root_storage_resp )
+      if(associated(cpatch%fmean_sapa_storage_resp )) deallocate(cpatch%fmean_sapa_storage_resp )
+      if(associated(cpatch%fmean_sapb_storage_resp )) deallocate(cpatch%fmean_sapb_storage_resp )
+      if(associated(cpatch%fmean_barka_storage_resp)) deallocate(cpatch%fmean_barka_storage_resp)
+      if(associated(cpatch%fmean_barkb_storage_resp)) deallocate(cpatch%fmean_barkb_storage_resp)
+      if(associated(cpatch%fmean_plresp            )) deallocate(cpatch%fmean_plresp            )
+      if(associated(cpatch%fmean_leaf_energy       )) deallocate(cpatch%fmean_leaf_energy       )
+      if(associated(cpatch%fmean_leaf_water        )) deallocate(cpatch%fmean_leaf_water        )
+      if(associated(cpatch%fmean_leaf_hcap         )) deallocate(cpatch%fmean_leaf_hcap         )
+      if(associated(cpatch%fmean_leaf_vpdef        )) deallocate(cpatch%fmean_leaf_vpdef        )
+      if(associated(cpatch%fmean_leaf_temp         )) deallocate(cpatch%fmean_leaf_temp         )
+      if(associated(cpatch%fmean_leaf_fliq         )) deallocate(cpatch%fmean_leaf_fliq         )
+      if(associated(cpatch%fmean_leaf_gsw          )) deallocate(cpatch%fmean_leaf_gsw          )
+      if(associated(cpatch%fmean_leaf_gbw          )) deallocate(cpatch%fmean_leaf_gbw          )
+      if(associated(cpatch%fmean_wood_energy       )) deallocate(cpatch%fmean_wood_energy       )
+      if(associated(cpatch%fmean_wood_water        )) deallocate(cpatch%fmean_wood_water        )
+      if(associated(cpatch%fmean_wood_hcap         )) deallocate(cpatch%fmean_wood_hcap         )
+      if(associated(cpatch%fmean_wood_temp         )) deallocate(cpatch%fmean_wood_temp         )
+      if(associated(cpatch%fmean_wood_fliq         )) deallocate(cpatch%fmean_wood_fliq         )
+      if(associated(cpatch%fmean_wood_gbw          )) deallocate(cpatch%fmean_wood_gbw          )
+      if(associated(cpatch%fmean_fs_open           )) deallocate(cpatch%fmean_fs_open           )
+      if(associated(cpatch%fmean_fsw               )) deallocate(cpatch%fmean_fsw               )
+      if(associated(cpatch%fmean_fsn               )) deallocate(cpatch%fmean_fsn               )
+      if(associated(cpatch%fmean_a_open            )) deallocate(cpatch%fmean_a_open            )
+      if(associated(cpatch%fmean_a_closed          )) deallocate(cpatch%fmean_a_closed          )
+      if(associated(cpatch%fmean_a_net             )) deallocate(cpatch%fmean_a_net             )
+      if(associated(cpatch%fmean_A_light           )) deallocate(cpatch%fmean_A_light           )
+      if(associated(cpatch%fmean_A_rubp            )) deallocate(cpatch%fmean_A_rubp            )
+      if(associated(cpatch%fmean_A_co2             )) deallocate(cpatch%fmean_A_co2             )
+      if(associated(cpatch%fmean_psi_open          )) deallocate(cpatch%fmean_psi_open          )
+      if(associated(cpatch%fmean_psi_closed        )) deallocate(cpatch%fmean_psi_closed        )
+      if(associated(cpatch%fmean_water_supply      )) deallocate(cpatch%fmean_water_supply      )
+      if(associated(cpatch%fmean_light_level       )) deallocate(cpatch%fmean_light_level       )
+      if(associated(cpatch%fmean_light_level_beam  )) deallocate(cpatch%fmean_light_level_beam  )
+      if(associated(cpatch%fmean_light_level_diff  )) deallocate(cpatch%fmean_light_level_diff  )
 
-      if(associated(cpatch%fmean_par_level_beam ))deallocate(cpatch%fmean_par_level_beam )
-      if(associated(cpatch%fmean_par_level_diffu))deallocate(cpatch%fmean_par_level_diffu)
-      if(associated(cpatch%fmean_par_level_diffd))deallocate(cpatch%fmean_par_level_diffd)
+      if(associated(cpatch%fmean_par_level_beam    )) deallocate(cpatch%fmean_par_level_beam    )
+      if(associated(cpatch%fmean_par_level_diffu   )) deallocate(cpatch%fmean_par_level_diffu   )
+      if(associated(cpatch%fmean_par_level_diffd   )) deallocate(cpatch%fmean_par_level_diffd   )
 
-      if(associated(cpatch%fmean_par_l         )) deallocate(cpatch%fmean_par_l         )
-      if(associated(cpatch%fmean_par_l_beam    )) deallocate(cpatch%fmean_par_l_beam    )
-      if(associated(cpatch%fmean_par_l_diff    )) deallocate(cpatch%fmean_par_l_diff    )
-      if(associated(cpatch%fmean_rshort_l      )) deallocate(cpatch%fmean_rshort_l      )
-      if(associated(cpatch%fmean_rlong_l       )) deallocate(cpatch%fmean_rlong_l       )
-      if(associated(cpatch%fmean_sensible_lc   )) deallocate(cpatch%fmean_sensible_lc   )
-      if(associated(cpatch%fmean_vapor_lc      )) deallocate(cpatch%fmean_vapor_lc      )
-      if(associated(cpatch%fmean_transp        )) deallocate(cpatch%fmean_transp        )
-      if(associated(cpatch%fmean_intercepted_al)) deallocate(cpatch%fmean_intercepted_al)
-      if(associated(cpatch%fmean_wshed_lg      )) deallocate(cpatch%fmean_wshed_lg      )
-      if(associated(cpatch%fmean_rshort_w      )) deallocate(cpatch%fmean_rshort_w      )
-      if(associated(cpatch%fmean_rlong_w       )) deallocate(cpatch%fmean_rlong_w       )
-      if(associated(cpatch%fmean_rad_profile   )) deallocate(cpatch%fmean_rad_profile   )
-      if(associated(cpatch%fmean_sensible_wc   )) deallocate(cpatch%fmean_sensible_wc   )
-      if(associated(cpatch%fmean_vapor_wc      )) deallocate(cpatch%fmean_vapor_wc      )
-      if(associated(cpatch%fmean_intercepted_aw)) deallocate(cpatch%fmean_intercepted_aw)
-      if(associated(cpatch%fmean_wshed_wg      )) deallocate(cpatch%fmean_wshed_wg      )
-      if(associated(cpatch%fmean_lai           )) deallocate(cpatch%fmean_lai           )
-      if(associated(cpatch%fmean_bdead         )) deallocate(cpatch%fmean_bdead         )
-      if(associated(cpatch%dmean_nppleaf       )) deallocate(cpatch%dmean_nppleaf       )
-      if(associated(cpatch%dmean_nppfroot      )) deallocate(cpatch%dmean_nppfroot      )
-      if(associated(cpatch%dmean_nppsapwood    )) deallocate(cpatch%dmean_nppsapwood    )
-      if(associated(cpatch%dmean_nppbark       )) deallocate(cpatch%dmean_nppbark       )
-      if(associated(cpatch%dmean_nppcroot      )) deallocate(cpatch%dmean_nppcroot      )
-      if(associated(cpatch%dmean_nppseeds      )) deallocate(cpatch%dmean_nppseeds      )
-      if(associated(cpatch%dmean_nppwood       )) deallocate(cpatch%dmean_nppwood       )
-      if(associated(cpatch%dmean_nppdaily      )) deallocate(cpatch%dmean_nppdaily      )
-      if(associated(cpatch%dmean_gpp           )) deallocate(cpatch%dmean_gpp           )
-      if(associated(cpatch%dmean_npp           )) deallocate(cpatch%dmean_npp           )
-      if(associated(cpatch%dmean_leaf_resp     )) deallocate(cpatch%dmean_leaf_resp     )
-      if(associated(cpatch%dmean_root_resp     )) deallocate(cpatch%dmean_root_resp     )
-      if(associated(cpatch%dmean_leaf_growth_resp)) deallocate(cpatch%dmean_leaf_growth_resp)
-      if(associated(cpatch%dmean_root_growth_resp)) deallocate(cpatch%dmean_root_growth_resp)
-      if(associated(cpatch%dmean_sapa_growth_resp)) deallocate(cpatch%dmean_sapa_growth_resp)
-      if(associated(cpatch%dmean_sapb_growth_resp)) deallocate(cpatch%dmean_sapb_growth_resp)
-      if(associated(cpatch%dmean_bark_growth_resp)) deallocate(cpatch%dmean_bark_growth_resp)
-      if(associated(cpatch%dmean_leaf_storage_resp)) deallocate(cpatch%dmean_leaf_storage_resp)
-      if(associated(cpatch%dmean_root_storage_resp)) deallocate(cpatch%dmean_root_storage_resp)
-      if(associated(cpatch%dmean_sapa_storage_resp)) deallocate(cpatch%dmean_sapa_storage_resp)
-      if(associated(cpatch%dmean_sapb_storage_resp)) deallocate(cpatch%dmean_sapb_storage_resp)
-      if(associated(cpatch%dmean_bark_storage_resp)) deallocate(cpatch%dmean_bark_storage_resp)
-      if(associated(cpatch%dmean_plresp        )) deallocate(cpatch%dmean_plresp        )
-      if(associated(cpatch%dmean_leaf_energy   )) deallocate(cpatch%dmean_leaf_energy   )
-      if(associated(cpatch%dmean_leaf_water    )) deallocate(cpatch%dmean_leaf_water    )
-      if(associated(cpatch%dmean_leaf_hcap     )) deallocate(cpatch%dmean_leaf_hcap     )
-      if(associated(cpatch%dmean_leaf_vpdef    )) deallocate(cpatch%dmean_leaf_vpdef    )
-      if(associated(cpatch%dmean_leaf_temp     )) deallocate(cpatch%dmean_leaf_temp     )
-      if(associated(cpatch%dmean_leaf_fliq     )) deallocate(cpatch%dmean_leaf_fliq     )
-      if(associated(cpatch%dmean_leaf_gsw      )) deallocate(cpatch%dmean_leaf_gsw      )
-      if(associated(cpatch%dmean_leaf_gbw      )) deallocate(cpatch%dmean_leaf_gbw      )
-      if(associated(cpatch%dmean_wood_energy   )) deallocate(cpatch%dmean_wood_energy   )
-      if(associated(cpatch%dmean_wood_water    )) deallocate(cpatch%dmean_wood_water    )
-      if(associated(cpatch%dmean_wood_hcap     )) deallocate(cpatch%dmean_wood_hcap     )
-      if(associated(cpatch%dmean_wood_temp     )) deallocate(cpatch%dmean_wood_temp     )
-      if(associated(cpatch%dmean_wood_fliq     )) deallocate(cpatch%dmean_wood_fliq     )
-      if(associated(cpatch%dmean_wood_gbw      )) deallocate(cpatch%dmean_wood_gbw      )
-      if(associated(cpatch%dmean_fs_open       )) deallocate(cpatch%dmean_fs_open       )
-      if(associated(cpatch%dmean_fsw           )) deallocate(cpatch%dmean_fsw           )
-      if(associated(cpatch%dmean_fsn           )) deallocate(cpatch%dmean_fsn           )
-      if(associated(cpatch%dmean_a_open        )) deallocate(cpatch%dmean_a_open        )
-      if(associated(cpatch%dmean_a_closed      )) deallocate(cpatch%dmean_a_closed      )
-      if(associated(cpatch%dmean_a_net         )) deallocate(cpatch%dmean_a_net         )
-      if(associated(cpatch%dmean_A_light       )) deallocate(cpatch%dmean_A_light       )
-      if(associated(cpatch%dmean_A_rubp        )) deallocate(cpatch%dmean_A_rubp        )
-      if(associated(cpatch%dmean_A_co2         )) deallocate(cpatch%dmean_A_co2         )
-      if(associated(cpatch%dmean_psi_open      )) deallocate(cpatch%dmean_psi_open      )
-      if(associated(cpatch%dmean_psi_closed    )) deallocate(cpatch%dmean_psi_closed    )
-      if(associated(cpatch%dmean_water_supply  )) deallocate(cpatch%dmean_water_supply  )
-      if(associated(cpatch%dmean_light_level   )) deallocate(cpatch%dmean_light_level   )
-      if(associated(cpatch%dmean_light_level_beam))                                        &
-                                                deallocate(cpatch%dmean_light_level_beam)
-      if(associated(cpatch%dmean_light_level_diff))                                        &
-                                                deallocate(cpatch%dmean_light_level_diff)
+      if(associated(cpatch%fmean_par_l             )) deallocate(cpatch%fmean_par_l             )
+      if(associated(cpatch%fmean_par_l_beam        )) deallocate(cpatch%fmean_par_l_beam        )
+      if(associated(cpatch%fmean_par_l_diff        )) deallocate(cpatch%fmean_par_l_diff        )
+      if(associated(cpatch%fmean_rshort_l          )) deallocate(cpatch%fmean_rshort_l          )
+      if(associated(cpatch%fmean_rlong_l           )) deallocate(cpatch%fmean_rlong_l           )
+      if(associated(cpatch%fmean_sensible_lc       )) deallocate(cpatch%fmean_sensible_lc       )
+      if(associated(cpatch%fmean_vapor_lc          )) deallocate(cpatch%fmean_vapor_lc          )
+      if(associated(cpatch%fmean_transp            )) deallocate(cpatch%fmean_transp            )
+      if(associated(cpatch%fmean_intercepted_al    )) deallocate(cpatch%fmean_intercepted_al    )
+      if(associated(cpatch%fmean_wshed_lg          )) deallocate(cpatch%fmean_wshed_lg          )
+      if(associated(cpatch%fmean_rshort_w          )) deallocate(cpatch%fmean_rshort_w          )
+      if(associated(cpatch%fmean_rlong_w           )) deallocate(cpatch%fmean_rlong_w           )
+      if(associated(cpatch%fmean_rad_profile       )) deallocate(cpatch%fmean_rad_profile       )
+      if(associated(cpatch%fmean_sensible_wc       )) deallocate(cpatch%fmean_sensible_wc       )
+      if(associated(cpatch%fmean_vapor_wc          )) deallocate(cpatch%fmean_vapor_wc          )
+      if(associated(cpatch%fmean_intercepted_aw    )) deallocate(cpatch%fmean_intercepted_aw    )
+      if(associated(cpatch%fmean_wshed_wg          )) deallocate(cpatch%fmean_wshed_wg          )
+      if(associated(cpatch%fmean_lai               )) deallocate(cpatch%fmean_lai               )
+      if(associated(cpatch%fmean_bdeada            )) deallocate(cpatch%fmean_bdeada            )
+      if(associated(cpatch%fmean_bdeadb            )) deallocate(cpatch%fmean_bdeadb            )
+      if(associated(cpatch%dmean_nppleaf           )) deallocate(cpatch%dmean_nppleaf           )
+      if(associated(cpatch%dmean_nppfroot          )) deallocate(cpatch%dmean_nppfroot          )
+      if(associated(cpatch%dmean_nppsapwood        )) deallocate(cpatch%dmean_nppsapwood        )
+      if(associated(cpatch%dmean_nppbark           )) deallocate(cpatch%dmean_nppbark           )
+      if(associated(cpatch%dmean_nppcroot          )) deallocate(cpatch%dmean_nppcroot          )
+      if(associated(cpatch%dmean_nppseeds          )) deallocate(cpatch%dmean_nppseeds          )
+      if(associated(cpatch%dmean_nppwood           )) deallocate(cpatch%dmean_nppwood           )
+      if(associated(cpatch%dmean_nppdaily          )) deallocate(cpatch%dmean_nppdaily          )
+      if(associated(cpatch%dmean_gpp               )) deallocate(cpatch%dmean_gpp               )
+      if(associated(cpatch%dmean_npp               )) deallocate(cpatch%dmean_npp               )
+      if(associated(cpatch%dmean_leaf_resp         )) deallocate(cpatch%dmean_leaf_resp         )
+      if(associated(cpatch%dmean_root_resp         )) deallocate(cpatch%dmean_root_resp         )
+      if(associated(cpatch%dmean_leaf_growth_resp  )) deallocate(cpatch%dmean_leaf_growth_resp  )
+      if(associated(cpatch%dmean_root_growth_resp  )) deallocate(cpatch%dmean_root_growth_resp  )
+      if(associated(cpatch%dmean_sapa_growth_resp  )) deallocate(cpatch%dmean_sapa_growth_resp  )
+      if(associated(cpatch%dmean_sapb_growth_resp  )) deallocate(cpatch%dmean_sapb_growth_resp  )
+      if(associated(cpatch%dmean_barka_growth_resp )) deallocate(cpatch%dmean_barka_growth_resp )
+      if(associated(cpatch%dmean_barkb_growth_resp )) deallocate(cpatch%dmean_barkb_growth_resp )
+      if(associated(cpatch%dmean_leaf_storage_resp )) deallocate(cpatch%dmean_leaf_storage_resp )
+      if(associated(cpatch%dmean_root_storage_resp )) deallocate(cpatch%dmean_root_storage_resp )
+      if(associated(cpatch%dmean_sapa_storage_resp )) deallocate(cpatch%dmean_sapa_storage_resp )
+      if(associated(cpatch%dmean_sapb_storage_resp )) deallocate(cpatch%dmean_sapb_storage_resp )
+      if(associated(cpatch%dmean_barka_storage_resp)) deallocate(cpatch%dmean_barka_storage_resp)
+      if(associated(cpatch%dmean_barkb_storage_resp)) deallocate(cpatch%dmean_barkb_storage_resp)
+      if(associated(cpatch%dmean_plresp            )) deallocate(cpatch%dmean_plresp            )
+      if(associated(cpatch%dmean_leaf_energy       )) deallocate(cpatch%dmean_leaf_energy       )
+      if(associated(cpatch%dmean_leaf_water        )) deallocate(cpatch%dmean_leaf_water        )
+      if(associated(cpatch%dmean_leaf_hcap         )) deallocate(cpatch%dmean_leaf_hcap         )
+      if(associated(cpatch%dmean_leaf_vpdef        )) deallocate(cpatch%dmean_leaf_vpdef        )
+      if(associated(cpatch%dmean_leaf_temp         )) deallocate(cpatch%dmean_leaf_temp         )
+      if(associated(cpatch%dmean_leaf_fliq         )) deallocate(cpatch%dmean_leaf_fliq         )
+      if(associated(cpatch%dmean_leaf_gsw          )) deallocate(cpatch%dmean_leaf_gsw          )
+      if(associated(cpatch%dmean_leaf_gbw          )) deallocate(cpatch%dmean_leaf_gbw          )
+      if(associated(cpatch%dmean_wood_energy       )) deallocate(cpatch%dmean_wood_energy       )
+      if(associated(cpatch%dmean_wood_water        )) deallocate(cpatch%dmean_wood_water        )
+      if(associated(cpatch%dmean_wood_hcap         )) deallocate(cpatch%dmean_wood_hcap         )
+      if(associated(cpatch%dmean_wood_temp         )) deallocate(cpatch%dmean_wood_temp         )
+      if(associated(cpatch%dmean_wood_fliq         )) deallocate(cpatch%dmean_wood_fliq         )
+      if(associated(cpatch%dmean_wood_gbw          )) deallocate(cpatch%dmean_wood_gbw          )
+      if(associated(cpatch%dmean_fs_open           )) deallocate(cpatch%dmean_fs_open           )
+      if(associated(cpatch%dmean_fsw               )) deallocate(cpatch%dmean_fsw               )
+      if(associated(cpatch%dmean_fsn               )) deallocate(cpatch%dmean_fsn               )
+      if(associated(cpatch%dmean_a_open            )) deallocate(cpatch%dmean_a_open            )
+      if(associated(cpatch%dmean_a_closed          )) deallocate(cpatch%dmean_a_closed          )
+      if(associated(cpatch%dmean_a_net             )) deallocate(cpatch%dmean_a_net             )
+      if(associated(cpatch%dmean_A_light           )) deallocate(cpatch%dmean_A_light           )
+      if(associated(cpatch%dmean_A_rubp            )) deallocate(cpatch%dmean_A_rubp            )
+      if(associated(cpatch%dmean_A_co2             )) deallocate(cpatch%dmean_A_co2             )
+      if(associated(cpatch%dmean_psi_open          )) deallocate(cpatch%dmean_psi_open          )
+      if(associated(cpatch%dmean_psi_closed        )) deallocate(cpatch%dmean_psi_closed        )
+      if(associated(cpatch%dmean_water_supply      )) deallocate(cpatch%dmean_water_supply      )
+      if(associated(cpatch%dmean_light_level       )) deallocate(cpatch%dmean_light_level       )
+      if(associated(cpatch%dmean_light_level_beam  )) deallocate(cpatch%dmean_light_level_beam  )
+      if(associated(cpatch%dmean_light_level_diff  )) deallocate(cpatch%dmean_light_level_diff  )
 
-      if(associated(cpatch%dmean_par_level_beam ))deallocate(cpatch%dmean_par_level_beam )
-      if(associated(cpatch%dmean_par_level_diffu))deallocate(cpatch%dmean_par_level_diffu)
-      if(associated(cpatch%dmean_par_level_diffd))deallocate(cpatch%dmean_par_level_diffd)
+      if(associated(cpatch%dmean_par_level_beam    )) deallocate(cpatch%dmean_par_level_beam    )
+      if(associated(cpatch%dmean_par_level_diffu   )) deallocate(cpatch%dmean_par_level_diffu   )
+      if(associated(cpatch%dmean_par_level_diffd   )) deallocate(cpatch%dmean_par_level_diffd   )
 
-      if(associated(cpatch%dmean_par_l         )) deallocate(cpatch%dmean_par_l         )
-      if(associated(cpatch%dmean_par_l_beam    )) deallocate(cpatch%dmean_par_l_beam    )
-      if(associated(cpatch%dmean_par_l_diff    )) deallocate(cpatch%dmean_par_l_diff    )
-      if(associated(cpatch%dmean_rshort_l      )) deallocate(cpatch%dmean_rshort_l      )
-      if(associated(cpatch%dmean_rlong_l       )) deallocate(cpatch%dmean_rlong_l       )
-      if(associated(cpatch%dmean_sensible_lc   )) deallocate(cpatch%dmean_sensible_lc   )
-      if(associated(cpatch%dmean_vapor_lc      )) deallocate(cpatch%dmean_vapor_lc      )
-      if(associated(cpatch%dmean_transp        )) deallocate(cpatch%dmean_transp        )
-      if(associated(cpatch%dmean_intercepted_al)) deallocate(cpatch%dmean_intercepted_al)
-      if(associated(cpatch%dmean_wshed_lg      )) deallocate(cpatch%dmean_wshed_lg      )
-      if(associated(cpatch%dmean_rshort_w      )) deallocate(cpatch%dmean_rshort_w      )
-      if(associated(cpatch%dmean_rlong_w       )) deallocate(cpatch%dmean_rlong_w       )
-      if(associated(cpatch%dmean_rad_profile   )) deallocate(cpatch%dmean_rad_profile   )
-      if(associated(cpatch%dmean_sensible_wc   )) deallocate(cpatch%dmean_sensible_wc   )
-      if(associated(cpatch%dmean_vapor_wc      )) deallocate(cpatch%dmean_vapor_wc      )
-      if(associated(cpatch%dmean_intercepted_aw)) deallocate(cpatch%dmean_intercepted_aw)
-      if(associated(cpatch%dmean_wshed_wg      )) deallocate(cpatch%dmean_wshed_wg      )
-      if(associated(cpatch%mmean_thbark        )) deallocate(cpatch%mmean_thbark        )
-      if(associated(cpatch%mmean_lai           )) deallocate(cpatch%mmean_lai           )
-      if(associated(cpatch%mmean_bleaf         )) deallocate(cpatch%mmean_bleaf         )
-      if(associated(cpatch%mmean_broot         )) deallocate(cpatch%mmean_broot         )
-      if(associated(cpatch%mmean_bbark         )) deallocate(cpatch%mmean_bbark         )
-      if(associated(cpatch%mmean_balive        )) deallocate(cpatch%mmean_balive        )
-      if(associated(cpatch%mmean_bstorage      )) deallocate(cpatch%mmean_bstorage      )
-      if(associated(cpatch%mmean_mort_rate     )) deallocate(cpatch%mmean_mort_rate     )
-      if(associated(cpatch%mmean_leaf_maintenance))                                        &
-                                                deallocate(cpatch%mmean_leaf_maintenance)
-      if(associated(cpatch%mmean_root_maintenance))                                        &
-                                                deallocate(cpatch%mmean_root_maintenance)
-      if(associated(cpatch%mmean_bark_maintenance))                                        &
-                                                deallocate(cpatch%mmean_bark_maintenance)
-      if(associated(cpatch%mmean_leaf_drop     )) deallocate(cpatch%mmean_leaf_drop     )
-      if(associated(cpatch%mmean_cb            )) deallocate(cpatch%mmean_cb            )
-      if(associated(cpatch%mmean_gpp           )) deallocate(cpatch%mmean_gpp           )
-      if(associated(cpatch%mmean_npp           )) deallocate(cpatch%mmean_npp           )
-      if(associated(cpatch%mmean_leaf_resp     )) deallocate(cpatch%mmean_leaf_resp     )
-      if(associated(cpatch%mmean_root_resp     )) deallocate(cpatch%mmean_root_resp     )
-      if(associated(cpatch%mmean_leaf_growth_resp)) deallocate(cpatch%mmean_leaf_growth_resp)
-      if(associated(cpatch%mmean_root_growth_resp)) deallocate(cpatch%mmean_root_growth_resp)
-      if(associated(cpatch%mmean_sapa_growth_resp)) deallocate(cpatch%mmean_sapa_growth_resp)
-      if(associated(cpatch%mmean_sapb_growth_resp)) deallocate(cpatch%mmean_sapb_growth_resp)
-      if(associated(cpatch%mmean_bark_growth_resp)) deallocate(cpatch%mmean_bark_growth_resp)
-      if(associated(cpatch%mmean_leaf_storage_resp)) deallocate(cpatch%mmean_leaf_storage_resp)
-      if(associated(cpatch%mmean_root_storage_resp)) deallocate(cpatch%mmean_root_storage_resp)
-      if(associated(cpatch%mmean_sapa_storage_resp)) deallocate(cpatch%mmean_sapa_storage_resp)
-      if(associated(cpatch%mmean_sapb_storage_resp)) deallocate(cpatch%mmean_sapb_storage_resp)
-      if(associated(cpatch%mmean_bark_storage_resp)) deallocate(cpatch%mmean_bark_storage_resp)
-      if(associated(cpatch%mmean_plresp        )) deallocate(cpatch%mmean_plresp        )
-      if(associated(cpatch%mmean_leaf_energy   )) deallocate(cpatch%mmean_leaf_energy   )
-      if(associated(cpatch%mmean_leaf_water    )) deallocate(cpatch%mmean_leaf_water    )
-      if(associated(cpatch%mmean_leaf_hcap     )) deallocate(cpatch%mmean_leaf_hcap     )
-      if(associated(cpatch%mmean_leaf_vpdef    )) deallocate(cpatch%mmean_leaf_vpdef    )
-      if(associated(cpatch%mmean_leaf_temp     )) deallocate(cpatch%mmean_leaf_temp     )
-      if(associated(cpatch%mmean_leaf_fliq     )) deallocate(cpatch%mmean_leaf_fliq     )
-      if(associated(cpatch%mmean_leaf_gsw      )) deallocate(cpatch%mmean_leaf_gsw      )
-      if(associated(cpatch%mmean_leaf_gbw      )) deallocate(cpatch%mmean_leaf_gbw      )
-      if(associated(cpatch%mmean_wood_energy   )) deallocate(cpatch%mmean_wood_energy   )
-      if(associated(cpatch%mmean_wood_water    )) deallocate(cpatch%mmean_wood_water    )
-      if(associated(cpatch%mmean_wood_hcap     )) deallocate(cpatch%mmean_wood_hcap     )
-      if(associated(cpatch%mmean_wood_temp     )) deallocate(cpatch%mmean_wood_temp     )
-      if(associated(cpatch%mmean_wood_fliq     )) deallocate(cpatch%mmean_wood_fliq     )
-      if(associated(cpatch%mmean_wood_gbw      )) deallocate(cpatch%mmean_wood_gbw      )
-      if(associated(cpatch%mmean_fs_open       )) deallocate(cpatch%mmean_fs_open       )
-      if(associated(cpatch%mmean_fsw           )) deallocate(cpatch%mmean_fsw           )
-      if(associated(cpatch%mmean_fsn           )) deallocate(cpatch%mmean_fsn           )
-      if(associated(cpatch%mmean_a_open        )) deallocate(cpatch%mmean_a_open        )
-      if(associated(cpatch%mmean_a_closed      )) deallocate(cpatch%mmean_a_closed      )
-      if(associated(cpatch%mmean_a_net         )) deallocate(cpatch%mmean_a_net         )
-      if(associated(cpatch%mmean_A_light       )) deallocate(cpatch%mmean_A_light       )
-      if(associated(cpatch%mmean_A_rubp        )) deallocate(cpatch%mmean_A_rubp        )
-      if(associated(cpatch%mmean_A_co2         )) deallocate(cpatch%mmean_A_co2         )
-      if(associated(cpatch%mmean_psi_open      )) deallocate(cpatch%mmean_psi_open      )
-      if(associated(cpatch%mmean_psi_closed    )) deallocate(cpatch%mmean_psi_closed    )
-      if(associated(cpatch%mmean_water_supply  )) deallocate(cpatch%mmean_water_supply  )
-      if(associated(cpatch%mmean_light_level   )) deallocate(cpatch%mmean_light_level   )
-      if(associated(cpatch%mmean_light_level_beam))                                        &
-                                                deallocate(cpatch%mmean_light_level_beam)
-      if(associated(cpatch%mmean_light_level_diff))                                        &
-                                                deallocate(cpatch%mmean_light_level_diff)
+      if(associated(cpatch%dmean_par_l             )) deallocate(cpatch%dmean_par_l             )
+      if(associated(cpatch%dmean_par_l_beam        )) deallocate(cpatch%dmean_par_l_beam        )
+      if(associated(cpatch%dmean_par_l_diff        )) deallocate(cpatch%dmean_par_l_diff        )
+      if(associated(cpatch%dmean_rshort_l          )) deallocate(cpatch%dmean_rshort_l          )
+      if(associated(cpatch%dmean_rlong_l           )) deallocate(cpatch%dmean_rlong_l           )
+      if(associated(cpatch%dmean_sensible_lc       )) deallocate(cpatch%dmean_sensible_lc       )
+      if(associated(cpatch%dmean_vapor_lc          )) deallocate(cpatch%dmean_vapor_lc          )
+      if(associated(cpatch%dmean_transp            )) deallocate(cpatch%dmean_transp            )
+      if(associated(cpatch%dmean_intercepted_al    )) deallocate(cpatch%dmean_intercepted_al    )
+      if(associated(cpatch%dmean_wshed_lg          )) deallocate(cpatch%dmean_wshed_lg          )
+      if(associated(cpatch%dmean_rshort_w          )) deallocate(cpatch%dmean_rshort_w          )
+      if(associated(cpatch%dmean_rlong_w           )) deallocate(cpatch%dmean_rlong_w           )
+      if(associated(cpatch%dmean_rad_profile       )) deallocate(cpatch%dmean_rad_profile       )
+      if(associated(cpatch%dmean_sensible_wc       )) deallocate(cpatch%dmean_sensible_wc       )
+      if(associated(cpatch%dmean_vapor_wc          )) deallocate(cpatch%dmean_vapor_wc          )
+      if(associated(cpatch%dmean_intercepted_aw    )) deallocate(cpatch%dmean_intercepted_aw    )
+      if(associated(cpatch%dmean_wshed_wg          )) deallocate(cpatch%dmean_wshed_wg          )
+      if(associated(cpatch%mmean_thbark            )) deallocate(cpatch%mmean_thbark            )
+      if(associated(cpatch%mmean_lai               )) deallocate(cpatch%mmean_lai               )
+      if(associated(cpatch%mmean_bleaf             )) deallocate(cpatch%mmean_bleaf             )
+      if(associated(cpatch%mmean_broot             )) deallocate(cpatch%mmean_broot             )
+      if(associated(cpatch%mmean_bbarka            )) deallocate(cpatch%mmean_bbarka            )
+      if(associated(cpatch%mmean_bbarkb            )) deallocate(cpatch%mmean_bbarkb            )
+      if(associated(cpatch%mmean_balive            )) deallocate(cpatch%mmean_balive            )
+      if(associated(cpatch%mmean_bstorage          )) deallocate(cpatch%mmean_bstorage          )
+      if(associated(cpatch%mmean_mort_rate         )) deallocate(cpatch%mmean_mort_rate         )
+      if(associated(cpatch%mmean_leaf_maintenance  )) deallocate(cpatch%mmean_leaf_maintenance  )
+      if(associated(cpatch%mmean_root_maintenance  )) deallocate(cpatch%mmean_root_maintenance  )
+      if(associated(cpatch%mmean_barka_maintenance )) deallocate(cpatch%mmean_barka_maintenance )
+      if(associated(cpatch%mmean_barkb_maintenance )) deallocate(cpatch%mmean_barkb_maintenance )
+      if(associated(cpatch%mmean_leaf_drop         )) deallocate(cpatch%mmean_leaf_drop         )
+      if(associated(cpatch%mmean_cb                )) deallocate(cpatch%mmean_cb                )
+      if(associated(cpatch%mmean_gpp               )) deallocate(cpatch%mmean_gpp               )
+      if(associated(cpatch%mmean_npp               )) deallocate(cpatch%mmean_npp               )
+      if(associated(cpatch%mmean_leaf_resp         )) deallocate(cpatch%mmean_leaf_resp         )
+      if(associated(cpatch%mmean_root_resp         )) deallocate(cpatch%mmean_root_resp         )
+      if(associated(cpatch%mmean_leaf_growth_resp  )) deallocate(cpatch%mmean_leaf_growth_resp  )
+      if(associated(cpatch%mmean_root_growth_resp  )) deallocate(cpatch%mmean_root_growth_resp  )
+      if(associated(cpatch%mmean_sapa_growth_resp  )) deallocate(cpatch%mmean_sapa_growth_resp  )
+      if(associated(cpatch%mmean_sapb_growth_resp  )) deallocate(cpatch%mmean_sapb_growth_resp  )
+      if(associated(cpatch%mmean_barka_growth_resp )) deallocate(cpatch%mmean_barka_growth_resp )
+      if(associated(cpatch%mmean_barkb_growth_resp )) deallocate(cpatch%mmean_barkb_growth_resp )
+      if(associated(cpatch%mmean_leaf_storage_resp )) deallocate(cpatch%mmean_leaf_storage_resp )
+      if(associated(cpatch%mmean_root_storage_resp )) deallocate(cpatch%mmean_root_storage_resp )
+      if(associated(cpatch%mmean_sapa_storage_resp )) deallocate(cpatch%mmean_sapa_storage_resp )
+      if(associated(cpatch%mmean_sapb_storage_resp )) deallocate(cpatch%mmean_sapb_storage_resp )
+      if(associated(cpatch%mmean_barka_storage_resp)) deallocate(cpatch%mmean_barka_storage_resp)
+      if(associated(cpatch%mmean_barkb_storage_resp)) deallocate(cpatch%mmean_barkb_storage_resp)
+      if(associated(cpatch%mmean_plresp            )) deallocate(cpatch%mmean_plresp            )
+      if(associated(cpatch%mmean_leaf_energy       )) deallocate(cpatch%mmean_leaf_energy       )
+      if(associated(cpatch%mmean_leaf_water        )) deallocate(cpatch%mmean_leaf_water        )
+      if(associated(cpatch%mmean_leaf_hcap         )) deallocate(cpatch%mmean_leaf_hcap         )
+      if(associated(cpatch%mmean_leaf_vpdef        )) deallocate(cpatch%mmean_leaf_vpdef        )
+      if(associated(cpatch%mmean_leaf_temp         )) deallocate(cpatch%mmean_leaf_temp         )
+      if(associated(cpatch%mmean_leaf_fliq         )) deallocate(cpatch%mmean_leaf_fliq         )
+      if(associated(cpatch%mmean_leaf_gsw          )) deallocate(cpatch%mmean_leaf_gsw          )
+      if(associated(cpatch%mmean_leaf_gbw          )) deallocate(cpatch%mmean_leaf_gbw          )
+      if(associated(cpatch%mmean_wood_energy       )) deallocate(cpatch%mmean_wood_energy       )
+      if(associated(cpatch%mmean_wood_water        )) deallocate(cpatch%mmean_wood_water        )
+      if(associated(cpatch%mmean_wood_hcap         )) deallocate(cpatch%mmean_wood_hcap         )
+      if(associated(cpatch%mmean_wood_temp         )) deallocate(cpatch%mmean_wood_temp         )
+      if(associated(cpatch%mmean_wood_fliq         )) deallocate(cpatch%mmean_wood_fliq         )
+      if(associated(cpatch%mmean_wood_gbw          )) deallocate(cpatch%mmean_wood_gbw          )
+      if(associated(cpatch%mmean_fs_open           )) deallocate(cpatch%mmean_fs_open           )
+      if(associated(cpatch%mmean_fsw               )) deallocate(cpatch%mmean_fsw               )
+      if(associated(cpatch%mmean_fsn               )) deallocate(cpatch%mmean_fsn               )
+      if(associated(cpatch%mmean_a_open            )) deallocate(cpatch%mmean_a_open            )
+      if(associated(cpatch%mmean_a_closed          )) deallocate(cpatch%mmean_a_closed          )
+      if(associated(cpatch%mmean_a_net             )) deallocate(cpatch%mmean_a_net             )
+      if(associated(cpatch%mmean_A_light           )) deallocate(cpatch%mmean_A_light           )
+      if(associated(cpatch%mmean_A_rubp            )) deallocate(cpatch%mmean_A_rubp            )
+      if(associated(cpatch%mmean_A_co2             )) deallocate(cpatch%mmean_A_co2             )
+      if(associated(cpatch%mmean_psi_open          )) deallocate(cpatch%mmean_psi_open          )
+      if(associated(cpatch%mmean_psi_closed        )) deallocate(cpatch%mmean_psi_closed        )
+      if(associated(cpatch%mmean_water_supply      )) deallocate(cpatch%mmean_water_supply      )
+      if(associated(cpatch%mmean_light_level       )) deallocate(cpatch%mmean_light_level       )
+      if(associated(cpatch%mmean_light_level_beam  )) deallocate(cpatch%mmean_light_level_beam  )
+      if(associated(cpatch%mmean_light_level_diff  )) deallocate(cpatch%mmean_light_level_diff  )
       
-      if(associated(cpatch%mmean_par_level_beam ))deallocate(cpatch%mmean_par_level_beam )
-      if(associated(cpatch%mmean_par_level_diffu))deallocate(cpatch%mmean_par_level_diffu)
-      if(associated(cpatch%mmean_par_level_diffd))deallocate(cpatch%mmean_par_level_diffd)
+      if(associated(cpatch%mmean_par_level_beam    )) deallocate(cpatch%mmean_par_level_beam    )
+      if(associated(cpatch%mmean_par_level_diffu   )) deallocate(cpatch%mmean_par_level_diffu   )
+      if(associated(cpatch%mmean_par_level_diffd   )) deallocate(cpatch%mmean_par_level_diffd   )
 
-      if(associated(cpatch%mmean_par_l         )) deallocate(cpatch%mmean_par_l         )
-      if(associated(cpatch%mmean_par_l_beam    )) deallocate(cpatch%mmean_par_l_beam    )
-      if(associated(cpatch%mmean_par_l_diff    )) deallocate(cpatch%mmean_par_l_diff    )
-      if(associated(cpatch%mmean_rshort_l      )) deallocate(cpatch%mmean_rshort_l      )
-      if(associated(cpatch%mmean_rlong_l       )) deallocate(cpatch%mmean_rlong_l       )
-      if(associated(cpatch%mmean_sensible_lc   )) deallocate(cpatch%mmean_sensible_lc   )
-      if(associated(cpatch%mmean_vapor_lc      )) deallocate(cpatch%mmean_vapor_lc      )
-      if(associated(cpatch%mmean_transp        )) deallocate(cpatch%mmean_transp        )
-      if(associated(cpatch%mmean_intercepted_al)) deallocate(cpatch%mmean_intercepted_al)
-      if(associated(cpatch%mmean_wshed_lg      )) deallocate(cpatch%mmean_wshed_lg      )
-      if(associated(cpatch%mmean_rshort_w      )) deallocate(cpatch%mmean_rshort_w      )
-      if(associated(cpatch%mmean_rlong_w       )) deallocate(cpatch%mmean_rlong_w       )
-      if(associated(cpatch%mmean_rad_profile   )) deallocate(cpatch%mmean_rad_profile   )
-      if(associated(cpatch%mmean_sensible_wc   )) deallocate(cpatch%mmean_sensible_wc   )
-      if(associated(cpatch%mmean_vapor_wc      )) deallocate(cpatch%mmean_vapor_wc      )
-      if(associated(cpatch%mmean_intercepted_aw)) deallocate(cpatch%mmean_intercepted_aw)
-      if(associated(cpatch%mmean_wshed_wg      )) deallocate(cpatch%mmean_wshed_wg      )
-      if(associated(cpatch%mmean_nppleaf       )) deallocate(cpatch%mmean_nppleaf       )
-      if(associated(cpatch%mmean_nppfroot      )) deallocate(cpatch%mmean_nppfroot      )
-      if(associated(cpatch%mmean_nppsapwood    )) deallocate(cpatch%mmean_nppsapwood    )
-      if(associated(cpatch%mmean_nppbark       )) deallocate(cpatch%mmean_nppbark       )
-      if(associated(cpatch%mmean_nppcroot      )) deallocate(cpatch%mmean_nppcroot      )
-      if(associated(cpatch%mmean_nppseeds      )) deallocate(cpatch%mmean_nppseeds      )
-      if(associated(cpatch%mmean_nppwood       )) deallocate(cpatch%mmean_nppwood       )
-      if(associated(cpatch%mmean_nppdaily      )) deallocate(cpatch%mmean_nppdaily      )
-      if(associated(cpatch%mmsqu_gpp           )) deallocate(cpatch%mmsqu_gpp           )
-      if(associated(cpatch%mmsqu_npp           )) deallocate(cpatch%mmsqu_npp           )
-      if(associated(cpatch%mmsqu_plresp        )) deallocate(cpatch%mmsqu_plresp        )
-      if(associated(cpatch%mmsqu_sensible_lc   )) deallocate(cpatch%mmsqu_sensible_lc   )
-      if(associated(cpatch%mmsqu_vapor_lc      )) deallocate(cpatch%mmsqu_vapor_lc      )
-      if(associated(cpatch%mmsqu_transp        )) deallocate(cpatch%mmsqu_transp        )
-      if(associated(cpatch%mmsqu_sensible_wc   )) deallocate(cpatch%mmsqu_sensible_wc   )
-      if(associated(cpatch%mmsqu_vapor_wc      )) deallocate(cpatch%mmsqu_vapor_wc      )
-      if(associated(cpatch%qmean_gpp           )) deallocate(cpatch%qmean_gpp           )
-      if(associated(cpatch%qmean_npp           )) deallocate(cpatch%qmean_npp           )
-      if(associated(cpatch%qmean_leaf_resp     )) deallocate(cpatch%qmean_leaf_resp     )
-      if(associated(cpatch%qmean_root_resp     )) deallocate(cpatch%qmean_root_resp     )
-      if(associated(cpatch%qmean_leaf_growth_resp)) deallocate(cpatch%qmean_leaf_growth_resp)
-      if(associated(cpatch%qmean_root_growth_resp)) deallocate(cpatch%qmean_root_growth_resp)
-      if(associated(cpatch%qmean_sapa_growth_resp)) deallocate(cpatch%qmean_sapa_growth_resp)
-      if(associated(cpatch%qmean_sapb_growth_resp)) deallocate(cpatch%qmean_sapb_growth_resp)
-      if(associated(cpatch%qmean_bark_growth_resp)) deallocate(cpatch%qmean_bark_growth_resp)
-      if(associated(cpatch%qmean_leaf_storage_resp)) deallocate(cpatch%qmean_leaf_storage_resp)
-      if(associated(cpatch%qmean_root_storage_resp)) deallocate(cpatch%qmean_root_storage_resp)
-      if(associated(cpatch%qmean_sapa_storage_resp)) deallocate(cpatch%qmean_sapa_storage_resp)
-      if(associated(cpatch%qmean_sapb_storage_resp)) deallocate(cpatch%qmean_sapb_storage_resp)
-      if(associated(cpatch%qmean_bark_storage_resp)) deallocate(cpatch%qmean_bark_storage_resp)
-      if(associated(cpatch%qmean_plresp        )) deallocate(cpatch%qmean_plresp        )
-      if(associated(cpatch%qmean_leaf_energy   )) deallocate(cpatch%qmean_leaf_energy   )
-      if(associated(cpatch%qmean_leaf_water    )) deallocate(cpatch%qmean_leaf_water    )
-      if(associated(cpatch%qmean_leaf_hcap     )) deallocate(cpatch%qmean_leaf_hcap     )
-      if(associated(cpatch%qmean_leaf_vpdef    )) deallocate(cpatch%qmean_leaf_vpdef    )
-      if(associated(cpatch%qmean_leaf_temp     )) deallocate(cpatch%qmean_leaf_temp     )
-      if(associated(cpatch%qmean_leaf_fliq     )) deallocate(cpatch%qmean_leaf_fliq     )
-      if(associated(cpatch%qmean_leaf_gsw      )) deallocate(cpatch%qmean_leaf_gsw      )
-      if(associated(cpatch%qmean_leaf_gbw      )) deallocate(cpatch%qmean_leaf_gbw      )
-      if(associated(cpatch%qmean_wood_energy   )) deallocate(cpatch%qmean_wood_energy   )
-      if(associated(cpatch%qmean_wood_water    )) deallocate(cpatch%qmean_wood_water    )
-      if(associated(cpatch%qmean_wood_hcap     )) deallocate(cpatch%qmean_wood_hcap     )
-      if(associated(cpatch%qmean_wood_temp     )) deallocate(cpatch%qmean_wood_temp     )
-      if(associated(cpatch%qmean_wood_fliq     )) deallocate(cpatch%qmean_wood_fliq     )
-      if(associated(cpatch%qmean_wood_gbw      )) deallocate(cpatch%qmean_wood_gbw      )
-      if(associated(cpatch%qmean_fs_open       )) deallocate(cpatch%qmean_fs_open       )
-      if(associated(cpatch%qmean_fsw           )) deallocate(cpatch%qmean_fsw           )
-      if(associated(cpatch%qmean_fsn           )) deallocate(cpatch%qmean_fsn           )
-      if(associated(cpatch%qmean_a_open        )) deallocate(cpatch%qmean_a_open        )
-      if(associated(cpatch%qmean_a_closed      )) deallocate(cpatch%qmean_a_closed      )
-      if(associated(cpatch%qmean_a_net         )) deallocate(cpatch%qmean_a_net         )
-      if(associated(cpatch%qmean_A_light       )) deallocate(cpatch%qmean_A_light       )
-      if(associated(cpatch%qmean_A_rubp        )) deallocate(cpatch%qmean_A_rubp        )
-      if(associated(cpatch%qmean_A_co2         )) deallocate(cpatch%qmean_A_co2         )
-      if(associated(cpatch%qmean_psi_open      )) deallocate(cpatch%qmean_psi_open      )
-      if(associated(cpatch%qmean_psi_closed    )) deallocate(cpatch%qmean_psi_closed    )
-      if(associated(cpatch%qmean_water_supply  )) deallocate(cpatch%qmean_water_supply  )
-      if(associated(cpatch%qmean_light_level   )) deallocate(cpatch%qmean_light_level   )
-      if(associated(cpatch%qmean_light_level_beam))                                        &
-                                                deallocate(cpatch%qmean_light_level_beam)
-      if(associated(cpatch%qmean_light_level_diff))                                        &
-                                                deallocate(cpatch%qmean_light_level_diff)
+      if(associated(cpatch%mmean_par_l             )) deallocate(cpatch%mmean_par_l             )
+      if(associated(cpatch%mmean_par_l_beam        )) deallocate(cpatch%mmean_par_l_beam        )
+      if(associated(cpatch%mmean_par_l_diff        )) deallocate(cpatch%mmean_par_l_diff        )
+      if(associated(cpatch%mmean_rshort_l          )) deallocate(cpatch%mmean_rshort_l          )
+      if(associated(cpatch%mmean_rlong_l           )) deallocate(cpatch%mmean_rlong_l           )
+      if(associated(cpatch%mmean_sensible_lc       )) deallocate(cpatch%mmean_sensible_lc       )
+      if(associated(cpatch%mmean_vapor_lc          )) deallocate(cpatch%mmean_vapor_lc          )
+      if(associated(cpatch%mmean_transp            )) deallocate(cpatch%mmean_transp            )
+      if(associated(cpatch%mmean_intercepted_al    )) deallocate(cpatch%mmean_intercepted_al    )
+      if(associated(cpatch%mmean_wshed_lg          )) deallocate(cpatch%mmean_wshed_lg          )
+      if(associated(cpatch%mmean_rshort_w          )) deallocate(cpatch%mmean_rshort_w          )
+      if(associated(cpatch%mmean_rlong_w           )) deallocate(cpatch%mmean_rlong_w           )
+      if(associated(cpatch%mmean_rad_profile       )) deallocate(cpatch%mmean_rad_profile       )
+      if(associated(cpatch%mmean_sensible_wc       )) deallocate(cpatch%mmean_sensible_wc       )
+      if(associated(cpatch%mmean_vapor_wc          )) deallocate(cpatch%mmean_vapor_wc          )
+      if(associated(cpatch%mmean_intercepted_aw    )) deallocate(cpatch%mmean_intercepted_aw    )
+      if(associated(cpatch%mmean_wshed_wg          )) deallocate(cpatch%mmean_wshed_wg          )
+      if(associated(cpatch%mmean_nppleaf           )) deallocate(cpatch%mmean_nppleaf           )
+      if(associated(cpatch%mmean_nppfroot          )) deallocate(cpatch%mmean_nppfroot          )
+      if(associated(cpatch%mmean_nppsapwood        )) deallocate(cpatch%mmean_nppsapwood        )
+      if(associated(cpatch%mmean_nppbark           )) deallocate(cpatch%mmean_nppbark           )
+      if(associated(cpatch%mmean_nppcroot          )) deallocate(cpatch%mmean_nppcroot          )
+      if(associated(cpatch%mmean_nppseeds          )) deallocate(cpatch%mmean_nppseeds          )
+      if(associated(cpatch%mmean_nppwood           )) deallocate(cpatch%mmean_nppwood           )
+      if(associated(cpatch%mmean_nppdaily          )) deallocate(cpatch%mmean_nppdaily          )
+      if(associated(cpatch%mmsqu_gpp               )) deallocate(cpatch%mmsqu_gpp               )
+      if(associated(cpatch%mmsqu_npp               )) deallocate(cpatch%mmsqu_npp               )
+      if(associated(cpatch%mmsqu_plresp            )) deallocate(cpatch%mmsqu_plresp            )
+      if(associated(cpatch%mmsqu_sensible_lc       )) deallocate(cpatch%mmsqu_sensible_lc       )
+      if(associated(cpatch%mmsqu_vapor_lc          )) deallocate(cpatch%mmsqu_vapor_lc          )
+      if(associated(cpatch%mmsqu_transp            )) deallocate(cpatch%mmsqu_transp            )
+      if(associated(cpatch%mmsqu_sensible_wc       )) deallocate(cpatch%mmsqu_sensible_wc       )
+      if(associated(cpatch%mmsqu_vapor_wc          )) deallocate(cpatch%mmsqu_vapor_wc          )
+      if(associated(cpatch%qmean_gpp               )) deallocate(cpatch%qmean_gpp               )
+      if(associated(cpatch%qmean_npp               )) deallocate(cpatch%qmean_npp               )
+      if(associated(cpatch%qmean_leaf_resp         )) deallocate(cpatch%qmean_leaf_resp         )
+      if(associated(cpatch%qmean_root_resp         )) deallocate(cpatch%qmean_root_resp         )
+      if(associated(cpatch%qmean_leaf_growth_resp  )) deallocate(cpatch%qmean_leaf_growth_resp  )
+      if(associated(cpatch%qmean_root_growth_resp  )) deallocate(cpatch%qmean_root_growth_resp  )
+      if(associated(cpatch%qmean_sapa_growth_resp  )) deallocate(cpatch%qmean_sapa_growth_resp  )
+      if(associated(cpatch%qmean_sapb_growth_resp  )) deallocate(cpatch%qmean_sapb_growth_resp  )
+      if(associated(cpatch%qmean_barka_growth_resp )) deallocate(cpatch%qmean_barka_growth_resp )
+      if(associated(cpatch%qmean_barkb_growth_resp )) deallocate(cpatch%qmean_barkb_growth_resp )
+      if(associated(cpatch%qmean_leaf_storage_resp )) deallocate(cpatch%qmean_leaf_storage_resp )
+      if(associated(cpatch%qmean_root_storage_resp )) deallocate(cpatch%qmean_root_storage_resp )
+      if(associated(cpatch%qmean_sapa_storage_resp )) deallocate(cpatch%qmean_sapa_storage_resp )
+      if(associated(cpatch%qmean_sapb_storage_resp )) deallocate(cpatch%qmean_sapb_storage_resp )
+      if(associated(cpatch%qmean_barka_storage_resp)) deallocate(cpatch%qmean_barka_storage_resp)
+      if(associated(cpatch%qmean_barkb_storage_resp)) deallocate(cpatch%qmean_barkb_storage_resp)
+      if(associated(cpatch%qmean_plresp            )) deallocate(cpatch%qmean_plresp            )
+      if(associated(cpatch%qmean_leaf_energy       )) deallocate(cpatch%qmean_leaf_energy       )
+      if(associated(cpatch%qmean_leaf_water        )) deallocate(cpatch%qmean_leaf_water        )
+      if(associated(cpatch%qmean_leaf_hcap         )) deallocate(cpatch%qmean_leaf_hcap         )
+      if(associated(cpatch%qmean_leaf_vpdef        )) deallocate(cpatch%qmean_leaf_vpdef        )
+      if(associated(cpatch%qmean_leaf_temp         )) deallocate(cpatch%qmean_leaf_temp         )
+      if(associated(cpatch%qmean_leaf_fliq         )) deallocate(cpatch%qmean_leaf_fliq         )
+      if(associated(cpatch%qmean_leaf_gsw          )) deallocate(cpatch%qmean_leaf_gsw          )
+      if(associated(cpatch%qmean_leaf_gbw          )) deallocate(cpatch%qmean_leaf_gbw          )
+      if(associated(cpatch%qmean_wood_energy       )) deallocate(cpatch%qmean_wood_energy       )
+      if(associated(cpatch%qmean_wood_water        )) deallocate(cpatch%qmean_wood_water        )
+      if(associated(cpatch%qmean_wood_hcap         )) deallocate(cpatch%qmean_wood_hcap         )
+      if(associated(cpatch%qmean_wood_temp         )) deallocate(cpatch%qmean_wood_temp         )
+      if(associated(cpatch%qmean_wood_fliq         )) deallocate(cpatch%qmean_wood_fliq         )
+      if(associated(cpatch%qmean_wood_gbw          )) deallocate(cpatch%qmean_wood_gbw          )
+      if(associated(cpatch%qmean_fs_open           )) deallocate(cpatch%qmean_fs_open           )
+      if(associated(cpatch%qmean_fsw               )) deallocate(cpatch%qmean_fsw               )
+      if(associated(cpatch%qmean_fsn               )) deallocate(cpatch%qmean_fsn               )
+      if(associated(cpatch%qmean_a_open            )) deallocate(cpatch%qmean_a_open            )
+      if(associated(cpatch%qmean_a_closed          )) deallocate(cpatch%qmean_a_closed          )
+      if(associated(cpatch%qmean_a_net             )) deallocate(cpatch%qmean_a_net             )
+      if(associated(cpatch%qmean_A_light           )) deallocate(cpatch%qmean_A_light           )
+      if(associated(cpatch%qmean_A_rubp            )) deallocate(cpatch%qmean_A_rubp            )
+      if(associated(cpatch%qmean_A_co2             )) deallocate(cpatch%qmean_A_co2             )
+      if(associated(cpatch%qmean_psi_open          )) deallocate(cpatch%qmean_psi_open          )
+      if(associated(cpatch%qmean_psi_closed        )) deallocate(cpatch%qmean_psi_closed        )
+      if(associated(cpatch%qmean_water_supply      )) deallocate(cpatch%qmean_water_supply      )
+      if(associated(cpatch%qmean_light_level       )) deallocate(cpatch%qmean_light_level       )
+      if(associated(cpatch%qmean_light_level_beam  )) deallocate(cpatch%qmean_light_level_beam  )
+      if(associated(cpatch%qmean_light_level_diff  )) deallocate(cpatch%qmean_light_level_diff  )
 
-      if(associated(cpatch%qmean_par_level_beam ))deallocate(cpatch%qmean_par_level_beam )
-      if(associated(cpatch%qmean_par_level_diffu))deallocate(cpatch%qmean_par_level_diffu)
-      if(associated(cpatch%qmean_par_level_diffd))deallocate(cpatch%qmean_par_level_diffd)
+      if(associated(cpatch%qmean_par_level_beam    ))deallocate(cpatch%qmean_par_level_beam     )
+      if(associated(cpatch%qmean_par_level_diffu   ))deallocate(cpatch%qmean_par_level_diffu    )
+      if(associated(cpatch%qmean_par_level_diffd   ))deallocate(cpatch%qmean_par_level_diffd    )
 
-      if(associated(cpatch%qmean_par_l         )) deallocate(cpatch%qmean_par_l         )
-      if(associated(cpatch%qmean_par_l_beam    )) deallocate(cpatch%qmean_par_l_beam    )
-      if(associated(cpatch%qmean_par_l_diff    )) deallocate(cpatch%qmean_par_l_diff    )
-      if(associated(cpatch%qmean_rshort_l      )) deallocate(cpatch%qmean_rshort_l      )
-      if(associated(cpatch%qmean_rlong_l       )) deallocate(cpatch%qmean_rlong_l       )
-      if(associated(cpatch%qmean_sensible_lc   )) deallocate(cpatch%qmean_sensible_lc   )
-      if(associated(cpatch%qmean_vapor_lc      )) deallocate(cpatch%qmean_vapor_lc      )
-      if(associated(cpatch%qmean_transp        )) deallocate(cpatch%qmean_transp        )
-      if(associated(cpatch%qmean_intercepted_al)) deallocate(cpatch%qmean_intercepted_al)
-      if(associated(cpatch%qmean_wshed_lg      )) deallocate(cpatch%qmean_wshed_lg      )
-      if(associated(cpatch%qmean_rshort_w      )) deallocate(cpatch%qmean_rshort_w      )
-      if(associated(cpatch%qmean_rlong_w       )) deallocate(cpatch%qmean_rlong_w       )
-      if(associated(cpatch%qmean_rad_profile   )) deallocate(cpatch%qmean_rad_profile   )
-      if(associated(cpatch%qmean_sensible_wc   )) deallocate(cpatch%qmean_sensible_wc   )
-      if(associated(cpatch%qmean_vapor_wc      )) deallocate(cpatch%qmean_vapor_wc      )
-      if(associated(cpatch%qmean_intercepted_aw)) deallocate(cpatch%qmean_intercepted_aw)
-      if(associated(cpatch%qmean_wshed_wg      )) deallocate(cpatch%qmean_wshed_wg      )
-      if(associated(cpatch%qmsqu_gpp           )) deallocate(cpatch%qmsqu_gpp           )
-      if(associated(cpatch%qmsqu_npp           )) deallocate(cpatch%qmsqu_npp           )
-      if(associated(cpatch%qmsqu_plresp        )) deallocate(cpatch%qmsqu_plresp        )
-      if(associated(cpatch%qmsqu_sensible_lc   )) deallocate(cpatch%qmsqu_sensible_lc   )
-      if(associated(cpatch%qmsqu_vapor_lc      )) deallocate(cpatch%qmsqu_vapor_lc      )
-      if(associated(cpatch%qmsqu_transp        )) deallocate(cpatch%qmsqu_transp        )
-      if(associated(cpatch%qmsqu_sensible_wc   )) deallocate(cpatch%qmsqu_sensible_wc   )
-      if(associated(cpatch%qmsqu_vapor_wc      )) deallocate(cpatch%qmsqu_vapor_wc      )
+      if(associated(cpatch%qmean_par_l             )) deallocate(cpatch%qmean_par_l             )
+      if(associated(cpatch%qmean_par_l_beam        )) deallocate(cpatch%qmean_par_l_beam        )
+      if(associated(cpatch%qmean_par_l_diff        )) deallocate(cpatch%qmean_par_l_diff        )
+      if(associated(cpatch%qmean_rshort_l          )) deallocate(cpatch%qmean_rshort_l          )
+      if(associated(cpatch%qmean_rlong_l           )) deallocate(cpatch%qmean_rlong_l           )
+      if(associated(cpatch%qmean_sensible_lc       )) deallocate(cpatch%qmean_sensible_lc       )
+      if(associated(cpatch%qmean_vapor_lc          )) deallocate(cpatch%qmean_vapor_lc          )
+      if(associated(cpatch%qmean_transp            )) deallocate(cpatch%qmean_transp            )
+      if(associated(cpatch%qmean_intercepted_al    )) deallocate(cpatch%qmean_intercepted_al    )
+      if(associated(cpatch%qmean_wshed_lg          )) deallocate(cpatch%qmean_wshed_lg          )
+      if(associated(cpatch%qmean_rshort_w          )) deallocate(cpatch%qmean_rshort_w          )
+      if(associated(cpatch%qmean_rlong_w           )) deallocate(cpatch%qmean_rlong_w           )
+      if(associated(cpatch%qmean_rad_profile       )) deallocate(cpatch%qmean_rad_profile       )
+      if(associated(cpatch%qmean_sensible_wc       )) deallocate(cpatch%qmean_sensible_wc       )
+      if(associated(cpatch%qmean_vapor_wc          )) deallocate(cpatch%qmean_vapor_wc          )
+      if(associated(cpatch%qmean_intercepted_aw    )) deallocate(cpatch%qmean_intercepted_aw    )
+      if(associated(cpatch%qmean_wshed_wg          )) deallocate(cpatch%qmean_wshed_wg          )
+      if(associated(cpatch%qmsqu_gpp               )) deallocate(cpatch%qmsqu_gpp               )
+      if(associated(cpatch%qmsqu_npp               )) deallocate(cpatch%qmsqu_npp               )
+      if(associated(cpatch%qmsqu_plresp            )) deallocate(cpatch%qmsqu_plresp            )
+      if(associated(cpatch%qmsqu_sensible_lc       )) deallocate(cpatch%qmsqu_sensible_lc       )
+      if(associated(cpatch%qmsqu_vapor_lc          )) deallocate(cpatch%qmsqu_vapor_lc          )
+      if(associated(cpatch%qmsqu_transp            )) deallocate(cpatch%qmsqu_transp            )
+      if(associated(cpatch%qmsqu_sensible_wc       )) deallocate(cpatch%qmsqu_sensible_wc       )
+      if(associated(cpatch%qmsqu_vapor_wc          )) deallocate(cpatch%qmsqu_vapor_wc          )
 
       return
    end subroutine deallocate_patchtype
@@ -8144,12 +8696,19 @@ module ed_state_vars
          osite%dist_type                  (opa) = isite%dist_type                  (ipa)
          osite%fbeam                      (opa) = isite%fbeam                      (ipa)
          osite%light_type                 (opa) = isite%light_type                 (ipa)
+         osite%fast_grnd_C                (opa) = isite%fast_grnd_C                (ipa)
          osite%fast_soil_C                (opa) = isite%fast_soil_C                (ipa)
-         osite%slow_soil_C                (opa) = isite%slow_soil_C                (ipa)
+         osite%structural_grnd_C          (opa) = isite%structural_grnd_C          (ipa)
          osite%structural_soil_C          (opa) = isite%structural_soil_C          (ipa)
+         osite%structural_grnd_L          (opa) = isite%structural_grnd_L          (ipa)
          osite%structural_soil_L          (opa) = isite%structural_soil_L          (ipa)
-         osite%mineralized_soil_N         (opa) = isite%mineralized_soil_N         (ipa)
+         osite%microbial_soil_C           (opa) = isite%microbial_soil_C           (ipa)
+         osite%slow_soil_C                (opa) = isite%slow_soil_C                (ipa)
+         osite%fast_grnd_N                (opa) = isite%fast_grnd_N                (ipa)
          osite%fast_soil_N                (opa) = isite%fast_soil_N                (ipa)
+         osite%structural_grnd_N          (opa) = isite%structural_grnd_N          (ipa)
+         osite%structural_soil_N          (opa) = isite%structural_soil_N          (ipa)
+         osite%mineralized_soil_N         (opa) = isite%mineralized_soil_N         (ipa)
          osite%sum_dgd                    (opa) = isite%sum_dgd                    (ipa)
          osite%sum_chd                    (opa) = isite%sum_chd                    (ipa)
          osite%can_theiv                  (opa) = isite%can_theiv                  (ipa)
@@ -8203,14 +8762,22 @@ module ed_state_vars
          osite%co2budget_plresp           (opa) = isite%co2budget_plresp           (ipa)
          osite%co2budget_rh               (opa) = isite%co2budget_rh               (ipa)
          osite%today_A_decomp             (opa) = isite%today_A_decomp             (ipa)
+         osite%today_B_decomp             (opa) = isite%today_B_decomp             (ipa)
          osite%today_Af_decomp            (opa) = isite%today_Af_decomp            (ipa)
+         osite%today_Bf_decomp            (opa) = isite%today_Bf_decomp            (ipa)
          osite%veg_rough                  (opa) = isite%veg_rough                  (ipa)
          osite%veg_height                 (opa) = isite%veg_height                 (ipa)
          osite%veg_displace               (opa) = isite%veg_displace               (ipa)
+         osite%fgc_in                     (opa) = isite%fgc_in                     (ipa)
          osite%fsc_in                     (opa) = isite%fsc_in                     (ipa)
-         osite%ssc_in                     (opa) = isite%ssc_in                     (ipa)
-         osite%ssl_in                     (opa) = isite%ssl_in                     (ipa)
+         osite%stgc_in                    (opa) = isite%stgc_in                    (ipa)
+         osite%stsc_in                    (opa) = isite%stsc_in                    (ipa)
+         osite%stgl_in                    (opa) = isite%stgl_in                    (ipa)
+         osite%stsl_in                    (opa) = isite%stsl_in                    (ipa)
+         osite%fgn_in                     (opa) = isite%fgn_in                     (ipa)
          osite%fsn_in                     (opa) = isite%fsn_in                     (ipa)
+         osite%stgn_in                    (opa) = isite%stgn_in                    (ipa)
+         osite%stsn_in                    (opa) = isite%stsn_in                    (ipa)
          osite%total_plant_nitrogen_uptake(opa) = isite%total_plant_nitrogen_uptake(ipa)
          osite%mineralized_N_loss         (opa) = isite%mineralized_N_loss         (ipa)
          osite%mineralized_N_input        (opa) = isite%mineralized_N_input        (ipa)
@@ -8240,9 +8807,15 @@ module ed_state_vars
          osite%total_sfcw_depth           (opa) = isite%total_sfcw_depth           (ipa)
          osite%snowfac                    (opa) = isite%snowfac                    (ipa)
          osite%A_decomp                   (opa) = isite%A_decomp                   (ipa)
+         osite%B_decomp                   (opa) = isite%B_decomp                   (ipa)
          osite%f_decomp                   (opa) = isite%f_decomp                   (ipa)
          osite%rh                         (opa) = isite%rh                         (ipa)
-         osite%cwd_rh                     (opa) = isite%cwd_rh                     (ipa)
+         osite%fgc_rh                     (opa) = isite%fgc_rh                     (ipa)
+         osite%fsc_rh                     (opa) = isite%fsc_rh                     (ipa)
+         osite%stgc_rh                    (opa) = isite%stgc_rh                    (ipa)
+         osite%stsc_rh                    (opa) = isite%stsc_rh                    (ipa)
+         osite%msc_rh                     (opa) = isite%msc_rh                     (ipa)
+         osite%ssc_rh                     (opa) = isite%ssc_rh                     (ipa)
          osite%plant_ag_biomass           (opa) = isite%plant_ag_biomass           (ipa)
          osite%htry                       (opa) = isite%htry                       (ipa)
          osite%hprev                      (opa) = isite%hprev                      (ipa)
@@ -8267,7 +8840,12 @@ module ed_state_vars
          osite%runoff                     (opa) = isite%runoff                     (ipa)
          osite%qrunoff                    (opa) = isite%qrunoff                    (ipa)
          osite%fmean_rh                   (opa) = isite%fmean_rh                   (ipa)
-         osite%fmean_cwd_rh               (opa) = isite%fmean_cwd_rh               (ipa)
+         osite%fmean_fgc_rh               (opa) = isite%fmean_fgc_rh               (ipa)
+         osite%fmean_fsc_rh               (opa) = isite%fmean_fsc_rh               (ipa)
+         osite%fmean_stgc_rh              (opa) = isite%fmean_stgc_rh              (ipa)
+         osite%fmean_stsc_rh              (opa) = isite%fmean_stsc_rh              (ipa)
+         osite%fmean_msc_rh               (opa) = isite%fmean_msc_rh               (ipa)
+         osite%fmean_ssc_rh               (opa) = isite%fmean_ssc_rh               (ipa)
          osite%fmean_nep                  (opa) = isite%fmean_nep                  (ipa)
          osite%fmean_rk4step              (opa) = isite%fmean_rk4step              (ipa)
          osite%fmean_available_water      (opa) = isite%fmean_available_water      (ipa)
@@ -8381,12 +8959,19 @@ module ed_state_vars
          if (writing_long) then
             !----- Scalars. ---------------------------------------------------------------!
             osite%dmean_A_decomp       (opa) = isite%dmean_A_decomp       (ipa)
+            osite%dmean_B_decomp       (opa) = isite%dmean_B_decomp       (ipa)
             osite%dmean_Af_decomp      (opa) = isite%dmean_Af_decomp      (ipa)
+            osite%dmean_Bf_decomp      (opa) = isite%dmean_Bf_decomp      (ipa)
             osite%dmean_co2_residual   (opa) = isite%dmean_co2_residual   (ipa)
             osite%dmean_energy_residual(opa) = isite%dmean_energy_residual(ipa)
             osite%dmean_water_residual (opa) = isite%dmean_water_residual (ipa)
             osite%dmean_rh             (opa) = isite%dmean_rh             (ipa)
-            osite%dmean_cwd_rh         (opa) = isite%dmean_cwd_rh         (ipa)
+            osite%dmean_fgc_rh         (opa) = isite%dmean_fgc_rh         (ipa)
+            osite%dmean_fsc_rh         (opa) = isite%dmean_fsc_rh         (ipa)
+            osite%dmean_stgc_rh        (opa) = isite%dmean_stgc_rh        (ipa)
+            osite%dmean_stsc_rh        (opa) = isite%dmean_stsc_rh        (ipa)
+            osite%dmean_msc_rh         (opa) = isite%dmean_msc_rh         (ipa)
+            osite%dmean_ssc_rh         (opa) = isite%dmean_ssc_rh         (ipa)
             osite%dmean_nep            (opa) = isite%dmean_nep            (ipa)
             osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (ipa)
             osite%dmean_available_water(opa) = isite%dmean_available_water(ipa)
@@ -8461,20 +9046,34 @@ module ed_state_vars
          !---------------------------------------------------------------------------------!
          if (writing_eorq) then
             !----- Scalars. ---------------------------------------------------------------!
+            osite%mmean_fast_grnd_c    (opa) = isite%mmean_fast_grnd_c    (ipa)
             osite%mmean_fast_soil_c    (opa) = isite%mmean_fast_soil_c    (ipa)
-            osite%mmean_slow_soil_c    (opa) = isite%mmean_slow_soil_c    (ipa)
+            osite%mmean_struct_grnd_c  (opa) = isite%mmean_struct_grnd_c  (ipa)
             osite%mmean_struct_soil_c  (opa) = isite%mmean_struct_soil_c  (ipa)
+            osite%mmean_struct_grnd_l  (opa) = isite%mmean_struct_grnd_l  (ipa)
             osite%mmean_struct_soil_l  (opa) = isite%mmean_struct_soil_l  (ipa)
+            osite%mmean_microbe_soil_c (opa) = isite%mmean_microbe_soil_c (ipa)
+            osite%mmean_slow_soil_c    (opa) = isite%mmean_slow_soil_c    (ipa)
+            osite%mmean_fast_grnd_n    (opa) = isite%mmean_fast_grnd_n    (ipa)
             osite%mmean_fast_soil_n    (opa) = isite%mmean_fast_soil_n    (ipa)
+            osite%mmean_struct_grnd_n  (opa) = isite%mmean_struct_grnd_n  (ipa)
+            osite%mmean_struct_soil_n  (opa) = isite%mmean_struct_soil_n  (ipa)
             osite%mmean_mineral_soil_n (opa) = isite%mmean_mineral_soil_n (ipa)
             osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
             osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
             osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
             osite%mmean_rh             (opa) = isite%mmean_rh             (ipa)
-            osite%mmean_cwd_rh         (opa) = isite%mmean_cwd_rh         (ipa)
+            osite%mmean_fgc_rh         (opa) = isite%mmean_fgc_rh         (ipa)
+            osite%mmean_fsc_rh         (opa) = isite%mmean_fsc_rh         (ipa)
+            osite%mmean_stgc_rh        (opa) = isite%mmean_stgc_rh        (ipa)
+            osite%mmean_stsc_rh        (opa) = isite%mmean_stsc_rh        (ipa)
+            osite%mmean_msc_rh         (opa) = isite%mmean_msc_rh         (ipa)
+            osite%mmean_ssc_rh         (opa) = isite%mmean_ssc_rh         (ipa)
             osite%mmean_nep            (opa) = isite%mmean_nep            (ipa)
             osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
+            osite%mmean_B_decomp       (opa) = isite%mmean_B_decomp       (ipa)
             osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
+            osite%mmean_Bf_decomp      (opa) = isite%mmean_Bf_decomp      (ipa)
             osite%mmean_rk4step        (opa) = isite%mmean_rk4step        (ipa)
             osite%mmean_available_water(opa) = isite%mmean_available_water(ipa)
             osite%mmean_veg_displace   (opa) = isite%mmean_veg_displace   (ipa)
@@ -8524,12 +9123,19 @@ module ed_state_vars
             osite%mmean_qrunoff        (opa) = isite%mmean_qrunoff        (ipa)
             osite%mmean_qdrainage      (opa) = isite%mmean_qdrainage      (ipa)
             osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
+            osite%mmean_B_decomp       (opa) = isite%mmean_B_decomp       (ipa)
             osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
+            osite%mmean_Bf_decomp      (opa) = isite%mmean_Bf_decomp      (ipa)
             osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
             osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
             osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
             osite%mmsqu_rh             (opa) = isite%mmsqu_rh             (ipa)
-            osite%mmsqu_cwd_rh         (opa) = isite%mmsqu_cwd_rh         (ipa)
+            osite%mmsqu_fgc_rh         (opa) = isite%mmsqu_fgc_rh         (ipa)
+            osite%mmsqu_fsc_rh         (opa) = isite%mmsqu_fsc_rh         (ipa)
+            osite%mmsqu_stgc_rh        (opa) = isite%mmsqu_stgc_rh        (ipa)
+            osite%mmsqu_stsc_rh        (opa) = isite%mmsqu_stsc_rh        (ipa)
+            osite%mmsqu_msc_rh         (opa) = isite%mmsqu_msc_rh         (ipa)
+            osite%mmsqu_ssc_rh         (opa) = isite%mmsqu_ssc_rh         (ipa)
             osite%mmsqu_nep            (opa) = isite%mmsqu_nep            (ipa)
             osite%mmsqu_rlongup        (opa) = isite%mmsqu_rlongup        (ipa)
             osite%mmsqu_parup          (opa) = isite%mmsqu_parup          (ipa)
@@ -8571,7 +9177,12 @@ module ed_state_vars
             do n=1,ndcycle
                !----- Scalars. ------------------------------------------------------------!
                osite%qmean_rh             (n,opa) = isite%qmean_rh             (n,ipa)
-               osite%qmean_cwd_rh         (n,opa) = isite%qmean_cwd_rh         (n,ipa)
+               osite%qmean_fgc_rh         (n,opa) = isite%qmean_fgc_rh         (n,ipa)
+               osite%qmean_fsc_rh         (n,opa) = isite%qmean_fsc_rh         (n,ipa)
+               osite%qmean_stgc_rh        (n,opa) = isite%qmean_stgc_rh        (n,ipa)
+               osite%qmean_stsc_rh        (n,opa) = isite%qmean_stsc_rh        (n,ipa)
+               osite%qmean_msc_rh         (n,opa) = isite%qmean_msc_rh         (n,ipa)
+               osite%qmean_ssc_rh         (n,opa) = isite%qmean_ssc_rh         (n,ipa)
                osite%qmean_nep            (n,opa) = isite%qmean_nep            (n,ipa)
                osite%qmean_rk4step        (n,opa) = isite%qmean_rk4step        (n,ipa)
                osite%qmean_available_water(n,opa) = isite%qmean_available_water(n,ipa)
@@ -8622,7 +9233,12 @@ module ed_state_vars
                osite%qmean_qrunoff        (n,opa) = isite%qmean_qrunoff        (n,ipa)
                osite%qmean_qdrainage      (n,opa) = isite%qmean_qdrainage      (n,ipa)
                osite%qmsqu_rh             (n,opa) = isite%qmsqu_rh             (n,ipa)
-               osite%qmsqu_cwd_rh         (n,opa) = isite%qmsqu_cwd_rh         (n,ipa)
+               osite%qmsqu_fgc_rh         (n,opa) = isite%qmsqu_fgc_rh         (n,ipa)
+               osite%qmsqu_fsc_rh         (n,opa) = isite%qmsqu_fsc_rh         (n,ipa)
+               osite%qmsqu_stgc_rh        (n,opa) = isite%qmsqu_stgc_rh        (n,ipa)
+               osite%qmsqu_stsc_rh        (n,opa) = isite%qmsqu_stsc_rh        (n,ipa)
+               osite%qmsqu_msc_rh         (n,opa) = isite%qmsqu_msc_rh         (n,ipa)
+               osite%qmsqu_ssc_rh         (n,opa) = isite%qmsqu_ssc_rh         (n,ipa)
                osite%qmsqu_nep            (n,opa) = isite%qmsqu_nep            (n,ipa)
                osite%qmsqu_rlongup        (n,opa) = isite%qmsqu_rlongup        (n,ipa)
                osite%qmsqu_parup          (n,opa) = isite%qmsqu_parup          (n,ipa)
@@ -8780,138 +9396,158 @@ module ed_state_vars
 
 
       !----- Scalars. ---------------------------------------------------------------------!
-      osite%paco_id                   (1:z) = pack(isite%paco_id                   ,lmask)
-      osite%paco_n                    (1:z) = pack(isite%paco_n                    ,lmask)
-      osite%cohort_count              (1:z) = pack(isite%cohort_count              ,lmask)
-      osite%pname                     (1:z) = pack(isite%pname                     ,lmask)
-      osite%area                      (1:z) = pack(isite%area                      ,lmask)
-      osite%age                       (1:z) = pack(isite%age                       ,lmask)
-      osite%dist_type                 (1:z) = pack(isite%dist_type                 ,lmask)
-      osite%fbeam                     (1:z) = pack(isite%fbeam                     ,lmask)
-      osite%light_type                (1:z) = pack(isite%light_type                ,lmask)
-      osite%fast_soil_C               (1:z) = pack(isite%fast_soil_C               ,lmask)
-      osite%slow_soil_C               (1:z) = pack(isite%slow_soil_C               ,lmask)
-      osite%structural_soil_C         (1:z) = pack(isite%structural_soil_C         ,lmask)
-      osite%structural_soil_L         (1:z) = pack(isite%structural_soil_L         ,lmask)
-      osite%mineralized_soil_N        (1:z) = pack(isite%mineralized_soil_N        ,lmask)
-      osite%fast_soil_N               (1:z) = pack(isite%fast_soil_N               ,lmask)
-      osite%sum_dgd                   (1:z) = pack(isite%sum_dgd                   ,lmask)
-      osite%sum_chd                   (1:z) = pack(isite%sum_chd                   ,lmask)
-      osite%can_theiv                 (1:z) = pack(isite%can_theiv                 ,lmask)
-      osite%can_vpdef                 (1:z) = pack(isite%can_vpdef                 ,lmask)
-      osite%can_temp                  (1:z) = pack(isite%can_temp                  ,lmask)
-      osite%can_temp_pv               (1:z) = pack(isite%can_temp_pv               ,lmask)
-      osite%can_shv                   (1:z) = pack(isite%can_shv                   ,lmask)
-      osite%can_co2                   (1:z) = pack(isite%can_co2                   ,lmask)
-      osite%can_rhos                  (1:z) = pack(isite%can_rhos                  ,lmask)
-      osite%can_prss                  (1:z) = pack(isite%can_prss                  ,lmask)
-      osite%can_theta                 (1:z) = pack(isite%can_theta                 ,lmask)
-      osite%can_depth                 (1:z) = pack(isite%can_depth                 ,lmask)
-      osite%opencan_frac              (1:z) = pack(isite%opencan_frac              ,lmask)
-      osite%ggbare                    (1:z) = pack(isite%ggbare                    ,lmask)
-      osite%ggveg                     (1:z) = pack(isite%ggveg                     ,lmask)
-      osite%ggnet                     (1:z) = pack(isite%ggnet                     ,lmask)
-      osite%ggsoil                    (1:z) = pack(isite%ggsoil                    ,lmask)
-      osite%nlev_sfcwater             (1:z) = pack(isite%nlev_sfcwater             ,lmask)
-      osite%ground_shv                (1:z) = pack(isite%ground_shv                ,lmask)
-      osite%ground_ssh                (1:z) = pack(isite%ground_ssh                ,lmask)
-      osite%ground_temp               (1:z) = pack(isite%ground_temp               ,lmask)
-      osite%ground_fliq               (1:z) = pack(isite%ground_fliq               ,lmask)
-      osite%rough                     (1:z) = pack(isite%rough                     ,lmask)
-      osite%par_l_max                 (1:z) = pack(isite%par_l_max                 ,lmask)
-      osite%par_l_beam_max            (1:z) = pack(isite%par_l_beam_max            ,lmask)
-      osite%par_l_diffuse_max         (1:z) = pack(isite%par_l_diffuse_max         ,lmask)
-      osite%avg_daily_temp            (1:z) = pack(isite%avg_daily_temp            ,lmask)
-      osite%avg_monthly_gndwater      (1:z) = pack(isite%avg_monthly_gndwater      ,lmask)
-      osite%avg_monthly_waterdef      (1:z) = pack(isite%avg_monthly_waterdef      ,lmask)
-      osite%wbudget_loss2atm          (1:z) = pack(isite%wbudget_loss2atm          ,lmask)
-      osite%wbudget_denseffect        (1:z) = pack(isite%wbudget_denseffect        ,lmask)
-      osite%wbudget_precipgain        (1:z) = pack(isite%wbudget_precipgain        ,lmask)
-      osite%wbudget_loss2runoff       (1:z) = pack(isite%wbudget_loss2runoff       ,lmask)
-      osite%wbudget_loss2drainage     (1:z) = pack(isite%wbudget_loss2drainage     ,lmask)
-      osite%wbudget_initialstorage    (1:z) = pack(isite%wbudget_initialstorage    ,lmask)
-      osite%wbudget_residual          (1:z) = pack(isite%wbudget_residual          ,lmask)
-      osite%ebudget_loss2atm          (1:z) = pack(isite%ebudget_loss2atm          ,lmask)
-      osite%ebudget_denseffect        (1:z) = pack(isite%ebudget_denseffect        ,lmask)
-      osite%ebudget_prsseffect        (1:z) = pack(isite%ebudget_prsseffect        ,lmask)
-      osite%ebudget_loss2runoff       (1:z) = pack(isite%ebudget_loss2runoff       ,lmask)
-      osite%ebudget_loss2drainage     (1:z) = pack(isite%ebudget_loss2drainage     ,lmask)
-      osite%ebudget_netrad            (1:z) = pack(isite%ebudget_netrad            ,lmask)
-      osite%ebudget_precipgain        (1:z) = pack(isite%ebudget_precipgain        ,lmask)
-      osite%ebudget_initialstorage    (1:z) = pack(isite%ebudget_initialstorage    ,lmask)
-      osite%ebudget_residual          (1:z) = pack(isite%ebudget_residual          ,lmask)
-      osite%co2budget_initialstorage  (1:z) = pack(isite%co2budget_initialstorage  ,lmask)
-      osite%co2budget_residual        (1:z) = pack(isite%co2budget_residual        ,lmask)
-      osite%co2budget_loss2atm        (1:z) = pack(isite%co2budget_loss2atm        ,lmask)
-      osite%co2budget_denseffect      (1:z) = pack(isite%co2budget_denseffect      ,lmask)
-      osite%co2budget_gpp             (1:z) = pack(isite%co2budget_gpp             ,lmask)
-      osite%co2budget_plresp          (1:z) = pack(isite%co2budget_plresp          ,lmask)
-      osite%co2budget_rh              (1:z) = pack(isite%co2budget_rh              ,lmask)
-      osite%today_A_decomp            (1:z) = pack(isite%today_A_decomp            ,lmask)
-      osite%today_Af_decomp           (1:z) = pack(isite%today_Af_decomp           ,lmask)
-      osite%veg_rough                 (1:z) = pack(isite%veg_rough                 ,lmask)
-      osite%veg_height                (1:z) = pack(isite%veg_height                ,lmask)
-      osite%veg_displace              (1:z) = pack(isite%veg_displace              ,lmask)
-      osite%fsc_in                    (1:z) = pack(isite%fsc_in                    ,lmask)
-      osite%ssc_in                    (1:z) = pack(isite%ssc_in                    ,lmask)
-      osite%ssl_in                    (1:z) = pack(isite%ssl_in                    ,lmask)
-      osite%fsn_in                    (1:z) = pack(isite%fsn_in                    ,lmask)
-      osite%total_plant_nitrogen_uptake(1:z) =                                             &
-                                             pack(isite%total_plant_nitrogen_uptake,lmask)
-      osite%mineralized_N_loss        (1:z) = pack(isite%mineralized_N_loss        ,lmask)
-      osite%mineralized_N_input       (1:z) = pack(isite%mineralized_N_input       ,lmask)
-      osite%rshort_g                  (1:z) = pack(isite%rshort_g                  ,lmask)
-      osite%rshort_g_beam             (1:z) = pack(isite%rshort_g_beam             ,lmask)
-      osite%rshort_g_diffuse          (1:z) = pack(isite%rshort_g_diffuse          ,lmask)
-      osite%par_g                     (1:z) = pack(isite%par_g                     ,lmask)
-      osite%par_g_beam                (1:z) = pack(isite%par_g_beam                ,lmask)
-      osite%par_g_diffuse             (1:z) = pack(isite%par_g_diffuse             ,lmask)
-      osite%par_b                     (1:z) = pack(isite%par_b                     ,lmask)
-      osite%par_b_beam                (1:z) = pack(isite%par_b_beam                ,lmask)
-      osite%par_b_diffuse             (1:z) = pack(isite%par_b_diffuse             ,lmask)
-      osite%nir_b                     (1:z) = pack(isite%nir_b                     ,lmask)
-      osite%nir_b_beam                (1:z) = pack(isite%nir_b_beam                ,lmask)
-      osite%nir_b_diffuse             (1:z) = pack(isite%nir_b_diffuse             ,lmask)
-      osite%rlong_g                   (1:z) = pack(isite%rlong_g                   ,lmask)
-      osite%rlong_s                   (1:z) = pack(isite%rlong_s                   ,lmask)
-      osite%albedo                    (1:z) = pack(isite%albedo                    ,lmask)
-      osite%albedo_par                (1:z) = pack(isite%albedo_par                ,lmask)
-      osite%albedo_nir                (1:z) = pack(isite%albedo_nir                ,lmask)
-      osite%rlong_albedo              (1:z) = pack(isite%rlong_albedo              ,lmask)
-      osite%rnet                      (1:z) = pack(isite%rnet                      ,lmask)
-      osite%rlongup                   (1:z) = pack(isite%rlongup                   ,lmask)
-      osite%parup                     (1:z) = pack(isite%parup                     ,lmask)
-      osite%nirup                     (1:z) = pack(isite%nirup                     ,lmask)
-      osite%rshortup                  (1:z) = pack(isite%rshortup                  ,lmask)
-      osite%total_sfcw_depth          (1:z) = pack(isite%total_sfcw_depth          ,lmask)
-      osite%snowfac                   (1:z) = pack(isite%snowfac                   ,lmask)
-      osite%A_decomp                  (1:z) = pack(isite%A_decomp                  ,lmask)
-      osite%f_decomp                  (1:z) = pack(isite%f_decomp                  ,lmask)
-      osite%rh                        (1:z) = pack(isite%rh                        ,lmask)
-      osite%cwd_rh                    (1:z) = pack(isite%cwd_rh                    ,lmask)
-      osite%plant_ag_biomass          (1:z) = pack(isite%plant_ag_biomass          ,lmask)
-      osite%htry                      (1:z) = pack(isite%htry                      ,lmask)
-      osite%hprev                     (1:z) = pack(isite%hprev                     ,lmask)
-      osite%ustar                     (1:z) = pack(isite%ustar                     ,lmask)
-      osite%tstar                     (1:z) = pack(isite%tstar                     ,lmask)
-      osite%qstar                     (1:z) = pack(isite%qstar                     ,lmask)
-      osite%cstar                     (1:z) = pack(isite%cstar                     ,lmask)
-      osite%zeta                      (1:z) = pack(isite%zeta                      ,lmask)
-      osite%ribulk                    (1:z) = pack(isite%ribulk                    ,lmask)
-      osite%upwp                      (1:z) = pack(isite%upwp                      ,lmask)
-      osite%qpwp                      (1:z) = pack(isite%qpwp                      ,lmask)
-      osite%cpwp                      (1:z) = pack(isite%cpwp                      ,lmask)
-      osite%tpwp                      (1:z) = pack(isite%tpwp                      ,lmask)
-      osite%wpwp                      (1:z) = pack(isite%wpwp                      ,lmask)
-      osite%watertable                (1:z) = pack(isite%watertable                ,lmask)
-      osite%moist_dz                  (1:z) = pack(isite%moist_dz                  ,lmask)
-      osite%ksat                      (1:z) = pack(isite%ksat                      ,lmask)
-      osite%soil_sat_energy           (1:z) = pack(isite%soil_sat_energy           ,lmask)
-      osite%soil_sat_water            (1:z) = pack(isite%soil_sat_water            ,lmask)
-      osite%soil_sat_heat             (1:z) = pack(isite%soil_sat_heat             ,lmask)
-      osite%runoff_rate               (1:z) = pack(isite%runoff_rate               ,lmask)
-      osite%runoff                    (1:z) = pack(isite%runoff                    ,lmask)
-      osite%qrunoff                   (1:z) = pack(isite%qrunoff                   ,lmask)
+      osite%paco_id                    (1:z) = pack(isite%paco_id                    ,lmask)
+      osite%paco_n                     (1:z) = pack(isite%paco_n                     ,lmask)
+      osite%cohort_count               (1:z) = pack(isite%cohort_count               ,lmask)
+      osite%pname                      (1:z) = pack(isite%pname                      ,lmask)
+      osite%area                       (1:z) = pack(isite%area                       ,lmask)
+      osite%age                        (1:z) = pack(isite%age                        ,lmask)
+      osite%dist_type                  (1:z) = pack(isite%dist_type                  ,lmask)
+      osite%fbeam                      (1:z) = pack(isite%fbeam                      ,lmask)
+      osite%light_type                 (1:z) = pack(isite%light_type                 ,lmask)
+      osite%fast_grnd_C                (1:z) = pack(isite%fast_grnd_C                ,lmask)
+      osite%fast_soil_C                (1:z) = pack(isite%fast_soil_C                ,lmask)
+      osite%structural_grnd_C          (1:z) = pack(isite%structural_grnd_C          ,lmask)
+      osite%structural_soil_C          (1:z) = pack(isite%structural_soil_C          ,lmask)
+      osite%structural_grnd_L          (1:z) = pack(isite%structural_grnd_L          ,lmask)
+      osite%structural_soil_L          (1:z) = pack(isite%structural_soil_L          ,lmask)
+      osite%microbial_soil_C           (1:z) = pack(isite%microbial_soil_C           ,lmask)
+      osite%slow_soil_C                (1:z) = pack(isite%slow_soil_C                ,lmask)
+      osite%fast_grnd_N                (1:z) = pack(isite%fast_grnd_N                ,lmask)
+      osite%fast_soil_N                (1:z) = pack(isite%fast_soil_N                ,lmask)
+      osite%structural_grnd_N          (1:z) = pack(isite%structural_grnd_N          ,lmask)
+      osite%structural_soil_N          (1:z) = pack(isite%structural_soil_N          ,lmask)
+      osite%mineralized_soil_N         (1:z) = pack(isite%mineralized_soil_N         ,lmask)
+      osite%sum_dgd                    (1:z) = pack(isite%sum_dgd                    ,lmask)
+      osite%sum_chd                    (1:z) = pack(isite%sum_chd                    ,lmask)
+      osite%can_theiv                  (1:z) = pack(isite%can_theiv                  ,lmask)
+      osite%can_vpdef                  (1:z) = pack(isite%can_vpdef                  ,lmask)
+      osite%can_temp                   (1:z) = pack(isite%can_temp                   ,lmask)
+      osite%can_temp_pv                (1:z) = pack(isite%can_temp_pv                ,lmask)
+      osite%can_shv                    (1:z) = pack(isite%can_shv                    ,lmask)
+      osite%can_co2                    (1:z) = pack(isite%can_co2                    ,lmask)
+      osite%can_rhos                   (1:z) = pack(isite%can_rhos                   ,lmask)
+      osite%can_prss                   (1:z) = pack(isite%can_prss                   ,lmask)
+      osite%can_theta                  (1:z) = pack(isite%can_theta                  ,lmask)
+      osite%can_depth                  (1:z) = pack(isite%can_depth                  ,lmask)
+      osite%opencan_frac               (1:z) = pack(isite%opencan_frac               ,lmask)
+      osite%ggbare                     (1:z) = pack(isite%ggbare                     ,lmask)
+      osite%ggveg                      (1:z) = pack(isite%ggveg                      ,lmask)
+      osite%ggnet                      (1:z) = pack(isite%ggnet                      ,lmask)
+      osite%ggsoil                     (1:z) = pack(isite%ggsoil                     ,lmask)
+      osite%nlev_sfcwater              (1:z) = pack(isite%nlev_sfcwater              ,lmask)
+      osite%ground_shv                 (1:z) = pack(isite%ground_shv                 ,lmask)
+      osite%ground_ssh                 (1:z) = pack(isite%ground_ssh                 ,lmask)
+      osite%ground_temp                (1:z) = pack(isite%ground_temp                ,lmask)
+      osite%ground_fliq                (1:z) = pack(isite%ground_fliq                ,lmask)
+      osite%rough                      (1:z) = pack(isite%rough                      ,lmask)
+      osite%par_l_max                  (1:z) = pack(isite%par_l_max                  ,lmask)
+      osite%par_l_beam_max             (1:z) = pack(isite%par_l_beam_max             ,lmask)
+      osite%par_l_diffuse_max          (1:z) = pack(isite%par_l_diffuse_max          ,lmask)
+      osite%avg_daily_temp             (1:z) = pack(isite%avg_daily_temp             ,lmask)
+      osite%avg_monthly_gndwater       (1:z) = pack(isite%avg_monthly_gndwater       ,lmask)
+      osite%avg_monthly_waterdef       (1:z) = pack(isite%avg_monthly_waterdef       ,lmask)
+      osite%wbudget_loss2atm           (1:z) = pack(isite%wbudget_loss2atm           ,lmask)
+      osite%wbudget_denseffect         (1:z) = pack(isite%wbudget_denseffect         ,lmask)
+      osite%wbudget_precipgain         (1:z) = pack(isite%wbudget_precipgain         ,lmask)
+      osite%wbudget_loss2runoff        (1:z) = pack(isite%wbudget_loss2runoff        ,lmask)
+      osite%wbudget_loss2drainage      (1:z) = pack(isite%wbudget_loss2drainage      ,lmask)
+      osite%wbudget_initialstorage     (1:z) = pack(isite%wbudget_initialstorage     ,lmask)
+      osite%wbudget_residual           (1:z) = pack(isite%wbudget_residual           ,lmask)
+      osite%ebudget_loss2atm           (1:z) = pack(isite%ebudget_loss2atm           ,lmask)
+      osite%ebudget_denseffect         (1:z) = pack(isite%ebudget_denseffect         ,lmask)
+      osite%ebudget_prsseffect         (1:z) = pack(isite%ebudget_prsseffect         ,lmask)
+      osite%ebudget_loss2runoff        (1:z) = pack(isite%ebudget_loss2runoff        ,lmask)
+      osite%ebudget_loss2drainage      (1:z) = pack(isite%ebudget_loss2drainage      ,lmask)
+      osite%ebudget_netrad             (1:z) = pack(isite%ebudget_netrad             ,lmask)
+      osite%ebudget_precipgain         (1:z) = pack(isite%ebudget_precipgain         ,lmask)
+      osite%ebudget_initialstorage     (1:z) = pack(isite%ebudget_initialstorage     ,lmask)
+      osite%ebudget_residual           (1:z) = pack(isite%ebudget_residual           ,lmask)
+      osite%co2budget_initialstorage   (1:z) = pack(isite%co2budget_initialstorage   ,lmask)
+      osite%co2budget_residual         (1:z) = pack(isite%co2budget_residual         ,lmask)
+      osite%co2budget_loss2atm         (1:z) = pack(isite%co2budget_loss2atm         ,lmask)
+      osite%co2budget_denseffect       (1:z) = pack(isite%co2budget_denseffect       ,lmask)
+      osite%co2budget_gpp              (1:z) = pack(isite%co2budget_gpp              ,lmask)
+      osite%co2budget_plresp           (1:z) = pack(isite%co2budget_plresp           ,lmask)
+      osite%co2budget_rh               (1:z) = pack(isite%co2budget_rh               ,lmask)
+      osite%today_A_decomp             (1:z) = pack(isite%today_A_decomp             ,lmask)
+      osite%today_B_decomp             (1:z) = pack(isite%today_B_decomp             ,lmask)
+      osite%today_Af_decomp            (1:z) = pack(isite%today_Af_decomp            ,lmask)
+      osite%today_Bf_decomp            (1:z) = pack(isite%today_Bf_decomp            ,lmask)
+      osite%veg_rough                  (1:z) = pack(isite%veg_rough                  ,lmask)
+      osite%veg_height                 (1:z) = pack(isite%veg_height                 ,lmask)
+      osite%veg_displace               (1:z) = pack(isite%veg_displace               ,lmask)
+      osite%fgc_in                     (1:z) = pack(isite%fgc_in                     ,lmask)
+      osite%fsc_in                     (1:z) = pack(isite%fsc_in                     ,lmask)
+      osite%stgc_in                    (1:z) = pack(isite%stgc_in                    ,lmask)
+      osite%stsc_in                    (1:z) = pack(isite%stsc_in                    ,lmask)
+      osite%stgl_in                    (1:z) = pack(isite%stgl_in                    ,lmask)
+      osite%stsl_in                    (1:z) = pack(isite%stsl_in                    ,lmask)
+      osite%fgn_in                     (1:z) = pack(isite%fgn_in                     ,lmask)
+      osite%fsn_in                     (1:z) = pack(isite%fsn_in                     ,lmask)
+      osite%stgn_in                    (1:z) = pack(isite%stgn_in                    ,lmask)
+      osite%stsn_in                    (1:z) = pack(isite%stsn_in                    ,lmask)
+      osite%total_plant_nitrogen_uptake(1:z) = pack(isite%total_plant_nitrogen_uptake,lmask)
+      osite%mineralized_N_loss         (1:z) = pack(isite%mineralized_N_loss         ,lmask)
+      osite%mineralized_N_input        (1:z) = pack(isite%mineralized_N_input        ,lmask)
+      osite%rshort_g                   (1:z) = pack(isite%rshort_g                   ,lmask)
+      osite%rshort_g_beam              (1:z) = pack(isite%rshort_g_beam              ,lmask)
+      osite%rshort_g_diffuse           (1:z) = pack(isite%rshort_g_diffuse           ,lmask)
+      osite%par_g                      (1:z) = pack(isite%par_g                      ,lmask)
+      osite%par_g_beam                 (1:z) = pack(isite%par_g_beam                 ,lmask)
+      osite%par_g_diffuse              (1:z) = pack(isite%par_g_diffuse              ,lmask)
+      osite%par_b                      (1:z) = pack(isite%par_b                      ,lmask)
+      osite%par_b_beam                 (1:z) = pack(isite%par_b_beam                 ,lmask)
+      osite%par_b_diffuse              (1:z) = pack(isite%par_b_diffuse              ,lmask)
+      osite%nir_b                      (1:z) = pack(isite%nir_b                      ,lmask)
+      osite%nir_b_beam                 (1:z) = pack(isite%nir_b_beam                 ,lmask)
+      osite%nir_b_diffuse              (1:z) = pack(isite%nir_b_diffuse              ,lmask)
+      osite%rlong_g                    (1:z) = pack(isite%rlong_g                    ,lmask)
+      osite%rlong_s                    (1:z) = pack(isite%rlong_s                    ,lmask)
+      osite%albedo                     (1:z) = pack(isite%albedo                     ,lmask)
+      osite%albedo_par                 (1:z) = pack(isite%albedo_par                 ,lmask)
+      osite%albedo_nir                 (1:z) = pack(isite%albedo_nir                 ,lmask)
+      osite%rlong_albedo               (1:z) = pack(isite%rlong_albedo               ,lmask)
+      osite%rnet                       (1:z) = pack(isite%rnet                       ,lmask)
+      osite%rlongup                    (1:z) = pack(isite%rlongup                    ,lmask)
+      osite%parup                      (1:z) = pack(isite%parup                      ,lmask)
+      osite%nirup                      (1:z) = pack(isite%nirup                      ,lmask)
+      osite%rshortup                   (1:z) = pack(isite%rshortup                   ,lmask)
+      osite%total_sfcw_depth           (1:z) = pack(isite%total_sfcw_depth           ,lmask)
+      osite%snowfac                    (1:z) = pack(isite%snowfac                    ,lmask)
+      osite%A_decomp                   (1:z) = pack(isite%A_decomp                   ,lmask)
+      osite%B_decomp                   (1:z) = pack(isite%B_decomp                   ,lmask)
+      osite%f_decomp                   (1:z) = pack(isite%f_decomp                   ,lmask)
+      osite%rh                         (1:z) = pack(isite%rh                         ,lmask)
+      osite%fgc_rh                     (1:z) = pack(isite%fgc_rh                     ,lmask)
+      osite%fsc_rh                     (1:z) = pack(isite%fsc_rh                     ,lmask)
+      osite%stgc_rh                    (1:z) = pack(isite%stgc_rh                    ,lmask)
+      osite%stsc_rh                    (1:z) = pack(isite%stsc_rh                    ,lmask)
+      osite%msc_rh                     (1:z) = pack(isite%msc_rh                     ,lmask)
+      osite%ssc_rh                     (1:z) = pack(isite%ssc_rh                     ,lmask)
+      osite%plant_ag_biomass           (1:z) = pack(isite%plant_ag_biomass           ,lmask)
+      osite%htry                       (1:z) = pack(isite%htry                       ,lmask)
+      osite%hprev                      (1:z) = pack(isite%hprev                      ,lmask)
+      osite%ustar                      (1:z) = pack(isite%ustar                      ,lmask)
+      osite%tstar                      (1:z) = pack(isite%tstar                      ,lmask)
+      osite%qstar                      (1:z) = pack(isite%qstar                      ,lmask)
+      osite%cstar                      (1:z) = pack(isite%cstar                      ,lmask)
+      osite%zeta                       (1:z) = pack(isite%zeta                       ,lmask)
+      osite%ribulk                     (1:z) = pack(isite%ribulk                     ,lmask)
+      osite%upwp                       (1:z) = pack(isite%upwp                       ,lmask)
+      osite%qpwp                       (1:z) = pack(isite%qpwp                       ,lmask)
+      osite%cpwp                       (1:z) = pack(isite%cpwp                       ,lmask)
+      osite%tpwp                       (1:z) = pack(isite%tpwp                       ,lmask)
+      osite%wpwp                       (1:z) = pack(isite%wpwp                       ,lmask)
+      osite%watertable                 (1:z) = pack(isite%watertable                 ,lmask)
+      osite%moist_dz                   (1:z) = pack(isite%moist_dz                   ,lmask)
+      osite%ksat                       (1:z) = pack(isite%ksat                       ,lmask)
+      osite%soil_sat_energy            (1:z) = pack(isite%soil_sat_energy            ,lmask)
+      osite%soil_sat_water             (1:z) = pack(isite%soil_sat_water             ,lmask)
+      osite%soil_sat_heat              (1:z) = pack(isite%soil_sat_heat              ,lmask)
+      osite%runoff_rate                (1:z) = pack(isite%runoff_rate                ,lmask)
+      osite%runoff                     (1:z) = pack(isite%runoff                     ,lmask)
+      osite%qrunoff                    (1:z) = pack(isite%qrunoff                    ,lmask)
       !------------------------------------------------------------------------------------!
 
       !----- Temporary pounding/snow layer variables. -------------------------------------!
@@ -8994,7 +9630,12 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
       osite%fmean_rh                  (1:z) = pack(isite%fmean_rh                  ,lmask)
-      osite%fmean_cwd_rh              (1:z) = pack(isite%fmean_cwd_rh              ,lmask)
+      osite%fmean_fgc_rh              (1:z) = pack(isite%fmean_fgc_rh              ,lmask)
+      osite%fmean_fsc_rh              (1:z) = pack(isite%fmean_fsc_rh              ,lmask)
+      osite%fmean_stgc_rh             (1:z) = pack(isite%fmean_stgc_rh             ,lmask)
+      osite%fmean_stsc_rh             (1:z) = pack(isite%fmean_stsc_rh             ,lmask)
+      osite%fmean_msc_rh              (1:z) = pack(isite%fmean_msc_rh              ,lmask)
+      osite%fmean_ssc_rh              (1:z) = pack(isite%fmean_ssc_rh              ,lmask)
       osite%fmean_nep                 (1:z) = pack(isite%fmean_nep                 ,lmask)
       osite%fmean_rk4step             (1:z) = pack(isite%fmean_rk4step             ,lmask)
       osite%fmean_available_water     (1:z) = pack(isite%fmean_available_water     ,lmask)
@@ -9095,12 +9736,19 @@ module ed_state_vars
 
       !----- Scalars. ---------------------------------------------------------------------!
       osite%dmean_A_decomp       (1:z) = pack(isite%dmean_A_decomp       (:),lmask)
+      osite%dmean_B_decomp       (1:z) = pack(isite%dmean_B_decomp       (:),lmask)
       osite%dmean_Af_decomp      (1:z) = pack(isite%dmean_Af_decomp      (:),lmask)
+      osite%dmean_Bf_decomp      (1:z) = pack(isite%dmean_Bf_decomp      (:),lmask)
       osite%dmean_co2_residual   (1:z) = pack(isite%dmean_co2_residual   (:),lmask)
       osite%dmean_energy_residual(1:z) = pack(isite%dmean_energy_residual(:),lmask)
       osite%dmean_water_residual (1:z) = pack(isite%dmean_water_residual (:),lmask)
       osite%dmean_rh             (1:z) = pack(isite%dmean_rh             (:),lmask)
-      osite%dmean_cwd_rh         (1:z) = pack(isite%dmean_cwd_rh         (:),lmask)
+      osite%dmean_fgc_rh         (1:z) = pack(isite%dmean_fgc_rh         (:),lmask)
+      osite%dmean_fsc_rh         (1:z) = pack(isite%dmean_fsc_rh         (:),lmask)
+      osite%dmean_stgc_rh        (1:z) = pack(isite%dmean_stgc_rh        (:),lmask)
+      osite%dmean_stsc_rh        (1:z) = pack(isite%dmean_stsc_rh        (:),lmask)
+      osite%dmean_msc_rh         (1:z) = pack(isite%dmean_msc_rh         (:),lmask)
+      osite%dmean_ssc_rh         (1:z) = pack(isite%dmean_ssc_rh         (:),lmask)
       osite%dmean_nep            (1:z) = pack(isite%dmean_nep            (:),lmask)
       osite%dmean_rk4step        (1:z) = pack(isite%dmean_rk4step        (:),lmask)
       osite%dmean_available_water(1:z) = pack(isite%dmean_available_water(:),lmask)
@@ -9202,20 +9850,34 @@ module ed_state_vars
 
 
       !----- Scalars. ---------------------------------------------------------------------!
+      osite%mmean_fast_grnd_c    (1:z) = pack(isite%mmean_fast_grnd_c    (:),lmask)
       osite%mmean_fast_soil_c    (1:z) = pack(isite%mmean_fast_soil_c    (:),lmask)
-      osite%mmean_slow_soil_c    (1:z) = pack(isite%mmean_slow_soil_c    (:),lmask)
+      osite%mmean_struct_grnd_c  (1:z) = pack(isite%mmean_struct_grnd_c  (:),lmask)
       osite%mmean_struct_soil_c  (1:z) = pack(isite%mmean_struct_soil_c  (:),lmask)
+      osite%mmean_struct_grnd_l  (1:z) = pack(isite%mmean_struct_grnd_l  (:),lmask)
       osite%mmean_struct_soil_l  (1:z) = pack(isite%mmean_struct_soil_l  (:),lmask)
+      osite%mmean_microbe_soil_c (1:z) = pack(isite%mmean_microbe_soil_c (:),lmask)
+      osite%mmean_slow_soil_c    (1:z) = pack(isite%mmean_slow_soil_c    (:),lmask)
+      osite%mmean_fast_grnd_n    (1:z) = pack(isite%mmean_fast_grnd_n    (:),lmask)
       osite%mmean_fast_soil_n    (1:z) = pack(isite%mmean_fast_soil_n    (:),lmask)
+      osite%mmean_struct_grnd_n  (1:z) = pack(isite%mmean_struct_grnd_n  (:),lmask)
+      osite%mmean_struct_soil_n  (1:z) = pack(isite%mmean_struct_soil_n  (:),lmask)
       osite%mmean_mineral_soil_n (1:z) = pack(isite%mmean_mineral_soil_n (:),lmask)
       osite%mmean_co2_residual   (1:z) = pack(isite%mmean_co2_residual   (:),lmask)
       osite%mmean_energy_residual(1:z) = pack(isite%mmean_energy_residual(:),lmask)
       osite%mmean_water_residual (1:z) = pack(isite%mmean_water_residual (:),lmask)
       osite%mmean_rh             (1:z) = pack(isite%mmean_rh             (:),lmask)
-      osite%mmean_cwd_rh         (1:z) = pack(isite%mmean_cwd_rh         (:),lmask)
+      osite%mmean_fgc_rh         (1:z) = pack(isite%mmean_fgc_rh         (:),lmask)
+      osite%mmean_fsc_rh         (1:z) = pack(isite%mmean_fsc_rh         (:),lmask)
+      osite%mmean_stgc_rh        (1:z) = pack(isite%mmean_stgc_rh        (:),lmask)
+      osite%mmean_stsc_rh        (1:z) = pack(isite%mmean_stsc_rh        (:),lmask)
+      osite%mmean_msc_rh         (1:z) = pack(isite%mmean_msc_rh         (:),lmask)
+      osite%mmean_ssc_rh         (1:z) = pack(isite%mmean_ssc_rh         (:),lmask)
       osite%mmean_nep            (1:z) = pack(isite%mmean_nep            (:),lmask)
       osite%mmean_A_decomp       (1:z) = pack(isite%mmean_A_decomp       (:),lmask)
+      osite%mmean_B_decomp       (1:z) = pack(isite%mmean_B_decomp       (:),lmask)
       osite%mmean_Af_decomp      (1:z) = pack(isite%mmean_Af_decomp      (:),lmask)
+      osite%mmean_Bf_decomp      (1:z) = pack(isite%mmean_Bf_decomp      (:),lmask)
       osite%mmean_rk4step        (1:z) = pack(isite%mmean_rk4step        (:),lmask)
       osite%mmean_available_water(1:z) = pack(isite%mmean_available_water(:),lmask)
       osite%mmean_veg_displace   (1:z) = pack(isite%mmean_veg_displace   (:),lmask)
@@ -9265,12 +9927,19 @@ module ed_state_vars
       osite%mmean_qrunoff        (1:z) = pack(isite%mmean_qrunoff        (:),lmask)
       osite%mmean_qdrainage      (1:z) = pack(isite%mmean_qdrainage      (:),lmask)
       osite%mmean_A_decomp       (1:z) = pack(isite%mmean_A_decomp       (:),lmask)
+      osite%mmean_B_decomp       (1:z) = pack(isite%mmean_B_decomp       (:),lmask)
       osite%mmean_Af_decomp      (1:z) = pack(isite%mmean_Af_decomp      (:),lmask)
+      osite%mmean_Bf_decomp      (1:z) = pack(isite%mmean_Bf_decomp      (:),lmask)
       osite%mmean_co2_residual   (1:z) = pack(isite%mmean_co2_residual   (:),lmask)
       osite%mmean_energy_residual(1:z) = pack(isite%mmean_energy_residual(:),lmask)
       osite%mmean_water_residual (1:z) = pack(isite%mmean_water_residual (:),lmask)
       osite%mmsqu_rh             (1:z) = pack(isite%mmsqu_rh             (:),lmask)
-      osite%mmsqu_cwd_rh         (1:z) = pack(isite%mmsqu_cwd_rh         (:),lmask)
+      osite%mmsqu_fgc_rh         (1:z) = pack(isite%mmsqu_fgc_rh         (:),lmask)
+      osite%mmsqu_fsc_rh         (1:z) = pack(isite%mmsqu_fsc_rh         (:),lmask)
+      osite%mmsqu_stgc_rh        (1:z) = pack(isite%mmsqu_stgc_rh        (:),lmask)
+      osite%mmsqu_stsc_rh        (1:z) = pack(isite%mmsqu_stsc_rh        (:),lmask)
+      osite%mmsqu_msc_rh         (1:z) = pack(isite%mmsqu_msc_rh         (:),lmask)
+      osite%mmsqu_ssc_rh         (1:z) = pack(isite%mmsqu_ssc_rh         (:),lmask)
       osite%mmsqu_nep            (1:z) = pack(isite%mmsqu_nep            (:),lmask)
       osite%mmsqu_rlongup        (1:z) = pack(isite%mmsqu_rlongup        (:),lmask)
       osite%mmsqu_parup          (1:z) = pack(isite%mmsqu_parup          (:),lmask)
@@ -9339,7 +10008,12 @@ module ed_state_vars
       do n=1,ndcycle
          !----- Scalars. ------------------------------------------------------------------!
          osite%qmean_rh             (n,1:z) = pack(isite%qmean_rh             (n,:),lmask)
-         osite%qmean_cwd_rh         (n,1:z) = pack(isite%qmean_cwd_rh         (n,:),lmask)
+         osite%qmean_fgc_rh         (n,1:z) = pack(isite%qmean_fgc_rh         (n,:),lmask)
+         osite%qmean_fsc_rh         (n,1:z) = pack(isite%qmean_fsc_rh         (n,:),lmask)
+         osite%qmean_stgc_rh        (n,1:z) = pack(isite%qmean_stgc_rh        (n,:),lmask)
+         osite%qmean_stsc_rh        (n,1:z) = pack(isite%qmean_stsc_rh        (n,:),lmask)
+         osite%qmean_msc_rh         (n,1:z) = pack(isite%qmean_msc_rh         (n,:),lmask)
+         osite%qmean_ssc_rh         (n,1:z) = pack(isite%qmean_ssc_rh         (n,:),lmask)
          osite%qmean_nep            (n,1:z) = pack(isite%qmean_nep            (n,:),lmask)
          osite%qmean_rk4step        (n,1:z) = pack(isite%qmean_rk4step        (n,:),lmask)
          osite%qmean_available_water(n,1:z) = pack(isite%qmean_available_water(n,:),lmask)
@@ -9390,7 +10064,12 @@ module ed_state_vars
          osite%qmean_qrunoff        (n,1:z) = pack(isite%qmean_qrunoff        (n,:),lmask)
          osite%qmean_qdrainage      (n,1:z) = pack(isite%qmean_qdrainage      (n,:),lmask)
          osite%qmsqu_rh             (n,1:z) = pack(isite%qmsqu_rh             (n,:),lmask)
-         osite%qmsqu_cwd_rh         (n,1:z) = pack(isite%qmsqu_cwd_rh         (n,:),lmask)
+         osite%qmsqu_fgc_rh         (n,1:z) = pack(isite%qmsqu_fgc_rh         (n,:),lmask)
+         osite%qmsqu_fsc_rh         (n,1:z) = pack(isite%qmsqu_fsc_rh         (n,:),lmask)
+         osite%qmsqu_stgc_rh        (n,1:z) = pack(isite%qmsqu_stgc_rh        (n,:),lmask)
+         osite%qmsqu_stsc_rh        (n,1:z) = pack(isite%qmsqu_stsc_rh        (n,:),lmask)
+         osite%qmsqu_msc_rh         (n,1:z) = pack(isite%qmsqu_msc_rh         (n,:),lmask)
+         osite%qmsqu_ssc_rh         (n,1:z) = pack(isite%qmsqu_ssc_rh         (n,:),lmask)
          osite%qmsqu_nep            (n,1:z) = pack(isite%qmsqu_nep            (n,:),lmask)
          osite%qmsqu_rlongup        (n,1:z) = pack(isite%qmsqu_rlongup        (n,:),lmask)
          osite%qmsqu_parup          (n,1:z) = pack(isite%qmsqu_parup          (n,:),lmask)
@@ -9482,207 +10161,215 @@ module ed_state_vars
          ico = ico + 1
 
          !----- Scalars. ------------------------------------------------------------------!
-         opatch%pft                   (oco) = ipatch%pft                   (ico)
-         opatch%nplant                (oco) = ipatch%nplant                (ico)
-         opatch%phenology_status      (oco) = ipatch%phenology_status      (ico)
-         opatch%recruit_dbh           (oco) = ipatch%recruit_dbh           (ico)
-         opatch%census_status         (oco) = ipatch%census_status         (ico)
-         opatch%hite                  (oco) = ipatch%hite                  (ico)
-         opatch%agb                   (oco) = ipatch%agb                   (ico)
-         opatch%basarea               (oco) = ipatch%basarea               (ico)
-         opatch%dagb_dt               (oco) = ipatch%dagb_dt               (ico)
-         opatch%dlnagb_dt             (oco) = ipatch%dlnagb_dt             (ico)
-         opatch%dba_dt                (oco) = ipatch%dba_dt                (ico)
-         opatch%dlnba_dt              (oco) = ipatch%dlnba_dt              (ico)
-         opatch%ddbh_dt               (oco) = ipatch%ddbh_dt               (ico)
-         opatch%dlndbh_dt             (oco) = ipatch%dlndbh_dt             (ico)
-         opatch%dbh                   (oco) = ipatch%dbh                   (ico)
-         opatch%thbark                (oco) = ipatch%thbark                (ico)
-         opatch%bdead                 (oco) = ipatch%bdead                 (ico)
-         opatch%btimber               (oco) = ipatch%btimber               (ico)
-         opatch%bleaf                 (oco) = ipatch%bleaf                 (ico)
-         opatch%balive                (oco) = ipatch%balive                (ico)
-         opatch%broot                 (oco) = ipatch%broot                 (ico)
-         opatch%bsapwooda             (oco) = ipatch%bsapwooda             (ico)
-         opatch%bsapwoodb             (oco) = ipatch%bsapwoodb             (ico)
-         opatch%bbark                 (oco) = ipatch%bbark                 (ico)
-         opatch%bstorage              (oco) = ipatch%bstorage              (ico)
-         opatch%bseeds                (oco) = ipatch%bseeds                (ico)
-         opatch%byield                (oco) = ipatch%byield                (ico)
-         opatch%lai                   (oco) = ipatch%lai                   (ico)
-         opatch%wai                   (oco) = ipatch%wai                   (ico)
-         opatch%crown_area            (oco) = ipatch%crown_area            (ico)
-         opatch%leaf_resolvable       (oco) = ipatch%leaf_resolvable       (ico)
-         opatch%wood_resolvable       (oco) = ipatch%wood_resolvable       (ico)
-         opatch%cbr_bar               (oco) = ipatch%cbr_bar               (ico)
-         opatch%leaf_energy           (oco) = ipatch%leaf_energy           (ico)
-         opatch%leaf_temp             (oco) = ipatch%leaf_temp             (ico)
-         opatch%leaf_vpdef            (oco) = ipatch%leaf_vpdef            (ico)
-         opatch%leaf_temp_pv          (oco) = ipatch%leaf_temp_pv          (ico)
-         opatch%leaf_hcap             (oco) = ipatch%leaf_hcap             (ico)
-         opatch%leaf_fliq             (oco) = ipatch%leaf_fliq             (ico)
-         opatch%leaf_water            (oco) = ipatch%leaf_water            (ico)
-         opatch%wood_energy           (oco) = ipatch%wood_energy           (ico)
-         opatch%wood_temp             (oco) = ipatch%wood_temp             (ico)
-         opatch%wood_temp_pv          (oco) = ipatch%wood_temp_pv          (ico)
-         opatch%wood_hcap             (oco) = ipatch%wood_hcap             (ico)
-         opatch%wood_fliq             (oco) = ipatch%wood_fliq             (ico)
-         opatch%wood_water            (oco) = ipatch%wood_water            (ico)
-         opatch%veg_wind              (oco) = ipatch%veg_wind              (ico)
-         opatch%lsfc_shv_open         (oco) = ipatch%lsfc_shv_open         (ico)
-         opatch%lsfc_shv_closed       (oco) = ipatch%lsfc_shv_closed       (ico)
-         opatch%lsfc_co2_open         (oco) = ipatch%lsfc_co2_open         (ico)
-         opatch%lsfc_co2_closed       (oco) = ipatch%lsfc_co2_closed       (ico)
-         opatch%lint_shv              (oco) = ipatch%lint_shv              (ico)
-         opatch%lint_co2_open         (oco) = ipatch%lint_co2_open         (ico)
-         opatch%lint_co2_closed       (oco) = ipatch%lint_co2_closed       (ico)
-         opatch%today_leaf_resp       (oco) = ipatch%today_leaf_resp       (ico)
-         opatch%today_root_resp       (oco) = ipatch%today_root_resp       (ico)
-         opatch%today_gpp             (oco) = ipatch%today_gpp             (ico)
-         opatch%today_gpp_pot         (oco) = ipatch%today_gpp_pot         (ico)
-         opatch%today_gpp_lightmax    (oco) = ipatch%today_gpp_lightmax    (ico)
-         opatch%today_gpp_moistmax    (oco) = ipatch%today_gpp_moistmax    (ico)
-         opatch%today_gpp_mlmax       (oco) = ipatch%today_gpp_mlmax       (ico)
-         opatch%today_nppleaf         (oco) = ipatch%today_nppleaf         (ico)
-         opatch%today_nppfroot        (oco) = ipatch%today_nppfroot        (ico)
-         opatch%today_nppsapwood      (oco) = ipatch%today_nppsapwood      (ico)
-         opatch%today_nppbark         (oco) = ipatch%today_nppbark         (ico)
-         opatch%today_nppcroot        (oco) = ipatch%today_nppcroot        (ico)
-         opatch%today_nppseeds        (oco) = ipatch%today_nppseeds        (ico)
-         opatch%today_nppwood         (oco) = ipatch%today_nppwood         (ico)
-         opatch%today_nppdaily        (oco) = ipatch%today_nppdaily        (ico)
-         opatch%leaf_growth_resp      (oco) = ipatch%leaf_growth_resp      (ico)
-         opatch%root_growth_resp      (oco) = ipatch%root_growth_resp      (ico)
-         opatch%sapa_growth_resp      (oco) = ipatch%sapa_growth_resp      (ico)
-         opatch%sapb_growth_resp      (oco) = ipatch%sapb_growth_resp      (ico)
-         opatch%bark_growth_resp      (oco) = ipatch%bark_growth_resp      (ico)
-         opatch%leaf_storage_resp     (oco) = ipatch%leaf_storage_resp     (ico)
-         opatch%root_storage_resp     (oco) = ipatch%root_storage_resp     (ico)
-         opatch%sapa_storage_resp     (oco) = ipatch%sapa_storage_resp     (ico)
-         opatch%sapb_storage_resp     (oco) = ipatch%sapb_storage_resp     (ico)
-         opatch%bark_storage_resp     (oco) = ipatch%bark_storage_resp     (ico)
-         opatch%monthly_dndt          (oco) = ipatch%monthly_dndt          (ico)
-         opatch%monthly_dlnndt        (oco) = ipatch%monthly_dlnndt        (ico)
-         opatch%krdepth               (oco) = ipatch%krdepth               (ico)
-         opatch%first_census          (oco) = ipatch%first_census          (ico)
-         opatch%new_recruit_flag      (oco) = ipatch%new_recruit_flag      (ico)
-         opatch%light_level           (oco) = ipatch%light_level           (ico)
-         opatch%light_level_beam      (oco) = ipatch%light_level_beam      (ico)
-         opatch%light_level_diff      (oco) = ipatch%light_level_diff      (ico)
+         opatch%pft                     (oco) = ipatch%pft                     (ico)
+         opatch%nplant                  (oco) = ipatch%nplant                  (ico)
+         opatch%phenology_status        (oco) = ipatch%phenology_status        (ico)
+         opatch%recruit_dbh             (oco) = ipatch%recruit_dbh             (ico)
+         opatch%census_status           (oco) = ipatch%census_status           (ico)
+         opatch%hite                    (oco) = ipatch%hite                    (ico)
+         opatch%agb                     (oco) = ipatch%agb                     (ico)
+         opatch%basarea                 (oco) = ipatch%basarea                 (ico)
+         opatch%dagb_dt                 (oco) = ipatch%dagb_dt                 (ico)
+         opatch%dlnagb_dt               (oco) = ipatch%dlnagb_dt               (ico)
+         opatch%dba_dt                  (oco) = ipatch%dba_dt                  (ico)
+         opatch%dlnba_dt                (oco) = ipatch%dlnba_dt                (ico)
+         opatch%ddbh_dt                 (oco) = ipatch%ddbh_dt                 (ico)
+         opatch%dlndbh_dt               (oco) = ipatch%dlndbh_dt               (ico)
+         opatch%dbh                     (oco) = ipatch%dbh                     (ico)
+         opatch%thbark                  (oco) = ipatch%thbark                  (ico)
+         opatch%bdeada                  (oco) = ipatch%bdeada                  (ico)
+         opatch%bdeadb                  (oco) = ipatch%bdeadb                  (ico)
+         opatch%btimber                 (oco) = ipatch%btimber                 (ico)
+         opatch%bleaf                   (oco) = ipatch%bleaf                   (ico)
+         opatch%balive                  (oco) = ipatch%balive                  (ico)
+         opatch%broot                   (oco) = ipatch%broot                   (ico)
+         opatch%bsapwooda               (oco) = ipatch%bsapwooda               (ico)
+         opatch%bsapwoodb               (oco) = ipatch%bsapwoodb               (ico)
+         opatch%bbarka                  (oco) = ipatch%bbarka                  (ico)
+         opatch%bbarkb                  (oco) = ipatch%bbarkb                  (ico)
+         opatch%bstorage                (oco) = ipatch%bstorage                (ico)
+         opatch%bseeds                  (oco) = ipatch%bseeds                  (ico)
+         opatch%byield                  (oco) = ipatch%byield                  (ico)
+         opatch%lai                     (oco) = ipatch%lai                     (ico)
+         opatch%wai                     (oco) = ipatch%wai                     (ico)
+         opatch%crown_area              (oco) = ipatch%crown_area              (ico)
+         opatch%leaf_resolvable         (oco) = ipatch%leaf_resolvable         (ico)
+         opatch%wood_resolvable         (oco) = ipatch%wood_resolvable         (ico)
+         opatch%cbr_bar                 (oco) = ipatch%cbr_bar                 (ico)
+         opatch%leaf_energy             (oco) = ipatch%leaf_energy             (ico)
+         opatch%leaf_temp               (oco) = ipatch%leaf_temp               (ico)
+         opatch%leaf_vpdef              (oco) = ipatch%leaf_vpdef              (ico)
+         opatch%leaf_temp_pv            (oco) = ipatch%leaf_temp_pv            (ico)
+         opatch%leaf_hcap               (oco) = ipatch%leaf_hcap               (ico)
+         opatch%leaf_fliq               (oco) = ipatch%leaf_fliq               (ico)
+         opatch%leaf_water              (oco) = ipatch%leaf_water              (ico)
+         opatch%wood_energy             (oco) = ipatch%wood_energy             (ico)
+         opatch%wood_temp               (oco) = ipatch%wood_temp               (ico)
+         opatch%wood_temp_pv            (oco) = ipatch%wood_temp_pv            (ico)
+         opatch%wood_hcap               (oco) = ipatch%wood_hcap               (ico)
+         opatch%wood_fliq               (oco) = ipatch%wood_fliq               (ico)
+         opatch%wood_water              (oco) = ipatch%wood_water              (ico)
+         opatch%veg_wind                (oco) = ipatch%veg_wind                (ico)
+         opatch%lsfc_shv_open           (oco) = ipatch%lsfc_shv_open           (ico)
+         opatch%lsfc_shv_closed         (oco) = ipatch%lsfc_shv_closed         (ico)
+         opatch%lsfc_co2_open           (oco) = ipatch%lsfc_co2_open           (ico)
+         opatch%lsfc_co2_closed         (oco) = ipatch%lsfc_co2_closed         (ico)
+         opatch%lint_shv                (oco) = ipatch%lint_shv                (ico)
+         opatch%lint_co2_open           (oco) = ipatch%lint_co2_open           (ico)
+         opatch%lint_co2_closed         (oco) = ipatch%lint_co2_closed         (ico)
+         opatch%today_leaf_resp         (oco) = ipatch%today_leaf_resp         (ico)
+         opatch%today_root_resp         (oco) = ipatch%today_root_resp         (ico)
+         opatch%today_gpp               (oco) = ipatch%today_gpp               (ico)
+         opatch%today_gpp_pot           (oco) = ipatch%today_gpp_pot           (ico)
+         opatch%today_gpp_lightmax      (oco) = ipatch%today_gpp_lightmax      (ico)
+         opatch%today_gpp_moistmax      (oco) = ipatch%today_gpp_moistmax      (ico)
+         opatch%today_gpp_mlmax         (oco) = ipatch%today_gpp_mlmax         (ico)
+         opatch%today_nppleaf           (oco) = ipatch%today_nppleaf           (ico)
+         opatch%today_nppfroot          (oco) = ipatch%today_nppfroot          (ico)
+         opatch%today_nppsapwood        (oco) = ipatch%today_nppsapwood        (ico)
+         opatch%today_nppbark           (oco) = ipatch%today_nppbark           (ico)
+         opatch%today_nppcroot          (oco) = ipatch%today_nppcroot          (ico)
+         opatch%today_nppseeds          (oco) = ipatch%today_nppseeds          (ico)
+         opatch%today_nppwood           (oco) = ipatch%today_nppwood           (ico)
+         opatch%today_nppdaily          (oco) = ipatch%today_nppdaily          (ico)
+         opatch%leaf_growth_resp        (oco) = ipatch%leaf_growth_resp        (ico)
+         opatch%root_growth_resp        (oco) = ipatch%root_growth_resp        (ico)
+         opatch%sapa_growth_resp        (oco) = ipatch%sapa_growth_resp        (ico)
+         opatch%sapb_growth_resp        (oco) = ipatch%sapb_growth_resp        (ico)
+         opatch%barka_growth_resp       (oco) = ipatch%barka_growth_resp       (ico)
+         opatch%barkb_growth_resp       (oco) = ipatch%barkb_growth_resp       (ico)
+         opatch%leaf_storage_resp       (oco) = ipatch%leaf_storage_resp       (ico)
+         opatch%root_storage_resp       (oco) = ipatch%root_storage_resp       (ico)
+         opatch%sapa_storage_resp       (oco) = ipatch%sapa_storage_resp       (ico)
+         opatch%sapb_storage_resp       (oco) = ipatch%sapb_storage_resp       (ico)
+         opatch%barka_storage_resp      (oco) = ipatch%barka_storage_resp      (ico)
+         opatch%barkb_storage_resp      (oco) = ipatch%barkb_storage_resp      (ico)
+         opatch%monthly_dndt            (oco) = ipatch%monthly_dndt            (ico)
+         opatch%monthly_dlnndt          (oco) = ipatch%monthly_dlnndt          (ico)
+         opatch%krdepth                 (oco) = ipatch%krdepth                 (ico)
+         opatch%first_census            (oco) = ipatch%first_census            (ico)
+         opatch%new_recruit_flag        (oco) = ipatch%new_recruit_flag        (ico)
+         opatch%light_level             (oco) = ipatch%light_level             (ico)
+         opatch%light_level_beam        (oco) = ipatch%light_level_beam        (ico)
+         opatch%light_level_diff        (oco) = ipatch%light_level_diff        (ico)
          
-         opatch%par_level_beam        (oco) = ipatch%par_level_beam        (ico)
-         opatch%par_level_diffu       (oco) = ipatch%par_level_diffu       (ico)
-         opatch%par_level_diffd       (oco) = ipatch%par_level_diffd       (ico)
+         opatch%par_level_beam          (oco) = ipatch%par_level_beam          (ico)
+         opatch%par_level_diffu         (oco) = ipatch%par_level_diffu         (ico)
+         opatch%par_level_diffd         (oco) = ipatch%par_level_diffd         (ico)
 
-         opatch%par_l                 (oco) = ipatch%par_l                 (ico)
-         opatch%par_l_beam            (oco) = ipatch%par_l_beam            (ico)
-         opatch%par_l_diffuse         (oco) = ipatch%par_l_diffuse         (ico)
-         opatch%rshort_l              (oco) = ipatch%rshort_l              (ico)
-         opatch%rshort_l_beam         (oco) = ipatch%rshort_l_beam         (ico)
-         opatch%rshort_l_diffuse      (oco) = ipatch%rshort_l_diffuse      (ico)
-         opatch%rlong_l               (oco) = ipatch%rlong_l               (ico)
-         opatch%rshort_w              (oco) = ipatch%rshort_w              (ico)
-         opatch%rshort_w_beam         (oco) = ipatch%rshort_w_beam         (ico)
-         opatch%rshort_w_diffuse      (oco) = ipatch%rshort_w_diffuse      (ico)
-         opatch%rlong_w               (oco) = ipatch%rlong_w               (ico)
-         opatch%leaf_gbh              (oco) = ipatch%leaf_gbh              (ico)
-         opatch%leaf_gbw              (oco) = ipatch%leaf_gbw              (ico)
-         opatch%wood_gbh              (oco) = ipatch%wood_gbh              (ico)
-         opatch%wood_gbw              (oco) = ipatch%wood_gbw              (ico)
-         opatch%A_open                (oco) = ipatch%A_open                (ico)
-         opatch%A_closed              (oco) = ipatch%A_closed              (ico)
-         opatch%A_light               (oco) = ipatch%A_light               (ico)
-         opatch%A_rubp                (oco) = ipatch%A_rubp                (ico)
-         opatch%A_co2                 (oco) = ipatch%A_co2                 (ico)
-         opatch%psi_open              (oco) = ipatch%psi_open              (ico)
-         opatch%psi_closed            (oco) = ipatch%psi_closed            (ico)
-         opatch%gsw_open              (oco) = ipatch%gsw_open              (ico)
-         opatch%gsw_closed            (oco) = ipatch%gsw_closed            (ico)
-         opatch%leaf_gsw              (oco) = ipatch%leaf_gsw              (ico)
-         opatch%fsw                   (oco) = ipatch%fsw                   (ico)
-         opatch%fsn                   (oco) = ipatch%fsn                   (ico)
-         opatch%fs_open               (oco) = ipatch%fs_open               (ico)
-         opatch%water_supply          (oco) = ipatch%water_supply          (ico)
-         opatch%leaf_maintenance      (oco) = ipatch%leaf_maintenance      (ico)
-         opatch%root_maintenance      (oco) = ipatch%root_maintenance      (ico)
-         opatch%bark_maintenance      (oco) = ipatch%bark_maintenance      (ico)
-         opatch%leaf_drop             (oco) = ipatch%leaf_drop             (ico)
-         opatch%leaf_respiration      (oco) = ipatch%leaf_respiration      (ico)
-         opatch%root_respiration      (oco) = ipatch%root_respiration      (ico)
-         opatch%gpp                   (oco) = ipatch%gpp                   (ico)
-         opatch%paw_avg               (oco) = ipatch%paw_avg               (ico)
-         opatch%elongf                (oco) = ipatch%elongf                (ico)
-         opatch%turnover_amp          (oco) = ipatch%turnover_amp          (ico)
-         opatch%llspan                (oco) = ipatch%llspan                (ico)
-         opatch%vm_bar                (oco) = ipatch%vm_bar                (ico)
-         opatch%sla                   (oco) = ipatch%sla                   (ico)
-         opatch%fmean_gpp             (oco) = ipatch%fmean_gpp             (ico)
-         opatch%fmean_npp             (oco) = ipatch%fmean_npp             (ico)
-         opatch%fmean_leaf_resp       (oco) = ipatch%fmean_leaf_resp       (ico)
-         opatch%fmean_root_resp       (oco) = ipatch%fmean_root_resp       (ico)
-         opatch%fmean_leaf_growth_resp(oco) = ipatch%fmean_leaf_growth_resp(ico)
-         opatch%fmean_root_growth_resp(oco) = ipatch%fmean_root_growth_resp(ico)
-         opatch%fmean_sapa_growth_resp(oco) = ipatch%fmean_sapa_growth_resp(ico)
-         opatch%fmean_sapb_growth_resp(oco) = ipatch%fmean_sapb_growth_resp(ico)
-         opatch%fmean_bark_growth_resp(oco) = ipatch%fmean_bark_growth_resp(ico)
-         opatch%fmean_leaf_storage_resp(oco) = ipatch%fmean_leaf_storage_resp(ico)
-         opatch%fmean_root_storage_resp(oco) = ipatch%fmean_root_storage_resp(ico)
-         opatch%fmean_sapa_storage_resp(oco) = ipatch%fmean_sapa_storage_resp(ico)
-         opatch%fmean_sapb_storage_resp(oco) = ipatch%fmean_sapb_storage_resp(ico)
-         opatch%fmean_bark_storage_resp(oco) = ipatch%fmean_bark_storage_resp(ico)
-         opatch%fmean_plresp          (oco) = ipatch%fmean_plresp          (ico)
-         opatch%fmean_leaf_energy     (oco) = ipatch%fmean_leaf_energy     (ico)
-         opatch%fmean_leaf_water      (oco) = ipatch%fmean_leaf_water      (ico)
-         opatch%fmean_leaf_hcap       (oco) = ipatch%fmean_leaf_hcap       (ico)
-         opatch%fmean_leaf_vpdef      (oco) = ipatch%fmean_leaf_vpdef      (ico)
-         opatch%fmean_leaf_temp       (oco) = ipatch%fmean_leaf_temp       (ico)
-         opatch%fmean_leaf_fliq       (oco) = ipatch%fmean_leaf_fliq       (ico)
-         opatch%fmean_leaf_gsw        (oco) = ipatch%fmean_leaf_gsw        (ico)
-         opatch%fmean_leaf_gbw        (oco) = ipatch%fmean_leaf_gbw        (ico)
-         opatch%fmean_wood_energy     (oco) = ipatch%fmean_wood_energy     (ico)
-         opatch%fmean_wood_water      (oco) = ipatch%fmean_wood_water      (ico)
-         opatch%fmean_wood_hcap       (oco) = ipatch%fmean_wood_hcap       (ico)
-         opatch%fmean_wood_temp       (oco) = ipatch%fmean_wood_temp       (ico)
-         opatch%fmean_wood_fliq       (oco) = ipatch%fmean_wood_fliq       (ico)
-         opatch%fmean_wood_gbw        (oco) = ipatch%fmean_wood_gbw        (ico)
-         opatch%fmean_fs_open         (oco) = ipatch%fmean_fs_open         (ico)
-         opatch%fmean_fsw             (oco) = ipatch%fmean_fsw             (ico)
-         opatch%fmean_fsn             (oco) = ipatch%fmean_fsn             (ico)
-         opatch%fmean_a_open          (oco) = ipatch%fmean_a_open          (ico)
-         opatch%fmean_a_closed        (oco) = ipatch%fmean_a_closed        (ico)
-         opatch%fmean_a_net           (oco) = ipatch%fmean_a_net           (ico)
-         opatch%fmean_A_light         (oco) = ipatch%fmean_A_light         (ico)
-         opatch%fmean_A_rubp          (oco) = ipatch%fmean_A_rubp          (ico)
-         opatch%fmean_A_co2           (oco) = ipatch%fmean_A_co2           (ico)
-         opatch%fmean_psi_open        (oco) = ipatch%fmean_psi_open        (ico)
-         opatch%fmean_psi_closed      (oco) = ipatch%fmean_psi_closed      (ico)
-         opatch%fmean_water_supply    (oco) = ipatch%fmean_water_supply    (ico)
-         opatch%fmean_light_level     (oco) = ipatch%fmean_light_level     (ico)
-         opatch%fmean_light_level_beam(oco) = ipatch%fmean_light_level_beam(ico)
-         opatch%fmean_light_level_diff(oco) = ipatch%fmean_light_level_diff(ico)
+         opatch%par_l                   (oco) = ipatch%par_l                   (ico)
+         opatch%par_l_beam              (oco) = ipatch%par_l_beam              (ico)
+         opatch%par_l_diffuse           (oco) = ipatch%par_l_diffuse           (ico)
+         opatch%rshort_l                (oco) = ipatch%rshort_l                (ico)
+         opatch%rshort_l_beam           (oco) = ipatch%rshort_l_beam           (ico)
+         opatch%rshort_l_diffuse        (oco) = ipatch%rshort_l_diffuse        (ico)
+         opatch%rlong_l                 (oco) = ipatch%rlong_l                 (ico)
+         opatch%rshort_w                (oco) = ipatch%rshort_w                (ico)
+         opatch%rshort_w_beam           (oco) = ipatch%rshort_w_beam           (ico)
+         opatch%rshort_w_diffuse        (oco) = ipatch%rshort_w_diffuse        (ico)
+         opatch%rlong_w                 (oco) = ipatch%rlong_w                 (ico)
+         opatch%leaf_gbh                (oco) = ipatch%leaf_gbh                (ico)
+         opatch%leaf_gbw                (oco) = ipatch%leaf_gbw                (ico)
+         opatch%wood_gbh                (oco) = ipatch%wood_gbh                (ico)
+         opatch%wood_gbw                (oco) = ipatch%wood_gbw                (ico)
+         opatch%A_open                  (oco) = ipatch%A_open                  (ico)
+         opatch%A_closed                (oco) = ipatch%A_closed                (ico)
+         opatch%A_light                 (oco) = ipatch%A_light                 (ico)
+         opatch%A_rubp                  (oco) = ipatch%A_rubp                  (ico)
+         opatch%A_co2                   (oco) = ipatch%A_co2                   (ico)
+         opatch%psi_open                (oco) = ipatch%psi_open                (ico)
+         opatch%psi_closed              (oco) = ipatch%psi_closed              (ico)
+         opatch%gsw_open                (oco) = ipatch%gsw_open                (ico)
+         opatch%gsw_closed              (oco) = ipatch%gsw_closed              (ico)
+         opatch%leaf_gsw                (oco) = ipatch%leaf_gsw                (ico)
+         opatch%fsw                     (oco) = ipatch%fsw                     (ico)
+         opatch%fsn                     (oco) = ipatch%fsn                     (ico)
+         opatch%fs_open                 (oco) = ipatch%fs_open                 (ico)
+         opatch%water_supply            (oco) = ipatch%water_supply            (ico)
+         opatch%leaf_maintenance        (oco) = ipatch%leaf_maintenance        (ico)
+         opatch%root_maintenance        (oco) = ipatch%root_maintenance        (ico)
+         opatch%barka_maintenance       (oco) = ipatch%barka_maintenance       (ico)
+         opatch%barkb_maintenance       (oco) = ipatch%barkb_maintenance       (ico)
+         opatch%leaf_drop               (oco) = ipatch%leaf_drop               (ico)
+         opatch%leaf_respiration        (oco) = ipatch%leaf_respiration        (ico)
+         opatch%root_respiration        (oco) = ipatch%root_respiration        (ico)
+         opatch%gpp                     (oco) = ipatch%gpp                     (ico)
+         opatch%paw_avg                 (oco) = ipatch%paw_avg                 (ico)
+         opatch%elongf                  (oco) = ipatch%elongf                  (ico)
+         opatch%turnover_amp            (oco) = ipatch%turnover_amp            (ico)
+         opatch%llspan                  (oco) = ipatch%llspan                  (ico)
+         opatch%vm_bar                  (oco) = ipatch%vm_bar                  (ico)
+         opatch%sla                     (oco) = ipatch%sla                     (ico)
+         opatch%fmean_gpp               (oco) = ipatch%fmean_gpp               (ico)
+         opatch%fmean_npp               (oco) = ipatch%fmean_npp               (ico)
+         opatch%fmean_leaf_resp         (oco) = ipatch%fmean_leaf_resp         (ico)
+         opatch%fmean_root_resp         (oco) = ipatch%fmean_root_resp         (ico)
+         opatch%fmean_leaf_growth_resp  (oco) = ipatch%fmean_leaf_growth_resp  (ico)
+         opatch%fmean_root_growth_resp  (oco) = ipatch%fmean_root_growth_resp  (ico)
+         opatch%fmean_sapa_growth_resp  (oco) = ipatch%fmean_sapa_growth_resp  (ico)
+         opatch%fmean_sapb_growth_resp  (oco) = ipatch%fmean_sapb_growth_resp  (ico)
+         opatch%fmean_barka_growth_resp (oco) = ipatch%fmean_barka_growth_resp (ico)
+         opatch%fmean_barkb_growth_resp (oco) = ipatch%fmean_barkb_growth_resp (ico)
+         opatch%fmean_leaf_storage_resp (oco) = ipatch%fmean_leaf_storage_resp (ico)
+         opatch%fmean_root_storage_resp (oco) = ipatch%fmean_root_storage_resp (ico)
+         opatch%fmean_sapa_storage_resp (oco) = ipatch%fmean_sapa_storage_resp (ico)
+         opatch%fmean_sapb_storage_resp (oco) = ipatch%fmean_sapb_storage_resp (ico)
+         opatch%fmean_barka_storage_resp(oco) = ipatch%fmean_barka_storage_resp(ico)
+         opatch%fmean_barkb_storage_resp(oco) = ipatch%fmean_barkb_storage_resp(ico)
+         opatch%fmean_plresp            (oco) = ipatch%fmean_plresp            (ico)
+         opatch%fmean_leaf_energy       (oco) = ipatch%fmean_leaf_energy       (ico)
+         opatch%fmean_leaf_water        (oco) = ipatch%fmean_leaf_water        (ico)
+         opatch%fmean_leaf_hcap         (oco) = ipatch%fmean_leaf_hcap         (ico)
+         opatch%fmean_leaf_vpdef        (oco) = ipatch%fmean_leaf_vpdef        (ico)
+         opatch%fmean_leaf_temp         (oco) = ipatch%fmean_leaf_temp         (ico)
+         opatch%fmean_leaf_fliq         (oco) = ipatch%fmean_leaf_fliq         (ico)
+         opatch%fmean_leaf_gsw          (oco) = ipatch%fmean_leaf_gsw          (ico)
+         opatch%fmean_leaf_gbw          (oco) = ipatch%fmean_leaf_gbw          (ico)
+         opatch%fmean_wood_energy       (oco) = ipatch%fmean_wood_energy       (ico)
+         opatch%fmean_wood_water        (oco) = ipatch%fmean_wood_water        (ico)
+         opatch%fmean_wood_hcap         (oco) = ipatch%fmean_wood_hcap         (ico)
+         opatch%fmean_wood_temp         (oco) = ipatch%fmean_wood_temp         (ico)
+         opatch%fmean_wood_fliq         (oco) = ipatch%fmean_wood_fliq         (ico)
+         opatch%fmean_wood_gbw          (oco) = ipatch%fmean_wood_gbw          (ico)
+         opatch%fmean_fs_open           (oco) = ipatch%fmean_fs_open           (ico)
+         opatch%fmean_fsw               (oco) = ipatch%fmean_fsw               (ico)
+         opatch%fmean_fsn               (oco) = ipatch%fmean_fsn               (ico)
+         opatch%fmean_a_open            (oco) = ipatch%fmean_a_open            (ico)
+         opatch%fmean_a_closed          (oco) = ipatch%fmean_a_closed          (ico)
+         opatch%fmean_a_net             (oco) = ipatch%fmean_a_net             (ico)
+         opatch%fmean_A_light           (oco) = ipatch%fmean_A_light           (ico)
+         opatch%fmean_A_rubp            (oco) = ipatch%fmean_A_rubp            (ico)
+         opatch%fmean_A_co2             (oco) = ipatch%fmean_A_co2             (ico)
+         opatch%fmean_psi_open          (oco) = ipatch%fmean_psi_open          (ico)
+         opatch%fmean_psi_closed        (oco) = ipatch%fmean_psi_closed        (ico)
+         opatch%fmean_water_supply      (oco) = ipatch%fmean_water_supply      (ico)
+         opatch%fmean_light_level       (oco) = ipatch%fmean_light_level       (ico)
+         opatch%fmean_light_level_beam  (oco) = ipatch%fmean_light_level_beam  (ico)
+         opatch%fmean_light_level_diff  (oco) = ipatch%fmean_light_level_diff  (ico)
          
-         opatch%fmean_par_level_beam  (oco) = ipatch%fmean_par_level_beam  (ico)
-         opatch%fmean_par_level_diffu (oco) = ipatch%fmean_par_level_diffu (ico)
-         opatch%fmean_par_level_diffd (oco) = ipatch%fmean_par_level_diffd (ico)
+         opatch%fmean_par_level_beam    (oco) = ipatch%fmean_par_level_beam    (ico)
+         opatch%fmean_par_level_diffu   (oco) = ipatch%fmean_par_level_diffu   (ico)
+         opatch%fmean_par_level_diffd   (oco) = ipatch%fmean_par_level_diffd   (ico)
 
-         opatch%fmean_par_l           (oco) = ipatch%fmean_par_l           (ico)
-         opatch%fmean_par_l_beam      (oco) = ipatch%fmean_par_l_beam      (ico)
-         opatch%fmean_par_l_diff      (oco) = ipatch%fmean_par_l_diff      (ico)
-         opatch%fmean_rshort_l        (oco) = ipatch%fmean_rshort_l        (ico)
-         opatch%fmean_rlong_l         (oco) = ipatch%fmean_rlong_l         (ico)
-         opatch%fmean_sensible_lc     (oco) = ipatch%fmean_sensible_lc     (ico)
-         opatch%fmean_vapor_lc        (oco) = ipatch%fmean_vapor_lc        (ico)
-         opatch%fmean_transp          (oco) = ipatch%fmean_transp          (ico)
-         opatch%fmean_intercepted_al  (oco) = ipatch%fmean_intercepted_al  (ico)
-         opatch%fmean_wshed_lg        (oco) = ipatch%fmean_wshed_lg        (ico)
-         opatch%fmean_rshort_w        (oco) = ipatch%fmean_rshort_w        (ico)
-         opatch%fmean_rlong_w         (oco) = ipatch%fmean_rlong_w         (ico)
-         opatch%fmean_sensible_wc     (oco) = ipatch%fmean_sensible_wc     (ico)
-         opatch%fmean_vapor_wc        (oco) = ipatch%fmean_vapor_wc        (ico)
-         opatch%fmean_intercepted_aw  (oco) = ipatch%fmean_intercepted_aw  (ico)
-         opatch%fmean_wshed_wg        (oco) = ipatch%fmean_wshed_wg        (ico)
-         opatch%fmean_lai             (oco) = ipatch%fmean_lai             (ico)
-         opatch%fmean_bdead           (oco) = ipatch%fmean_bdead           (ico)
+         opatch%fmean_par_l             (oco) = ipatch%fmean_par_l             (ico)
+         opatch%fmean_par_l_beam        (oco) = ipatch%fmean_par_l_beam        (ico)
+         opatch%fmean_par_l_diff        (oco) = ipatch%fmean_par_l_diff        (ico)
+         opatch%fmean_rshort_l          (oco) = ipatch%fmean_rshort_l          (ico)
+         opatch%fmean_rlong_l           (oco) = ipatch%fmean_rlong_l           (ico)
+         opatch%fmean_sensible_lc       (oco) = ipatch%fmean_sensible_lc       (ico)
+         opatch%fmean_vapor_lc          (oco) = ipatch%fmean_vapor_lc          (ico)
+         opatch%fmean_transp            (oco) = ipatch%fmean_transp            (ico)
+         opatch%fmean_intercepted_al    (oco) = ipatch%fmean_intercepted_al    (ico)
+         opatch%fmean_wshed_lg          (oco) = ipatch%fmean_wshed_lg          (ico)
+         opatch%fmean_rshort_w          (oco) = ipatch%fmean_rshort_w          (ico)
+         opatch%fmean_rlong_w           (oco) = ipatch%fmean_rlong_w           (ico)
+         opatch%fmean_sensible_wc       (oco) = ipatch%fmean_sensible_wc       (ico)
+         opatch%fmean_vapor_wc          (oco) = ipatch%fmean_vapor_wc          (ico)
+         opatch%fmean_intercepted_aw    (oco) = ipatch%fmean_intercepted_aw    (ico)
+         opatch%fmean_wshed_wg          (oco) = ipatch%fmean_wshed_wg          (ico)
+         opatch%fmean_lai               (oco) = ipatch%fmean_lai               (ico)
+         opatch%fmean_bdeada            (oco) = ipatch%fmean_bdeada            (ico)
+         opatch%fmean_bdeadb            (oco) = ipatch%fmean_bdeadb            (ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -9717,79 +10404,81 @@ module ed_state_vars
          !---------------------------------------------------------------------------------!
          if (writing_long) then
             !----- Scalars. ---------------------------------------------------------------!
-            opatch%dmean_nppleaf         (oco) = ipatch%dmean_nppleaf         (ico)
-            opatch%dmean_nppfroot        (oco) = ipatch%dmean_nppfroot        (ico)
-            opatch%dmean_nppsapwood      (oco) = ipatch%dmean_nppsapwood      (ico)
-            opatch%dmean_nppbark         (oco) = ipatch%dmean_nppbark         (ico)
-            opatch%dmean_nppcroot        (oco) = ipatch%dmean_nppcroot        (ico)
-            opatch%dmean_nppseeds        (oco) = ipatch%dmean_nppseeds        (ico)
-            opatch%dmean_nppwood         (oco) = ipatch%dmean_nppwood         (ico)
-            opatch%dmean_nppdaily        (oco) = ipatch%dmean_nppdaily        (ico)
-            opatch%dmean_gpp             (oco) = ipatch%dmean_gpp             (ico)
-            opatch%dmean_npp             (oco) = ipatch%dmean_npp             (ico)
-            opatch%dmean_leaf_resp       (oco) = ipatch%dmean_leaf_resp       (ico)
-            opatch%dmean_root_resp       (oco) = ipatch%dmean_root_resp       (ico)
-            opatch%dmean_leaf_growth_resp(oco) = ipatch%dmean_leaf_growth_resp(ico)
-            opatch%dmean_root_growth_resp(oco) = ipatch%dmean_root_growth_resp(ico)
-            opatch%dmean_sapa_growth_resp(oco) = ipatch%dmean_sapa_growth_resp(ico)
-            opatch%dmean_sapb_growth_resp(oco) = ipatch%dmean_sapb_growth_resp(ico)
-            opatch%dmean_bark_growth_resp(oco) = ipatch%dmean_bark_growth_resp(ico)
-            opatch%dmean_leaf_storage_resp(oco) = ipatch%dmean_leaf_storage_resp(ico)
-            opatch%dmean_root_storage_resp(oco) = ipatch%dmean_root_storage_resp(ico)
-            opatch%dmean_sapa_storage_resp(oco) = ipatch%dmean_sapa_storage_resp(ico)
-            opatch%dmean_sapb_storage_resp(oco) = ipatch%dmean_sapb_storage_resp(ico)
-            opatch%dmean_bark_storage_resp(oco) = ipatch%dmean_bark_storage_resp(ico)
-            opatch%dmean_plresp          (oco) = ipatch%dmean_plresp          (ico)
-            opatch%dmean_leaf_energy     (oco) = ipatch%dmean_leaf_energy     (ico)
-            opatch%dmean_leaf_water      (oco) = ipatch%dmean_leaf_water      (ico)
-            opatch%dmean_leaf_hcap       (oco) = ipatch%dmean_leaf_hcap       (ico)
-            opatch%dmean_leaf_vpdef      (oco) = ipatch%dmean_leaf_vpdef      (ico)
-            opatch%dmean_leaf_temp       (oco) = ipatch%dmean_leaf_temp       (ico)
-            opatch%dmean_leaf_fliq       (oco) = ipatch%dmean_leaf_fliq       (ico)
-            opatch%dmean_leaf_gsw        (oco) = ipatch%dmean_leaf_gsw        (ico)
-            opatch%dmean_leaf_gbw        (oco) = ipatch%dmean_leaf_gbw        (ico)
-            opatch%dmean_wood_energy     (oco) = ipatch%dmean_wood_energy     (ico)
-            opatch%dmean_wood_water      (oco) = ipatch%dmean_wood_water      (ico)
-            opatch%dmean_wood_hcap       (oco) = ipatch%dmean_wood_hcap       (ico)
-            opatch%dmean_wood_temp       (oco) = ipatch%dmean_wood_temp       (ico)
-            opatch%dmean_wood_fliq       (oco) = ipatch%dmean_wood_fliq       (ico)
-            opatch%dmean_wood_gbw        (oco) = ipatch%dmean_wood_gbw        (ico)
-            opatch%dmean_fs_open         (oco) = ipatch%dmean_fs_open         (ico)
-            opatch%dmean_fsw             (oco) = ipatch%dmean_fsw             (ico)
-            opatch%dmean_fsn             (oco) = ipatch%dmean_fsn             (ico)
-            opatch%dmean_a_open          (oco) = ipatch%dmean_a_open          (ico)
-            opatch%dmean_a_closed        (oco) = ipatch%dmean_a_closed        (ico)
-            opatch%dmean_a_net           (oco) = ipatch%dmean_a_net           (ico)
-            opatch%dmean_A_light         (oco) = ipatch%dmean_A_light         (ico)
-            opatch%dmean_A_rubp          (oco) = ipatch%dmean_A_rubp          (ico)
-            opatch%dmean_A_co2           (oco) = ipatch%dmean_A_co2           (ico)
-            opatch%dmean_psi_open        (oco) = ipatch%dmean_psi_open        (ico)
-            opatch%dmean_psi_closed      (oco) = ipatch%dmean_psi_closed      (ico)
-            opatch%dmean_water_supply    (oco) = ipatch%dmean_water_supply    (ico)
-            opatch%dmean_light_level     (oco) = ipatch%dmean_light_level     (ico)
-            opatch%dmean_light_level_beam(oco) = ipatch%dmean_light_level_beam(ico)
-            opatch%dmean_light_level_diff(oco) = ipatch%dmean_light_level_diff(ico)
+            opatch%dmean_nppleaf           (oco) = ipatch%dmean_nppleaf           (ico)
+            opatch%dmean_nppfroot          (oco) = ipatch%dmean_nppfroot          (ico)
+            opatch%dmean_nppsapwood        (oco) = ipatch%dmean_nppsapwood        (ico)
+            opatch%dmean_nppbark           (oco) = ipatch%dmean_nppbark           (ico)
+            opatch%dmean_nppcroot          (oco) = ipatch%dmean_nppcroot          (ico)
+            opatch%dmean_nppseeds          (oco) = ipatch%dmean_nppseeds          (ico)
+            opatch%dmean_nppwood           (oco) = ipatch%dmean_nppwood           (ico)
+            opatch%dmean_nppdaily          (oco) = ipatch%dmean_nppdaily          (ico)
+            opatch%dmean_gpp               (oco) = ipatch%dmean_gpp               (ico)
+            opatch%dmean_npp               (oco) = ipatch%dmean_npp               (ico)
+            opatch%dmean_leaf_resp         (oco) = ipatch%dmean_leaf_resp         (ico)
+            opatch%dmean_root_resp         (oco) = ipatch%dmean_root_resp         (ico)
+            opatch%dmean_leaf_growth_resp  (oco) = ipatch%dmean_leaf_growth_resp  (ico)
+            opatch%dmean_root_growth_resp  (oco) = ipatch%dmean_root_growth_resp  (ico)
+            opatch%dmean_sapa_growth_resp  (oco) = ipatch%dmean_sapa_growth_resp  (ico)
+            opatch%dmean_sapb_growth_resp  (oco) = ipatch%dmean_sapb_growth_resp  (ico)
+            opatch%dmean_barka_growth_resp (oco) = ipatch%dmean_barka_growth_resp (ico)
+            opatch%dmean_barkb_growth_resp (oco) = ipatch%dmean_barkb_growth_resp (ico)
+            opatch%dmean_leaf_storage_resp (oco) = ipatch%dmean_leaf_storage_resp (ico)
+            opatch%dmean_root_storage_resp (oco) = ipatch%dmean_root_storage_resp (ico)
+            opatch%dmean_sapa_storage_resp (oco) = ipatch%dmean_sapa_storage_resp (ico)
+            opatch%dmean_sapb_storage_resp (oco) = ipatch%dmean_sapb_storage_resp (ico)
+            opatch%dmean_barka_storage_resp(oco) = ipatch%dmean_barka_storage_resp(ico)
+            opatch%dmean_barkb_storage_resp(oco) = ipatch%dmean_barkb_storage_resp(ico)
+            opatch%dmean_plresp            (oco) = ipatch%dmean_plresp            (ico)
+            opatch%dmean_leaf_energy       (oco) = ipatch%dmean_leaf_energy       (ico)
+            opatch%dmean_leaf_water        (oco) = ipatch%dmean_leaf_water        (ico)
+            opatch%dmean_leaf_hcap         (oco) = ipatch%dmean_leaf_hcap         (ico)
+            opatch%dmean_leaf_vpdef        (oco) = ipatch%dmean_leaf_vpdef        (ico)
+            opatch%dmean_leaf_temp         (oco) = ipatch%dmean_leaf_temp         (ico)
+            opatch%dmean_leaf_fliq         (oco) = ipatch%dmean_leaf_fliq         (ico)
+            opatch%dmean_leaf_gsw          (oco) = ipatch%dmean_leaf_gsw          (ico)
+            opatch%dmean_leaf_gbw          (oco) = ipatch%dmean_leaf_gbw          (ico)
+            opatch%dmean_wood_energy       (oco) = ipatch%dmean_wood_energy       (ico)
+            opatch%dmean_wood_water        (oco) = ipatch%dmean_wood_water        (ico)
+            opatch%dmean_wood_hcap         (oco) = ipatch%dmean_wood_hcap         (ico)
+            opatch%dmean_wood_temp         (oco) = ipatch%dmean_wood_temp         (ico)
+            opatch%dmean_wood_fliq         (oco) = ipatch%dmean_wood_fliq         (ico)
+            opatch%dmean_wood_gbw          (oco) = ipatch%dmean_wood_gbw          (ico)
+            opatch%dmean_fs_open           (oco) = ipatch%dmean_fs_open           (ico)
+            opatch%dmean_fsw               (oco) = ipatch%dmean_fsw               (ico)
+            opatch%dmean_fsn               (oco) = ipatch%dmean_fsn               (ico)
+            opatch%dmean_a_open            (oco) = ipatch%dmean_a_open            (ico)
+            opatch%dmean_a_closed          (oco) = ipatch%dmean_a_closed          (ico)
+            opatch%dmean_a_net             (oco) = ipatch%dmean_a_net             (ico)
+            opatch%dmean_A_light           (oco) = ipatch%dmean_A_light           (ico)
+            opatch%dmean_A_rubp            (oco) = ipatch%dmean_A_rubp            (ico)
+            opatch%dmean_A_co2             (oco) = ipatch%dmean_A_co2             (ico)
+            opatch%dmean_psi_open          (oco) = ipatch%dmean_psi_open          (ico)
+            opatch%dmean_psi_closed        (oco) = ipatch%dmean_psi_closed        (ico)
+            opatch%dmean_water_supply      (oco) = ipatch%dmean_water_supply      (ico)
+            opatch%dmean_light_level       (oco) = ipatch%dmean_light_level       (ico)
+            opatch%dmean_light_level_beam  (oco) = ipatch%dmean_light_level_beam  (ico)
+            opatch%dmean_light_level_diff  (oco) = ipatch%dmean_light_level_diff  (ico)
 
-            opatch%dmean_par_level_beam  (oco) = ipatch%dmean_par_level_beam  (ico)
-            opatch%dmean_par_level_diffu (oco) = ipatch%dmean_par_level_diffu (ico)
-            opatch%dmean_par_level_diffd (oco) = ipatch%dmean_par_level_diffd (ico)
+            opatch%dmean_par_level_beam    (oco) = ipatch%dmean_par_level_beam    (ico)
+            opatch%dmean_par_level_diffu   (oco) = ipatch%dmean_par_level_diffu   (ico)
+            opatch%dmean_par_level_diffd   (oco) = ipatch%dmean_par_level_diffd   (ico)
 
-            opatch%dmean_par_l           (oco) = ipatch%dmean_par_l           (ico)
-            opatch%dmean_par_l_beam      (oco) = ipatch%dmean_par_l_beam      (ico)
-            opatch%dmean_par_l_diff      (oco) = ipatch%dmean_par_l_diff      (ico)
-            opatch%dmean_rshort_l        (oco) = ipatch%dmean_rshort_l        (ico)
-            opatch%dmean_rlong_l         (oco) = ipatch%dmean_rlong_l         (ico)
-            opatch%dmean_sensible_lc     (oco) = ipatch%dmean_sensible_lc     (ico)
-            opatch%dmean_vapor_lc        (oco) = ipatch%dmean_vapor_lc        (ico)
-            opatch%dmean_transp          (oco) = ipatch%dmean_transp          (ico)
-            opatch%dmean_intercepted_al  (oco) = ipatch%dmean_intercepted_al  (ico)
-            opatch%dmean_wshed_lg        (oco) = ipatch%dmean_wshed_lg        (ico)
-            opatch%dmean_rshort_w        (oco) = ipatch%dmean_rshort_w        (ico)
-            opatch%dmean_rlong_w         (oco) = ipatch%dmean_rlong_w         (ico)
-            opatch%dmean_sensible_wc     (oco) = ipatch%dmean_sensible_wc     (ico)
-            opatch%dmean_vapor_wc        (oco) = ipatch%dmean_vapor_wc        (ico)
-            opatch%dmean_intercepted_aw  (oco) = ipatch%dmean_intercepted_aw  (ico)
-            opatch%dmean_wshed_wg        (oco) = ipatch%dmean_wshed_wg        (ico)
+            opatch%dmean_par_l             (oco) = ipatch%dmean_par_l             (ico)
+            opatch%dmean_par_l_beam        (oco) = ipatch%dmean_par_l_beam        (ico)
+            opatch%dmean_par_l_diff        (oco) = ipatch%dmean_par_l_diff        (ico)
+            opatch%dmean_rshort_l          (oco) = ipatch%dmean_rshort_l          (ico)
+            opatch%dmean_rlong_l           (oco) = ipatch%dmean_rlong_l           (ico)
+            opatch%dmean_sensible_lc       (oco) = ipatch%dmean_sensible_lc       (ico)
+            opatch%dmean_vapor_lc          (oco) = ipatch%dmean_vapor_lc          (ico)
+            opatch%dmean_transp            (oco) = ipatch%dmean_transp            (ico)
+            opatch%dmean_intercepted_al    (oco) = ipatch%dmean_intercepted_al    (ico)
+            opatch%dmean_wshed_lg          (oco) = ipatch%dmean_wshed_lg          (ico)
+            opatch%dmean_rshort_w          (oco) = ipatch%dmean_rshort_w          (ico)
+            opatch%dmean_rlong_w           (oco) = ipatch%dmean_rlong_w           (ico)
+            opatch%dmean_sensible_wc       (oco) = ipatch%dmean_sensible_wc       (ico)
+            opatch%dmean_vapor_wc          (oco) = ipatch%dmean_vapor_wc          (ico)
+            opatch%dmean_intercepted_aw    (oco) = ipatch%dmean_intercepted_aw    (ico)
+            opatch%dmean_wshed_wg          (oco) = ipatch%dmean_wshed_wg          (ico)
 
 
             !------ Radiation profile variables. ------------------------------------------!
@@ -9808,99 +10497,103 @@ module ed_state_vars
          !---------------------------------------------------------------------------------!
          if (writing_eorq) then
             !----- Scalars. ---------------------------------------------------------------!
-            opatch%mmean_thbark          (oco) = ipatch%mmean_thbark          (ico)
-            opatch%mmean_lai             (oco) = ipatch%mmean_lai             (ico)
-            opatch%mmean_bleaf           (oco) = ipatch%mmean_bleaf           (ico)
-            opatch%mmean_broot           (oco) = ipatch%mmean_broot           (ico)
-            opatch%mmean_bbark           (oco) = ipatch%mmean_bbark           (ico)
-            opatch%mmean_balive          (oco) = ipatch%mmean_balive          (ico)
-            opatch%mmean_bstorage        (oco) = ipatch%mmean_bstorage        (ico)
-            opatch%mmean_leaf_maintenance(oco) = ipatch%mmean_leaf_maintenance(ico)
-            opatch%mmean_root_maintenance(oco) = ipatch%mmean_root_maintenance(ico)
-            opatch%mmean_bark_maintenance(oco) = ipatch%mmean_bark_maintenance(ico)
-            opatch%mmean_leaf_drop       (oco) = ipatch%mmean_leaf_drop       (ico)
-            opatch%mmean_cb              (oco) = ipatch%mmean_cb              (ico)
-            opatch%mmean_gpp             (oco) = ipatch%mmean_gpp             (ico)
-            opatch%mmean_npp             (oco) = ipatch%mmean_npp             (ico)
-            opatch%mmean_leaf_resp       (oco) = ipatch%mmean_leaf_resp       (ico)
-            opatch%mmean_root_resp       (oco) = ipatch%mmean_root_resp       (ico)
-            opatch%mmean_leaf_growth_resp(oco) = ipatch%mmean_leaf_growth_resp(ico)
-            opatch%mmean_root_growth_resp(oco) = ipatch%mmean_root_growth_resp(ico)
-            opatch%mmean_sapa_growth_resp(oco) = ipatch%mmean_sapa_growth_resp(ico)
-            opatch%mmean_sapb_growth_resp(oco) = ipatch%mmean_sapb_growth_resp(ico)
-            opatch%mmean_bark_growth_resp(oco) = ipatch%mmean_bark_growth_resp(ico)
-            opatch%mmean_leaf_storage_resp(oco) = ipatch%mmean_leaf_storage_resp(ico)
-            opatch%mmean_root_storage_resp(oco) = ipatch%mmean_root_storage_resp(ico)
-            opatch%mmean_sapa_storage_resp(oco) = ipatch%mmean_sapa_storage_resp(ico)
-            opatch%mmean_sapb_storage_resp(oco) = ipatch%mmean_sapb_storage_resp(ico)
-            opatch%mmean_bark_storage_resp(oco) = ipatch%mmean_bark_storage_resp(ico)
-            opatch%mmean_plresp          (oco) = ipatch%mmean_plresp          (ico)
-            opatch%mmean_leaf_energy     (oco) = ipatch%mmean_leaf_energy     (ico)
-            opatch%mmean_leaf_water      (oco) = ipatch%mmean_leaf_water      (ico)
-            opatch%mmean_leaf_hcap       (oco) = ipatch%mmean_leaf_hcap       (ico)
-            opatch%mmean_leaf_vpdef      (oco) = ipatch%mmean_leaf_vpdef      (ico)
-            opatch%mmean_leaf_temp       (oco) = ipatch%mmean_leaf_temp       (ico)
-            opatch%mmean_leaf_fliq       (oco) = ipatch%mmean_leaf_fliq       (ico)
-            opatch%mmean_leaf_gsw        (oco) = ipatch%mmean_leaf_gsw        (ico)
-            opatch%mmean_leaf_gbw        (oco) = ipatch%mmean_leaf_gbw        (ico)
-            opatch%mmean_wood_energy     (oco) = ipatch%mmean_wood_energy     (ico)
-            opatch%mmean_wood_water      (oco) = ipatch%mmean_wood_water      (ico)
-            opatch%mmean_wood_hcap       (oco) = ipatch%mmean_wood_hcap       (ico)
-            opatch%mmean_wood_temp       (oco) = ipatch%mmean_wood_temp       (ico)
-            opatch%mmean_wood_fliq       (oco) = ipatch%mmean_wood_fliq       (ico)
-            opatch%mmean_wood_gbw        (oco) = ipatch%mmean_wood_gbw        (ico)
-            opatch%mmean_fs_open         (oco) = ipatch%mmean_fs_open         (ico)
-            opatch%mmean_fsw             (oco) = ipatch%mmean_fsw             (ico)
-            opatch%mmean_fsn             (oco) = ipatch%mmean_fsn             (ico)
-            opatch%mmean_a_open          (oco) = ipatch%mmean_a_open          (ico)
-            opatch%mmean_a_closed        (oco) = ipatch%mmean_a_closed        (ico)
-            opatch%mmean_a_net           (oco) = ipatch%mmean_a_net           (ico)
-            opatch%mmean_A_light         (oco) = ipatch%mmean_A_light         (ico)
-            opatch%mmean_A_rubp          (oco) = ipatch%mmean_A_rubp          (ico)
-            opatch%mmean_A_co2           (oco) = ipatch%mmean_A_co2           (ico)
-            opatch%mmean_psi_open        (oco) = ipatch%mmean_psi_open        (ico)
-            opatch%mmean_psi_closed      (oco) = ipatch%mmean_psi_closed      (ico)
-            opatch%mmean_water_supply    (oco) = ipatch%mmean_water_supply    (ico)
-            opatch%mmean_light_level     (oco) = ipatch%mmean_light_level     (ico)
-            opatch%mmean_light_level_beam(oco) = ipatch%mmean_light_level_beam(ico)
-            opatch%mmean_light_level_diff(oco) = ipatch%mmean_light_level_diff(ico)
+            opatch%mmean_thbark            (oco) = ipatch%mmean_thbark            (ico)
+            opatch%mmean_lai               (oco) = ipatch%mmean_lai               (ico)
+            opatch%mmean_bleaf             (oco) = ipatch%mmean_bleaf             (ico)
+            opatch%mmean_broot             (oco) = ipatch%mmean_broot             (ico)
+            opatch%mmean_bbarka            (oco) = ipatch%mmean_bbarka            (ico)
+            opatch%mmean_bbarkb            (oco) = ipatch%mmean_bbarkb            (ico)
+            opatch%mmean_balive            (oco) = ipatch%mmean_balive            (ico)
+            opatch%mmean_bstorage          (oco) = ipatch%mmean_bstorage          (ico)
+            opatch%mmean_leaf_maintenance  (oco) = ipatch%mmean_leaf_maintenance  (ico)
+            opatch%mmean_root_maintenance  (oco) = ipatch%mmean_root_maintenance  (ico)
+            opatch%mmean_barka_maintenance (oco) = ipatch%mmean_barka_maintenance (ico)
+            opatch%mmean_barkb_maintenance (oco) = ipatch%mmean_barkb_maintenance (ico)
+            opatch%mmean_leaf_drop         (oco) = ipatch%mmean_leaf_drop         (ico)
+            opatch%mmean_cb                (oco) = ipatch%mmean_cb                (ico)
+            opatch%mmean_gpp               (oco) = ipatch%mmean_gpp               (ico)
+            opatch%mmean_npp               (oco) = ipatch%mmean_npp               (ico)
+            opatch%mmean_leaf_resp         (oco) = ipatch%mmean_leaf_resp         (ico)
+            opatch%mmean_root_resp         (oco) = ipatch%mmean_root_resp         (ico)
+            opatch%mmean_leaf_growth_resp  (oco) = ipatch%mmean_leaf_growth_resp  (ico)
+            opatch%mmean_root_growth_resp  (oco) = ipatch%mmean_root_growth_resp  (ico)
+            opatch%mmean_sapa_growth_resp  (oco) = ipatch%mmean_sapa_growth_resp  (ico)
+            opatch%mmean_sapb_growth_resp  (oco) = ipatch%mmean_sapb_growth_resp  (ico)
+            opatch%mmean_barka_growth_resp (oco) = ipatch%mmean_barka_growth_resp (ico)
+            opatch%mmean_barkb_growth_resp (oco) = ipatch%mmean_barkb_growth_resp (ico)
+            opatch%mmean_leaf_storage_resp (oco) = ipatch%mmean_leaf_storage_resp (ico)
+            opatch%mmean_root_storage_resp (oco) = ipatch%mmean_root_storage_resp (ico)
+            opatch%mmean_sapa_storage_resp (oco) = ipatch%mmean_sapa_storage_resp (ico)
+            opatch%mmean_sapb_storage_resp (oco) = ipatch%mmean_sapb_storage_resp (ico)
+            opatch%mmean_barka_storage_resp(oco) = ipatch%mmean_barka_storage_resp(ico)
+            opatch%mmean_barkb_storage_resp(oco) = ipatch%mmean_barkb_storage_resp(ico)
+            opatch%mmean_plresp            (oco) = ipatch%mmean_plresp            (ico)
+            opatch%mmean_leaf_energy       (oco) = ipatch%mmean_leaf_energy       (ico)
+            opatch%mmean_leaf_water        (oco) = ipatch%mmean_leaf_water        (ico)
+            opatch%mmean_leaf_hcap         (oco) = ipatch%mmean_leaf_hcap         (ico)
+            opatch%mmean_leaf_vpdef        (oco) = ipatch%mmean_leaf_vpdef        (ico)
+            opatch%mmean_leaf_temp         (oco) = ipatch%mmean_leaf_temp         (ico)
+            opatch%mmean_leaf_fliq         (oco) = ipatch%mmean_leaf_fliq         (ico)
+            opatch%mmean_leaf_gsw          (oco) = ipatch%mmean_leaf_gsw          (ico)
+            opatch%mmean_leaf_gbw          (oco) = ipatch%mmean_leaf_gbw          (ico)
+            opatch%mmean_wood_energy       (oco) = ipatch%mmean_wood_energy       (ico)
+            opatch%mmean_wood_water        (oco) = ipatch%mmean_wood_water        (ico)
+            opatch%mmean_wood_hcap         (oco) = ipatch%mmean_wood_hcap         (ico)
+            opatch%mmean_wood_temp         (oco) = ipatch%mmean_wood_temp         (ico)
+            opatch%mmean_wood_fliq         (oco) = ipatch%mmean_wood_fliq         (ico)
+            opatch%mmean_wood_gbw          (oco) = ipatch%mmean_wood_gbw          (ico)
+            opatch%mmean_fs_open           (oco) = ipatch%mmean_fs_open           (ico)
+            opatch%mmean_fsw               (oco) = ipatch%mmean_fsw               (ico)
+            opatch%mmean_fsn               (oco) = ipatch%mmean_fsn               (ico)
+            opatch%mmean_a_open            (oco) = ipatch%mmean_a_open            (ico)
+            opatch%mmean_a_closed          (oco) = ipatch%mmean_a_closed          (ico)
+            opatch%mmean_a_net             (oco) = ipatch%mmean_a_net             (ico)
+            opatch%mmean_A_light           (oco) = ipatch%mmean_A_light           (ico)
+            opatch%mmean_A_rubp            (oco) = ipatch%mmean_A_rubp            (ico)
+            opatch%mmean_A_co2             (oco) = ipatch%mmean_A_co2             (ico)
+            opatch%mmean_psi_open          (oco) = ipatch%mmean_psi_open          (ico)
+            opatch%mmean_psi_closed        (oco) = ipatch%mmean_psi_closed        (ico)
+            opatch%mmean_water_supply      (oco) = ipatch%mmean_water_supply      (ico)
+            opatch%mmean_light_level       (oco) = ipatch%mmean_light_level       (ico)
+            opatch%mmean_light_level_beam  (oco) = ipatch%mmean_light_level_beam  (ico)
+            opatch%mmean_light_level_diff  (oco) = ipatch%mmean_light_level_diff  (ico)
 
-            opatch%mmean_par_level_beam  (oco) = ipatch%mmean_par_level_beam  (ico)
-            opatch%mmean_par_level_diffu (oco) = ipatch%mmean_par_level_diffu (ico)
-            opatch%mmean_par_level_diffd (oco) = ipatch%mmean_par_level_diffd (ico)
+            opatch%mmean_par_level_beam    (oco) = ipatch%mmean_par_level_beam    (ico)
+            opatch%mmean_par_level_diffu   (oco) = ipatch%mmean_par_level_diffu   (ico)
+            opatch%mmean_par_level_diffd   (oco) = ipatch%mmean_par_level_diffd   (ico)
 
-            opatch%mmean_par_l           (oco) = ipatch%mmean_par_l           (ico)
-            opatch%mmean_par_l_beam      (oco) = ipatch%mmean_par_l_beam      (ico)
-            opatch%mmean_par_l_diff      (oco) = ipatch%mmean_par_l_diff      (ico)
-            opatch%mmean_rshort_l        (oco) = ipatch%mmean_rshort_l        (ico)
-            opatch%mmean_rlong_l         (oco) = ipatch%mmean_rlong_l         (ico)
-            opatch%mmean_sensible_lc     (oco) = ipatch%mmean_sensible_lc     (ico)
-            opatch%mmean_vapor_lc        (oco) = ipatch%mmean_vapor_lc        (ico)
-            opatch%mmean_transp          (oco) = ipatch%mmean_transp          (ico)
-            opatch%mmean_intercepted_al  (oco) = ipatch%mmean_intercepted_al  (ico)
-            opatch%mmean_wshed_lg        (oco) = ipatch%mmean_wshed_lg        (ico)
-            opatch%mmean_rshort_w        (oco) = ipatch%mmean_rshort_w        (ico)
-            opatch%mmean_rlong_w         (oco) = ipatch%mmean_rlong_w         (ico)
-            opatch%mmean_sensible_wc     (oco) = ipatch%mmean_sensible_wc     (ico)
-            opatch%mmean_vapor_wc        (oco) = ipatch%mmean_vapor_wc        (ico)
-            opatch%mmean_intercepted_aw  (oco) = ipatch%mmean_intercepted_aw  (ico)
-            opatch%mmean_wshed_wg        (oco) = ipatch%mmean_wshed_wg        (ico)
-            opatch%mmean_nppleaf         (oco) = ipatch%mmean_nppleaf         (ico)
-            opatch%mmean_nppfroot        (oco) = ipatch%mmean_nppfroot        (ico)
-            opatch%mmean_nppsapwood      (oco) = ipatch%mmean_nppsapwood      (ico)
-            opatch%mmean_nppbark         (oco) = ipatch%mmean_nppbark         (ico)
-            opatch%mmean_nppcroot        (oco) = ipatch%mmean_nppcroot        (ico)
-            opatch%mmean_nppseeds        (oco) = ipatch%mmean_nppseeds        (ico)
-            opatch%mmean_nppwood         (oco) = ipatch%mmean_nppwood         (ico)
-            opatch%mmean_nppdaily        (oco) = ipatch%mmean_nppdaily        (ico)
-            opatch%mmsqu_gpp             (oco) = ipatch%mmsqu_gpp             (ico)
-            opatch%mmsqu_npp             (oco) = ipatch%mmsqu_npp             (ico)
-            opatch%mmsqu_plresp          (oco) = ipatch%mmsqu_plresp          (ico)
-            opatch%mmsqu_sensible_lc     (oco) = ipatch%mmsqu_sensible_lc     (ico)
-            opatch%mmsqu_vapor_lc        (oco) = ipatch%mmsqu_vapor_lc        (ico)
-            opatch%mmsqu_transp          (oco) = ipatch%mmsqu_transp          (ico)
-            opatch%mmsqu_sensible_wc     (oco) = ipatch%mmsqu_sensible_wc     (ico)
-            opatch%mmsqu_vapor_wc        (oco) = ipatch%mmsqu_vapor_wc        (ico)
+            opatch%mmean_par_l             (oco) = ipatch%mmean_par_l             (ico)
+            opatch%mmean_par_l_beam        (oco) = ipatch%mmean_par_l_beam        (ico)
+            opatch%mmean_par_l_diff        (oco) = ipatch%mmean_par_l_diff        (ico)
+            opatch%mmean_rshort_l          (oco) = ipatch%mmean_rshort_l          (ico)
+            opatch%mmean_rlong_l           (oco) = ipatch%mmean_rlong_l           (ico)
+            opatch%mmean_sensible_lc       (oco) = ipatch%mmean_sensible_lc       (ico)
+            opatch%mmean_vapor_lc          (oco) = ipatch%mmean_vapor_lc          (ico)
+            opatch%mmean_transp            (oco) = ipatch%mmean_transp            (ico)
+            opatch%mmean_intercepted_al    (oco) = ipatch%mmean_intercepted_al    (ico)
+            opatch%mmean_wshed_lg          (oco) = ipatch%mmean_wshed_lg          (ico)
+            opatch%mmean_rshort_w          (oco) = ipatch%mmean_rshort_w          (ico)
+            opatch%mmean_rlong_w           (oco) = ipatch%mmean_rlong_w           (ico)
+            opatch%mmean_sensible_wc       (oco) = ipatch%mmean_sensible_wc       (ico)
+            opatch%mmean_vapor_wc          (oco) = ipatch%mmean_vapor_wc          (ico)
+            opatch%mmean_intercepted_aw    (oco) = ipatch%mmean_intercepted_aw    (ico)
+            opatch%mmean_wshed_wg          (oco) = ipatch%mmean_wshed_wg          (ico)
+            opatch%mmean_nppleaf           (oco) = ipatch%mmean_nppleaf           (ico)
+            opatch%mmean_nppfroot          (oco) = ipatch%mmean_nppfroot          (ico)
+            opatch%mmean_nppsapwood        (oco) = ipatch%mmean_nppsapwood        (ico)
+            opatch%mmean_nppbark           (oco) = ipatch%mmean_nppbark           (ico)
+            opatch%mmean_nppcroot          (oco) = ipatch%mmean_nppcroot          (ico)
+            opatch%mmean_nppseeds          (oco) = ipatch%mmean_nppseeds          (ico)
+            opatch%mmean_nppwood           (oco) = ipatch%mmean_nppwood           (ico)
+            opatch%mmean_nppdaily          (oco) = ipatch%mmean_nppdaily          (ico)
+            opatch%mmsqu_gpp               (oco) = ipatch%mmsqu_gpp               (ico)
+            opatch%mmsqu_npp               (oco) = ipatch%mmsqu_npp               (ico)
+            opatch%mmsqu_plresp            (oco) = ipatch%mmsqu_plresp            (ico)
+            opatch%mmsqu_sensible_lc       (oco) = ipatch%mmsqu_sensible_lc       (ico)
+            opatch%mmsqu_vapor_lc          (oco) = ipatch%mmsqu_vapor_lc          (ico)
+            opatch%mmsqu_transp            (oco) = ipatch%mmsqu_transp            (ico)
+            opatch%mmsqu_sensible_wc       (oco) = ipatch%mmsqu_sensible_wc       (ico)
+            opatch%mmsqu_vapor_wc          (oco) = ipatch%mmsqu_vapor_wc          (ico)
             !----- Mortality variables. ---------------------------------------------------!
             do m=1,n_mort
                opatch%mmean_mort_rate(m,oco) = ipatch%mmean_mort_rate(m,ico)
@@ -9923,79 +10616,81 @@ module ed_state_vars
 
          if (writing_dcyc) then
             do n=1,ndcycle
-               opatch%qmean_gpp             (n,oco) = ipatch%qmean_gpp             (n,ico)
-               opatch%qmean_npp             (n,oco) = ipatch%qmean_npp             (n,ico)
-               opatch%qmean_leaf_resp       (n,oco) = ipatch%qmean_leaf_resp       (n,ico)
-               opatch%qmean_root_resp       (n,oco) = ipatch%qmean_root_resp       (n,ico)
-               opatch%qmean_leaf_growth_resp(n,oco) = ipatch%qmean_leaf_growth_resp(n,ico)
-               opatch%qmean_root_growth_resp(n,oco) = ipatch%qmean_root_growth_resp(n,ico)
-               opatch%qmean_sapa_growth_resp(n,oco) = ipatch%qmean_sapa_growth_resp(n,ico)
-               opatch%qmean_sapb_growth_resp(n,oco) = ipatch%qmean_sapb_growth_resp(n,ico)
-               opatch%qmean_bark_growth_resp(n,oco) = ipatch%qmean_bark_growth_resp(n,ico)
-               opatch%qmean_leaf_storage_resp(n,oco) = ipatch%qmean_leaf_storage_resp(n,ico)
-               opatch%qmean_root_storage_resp(n,oco) = ipatch%qmean_root_storage_resp(n,ico)
-               opatch%qmean_sapa_storage_resp(n,oco) = ipatch%qmean_sapa_storage_resp(n,ico)
-               opatch%qmean_sapb_storage_resp(n,oco) = ipatch%qmean_sapb_storage_resp(n,ico)
-               opatch%qmean_bark_storage_resp(n,oco) = ipatch%qmean_bark_storage_resp(n,ico)
-               opatch%qmean_plresp          (n,oco) = ipatch%qmean_plresp          (n,ico)
-               opatch%qmean_leaf_energy     (n,oco) = ipatch%qmean_leaf_energy     (n,ico)
-               opatch%qmean_leaf_water      (n,oco) = ipatch%qmean_leaf_water      (n,ico)
-               opatch%qmean_leaf_hcap       (n,oco) = ipatch%qmean_leaf_hcap       (n,ico)
-               opatch%qmean_leaf_vpdef      (n,oco) = ipatch%qmean_leaf_vpdef      (n,ico)
-               opatch%qmean_leaf_temp       (n,oco) = ipatch%qmean_leaf_temp       (n,ico)
-               opatch%qmean_leaf_fliq       (n,oco) = ipatch%qmean_leaf_fliq       (n,ico)
-               opatch%qmean_leaf_gsw        (n,oco) = ipatch%qmean_leaf_gsw        (n,ico)
-               opatch%qmean_leaf_gbw        (n,oco) = ipatch%qmean_leaf_gbw        (n,ico)
-               opatch%qmean_wood_energy     (n,oco) = ipatch%qmean_wood_energy     (n,ico)
-               opatch%qmean_wood_water      (n,oco) = ipatch%qmean_wood_water      (n,ico)
-               opatch%qmean_wood_hcap       (n,oco) = ipatch%qmean_wood_hcap       (n,ico)
-               opatch%qmean_wood_temp       (n,oco) = ipatch%qmean_wood_temp       (n,ico)
-               opatch%qmean_wood_fliq       (n,oco) = ipatch%qmean_wood_fliq       (n,ico)
-               opatch%qmean_wood_gbw        (n,oco) = ipatch%qmean_wood_gbw        (n,ico)
-               opatch%qmean_fs_open         (n,oco) = ipatch%qmean_fs_open         (n,ico)
-               opatch%qmean_fsw             (n,oco) = ipatch%qmean_fsw             (n,ico)
-               opatch%qmean_fsn             (n,oco) = ipatch%qmean_fsn             (n,ico)
-               opatch%qmean_a_open          (n,oco) = ipatch%qmean_a_open          (n,ico)
-               opatch%qmean_a_closed        (n,oco) = ipatch%qmean_a_closed        (n,ico)
-               opatch%qmean_a_net           (n,oco) = ipatch%qmean_a_net           (n,ico)
-               opatch%qmean_A_light         (n,oco) = ipatch%qmean_A_light         (n,ico)
-               opatch%qmean_A_rubp          (n,oco) = ipatch%qmean_A_rubp          (n,ico)
-               opatch%qmean_A_co2           (n,oco) = ipatch%qmean_A_co2           (n,ico)
-               opatch%qmean_psi_open        (n,oco) = ipatch%qmean_psi_open        (n,ico)
-               opatch%qmean_psi_closed      (n,oco) = ipatch%qmean_psi_closed      (n,ico)
-               opatch%qmean_water_supply    (n,oco) = ipatch%qmean_water_supply    (n,ico)
-               opatch%qmean_light_level     (n,oco) = ipatch%qmean_light_level     (n,ico)
-               opatch%qmean_light_level_beam(n,oco) = ipatch%qmean_light_level_beam(n,ico)
-               opatch%qmean_light_level_diff(n,oco) = ipatch%qmean_light_level_diff(n,ico)
+               opatch%qmean_gpp               (n,oco) = ipatch%qmean_gpp               (n,ico)
+               opatch%qmean_npp               (n,oco) = ipatch%qmean_npp               (n,ico)
+               opatch%qmean_leaf_resp         (n,oco) = ipatch%qmean_leaf_resp         (n,ico)
+               opatch%qmean_root_resp         (n,oco) = ipatch%qmean_root_resp         (n,ico)
+               opatch%qmean_leaf_growth_resp  (n,oco) = ipatch%qmean_leaf_growth_resp  (n,ico)
+               opatch%qmean_root_growth_resp  (n,oco) = ipatch%qmean_root_growth_resp  (n,ico)
+               opatch%qmean_sapa_growth_resp  (n,oco) = ipatch%qmean_sapa_growth_resp  (n,ico)
+               opatch%qmean_sapb_growth_resp  (n,oco) = ipatch%qmean_sapb_growth_resp  (n,ico)
+               opatch%qmean_barka_growth_resp (n,oco) = ipatch%qmean_barka_growth_resp (n,ico)
+               opatch%qmean_barkb_growth_resp (n,oco) = ipatch%qmean_barkb_growth_resp (n,ico)
+               opatch%qmean_leaf_storage_resp (n,oco) = ipatch%qmean_leaf_storage_resp (n,ico)
+               opatch%qmean_root_storage_resp (n,oco) = ipatch%qmean_root_storage_resp (n,ico)
+               opatch%qmean_sapa_storage_resp (n,oco) = ipatch%qmean_sapa_storage_resp (n,ico)
+               opatch%qmean_sapb_storage_resp (n,oco) = ipatch%qmean_sapb_storage_resp (n,ico)
+               opatch%qmean_barka_storage_resp(n,oco) = ipatch%qmean_barka_storage_resp(n,ico)
+               opatch%qmean_barkb_storage_resp(n,oco) = ipatch%qmean_barkb_storage_resp(n,ico)
+               opatch%qmean_plresp            (n,oco) = ipatch%qmean_plresp            (n,ico)
+               opatch%qmean_leaf_energy       (n,oco) = ipatch%qmean_leaf_energy       (n,ico)
+               opatch%qmean_leaf_water        (n,oco) = ipatch%qmean_leaf_water        (n,ico)
+               opatch%qmean_leaf_hcap         (n,oco) = ipatch%qmean_leaf_hcap         (n,ico)
+               opatch%qmean_leaf_vpdef        (n,oco) = ipatch%qmean_leaf_vpdef        (n,ico)
+               opatch%qmean_leaf_temp         (n,oco) = ipatch%qmean_leaf_temp         (n,ico)
+               opatch%qmean_leaf_fliq         (n,oco) = ipatch%qmean_leaf_fliq         (n,ico)
+               opatch%qmean_leaf_gsw          (n,oco) = ipatch%qmean_leaf_gsw          (n,ico)
+               opatch%qmean_leaf_gbw          (n,oco) = ipatch%qmean_leaf_gbw          (n,ico)
+               opatch%qmean_wood_energy       (n,oco) = ipatch%qmean_wood_energy       (n,ico)
+               opatch%qmean_wood_water        (n,oco) = ipatch%qmean_wood_water        (n,ico)
+               opatch%qmean_wood_hcap         (n,oco) = ipatch%qmean_wood_hcap         (n,ico)
+               opatch%qmean_wood_temp         (n,oco) = ipatch%qmean_wood_temp         (n,ico)
+               opatch%qmean_wood_fliq         (n,oco) = ipatch%qmean_wood_fliq         (n,ico)
+               opatch%qmean_wood_gbw          (n,oco) = ipatch%qmean_wood_gbw          (n,ico)
+               opatch%qmean_fs_open           (n,oco) = ipatch%qmean_fs_open           (n,ico)
+               opatch%qmean_fsw               (n,oco) = ipatch%qmean_fsw               (n,ico)
+               opatch%qmean_fsn               (n,oco) = ipatch%qmean_fsn               (n,ico)
+               opatch%qmean_a_open            (n,oco) = ipatch%qmean_a_open            (n,ico)
+               opatch%qmean_a_closed          (n,oco) = ipatch%qmean_a_closed          (n,ico)
+               opatch%qmean_a_net             (n,oco) = ipatch%qmean_a_net             (n,ico)
+               opatch%qmean_A_light           (n,oco) = ipatch%qmean_A_light           (n,ico)
+               opatch%qmean_A_rubp            (n,oco) = ipatch%qmean_A_rubp            (n,ico)
+               opatch%qmean_A_co2             (n,oco) = ipatch%qmean_A_co2             (n,ico)
+               opatch%qmean_psi_open          (n,oco) = ipatch%qmean_psi_open          (n,ico)
+               opatch%qmean_psi_closed        (n,oco) = ipatch%qmean_psi_closed        (n,ico)
+               opatch%qmean_water_supply      (n,oco) = ipatch%qmean_water_supply      (n,ico)
+               opatch%qmean_light_level       (n,oco) = ipatch%qmean_light_level       (n,ico)
+               opatch%qmean_light_level_beam  (n,oco) = ipatch%qmean_light_level_beam  (n,ico)
+               opatch%qmean_light_level_diff  (n,oco) = ipatch%qmean_light_level_diff  (n,ico)
 
-               opatch%qmean_par_level_beam  (n,oco) = ipatch%qmean_par_level_beam  (n,ico)
-               opatch%qmean_par_level_diffu (n,oco) = ipatch%qmean_par_level_diffu (n,ico)
-               opatch%qmean_par_level_diffd (n,oco) = ipatch%qmean_par_level_diffd (n,ico)
+               opatch%qmean_par_level_beam    (n,oco) = ipatch%qmean_par_level_beam    (n,ico)
+               opatch%qmean_par_level_diffu   (n,oco) = ipatch%qmean_par_level_diffu   (n,ico)
+               opatch%qmean_par_level_diffd   (n,oco) = ipatch%qmean_par_level_diffd   (n,ico)
 
-               opatch%qmean_par_l           (n,oco) = ipatch%qmean_par_l           (n,ico)
-               opatch%qmean_par_l_beam      (n,oco) = ipatch%qmean_par_l_beam      (n,ico)
-               opatch%qmean_par_l_diff      (n,oco) = ipatch%qmean_par_l_diff      (n,ico)
-               opatch%qmean_rshort_l        (n,oco) = ipatch%qmean_rshort_l        (n,ico)
-               opatch%qmean_rlong_l         (n,oco) = ipatch%qmean_rlong_l         (n,ico)
-               opatch%qmean_sensible_lc     (n,oco) = ipatch%qmean_sensible_lc     (n,ico)
-               opatch%qmean_vapor_lc        (n,oco) = ipatch%qmean_vapor_lc        (n,ico)
-               opatch%qmean_transp          (n,oco) = ipatch%qmean_transp          (n,ico)
-               opatch%qmean_intercepted_al  (n,oco) = ipatch%qmean_intercepted_al  (n,ico)
-               opatch%qmean_wshed_lg        (n,oco) = ipatch%qmean_wshed_lg        (n,ico)
-               opatch%qmean_rshort_w        (n,oco) = ipatch%qmean_rshort_w        (n,ico)
-               opatch%qmean_rlong_w         (n,oco) = ipatch%qmean_rlong_w         (n,ico)
-               opatch%qmean_sensible_wc     (n,oco) = ipatch%qmean_sensible_wc     (n,ico)
-               opatch%qmean_vapor_wc        (n,oco) = ipatch%qmean_vapor_wc        (n,ico)
-               opatch%qmean_intercepted_aw  (n,oco) = ipatch%qmean_intercepted_aw  (n,ico)
-               opatch%qmean_wshed_wg        (n,oco) = ipatch%qmean_wshed_wg        (n,ico)
-               opatch%qmsqu_gpp             (n,oco) = ipatch%qmsqu_gpp             (n,ico)
-               opatch%qmsqu_npp             (n,oco) = ipatch%qmsqu_npp             (n,ico)
-               opatch%qmsqu_plresp          (n,oco) = ipatch%qmsqu_plresp          (n,ico)
-               opatch%qmsqu_sensible_lc     (n,oco) = ipatch%qmsqu_sensible_lc     (n,ico)
-               opatch%qmsqu_vapor_lc        (n,oco) = ipatch%qmsqu_vapor_lc        (n,ico)
-               opatch%qmsqu_transp          (n,oco) = ipatch%qmsqu_transp          (n,ico)
-               opatch%qmsqu_sensible_wc     (n,oco) = ipatch%qmsqu_sensible_wc     (n,ico)
-               opatch%qmsqu_vapor_wc        (n,oco) = ipatch%qmsqu_vapor_wc        (n,ico)
+               opatch%qmean_par_l             (n,oco) = ipatch%qmean_par_l             (n,ico)
+               opatch%qmean_par_l_beam        (n,oco) = ipatch%qmean_par_l_beam        (n,ico)
+               opatch%qmean_par_l_diff        (n,oco) = ipatch%qmean_par_l_diff        (n,ico)
+               opatch%qmean_rshort_l          (n,oco) = ipatch%qmean_rshort_l          (n,ico)
+               opatch%qmean_rlong_l           (n,oco) = ipatch%qmean_rlong_l           (n,ico)
+               opatch%qmean_sensible_lc       (n,oco) = ipatch%qmean_sensible_lc       (n,ico)
+               opatch%qmean_vapor_lc          (n,oco) = ipatch%qmean_vapor_lc          (n,ico)
+               opatch%qmean_transp            (n,oco) = ipatch%qmean_transp            (n,ico)
+               opatch%qmean_intercepted_al    (n,oco) = ipatch%qmean_intercepted_al    (n,ico)
+               opatch%qmean_wshed_lg          (n,oco) = ipatch%qmean_wshed_lg          (n,ico)
+               opatch%qmean_rshort_w          (n,oco) = ipatch%qmean_rshort_w          (n,ico)
+               opatch%qmean_rlong_w           (n,oco) = ipatch%qmean_rlong_w           (n,ico)
+               opatch%qmean_sensible_wc       (n,oco) = ipatch%qmean_sensible_wc       (n,ico)
+               opatch%qmean_vapor_wc          (n,oco) = ipatch%qmean_vapor_wc          (n,ico)
+               opatch%qmean_intercepted_aw    (n,oco) = ipatch%qmean_intercepted_aw    (n,ico)
+               opatch%qmean_wshed_wg          (n,oco) = ipatch%qmean_wshed_wg          (n,ico)
+               opatch%qmsqu_gpp               (n,oco) = ipatch%qmsqu_gpp               (n,ico)
+               opatch%qmsqu_npp               (n,oco) = ipatch%qmsqu_npp               (n,ico)
+               opatch%qmsqu_plresp            (n,oco) = ipatch%qmsqu_plresp            (n,ico)
+               opatch%qmsqu_sensible_lc       (n,oco) = ipatch%qmsqu_sensible_lc       (n,ico)
+               opatch%qmsqu_vapor_lc          (n,oco) = ipatch%qmsqu_vapor_lc          (n,ico)
+               opatch%qmsqu_transp            (n,oco) = ipatch%qmsqu_transp            (n,ico)
+               opatch%qmsqu_sensible_wc       (n,oco) = ipatch%qmsqu_sensible_wc       (n,ico)
+               opatch%qmsqu_vapor_wc          (n,oco) = ipatch%qmsqu_vapor_wc          (n,ico)
 
                !------ Radiation profile variables. ---------------------------------------!
                do m=1,n_radprof
@@ -10124,14 +10819,16 @@ module ed_state_vars
       opatch%dlndbh_dt             (1:z) = pack(ipatch%dlndbh_dt                 ,lmask)
       opatch%dbh                   (1:z) = pack(ipatch%dbh                       ,lmask)
       opatch%thbark                (1:z) = pack(ipatch%thbark                    ,lmask)
-      opatch%bdead                 (1:z) = pack(ipatch%bdead                     ,lmask)
+      opatch%bdeada                (1:z) = pack(ipatch%bdeada                    ,lmask)
+      opatch%bdeadb                (1:z) = pack(ipatch%bdeadb                    ,lmask)
       opatch%btimber               (1:z) = pack(ipatch%btimber                   ,lmask)
       opatch%bleaf                 (1:z) = pack(ipatch%bleaf                     ,lmask)
       opatch%balive                (1:z) = pack(ipatch%balive                    ,lmask)
       opatch%broot                 (1:z) = pack(ipatch%broot                     ,lmask)
       opatch%bsapwooda             (1:z) = pack(ipatch%bsapwooda                 ,lmask)
       opatch%bsapwoodb             (1:z) = pack(ipatch%bsapwoodb                 ,lmask)
-      opatch%bbark                 (1:z) = pack(ipatch%bbark                     ,lmask)
+      opatch%bbarka                (1:z) = pack(ipatch%bbarka                    ,lmask)
+      opatch%bbarkb                (1:z) = pack(ipatch%bbarkb                    ,lmask)
       opatch%bstorage              (1:z) = pack(ipatch%bstorage                  ,lmask)
       opatch%bseeds                (1:z) = pack(ipatch%bseeds                    ,lmask)
       opatch%byield                (1:z) = pack(ipatch%byield                    ,lmask)
@@ -10181,12 +10878,14 @@ module ed_state_vars
       opatch%root_growth_resp      (1:z) = pack(ipatch%root_growth_resp          ,lmask)
       opatch%sapa_growth_resp      (1:z) = pack(ipatch%sapa_growth_resp          ,lmask)
       opatch%sapb_growth_resp      (1:z) = pack(ipatch%sapb_growth_resp          ,lmask)
-      opatch%bark_growth_resp      (1:z) = pack(ipatch%bark_growth_resp          ,lmask)
+      opatch%barka_growth_resp     (1:z) = pack(ipatch%barka_growth_resp         ,lmask)
+      opatch%barkb_growth_resp     (1:z) = pack(ipatch%barkb_growth_resp         ,lmask)
       opatch%leaf_storage_resp     (1:z) = pack(ipatch%leaf_storage_resp         ,lmask)
       opatch%root_storage_resp     (1:z) = pack(ipatch%root_storage_resp         ,lmask)
       opatch%sapa_storage_resp     (1:z) = pack(ipatch%sapa_storage_resp         ,lmask)
       opatch%sapb_storage_resp     (1:z) = pack(ipatch%sapb_storage_resp         ,lmask)
-      opatch%bark_storage_resp     (1:z) = pack(ipatch%bark_storage_resp         ,lmask)
+      opatch%barka_storage_resp    (1:z) = pack(ipatch%barka_storage_resp        ,lmask)
+      opatch%barkb_storage_resp    (1:z) = pack(ipatch%barkb_storage_resp        ,lmask)
       opatch%monthly_dndt          (1:z) = pack(ipatch%monthly_dndt              ,lmask)
       opatch%monthly_dlnndt        (1:z) = pack(ipatch%monthly_dlnndt            ,lmask)
       opatch%krdepth               (1:z) = pack(ipatch%krdepth                   ,lmask)
@@ -10231,7 +10930,8 @@ module ed_state_vars
       opatch%water_supply          (1:z) = pack(ipatch%water_supply              ,lmask)
       opatch%leaf_maintenance      (1:z) = pack(ipatch%leaf_maintenance          ,lmask)
       opatch%root_maintenance      (1:z) = pack(ipatch%root_maintenance          ,lmask)
-      opatch%bark_maintenance      (1:z) = pack(ipatch%bark_maintenance          ,lmask)
+      opatch%barka_maintenance     (1:z) = pack(ipatch%barka_maintenance         ,lmask)
+      opatch%barkb_maintenance     (1:z) = pack(ipatch%barkb_maintenance         ,lmask)
       opatch%leaf_drop             (1:z) = pack(ipatch%leaf_drop                 ,lmask)
       opatch%leaf_respiration      (1:z) = pack(ipatch%leaf_respiration          ,lmask)
       opatch%root_respiration      (1:z) = pack(ipatch%root_respiration          ,lmask)
@@ -10299,73 +10999,76 @@ module ed_state_vars
 
 
 
-      opatch%fmean_gpp             (1:z) = pack(ipatch%fmean_gpp                 ,lmask)
-      opatch%fmean_npp             (1:z) = pack(ipatch%fmean_npp                 ,lmask)
-      opatch%fmean_leaf_resp       (1:z) = pack(ipatch%fmean_leaf_resp           ,lmask)
-      opatch%fmean_root_resp       (1:z) = pack(ipatch%fmean_root_resp           ,lmask)
-      opatch%fmean_leaf_growth_resp(1:z) = pack(ipatch%fmean_leaf_growth_resp    ,lmask)
-      opatch%fmean_root_growth_resp(1:z) = pack(ipatch%fmean_root_growth_resp    ,lmask)
-      opatch%fmean_sapa_growth_resp(1:z) = pack(ipatch%fmean_sapa_growth_resp    ,lmask)
-      opatch%fmean_sapb_growth_resp(1:z) = pack(ipatch%fmean_sapb_growth_resp    ,lmask)
-      opatch%fmean_bark_growth_resp(1:z) = pack(ipatch%fmean_bark_growth_resp    ,lmask)
-      opatch%fmean_leaf_storage_resp(1:z) = pack(ipatch%fmean_leaf_storage_resp  ,lmask)
-      opatch%fmean_root_storage_resp(1:z) = pack(ipatch%fmean_root_storage_resp  ,lmask)
-      opatch%fmean_sapa_storage_resp(1:z) = pack(ipatch%fmean_sapa_storage_resp  ,lmask)
-      opatch%fmean_sapb_storage_resp(1:z) = pack(ipatch%fmean_sapb_storage_resp  ,lmask)
-      opatch%fmean_bark_storage_resp(1:z) = pack(ipatch%fmean_bark_storage_resp  ,lmask)
-      opatch%fmean_plresp          (1:z) = pack(ipatch%fmean_plresp              ,lmask)
-      opatch%fmean_leaf_energy     (1:z) = pack(ipatch%fmean_leaf_energy         ,lmask)
-      opatch%fmean_leaf_water      (1:z) = pack(ipatch%fmean_leaf_water          ,lmask)
-      opatch%fmean_leaf_hcap       (1:z) = pack(ipatch%fmean_leaf_hcap           ,lmask)
-      opatch%fmean_leaf_vpdef      (1:z) = pack(ipatch%fmean_leaf_vpdef          ,lmask)
-      opatch%fmean_leaf_temp       (1:z) = pack(ipatch%fmean_leaf_temp           ,lmask)
-      opatch%fmean_leaf_fliq       (1:z) = pack(ipatch%fmean_leaf_fliq           ,lmask)
-      opatch%fmean_leaf_gsw        (1:z) = pack(ipatch%fmean_leaf_gsw            ,lmask)
-      opatch%fmean_leaf_gbw        (1:z) = pack(ipatch%fmean_leaf_gbw            ,lmask)
-      opatch%fmean_wood_energy     (1:z) = pack(ipatch%fmean_wood_energy         ,lmask)
-      opatch%fmean_wood_water      (1:z) = pack(ipatch%fmean_wood_water          ,lmask)
-      opatch%fmean_wood_hcap       (1:z) = pack(ipatch%fmean_wood_hcap           ,lmask)
-      opatch%fmean_wood_temp       (1:z) = pack(ipatch%fmean_wood_temp           ,lmask)
-      opatch%fmean_wood_fliq       (1:z) = pack(ipatch%fmean_wood_fliq           ,lmask)
-      opatch%fmean_wood_gbw        (1:z) = pack(ipatch%fmean_wood_gbw            ,lmask)
-      opatch%fmean_fs_open         (1:z) = pack(ipatch%fmean_fs_open             ,lmask)
-      opatch%fmean_fsw             (1:z) = pack(ipatch%fmean_fsw                 ,lmask)
-      opatch%fmean_fsn             (1:z) = pack(ipatch%fmean_fsn                 ,lmask)
-      opatch%fmean_a_open          (1:z) = pack(ipatch%fmean_a_open              ,lmask)
-      opatch%fmean_a_closed        (1:z) = pack(ipatch%fmean_a_closed            ,lmask)
-      opatch%fmean_a_net           (1:z) = pack(ipatch%fmean_a_net               ,lmask)
-      opatch%fmean_A_light         (1:z) = pack(ipatch%fmean_A_light             ,lmask)
-      opatch%fmean_A_rubp          (1:z) = pack(ipatch%fmean_A_rubp              ,lmask)
-      opatch%fmean_A_co2           (1:z) = pack(ipatch%fmean_A_co2               ,lmask)
-      opatch%fmean_psi_open        (1:z) = pack(ipatch%fmean_psi_open            ,lmask)
-      opatch%fmean_psi_closed      (1:z) = pack(ipatch%fmean_psi_closed          ,lmask)
-      opatch%fmean_water_supply    (1:z) = pack(ipatch%fmean_water_supply        ,lmask)
-      opatch%fmean_light_level     (1:z) = pack(ipatch%fmean_light_level         ,lmask)
-      opatch%fmean_light_level_beam(1:z) = pack(ipatch%fmean_light_level_beam    ,lmask)
-      opatch%fmean_light_level_diff(1:z) = pack(ipatch%fmean_light_level_diff    ,lmask)
+      opatch%fmean_gpp               (1:z) = pack(ipatch%fmean_gpp                ,lmask)
+      opatch%fmean_npp               (1:z) = pack(ipatch%fmean_npp                ,lmask)
+      opatch%fmean_leaf_resp         (1:z) = pack(ipatch%fmean_leaf_resp          ,lmask)
+      opatch%fmean_root_resp         (1:z) = pack(ipatch%fmean_root_resp          ,lmask)
+      opatch%fmean_leaf_growth_resp  (1:z) = pack(ipatch%fmean_leaf_growth_resp   ,lmask)
+      opatch%fmean_root_growth_resp  (1:z) = pack(ipatch%fmean_root_growth_resp   ,lmask)
+      opatch%fmean_sapa_growth_resp  (1:z) = pack(ipatch%fmean_sapa_growth_resp   ,lmask)
+      opatch%fmean_sapb_growth_resp  (1:z) = pack(ipatch%fmean_sapb_growth_resp   ,lmask)
+      opatch%fmean_barka_growth_resp (1:z) = pack(ipatch%fmean_barka_growth_resp  ,lmask)
+      opatch%fmean_barkb_growth_resp (1:z) = pack(ipatch%fmean_barkb_growth_resp  ,lmask)
+      opatch%fmean_leaf_storage_resp (1:z) = pack(ipatch%fmean_leaf_storage_resp  ,lmask)
+      opatch%fmean_root_storage_resp (1:z) = pack(ipatch%fmean_root_storage_resp  ,lmask)
+      opatch%fmean_sapa_storage_resp (1:z) = pack(ipatch%fmean_sapa_storage_resp  ,lmask)
+      opatch%fmean_sapb_storage_resp (1:z) = pack(ipatch%fmean_sapb_storage_resp  ,lmask)
+      opatch%fmean_barka_storage_resp(1:z) = pack(ipatch%fmean_barka_storage_resp ,lmask)
+      opatch%fmean_barkb_storage_resp(1:z) = pack(ipatch%fmean_barkb_storage_resp ,lmask)
+      opatch%fmean_plresp            (1:z) = pack(ipatch%fmean_plresp             ,lmask)
+      opatch%fmean_leaf_energy       (1:z) = pack(ipatch%fmean_leaf_energy        ,lmask)
+      opatch%fmean_leaf_water        (1:z) = pack(ipatch%fmean_leaf_water         ,lmask)
+      opatch%fmean_leaf_hcap         (1:z) = pack(ipatch%fmean_leaf_hcap          ,lmask)
+      opatch%fmean_leaf_vpdef        (1:z) = pack(ipatch%fmean_leaf_vpdef         ,lmask)
+      opatch%fmean_leaf_temp         (1:z) = pack(ipatch%fmean_leaf_temp          ,lmask)
+      opatch%fmean_leaf_fliq         (1:z) = pack(ipatch%fmean_leaf_fliq          ,lmask)
+      opatch%fmean_leaf_gsw          (1:z) = pack(ipatch%fmean_leaf_gsw           ,lmask)
+      opatch%fmean_leaf_gbw          (1:z) = pack(ipatch%fmean_leaf_gbw           ,lmask)
+      opatch%fmean_wood_energy       (1:z) = pack(ipatch%fmean_wood_energy        ,lmask)
+      opatch%fmean_wood_water        (1:z) = pack(ipatch%fmean_wood_water         ,lmask)
+      opatch%fmean_wood_hcap         (1:z) = pack(ipatch%fmean_wood_hcap          ,lmask)
+      opatch%fmean_wood_temp         (1:z) = pack(ipatch%fmean_wood_temp          ,lmask)
+      opatch%fmean_wood_fliq         (1:z) = pack(ipatch%fmean_wood_fliq          ,lmask)
+      opatch%fmean_wood_gbw          (1:z) = pack(ipatch%fmean_wood_gbw           ,lmask)
+      opatch%fmean_fs_open           (1:z) = pack(ipatch%fmean_fs_open            ,lmask)
+      opatch%fmean_fsw               (1:z) = pack(ipatch%fmean_fsw                ,lmask)
+      opatch%fmean_fsn               (1:z) = pack(ipatch%fmean_fsn                ,lmask)
+      opatch%fmean_a_open            (1:z) = pack(ipatch%fmean_a_open             ,lmask)
+      opatch%fmean_a_closed          (1:z) = pack(ipatch%fmean_a_closed           ,lmask)
+      opatch%fmean_a_net             (1:z) = pack(ipatch%fmean_a_net              ,lmask)
+      opatch%fmean_A_light           (1:z) = pack(ipatch%fmean_A_light            ,lmask)
+      opatch%fmean_A_rubp            (1:z) = pack(ipatch%fmean_A_rubp             ,lmask)
+      opatch%fmean_A_co2             (1:z) = pack(ipatch%fmean_A_co2              ,lmask)
+      opatch%fmean_psi_open          (1:z) = pack(ipatch%fmean_psi_open           ,lmask)
+      opatch%fmean_psi_closed        (1:z) = pack(ipatch%fmean_psi_closed         ,lmask)
+      opatch%fmean_water_supply      (1:z) = pack(ipatch%fmean_water_supply       ,lmask)
+      opatch%fmean_light_level       (1:z) = pack(ipatch%fmean_light_level        ,lmask)
+      opatch%fmean_light_level_beam  (1:z) = pack(ipatch%fmean_light_level_beam   ,lmask)
+      opatch%fmean_light_level_diff  (1:z) = pack(ipatch%fmean_light_level_diff   ,lmask)
 
-      opatch%fmean_par_level_beam  (1:z) = pack(ipatch%fmean_par_level_beam      ,lmask)
-      opatch%fmean_par_level_diffu (1:z) = pack(ipatch%fmean_par_level_diffu     ,lmask)
-      opatch%fmean_par_level_diffd (1:z) = pack(ipatch%fmean_par_level_diffd     ,lmask)
+      opatch%fmean_par_level_beam    (1:z) = pack(ipatch%fmean_par_level_beam     ,lmask)
+      opatch%fmean_par_level_diffu   (1:z) = pack(ipatch%fmean_par_level_diffu    ,lmask)
+      opatch%fmean_par_level_diffd   (1:z) = pack(ipatch%fmean_par_level_diffd    ,lmask)
 
-      opatch%fmean_par_l           (1:z) = pack(ipatch%fmean_par_l               ,lmask)
-      opatch%fmean_par_l_beam      (1:z) = pack(ipatch%fmean_par_l_beam          ,lmask)
-      opatch%fmean_par_l_diff      (1:z) = pack(ipatch%fmean_par_l_diff          ,lmask)
-      opatch%fmean_rshort_l        (1:z) = pack(ipatch%fmean_rshort_l            ,lmask)
-      opatch%fmean_rlong_l         (1:z) = pack(ipatch%fmean_rlong_l             ,lmask)
-      opatch%fmean_sensible_lc     (1:z) = pack(ipatch%fmean_sensible_lc         ,lmask)
-      opatch%fmean_vapor_lc        (1:z) = pack(ipatch%fmean_vapor_lc            ,lmask)
-      opatch%fmean_transp          (1:z) = pack(ipatch%fmean_transp              ,lmask)
-      opatch%fmean_intercepted_al  (1:z) = pack(ipatch%fmean_intercepted_al      ,lmask)
-      opatch%fmean_wshed_lg        (1:z) = pack(ipatch%fmean_wshed_lg            ,lmask)
-      opatch%fmean_rshort_w        (1:z) = pack(ipatch%fmean_rshort_w            ,lmask)
-      opatch%fmean_rlong_w         (1:z) = pack(ipatch%fmean_rlong_w             ,lmask)
-      opatch%fmean_sensible_wc     (1:z) = pack(ipatch%fmean_sensible_wc         ,lmask)
-      opatch%fmean_vapor_wc        (1:z) = pack(ipatch%fmean_vapor_wc            ,lmask)
-      opatch%fmean_intercepted_aw  (1:z) = pack(ipatch%fmean_intercepted_aw      ,lmask)
-      opatch%fmean_wshed_wg        (1:z) = pack(ipatch%fmean_wshed_wg            ,lmask)
-      opatch%fmean_lai             (1:z) = pack(ipatch%fmean_lai                 ,lmask)
-      opatch%fmean_bdead           (1:z) = pack(ipatch%fmean_bdead               ,lmask)
+      opatch%fmean_par_l             (1:z) = pack(ipatch%fmean_par_l              ,lmask)
+      opatch%fmean_par_l_beam        (1:z) = pack(ipatch%fmean_par_l_beam         ,lmask)
+      opatch%fmean_par_l_diff        (1:z) = pack(ipatch%fmean_par_l_diff         ,lmask)
+      opatch%fmean_rshort_l          (1:z) = pack(ipatch%fmean_rshort_l           ,lmask)
+      opatch%fmean_rlong_l           (1:z) = pack(ipatch%fmean_rlong_l            ,lmask)
+      opatch%fmean_sensible_lc       (1:z) = pack(ipatch%fmean_sensible_lc        ,lmask)
+      opatch%fmean_vapor_lc          (1:z) = pack(ipatch%fmean_vapor_lc           ,lmask)
+      opatch%fmean_transp            (1:z) = pack(ipatch%fmean_transp             ,lmask)
+      opatch%fmean_intercepted_al    (1:z) = pack(ipatch%fmean_intercepted_al     ,lmask)
+      opatch%fmean_wshed_lg          (1:z) = pack(ipatch%fmean_wshed_lg           ,lmask)
+      opatch%fmean_rshort_w          (1:z) = pack(ipatch%fmean_rshort_w           ,lmask)
+      opatch%fmean_rlong_w           (1:z) = pack(ipatch%fmean_rlong_w            ,lmask)
+      opatch%fmean_sensible_wc       (1:z) = pack(ipatch%fmean_sensible_wc        ,lmask)
+      opatch%fmean_vapor_wc          (1:z) = pack(ipatch%fmean_vapor_wc           ,lmask)
+      opatch%fmean_intercepted_aw    (1:z) = pack(ipatch%fmean_intercepted_aw     ,lmask)
+      opatch%fmean_wshed_wg          (1:z) = pack(ipatch%fmean_wshed_wg           ,lmask)
+      opatch%fmean_lai               (1:z) = pack(ipatch%fmean_lai                ,lmask)
+      opatch%fmean_bdeada            (1:z) = pack(ipatch%fmean_bdeada             ,lmask)
+      opatch%fmean_bdeadb            (1:z) = pack(ipatch%fmean_bdeadb             ,lmask)
       !------------------------------------------------------------------------------------!
 
 
@@ -10406,79 +11109,81 @@ module ed_state_vars
 
 
       !----- Scalars. ------------------------------------------------------------------!
-      opatch%dmean_nppleaf         (1:z) = pack(ipatch%dmean_nppleaf             ,lmask)
-      opatch%dmean_nppfroot        (1:z) = pack(ipatch%dmean_nppfroot            ,lmask)
-      opatch%dmean_nppsapwood      (1:z) = pack(ipatch%dmean_nppsapwood          ,lmask)
-      opatch%dmean_nppbark         (1:z) = pack(ipatch%dmean_nppbark             ,lmask)
-      opatch%dmean_nppcroot        (1:z) = pack(ipatch%dmean_nppcroot            ,lmask)
-      opatch%dmean_nppseeds        (1:z) = pack(ipatch%dmean_nppseeds            ,lmask)
-      opatch%dmean_nppwood         (1:z) = pack(ipatch%dmean_nppwood             ,lmask)
-      opatch%dmean_nppdaily        (1:z) = pack(ipatch%dmean_nppdaily            ,lmask)
-      opatch%dmean_gpp             (1:z) = pack(ipatch%dmean_gpp                 ,lmask)
-      opatch%dmean_npp             (1:z) = pack(ipatch%dmean_npp                 ,lmask)
-      opatch%dmean_leaf_resp       (1:z) = pack(ipatch%dmean_leaf_resp           ,lmask)
-      opatch%dmean_root_resp       (1:z) = pack(ipatch%dmean_root_resp           ,lmask)
-      opatch%dmean_leaf_growth_resp(1:z) = pack(ipatch%dmean_leaf_growth_resp    ,lmask)
-      opatch%dmean_root_growth_resp(1:z) = pack(ipatch%dmean_root_growth_resp    ,lmask)
-      opatch%dmean_sapa_growth_resp(1:z) = pack(ipatch%dmean_sapa_growth_resp    ,lmask)
-      opatch%dmean_sapb_growth_resp(1:z) = pack(ipatch%dmean_sapb_growth_resp    ,lmask)
-      opatch%dmean_bark_growth_resp(1:z) = pack(ipatch%dmean_bark_growth_resp    ,lmask)
-      opatch%dmean_leaf_storage_resp(1:z) = pack(ipatch%dmean_leaf_storage_resp  ,lmask)
-      opatch%dmean_root_storage_resp(1:z) = pack(ipatch%dmean_root_storage_resp  ,lmask)
-      opatch%dmean_sapa_storage_resp(1:z) = pack(ipatch%dmean_sapa_storage_resp  ,lmask)
-      opatch%dmean_sapb_storage_resp(1:z) = pack(ipatch%dmean_sapb_storage_resp  ,lmask)
-      opatch%dmean_bark_storage_resp(1:z) = pack(ipatch%dmean_bark_storage_resp  ,lmask)
-      opatch%dmean_plresp          (1:z) = pack(ipatch%dmean_plresp              ,lmask)
-      opatch%dmean_leaf_energy     (1:z) = pack(ipatch%dmean_leaf_energy         ,lmask)
-      opatch%dmean_leaf_water      (1:z) = pack(ipatch%dmean_leaf_water          ,lmask)
-      opatch%dmean_leaf_hcap       (1:z) = pack(ipatch%dmean_leaf_hcap           ,lmask)
-      opatch%dmean_leaf_vpdef      (1:z) = pack(ipatch%dmean_leaf_vpdef          ,lmask)
-      opatch%dmean_leaf_temp       (1:z) = pack(ipatch%dmean_leaf_temp           ,lmask)
-      opatch%dmean_leaf_fliq       (1:z) = pack(ipatch%dmean_leaf_fliq           ,lmask)
-      opatch%dmean_leaf_gsw        (1:z) = pack(ipatch%dmean_leaf_gsw            ,lmask)
-      opatch%dmean_leaf_gbw        (1:z) = pack(ipatch%dmean_leaf_gbw            ,lmask)
-      opatch%dmean_wood_energy     (1:z) = pack(ipatch%dmean_wood_energy         ,lmask)
-      opatch%dmean_wood_water      (1:z) = pack(ipatch%dmean_wood_water          ,lmask)
-      opatch%dmean_wood_hcap       (1:z) = pack(ipatch%dmean_wood_hcap           ,lmask)
-      opatch%dmean_wood_temp       (1:z) = pack(ipatch%dmean_wood_temp           ,lmask)
-      opatch%dmean_wood_fliq       (1:z) = pack(ipatch%dmean_wood_fliq           ,lmask)
-      opatch%dmean_wood_gbw        (1:z) = pack(ipatch%dmean_wood_gbw            ,lmask)
-      opatch%dmean_fs_open         (1:z) = pack(ipatch%dmean_fs_open             ,lmask)
-      opatch%dmean_fsw             (1:z) = pack(ipatch%dmean_fsw                 ,lmask)
-      opatch%dmean_fsn             (1:z) = pack(ipatch%dmean_fsn                 ,lmask)
-      opatch%dmean_a_open          (1:z) = pack(ipatch%dmean_a_open              ,lmask)
-      opatch%dmean_a_closed        (1:z) = pack(ipatch%dmean_a_closed            ,lmask)
-      opatch%dmean_a_net           (1:z) = pack(ipatch%dmean_a_net               ,lmask)
-      opatch%dmean_A_light         (1:z) = pack(ipatch%dmean_A_light             ,lmask)
-      opatch%dmean_A_rubp          (1:z) = pack(ipatch%dmean_A_rubp              ,lmask)
-      opatch%dmean_A_co2           (1:z) = pack(ipatch%dmean_A_co2               ,lmask)
-      opatch%dmean_psi_open        (1:z) = pack(ipatch%dmean_psi_open            ,lmask)
-      opatch%dmean_psi_closed      (1:z) = pack(ipatch%dmean_psi_closed          ,lmask)
-      opatch%dmean_water_supply    (1:z) = pack(ipatch%dmean_water_supply        ,lmask)
-      opatch%dmean_light_level     (1:z) = pack(ipatch%dmean_light_level         ,lmask)
-      opatch%dmean_light_level_beam(1:z) = pack(ipatch%dmean_light_level_beam    ,lmask)
-      opatch%dmean_light_level_diff(1:z) = pack(ipatch%dmean_light_level_diff    ,lmask)
+      opatch%dmean_nppleaf           (1:z) = pack(ipatch%dmean_nppleaf             ,lmask)
+      opatch%dmean_nppfroot          (1:z) = pack(ipatch%dmean_nppfroot            ,lmask)
+      opatch%dmean_nppsapwood        (1:z) = pack(ipatch%dmean_nppsapwood          ,lmask)
+      opatch%dmean_nppbark           (1:z) = pack(ipatch%dmean_nppbark             ,lmask)
+      opatch%dmean_nppcroot          (1:z) = pack(ipatch%dmean_nppcroot            ,lmask)
+      opatch%dmean_nppseeds          (1:z) = pack(ipatch%dmean_nppseeds            ,lmask)
+      opatch%dmean_nppwood           (1:z) = pack(ipatch%dmean_nppwood             ,lmask)
+      opatch%dmean_nppdaily          (1:z) = pack(ipatch%dmean_nppdaily            ,lmask)
+      opatch%dmean_gpp               (1:z) = pack(ipatch%dmean_gpp                 ,lmask)
+      opatch%dmean_npp               (1:z) = pack(ipatch%dmean_npp                 ,lmask)
+      opatch%dmean_leaf_resp         (1:z) = pack(ipatch%dmean_leaf_resp           ,lmask)
+      opatch%dmean_root_resp         (1:z) = pack(ipatch%dmean_root_resp           ,lmask)
+      opatch%dmean_leaf_growth_resp  (1:z) = pack(ipatch%dmean_leaf_growth_resp    ,lmask)
+      opatch%dmean_root_growth_resp  (1:z) = pack(ipatch%dmean_root_growth_resp    ,lmask)
+      opatch%dmean_sapa_growth_resp  (1:z) = pack(ipatch%dmean_sapa_growth_resp    ,lmask)
+      opatch%dmean_sapb_growth_resp  (1:z) = pack(ipatch%dmean_sapb_growth_resp    ,lmask)
+      opatch%dmean_barka_growth_resp (1:z) = pack(ipatch%dmean_barka_growth_resp   ,lmask)
+      opatch%dmean_barkb_growth_resp (1:z) = pack(ipatch%dmean_barkb_growth_resp   ,lmask)
+      opatch%dmean_leaf_storage_resp (1:z) = pack(ipatch%dmean_leaf_storage_resp   ,lmask)
+      opatch%dmean_root_storage_resp (1:z) = pack(ipatch%dmean_root_storage_resp   ,lmask)
+      opatch%dmean_sapa_storage_resp (1:z) = pack(ipatch%dmean_sapa_storage_resp   ,lmask)
+      opatch%dmean_sapb_storage_resp (1:z) = pack(ipatch%dmean_sapb_storage_resp   ,lmask)
+      opatch%dmean_barka_storage_resp(1:z) = pack(ipatch%dmean_barka_storage_resp  ,lmask)
+      opatch%dmean_barkb_storage_resp(1:z) = pack(ipatch%dmean_barkb_storage_resp  ,lmask)
+      opatch%dmean_plresp            (1:z) = pack(ipatch%dmean_plresp              ,lmask)
+      opatch%dmean_leaf_energy       (1:z) = pack(ipatch%dmean_leaf_energy         ,lmask)
+      opatch%dmean_leaf_water        (1:z) = pack(ipatch%dmean_leaf_water          ,lmask)
+      opatch%dmean_leaf_hcap         (1:z) = pack(ipatch%dmean_leaf_hcap           ,lmask)
+      opatch%dmean_leaf_vpdef        (1:z) = pack(ipatch%dmean_leaf_vpdef          ,lmask)
+      opatch%dmean_leaf_temp         (1:z) = pack(ipatch%dmean_leaf_temp           ,lmask)
+      opatch%dmean_leaf_fliq         (1:z) = pack(ipatch%dmean_leaf_fliq           ,lmask)
+      opatch%dmean_leaf_gsw          (1:z) = pack(ipatch%dmean_leaf_gsw            ,lmask)
+      opatch%dmean_leaf_gbw          (1:z) = pack(ipatch%dmean_leaf_gbw            ,lmask)
+      opatch%dmean_wood_energy       (1:z) = pack(ipatch%dmean_wood_energy         ,lmask)
+      opatch%dmean_wood_water        (1:z) = pack(ipatch%dmean_wood_water          ,lmask)
+      opatch%dmean_wood_hcap         (1:z) = pack(ipatch%dmean_wood_hcap           ,lmask)
+      opatch%dmean_wood_temp         (1:z) = pack(ipatch%dmean_wood_temp           ,lmask)
+      opatch%dmean_wood_fliq         (1:z) = pack(ipatch%dmean_wood_fliq           ,lmask)
+      opatch%dmean_wood_gbw          (1:z) = pack(ipatch%dmean_wood_gbw            ,lmask)
+      opatch%dmean_fs_open           (1:z) = pack(ipatch%dmean_fs_open             ,lmask)
+      opatch%dmean_fsw               (1:z) = pack(ipatch%dmean_fsw                 ,lmask)
+      opatch%dmean_fsn               (1:z) = pack(ipatch%dmean_fsn                 ,lmask)
+      opatch%dmean_a_open            (1:z) = pack(ipatch%dmean_a_open              ,lmask)
+      opatch%dmean_a_closed          (1:z) = pack(ipatch%dmean_a_closed            ,lmask)
+      opatch%dmean_a_net             (1:z) = pack(ipatch%dmean_a_net               ,lmask)
+      opatch%dmean_A_light           (1:z) = pack(ipatch%dmean_A_light             ,lmask)
+      opatch%dmean_A_rubp            (1:z) = pack(ipatch%dmean_A_rubp              ,lmask)
+      opatch%dmean_A_co2             (1:z) = pack(ipatch%dmean_A_co2               ,lmask)
+      opatch%dmean_psi_open          (1:z) = pack(ipatch%dmean_psi_open            ,lmask)
+      opatch%dmean_psi_closed        (1:z) = pack(ipatch%dmean_psi_closed          ,lmask)
+      opatch%dmean_water_supply      (1:z) = pack(ipatch%dmean_water_supply        ,lmask)
+      opatch%dmean_light_level       (1:z) = pack(ipatch%dmean_light_level         ,lmask)
+      opatch%dmean_light_level_beam  (1:z) = pack(ipatch%dmean_light_level_beam    ,lmask)
+      opatch%dmean_light_level_diff  (1:z) = pack(ipatch%dmean_light_level_diff    ,lmask)
 
-      opatch%dmean_par_level_beam  (1:z) = pack(ipatch%dmean_par_level_beam      ,lmask)
-      opatch%dmean_par_level_diffu (1:z) = pack(ipatch%dmean_par_level_diffu     ,lmask)
-      opatch%dmean_par_level_diffd (1:z) = pack(ipatch%dmean_par_level_diffd     ,lmask)
+      opatch%dmean_par_level_beam    (1:z) = pack(ipatch%dmean_par_level_beam      ,lmask)
+      opatch%dmean_par_level_diffu   (1:z) = pack(ipatch%dmean_par_level_diffu     ,lmask)
+      opatch%dmean_par_level_diffd   (1:z) = pack(ipatch%dmean_par_level_diffd     ,lmask)
 
-      opatch%dmean_par_l           (1:z) = pack(ipatch%dmean_par_l               ,lmask)
-      opatch%dmean_par_l_beam      (1:z) = pack(ipatch%dmean_par_l_beam          ,lmask)
-      opatch%dmean_par_l_diff      (1:z) = pack(ipatch%dmean_par_l_diff          ,lmask)
-      opatch%dmean_rshort_l        (1:z) = pack(ipatch%dmean_rshort_l            ,lmask)
-      opatch%dmean_rlong_l         (1:z) = pack(ipatch%dmean_rlong_l             ,lmask)
-      opatch%dmean_sensible_lc     (1:z) = pack(ipatch%dmean_sensible_lc         ,lmask)
-      opatch%dmean_vapor_lc        (1:z) = pack(ipatch%dmean_vapor_lc            ,lmask)
-      opatch%dmean_transp          (1:z) = pack(ipatch%dmean_transp              ,lmask)
-      opatch%dmean_intercepted_al  (1:z) = pack(ipatch%dmean_intercepted_al      ,lmask)
-      opatch%dmean_wshed_lg        (1:z) = pack(ipatch%dmean_wshed_lg            ,lmask)
-      opatch%dmean_rshort_w        (1:z) = pack(ipatch%dmean_rshort_w            ,lmask)
-      opatch%dmean_rlong_w         (1:z) = pack(ipatch%dmean_rlong_w             ,lmask)
-      opatch%dmean_sensible_wc     (1:z) = pack(ipatch%dmean_sensible_wc         ,lmask)
-      opatch%dmean_vapor_wc        (1:z) = pack(ipatch%dmean_vapor_wc            ,lmask)
-      opatch%dmean_intercepted_aw  (1:z) = pack(ipatch%dmean_intercepted_aw      ,lmask)
-      opatch%dmean_wshed_wg        (1:z) = pack(ipatch%dmean_wshed_wg            ,lmask)
+      opatch%dmean_par_l             (1:z) = pack(ipatch%dmean_par_l               ,lmask)
+      opatch%dmean_par_l_beam        (1:z) = pack(ipatch%dmean_par_l_beam          ,lmask)
+      opatch%dmean_par_l_diff        (1:z) = pack(ipatch%dmean_par_l_diff          ,lmask)
+      opatch%dmean_rshort_l          (1:z) = pack(ipatch%dmean_rshort_l            ,lmask)
+      opatch%dmean_rlong_l           (1:z) = pack(ipatch%dmean_rlong_l             ,lmask)
+      opatch%dmean_sensible_lc       (1:z) = pack(ipatch%dmean_sensible_lc         ,lmask)
+      opatch%dmean_vapor_lc          (1:z) = pack(ipatch%dmean_vapor_lc            ,lmask)
+      opatch%dmean_transp            (1:z) = pack(ipatch%dmean_transp              ,lmask)
+      opatch%dmean_intercepted_al    (1:z) = pack(ipatch%dmean_intercepted_al      ,lmask)
+      opatch%dmean_wshed_lg          (1:z) = pack(ipatch%dmean_wshed_lg            ,lmask)
+      opatch%dmean_rshort_w          (1:z) = pack(ipatch%dmean_rshort_w            ,lmask)
+      opatch%dmean_rlong_w           (1:z) = pack(ipatch%dmean_rlong_w             ,lmask)
+      opatch%dmean_sensible_wc       (1:z) = pack(ipatch%dmean_sensible_wc         ,lmask)
+      opatch%dmean_vapor_wc          (1:z) = pack(ipatch%dmean_vapor_wc            ,lmask)
+      opatch%dmean_intercepted_aw    (1:z) = pack(ipatch%dmean_intercepted_aw      ,lmask)
+      opatch%dmean_wshed_wg          (1:z) = pack(ipatch%dmean_wshed_wg            ,lmask)
       !------------------------------------------------------------------------------------!
 
 
@@ -10521,99 +11226,103 @@ module ed_state_vars
 
 
       !----- Scalars. ---------------------------------------------------------------------!
-      opatch%mmean_thbark          (1:z) = pack(ipatch%mmean_thbark              ,lmask)
-      opatch%mmean_lai             (1:z) = pack(ipatch%mmean_lai                 ,lmask)
-      opatch%mmean_bleaf           (1:z) = pack(ipatch%mmean_bleaf               ,lmask)
-      opatch%mmean_broot           (1:z) = pack(ipatch%mmean_broot               ,lmask)
-      opatch%mmean_bbark           (1:z) = pack(ipatch%mmean_bbark               ,lmask)
-      opatch%mmean_balive          (1:z) = pack(ipatch%mmean_balive              ,lmask)
-      opatch%mmean_bstorage        (1:z) = pack(ipatch%mmean_bstorage            ,lmask)
-      opatch%mmean_leaf_maintenance(1:z) = pack(ipatch%mmean_leaf_maintenance    ,lmask)
-      opatch%mmean_root_maintenance(1:z) = pack(ipatch%mmean_root_maintenance    ,lmask)
-      opatch%mmean_bark_maintenance(1:z) = pack(ipatch%mmean_bark_maintenance    ,lmask)
-      opatch%mmean_leaf_drop       (1:z) = pack(ipatch%mmean_leaf_drop           ,lmask)
-      opatch%mmean_cb              (1:z) = pack(ipatch%mmean_cb                  ,lmask)
-      opatch%mmean_gpp             (1:z) = pack(ipatch%mmean_gpp                 ,lmask)
-      opatch%mmean_npp             (1:z) = pack(ipatch%mmean_npp                 ,lmask)
-      opatch%mmean_leaf_resp       (1:z) = pack(ipatch%mmean_leaf_resp           ,lmask)
-      opatch%mmean_root_resp       (1:z) = pack(ipatch%mmean_root_resp           ,lmask)
-      opatch%mmean_leaf_growth_resp(1:z) = pack(ipatch%mmean_leaf_growth_resp    ,lmask)
-      opatch%mmean_root_growth_resp(1:z) = pack(ipatch%mmean_root_growth_resp    ,lmask)
-      opatch%mmean_sapa_growth_resp(1:z) = pack(ipatch%mmean_sapa_growth_resp    ,lmask)
-      opatch%mmean_sapb_growth_resp(1:z) = pack(ipatch%mmean_sapb_growth_resp    ,lmask)
-      opatch%mmean_bark_growth_resp(1:z) = pack(ipatch%mmean_bark_growth_resp    ,lmask)
-      opatch%mmean_leaf_storage_resp(1:z) = pack(ipatch%mmean_leaf_storage_resp  ,lmask)
-      opatch%mmean_root_storage_resp(1:z) = pack(ipatch%mmean_root_storage_resp  ,lmask)
-      opatch%mmean_sapa_storage_resp(1:z) = pack(ipatch%mmean_sapa_storage_resp  ,lmask)
-      opatch%mmean_sapb_storage_resp(1:z) = pack(ipatch%mmean_sapb_storage_resp  ,lmask)
-      opatch%mmean_bark_storage_resp(1:z) = pack(ipatch%mmean_bark_storage_resp  ,lmask)
-      opatch%mmean_plresp          (1:z) = pack(ipatch%mmean_plresp              ,lmask)
-      opatch%mmean_leaf_energy     (1:z) = pack(ipatch%mmean_leaf_energy         ,lmask)
-      opatch%mmean_leaf_water      (1:z) = pack(ipatch%mmean_leaf_water          ,lmask)
-      opatch%mmean_leaf_hcap       (1:z) = pack(ipatch%mmean_leaf_hcap           ,lmask)
-      opatch%mmean_leaf_vpdef      (1:z) = pack(ipatch%mmean_leaf_vpdef          ,lmask)
-      opatch%mmean_leaf_temp       (1:z) = pack(ipatch%mmean_leaf_temp           ,lmask)
-      opatch%mmean_leaf_fliq       (1:z) = pack(ipatch%mmean_leaf_fliq           ,lmask)
-      opatch%mmean_leaf_gsw        (1:z) = pack(ipatch%mmean_leaf_gsw            ,lmask)
-      opatch%mmean_leaf_gbw        (1:z) = pack(ipatch%mmean_leaf_gbw            ,lmask)
-      opatch%mmean_wood_energy     (1:z) = pack(ipatch%mmean_wood_energy         ,lmask)
-      opatch%mmean_wood_water      (1:z) = pack(ipatch%mmean_wood_water          ,lmask)
-      opatch%mmean_wood_hcap       (1:z) = pack(ipatch%mmean_wood_hcap           ,lmask)
-      opatch%mmean_wood_temp       (1:z) = pack(ipatch%mmean_wood_temp           ,lmask)
-      opatch%mmean_wood_fliq       (1:z) = pack(ipatch%mmean_wood_fliq           ,lmask)
-      opatch%mmean_wood_gbw        (1:z) = pack(ipatch%mmean_wood_gbw            ,lmask)
-      opatch%mmean_fs_open         (1:z) = pack(ipatch%mmean_fs_open             ,lmask)
-      opatch%mmean_fsw             (1:z) = pack(ipatch%mmean_fsw                 ,lmask)
-      opatch%mmean_fsn             (1:z) = pack(ipatch%mmean_fsn                 ,lmask)
-      opatch%mmean_a_open          (1:z) = pack(ipatch%mmean_a_open              ,lmask)
-      opatch%mmean_a_closed        (1:z) = pack(ipatch%mmean_a_closed            ,lmask)
-      opatch%mmean_a_net           (1:z) = pack(ipatch%mmean_a_net               ,lmask)
-      opatch%mmean_A_light         (1:z) = pack(ipatch%mmean_A_light             ,lmask)
-      opatch%mmean_A_rubp          (1:z) = pack(ipatch%mmean_A_rubp              ,lmask)
-      opatch%mmean_A_co2           (1:z) = pack(ipatch%mmean_A_co2               ,lmask)
-      opatch%mmean_psi_open        (1:z) = pack(ipatch%mmean_psi_open            ,lmask)
-      opatch%mmean_psi_closed      (1:z) = pack(ipatch%mmean_psi_closed          ,lmask)
-      opatch%mmean_water_supply    (1:z) = pack(ipatch%mmean_water_supply        ,lmask)
-      opatch%mmean_light_level     (1:z) = pack(ipatch%mmean_light_level         ,lmask)
-      opatch%mmean_light_level_beam(1:z) = pack(ipatch%mmean_light_level_beam    ,lmask)
-      opatch%mmean_light_level_diff(1:z) = pack(ipatch%mmean_light_level_diff    ,lmask)
+      opatch%mmean_thbark            (1:z) = pack(ipatch%mmean_thbark              ,lmask)
+      opatch%mmean_lai               (1:z) = pack(ipatch%mmean_lai                 ,lmask)
+      opatch%mmean_bleaf             (1:z) = pack(ipatch%mmean_bleaf               ,lmask)
+      opatch%mmean_broot             (1:z) = pack(ipatch%mmean_broot               ,lmask)
+      opatch%mmean_bbarka            (1:z) = pack(ipatch%mmean_bbarka              ,lmask)
+      opatch%mmean_bbarkb            (1:z) = pack(ipatch%mmean_bbarkb              ,lmask)
+      opatch%mmean_balive            (1:z) = pack(ipatch%mmean_balive              ,lmask)
+      opatch%mmean_bstorage          (1:z) = pack(ipatch%mmean_bstorage            ,lmask)
+      opatch%mmean_leaf_maintenance  (1:z) = pack(ipatch%mmean_leaf_maintenance    ,lmask)
+      opatch%mmean_root_maintenance  (1:z) = pack(ipatch%mmean_root_maintenance    ,lmask)
+      opatch%mmean_barka_maintenance (1:z) = pack(ipatch%mmean_barka_maintenance   ,lmask)
+      opatch%mmean_barkb_maintenance (1:z) = pack(ipatch%mmean_barkb_maintenance   ,lmask)
+      opatch%mmean_leaf_drop         (1:z) = pack(ipatch%mmean_leaf_drop           ,lmask)
+      opatch%mmean_cb                (1:z) = pack(ipatch%mmean_cb                  ,lmask)
+      opatch%mmean_gpp               (1:z) = pack(ipatch%mmean_gpp                 ,lmask)
+      opatch%mmean_npp               (1:z) = pack(ipatch%mmean_npp                 ,lmask)
+      opatch%mmean_leaf_resp         (1:z) = pack(ipatch%mmean_leaf_resp           ,lmask)
+      opatch%mmean_root_resp         (1:z) = pack(ipatch%mmean_root_resp           ,lmask)
+      opatch%mmean_leaf_growth_resp  (1:z) = pack(ipatch%mmean_leaf_growth_resp    ,lmask)
+      opatch%mmean_root_growth_resp  (1:z) = pack(ipatch%mmean_root_growth_resp    ,lmask)
+      opatch%mmean_sapa_growth_resp  (1:z) = pack(ipatch%mmean_sapa_growth_resp    ,lmask)
+      opatch%mmean_sapb_growth_resp  (1:z) = pack(ipatch%mmean_sapb_growth_resp    ,lmask)
+      opatch%mmean_barka_growth_resp (1:z) = pack(ipatch%mmean_barka_growth_resp   ,lmask)
+      opatch%mmean_barkb_growth_resp (1:z) = pack(ipatch%mmean_barkb_growth_resp   ,lmask)
+      opatch%mmean_leaf_storage_resp (1:z) = pack(ipatch%mmean_leaf_storage_resp   ,lmask)
+      opatch%mmean_root_storage_resp (1:z) = pack(ipatch%mmean_root_storage_resp   ,lmask)
+      opatch%mmean_sapa_storage_resp (1:z) = pack(ipatch%mmean_sapa_storage_resp   ,lmask)
+      opatch%mmean_sapb_storage_resp (1:z) = pack(ipatch%mmean_sapb_storage_resp   ,lmask)
+      opatch%mmean_barka_storage_resp(1:z) = pack(ipatch%mmean_barka_storage_resp  ,lmask)
+      opatch%mmean_barkb_storage_resp(1:z) = pack(ipatch%mmean_barkb_storage_resp  ,lmask)
+      opatch%mmean_plresp            (1:z) = pack(ipatch%mmean_plresp              ,lmask)
+      opatch%mmean_leaf_energy       (1:z) = pack(ipatch%mmean_leaf_energy         ,lmask)
+      opatch%mmean_leaf_water        (1:z) = pack(ipatch%mmean_leaf_water          ,lmask)
+      opatch%mmean_leaf_hcap         (1:z) = pack(ipatch%mmean_leaf_hcap           ,lmask)
+      opatch%mmean_leaf_vpdef        (1:z) = pack(ipatch%mmean_leaf_vpdef          ,lmask)
+      opatch%mmean_leaf_temp         (1:z) = pack(ipatch%mmean_leaf_temp           ,lmask)
+      opatch%mmean_leaf_fliq         (1:z) = pack(ipatch%mmean_leaf_fliq           ,lmask)
+      opatch%mmean_leaf_gsw          (1:z) = pack(ipatch%mmean_leaf_gsw            ,lmask)
+      opatch%mmean_leaf_gbw          (1:z) = pack(ipatch%mmean_leaf_gbw            ,lmask)
+      opatch%mmean_wood_energy       (1:z) = pack(ipatch%mmean_wood_energy         ,lmask)
+      opatch%mmean_wood_water        (1:z) = pack(ipatch%mmean_wood_water          ,lmask)
+      opatch%mmean_wood_hcap         (1:z) = pack(ipatch%mmean_wood_hcap           ,lmask)
+      opatch%mmean_wood_temp         (1:z) = pack(ipatch%mmean_wood_temp           ,lmask)
+      opatch%mmean_wood_fliq         (1:z) = pack(ipatch%mmean_wood_fliq           ,lmask)
+      opatch%mmean_wood_gbw          (1:z) = pack(ipatch%mmean_wood_gbw            ,lmask)
+      opatch%mmean_fs_open           (1:z) = pack(ipatch%mmean_fs_open             ,lmask)
+      opatch%mmean_fsw               (1:z) = pack(ipatch%mmean_fsw                 ,lmask)
+      opatch%mmean_fsn               (1:z) = pack(ipatch%mmean_fsn                 ,lmask)
+      opatch%mmean_a_open            (1:z) = pack(ipatch%mmean_a_open              ,lmask)
+      opatch%mmean_a_closed          (1:z) = pack(ipatch%mmean_a_closed            ,lmask)
+      opatch%mmean_a_net             (1:z) = pack(ipatch%mmean_a_net               ,lmask)
+      opatch%mmean_A_light           (1:z) = pack(ipatch%mmean_A_light             ,lmask)
+      opatch%mmean_A_rubp            (1:z) = pack(ipatch%mmean_A_rubp              ,lmask)
+      opatch%mmean_A_co2             (1:z) = pack(ipatch%mmean_A_co2               ,lmask)
+      opatch%mmean_psi_open          (1:z) = pack(ipatch%mmean_psi_open            ,lmask)
+      opatch%mmean_psi_closed        (1:z) = pack(ipatch%mmean_psi_closed          ,lmask)
+      opatch%mmean_water_supply      (1:z) = pack(ipatch%mmean_water_supply        ,lmask)
+      opatch%mmean_light_level       (1:z) = pack(ipatch%mmean_light_level         ,lmask)
+      opatch%mmean_light_level_beam  (1:z) = pack(ipatch%mmean_light_level_beam    ,lmask)
+      opatch%mmean_light_level_diff  (1:z) = pack(ipatch%mmean_light_level_diff    ,lmask)
 
-      opatch%mmean_par_level_beam  (1:z) = pack(ipatch%mmean_par_level_beam      ,lmask)
-      opatch%mmean_par_level_diffu (1:z) = pack(ipatch%mmean_par_level_diffu     ,lmask)
-      opatch%mmean_par_level_diffd (1:z) = pack(ipatch%mmean_par_level_diffd     ,lmask)
+      opatch%mmean_par_level_beam    (1:z) = pack(ipatch%mmean_par_level_beam      ,lmask)
+      opatch%mmean_par_level_diffu   (1:z) = pack(ipatch%mmean_par_level_diffu     ,lmask)
+      opatch%mmean_par_level_diffd   (1:z) = pack(ipatch%mmean_par_level_diffd     ,lmask)
 
-      opatch%mmean_par_l           (1:z) = pack(ipatch%mmean_par_l               ,lmask)
-      opatch%mmean_par_l_beam      (1:z) = pack(ipatch%mmean_par_l_beam          ,lmask)
-      opatch%mmean_par_l_diff      (1:z) = pack(ipatch%mmean_par_l_diff          ,lmask)
-      opatch%mmean_rshort_l        (1:z) = pack(ipatch%mmean_rshort_l            ,lmask)
-      opatch%mmean_rlong_l         (1:z) = pack(ipatch%mmean_rlong_l             ,lmask)
-      opatch%mmean_sensible_lc     (1:z) = pack(ipatch%mmean_sensible_lc         ,lmask)
-      opatch%mmean_vapor_lc        (1:z) = pack(ipatch%mmean_vapor_lc            ,lmask)
-      opatch%mmean_transp          (1:z) = pack(ipatch%mmean_transp              ,lmask)
-      opatch%mmean_intercepted_al  (1:z) = pack(ipatch%mmean_intercepted_al      ,lmask)
-      opatch%mmean_wshed_lg        (1:z) = pack(ipatch%mmean_wshed_lg            ,lmask)
-      opatch%mmean_rshort_w        (1:z) = pack(ipatch%mmean_rshort_w            ,lmask)
-      opatch%mmean_rlong_w         (1:z) = pack(ipatch%mmean_rlong_w             ,lmask)
-      opatch%mmean_sensible_wc     (1:z) = pack(ipatch%mmean_sensible_wc         ,lmask)
-      opatch%mmean_vapor_wc        (1:z) = pack(ipatch%mmean_vapor_wc            ,lmask)
-      opatch%mmean_intercepted_aw  (1:z) = pack(ipatch%mmean_intercepted_aw      ,lmask)
-      opatch%mmean_wshed_wg        (1:z) = pack(ipatch%mmean_wshed_wg            ,lmask)
-      opatch%mmean_nppleaf         (1:z) = pack(ipatch%mmean_nppleaf             ,lmask)
-      opatch%mmean_nppfroot        (1:z) = pack(ipatch%mmean_nppfroot            ,lmask)
-      opatch%mmean_nppsapwood      (1:z) = pack(ipatch%mmean_nppsapwood          ,lmask)
-      opatch%mmean_nppbark         (1:z) = pack(ipatch%mmean_nppbark             ,lmask)
-      opatch%mmean_nppcroot        (1:z) = pack(ipatch%mmean_nppcroot            ,lmask)
-      opatch%mmean_nppseeds        (1:z) = pack(ipatch%mmean_nppseeds            ,lmask)
-      opatch%mmean_nppwood         (1:z) = pack(ipatch%mmean_nppwood             ,lmask)
-      opatch%mmean_nppdaily        (1:z) = pack(ipatch%mmean_nppdaily            ,lmask)
-      opatch%mmsqu_gpp             (1:z) = pack(ipatch%mmsqu_gpp                 ,lmask)
-      opatch%mmsqu_npp             (1:z) = pack(ipatch%mmsqu_npp                 ,lmask)
-      opatch%mmsqu_plresp          (1:z) = pack(ipatch%mmsqu_plresp              ,lmask)
-      opatch%mmsqu_sensible_lc     (1:z) = pack(ipatch%mmsqu_sensible_lc         ,lmask)
-      opatch%mmsqu_vapor_lc        (1:z) = pack(ipatch%mmsqu_vapor_lc            ,lmask)
-      opatch%mmsqu_transp          (1:z) = pack(ipatch%mmsqu_transp              ,lmask)
-      opatch%mmsqu_sensible_wc     (1:z) = pack(ipatch%mmsqu_sensible_wc         ,lmask)
-      opatch%mmsqu_vapor_wc        (1:z) = pack(ipatch%mmsqu_vapor_wc            ,lmask)
+      opatch%mmean_par_l             (1:z) = pack(ipatch%mmean_par_l               ,lmask)
+      opatch%mmean_par_l_beam        (1:z) = pack(ipatch%mmean_par_l_beam          ,lmask)
+      opatch%mmean_par_l_diff        (1:z) = pack(ipatch%mmean_par_l_diff          ,lmask)
+      opatch%mmean_rshort_l          (1:z) = pack(ipatch%mmean_rshort_l            ,lmask)
+      opatch%mmean_rlong_l           (1:z) = pack(ipatch%mmean_rlong_l             ,lmask)
+      opatch%mmean_sensible_lc       (1:z) = pack(ipatch%mmean_sensible_lc         ,lmask)
+      opatch%mmean_vapor_lc          (1:z) = pack(ipatch%mmean_vapor_lc            ,lmask)
+      opatch%mmean_transp            (1:z) = pack(ipatch%mmean_transp              ,lmask)
+      opatch%mmean_intercepted_al    (1:z) = pack(ipatch%mmean_intercepted_al      ,lmask)
+      opatch%mmean_wshed_lg          (1:z) = pack(ipatch%mmean_wshed_lg            ,lmask)
+      opatch%mmean_rshort_w          (1:z) = pack(ipatch%mmean_rshort_w            ,lmask)
+      opatch%mmean_rlong_w           (1:z) = pack(ipatch%mmean_rlong_w             ,lmask)
+      opatch%mmean_sensible_wc       (1:z) = pack(ipatch%mmean_sensible_wc         ,lmask)
+      opatch%mmean_vapor_wc          (1:z) = pack(ipatch%mmean_vapor_wc            ,lmask)
+      opatch%mmean_intercepted_aw    (1:z) = pack(ipatch%mmean_intercepted_aw      ,lmask)
+      opatch%mmean_wshed_wg          (1:z) = pack(ipatch%mmean_wshed_wg            ,lmask)
+      opatch%mmean_nppleaf           (1:z) = pack(ipatch%mmean_nppleaf             ,lmask)
+      opatch%mmean_nppfroot          (1:z) = pack(ipatch%mmean_nppfroot            ,lmask)
+      opatch%mmean_nppsapwood        (1:z) = pack(ipatch%mmean_nppsapwood          ,lmask)
+      opatch%mmean_nppbark           (1:z) = pack(ipatch%mmean_nppbark             ,lmask)
+      opatch%mmean_nppcroot          (1:z) = pack(ipatch%mmean_nppcroot            ,lmask)
+      opatch%mmean_nppseeds          (1:z) = pack(ipatch%mmean_nppseeds            ,lmask)
+      opatch%mmean_nppwood           (1:z) = pack(ipatch%mmean_nppwood             ,lmask)
+      opatch%mmean_nppdaily          (1:z) = pack(ipatch%mmean_nppdaily            ,lmask)
+      opatch%mmsqu_gpp               (1:z) = pack(ipatch%mmsqu_gpp                 ,lmask)
+      opatch%mmsqu_npp               (1:z) = pack(ipatch%mmsqu_npp                 ,lmask)
+      opatch%mmsqu_plresp            (1:z) = pack(ipatch%mmsqu_plresp              ,lmask)
+      opatch%mmsqu_sensible_lc       (1:z) = pack(ipatch%mmsqu_sensible_lc         ,lmask)
+      opatch%mmsqu_vapor_lc          (1:z) = pack(ipatch%mmsqu_vapor_lc            ,lmask)
+      opatch%mmsqu_transp            (1:z) = pack(ipatch%mmsqu_transp              ,lmask)
+      opatch%mmsqu_sensible_wc       (1:z) = pack(ipatch%mmsqu_sensible_wc         ,lmask)
+      opatch%mmsqu_vapor_wc          (1:z) = pack(ipatch%mmsqu_vapor_wc            ,lmask)
       !------------------------------------------------------------------------------------!
 
 
@@ -10662,81 +11371,81 @@ module ed_state_vars
 
 
       do n=1,ndcycle
-         opatch%qmean_gpp           (n,1:z) = pack(ipatch%qmean_gpp           (n,:),lmask)
-         opatch%qmean_npp           (n,1:z) = pack(ipatch%qmean_npp           (n,:),lmask)
-         opatch%qmean_leaf_resp     (n,1:z) = pack(ipatch%qmean_leaf_resp     (n,:),lmask)
-         opatch%qmean_root_resp     (n,1:z) = pack(ipatch%qmean_root_resp     (n,:),lmask)
-         opatch%qmean_leaf_growth_resp(n,1:z) = pack(ipatch%qmean_leaf_growth_resp(n,:),lmask)
-         opatch%qmean_root_growth_resp(n,1:z) = pack(ipatch%qmean_root_growth_resp(n,:),lmask)
-         opatch%qmean_sapa_growth_resp(n,1:z) = pack(ipatch%qmean_sapa_growth_resp(n,:),lmask)
-         opatch%qmean_sapb_growth_resp(n,1:z) = pack(ipatch%qmean_sapb_growth_resp(n,:),lmask)
-         opatch%qmean_bark_growth_resp(n,1:z) = pack(ipatch%qmean_bark_growth_resp(n,:),lmask)
-         opatch%qmean_leaf_storage_resp(n,1:z) = pack(ipatch%qmean_leaf_storage_resp(n,:),lmask)
-         opatch%qmean_root_storage_resp(n,1:z) = pack(ipatch%qmean_root_storage_resp(n,:),lmask)
-         opatch%qmean_sapa_storage_resp(n,1:z) = pack(ipatch%qmean_sapa_storage_resp(n,:),lmask)
-         opatch%qmean_sapb_storage_resp(n,1:z) = pack(ipatch%qmean_sapb_storage_resp(n,:),lmask)
-         opatch%qmean_bark_storage_resp(n,1:z) = pack(ipatch%qmean_bark_storage_resp(n,:),lmask)
-         opatch%qmean_plresp        (n,1:z) = pack(ipatch%qmean_plresp        (n,:),lmask)
-         opatch%qmean_leaf_energy   (n,1:z) = pack(ipatch%qmean_leaf_energy   (n,:),lmask)
-         opatch%qmean_leaf_water    (n,1:z) = pack(ipatch%qmean_leaf_water    (n,:),lmask)
-         opatch%qmean_leaf_hcap     (n,1:z) = pack(ipatch%qmean_leaf_hcap     (n,:),lmask)
-         opatch%qmean_leaf_vpdef    (n,1:z) = pack(ipatch%qmean_leaf_vpdef    (n,:),lmask)
-         opatch%qmean_leaf_temp     (n,1:z) = pack(ipatch%qmean_leaf_temp     (n,:),lmask)
-         opatch%qmean_leaf_fliq     (n,1:z) = pack(ipatch%qmean_leaf_fliq     (n,:),lmask)
-         opatch%qmean_leaf_gsw      (n,1:z) = pack(ipatch%qmean_leaf_gsw      (n,:),lmask)
-         opatch%qmean_leaf_gbw      (n,1:z) = pack(ipatch%qmean_leaf_gbw      (n,:),lmask)
-         opatch%qmean_wood_energy   (n,1:z) = pack(ipatch%qmean_wood_energy   (n,:),lmask)
-         opatch%qmean_wood_water    (n,1:z) = pack(ipatch%qmean_wood_water    (n,:),lmask)
-         opatch%qmean_wood_hcap     (n,1:z) = pack(ipatch%qmean_wood_hcap     (n,:),lmask)
-         opatch%qmean_wood_temp     (n,1:z) = pack(ipatch%qmean_wood_temp     (n,:),lmask)
-         opatch%qmean_wood_fliq     (n,1:z) = pack(ipatch%qmean_wood_fliq     (n,:),lmask)
-         opatch%qmean_wood_gbw      (n,1:z) = pack(ipatch%qmean_wood_gbw      (n,:),lmask)
-         opatch%qmean_fs_open       (n,1:z) = pack(ipatch%qmean_fs_open       (n,:),lmask)
-         opatch%qmean_fsw           (n,1:z) = pack(ipatch%qmean_fsw           (n,:),lmask)
-         opatch%qmean_fsn           (n,1:z) = pack(ipatch%qmean_fsn           (n,:),lmask)
-         opatch%qmean_a_open        (n,1:z) = pack(ipatch%qmean_a_open        (n,:),lmask)
-         opatch%qmean_a_closed      (n,1:z) = pack(ipatch%qmean_a_closed      (n,:),lmask)
-         opatch%qmean_a_net         (n,1:z) = pack(ipatch%qmean_a_net         (n,:),lmask)
-         opatch%qmean_A_light       (n,1:z) = pack(ipatch%qmean_A_light       (n,:),lmask)
-         opatch%qmean_A_rubp        (n,1:z) = pack(ipatch%qmean_A_rubp        (n,:),lmask)
-         opatch%qmean_A_co2         (n,1:z) = pack(ipatch%qmean_A_co2         (n,:),lmask)
-         opatch%qmean_psi_open      (n,1:z) = pack(ipatch%qmean_psi_open      (n,:),lmask)
-         opatch%qmean_psi_closed    (n,1:z) = pack(ipatch%qmean_psi_closed    (n,:),lmask)
-         opatch%qmean_water_supply  (n,1:z) = pack(ipatch%qmean_water_supply  (n,:),lmask)
-         opatch%qmean_light_level   (n,1:z) = pack(ipatch%qmean_light_level   (n,:),lmask)
-         opatch%qmean_light_level_beam(n,1:z) =                                            &
-                                            pack(ipatch%qmean_light_level_beam(n,:),lmask)
-         opatch%qmean_light_level_diff(n,1:z) =                                            &
-                                            pack(ipatch%qmean_light_level_diff(n,:),lmask)
+         opatch%qmean_gpp               (n,1:z) = pack(ipatch%qmean_gpp               (n,:),lmask)
+         opatch%qmean_npp               (n,1:z) = pack(ipatch%qmean_npp               (n,:),lmask)
+         opatch%qmean_leaf_resp         (n,1:z) = pack(ipatch%qmean_leaf_resp         (n,:),lmask)
+         opatch%qmean_root_resp         (n,1:z) = pack(ipatch%qmean_root_resp         (n,:),lmask)
+         opatch%qmean_leaf_growth_resp  (n,1:z) = pack(ipatch%qmean_leaf_growth_resp  (n,:),lmask)
+         opatch%qmean_root_growth_resp  (n,1:z) = pack(ipatch%qmean_root_growth_resp  (n,:),lmask)
+         opatch%qmean_sapa_growth_resp  (n,1:z) = pack(ipatch%qmean_sapa_growth_resp  (n,:),lmask)
+         opatch%qmean_sapb_growth_resp  (n,1:z) = pack(ipatch%qmean_sapb_growth_resp  (n,:),lmask)
+         opatch%qmean_barka_growth_resp (n,1:z) = pack(ipatch%qmean_barka_growth_resp (n,:),lmask)
+         opatch%qmean_barkb_growth_resp (n,1:z) = pack(ipatch%qmean_barkb_growth_resp (n,:),lmask)
+         opatch%qmean_leaf_storage_resp (n,1:z) = pack(ipatch%qmean_leaf_storage_resp (n,:),lmask)
+         opatch%qmean_root_storage_resp (n,1:z) = pack(ipatch%qmean_root_storage_resp (n,:),lmask)
+         opatch%qmean_sapa_storage_resp (n,1:z) = pack(ipatch%qmean_sapa_storage_resp (n,:),lmask)
+         opatch%qmean_sapb_storage_resp (n,1:z) = pack(ipatch%qmean_sapb_storage_resp (n,:),lmask)
+         opatch%qmean_barka_storage_resp(n,1:z) = pack(ipatch%qmean_barka_storage_resp(n,:),lmask)
+         opatch%qmean_barkb_storage_resp(n,1:z) = pack(ipatch%qmean_barkb_storage_resp(n,:),lmask)
+         opatch%qmean_plresp            (n,1:z) = pack(ipatch%qmean_plresp            (n,:),lmask)
+         opatch%qmean_leaf_energy       (n,1:z) = pack(ipatch%qmean_leaf_energy       (n,:),lmask)
+         opatch%qmean_leaf_water        (n,1:z) = pack(ipatch%qmean_leaf_water        (n,:),lmask)
+         opatch%qmean_leaf_hcap         (n,1:z) = pack(ipatch%qmean_leaf_hcap         (n,:),lmask)
+         opatch%qmean_leaf_vpdef        (n,1:z) = pack(ipatch%qmean_leaf_vpdef        (n,:),lmask)
+         opatch%qmean_leaf_temp         (n,1:z) = pack(ipatch%qmean_leaf_temp         (n,:),lmask)
+         opatch%qmean_leaf_fliq         (n,1:z) = pack(ipatch%qmean_leaf_fliq         (n,:),lmask)
+         opatch%qmean_leaf_gsw          (n,1:z) = pack(ipatch%qmean_leaf_gsw          (n,:),lmask)
+         opatch%qmean_leaf_gbw          (n,1:z) = pack(ipatch%qmean_leaf_gbw          (n,:),lmask)
+         opatch%qmean_wood_energy       (n,1:z) = pack(ipatch%qmean_wood_energy       (n,:),lmask)
+         opatch%qmean_wood_water        (n,1:z) = pack(ipatch%qmean_wood_water        (n,:),lmask)
+         opatch%qmean_wood_hcap         (n,1:z) = pack(ipatch%qmean_wood_hcap         (n,:),lmask)
+         opatch%qmean_wood_temp         (n,1:z) = pack(ipatch%qmean_wood_temp         (n,:),lmask)
+         opatch%qmean_wood_fliq         (n,1:z) = pack(ipatch%qmean_wood_fliq         (n,:),lmask)
+         opatch%qmean_wood_gbw          (n,1:z) = pack(ipatch%qmean_wood_gbw          (n,:),lmask)
+         opatch%qmean_fs_open           (n,1:z) = pack(ipatch%qmean_fs_open           (n,:),lmask)
+         opatch%qmean_fsw               (n,1:z) = pack(ipatch%qmean_fsw               (n,:),lmask)
+         opatch%qmean_fsn               (n,1:z) = pack(ipatch%qmean_fsn               (n,:),lmask)
+         opatch%qmean_a_open            (n,1:z) = pack(ipatch%qmean_a_open            (n,:),lmask)
+         opatch%qmean_a_closed          (n,1:z) = pack(ipatch%qmean_a_closed          (n,:),lmask)
+         opatch%qmean_a_net             (n,1:z) = pack(ipatch%qmean_a_net             (n,:),lmask)
+         opatch%qmean_A_light           (n,1:z) = pack(ipatch%qmean_A_light           (n,:),lmask)
+         opatch%qmean_A_rubp            (n,1:z) = pack(ipatch%qmean_A_rubp            (n,:),lmask)
+         opatch%qmean_A_co2             (n,1:z) = pack(ipatch%qmean_A_co2             (n,:),lmask)
+         opatch%qmean_psi_open          (n,1:z) = pack(ipatch%qmean_psi_open          (n,:),lmask)
+         opatch%qmean_psi_closed        (n,1:z) = pack(ipatch%qmean_psi_closed        (n,:),lmask)
+         opatch%qmean_water_supply      (n,1:z) = pack(ipatch%qmean_water_supply      (n,:),lmask)
+         opatch%qmean_light_level       (n,1:z) = pack(ipatch%qmean_light_level       (n,:),lmask)
+         opatch%qmean_light_level_beam  (n,1:z) = pack(ipatch%qmean_light_level_beam  (n,:),lmask)
+         opatch%qmean_light_level_diff  (n,1:z) = pack(ipatch%qmean_light_level_diff  (n,:),lmask)
 
-         opatch%qmean_par_level_beam  (n,1:z) = pack(ipatch%qmean_par_level_beam(n,:)     ,lmask)
-         opatch%qmean_par_level_diffu (n,1:z) = pack(ipatch%qmean_par_level_diffu(n,:)    ,lmask)
-         opatch%qmean_par_level_diffd (n,1:z) = pack(ipatch%qmean_par_level_diffd(n,:)    ,lmask)
+         opatch%qmean_par_level_beam    (n,1:z) = pack(ipatch%qmean_par_level_beam    (n,:),lmask)
+         opatch%qmean_par_level_diffu   (n,1:z) = pack(ipatch%qmean_par_level_diffu   (n,:),lmask)
+         opatch%qmean_par_level_diffd   (n,1:z) = pack(ipatch%qmean_par_level_diffd   (n,:),lmask)
 
-         opatch%qmean_par_l         (n,1:z) = pack(ipatch%qmean_par_l         (n,:),lmask)
-         opatch%qmean_par_l_beam    (n,1:z) = pack(ipatch%qmean_par_l_beam    (n,:),lmask)
-         opatch%qmean_par_l_diff    (n,1:z) = pack(ipatch%qmean_par_l_diff    (n,:),lmask)
-         opatch%qmean_rshort_l      (n,1:z) = pack(ipatch%qmean_rshort_l      (n,:),lmask)
-         opatch%qmean_rlong_l       (n,1:z) = pack(ipatch%qmean_rlong_l       (n,:),lmask)
-         opatch%qmean_sensible_lc   (n,1:z) = pack(ipatch%qmean_sensible_lc   (n,:),lmask)
-         opatch%qmean_vapor_lc      (n,1:z) = pack(ipatch%qmean_vapor_lc      (n,:),lmask)
-         opatch%qmean_transp        (n,1:z) = pack(ipatch%qmean_transp        (n,:),lmask)
-         opatch%qmean_intercepted_al(n,1:z) = pack(ipatch%qmean_intercepted_al(n,:),lmask)
-         opatch%qmean_wshed_lg      (n,1:z) = pack(ipatch%qmean_wshed_lg      (n,:),lmask)
-         opatch%qmean_rshort_w      (n,1:z) = pack(ipatch%qmean_rshort_w      (n,:),lmask)
-         opatch%qmean_rlong_w       (n,1:z) = pack(ipatch%qmean_rlong_w       (n,:),lmask)
-         opatch%qmean_sensible_wc   (n,1:z) = pack(ipatch%qmean_sensible_wc   (n,:),lmask)
-         opatch%qmean_vapor_wc      (n,1:z) = pack(ipatch%qmean_vapor_wc      (n,:),lmask)
-         opatch%qmean_intercepted_aw(n,1:z) = pack(ipatch%qmean_intercepted_aw(n,:),lmask)
-         opatch%qmean_wshed_wg      (n,1:z) = pack(ipatch%qmean_wshed_wg      (n,:),lmask)
-         opatch%qmsqu_gpp           (n,1:z) = pack(ipatch%qmsqu_gpp           (n,:),lmask)
-         opatch%qmsqu_npp           (n,1:z) = pack(ipatch%qmsqu_npp           (n,:),lmask)
-         opatch%qmsqu_plresp        (n,1:z) = pack(ipatch%qmsqu_plresp        (n,:),lmask)
-         opatch%qmsqu_sensible_lc   (n,1:z) = pack(ipatch%qmsqu_sensible_lc   (n,:),lmask)
-         opatch%qmsqu_vapor_lc      (n,1:z) = pack(ipatch%qmsqu_vapor_lc      (n,:),lmask)
-         opatch%qmsqu_transp        (n,1:z) = pack(ipatch%qmsqu_transp        (n,:),lmask)
-         opatch%qmsqu_sensible_wc   (n,1:z) = pack(ipatch%qmsqu_sensible_wc   (n,:),lmask)
-         opatch%qmsqu_vapor_wc      (n,1:z) = pack(ipatch%qmsqu_vapor_wc      (n,:),lmask)
+         opatch%qmean_par_l             (n,1:z) = pack(ipatch%qmean_par_l             (n,:),lmask)
+         opatch%qmean_par_l_beam        (n,1:z) = pack(ipatch%qmean_par_l_beam        (n,:),lmask)
+         opatch%qmean_par_l_diff        (n,1:z) = pack(ipatch%qmean_par_l_diff        (n,:),lmask)
+         opatch%qmean_rshort_l          (n,1:z) = pack(ipatch%qmean_rshort_l          (n,:),lmask)
+         opatch%qmean_rlong_l           (n,1:z) = pack(ipatch%qmean_rlong_l           (n,:),lmask)
+         opatch%qmean_sensible_lc       (n,1:z) = pack(ipatch%qmean_sensible_lc       (n,:),lmask)
+         opatch%qmean_vapor_lc          (n,1:z) = pack(ipatch%qmean_vapor_lc          (n,:),lmask)
+         opatch%qmean_transp            (n,1:z) = pack(ipatch%qmean_transp            (n,:),lmask)
+         opatch%qmean_intercepted_al    (n,1:z) = pack(ipatch%qmean_intercepted_al    (n,:),lmask)
+         opatch%qmean_wshed_lg          (n,1:z) = pack(ipatch%qmean_wshed_lg          (n,:),lmask)
+         opatch%qmean_rshort_w          (n,1:z) = pack(ipatch%qmean_rshort_w          (n,:),lmask)
+         opatch%qmean_rlong_w           (n,1:z) = pack(ipatch%qmean_rlong_w           (n,:),lmask)
+         opatch%qmean_sensible_wc       (n,1:z) = pack(ipatch%qmean_sensible_wc       (n,:),lmask)
+         opatch%qmean_vapor_wc          (n,1:z) = pack(ipatch%qmean_vapor_wc          (n,:),lmask)
+         opatch%qmean_intercepted_aw    (n,1:z) = pack(ipatch%qmean_intercepted_aw    (n,:),lmask)
+         opatch%qmean_wshed_wg          (n,1:z) = pack(ipatch%qmean_wshed_wg          (n,:),lmask)
+         opatch%qmsqu_gpp               (n,1:z) = pack(ipatch%qmsqu_gpp               (n,:),lmask)
+         opatch%qmsqu_npp               (n,1:z) = pack(ipatch%qmsqu_npp               (n,:),lmask)
+         opatch%qmsqu_plresp            (n,1:z) = pack(ipatch%qmsqu_plresp            (n,:),lmask)
+         opatch%qmsqu_sensible_lc       (n,1:z) = pack(ipatch%qmsqu_sensible_lc       (n,:),lmask)
+         opatch%qmsqu_vapor_lc          (n,1:z) = pack(ipatch%qmsqu_vapor_lc          (n,:),lmask)
+         opatch%qmsqu_transp            (n,1:z) = pack(ipatch%qmsqu_transp            (n,:),lmask)
+         opatch%qmsqu_sensible_wc       (n,1:z) = pack(ipatch%qmsqu_sensible_wc       (n,:),lmask)
+         opatch%qmsqu_vapor_wc          (n,1:z) = pack(ipatch%qmsqu_vapor_wc          (n,:),lmask)
 
 
 
@@ -10774,7 +11483,7 @@ module ed_state_vars
    ! hyperslabs of data in parallel to a joining HDF5 dataset as "collective-chunked"      !
    ! data.  The modifications that must be made after running this subroutine, are that    !
    ! the indexes should account for the offset of the current compute node.                !
-   !                                                                                       !!
+   !                                                                                       !
    !    The various state scalars, vectors and arrays are now populate the vtable.  The    !
    ! vtable indexes the array gives it a name, records its dimensions, when it is to be    !
    ! used as output and how (averaging and such) and most importantly saves a pointer to   !
@@ -10843,7 +11552,7 @@ module ed_state_vars
    !  27    : rank 2 : site, age                                                           !
    !  28    : rank 2 : site, mort                                                          !
    !  29    : rank 2 : site, month                                                         !
-   !  291   : rank 2 : site, month+1                                                         !
+   !  291   : rank 2 : site, month+1                                                       !
    !                                                                                       !
    !  30    : rank 1 : patch, integer                                                      !
    !  31    : rank 1 : patch                                                               !
@@ -11877,20 +12586,28 @@ module ed_state_vars
 
 
       !------ Polygon average of soil C and N pools. --------------------------------------!
+      if(associated(cgrid%fast_grnd_c    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%fast_grnd_c                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FAST_GRND_C_PY     :11:hist:anal:dail:opti')
+         call metadata_edio(nvar,igr,'Ground Carbon (Fast/Litter pool)'                    &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
       if(associated(cgrid%fast_soil_c    )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%fast_soil_c                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'FAST_SOIL_C_PY     :11:hist:anal:dail:opti')
-         call metadata_edio(nvar,igr,'Soil Carbon (Fast pool)'                             &
+         call metadata_edio(nvar,igr,'Soil Carbon (Fast/Litter pool)'                      &
                            ,'[kgC/m2]','(ipoly)')
       end if
-      if(associated(cgrid%slow_soil_c    )) then
+      if(associated(cgrid%struct_grnd_c  )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%slow_soil_c                                         &
+         call vtable_edio_r(npts,cgrid%struct_grnd_c                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'SLOW_SOIL_C_PY     :11:hist:anal:dail:opti')
-         call metadata_edio(nvar,igr,'Soil Carbon (Slow pool)'                             &
+                           ,'STRUCT_GRND_C_PY   :11:hist:anal:dail:opti')
+         call metadata_edio(nvar,igr,'Ground Carbon (Structural/Woody Debris pool)'        &
                            ,'[kgC/m2]','(ipoly)')
       end if
       if(associated(cgrid%struct_soil_c  )) then
@@ -11898,7 +12615,15 @@ module ed_state_vars
          call vtable_edio_r(npts,cgrid%struct_soil_c                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'STRUCT_SOIL_C_PY   :11:hist:anal:dail:opti')
-         call metadata_edio(nvar,igr,'Soil Carbon (Structural pool)'                       &
+         call metadata_edio(nvar,igr,'Soil Carbon (Structural/Woody Debris pool)'          &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%struct_grnd_l  )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%struct_grnd_l                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'STRUCT_GRND_L_PY   :11:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Ground Lignin (Structural pool)'                     &
                            ,'[kgC/m2]','(ipoly)')
       end if
       if(associated(cgrid%struct_soil_l  )) then
@@ -11909,13 +12634,29 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Soil Lignin (Structural pool)'                       &
                            ,'[kgC/m2]','(ipoly)')
       end if
-      if(associated(cgrid%cwd_c     )) then
+      if(associated(cgrid%microbe_soil_c )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%cwd_c                                               &
+         call vtable_edio_r(npts,cgrid%microbe_soil_c                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'CWD_C_PY    :11:hist:anal:dail')
-         call metadata_edio(nvar,igr,'Coarse woody debris'                                 &
+                           ,'MICROBE_SOIL_C_PY  :11:hist:anal:dail:opti')
+         call metadata_edio(nvar,igr,'Soil Carbon (Microbial pool)'                        &
                            ,'[kgC/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%slow_soil_c    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%slow_soil_c                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'SLOW_SOIL_C_PY     :11:hist:anal:dail:opti')
+         call metadata_edio(nvar,igr,'Soil Carbon (Slow/Humified pool)'                    &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%fast_grnd_n    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%fast_grnd_n                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FAST_GRND_N_PY     :11:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Ground Nitrogen (Fast pool)'                         &
+                           ,'[kgN/m2]','(ipoly)')
       end if
       if(associated(cgrid%fast_soil_n    )) then
          nvar = nvar + 1
@@ -11925,20 +12666,28 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Soil Nitrogen (Fast pool)'                           &
                            ,'[kgN/m2]','(ipoly)')
       end if
+      if(associated(cgrid%struct_grnd_n  )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%struct_grnd_n                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'STRUCT_GRND_N_PY   :11:hist:anal:dail:opti')
+         call metadata_edio(nvar,igr,'Ground Nitrogen (Structural/Woody Debris pool)'      &
+                           ,'[kgN/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%struct_soil_n  )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%struct_soil_n                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'STRUCT_SOIL_N_PY   :11:hist:anal:dail:opti')
+         call metadata_edio(nvar,igr,'Soil Nitrogen (Structural/Woody Debris pool)'        &
+                           ,'[kgN/m2]','(ipoly)')
+      end if
       if(associated(cgrid%mineral_soil_n )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mineral_soil_n                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MINERAL_SOIL_N_PY  :11:hist:anal:dail')
          call metadata_edio(nvar,igr,'Soil Nitrogen (Mineralised pool)'                    &
-                           ,'[kgN/m2]','(ipoly)')
-      end if
-      if(associated(cgrid%cwd_n     )) then
-         nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%cwd_n                                               &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'CWD_N_PY    :11:hist:anal:dail')
-         call metadata_edio(nvar,igr,'Coarse woody debris nitrogen'                        &
                            ,'[kgN/m2]','(ipoly)')
       end if
       if(associated(cgrid%crop_harvest)) then
@@ -12093,13 +12842,22 @@ module ed_state_vars
                            ,'Sub-daily mean - Belowground sapwood growth respiration'      &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%fmean_bark_growth_resp )) then
+      if (associated(cgrid%fmean_barka_growth_resp )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%fmean_bark_growth_resp                              &
+         call vtable_edio_r(npts,cgrid%fmean_barka_growth_resp                             &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_BARK_GROWTH_RESP_PY   :11:'//trim(fast_keys)     )
+                           ,'FMEAN_BARKA_GROWTH_RESP_PY  :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Bark growth respiration'                     &
+                           ,'Sub-daily mean - Aboveground bark growth respiration'         &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_barkb_growth_resp )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_barkb_growth_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_BARKB_GROWTH_RESP_PY  :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Belowground bark growth respiration'         &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_leaf_storage_resp    )) then
@@ -12138,13 +12896,22 @@ module ed_state_vars
                            ,'Sub-daily mean - Belowground Sapwood storage respiration'     &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%fmean_bark_storage_resp    )) then
+      if (associated(cgrid%fmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%fmean_bark_storage_resp                             &
+         call vtable_edio_r(npts,cgrid%fmean_barka_storage_resp                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_BARK_STORAGE_RESP_PY      :11:'//trim(fast_keys)     )
+                           ,'FMEAN_BARKA_STORAGE_RESP_PY     :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Bark storage respiration'                    &
+                           ,'Sub-daily mean - Aboveground bark storage respiration'        &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_barkb_storage_resp                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_BARKB_STORAGE_RESP_PY     :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Belowground bark storage respiration'        &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_plresp          )) then
@@ -12543,13 +13310,58 @@ module ed_state_vars
                            ,'Sub-daily mean - Heterotrophic respiration'                   &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%fmean_cwd_rh          )) then
+      if (associated(cgrid%fmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%fmean_cwd_rh                                        &
+         call vtable_edio_r(npts,cgrid%fmean_fgc_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CWD_RH_PY            :11:'//trim(fast_keys)     )
+                           ,'FMEAN_FGC_RH_PY            :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Coarse woody debris respiration'             &
+                           ,'Sub-daily mean - Fast ground carbon (litter) respiration'     &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_fsc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_FSC_RH_PY            :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Fast soil carbon (litter) respiration'       &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_stgc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_stgc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_STGC_RH_PY            :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Struct. ground carbon (w.debr.) respiration' &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_stsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_stsc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_STSC_RH_PY            :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Struct. soil carbon (w.debr.) respiration'   &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_msc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_MSC_RH_PY            :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Microbial soil carbon respiration'           &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_ssc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_SSC_RH_PY            :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Slow (humified) soil carbon respiration'     &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_nep             )) then
@@ -13173,13 +13985,22 @@ module ed_state_vars
                            ,'Sub-daily mean - LAI'                                         &
                            ,'[           m2/m2]','(ipoly)'            )
       end if
-      if (associated(cgrid%fmean_skin_temp)) then
+      if (associated(cgrid%fmean_bdeada)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%fmean_bdead                                         &
+         call vtable_edio_r(npts,cgrid%fmean_bdeada                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_BDEAD_PY  :11:'//trim(fast_keys)  )
+                           ,'FMEAN_BDEADA_PY  :11:'//trim(fast_keys) )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Dead biomass'                                &
+                           ,'Sub-daily mean - Aboveground heartwood biomass'               &
+                           ,'[          kg/plant]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_bdeadb)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_bdeadb                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_BDEADB_PY  :11:'//trim(fast_keys) )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Belowground heartwood biomass'               &
                            ,'[          kg/plant]','(ipoly)'            )
       end if
 
@@ -13316,7 +14137,16 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'DMEAN_A_DECOMP_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale'                             &
+                           ,'Daily mean - Decomposition scale (aboveground)'               &
+                           ,'[         --]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_B_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_B_decomp                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_B_DECOMP_PY          :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Decomposition scale (belowground)'               &
                            ,'[         --]','(ipoly)'            )
       end if
       if (associated(cgrid%dmean_Af_decomp       )) then
@@ -13325,7 +14155,16 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'DMEAN_AF_DECOMP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale with N immobilisation'       &
+                           ,'Daily mean - AG Decomposition scale with N immobilisation'    &
+                           ,'[         --]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_Bf_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_Bf_decomp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_BF_DECOMP_PY         :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - BG Decomposition scale with N immobilisation'    &
                            ,'[         --]','(ipoly)'            )
       end if
       if (associated(cgrid%dmean_co2_residual    )) then
@@ -13427,13 +14266,22 @@ module ed_state_vars
                            ,'Daily mean - Belowground sapwood growth respiration'          &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%dmean_bark_growth_resp)) then
+      if (associated(cgrid%dmean_barka_growth_resp)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_bark_growth_resp                              &
+         call vtable_edio_r(npts,cgrid%dmean_barka_growth_resp                             &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_BARK_GROWTH_RESP_PY  :11:'//trim(dail_keys)     )
+                           ,'DMEAN_BARKA_GROWTH_RESP_PY :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Bark growth respiration'                         &
+                           ,'Daily mean - Aboveground bark growth respiration'             &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_barkb_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_barkb_growth_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_BARKB_GROWTH_RESP_PY :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Belowground bark growth respiration'             &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%dmean_leaf_storage_resp    )) then
@@ -13472,13 +14320,22 @@ module ed_state_vars
                            ,'Daily mean - Belowground Sapwood Storage respiration'         &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%dmean_bark_storage_resp    )) then
+      if (associated(cgrid%dmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_bark_storage_resp                             &
+         call vtable_edio_r(npts,cgrid%dmean_barka_storage_resp                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_BARK_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
+                           ,'DMEAN_BARKA_STORAGE_RESP_PY     :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Bark storage respiration'                        &
+                           ,'Daily mean - Aboveground bark storage respiration'            &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_barkb_storage_resp                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_BARKB_STORAGE_RESP_PY     :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Belowground bark storage respiration'            &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%dmean_plresp          )) then
@@ -13877,13 +14734,58 @@ module ed_state_vars
                            ,'Daily mean - Heterotrophic respiration'                       &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%dmean_cwd_rh          )) then
+      if (associated(cgrid%dmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_cwd_rh                                        &
+         call vtable_edio_r(npts,cgrid%dmean_fgc_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CWD_RH_PY            :11:'//trim(dail_keys)     )
+                           ,'DMEAN_FGC_RH_PY            :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Coarse woody debris respiration'                 &
+                           ,'Daily mean - Fast ground carbon (litter) respiration'         &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_fsc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_FSC_RH_PY            :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Fast soil carbon (litter) respiration'           &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_stgc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_stgc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_STGC_RH_PY            :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Struct. ground carbon (w.debr.) respiration'     &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_stsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_stsc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_STSC_RH_PY            :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Struct. soil carbon (w.debr.) respiration'       &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_msc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_MSC_RH_PY            :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Microbial soil carbon respiration'               &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_ssc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_SSC_RH_PY            :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Slow (humified) soil carbon respiration'         &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%dmean_nep             )) then
@@ -14609,13 +15511,22 @@ module ed_state_vars
                            ,'Monthly mean - Belowground sapwood growth respiration'        &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%mmean_bark_growth_resp)) then
+      if (associated(cgrid%mmean_barka_growth_resp)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_bark_growth_resp                              &
+         call vtable_edio_r(npts,cgrid%mmean_barka_growth_resp                             &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BARK_GROWTH_RESP_PY  :11:'//trim(eorq_keys))
+                           ,'MMEAN_BARKA_GROWTH_RESP_PY :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Bark growth respiration'                       &
+                           ,'Monthly mean - Aboveground bark growth respiration'           &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_barkb_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_barkb_growth_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BARKB_GROWTH_RESP_PY :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground bark growth respiration'           &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_leaf_storage_resp    )) then
@@ -14654,13 +15565,22 @@ module ed_state_vars
                            ,'Monthly mean - Belowground Sapwood Storage respiration'       &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%mmean_bark_storage_resp    )) then
+      if (associated(cgrid%mmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_bark_storage_resp                             &
+         call vtable_edio_r(npts,cgrid%mmean_barka_storage_resp                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BARK_STORAGE_RESP_PY      :11:'//trim(eorq_keys))
+                           ,'MMEAN_BARKA_STORAGE_RESP_PY     :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Bark Storage respiration'                      &
+                           ,'Monthly mean - Aboveground bark Storage respiration'          &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_barkb_storage_resp                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BARKB_STORAGE_RESP_PY     :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground bark Storage respiration'          &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_plresp          )) then
@@ -15059,13 +15979,58 @@ module ed_state_vars
                            ,'Monthly mean - Heterotrophic respiration'                     &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%mmean_cwd_rh          )) then
+      if (associated(cgrid%mmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_cwd_rh                                        &
+         call vtable_edio_r(npts,cgrid%mmean_fgc_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_RH_PY            :11:'//trim(eorq_keys))
+                           ,'MMEAN_FGC_RH_PY            :11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Coarse woody debris respiration'               &
+                           ,'Monthly mean - Fast ground carbon (litter) respiration'       &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_fsc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Fast soil carbon (litter) respiration'         &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_stgc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_stgc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STGC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Struct. ground carbon (w.debr.) respiration'   &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_stsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_stsc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Struct. soil carbon (w.debr.) respiration'     &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_msc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_MSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Microbial soil carbon respiration'             &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_ssc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_SSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Slow (humified) soil carbon respiration'       &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_nep             )) then
@@ -15587,7 +16552,16 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_A_DECOMP_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale'                           &
+                           ,'Monthly mean - Decomposition scale (Aboveground)'             &
+                           ,'[         --]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_B_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_B_decomp                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_B_DECOMP_PY          :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Decomposition scale (Belowground)'             &
                            ,'[         --]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_Af_decomp       )) then
@@ -15596,7 +16570,16 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_AF_DECOMP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
+                           ,'Monthly mean - AG Decomposition scale with N immobilisation'  &
+                           ,'[         --]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_Bf_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_Bf_decomp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BF_DECOMP_PY         :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - BG Decomposition scale with N immobilisation'  &
                            ,'[         --]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_co2_residual    )) then
@@ -15779,20 +16762,28 @@ module ed_state_vars
                            ,'Monthly mean - Precipitation depth'                           &
                            ,'[          m]','(ipoly)'            )
       end if
+      if(associated(cgrid%mmean_fast_grnd_c    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_fast_grnd_c                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FAST_GRND_C_PY     :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Ground Carbon (Fast/Litter pool)'     &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
       if(associated(cgrid%mmean_fast_soil_c    )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_fast_soil_c                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_FAST_SOIL_C_PY     :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Fast pool)'              &
+         call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Fast/Litter pool)'       &
                            ,'[kgC/m2]','(ipoly)')
       end if
-      if(associated(cgrid%mmean_slow_soil_c    )) then
+      if(associated(cgrid%mmean_struct_grnd_c  )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%mmean_slow_soil_c                                   &
+         call vtable_edio_r(npts,cgrid%mmean_struct_grnd_c                                 &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SLOW_SOIL_C_PY     :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Slow pool)'              &
+                           ,'MMEAN_STRUCT_GRND_C_PY   :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Ground Carbon (Structural pool)'      &
                            ,'[kgC/m2]','(ipoly)')
       end if
       if(associated(cgrid%mmean_struct_soil_c  )) then
@@ -15803,6 +16794,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Structural pool)'        &
                            ,'[kgC/m2]','(ipoly)')
       end if
+      if(associated(cgrid%mmean_struct_grnd_l  )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_struct_grnd_l                                 &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STRUCT_GRND_L_PY   :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Ground Lignin (Structural pool)'      &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
       if(associated(cgrid%mmean_struct_soil_l  )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_struct_soil_l                                 &
@@ -15811,13 +16810,29 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Soil Lignin (Structural pool)'        &
                            ,'[kgC/m2]','(ipoly)')
       end if
-      if(associated(cgrid%mmean_cwd_c  )) then
+      if(associated(cgrid%mmean_microbe_soil_c )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%mmean_cwd_c                                         &
+         call vtable_edio_r(npts,cgrid%mmean_microbe_soil_c                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_C_PY   :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean - Coarse woody debris'                  &
+                           ,'MMEAN_MICROBE_SOIL_C_PY  :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Microbial pool)'         &
                            ,'[kgC/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%mmean_slow_soil_c    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_slow_soil_c                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_SLOW_SOIL_C_PY     :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Slow/Humified pool)'     &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%mmean_fast_grnd_n    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_fast_grnd_n                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FAST_GRND_N_PY     :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Ground Nitrogen (Fast pool)'          &
+                           ,'[kgN/m2]','(ipoly)')
       end if
       if(associated(cgrid%mmean_fast_soil_n    )) then
          nvar = nvar + 1
@@ -15827,20 +16842,28 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Soil Nitrogen (Fast pool)'            &
                            ,'[kgN/m2]','(ipoly)')
       end if
+      if(associated(cgrid%mmean_struct_grnd_n  )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_struct_grnd_n                                 &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STRUCT_GRND_N_PY   :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Ground Nitrogen (Structural pool)'    &
+                           ,'[kgN/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%mmean_struct_soil_n  )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_struct_soil_n                                 &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STRUCT_SOIL_N_PY   :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Soil Nitrogen (Structural pool)'      &
+                           ,'[kgN/m2]','(ipoly)')
+      end if
       if(associated(cgrid%mmean_mineral_soil_n )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_mineral_soil_n                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_MINERAL_SOIL_N_PY  :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Soil Nitrogen (Mineralised pool)'     &
-                           ,'[kgN/m2]','(ipoly)')
-      end if
-      if(associated(cgrid%mmean_cwd_n  )) then
-         nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%mmean_cwd_n                                         &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_N_PY   :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean - Coarse woody debris nitrogen'         &
                            ,'[kgN/m2]','(ipoly)')
       end if
       if (associated(cgrid%mmsqu_gpp             )) then
@@ -15924,13 +16947,58 @@ module ed_state_vars
                            ,'Monthly MSSq - Heterotrophic respiration'                     &
                            ,'[ kg2/m4/yr2]','(ipoly)'            )
       end if
-      if (associated(cgrid%mmsqu_cwd_rh          )) then
+      if (associated(cgrid%mmsqu_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmsqu_cwd_rh                                        &
+         call vtable_edio_r(npts,cgrid%mmsqu_fgc_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CWD_RH_PY            :11:'//trim(eorq_keys))
+                           ,'MMSQU_FGC_RH_PY            :11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly MSSq - Coarse woody debris respiration'               &
+                           ,'Monthly MSSq - Fast ground carbon (litter) respiration'       &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmsqu_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_fsc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_FSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Fast soil carbon (litter) respiration'         &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmsqu_stgc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_stgc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_STGC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Struct. ground carbon (w.debr.) respiration'   &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmsqu_stsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_stsc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_STSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Struct. soil carbon (w.debr.) respiration'     &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmsqu_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_msc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_MSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Microbial soil carbon respiration'             &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmsqu_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_ssc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_SSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Slow (humified) soil carbon respiration'       &
                            ,'[ kg2/m4/yr2]','(ipoly)'            )
       end if
       if (associated(cgrid%mmsqu_nep             )) then
@@ -16185,13 +17253,22 @@ module ed_state_vars
                            ,'Mean diel - Belowground Sapwood Growth respiration'           &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
       end if
-      if (associated(cgrid%qmean_bark_growth_resp )) then
+      if (associated(cgrid%qmean_barka_growth_resp )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%qmean_bark_growth_resp                              &
+         call vtable_edio_r(npts,cgrid%qmean_barka_growth_resp                             &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_BARK_GROWTH_RESP_PY :-11:'//trim(eorq_keys)     )
+                           ,'QMEAN_BARKA_GROWTH_RESP_PY :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Bark Growth respiration'                          &
+                           ,'Mean diel - Aboveground bark Growth respiration'              &
+                           ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_barkb_growth_resp )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_barkb_growth_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_BARKB_GROWTH_RESP_PY :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Belowground bark Growth respiration'              &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
       end if
       if (associated(cgrid%qmean_leaf_storage_resp    )) then
@@ -16230,13 +17307,22 @@ module ed_state_vars
                            ,'Mean diel - Belowground Sapwood Storage respiration'          &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
       end if
-      if (associated(cgrid%qmean_bark_storage_resp    )) then
+      if (associated(cgrid%qmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%qmean_bark_storage_resp                             &
+         call vtable_edio_r(npts,cgrid%qmean_barka_storage_resp                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_BARK_STORAGE_RESP_PY     :-11:'//trim(eorq_keys)     )
+                           ,'QMEAN_BARKA_STORAGE_RESP_PY    :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Bark storage respiration'                         &
+                           ,'Mean diel - Aboveground bark storage respiration'             &
+                           ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_barkb_storage_resp                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_BARKB_STORAGE_RESP_PY    :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Belowground bark storage respiration'             &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
       end if
       if (associated(cgrid%qmean_plresp          )) then
@@ -16635,14 +17721,59 @@ module ed_state_vars
                            ,'Mean diel - Heterotrophic respiration'                        &
                            ,'[   kg/m2/yr]','(ndcycle,ipoly)'    )
       end if
-      if (associated(cgrid%qmean_cwd_rh          )) then
+      if (associated(cgrid%qmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%qmean_cwd_rh                                        &
+         call vtable_edio_r(npts,cgrid%qmean_fgc_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CWD_RH_PY           :-11:'//trim(eorq_keys)     )
+                           ,'QMEAN_FGC_RH_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Coarse woody debris respiration'                  &
-                           ,'[   kg/m2/yr]','(ndcycle,ipoly)'    )
+                           ,'Mean diel - Fast ground carbon (litter) respiration'          &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_fsc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_FSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Fast soil carbon (litter) respiration'            &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_stgc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_stgc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_STGC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Struct. ground carbon (w.debr.) respiration'      &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_stsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_stsc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_STSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Struct. soil carbon (w.debr.) respiration'        &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_msc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_MSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Microbial soil carbon respiration'                &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_ssc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_SSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Slow (humified) soil carbon respiration'          &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%qmean_nep             )) then
          nvar = nvar+1
@@ -17319,14 +18450,59 @@ module ed_state_vars
                            ,'MSSq diel - Heterotrophic respiration'                        &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipoly)'    )
       end if
-      if (associated(cgrid%qmsqu_cwd_rh          )) then
+      if (associated(cgrid%qmsqu_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%qmsqu_cwd_rh                                        &
+         call vtable_edio_r(npts,cgrid%qmsqu_fgc_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CWD_RH_PY           :-11:'//trim(eorq_keys)     )
+                           ,'QMSQU_FGC_RH_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'MSSq diel - Coarse woody debris respiration'                  &
-                           ,'[ kg2/m4/yr2]','(ndcycle,ipoly)'    )
+                           ,'MSSq diel - Fast ground carbon (litter) respiration'          &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmsqu_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_fsc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_FSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Fast soil carbon (litter) respiration'            &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmsqu_stgc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_stgc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_STGC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Struct. ground carbon (w.debr.) respiration'      &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmsqu_stsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_stsc_rh                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_STSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Struct. soil carbon (w.debr.) respiration'        &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmsqu_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_msc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_MSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Microbial soil carbon respiration'                &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmsqu_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_ssc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_SSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Slow (humified) soil carbon respiration'          &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
       end if
       if (associated(cgrid%qmsqu_nep             )) then
          nvar = nvar+1
@@ -18072,12 +19248,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Bark thickness (weighted by basal area)'             &
                            ,   '[cm]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%bdead      )) then
+      if (associated(cgrid%bdeada     )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%bdead                                               &
+         call vtable_edio_r(npts,cgrid%bdeada                                              &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'BDEAD_PY       :146:hist:anal:mont:dail:dcyc')
-         call metadata_edio(nvar,igr,'Biomass of structural (dead) tissues'                &
+                           ,'BDEADA_PY      :146:hist:anal:mont:dail:dcyc')
+         call metadata_edio(nvar,igr,'Aboveground heartwood (dead) biomass'                &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%bdeadb     )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%bdeadb                                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BDEADB_PY      :146:hist:anal:mont:dail:dcyc')
+         call metadata_edio(nvar,igr,'Belowground heartwood (dead) biomass'                &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%btimber    )) then
@@ -18128,12 +19312,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Below-ground sapwood biomass'                        &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%bbark      )) then
+      if (associated(cgrid%bbarka     )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%bbark                                               &
+         call vtable_edio_r(npts,cgrid%bbarka                                              &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'BBARK_PY       :146:hist:anal:dail')
-         call metadata_edio(nvar,igr,'Bark biomass'                                        &
+                           ,'BBARKA_PY      :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Aboveground bark biomass'                            &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%bbarkb     )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%bbarkb                                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BBARKB_PY      :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Belowground bark biomass'                            &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%bseeds     )) then
@@ -18160,12 +19352,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Storage biomass'                                     &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%bdead_n      )) then
+      if (associated(cgrid%bdeada_n      )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%bdead_n                                             &
+         call vtable_edio_r(npts,cgrid%bdeada_n                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'BDEAD_N_PY     :146:hist:anal:mont:dail:dcyc')
-         call metadata_edio(nvar,igr,'Nitrogen mass of structural (dead) tissues'          &
+                           ,'BDEADA_N_PY    :146:hist:anal:mont:dail:dcyc')
+         call metadata_edio(nvar,igr,'Aboveground heartwood (dead) nitrogen mass'          &
+                           ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%bdeadb_n      )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%bdeadb_n                                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BDEADB_N_PY    :146:hist:anal:mont:dail:dcyc')
+         call metadata_edio(nvar,igr,'Belowground heartwood (dead) nitrogen mass'          &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%balive_n   )) then
@@ -18208,12 +19408,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Below-ground sapwood nitrogen mass'                  &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%bbark_n    )) then
+      if (associated(cgrid%bbarka_n    )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%bbark_n                                             &
+         call vtable_edio_r(npts,cgrid%bbarka_n                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'BBARK_N_PY     :146:hist:anal:dail')
-         call metadata_edio(nvar,igr,'Bark nitrogen mass'                                  &
+                           ,'BBARKA_N_PY    :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Aboveground Bark nitrogen mass'                      &
+                           ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%bbarkb_n    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%bbarkb_n                                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BBARKB_N_PY    :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Belowground Bark nitrogen mass'                      &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%bseeds_n   )) then
@@ -18248,12 +19456,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Root maintenance rate'                               &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%bark_maintenance)) then
+      if (associated(cgrid%barka_maintenance)) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%bark_maintenance                                    &
+         call vtable_edio_r(npts,cgrid%barka_maintenance                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'BARK_MAINTENANCE_PY    :146:hist:anal:dail')
-         call metadata_edio(nvar,igr,'Bark maintenance rate'                               &
+                           ,'BARKA_MAINTENANCE_PY    :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Aboveground bark maintenance rate'                   &
+                           ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%barkb_maintenance)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%barkb_maintenance                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BARKB_MAINTENANCE_PY    :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Belowground bark maintenance rate'                   &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%leaf_drop)) then
@@ -18296,12 +19512,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Root biomass'                         &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%mmean_bbark      )) then
+      if (associated(cgrid%mmean_bbarka     )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%mmean_bbark                                         &
+         call vtable_edio_r(npts,cgrid%mmean_bbarka                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BBARK_PY       :146:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean - Bark biomass'                         &
+                           ,'MMEAN_BBARKA_PY      :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Aboveground bark biomass'             &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_bbarkb     )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_bbarkb                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BBARKB_PY      :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Belowground bark biomass'             &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%mmean_balive     )) then
@@ -18336,12 +19560,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Root nitrogen mass'                   &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%mmean_bbark_n    )) then
+      if (associated(cgrid%mmean_bbarka_n    )) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%mmean_bbark_n                                       &
+         call vtable_edio_r(npts,cgrid%mmean_bbarka_n                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BBARK_N_PY     :146:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean - Bark nitrogen mass'                   &
+                           ,'MMEAN_BBARKA_N_PY    :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Aboveground bark nitrogen mass'       &
+                           ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_bbarkb_n    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_bbarkb_n                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BBARKB_N_PY    :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Belowground bark nitrogen mass'       &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%mmean_balive_n   )) then
@@ -18376,12 +19608,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Root maintenance rate'                &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
-      if (associated(cgrid%mmean_bark_maintenance)) then
+      if (associated(cgrid%mmean_barka_maintenance)) then
          nvar = nvar + 1
-         call vtable_edio_r(npts,cgrid%mmean_bark_maintenance                              &
+         call vtable_edio_r(npts,cgrid%mmean_barka_maintenance                             &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BARK_MAINTENANCE_PY       :146:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean - Bark maintenance rate'                &
+                           ,'MMEAN_BARKA_MAINTENANCE_PY      :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Aboveground bark maintenance rate'    &
+                           ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_barkb_maintenance)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_barkb_maintenance                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BARKB_MAINTENANCE_PY      :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Belowground bark maintenance rate'    &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%mmean_leaf_drop)) then
@@ -20352,6 +21592,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Patch area relative to site area','[0-1]','ipatch') 
       end if
 
+      if (associated(csite%fast_grnd_C)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fast_grnd_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FAST_GRND_C :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%fast_soil_C)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fast_soil_C,nvar,igr,init,csite%paglob_id, &
@@ -20359,10 +21606,10 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%slow_soil_C)) then
+      if (associated(csite%structural_grnd_C)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%slow_soil_C,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:year:anal') 
+           call vtable_edio_r(npts,csite%structural_grnd_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_GRND_C :31:hist:year:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -20373,6 +21620,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%structural_grnd_L)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%structural_grnd_L,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_GRND_L :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%structural_soil_L)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%structural_soil_L,nvar,igr,init,csite%paglob_id, &
@@ -20380,10 +21634,24 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%mineralized_soil_N)) then
+      if (associated(csite%microbial_soil_C)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%mineralized_soil_N,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:year:anal') 
+           call vtable_edio_r(npts,csite%microbial_soil_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'MICROBIAL_SOIL_C :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%slow_soil_C)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%slow_soil_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%fast_grnd_N)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fast_grnd_N,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FAST_GRND_N :31:hist:year:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -20391,6 +21659,27 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fast_soil_N,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'FAST_SOIL_N :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%structural_grnd_N)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%structural_grnd_N,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_GRND_N :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%structural_soil_N)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%structural_soil_N,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_N :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%mineralized_soil_N)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%mineralized_soil_N,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:year:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       
@@ -20738,10 +22027,24 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
       end if
 
+      if (associated(csite%today_B_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_B_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_B_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
       if (associated(csite%today_Af_decomp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%today_Af_decomp,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'TODAY_AF_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      if (associated(csite%today_Bf_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_Bf_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_BF_DECOMP :31:hist') 
          call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
       end if
 
@@ -20766,6 +22069,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%fgc_in)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fgc_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FGC_IN :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%fsc_in)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fsc_in,nvar,igr,init,csite%paglob_id, &
@@ -20773,17 +22083,31 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%ssc_in)) then
+      if (associated(csite%stgc_in)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%ssc_in,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SSC_IN :31:hist') 
+           call vtable_edio_r(npts,csite%stgc_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STGC_IN :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%ssl_in)) then
+      if (associated(csite%stsc_in)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%ssl_in,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SSL_IN :31:hist') 
+           call vtable_edio_r(npts,csite%stsc_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STSC_IN :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%stsl_in)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%stsl_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STSL_IN :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%fgn_in)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fgn_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FGN_IN :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -20791,6 +22115,20 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fsn_in,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'FSN_IN :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%stgn_in)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%stgn_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STGN_IN :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%stsn_in)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%stsn_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STSN_IN :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -20998,6 +22336,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%B_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%B_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'B_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%f_decomp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%f_decomp,nvar,igr,init,csite%paglob_id, &
@@ -21012,10 +22357,45 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%cwd_rh)) then
+      if (associated(csite%fgc_rh)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%cwd_rh,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CWD_RH :31:hist') 
+           call vtable_edio_r(npts,csite%fgc_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FGC_RH :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%fsc_rh)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fsc_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FSC_RH :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%stgc_rh)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%stgc_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STGC_RH :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%stsc_rh)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%stsc_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STSC_RH :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%msc_rh)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%msc_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'MSC_RH :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%ssc_rh)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%ssc_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'SSC_RH :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -21211,13 +22591,58 @@ module ed_state_vars
                            ,'Sub-daily mean - Heterotrophic respiration'                   &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
-      if (associated(csite%fmean_cwd_rh          )) then
+      if (associated(csite%fmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_cwd_rh                                        &
+         call vtable_edio_r(npts,csite%fmean_fgc_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CWD_RH_PA            :31:'//trim(fast_keys)     )
+                           ,'FMEAN_FGC_RH_PA            :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Coarse woody debris respiration'             &
+                           ,'Sub-daily mean - Fast ground carbon (litter) respiration'     &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_fsc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_FSC_RH_PA            :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Fast soil carbon (litter) respiration'       &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_stgc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_stgc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_STGC_RH_PA           :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Struct. ground carbon (w.debr.) respiration' &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_stsc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_stsc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_STSC_RH_PA           :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Struct. soil carbon (w.debr.) respiration'   &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_msc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_MSC_RH_PA            :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Microbial soil carbon respiration'           &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_ssc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_SSC_RH_PA            :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Slow (humified) soil carbon respiration'     &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
       if (associated(csite%fmean_nep             )) then
@@ -21721,7 +23146,16 @@ module ed_state_vars
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
                            ,'DMEAN_A_DECOMP_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale'                             &
+                           ,'Daily mean - Decomposition scale (aboveground)'               &
+                           ,'[         --]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_B_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_B_decomp                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_B_DECOMP_PA          :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Decomposition scale (belowground)'               &
                            ,'[         --]','(ipatch)'            )
       end if
       if (associated(csite%dmean_Af_decomp       )) then
@@ -21730,7 +23164,16 @@ module ed_state_vars
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
                            ,'DMEAN_AF_DECOMP_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale with N immobilisation'       &
+                           ,'Daily mean - AG Decomposition scale with N immobilisation'    &
+                           ,'[         --]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_Bf_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_Bf_decomp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_BF_DECOMP_PA         :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - BG Decomposition scale with N immobilisation'    &
                            ,'[         --]','(ipatch)'            )
       end if
       if (associated(csite%dmean_co2_residual    )) then
@@ -21770,13 +23213,58 @@ module ed_state_vars
                            ,'Daily mean - Heterotrophic respiration'                       &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
-      if (associated(csite%dmean_cwd_rh          )) then
+      if (associated(csite%dmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_cwd_rh                                        &
+         call vtable_edio_r(npts,csite%dmean_fgc_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CWD_RH_PA            :31:'//trim(dail_keys)     )
+                           ,'DMEAN_FGC_RH_PA            :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Coarse woody debris respiration'                 &
+                           ,'Daily mean - Fast ground carbon (litter) respiration'         &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_fsc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_FSC_RH_PA            :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Fast soil carbon (litter) respiration'           &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_stgc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_stgc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_STGC_RH_PA           :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Struct. ground carbon (w.debr.) respiration'     &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_stsc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_stsc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_STSC_RH_PA           :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Struct. soil carbon (w.debr.) respiration'       &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_msc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_MSC_RH_PA            :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Microbial soil carbon respiration'               &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_ssc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_SSC_RH_PA            :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Slow (humified) soil carbon respiration'         &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
       if (associated(csite%dmean_nep             )) then
@@ -22292,13 +23780,58 @@ module ed_state_vars
                            ,'Monthly mean - Heterotrophic respiration'                     &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
-      if (associated(csite%mmean_cwd_rh          )) then
+      if (associated(csite%mmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_cwd_rh                                        &
+         call vtable_edio_r(npts,csite%mmean_fgc_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_RH_PA            :31:'//trim(eorq_keys))
+                           ,'MMEAN_FGC_RH_PA            :31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Coarse woody debris respiration'               &
+                           ,'Monthly mean - Fast ground carbon (litter) respiration'       &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_fsc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Fast soil carbon (litter) respiration'         &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_stgc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_stgc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STGC_RH_PA           :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Struct. ground carbon (w.debr.) respiration'   &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_stsc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_stsc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STSC_RH_PA           :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Struct. soil carbon (w.debr.) respiration'     &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_msc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_MSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Microbial soil carbon respiration'             &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_ssc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_SSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Slow (humified) soil carbon respiration'       &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
       if (associated(csite%mmean_nep             )) then
@@ -22742,56 +24275,119 @@ module ed_state_vars
                            ,'Monthly mean - Drainage energy loss'                          &
                            ,'[       W/m2]','(ipatch)'            )
       end if
+      if (associated(csite%mmean_fast_grnd_c     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_fast_grnd_c                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FAST_GRND_C_PA       :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Ground Carbon (Fast/Litter pool)'              &
+                           ,'[     kgC/m2]','(ipatch)'            )
+      end if
       if (associated(csite%mmean_fast_soil_c     )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_fast_soil_c                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FAST_SOIL_C          :31:'//trim(eorq_keys))
+                           ,'MMEAN_FAST_SOIL_C_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil Carbon (Fast pool)'                       &
+                           ,'Monthly mean - Soil Carbon (Fast/Litter pool)'                &
                            ,'[     kgC/m2]','(ipatch)'            )
       end if
-      if (associated(csite%mmean_slow_soil_c     )) then
+      if (associated(csite%mmean_struct_grnd_c   )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_slow_soil_c                                   &
+         call vtable_edio_r(npts,csite%mmean_struct_grnd_c                                 &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SLOW_SOIL_C          :31:'//trim(eorq_keys))
+                           ,'MMEAN_STRUCT_GRND_C_PA     :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil Carbon (Slow pool)'                       &
+                           ,'Monthly mean - Ground Carbon (Structural pool)'               &
                            ,'[     kgC/m2]','(ipatch)'            )
       end if
       if (associated(csite%mmean_struct_soil_c   )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_struct_soil_c                                 &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_STRUCT_SOIL_C        :31:'//trim(eorq_keys))
+                           ,'MMEAN_STRUCT_SOIL_C_PA     :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Carbon (Structural pool)'                 &
                            ,'[     kgC/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_struct_grnd_l   )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_struct_grnd_l                                 &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STRUCT_GRND_L_PA     :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Ground Lignin (Structural pool)'               &
+                           ,'[     kgL/m2]','(ipatch)'            )
       end if
       if (associated(csite%mmean_struct_soil_l   )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_struct_soil_l                                 &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_STRUCT_SOIL_L        :31:'//trim(eorq_keys))
+                           ,'MMEAN_STRUCT_SOIL_L_PA     :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Lignin (Structural pool)'                 &
                            ,'[     kgL/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_microbe_soil_c  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_microbe_soil_c                                &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_MICROBE_SOIL_C_PA    :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Soil Carbon (Microbial pool)'                  &
+                           ,'[     kgC/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_slow_soil_c     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_slow_soil_c                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_SLOW_SOIL_C_PA       :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Soil Carbon (Slow/Humified pool)'              &
+                           ,'[     kgC/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_fast_grnd_n     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_fast_grnd_n                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FAST_GRND_N_PA       :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Ground Nitrogen (Fast pool)'                   &
+                           ,'[     kgN/m2]','(ipatch)'            )
       end if
       if (associated(csite%mmean_fast_soil_n     )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_fast_soil_n                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FAST_SOIL_N          :31:'//trim(eorq_keys))
+                           ,'MMEAN_FAST_SOIL_N_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Nitrogen (Fast pool)'                     &
+                           ,'[     kgN/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_struct_grnd_n   )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_struct_grnd_n                                 &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STRUCT_GRND_N_PA     :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Ground Nitrogen (Structural pool)'             &
+                           ,'[     kgN/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_struct_soil_n   )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_struct_soil_n                                 &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STRUCT_SOIL_N_PA     :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Soil Nitrogen (Structural pool)'               &
                            ,'[     kgN/m2]','(ipatch)'            )
       end if
       if (associated(csite%mmean_mineral_soil_n  )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_mineral_soil_n                                &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_MINERAL_SOIL_N       :31:'//trim(eorq_keys))
+                           ,'MMEAN_MINERAL_SOIL_N_PA    :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Nitrogen (Mineralised pool)'              &
                            ,'[     kgN/m2]','(ipatch)'            )
@@ -22802,7 +24398,16 @@ module ed_state_vars
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_A_DECOMP_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale'                           &
+                           ,'Monthly mean - Decomposition scale (aboveground)'             &
+                           ,'[         --]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_B_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_B_decomp                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_B_DECOMP_PA          :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Decomposition scale (belowground)'             &
                            ,'[         --]','(ipatch)'            )
       end if
       if (associated(csite%mmean_Af_decomp       )) then
@@ -22811,7 +24416,16 @@ module ed_state_vars
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_AF_DECOMP_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
+                           ,'Monthly mean - AG Decomposition scale with N immobilisation'  &
+                           ,'[         --]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_Bf_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_Bf_decomp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BF_DECOMP_PA         :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - BG Decomposition scale with N immobilisation'  &
                            ,'[         --]','(ipatch)'            )
       end if
       if (associated(csite%mmean_co2_residual    )) then
@@ -22850,13 +24464,58 @@ module ed_state_vars
                            ,'Monthly MSSq - Heterotrophic respiration'                     &
                            ,'[ kg2/m4/yr2]','(ipatch)'            )
       end if
-      if (associated(csite%mmsqu_cwd_rh          )) then
+      if (associated(csite%mmsqu_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmsqu_cwd_rh                                        &
+         call vtable_edio_r(npts,csite%mmsqu_fgc_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CWD_RH_PA            :31:'//trim(eorq_keys))
+                           ,'MMSQU_FGC_RH_PA            :31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly MSSq - Coarse woody debris respiration'               &
+                           ,'Monthly MSSq - Fast ground carbon (litter) respiration'       &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmsqu_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmsqu_fsc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_FSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Fast soil carbon (litter) respiration'         &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmsqu_stgc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmsqu_stgc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_STGC_RH_PA           :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Struct. ground carbon (w.debr.) respiration'   &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmsqu_stsc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmsqu_stsc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_STSC_RH_PA           :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Struct. soil carbon (w.debr.) respiration'     &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmsqu_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmsqu_msc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_MSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Microbial soil carbon respiration'             &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmsqu_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmsqu_ssc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_SSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Slow (humified) soil carbon respiration'       &
                            ,'[ kg2/m4/yr2]','(ipatch)'            )
       end if
       if (associated(csite%mmsqu_nep             )) then
@@ -23062,14 +24721,59 @@ module ed_state_vars
                            ,'Mean diel - Heterotrophic respiration'                        &
                            ,'[   kg/m2/yr]','(ndcycle,ipatch)'    )
       end if
-      if (associated(csite%qmean_cwd_rh          )) then
+      if (associated(csite%qmean_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,csite%qmean_cwd_rh                                        &
+         call vtable_edio_r(npts,csite%qmean_fgc_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CWD_RH_PA           :-31:'//trim(eorq_keys)     )
+                           ,'QMEAN_FGC_RH_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Coarse woody debris respiration'                  &
-                           ,'[   kg/m2/yr]','(ndcycle,ipatch)'    )
+                           ,'Mean diel - Fast ground carbon (litter) respiration'          &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%qmean_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_fsc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_FSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Fast soil carbon (litter) respiration'            &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%qmean_stgc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_stgc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_STGC_RH_PA          :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Struct. ground carbon (w.debr.) respiration'      &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%qmean_stsc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_stsc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_STSC_RH_PA          :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Struct. soil carbon (w.debr.) respiration'        &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%qmean_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_msc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_MSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Microbial soil carbon respiration'                &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%qmean_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_ssc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_SSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Slow (humified) soil carbon respiration'          &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
       end if
       if (associated(csite%qmean_nep             )) then
          nvar = nvar+1
@@ -23521,14 +25225,59 @@ module ed_state_vars
                            ,'MSSq diel - Heterotrophic respiration'                        &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipatch)'    )
       end if
-      if (associated(csite%qmsqu_cwd_rh          )) then
+      if (associated(csite%qmsqu_fgc_rh          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,csite%qmsqu_cwd_rh                                        &
+         call vtable_edio_r(npts,csite%qmsqu_fgc_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CWD_RH_PA           :-31:'//trim(eorq_keys)     )
+                           ,'QMSQU_FGC_RH_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'MSSq diel - Coarse woody debris respiration'                  &
-                           ,'[ kg2/m4/yr2]','(ndcycle,ipatch)'    )
+                           ,'MSSq diel - Fast ground carbon (litter) respiration'          &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%qmsqu_fsc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmsqu_fsc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_FSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Fast soil carbon (litter) respiration'            &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%qmsqu_stgc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmsqu_stgc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_STGC_RH_PA          :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Struct. ground carbon (w.debr.) respiration'      &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%qmsqu_stsc_rh         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmsqu_stsc_rh                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_STSC_RH_PA          :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Struct. soil carbon (w.debr.) respiration'        &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%qmsqu_msc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmsqu_msc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_MSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Microbial soil carbon respiration'                &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%qmsqu_ssc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmsqu_ssc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_SSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Slow (humified) soil carbon respiration'          &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
       end if
       if (associated(csite%qmsqu_nep             )) then
          nvar = nvar+1
@@ -24735,11 +26484,19 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Bark thickness','[cm]','icohort') 
       end if
 
-      if (associated(cpatch%bdead)) then
+      if (associated(cpatch%bdeada)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%bdead,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BDEAD :41:hist:anal:mont:dail:year:dcyc') 
-         call metadata_edio(nvar,igr,'Biomass of structural (dead) tissues'                &
+           call vtable_edio_r(npts,cpatch%bdeada,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BDEADA :41:hist:anal:mont:dail:year:dcyc') 
+         call metadata_edio(nvar,igr,'Aboveground heartwood (dead) biomass'      &
+                           ,'[kgC/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%bdeadb)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%bdeadb,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BDEADB :41:hist:anal:mont:dail:year:dcyc') 
+         call metadata_edio(nvar,igr,'Belowground heartwood (dead) biomass'      &
                            ,'[kgC/pl]','icohort') 
       end if
 
@@ -24787,11 +26544,18 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Below-ground sapwood biomass','[kgC/pl]','icohort') 
       end if
 
-      if (associated(cpatch%bbark)) then
+      if (associated(cpatch%bbarka)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%bbark,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BBARK :41:hist:anal:year:dail') 
-         call metadata_edio(nvar,igr,'Bark biomass','[kgC/pl]','icohort') 
+           call vtable_edio_r(npts,cpatch%bbarka,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BBARKA :41:hist:anal:year:dail') 
+         call metadata_edio(nvar,igr,'Aboveground bark biomass','[kgC/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%bbarkb)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%bbarkb,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BBARKB :41:hist:anal:year:dail') 
+         call metadata_edio(nvar,igr,'Belowground bark biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%lai)) then
@@ -25113,10 +26877,17 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpatch%bark_growth_resp)) then
+      if (associated(cpatch%barka_growth_resp)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%bark_growth_resp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BARK_GROWTH_RESP :41:hist:anal') 
+           call vtable_edio_r(npts,cpatch%barka_growth_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARKA_GROWTH_RESP :41:hist:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%barkb_growth_resp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%barkb_growth_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARKB_GROWTH_RESP :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -25148,10 +26919,17 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpatch%bark_storage_resp)) then
+      if (associated(cpatch%barka_storage_resp)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%bark_storage_resp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BARK_STORAGE_RESP :41:hist:anal') 
+           call vtable_edio_r(npts,cpatch%barka_storage_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARKA_STORAGE_RESP :41:hist:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%barkb_storage_resp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%barkb_storage_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARKB_STORAGE_RESP :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -25435,10 +27213,17 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpatch%bark_maintenance)) then
+      if (associated(cpatch%barka_maintenance)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%bark_maintenance,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BARK_MAINTENANCE :41:hist:dail') 
+           call vtable_edio_r(npts,cpatch%barka_maintenance,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARKA_MAINTENANCE :41:hist:dail') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%barkb_maintenance)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%barkb_maintenance,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARKB_MAINTENANCE :41:hist:dail') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -25654,13 +27439,22 @@ module ed_state_vars
                            ,'Sub-daily mean - Belowground sapwood growth respiration'      &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%fmean_bark_growth_resp)) then
+      if (associated(cpatch%fmean_barka_growth_resp)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%fmean_bark_growth_resp                             &
+         call vtable_edio_r(npts,cpatch%fmean_barka_growth_resp                            &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_BARK_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
+                           ,'FMEAN_BARKA_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Leaf growth respiration'                     &
+                           ,'Sub-daily mean - Aboveground bark growth respiration'         &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_barkb_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_barkb_growth_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_BARKB_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Belowground bark growth respiration'         &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_storage_resp    )) then
@@ -25699,13 +27493,22 @@ module ed_state_vars
                            ,'Sub-daily mean - Belowground Sapwood Storage respiration'     &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%fmean_bark_storage_resp    )) then
+      if (associated(cpatch%fmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%fmean_bark_storage_resp                            &
+         call vtable_edio_r(npts,cpatch%fmean_barka_storage_resp                           &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_BARK_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
+                           ,'FMEAN_BARKA_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Bark Storage respiration'                    &
+                           ,'Sub-daily mean - Aboveground bark Storage respiration'        &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_barkb_storage_resp                           &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_BARKB_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Belowground bark Storage respiration'        &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_plresp          )) then
@@ -26361,13 +28164,22 @@ module ed_state_vars
                            ,'Daily mean - Belowground sapwood growth respiration'          &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%dmean_bark_growth_resp)) then
+      if (associated(cpatch%dmean_barka_growth_resp)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%dmean_bark_growth_resp                             &
+         call vtable_edio_r(npts,cpatch%dmean_barka_growth_resp                            &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_BARK_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
+                           ,'DMEAN_BARKA_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Bark growth respiration'                         &
+                           ,'Daily mean - Aboveground bark growth respiration'             &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_barkb_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_barkb_growth_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_BARKB_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Below ground bark growth respiration'            &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_storage_resp    )) then
@@ -26406,13 +28218,22 @@ module ed_state_vars
                            ,'Daily mean - Belowground Sapwood Storage respiration'         &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%dmean_bark_storage_resp    )) then
+      if (associated(cpatch%dmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%dmean_bark_storage_resp                            &
+         call vtable_edio_r(npts,cpatch%dmean_barka_storage_resp                           &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_BARK_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
+                           ,'DMEAN_BARKA_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Bark Storage respiration'                        &
+                           ,'Daily mean - Aboveground bark Storage respiration'            &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_barkb_storage_resp                           &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_BARKB_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Belowground bark Storage respiration'            &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_plresp          )) then
@@ -27001,13 +28822,22 @@ module ed_state_vars
                            ,'Monthly mean - Belowground sapwood growth respiration'        &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%mmean_bark_growth_resp)) then
+      if (associated(cpatch%mmean_barka_growth_resp)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%mmean_bark_growth_resp                             &
+         call vtable_edio_r(npts,cpatch%mmean_barka_growth_resp                            &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_BARK_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
+                           ,'MMEAN_BARKA_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Bark growth respiration'                       &
+                           ,'Monthly mean - Aboveground bark growth respiration'           &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_barkb_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_barkb_growth_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BARKB_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground bark growth respiration'           &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_storage_resp    )) then
@@ -27046,13 +28876,22 @@ module ed_state_vars
                            ,'Monthly mean - Belowground Sapwood Storage respiration'       &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%mmean_bark_storage_resp    )) then
+      if (associated(cpatch%mmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%mmean_bark_storage_resp                            &
+         call vtable_edio_r(npts,cpatch%mmean_barka_storage_resp                           &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_BARK_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
+                           ,'MMEAN_BARKA_STORAGE_RESP_CO     :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Bark Storage respiration'                      &
+                           ,'Monthly mean - Aboveground bark Storage respiration'          &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_barkb_storage_resp                           &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BARKB_STORAGE_RESP_CO     :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground bark Storage respiration'          &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_plresp          )) then
@@ -27538,13 +29377,22 @@ module ed_state_vars
                            ,'Monthly mean - Root biomass'                                  &
                            ,'[     kgC/pl]','(icohort)'            )
       end if
-      if (associated(cpatch%mmean_bbark           )) then
+      if (associated(cpatch%mmean_bbarka          )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%mmean_bbark                                        &
+         call vtable_edio_r(npts,cpatch%mmean_bbarka                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_BBARK_CO             :41:'//trim(eorq_keys))
+                           ,'MMEAN_BBARKA_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Bark biomass'                                  &
+                           ,'Monthly mean - Aboveground bark biomass'                      &
+                           ,'[     kgC/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_bbarkb          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_bbarkb                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BBARKB_CO            :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground bark biomass'                      &
                            ,'[     kgC/pl]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_balive          )) then
@@ -27583,13 +29431,22 @@ module ed_state_vars
                            ,'Monthly mean - Root maintenance rate'                         &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%mmean_bark_maintenance)) then
+      if (associated(cpatch%mmean_barka_maintenance)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%mmean_bark_maintenance                             &
+         call vtable_edio_r(npts,cpatch%mmean_barka_maintenance                            &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_BARK_MAINTENANCE_CO     :41:'//trim(eorq_keys))
+                           ,'MMEAN_BARKA_MAINTENANCE_CO    :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Bark maintenance rate'                         &
+                           ,'Monthly mean - Aboveground bark maintenance rate'             &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_barkb_maintenance)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_barkb_maintenance                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BARKB_MAINTENANCE_CO    :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground bark maintenance rate'             &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_drop       )) then
@@ -27889,13 +29746,22 @@ module ed_state_vars
                            ,'Mean diel - Belowground sapwood growth respiration'           &
                            ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
-      if (associated(cpatch%qmean_bark_growth_resp)) then
+      if (associated(cpatch%qmean_barka_growth_resp)) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%qmean_bark_growth_resp                             &
+         call vtable_edio_r(npts,cpatch%qmean_barka_growth_resp                            &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_BARK_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
+                           ,'QMEAN_BARKA_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Bark growth respiration'                          &
+                           ,'Mean diel - Aboveground bark growth respiration'              &
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
+      end if
+      if (associated(cpatch%qmean_barkb_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_barkb_growth_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_BARKB_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Belowground bark growth respiration'              &
                            ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
        if (associated(cpatch%qmean_leaf_storage_resp    )) then
@@ -27934,13 +29800,22 @@ module ed_state_vars
                            ,'Mean diel - Belowground Sapwood Storage respiration'          &
                            ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
-      if (associated(cpatch%qmean_bark_storage_resp    )) then
+      if (associated(cpatch%qmean_barka_storage_resp    )) then
          nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%qmean_bark_storage_resp                            &
+         call vtable_edio_r(npts,cpatch%qmean_barka_storage_resp                           &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_BARK_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
+                           ,'QMEAN_BARKA_STORAGE_RESP_CO    :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Bark Storage respiration'                         &
+                           ,'Mean diel - Aboveground bark Storage respiration'             &
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
+      end if
+      if (associated(cpatch%qmean_barkb_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_barkb_storage_resp                           &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_BARKB_STORAGE_RESP_CO    :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Belowground bark Storage respiration'             &
                            ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_plresp          )) then

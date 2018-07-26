@@ -513,32 +513,40 @@ module rk4_misc
          !---------------------------------------------------------------------------------!
          !     The following variables are in kgC/plant/day, convert them to umol/m2/s.    !
          !---------------------------------------------------------------------------------!
-         targetp%leaf_growth_resp (ico) = dble(cpatch%leaf_growth_resp (ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%root_growth_resp (ico) = dble(cpatch%root_growth_resp (ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%sapa_growth_resp (ico) = dble(cpatch%sapa_growth_resp (ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%sapb_growth_resp (ico) = dble(cpatch%sapb_growth_resp (ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%bark_growth_resp (ico) = dble(cpatch%bark_growth_resp (ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%leaf_growth_resp  (ico) = dble(cpatch%leaf_growth_resp (ico))             &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%root_growth_resp  (ico) = dble(cpatch%root_growth_resp (ico))             &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%sapa_growth_resp  (ico) = dble(cpatch%sapa_growth_resp (ico))             &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%sapb_growth_resp  (ico) = dble(cpatch%sapb_growth_resp  (ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%barka_growth_resp (ico) = dble(cpatch%barka_growth_resp (ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%barkb_growth_resp (ico) = dble(cpatch%barkb_growth_resp (ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
 
-         targetp%leaf_storage_resp(ico) = dble(cpatch%leaf_storage_resp(ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%root_storage_resp(ico) = dble(cpatch%root_storage_resp(ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%sapa_storage_resp(ico) = dble(cpatch%sapa_storage_resp(ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%sapb_storage_resp(ico) = dble(cpatch%sapb_storage_resp(ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-         targetp%bark_storage_resp(ico) = dble(cpatch%bark_storage_resp(ico))              &
-                                        * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%leaf_storage_resp (ico) = dble(cpatch%leaf_storage_resp (ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%root_storage_resp (ico) = dble(cpatch%root_storage_resp (ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%sapa_storage_resp (ico) = dble(cpatch%sapa_storage_resp (ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%sapb_storage_resp (ico) = dble(cpatch%sapb_storage_resp (ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%barka_storage_resp(ico) = dble(cpatch%barka_storage_resp(ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+         targetp%barkb_storage_resp(ico) = dble(cpatch%barkb_storage_resp(ico))            &
+                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
       end do
 
       !----- Heterotrophic respiration terms. ---------------------------------------------!
-      targetp%cwd_rh = dble(sourcesite%cwd_rh(ipa))
-      targetp%rh     = dble(sourcesite%rh    (ipa))
+      targetp%fgc_rh  = dble(sourcesite%fgc_rh (ipa))
+      targetp%fsc_rh  = dble(sourcesite%fsc_rh (ipa))
+      targetp%stgc_rh = dble(sourcesite%stgc_rh(ipa))
+      targetp%stsc_rh = dble(sourcesite%stsc_rh(ipa))
+      targetp%msc_rh  = dble(sourcesite%msc_rh (ipa))
+      targetp%ssc_rh  = dble(sourcesite%ssc_rh (ipa))
 
       return
    end subroutine copy_patch_init_carbon
@@ -3449,12 +3457,14 @@ module rk4_misc
       real                         :: root_growth_resp
       real                         :: sapa_growth_resp
       real                         :: sapb_growth_resp
-      real                         :: bark_growth_resp
+      real                         :: barka_growth_resp
+      real                         :: barkb_growth_resp
       real                         :: leaf_storage_resp
       real                         :: root_storage_resp
       real                         :: sapa_storage_resp
       real                         :: sapb_storage_resp
-      real                         :: bark_storage_resp
+      real                         :: barka_storage_resp
+      real                         :: barkb_storage_resp
       real                         :: pss_lai
       real                         :: pss_wai
       !------------------------------------------------------------------------------------!
@@ -3488,18 +3498,19 @@ module rk4_misc
       write (unit=*,fmt='(80a)') ('-',k=1,80)
       write (unit=*,fmt='(a)'  ) 'Leaf information (only the resolvable ones shown): '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),10(a12,1x))')                                           &
+      write (unit=*,fmt='(2(a7,1x),11(a12,1x))')                                           &
             '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH'               &
-                               ,'       BDEAD','       BLEAF',' LEAF_ENERGY'               &
-                               ,'  LEAF_WATER','   LEAF_HCAP','   LEAF_TEMP'               &
-                               ,'   LEAF_FLIQ'
+                               ,'      BDEADA','      BDEADB','       BLEAF'               &
+                               ,' LEAF_ENERGY','  LEAF_WATER','   LEAF_HCAP'               &
+                               ,'   LEAF_TEMP','   LEAF_FLIQ'
       do ico = 1,cpatch%ncohorts
          if (cpatch%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),10(es12.4,1x))')                                   &
+            write(unit=*,fmt='(2(i7,1x),11(es12.4,1x))')                                   &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
-                 ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)     &
-                 ,cpatch%bleaf(ico),cpatch%leaf_energy(ico),cpatch%leaf_water(ico)         &
-                 ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico)
+                 ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdeada(ico)    &
+                 ,cpatch%bdeadb(ico),cpatch%bleaf(ico),cpatch%leaf_energy(ico)             &
+                 ,cpatch%leaf_water(ico),cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)       &
+                 ,cpatch%leaf_fliq(ico)
          end if
       end do
       write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                            &
@@ -3513,42 +3524,46 @@ module rk4_misc
                  ,cpatch%gpp(ico),cpatch%leaf_respiration(ico)
          end if
       end do
-      write (unit=*,fmt='(2(a7,1x),2(a12,1x),10(a17,1x))')                                 &
+      write (unit=*,fmt='(2(a7,1x),2(a12,1x),12(a17,1x))')                                 &
             '    PFT','KRDEPTH','         LAI','   ROOT_RESP'                              &
            ,'  LEAF_STORE_RESP','  ROOT_STORE_RESP','  SAPA_STORE_RESP'                    &
-           ,'  SAPB_STORE_RESP','  BARK_STORE_RESP',' LEAF_GROWTH_RESP'                    &
-           ,' ROOT_GROWTH_RESP',' SAPA_GROWTH_RESP',' SAPB_GROWTH_RESP'                    &
-           ,' BARK_GROWTH_RESP'
+           ,'  SAPB_STORE_RESP',' BARKA_STORE_RESP',' BARKB_STORE_RESP'                    &
+           ,' LEAF_GROWTH_RESP',' ROOT_GROWTH_RESP',' SAPA_GROWTH_RESP'                    &
+           ,' SAPB_GROWTH_RESP','BARKA_GROWTH_RESP','BARKB_GROWTH_RESP'
       do ico = 1,cpatch%ncohorts
          if (cpatch%leaf_resolvable(ico)) then
-            leaf_growth_resp  = cpatch%leaf_growth_resp(ico) * cpatch%nplant(ico)          &
-                              / (day_sec * umol_2_kgC)
-            root_growth_resp  = cpatch%root_growth_resp(ico) * cpatch%nplant(ico)          &
-                              / (day_sec * umol_2_kgC)
-            sapa_growth_resp  = cpatch%sapa_growth_resp(ico) * cpatch%nplant(ico)          &
-                              / (day_sec * umol_2_kgC)
-            sapb_growth_resp  = cpatch%sapb_growth_resp(ico) * cpatch%nplant(ico)          &
-                              / (day_sec * umol_2_kgC)
-            bark_growth_resp  = cpatch%bark_growth_resp(ico) * cpatch%nplant(ico)          &
-                              / (day_sec * umol_2_kgC)
-            leaf_storage_resp = cpatch%leaf_storage_resp(ico) * cpatch%nplant(ico)         &
-                              / (day_sec * umol_2_kgC)
-            root_storage_resp = cpatch%root_storage_resp(ico) * cpatch%nplant(ico)         &
-                              / (day_sec * umol_2_kgC)
-            sapa_storage_resp = cpatch%sapa_storage_resp(ico) * cpatch%nplant(ico)         &
-                              / (day_sec * umol_2_kgC)
-            sapb_storage_resp = cpatch%sapb_storage_resp(ico) * cpatch%nplant(ico)         &
-                              / (day_sec * umol_2_kgC)
-            bark_storage_resp = cpatch%bark_storage_resp(ico) * cpatch%nplant(ico)         &
-                              / (day_sec * umol_2_kgC)
+            leaf_growth_resp   = cpatch%leaf_growth_resp  (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            root_growth_resp   = cpatch%root_growth_resp  (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            sapa_growth_resp   = cpatch%sapa_growth_resp  (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            sapb_growth_resp   = cpatch%sapb_growth_resp  (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            barka_growth_resp  = cpatch%barka_growth_resp (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            barkb_growth_resp  = cpatch%barkb_growth_resp (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            leaf_storage_resp  = cpatch%leaf_storage_resp (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            root_storage_resp  = cpatch%root_storage_resp (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            sapa_storage_resp  = cpatch%sapa_storage_resp (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            sapb_storage_resp  = cpatch%sapb_storage_resp (ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            barka_storage_resp = cpatch%barka_storage_resp(ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
+            barkb_storage_resp = cpatch%barkb_storage_resp(ico) * cpatch%nplant(ico)       &
+                               / (day_sec * umol_2_kgC)
 
-            write(unit=*,fmt='(2(i7,1x),2(es12.5,1x),10(es17.5,1x))')                      &
-                   cpatch%pft(ico), cpatch%krdepth(ico)                                    &
-                 , cpatch%lai(ico),cpatch%root_respiration(ico)                            &
-                 , leaf_storage_resp, root_storage_resp, sapa_storage_resp                 &
-                 , sapb_storage_resp, bark_storage_resp, leaf_growth_resp                  &
-                 , root_growth_resp , sapa_growth_resp , sapb_growth_resp                  &
-                 , bark_growth_resp
+            write(unit=*,fmt='(2(i7,1x),2(es12.5,1x),12(es17.5,1x))')                      &
+                    cpatch%pft(ico)  ,  cpatch%krdepth(ico)                                &
+                 ,  cpatch%lai(ico)  ,  cpatch%root_respiration(ico)                       &
+                 ,  leaf_storage_resp,  root_storage_resp,  sapa_storage_resp              &
+                 ,  sapb_storage_resp, barka_storage_resp, barkb_storage_resp              &
+                 ,   leaf_growth_resp,   root_growth_resp,   sapa_growth_resp              &
+                 ,   sapb_growth_resp,  barka_growth_resp,  barkb_growth_resp
          end if
       end do
       write (unit=*,fmt='(a)'  ) ' '
@@ -3556,29 +3571,33 @@ module rk4_misc
       write (unit=*,fmt='(80a)') ('-',k=1,80)
       write (unit=*,fmt='(a)'  ) 'Wood information (only the resolvable ones shown): '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),10(a12,1x))')                                           &
+      write (unit=*,fmt='(2(a7,1x),12(a12,1x))')                                           &
             '    PFT','KRDEPTH','      NPLANT','         WAI','         DBH'               &
-                               ,'       BDEAD','   BSAPWOODA','   BSAPWOODB'               &
-                               ,'       BBARK',' WOOD_ENERGY','   WOOD_TEMP'               &
-                               ,'  WOOD_WATER'
+                               ,'      BDEADA','      BDEADB','   BSAPWOODA'               &
+                               ,'   BSAPWOODB','      BBARKA','      BBARKB'               &
+                               ,' WOOD_ENERGY','   WOOD_TEMP','  WOOD_WATER'
       do ico = 1,cpatch%ncohorts
          if (cpatch%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),10(es12.4,1x))')                                   &
+            write(unit=*,fmt='(2(i7,1x),12(es12.4,1x))')                                   &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
-                 ,cpatch%nplant(ico),cpatch%wai(ico),cpatch%dbh(ico),cpatch%bdead(ico)     &
-                 ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico),cpatch%bbark(ico)            &
-                 ,cpatch%wood_energy(ico),cpatch%wood_temp(ico),cpatch%wood_water(ico)
+                 ,cpatch%nplant(ico),cpatch%wai(ico),cpatch%dbh(ico),cpatch%bdeada(ico)    &
+                 ,cpatch%bdeadb(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)           &
+                 ,cpatch%bbarka(ico),cpatch%bbarkb(ico),cpatch%wood_energy(ico)            &
+                 ,cpatch%wood_temp(ico),cpatch%wood_water(ico)
          end if
       end do
       write (unit=*,fmt='(a)'  ) ' '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-      write (unit=*,fmt='(8(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'       &
-                                       ,'          RH','      CWD_RH','AVGDAILY_TMP'       &
-                                       ,'     SUM_CHD','     SUM_DGD'
-      write (unit=*,fmt='(i12,1x,7(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)      &
-            ,csite%area(ipa),csite%rh(ipa),csite%cwd_rh(ipa),csite%avg_daily_temp(ipa)     &
-            ,csite%sum_chd(ipa),csite%sum_dgd(ipa)
+      write (unit=*,fmt='(13(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'      &
+                                        ,'          RH','      FGC_RH','      FSC_RH'      &
+                                        ,'     STGC_RH','     STSC_RH','      MSC_RH'      &
+                                        ,'      SSC_RH','AVGDAILY_TMP','     SUM_CHD'      &
+                                        ,'     SUM_DGD'
+      write (unit=*,fmt='(i12,1x,12(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)     &
+            ,csite%area(ipa),csite%rh(ipa),csite%fgc_rh(ipa),csite%fsc_rh(ipa)             &
+            ,csite%stgc_rh(ipa),csite%stsc_rh(ipa),csite%msc_rh(ipa),csite%ssc_rh(ipa)     &
+            ,csite%avg_daily_temp(ipa),csite%sum_chd(ipa),csite%sum_dgd(ipa)
 
       write (unit=*,fmt='(a)'  ) ' '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3750,34 +3769,37 @@ module rk4_misc
       write (unit=*,fmt='(80a)') ('=',k=1,80)
       write (unit=*,fmt='(a)'  ) 'Leaf information (only those resolvable are shown): '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                            &
+      write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                            &
             '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH'               &
-                               ,'       BDEAD','       BLEAF','     FS_OPEN'               &
-                               ,'         FSW','         FSN'
+                               ,'      BDEADA','      BDEADB','       BLEAF'               &
+                               ,'     FS_OPEN','         FSW','         FSN'
       do ico = 1,cpatch%ncohorts
          if (cpatch%leaf_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))')                                    &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
-                 ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)    &
-                 ,cpatch%bleaf (ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
+                 ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdeada(ico)   &
+                 ,cpatch%bdeadb(ico),cpatch%bleaf (ico),cpatch%fs_open(ico)                &
+                 ,cpatch%fsw(ico),cpatch%fsn(ico)
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),4(a12,1x),10(a17,1x))')                                 &
+      write (unit=*,fmt='(2(a7,1x),4(a12,1x),12(a17,1x))')                                 &
          '    PFT','KRDEPTH','         LAI','         GPP','   LEAF_RESP','   ROOT_RESP'   &
                             ,'   LEAF_STOR_RESP','   ROOT_STOR_RESP','   SAPA_STOR_RESP'   &
-                            ,'   SAPB_STOR_RESP','   BARK_STOR_RESP',' LEAF_GROWTH_RESP'   &
-                            ,' ROOT_GROWTH_RESP',' SAPA_GROWTH_RESP',' SAPB_GROWTH_RESP'   &
-                            ,' BARK_GROWTH_RESP'
+                            ,'   SAPB_STOR_RESP','  BARKA_STOR_RESP','  BARKB_STOR_RESP'   &
+                            ,' LEAF_GROWTH_RESP',' ROOT_GROWTH_RESP',' SAPA_GROWTH_RESP'   &
+                            ,' SAPB_GROWTH_RESP','BARKA_GROWTH_RESP','BARKB_GROWTH_RESP'
       do ico = 1,cpatch%ncohorts
          if (cpatch%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),4(es12.4,1x),10(es17.4,1x))')                         &
+            write(unit=*,fmt='(2(i7,1x),4(es12.4,1x),12(es17.4,1x))')                      &
                cpatch%pft(ico), cpatch%krdepth(ico)                                        &
               ,y%lai(ico),y%gpp(ico),y%leaf_resp(ico),y%root_resp(ico)                     &
-              ,y%leaf_storage_resp(ico),y%root_storage_resp(ico),y%sapa_storage_resp(ico)  &
-              ,y%sapb_storage_resp(ico),y%bark_storage_resp(ico),y%leaf_growth_resp(ico)   &
-              ,y%root_growth_resp(ico),y%sapa_growth_resp(ico) ,y%sapb_growth_resp(ico)    &
-              ,y%bark_growth_resp(ico)
+              ,y%leaf_storage_resp (ico),y%root_storage_resp (ico)                         &
+              ,y%sapa_storage_resp (ico),y%sapb_storage_resp (ico)                         &
+              ,y%barka_storage_resp(ico),y%barkb_storage_resp(ico)                         &
+              ,y%leaf_growth_resp  (ico),y%root_growth_resp  (ico)                         &
+              ,y%sapa_growth_resp  (ico),y%sapb_growth_resp  (ico)                         &
+              ,y%barka_growth_resp (ico),y%barkb_growth_resp (ico)
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3837,15 +3859,17 @@ module rk4_misc
       write (unit=*,fmt='(80a)') ('=',k=1,80)
       write (unit=*,fmt='(a)'  ) 'Wood information (only those resolvable are shown): '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                            &
+      write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                            &
             '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH'               &
-                ,'       BDEAD','   BSAPWOODA','   BSAPWOODB','       BBARK'
+                ,'      BDEADA','      BDEADB','   BSAPWOODA','   BSAPWOODB'               &
+                ,'      BBARKA','      BBARKB'
       do ico = 1,cpatch%ncohorts
          if (cpatch%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))')                                    &
+            write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))')                                    &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
-                 ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)    &
-                 ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico),cpatch%bbark(ico)
+                 ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdeada(ico)   &
+                 ,cpatch%bdeadb(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)           &
+                 ,cpatch%bbarka(ico),cpatch%bbarkb(ico)
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3919,8 +3943,10 @@ module rk4_misc
 
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-      write (unit=*,fmt='(2(a12,1x))')  '          RH','      CWD_RH'
-      write (unit=*,fmt='(2(es12.4,1x))') y%rh,y%cwd_rh
+      write (unit=*,fmt='(6(a12,1x))')  '      FGC_RH','      FSC_RH','     STGC_RH'       &
+                                       ,'     STSC_RH','      MSC_RH','      SSC_RH'
+      write (unit=*,fmt='(6(es12.4,1x))') y%fgc_rh,y%fsc_rh,y%stgc_rh,y%stsc_rh,y%msc_rh   &
+                                         ,y%ssc_rh
 
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -4023,7 +4049,6 @@ module rk4_misc
       real(kind=8)                       :: sum_lai
       real(kind=8)                       :: sum_wai
       real(kind=8)                       :: sum_plresp
-      real(kind=8)                       :: soil_rh
       real(kind=8)                       :: qintercepted
       real(kind=8)                       :: avg_leaf_temp
       real(kind=8)                       :: avg_leaf_fliq
@@ -4038,12 +4063,12 @@ module rk4_misc
       real(kind=8)                       :: can_theiv
       real(kind=8)                       :: can_vpdef
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: phfmt='(86(a,1x))'
+      character(len=10), parameter :: phfmt='(89(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),76(es13.6,1x))'
-      character(len=10), parameter :: chfmt='(64(a,1x))'
+                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),79(es13.6,1x))'
+      character(len=10), parameter :: chfmt='(66(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),56(es13.6,1x))'
+                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),58(es13.6,1x))'
       !------------------------------------------------------------------------------------!
 
 
@@ -4069,7 +4094,6 @@ module rk4_misc
       sum_plresp      = 0.d0
       sum_lai         = 0.d0
       sum_wai         = 0.d0
-      soil_rh         = initp%rh-initp%cwd_rh
       cpatch => csite%patch(ipa)
       do ico=1,cpatch%ncohorts
          if (initp%leaf_resolvable(ico)) then
@@ -4080,16 +4104,18 @@ module rk4_misc
             sum_gpp         = sum_gpp         + initp%gpp(ico)
             sum_plresp      = sum_plresp      + initp%leaf_resp(ico)                       &
                                               + initp%root_resp(ico)                       &
-                                              + initp%leaf_growth_resp(ico)                &
-                                              + initp%root_growth_resp(ico)                &
-                                              + initp%sapa_growth_resp(ico)                &
-                                              + initp%sapb_growth_resp(ico)                &
-                                              + initp%bark_growth_resp(ico)                &
-                                              + initp%leaf_storage_resp(ico)               &
-                                              + initp%root_storage_resp(ico)               &
-                                              + initp%sapa_storage_resp(ico)               &
-                                              + initp%sapb_storage_resp(ico)               &
-                                              + initp%bark_storage_resp(ico)
+                                              + initp%leaf_growth_resp  (ico)              &
+                                              + initp%root_growth_resp  (ico)              &
+                                              + initp%sapa_growth_resp  (ico)              &
+                                              + initp%sapb_growth_resp  (ico)              &
+                                              + initp%barka_growth_resp (ico)              &
+                                              + initp%barkb_growth_resp (ico)              &
+                                              + initp%leaf_storage_resp (ico)              &
+                                              + initp%root_storage_resp (ico)              &
+                                              + initp%sapa_storage_resp (ico)              &
+                                              + initp%sapb_storage_resp (ico)              &
+                                              + initp%barka_storage_resp(ico)              &
+                                              + initp%barkb_storage_resp(ico)
          end if
          if (initp%wood_resolvable(ico)) then
             !----- Integrate vegetation properties using m2gnd rather than plant. ---------!
@@ -4206,11 +4232,12 @@ module rk4_misc
                                   , '       TRANSP' , '        WSHED', '    INTERCEPT'     &
                                   , '  THROUGHFALL' , '       HFLXGC', '       HFLXLC'     &
                                   , '       HFLXWC' , '       HFLXAC', '       CFLXAC'     &
-                                  , '       CFLXST' , '        CWDRH', '       SOILRH'     &
-                                  , '          GPP' , '       PLRESP', ' PAR.BEAM.TOP'     &
-                                  , ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'     &
-                                  , ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'     &
-                                  , ' NIR.DIFF.BOT'
+                                  , '       CFLXST' , '       FGC.RH', '       FSC.RH'     &
+                                  , '      STGC.RH' , '      STSC.RH', '       MSC.RH'     &
+                                  , '       SSC.RH' , '          GPP', '       PLRESP'     &
+                                  , ' PAR.BEAM.TOP' , ' PAR.DIFF.TOP', ' NIR.BEAM.TOP'     &
+                                  , ' NIR.DIFF.TOP' , ' PAR.BEAM.BOT', ' PAR.DIFF.BOT'     &
+                                  , ' NIR.BEAM.BOT' , ' NIR.DIFF.BOT'
          close (unit=83,status='keep')
       end if
       !------------------------------------------------------------------------------------!
@@ -4246,13 +4273,12 @@ module rk4_misc
                    , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
                    , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
                    , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
-                   , fluxp%flx_carbon_st   , initp%cwd_rh          , soil_rh               &
-                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
-                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
-                   , par_b_beam            , par_b_diff            , nir_b_beam            &
-                   , nir_b_diff            
-
-
+                   , fluxp%flx_carbon_st   , initp%fgc_rh          , initp%fsc_rh          &
+                   , initp%stgc_rh         , initp%stsc_rh         , initp%msc_rh          &
+                   , initp%ssc_rh          , sum_gpp               , sum_plresp            &
+                   , rk4site%par_beam      , rk4site%par_diffuse   , rk4site%nir_beam      &
+                   , rk4site%nir_diffuse   , par_b_beam            , par_b_diff            &
+                   , nir_b_beam            , nir_b_diff            
       close(unit=83,status='keep')
       !------------------------------------------------------------------------------------!
 
@@ -4308,15 +4334,13 @@ module rk4_misc
                            ,'         WOOD_GBH', '         WOOD_GBW', '         GSW_OPEN'  &
                            ,'         GSW_CLOS', '              GPP', '        LEAF_RESP'  &
                            ,'        ROOT_RESP', ' LEAF_GROWTH_RESP', ' ROOT_GROWTH_RESP'  &
-                           ,' SAPA_GROWTH_RESP', ' SAPB_GROWTH_RESP', ' BARK_GROWTH_RESP'  &
-                           ,'  LEAF_STORE_RESP', '  ROOT_STORE_RESP', '  SAPA_STORE_RESP'  &
-                           ,'  SAPB_STORE_RESP', '  BARK_STORE_RESP', '         RSHORT_L'  &
-                           ,'          RLONG_L', '         RSHORT_W', '          RLONG_W'  &
-                           ,'           HFLXLC', '           HFLXWC', '          QWFLXLC'  &
-                           ,'          QWFLXWC', '           QWSHED', '          QTRANSP'  &
-                           ,'     QINTERCEPTED'
-                               
-
+                           ,' SAPA_GROWTH_RESP', ' SAPB_GROWTH_RESP', 'BARKA_GROWTH_RESP'  &
+                           ,'BARKB_GROWTH_RESP', '  LEAF_STORE_RESP', '  ROOT_STORE_RESP'  &
+                           ,'  SAPA_STORE_RESP', '  SAPB_STORE_RESP', ' BARKA_STORE_RESP'  &
+                           ,' BARKB_STORE_RESP', '         RSHORT_L', '          RLONG_L'  &
+                           ,'         RSHORT_W', '          RLONG_W', '           HFLXLC'  &
+                           ,'           HFLXWC', '          QWFLXLC', '          QWFLXWC'  &
+                           ,'           QWSHED', '          QTRANSP', '     QINTERCEPTED'
             close (unit=84,status='keep')
          end if
          !---------------------------------------------------------------------------------!
@@ -4352,10 +4376,11 @@ module rk4_misc
                       , initp%gpp(ico)                , initp%leaf_resp(ico)               &
                       , initp%root_resp(ico)          , initp%leaf_growth_resp(ico)        &
                       , initp%root_growth_resp(ico)   , initp%sapa_growth_resp(ico)        &
-                      , initp%sapb_growth_resp(ico)   , initp%bark_growth_resp(ico)        &
-                      , initp%leaf_storage_resp(ico)  , initp%root_storage_resp(ico)       &
-                      , initp%sapa_storage_resp(ico)  , initp%sapb_storage_resp(ico)       &
-                      , initp%bark_storage_resp(ico)  , initp%rshort_l(ico)                &
+                      , initp%sapb_growth_resp(ico)   , initp%barka_growth_resp(ico)       &
+                      , initp%barkb_growth_resp(ico)  , initp%leaf_storage_resp(ico)       &
+                      , initp%root_storage_resp(ico)  , initp%sapa_storage_resp(ico)       &
+                      , initp%sapb_storage_resp(ico)  , initp%barka_storage_resp(ico)      &
+                      , initp%barkb_storage_resp(ico) , initp%rshort_l(ico)                &
                       , initp%rlong_l(ico)            , initp%rshort_w(ico)                &
                       , initp%rlong_w(ico)            , fluxp%cfx_hflxlc(ico)              &
                       , fluxp%cfx_hflxwc(ico)         , fluxp%cfx_qwflxlc(ico)             &

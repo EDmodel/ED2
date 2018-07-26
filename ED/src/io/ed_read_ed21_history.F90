@@ -55,6 +55,7 @@ subroutine read_ed21_history_file
                                   , memoffs                 & ! intent(in)
                                   , memsize                 ! ! intent(in)
    use allometry           , only : area_indices            & ! function
+                                  , ed_balive               & ! function
                                   , ed_biomass              & ! function
                                   , size2bt                 & ! function
                                   , size2xb                 & ! function
@@ -64,6 +65,9 @@ subroutine read_ed21_history_file
                                   , size2bd                 ! ! function
    use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
    use disturb_coms        , only : ianth_disturb           ! ! intent(in)
+   use decomp_coms         , only : agf_fsc                 & ! intent(in)
+                                  , agf_stsc                & ! intent(in)
+                                  , c2n_structural          ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
    use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
                                   , hdf_getslab_r           ! ! sub-routine
@@ -118,6 +122,7 @@ subroutine read_ed21_history_file
    real                                :: minrad
    real                                :: currad
    real                                :: elim_nplant
+   real                                :: bdeadx
    real                                :: elim_lai
    logical                             :: foundvar
    !----- External function. --------------------------------------------------------------!
@@ -495,17 +500,55 @@ subroutine read_ed21_history_file
                                     ,dsetrank,iparallel,.true.,foundvar)
 
                   call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '               &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '         &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
+                  !----- Try to read the ground carbon. -----------------------------------!
+                  call hdf_getslab_r(csite%fast_grnd_C       ,'FAST_GRND_C '               &
+                                    ,dsetrank,iparallel,.false.,foundvar)
+                  if (foundvar) then
+                     !----- New version, with ground/underground and C/N separation. ------!
+                     call hdf_getslab_r(csite%structural_grnd_C ,'STRUCTURAL_GRND_C '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%structural_grnd_L ,'STRUCTURAL_GRND_L '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '       &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%fast_grnd_N       ,'FAST_GRND_N '            &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%structural_grnd_N ,'STRUCTURAL_GRND_N '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%structural_soil_N ,'STRUCTURAL_SOIL_N '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     !---------------------------------------------------------------------!
+                  else
+                     !----- Old version, split above- and below-ground pools. -------------!
+                     csite%fast_grnd_C      (:) =    agf_fsc    * csite%fast_soil_C      (:)
+                     csite%fast_grnd_N      (:) =    agf_fsc    * csite%fast_soil_N      (:)
+                     csite%structural_grnd_C(:) =    agf_stsc   * csite%structural_soil_C(:)
+                     csite%structural_grnd_L(:) =    agf_stsc   * csite%structural_soil_L(:)
+                     csite%fast_soil_C      (:) = (1.-agf_fsc)  * csite%fast_soil_C      (:)
+                     csite%fast_soil_N      (:) = (1.-agf_fsc)  * csite%fast_soil_N      (:)
+                     csite%structural_soil_C(:) = (1.-agf_stsc) * csite%structural_soil_C(:)
+                     csite%structural_soil_L(:) = (1.-agf_stsc) * csite%structural_soil_L(:)
+                     csite%microbial_soil_C (:) = 0.0
+                     !---------------------------------------------------------------------!
+
+                     !----- Assume stoichiometry for other nitrogen pools. ----------------!
+                     csite%structural_grnd_N(:) = csite%structural_grnd_C(:)               &
+                                                / c2n_structural
+                     csite%structural_soil_N(:) = csite%structural_soil_C(:)               &
+                                                / c2n_structural
+                     !---------------------------------------------------------------------!
+                  end if
                   !------------------------------------------------------------------------!
 
 
@@ -585,12 +628,23 @@ subroutine read_ed21_history_file
 
                         call hdf_getslab_r(cpatch%dbh   ,'DBH '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_r(cpatch%bdead ,'BDEAD '                          &
-                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_i(cpatch%pft   ,'PFT '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%nplant,'NPLANT '                         &
                                           ,dsetrank,iparallel,.true.,foundvar)
+                        call hdf_getslab_r(cpatch%bdeada,'BDEADA '                         &
+                                          ,dsetrank,iparallel,.false.,foundvar)
+                        call hdf_getslab_r(cpatch%bdeadb,'BDEADB '                         &
+                                          ,dsetrank,iparallel,.false.,foundvar)
+                        if (.not. foundvar) then
+                           call hdf_getslab_r(cpatch%bdeada,'BDEAD '                       &
+                                             ,dsetrank,iparallel,.true.,foundvar)
+                           do ico=1,cpatch%ncohorts
+                              ipft               = cpatch%pft(ico)
+                              cpatch%bdeadb(ico) = (1.0-agf_bs(ipft)) * cpatch%bdeada(ico)
+                              cpatch%bdeada(ico) =      agf_bs(ipft)  * cpatch%bdeada(ico)
+                           end do
+                        end if
 
                         !------------------------------------------------------------------!
                         !    Find derived properties from Bdead.  In the unlikely case     !
@@ -599,36 +653,52 @@ subroutine read_ed21_history_file
                         !------------------------------------------------------------------!
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
+
+                           !---------------------------------------------------------------!
+                           !     Make sure the variables are bounded (even though they may !
+                           ! be overwritten).                                              !
+                           !---------------------------------------------------------------!
+                           cpatch%dbh   (ico) = max(cpatch%dbh(ico),min_dbh(ipft))
+                           cpatch%bdeada(ico) = max( cpatch%bdeada(ico)                    &
+                                                   , agf_bs(ipft) * min_bdead(ipft) )
+                           cpatch%bdeadb(ico) = max( cpatch%bdeadb(ico)                    &
+                                                   , (1.-agf_bs(ipft)) * min_bdead(ipft) )
+                           bdeadx             = cpatch%bdeada(ico) + cpatch%bdeadb(ico)
+                           !---------------------------------------------------------------!
+
+
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
                            if (iallom == 3) then
                               !----- New allometry, initialise with DBH. ------------------!
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
-                                                         ,ipft)
-                           elseif (igrass == 1 .and. is_grass(ipft)                        &
-                                           .and. cpatch%bdead(ico)>0.0) then
+                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
+                                                          ,cpatch%hite(ico),ipft)
+                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
+                           elseif ( igrass == 1 .and. is_grass(ipft)                       &
+                                                .and. cpatch%bdeada(ico) > 0.0 ) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
                               ! is set to zero and the mass is discarded                   !
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = 0.0
+                              cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdeada(ico) = 0.0
+                              cpatch%bdeadb(ico) = 0.0
 
-                           else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
+                           else if (bdeadx > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
-                              cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
-                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)           &
+                                                             ,cpatch%bdeadb(ico) )
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
                            else
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
-                                                         ,ipft)
+                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
+                                                          ,cpatch%hite(ico),ipft)
+                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                            end if
                            !---------------------------------------------------------------!
 
@@ -656,13 +726,11 @@ subroutine read_ed21_history_file
                                                  * qsw(ipft) * cpatch%hite(ico)
                            cpatch%bsapwoodb(ico) = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
                                                  * qsw(ipft) * cpatch%hite(ico)
-                           cpatch%bbark(ico)     = cpatch%bleaf(ico)                       &
+                           cpatch%bbarka(ico)    = agf_bs(ipft) * cpatch%bleaf(ico)        &
                                                  * qbark(ipft) * cpatch%hite(ico)
-                           cpatch%balive  (ico)  = cpatch%bleaf    (ico)                   &
-                                                 + cpatch%broot    (ico)                   &
-                                                 + cpatch%bsapwooda(ico)                   &
-                                                 + cpatch%bsapwoodb(ico)                   &
-                                                 + cpatch%bbark    (ico)
+                           cpatch%bbarkb(ico)    = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
+                                                 * qbark(ipft) * cpatch%hite(ico)
+                           cpatch%balive  (ico)  = ed_balive(cpatch,ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
                            !---------------------------------------------------------------!
@@ -786,13 +854,21 @@ subroutine read_ed21_history_file
                                cpatch%bsapwoodb(ico) < tiny_num) then
                               cpatch%bsapwoodb(ico) = tiny_num
                            end if
-                           if (cpatch%bbark(ico) > 0.                .and.                 &
-                               cpatch%bbark(ico) < tiny_num)     then
-                              cpatch%bbark(ico) = tiny_num
+                           if (cpatch%bbarka(ico) > 0.               .and.                 &
+                               cpatch%bbarka(ico) < tiny_num)     then
+                              cpatch%bbarka(ico) = tiny_num
                            end if
-                           if (cpatch%bdead(ico) > 0.                .and.                 &
-                               cpatch%bdead(ico) < tiny_num)     then
-                              cpatch%bdead(ico) = tiny_num
+                           if (cpatch%bbarkb(ico) > 0.               .and.                 &
+                               cpatch%bbarkb(ico) < tiny_num)     then
+                              cpatch%bbarkb(ico) = tiny_num
+                           end if
+                           if (cpatch%bdeada(ico) > 0.                .and.                &
+                               cpatch%bdeada(ico) < tiny_num)     then
+                              cpatch%bdeada(ico) = tiny_num
+                           end if
+                           if (cpatch%bdeadb(ico) > 0.                .and.                &
+                               cpatch%bdeadb(ico) < tiny_num)     then
+                              cpatch%bdeadb(ico) = tiny_num
                            end if
                            if (cpatch%bstorage(ico) > 0.             .and.                 &
                                cpatch%bstorage(ico) < tiny_num)  then
@@ -808,13 +884,14 @@ subroutine read_ed21_history_file
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
-                                                        , cpatch%bdead    (ico)            &
+                                                        , cpatch%bdeada   (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
-                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
                                                         , cpatch%pft      (ico) )
                            cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
-                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%bbarkb   (ico)            &
                                                         , cpatch%pft      (ico) )
 
 
@@ -980,6 +1057,7 @@ subroutine read_ed21_history_unstruct
                                   , memoffs                 & ! intent(in)
                                   , memsize                 ! ! intent(in)
    use allometry           , only : area_indices            & ! function
+                                  , ed_balive               & ! function
                                   , ed_biomass              & ! function
                                   , size2bt                 & ! function
                                   , size2xb                 & ! function
@@ -992,6 +1070,9 @@ subroutine read_ed21_history_unstruct
                                   , lu_rescale_file         & ! intent(in)
                                   , min_patch_area          ! ! intent(in)
    use soil_coms           , only : soil                    ! ! intent(in)
+   use decomp_coms         , only : agf_fsc                 & ! intent(in)
+                                  , agf_stsc                & ! intent(in)
+                                  , c2n_structural          ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
    use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
                                   , hdf_getslab_r           ! ! sub-routine
@@ -1091,6 +1172,7 @@ subroutine read_ed21_history_unstruct
    real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
+   real                                                         :: bdeadx
    logical                                                      :: foundvar
    !----- External functions. -------------------------------------------------------------!
    real                                           , external    :: dist_gc
@@ -1720,27 +1802,67 @@ subroutine read_ed21_history_unstruct
                   end do
 
                   call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%age               ,'AGE '                       &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%area              ,'AREA '                      &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%sum_dgd           ,'SUM_DGD '                   &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                   &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '               &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '         &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
+                  call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '          &
+                                    ,dsetrank,iparallel,.false.,foundvar)
                   call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
-                                    ,dsetrank,iparallel,.true.,foundvar)
+                                    ,dsetrank,iparallel,.true. ,foundvar)
+                  !----- Try to read the ground carbon. -----------------------------------!
+                  call hdf_getslab_r(csite%fast_grnd_C       ,'FAST_GRND_C '               &
+                                    ,dsetrank,iparallel,.false.,foundvar)
+                  if (foundvar) then
+                     !----- New version, with ground/underground and C/N separation. ------!
+                     call hdf_getslab_r(csite%structural_grnd_C ,'STRUCTURAL_GRND_C '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%structural_grnd_L ,'STRUCTURAL_GRND_L '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '       &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%fast_grnd_N       ,'FAST_GRND_N '            &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%structural_grnd_N ,'STRUCTURAL_GRND_N '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%structural_soil_N ,'STRUCTURAL_SOIL_N '      &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     !---------------------------------------------------------------------!
+                  else
+                     !----- Old version, split above- and below-ground pools. -------------!
+                     csite%fast_grnd_C      (:) =    agf_fsc    * csite%fast_soil_C      (:)
+                     csite%fast_grnd_N      (:) =    agf_fsc    * csite%fast_soil_N      (:)
+                     csite%structural_grnd_C(:) =    agf_stsc   * csite%structural_soil_C(:)
+                     csite%structural_grnd_L(:) =    agf_stsc   * csite%structural_soil_L(:)
+                     csite%fast_soil_C      (:) = (1.-agf_fsc)  * csite%fast_soil_C      (:)
+                     csite%fast_soil_N      (:) = (1.-agf_fsc)  * csite%fast_soil_N      (:)
+                     csite%structural_soil_C(:) = (1.-agf_stsc) * csite%structural_soil_C(:)
+                     csite%structural_soil_L(:) = (1.-agf_stsc) * csite%structural_soil_L(:)
+                     csite%microbial_soil_C (:) = 0.0
+                     !---------------------------------------------------------------------!
+
+                     !----- Assume stoichiometry for other nitrogen pools. ----------------!
+                     csite%structural_grnd_N(:) = csite%structural_grnd_C(:)               &
+                                                / c2n_structural
+                     csite%structural_soil_N(:) = csite%structural_soil_C(:)               &
+                                                / c2n_structural
+                     !---------------------------------------------------------------------!
+                  end if
                   !------------------------------------------------------------------------!
 
 
@@ -1862,12 +1984,23 @@ subroutine read_ed21_history_unstruct
 
                         call hdf_getslab_r(cpatch%dbh   ,'DBH '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_r(cpatch%bdead ,'BDEAD '                          &
-                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_i(cpatch%pft   ,'PFT '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%nplant,'NPLANT '                         &
                                           ,dsetrank,iparallel,.true.,foundvar)
+                        call hdf_getslab_r(cpatch%bdeada,'BDEADA '                         &
+                                          ,dsetrank,iparallel,.false.,foundvar)
+                        call hdf_getslab_r(cpatch%bdeadb,'BDEADB '                         &
+                                          ,dsetrank,iparallel,.false.,foundvar)
+                        if (.not. foundvar) then
+                           call hdf_getslab_r(cpatch%bdeada,'BDEAD '                       &
+                                             ,dsetrank,iparallel,.true.,foundvar)
+                           do ico=1,cpatch%ncohorts
+                              ipft               = cpatch%pft(ico)
+                              cpatch%bdeadb(ico) = (1.0-agf_bs(ipft)) * cpatch%bdeada(ico)
+                              cpatch%bdeada(ico) =      agf_bs(ipft)  * cpatch%bdeada(ico)
+                           end do
+                        end if
 
                         !------------------------------------------------------------------!
                         !    Find derived properties from Bdead.  In the unlikely case     !
@@ -1878,35 +2011,50 @@ subroutine read_ed21_history_unstruct
                            ipft = cpatch%pft(ico)
 
                            !---------------------------------------------------------------!
+                           !     Make sure the variables are bounded (even though they may !
+                           ! be overwritten).                                              !
+                           !---------------------------------------------------------------!
+                           cpatch%dbh   (ico) = max(cpatch%dbh(ico),min_dbh(ipft))
+                           cpatch%bdeada(ico) = max( cpatch%bdeada(ico)                    &
+                                                   , agf_bs(ipft) * min_bdead(ipft) )
+                           cpatch%bdeadb(ico) = max( cpatch%bdeadb(ico)                    &
+                                                   , (1.-agf_bs(ipft)) * min_bdead(ipft) )
+                           bdeadx             = cpatch%bdeada(ico) + cpatch%bdeadb(ico)
+                           !---------------------------------------------------------------!
+
+
+                           !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
                            if (iallom == 3) then
                               !----- New allometry, initialise with DBH. ------------------!
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
-                                                         ,ipft)
-                           elseif (igrass == 1 .and. is_grass(ipft)                        &
-                                           .and. cpatch%bdead(ico)>0.0) then
+                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
+                                                          ,cpatch%hite(ico),ipft)
+                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
+                           elseif ( igrass == 1 .and. is_grass(ipft)                       &
+                                                .and. cpatch%bdeada(ico) > 0.0 ) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
                               ! is set to zero and the mass is discarded                   !
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = 0.0
+                              cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdeada(ico) = 0.0
+                              cpatch%bdeadb(ico) = 0.0
 
-                           else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
+                           else if (bdeadx > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
-                              cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
-                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)           &
+                                                             ,cpatch%bdeadb(ico) )
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
                            else
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
-                                                         ,ipft)
+                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
+                                                          ,cpatch%hite(ico),ipft)
+                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                            end if
                            !---------------------------------------------------------------!
 
@@ -1933,13 +2081,11 @@ subroutine read_ed21_history_unstruct
                                                  * qsw(ipft) * cpatch%hite(ico)
                            cpatch%bsapwoodb(ico) = (1. - agf_bs(ipft)) * cpatch%bleaf(ico) &
                                                  * qsw(ipft) * cpatch%hite(ico)
-                           cpatch%bbark(ico)     = cpatch%bleaf(ico)                       &
+                           cpatch%bbarka(ico)    = agf_bs(ipft) * cpatch%bleaf(ico)        &
                                                  * qbark(ipft) * cpatch%hite(ico)
-                           cpatch%balive  (ico)  = cpatch%bleaf(ico)                       &
-                                                 + cpatch%broot(ico)                       &
-                                                 + cpatch%bsapwooda(ico)                   &
-                                                 + cpatch%bsapwoodb(ico)                   &
-                                                 + cpatch%bbark(ico)
+                           cpatch%bbarkb(ico)    = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
+                                                 * qbark(ipft) * cpatch%hite(ico)
+                           cpatch%balive  (ico)  = ed_balive(cpatch,ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
                            !---------------------------------------------------------------!
@@ -2064,13 +2210,21 @@ subroutine read_ed21_history_unstruct
                                cpatch%bsapwoodb(ico) < tiny_num) then
                               cpatch%bsapwoodb(ico) = tiny_num
                            end if
-                           if (cpatch%bbark(ico) > 0.            .and.                     &
-                               cpatch%bbark(ico) < tiny_num) then
-                              cpatch%bbark(ico) = tiny_num
+                           if (cpatch%bbarka(ico) > 0.            .and.                    &
+                               cpatch%bbarka(ico) < tiny_num) then
+                              cpatch%bbarka(ico) = tiny_num
                            end if
-                           if (cpatch%bdead(ico) > 0.            .and.                     &
-                               cpatch%bdead(ico) < tiny_num) then
-                              cpatch%bdead(ico) = tiny_num
+                           if (cpatch%bbarkb(ico) > 0.            .and.                    &
+                               cpatch%bbarkb(ico) < tiny_num) then
+                              cpatch%bbarkb(ico) = tiny_num
+                           end if
+                           if (cpatch%bdeada(ico) > 0.            .and.                    &
+                               cpatch%bdeada(ico) < tiny_num) then
+                              cpatch%bdeada(ico) = tiny_num
+                           end if
+                           if (cpatch%bdeadb(ico) > 0.            .and.                    &
+                               cpatch%bdeadb(ico) < tiny_num) then
+                              cpatch%bdeadb(ico) = tiny_num
                            end if
                            if (cpatch%bstorage(ico) > 0.            .and.                  &
                                cpatch%bstorage(ico) < tiny_num) then
@@ -2084,13 +2238,14 @@ subroutine read_ed21_history_unstruct
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
-                                                        , cpatch%bdead    (ico)            &
+                                                        , cpatch%bdeada   (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
-                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
                                                         , cpatch%pft      (ico) )
                            cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
-                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%bbarkb   (ico)            &
                                                         , cpatch%pft      (ico) )
                            !---------------------------------------------------------------!
 
@@ -2263,6 +2418,7 @@ subroutine read_ed21_polyclone
                                   , memoffs                 & ! intent(in)
                                   , memsize                 ! ! intent(in)
    use allometry           , only : area_indices            & ! function
+                                  , ed_balive               & ! function
                                   , ed_biomass              & ! function
                                   , size2bt                 & ! function
                                   , size2xb                 & ! function
@@ -2277,6 +2433,9 @@ subroutine read_ed21_polyclone
    use soil_coms           , only : soil                    & ! intent(in)
                                   , slzt                    & ! intent(in)
                                   , isoilcol                ! ! intent(in)
+   use decomp_coms         , only : agf_fsc                 & ! intent(in)
+                                  , agf_stsc                & ! intent(in)
+                                  , c2n_structural          ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
    use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
                                   , hdf_getslab_r           ! ! sub-routine
@@ -2366,10 +2525,11 @@ subroutine read_ed21_polyclone
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
    real                                                         :: sum_poly_area
-   real                       :: te
-   real                       :: t0
-   real                       :: k0
-   integer                    :: sc
+   real                                                         :: bdeadx
+   real                                                         :: te
+   real                                                         :: t0
+   real                                                         :: k0
+   integer                                                      :: sc
    !----- External functions. -------------------------------------------------------------!
    real                                           , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -2927,27 +3087,76 @@ subroutine read_ed21_polyclone
                      end do
 
                      call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '              &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%age               ,'AGE '                    &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%area              ,'AREA '                   &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%sum_dgd           ,'SUM_DGD '                &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '            &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '            &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '            &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '      &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '      &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '       &
+                          ,dsetrank,iparallel,.false.,foundvar)
                      call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '     &
-                          ,dsetrank,iparallel,.true.,foundvar)
+                          ,dsetrank,iparallel,.true. ,foundvar)
+                     !----- Try to read the ground carbon. --------------------------------!
+                     call hdf_getslab_r(csite%fast_grnd_C       ,'FAST_GRND_C '            &
+                                       ,dsetrank,iparallel,.false.,foundvar)
+                     if (foundvar) then
+                        !----- New version, with ground/underground and C/N separation. ---!
+                        call hdf_getslab_r(csite%structural_grnd_C ,'STRUCTURAL_GRND_C '   &
+                                          ,dsetrank,iparallel,.true. ,foundvar)
+                        call hdf_getslab_r(csite%structural_grnd_L ,'STRUCTURAL_GRND_L '   &
+                                          ,dsetrank,iparallel,.true. ,foundvar)
+                        call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '    &
+                                          ,dsetrank,iparallel,.true. ,foundvar)
+                        call hdf_getslab_r(csite%fast_grnd_N       ,'FAST_GRND_N '         &
+                                          ,dsetrank,iparallel,.true. ,foundvar)
+                        call hdf_getslab_r(csite%structural_grnd_N ,'STRUCTURAL_GRND_N '   &
+                                          ,dsetrank,iparallel,.true. ,foundvar)
+                        call hdf_getslab_r(csite%structural_soil_N ,'STRUCTURAL_SOIL_N '   &
+                                          ,dsetrank,iparallel,.true. ,foundvar)
+                        !------------------------------------------------------------------!
+                     else
+                        !----- Old version, split above- and below-ground pools. ----------!
+                        csite%fast_grnd_C      (:) =    agf_fsc                            &
+                                                   * csite%fast_soil_C      (:)
+                        csite%fast_grnd_N      (:) =    agf_fsc                            &
+                                                   * csite%fast_soil_N      (:)
+                        csite%structural_grnd_C(:) =    agf_stsc                           &
+                                                   * csite%structural_soil_C(:)
+                        csite%structural_grnd_L(:) =    agf_stsc                           &
+                                                   * csite%structural_soil_L(:)
+                        csite%fast_soil_C      (:) = (1.-agf_fsc)                          &
+                                                   * csite%fast_soil_C      (:)
+                        csite%fast_soil_N      (:) = (1.-agf_fsc)                          &
+                                                   * csite%fast_soil_N      (:)
+                        csite%structural_soil_C(:) = (1.-agf_stsc)                         &
+                                                   * csite%structural_soil_C(:)
+                        csite%structural_soil_L(:) = (1.-agf_stsc)                         &
+                                                   * csite%structural_soil_L(:)
+                        csite%microbial_soil_C (:) = 0.0
+                        !------------------------------------------------------------------!
+
+                        !----- Assume stoichiometry for other nitrogen pools. -------------!
+                        csite%structural_grnd_N(:) = csite%structural_grnd_C(:)            &
+                                                   / c2n_structural
+                        csite%structural_soil_N(:) = csite%structural_soil_C(:)            &
+                                                   / c2n_structural
+                        !------------------------------------------------------------------!
+                     end if
+                     !---------------------------------------------------------------------!
 
 
 
@@ -3108,14 +3317,25 @@ subroutine read_ed21_polyclone
                         memsize(1)  = int(cpatch%ncohorts,8)
                         memoffs(1)  = 0_8
 
-                        call hdf_getslab_r(cpatch%dbh             ,'DBH '                  &
+                        call hdf_getslab_r(cpatch%dbh   ,'DBH '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
+                        call hdf_getslab_i(cpatch%pft   ,'PFT '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_i(cpatch%pft             ,'PFT '                  &
+                        call hdf_getslab_r(cpatch%nplant,'NPLANT '                         &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_r(cpatch%nplant          ,'NPLANT '               &
-                                          ,dsetrank,iparallel,.true.,foundvar)
+                        call hdf_getslab_r(cpatch%bdeada,'BDEADA '                         &
+                                          ,dsetrank,iparallel,.false.,foundvar)
+                        call hdf_getslab_r(cpatch%bdeadb,'BDEADB '                         &
+                                          ,dsetrank,iparallel,.false.,foundvar)
+                        if (.not. foundvar) then
+                           call hdf_getslab_r(cpatch%bdeada,'BDEAD '                       &
+                                             ,dsetrank,iparallel,.true.,foundvar)
+                           do ico=1,cpatch%ncohorts
+                              ipft               = cpatch%pft(ico)
+                              cpatch%bdeadb(ico) = (1.0-agf_bs(ipft)) * cpatch%bdeada(ico)
+                              cpatch%bdeada(ico) =      agf_bs(ipft)  * cpatch%bdeada(ico)
+                           end do
+                        end if
 
                         !------------------------------------------------------------------!
                         !    Find derived properties from Bdead.  In the unlikely case     !
@@ -3126,35 +3346,50 @@ subroutine read_ed21_polyclone
                            ipft = cpatch%pft(ico)
 
                            !---------------------------------------------------------------!
+                           !     Make sure the variables are bounded (even though they may !
+                           ! be overwritten).                                              !
+                           !---------------------------------------------------------------!
+                           cpatch%dbh   (ico) = max(cpatch%dbh(ico),min_dbh(ipft))
+                           cpatch%bdeada(ico) = max( cpatch%bdeada(ico)                    &
+                                                   , agf_bs(ipft) * min_bdead(ipft) )
+                           cpatch%bdeadb(ico) = max( cpatch%bdeadb(ico)                    &
+                                                   , (1.-agf_bs(ipft)) * min_bdead(ipft) )
+                           bdeadx             = cpatch%bdeada(ico) + cpatch%bdeadb(ico)
+                           !---------------------------------------------------------------!
+
+
+                           !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
                            if (iallom == 3) then
                               !----- New allometry, initialise with DBH. ------------------!
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
-                                                         ,ipft)
-                           elseif (igrass == 1 .and. is_grass(ipft)                        &
-                                           .and. cpatch%bdead(ico)>0.0) then
+                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
+                                                          ,cpatch%hite(ico),ipft)
+                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
+                           elseif ( igrass == 1 .and. is_grass(ipft)                       &
+                                                .and. cpatch%bdeada(ico) > 0.0 ) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
                               ! is set to zero and the mass is discarded                   !
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = 0.0
+                              cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdeada(ico) = 0.0
+                              cpatch%bdeadb(ico) = 0.0
 
-                           else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
+                           else if (bdeadx > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
-                              cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
-                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)           &
+                                                             ,cpatch%bdeadb(ico) )
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
                            else
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
-                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = size2bd(cpatch%dbh(ico),cpatch%hite(ico) &
-                                                         ,ipft)
+                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
+                                                          ,cpatch%hite(ico),ipft)
+                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                            end if
                            !---------------------------------------------------------------!
 
@@ -3182,13 +3417,11 @@ subroutine read_ed21_polyclone
                                                  * qsw(ipft) * cpatch%hite(ico)
                            cpatch%bsapwoodb(ico) = (1. - agf_bs(ipft)) * cpatch%bleaf(ico) &
                                                  * qsw(ipft) * cpatch%hite(ico)
-                           cpatch%bbark(ico)     = cpatch%bleaf(ico)                       &
+                           cpatch%bbarka(ico)    = agf_bs(ipft) * cpatch%bleaf(ico)        &
                                                  * qbark(ipft) * cpatch%hite(ico)
-                           cpatch%balive  (ico)  = cpatch%bleaf    (ico)                   &
-                                                 + cpatch%broot    (ico)                   &
-                                                 + cpatch%bsapwooda(ico)                   &
-                                                 + cpatch%bsapwoodb(ico)                   &
-                                                 + cpatch%bbark    (ico)
+                           cpatch%bbarkb(ico)    = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
+                                                 * qbark(ipft) * cpatch%hite(ico)
+                           cpatch%balive  (ico)  = ed_balive(cpatch,ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
                            !---------------------------------------------------------------!
@@ -3313,13 +3546,21 @@ subroutine read_ed21_polyclone
                                cpatch%bsapwoodb(ico) < tiny_num) then
                               cpatch%bsapwoodb(ico) = tiny_num
                            end if
-                           if (cpatch%bbark(ico) > 0.            .and.                     &
-                               cpatch%bbark(ico) < tiny_num) then
-                              cpatch%bbark(ico) = tiny_num
+                           if (cpatch%bbarka(ico) > 0.            .and.                    &
+                               cpatch%bbarka(ico) < tiny_num) then
+                              cpatch%bbarka(ico) = tiny_num
                            end if
-                           if (cpatch%bdead(ico) > 0.            .and.                     &
-                               cpatch%bdead(ico) < tiny_num) then
-                              cpatch%bdead(ico) = tiny_num
+                           if (cpatch%bbarkb(ico) > 0.            .and.                    &
+                               cpatch%bbarkb(ico) < tiny_num) then
+                              cpatch%bbarkb(ico) = tiny_num
+                           end if
+                           if (cpatch%bdeada(ico) > 0.            .and.                    &
+                               cpatch%bdeada(ico) < tiny_num) then
+                              cpatch%bdeada(ico) = tiny_num
+                           end if
+                           if (cpatch%bdeadb(ico) > 0.            .and.                    &
+                               cpatch%bdeadb(ico) < tiny_num) then
+                              cpatch%bdeadb(ico) = tiny_num
                            end if
                            if (cpatch%bstorage(ico) > 0.            .and.                  &
                                cpatch%bstorage(ico) < tiny_num) then
@@ -3333,13 +3574,14 @@ subroutine read_ed21_polyclone
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
-                                                        , cpatch%bdead    (ico)            &
+                                                        , cpatch%bdeada   (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
-                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
                                                         , cpatch%pft      (ico) )
                            cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
-                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%bbarkb   (ico)            &
                                                         , cpatch%pft      (ico) )
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!

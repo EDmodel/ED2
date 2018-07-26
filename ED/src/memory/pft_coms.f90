@@ -452,10 +452,6 @@ module pft_coms
    !=======================================================================================!
    ! Nitrogen and water requirements  -- see "initialize_pft_nitro_params".                !
    !---------------------------------------------------------------------------------------!
-   !----- Carbon to Nitrogen ratio, slow pool. --------------------------------------------!
-   real :: c2n_slow
-   !----- Carbon to Nitrogen ratio, structural pool. --------------------------------------!
-   real :: c2n_structural
    !----- Carbon to Nitrogen ratio, storage pool. -----------------------------------------!
    real :: c2n_storage
    !----- Carbon to Nitrogen ratio, structural stem. --------------------------------------!
@@ -825,12 +821,14 @@ module pft_coms
       real                :: leaf_vpdef
       real                :: hite
       real                :: dbh
-      real                :: bdead
+      real                :: bdeada
+      real                :: bdeadb
       real                :: bleaf
       real                :: broot
       real                :: bsapwooda
       real                :: bsapwoodb
-      real                :: bbark
+      real                :: bbarka
+      real                :: bbarkb
       real                :: balive
       real                :: paw_avg
       real                :: elongf
@@ -875,12 +873,14 @@ module pft_coms
          recruit(p)%leaf_vpdef           = 0.
          recruit(p)%hite                 = 0.
          recruit(p)%dbh                  = 0.
-         recruit(p)%bdead                = 0.
+         recruit(p)%bdeada               = 0.
+         recruit(p)%bdeadb               = 0.
          recruit(p)%bleaf                = 0.
          recruit(p)%broot                = 0.
          recruit(p)%bsapwooda            = 0.
          recruit(p)%bsapwoodb            = 0.
-         recruit(p)%bbark                = 0.
+         recruit(p)%bbarka               = 0.
+         recruit(p)%bbarkb               = 0.
          recruit(p)%balive               = 0.
          recruit(p)%paw_avg              = 0.
          recruit(p)%elongf               = 0.
@@ -928,12 +928,14 @@ module pft_coms
       rectarget%leaf_vpdef       = recsource%leaf_vpdef
       rectarget%hite             = recsource%hite
       rectarget%dbh              = recsource%dbh
-      rectarget%bdead            = recsource%bdead
+      rectarget%bdeada           = recsource%bdeada
+      rectarget%bdeadb           = recsource%bdeadb
       rectarget%bleaf            = recsource%bleaf
       rectarget%broot            = recsource%broot
       rectarget%bsapwooda        = recsource%bsapwooda
       rectarget%bsapwoodb        = recsource%bsapwoodb
-      rectarget%bbark            = recsource%bbark
+      rectarget%bbarka           = recsource%bbarka
+      rectarget%bbarkb           = recsource%bbarkb
       rectarget%balive           = recsource%balive
       rectarget%paw_avg          = recsource%paw_avg
       rectarget%elongf           = recsource%elongf

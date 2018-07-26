@@ -88,9 +88,11 @@ module growth_balive
       real                          :: broot_in
       real                          :: bsapwooda_in
       real                          :: bsapwoodb_in
-      real                          :: bbark_in
+      real                          :: bbarka_in
+      real                          :: bbarkb_in
       real                          :: balive_in
-      real                          :: bdead_in
+      real                          :: bdeada_in
+      real                          :: bdeadb_in
       real                          :: hite_in
       real                          :: dbh_in
       real                          :: nplant_in
@@ -112,7 +114,8 @@ module growth_balive
       real                          :: storage_resp_int         ! Growth resp / balive
       real                          :: tr_bleaf
       real                          :: tr_broot
-      real                          :: tr_bbark
+      real                          :: tr_bbarka
+      real                          :: tr_bbarkb
       real                          :: tr_bsapwooda
       real                          :: tr_bsapwoodb
       real                          :: tr_bstorage
@@ -158,12 +161,14 @@ module growth_balive
                   ! ivegt_dynamics is zero.                                                !
                   !------------------------------------------------------------------------!
                   balive_in     = cpatch%balive          (ico)
-                  bdead_in      = cpatch%bdead           (ico)
+                  bdeada_in     = cpatch%bdeada          (ico)
+                  bdeadb_in     = cpatch%bdeadb          (ico)
                   bleaf_in      = cpatch%bleaf           (ico)
                   broot_in      = cpatch%broot           (ico)
                   bsapwooda_in  = cpatch%bsapwooda       (ico)
                   bsapwoodb_in  = cpatch%bsapwoodb       (ico)
-                  bbark_in      = cpatch%bbark           (ico)
+                  bbarka_in     = cpatch%bbarka          (ico)
+                  bbarkb_in     = cpatch%bbarkb          (ico)
                   hite_in       = cpatch%hite            (ico)
                   dbh_in        = cpatch%dbh             (ico)
                   nplant_in     = cpatch%nplant          (ico)
@@ -203,16 +208,17 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   select case(storage_resp_scheme)
                   case(0)
-                     cpatch%leaf_storage_resp(ico) = 0.0
-                     cpatch%root_storage_resp(ico) = 0.0
-                     cpatch%sapa_storage_resp(ico) = cpatch%bstorage(ico)                  &
-                                                   * storage_turnover_rate(ipft)           &
-                                                   * year_o_day * temp_dep
-                     cpatch%sapb_storage_resp(ico) = 0.0
-                     cpatch%bark_storage_resp(ico) = 0.0
+                     cpatch%leaf_storage_resp (ico) = 0.0
+                     cpatch%root_storage_resp (ico) = 0.0
+                     cpatch%sapa_storage_resp (ico) = cpatch%bstorage(ico)                 &
+                                                    * storage_turnover_rate(ipft)          &
+                                                    * year_o_day * temp_dep
+                     cpatch%sapb_storage_resp (ico) = 0.0
+                     cpatch%barka_storage_resp(ico) = 0.0
+                     cpatch%barkb_storage_resp(ico) = 0.0
 
-                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
-                                            - cpatch%sapa_storage_resp(ico)
+                     cpatch%bstorage(ico)           = cpatch%bstorage(ico)                 &
+                                                    - cpatch%sapa_storage_resp(ico)
                   case(1)
                      if (cpatch%balive(ico) >= tiny_num) then
                         storage_resp_int = cpatch%bstorage(ico) / cpatch%balive(ico)       &
@@ -222,29 +228,32 @@ module growth_balive
                         storage_resp_int = 0.0
                      end if
 
-                     cpatch%leaf_storage_resp(ico) = storage_resp_int *cpatch%bleaf(ico)
-                     cpatch%root_storage_resp(ico) = storage_resp_int *cpatch%broot(ico)
-                     cpatch%sapa_storage_resp(ico) = storage_resp_int *cpatch%bsapwooda(ico)
-                     cpatch%sapb_storage_resp(ico) = storage_resp_int *cpatch%bsapwoodb(ico)
-                     cpatch%bark_storage_resp(ico) = storage_resp_int *cpatch%bbark(ico)
+                     cpatch%leaf_storage_resp(ico)  = storage_resp_int*cpatch%bleaf(ico)
+                     cpatch%root_storage_resp(ico)  = storage_resp_int*cpatch%broot(ico)
+                     cpatch%sapa_storage_resp(ico)  = storage_resp_int*cpatch%bsapwooda(ico)
+                     cpatch%sapb_storage_resp(ico)  = storage_resp_int*cpatch%bsapwoodb(ico)
+                     cpatch%barka_storage_resp(ico) = storage_resp_int*cpatch%bbarka(ico)
+                     cpatch%barkb_storage_resp(ico) = storage_resp_int*cpatch%bbarkb(ico)
 
-                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
-                                          - cpatch%leaf_storage_resp(ico)                  &
-                                          - cpatch%root_storage_resp(ico)                  &
-                                          - cpatch%sapa_storage_resp(ico)                  &
-                                          - cpatch%sapb_storage_resp(ico)                  &
-                                          - cpatch%bark_storage_resp(ico)
+                     cpatch%bstorage(ico)           = cpatch%bstorage          (ico)       &
+                                                    - cpatch%leaf_storage_resp (ico)       &
+                                                    - cpatch%root_storage_resp (ico)       &
+                                                    - cpatch%sapa_storage_resp (ico)       &
+                                                    - cpatch%sapb_storage_resp (ico)       &
+                                                    - cpatch%barka_storage_resp(ico)       &
+                                                    - cpatch%barkb_storage_resp(ico)
                   end select
 
                   !------------------------------------------------------------------------!
                   !     When storage carbon is lost, allow the associated nitrogen to go   !
                   ! to litter in order to maintain prescribed C2N ratio.                   !
                   !------------------------------------------------------------------------!
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + (cpatch%leaf_storage_resp(ico)   &
-                                                        +  cpatch%root_storage_resp(ico)   &
-                                                        +  cpatch%sapa_storage_resp(ico)   &
-                                                        +  cpatch%sapb_storage_resp(ico)   &
-                                                        +  cpatch%bark_storage_resp(ico))  &
+                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + (cpatch%leaf_storage_resp (ico)  &
+                                                        +  cpatch%root_storage_resp (ico)  &
+                                                        +  cpatch%sapa_storage_resp (ico)  &
+                                                        +  cpatch%sapb_storage_resp (ico)  &
+                                                        +  cpatch%barka_storage_resp(ico)  &
+                                                        +  cpatch%barkb_storage_resp(ico)) &
                                                         / c2n_storage * cpatch%nplant(ico)
 
                   !------------------------------------------------------------------------!
@@ -262,12 +271,13 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   select case(growth_resp_scheme)
                   case(0)
-                     cpatch%sapa_growth_resp(ico) = max(0.0, daily_C_gain                  &
-                                                             * growth_resp_factor(ipft))
-                     cpatch%leaf_growth_resp(ico) = 0.0
-                     cpatch%root_growth_resp(ico) = 0.0
-                     cpatch%sapb_growth_resp(ico) = 0.0
-                     cpatch%bark_growth_resp(ico) = 0.0
+                     cpatch%sapa_growth_resp (ico) = max(0.0, daily_C_gain                 &
+                                                              * growth_resp_factor(ipft))
+                     cpatch%leaf_growth_resp (ico) = 0.0
+                     cpatch%root_growth_resp (ico) = 0.0
+                     cpatch%sapb_growth_resp (ico) = 0.0
+                     cpatch%barka_growth_resp(ico) = 0.0
+                     cpatch%barkb_growth_resp(ico) = 0.0
                   case(1)
                      if (cpatch%balive(ico) >= tiny_num) then
                         growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft) &
@@ -275,11 +285,12 @@ module growth_balive
                      else
                         growth_resp_int = 0.0
                      end if
-                     cpatch%leaf_growth_resp(ico) = growth_resp_int * cpatch%bleaf    (ico)
-                     cpatch%root_growth_resp(ico) = growth_resp_int * cpatch%broot    (ico)
-                     cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%bsapwooda(ico)
-                     cpatch%sapb_growth_resp(ico) = growth_resp_int * cpatch%bsapwoodb(ico)
-                     cpatch%bark_growth_resp(ico) = growth_resp_int * cpatch%bbark    (ico)
+                     cpatch%leaf_growth_resp (ico) = growth_resp_int*cpatch%bleaf    (ico)
+                     cpatch%root_growth_resp (ico) = growth_resp_int*cpatch%broot    (ico)
+                     cpatch%sapa_growth_resp (ico) = growth_resp_int*cpatch%bsapwooda(ico)
+                     cpatch%sapb_growth_resp (ico) = growth_resp_int*cpatch%bsapwoodb(ico)
+                     cpatch%barka_growth_resp(ico) = growth_resp_int*cpatch%bbarka   (ico)
+                     cpatch%barkb_growth_resp(ico) = growth_resp_int*cpatch%bbarkb   (ico)
                   end select
                   !------------------------------------------------------------------------!
 
@@ -290,19 +301,21 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call get_c_xfers(csite,ipa,ico,carbon_balance                            &
                                   ,cpoly%green_leaf_factor(ipft,isi),gr_tfact0             &
-                                  ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbark    &
-                                  ,tr_bstorage,carbon_debt,flushing,balive_aim)
+                                  ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbarka   &
+                                  ,tr_bbarkb,tr_bstorage,carbon_debt,flushing,balive_aim)
 
                   call apply_c_xfers(cpatch,ico,carbon_balance,tr_bleaf,tr_broot           &
-                                    ,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage)
+                                    ,tr_bsapwooda,tr_bsapwoodb,tr_bbarka,tr_bbarkb         &
+                                    ,tr_bstorage)
                   
                   call update_today_npp_vars(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda     &
-                                             ,tr_bsapwoodb,tr_bbark,carbon_balance)
+                                            ,tr_bsapwoodb,tr_bbarka,tr_bbarkb              &
+                                            ,carbon_balance)
 
                   call update_nitrogen(flushing,ipft,carbon_balance,cpatch%nplant(ico)     &
                                        ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb        &
-                                       ,tr_bbark,tr_bstorage,nitrogen_uptake               &
-                                       ,csite%fsn_in(ipa))
+                                       ,tr_bbarka,tr_bbarkb,tr_bstorage,nitrogen_uptake    &
+                                       ,csite%fgn_in(ipa),csite%fsn_in(ipa))
                   !------------------------------------------------------------------------!
 
                   if ( is_grass(ipft).and. igrass==1) then
@@ -405,12 +418,14 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   if (.not. veget_dyn_on) then
                      cpatch%balive          (ico) = balive_in
-                     cpatch%bdead           (ico) = bdead_in
+                     cpatch%bdeada          (ico) = bdeada_in
+                     cpatch%bdeadb          (ico) = bdeadb_in
                      cpatch%bleaf           (ico) = bleaf_in
                      cpatch%broot           (ico) = broot_in
                      cpatch%bsapwooda       (ico) = bsapwooda_in
                      cpatch%bsapwoodb       (ico) = bsapwoodb_in
-                     cpatch%bbark           (ico) = bbark_in
+                     cpatch%bbarka          (ico) = bbarka_in
+                     cpatch%bbarkb          (ico) = bbarkb_in
                      cpatch%hite            (ico) = hite_in
                      cpatch%dbh             (ico) = dbh_in
                      cpatch%nplant          (ico) = nplant_in
@@ -429,15 +444,16 @@ module growth_balive
 
                   !----- Update (commercial) timber biomass. ------------------------------!
                   cpatch%btimber(ico) = size2bt( cpatch%dbh(ico),cpatch%hite(ico)          &
-                                               , cpatch%bdead(ico),cpatch%bsapwooda(ico)   &
-                                               , cpatch%bbark(ico),cpatch%pft(ico) )
+                                               , cpatch%bdeada(ico),cpatch%bsapwooda(ico)  &
+                                               , cpatch%bbarka(ico),cpatch%pft(ico) )
                   !------------------------------------------------------------------------!
 
 
 
                   !----- Update bark thickness. -------------------------------------------!
                   cpatch%thbark(ico)  = size2xb( cpatch%dbh(ico),cpatch%hite(ico)          &
-                                               , cpatch%bbark(ico),cpatch%pft(ico) )
+                                               , cpatch%bbarka(ico),cpatch%bbarkb(ico)     &
+                                               , cpatch%pft(ico) )
                   !------------------------------------------------------------------------!
 
 
@@ -448,8 +464,8 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   old_leaf_hcap         = cpatch%leaf_hcap(ico)
                   old_wood_hcap         = cpatch%wood_hcap(ico)
-                  call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdead(ico)                  &
-                                    ,cpatch%bsapwooda(ico),cpatch%bbark(ico)               &
+                  call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdeada(ico)                 &
+                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
@@ -532,10 +548,15 @@ module growth_balive
       ! the PFT has.   The year_o_day term applied converts the maintenance rates to       !
       ! [kgC/plant/day].                                                                   !
       !------------------------------------------------------------------------------------!
-      cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft)*cpatch%bleaf(ico) *year_o_day
-      cpatch%root_maintenance(ico) = root_turnover_rate(ipft)*cpatch%broot(ico) *year_o_day
-      cpatch%bark_maintenance(ico) = bark_turnover_rate(ipft)*cpatch%bbark(ico) *year_o_day
-      
+      cpatch%leaf_maintenance (ico) = leaf_turnover_rate (ipft) * cpatch%bleaf (ico)       &
+                                    * year_o_day
+      cpatch%root_maintenance (ico) = root_turnover_rate (ipft) * cpatch%broot (ico)       &
+                                    * year_o_day
+      cpatch%barka_maintenance(ico) = bark_turnover_rate(ipft)  * cpatch%bbarka(ico)       &
+                                    * year_o_day
+      cpatch%barkb_maintenance(ico) = bark_turnover_rate(ipft)  * cpatch%bbarkb(ico)       &
+                                    * year_o_day
+
       select case (phenology(ipft))
       case (0)
          !---------------------------------------------------------------------------------!
@@ -545,9 +566,10 @@ module growth_balive
          !------ Find a temperature dependence adjustment. --------------------------------!
          maintenance_temp_dep = 1.0 / (1.0 + exp(0.4 * (278.15 - tempk)))
          !----- Scale maintenance by biomass and apply the temperature correction. --------!
-         cpatch%leaf_maintenance(ico) = cpatch%leaf_maintenance(ico)* maintenance_temp_dep
-         cpatch%root_maintenance(ico) = cpatch%root_maintenance(ico)* maintenance_temp_dep
-         cpatch%bark_maintenance(ico) = cpatch%bark_maintenance(ico)* maintenance_temp_dep
+         cpatch%leaf_maintenance (ico) = cpatch%leaf_maintenance (ico)*maintenance_temp_dep
+         cpatch%root_maintenance (ico) = cpatch%root_maintenance (ico)*maintenance_temp_dep
+         cpatch%barka_maintenance(ico) = cpatch%barka_maintenance(ico)*maintenance_temp_dep
+         cpatch%barkb_maintenance(ico) = cpatch%barkb_maintenance(ico)*maintenance_temp_dep
          !---------------------------------------------------------------------------------!
 
       case (3)
@@ -575,6 +597,7 @@ module growth_balive
       use ed_state_vars, only : patchtype             ! ! structure
       use consts_coms  , only : umol_2_kgC            & ! intent(in)
                               , day_sec               ! ! intent(in)
+      use allometry    , only : ed_balive             ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target       :: cpatch
@@ -586,13 +609,13 @@ module growth_balive
       !------------------------------------------------------------------------------------!
       ! Apply the standard update.                                                         !
       !------------------------------------------------------------------------------------!
-      cpatch%bleaf (ico) = cpatch%bleaf(ico) - cpatch%leaf_maintenance(ico)
-      cpatch%broot (ico) = cpatch%broot(ico) - cpatch%root_maintenance(ico)
-      cpatch%bbark (ico) = cpatch%bbark(ico) - cpatch%bark_maintenance(ico)
-      cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bsapwooda(ico)   &
-                         + cpatch%bsapwoodb(ico) + cpatch%bbark(ico)
-      cb_decrement       = cpatch%leaf_maintenance(ico) + cpatch%root_maintenance(ico)     &
-                         + cpatch%bark_maintenance(ico)
+      cpatch%bleaf (ico) = cpatch%bleaf (ico) - cpatch%leaf_maintenance (ico)
+      cpatch%broot (ico) = cpatch%broot (ico) - cpatch%root_maintenance (ico)
+      cpatch%bbarka(ico) = cpatch%bbarka(ico) - cpatch%barka_maintenance(ico)
+      cpatch%bbarkb(ico) = cpatch%bbarkb(ico) - cpatch%barkb_maintenance(ico)
+      cpatch%balive(ico) = ed_balive(cpatch,ico)
+      cb_decrement       = cpatch%leaf_maintenance (ico) + cpatch%root_maintenance (ico)   &
+                         + cpatch%barka_maintenance(ico) + cpatch%barkb_maintenance(ico)
       !------------------------------------------------------------------------------------!
 
    end subroutine apply_maintenance
@@ -657,7 +680,7 @@ module growth_balive
    !=======================================================================================!
    !=======================================================================================!
    subroutine update_today_npp_vars(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb &
-                                   ,tr_bbark,carbon_balance)
+                                   ,tr_bbarka,tr_bbarkb,carbon_balance)
       use ed_state_vars , only : patchtype    ! ! structure
       use consts_coms   , only : tiny_num     ! ! intent(in)
       implicit none
@@ -668,22 +691,25 @@ module growth_balive
       real           , intent(in)   :: tr_broot
       real           , intent(in)   :: tr_bsapwooda
       real           , intent(in)   :: tr_bsapwoodb
-      real           , intent(in)   :: tr_bbark
+      real           , intent(in)   :: tr_bbarka
+      real           , intent(in)   :: tr_bbarkb
       real           , intent(in)   :: carbon_balance
       !----- Local variables. -------------------------------------------------------------!
       real                          :: tr_bsapwood
+      real                          :: tr_bbark
       !------------------------------------------------------------------------------------!
 
       tr_bsapwood = tr_bsapwooda + tr_bsapwoodb
+      tr_bbark    = tr_bbarka    + tr_bbarkb
 
-      !----- NPP allocation in diff pools in KgC/m2/day. ----------------------------!
+      !----- NPP allocation in diff pools in KgC/m2/day. ----------------------------------!
       cpatch%today_nppleaf   (ico) = max(tr_bleaf    * cpatch%nplant(ico), 0.0)
       cpatch%today_nppfroot  (ico) = max(tr_broot    * cpatch%nplant(ico), 0.0)
       cpatch%today_nppsapwood(ico) = max(tr_bsapwood * cpatch%nplant(ico), 0.0)
       cpatch%today_nppbark   (ico) = max(tr_bbark    * cpatch%nplant(ico), 0.0)
       
       cpatch%today_nppdaily  (ico)  = carbon_balance * cpatch%nplant(ico)
-      !------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
    end subroutine update_today_npp_vars
@@ -697,10 +723,11 @@ module growth_balive
    !=======================================================================================!
    !=======================================================================================!
    subroutine update_nitrogen(flushing,ipft,carbon_balance,nplant,tr_bleaf,tr_broot        &
-                             ,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage               &
-                             ,nitrogen_uptake,fsn_in)
+                             ,tr_bsapwooda,tr_bsapwoodb,tr_bbarka,tr_bbarkb,tr_bstorage    &
+                             ,nitrogen_uptake,fgn_in,fsn_in)
       use consts_coms   , only : tiny_num                 ! ! intent(in)
-      use pft_coms      , only : c2n_storage              & ! intent(in)
+      use pft_coms      , only : agf_bs                   & ! intent(in)
+                               , c2n_storage              & ! intent(in)
                                , c2n_leaf                 & ! intent(in)
                                , c2n_stem                 & ! intent(in)
                                , f_labile_leaf            & ! intent(in)
@@ -715,35 +742,52 @@ module growth_balive
       real           , intent(in)    :: tr_broot
       real           , intent(in)    :: tr_bsapwooda
       real           , intent(in)    :: tr_bsapwoodb
-      real           , intent(in)    :: tr_bbark
+      real           , intent(in)    :: tr_bbarka
+      real           , intent(in)    :: tr_bbarkb
       real           , intent(in)    :: tr_bstorage
       real           , intent(inout) :: nitrogen_uptake
+      real           , intent(inout) :: fgn_in
       real           , intent(inout) :: fsn_in
       !----- Local variables. -------------------------------------------------------------!
       real                           :: n2c_labile_leaf
       real                           :: n2c_labile_stem
       real                           :: n2c_labile_storage
-      real                           :: tr_bfast
-      real                           :: tr_bstruct
+      real                           :: tr_a_bfast
+      real                           :: tr_b_bfast
+      real                           :: tr_a_bstruct
+      real                           :: tr_b_bstruct
       real                           :: tr_balive
       real                           :: f_tr_bfast
       real                           :: f_tr_bstruct
+      real                           :: tr_a_bstorage
+      real                           :: tr_b_bstorage
       !------------------------------------------------------------------------------------!
 
+
+      !------ Partition the components into labile and lignified (and AG and BG). ---------!
       n2c_labile_leaf    = (         f_labile_leaf(ipft)   / c2n_leaf(ipft)                &
                            + ( 1.0 - f_labile_leaf(ipft) ) / c2n_stem(ipft) )
       n2c_labile_stem    = (         f_labile_stem(ipft)   / c2n_leaf(ipft)                &
                            + ( 1.0 - f_labile_stem(ipft) ) / c2n_stem(ipft) )
       n2c_labile_storage = 1.0 / c2n_storage
-      tr_bfast        = tr_bleaf + tr_broot
-      tr_bstruct      = tr_bsapwooda + tr_bsapwoodb + tr_bbark
-      tr_balive       = tr_bfast + tr_bstruct
+      tr_a_bfast         = f_labile_leaf(ipft) * tr_bleaf                                  &
+                         + f_labile_stem(ipft) * (tr_bsapwooda + tr_bbarka)
+      tr_b_bfast         = f_labile_leaf(ipft) * tr_broot                                  &
+                         + f_labile_stem(ipft) * (tr_bsapwoodb + tr_bbarkb)
+      tr_a_bstruct       = (1.0 - f_labile_leaf(ipft)) * tr_bleaf                          &
+                         + (1.0 - f_labile_stem(ipft)) * (tr_bsapwooda + tr_bbarka)
+      tr_b_bstruct       = (1.0 - f_labile_leaf(ipft)) * tr_broot                          &
+                         + (1.0 - f_labile_stem(ipft)) * (tr_bsapwoodb + tr_bbarkb)
+      tr_balive          = tr_a_bfast + tr_b_bfast + tr_a_bstruct + tr_b_bstruct
+      tr_a_bstorage      =       agf_bs(ipft)  * tr_bstorage
+      tr_b_bstorage      = (1. - agf_bs(ipft)) * tr_bstorage
+      !------------------------------------------------------------------------------------!
 
       if (abs(tr_balive) < tiny_num) then
          f_tr_bfast   = 0.5
          f_tr_bstruct = 0.5
       else
-         f_tr_bfast   = min(1.,max(0.,tr_bfast / tr_balive))
+         f_tr_bfast   = max(0.,min(1.,( tr_a_bfast + tr_b_bfast)  / tr_balive))
          f_tr_bstruct = 1.0 - f_tr_bfast
       end if
 
@@ -759,15 +803,18 @@ module growth_balive
             if (carbon_balance < 0.0) then
                nitrogen_uptake = nitrogen_uptake + carbon_balance / c2n_storage
                nitrogen_uptake = nitrogen_uptake                                           &
-                               + ( carbon_balance - tr_bstruct - tr_bstorage )             &
+                               + ( carbon_balance  - tr_bstorage                           &
+                                 - tr_a_bstruct    - tr_b_bstruct )                        &
                                * ( n2c_labile_leaf -  n2c_labile_storage )                 &
-                               + ( carbon_balance - tr_bfast   - tr_bstorage )             &
+                               + ( carbon_balance  - tr_bstorage                           &
+                                 - tr_a_bfast      - tr_b_bfast  )                         &
                                * ( n2c_labile_stem -  n2c_labile_storage )
-
             else
                nitrogen_uptake = nitrogen_uptake                                           &
-                               + ( carbon_balance - tr_bstruct ) * n2c_labile_leaf         &
-                               + ( carbon_balance - tr_bfast   ) * n2c_labile_stem
+                               + ( carbon_balance - tr_a_bstruct - tr_b_bstruct )          &
+                               * n2c_labile_leaf                                           &
+                               + ( carbon_balance - tr_a_bfast   - tr_b_bfast   )          &
+                               * n2c_labile_stem
 
                !---------------------------------------------------------------------------!
                ! Calculate additional N uptake from transfer of C from storage to balive.  !
@@ -784,9 +831,9 @@ module growth_balive
             !     N uptake for fraction of daily C gain going to balive.                   !
             !------------------------------------------------------------------------------!
             nitrogen_uptake = nitrogen_uptake                                              &
-                            + (carbon_balance - tr_bstruct - tr_bstorage)                  &
+                            + (carbon_balance - tr_a_bstruct - tr_b_bstruct - tr_bstorage) &
                             * n2c_labile_leaf                                              &
-                            + (carbon_balance - tr_bfast   - tr_bstorage)                  &
+                            + (carbon_balance - tr_a_bfast   - tr_b_bfast   - tr_bstorage) &
                             * n2c_labile_stem
             !----------- N uptake for fraction of daily C gain going to bstorage. ---------!
             nitrogen_uptake = nitrogen_uptake + tr_bstorage * n2c_labile_storage
@@ -796,9 +843,12 @@ module growth_balive
          if (tr_bstorage > 0.0) then
             nitrogen_uptake = nitrogen_uptake + tr_bstorage * n2c_labile_storage
          else
-            fsn_in = fsn_in - nplant  * ( tr_bstorage * n2c_labile_storage                 &
-                                        + tr_bfast    * n2c_labile_leaf                    &
-                                        + tr_bstruct  * n2c_labile_stem )
+            fgn_in = fgn_in - nplant  * ( tr_a_bstorage * n2c_labile_storage               &
+                                        + tr_a_bfast    * n2c_labile_leaf                  &
+                                        + tr_a_bstruct  * n2c_labile_stem )
+            fsn_in = fsn_in - nplant  * ( tr_b_bstorage * n2c_labile_storage               &
+                                        + tr_b_bfast    * n2c_labile_leaf                  &
+                                        + tr_b_bstruct  * n2c_labile_stem )
          end if
       end if
 
@@ -823,8 +873,8 @@ module growth_balive
    !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
    subroutine get_c_xfers(csite,ipa,ico,carbon_balance,green_leaf_factor,gr_tfact0         &
-                         ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbark,tr_bstorage &
-                         ,carbon_debt,flushing,balive_aim)
+                         ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbarka,tr_bbarkb  &
+                         ,tr_bstorage,carbon_debt,flushing,balive_aim)
       use ed_state_vars , only : sitetype     & ! structure
                                , patchtype    ! ! structure
       use pft_coms      , only : q            & ! intent(in)
@@ -850,7 +900,8 @@ module growth_balive
       real           , intent(out)   :: tr_broot          !< Transfer to root C pool
       real           , intent(out)   :: tr_bsapwooda      !< Transfer to sapwooda C pool
       real           , intent(out)   :: tr_bsapwoodb      !< Transfer to sapwoodb C pool
-      real           , intent(out)   :: tr_bbark          !< Transfer to bark C pool
+      real           , intent(out)   :: tr_bbarka         !< Transfer to barka C pool
+      real           , intent(out)   :: tr_bbarkb         !< Transfer to barkb C pool
       real           , intent(out)   :: tr_bstorage       !< Transfer to storage C pool
       real           , intent(out)   :: carbon_debt       !< Net cohort carbon uptake
       logical        , intent(out)   :: flushing          !< Flag for leaf flush
@@ -862,7 +913,8 @@ module growth_balive
       real                           :: broot_aim
       real                           :: bsapwooda_aim
       real                           :: bsapwoodb_aim
-      real                           :: bbark_aim
+      real                           :: bbarka_aim
+      real                           :: bbarkb_aim
       real                           :: balive_max
       real                           :: bleaf_max
       real                           :: bloss_max
@@ -871,16 +923,19 @@ module growth_balive
       real                           :: delta_broot
       real                           :: delta_bsapwooda
       real                           :: delta_bsapwoodb
-      real                           :: delta_bbark
+      real                           :: delta_bbarka
+      real                           :: delta_bbarkb
       real                           :: delta_btotal
       real                           :: available_carbon
       real                           :: gtf_bleaf
       real                           :: gtf_broot
-      real                           :: gtf_bbark
+      real                           :: gtf_bbarka
+      real                           :: gtf_bbarkb
       real                           :: f_total
       real                           :: f_bleaf
       real                           :: f_broot
-      real                           :: f_bbark
+      real                           :: f_bbarka
+      real                           :: f_bbarkb
       logical                        :: time_to_flush
       integer                        :: phen_stat_in
       !logical          , parameter   :: printout = .false.
@@ -897,12 +952,12 @@ module growth_balive
       !if (first_time) then
       !   if (printout) then
       !      open (unit=66,file=fracfile,status='replace',action='write')
-      !      write (unit=66,fmt='(21(a,1x))')                                               &
-      !        ,'        YEAR','       MONTH','         DAY','         PFT','   PHENOLOGY'  &
-      !        ,'PHEN_STAT_IN','PHN_STAT_OUT','  FLUSH_TIME',' AVAILABLE_C','      ELONGF'  &
-      !        ,'  GREEN_LEAF','    ON_ALLOM',' DELTA_BLEAF',' DELTA_BROOT','   DELTA_BSA'  &
-      !        ,'   DELTA_BSB',' DELTA_BBARK','    TR_BLEAF','    TR_BROOT','      TR_BSA'  &
-      !        ,'      TR_BSB'
+      !      write (unit=66,fmt='(24(a,1x))')                                              &
+      !        ,'        YEAR','       MONTH','         DAY','         PFT','   PHENOLOGY' &
+      !        ,'PHEN_STAT_IN','PHN_STAT_OUT','  FLUSH_TIME',' AVAILABLE_C','      ELONGF' &
+      !        ,'  GREEN_LEAF','    ON_ALLOM',' DELTA_BLEAF',' DELTA_BROOT','   DELTA_BSA' &
+      !        ,'   DELTA_BSB','DELTA_BBARKA','DELTA_BBARKB','    TR_BLEAF','    TR_BROOT' &
+      !        ,'    TR_BSAPA','    TR_BSAPB','    TR_BARKA','    TR_BARKB'
       !      close (unit=66,status='keep')
       !   end if
       !   first_time = .false.
@@ -913,7 +968,8 @@ module growth_balive
       tr_broot     = 0.0
       tr_bsapwooda = 0.0
       tr_bsapwoodb = 0.0
-      tr_bbark     = 0.0
+      tr_bbarka    = 0.0
+      tr_bbarkb    = 0.0
       tr_bstorage  = 0.0
 
       cpatch => csite%patch(ipa)
@@ -956,8 +1012,11 @@ module growth_balive
       broot_aim     = bleaf_aim * q    (ipft)
       bsapwooda_aim = bleaf_aim * qsw  (ipft) * height_aim * agf_bs(ipft)
       bsapwoodb_aim = bleaf_aim * qsw  (ipft) * height_aim * (1. - agf_bs(ipft))
-      bbark_aim     = bleaf_aim * qbark(ipft) * height_aim
-      balive_aim    = bleaf_aim + broot_aim + bsapwooda_aim + bsapwoodb_aim + bbark_aim
+      bbarka_aim    = bleaf_aim * qbark(ipft) * height_aim * agf_bs(ipft)
+      bbarkb_aim    = bleaf_aim * qbark(ipft) * height_aim * (1. - agf_bs(ipft))
+      balive_aim    = bleaf_aim     + broot_aim                                            &
+                    + bsapwooda_aim + bsapwoodb_aim                                        &
+                    + bbarka_aim    + bbarkb_aim
       !------------------------------------------------------------------------------------!
 
 
@@ -987,7 +1046,8 @@ module growth_balive
             delta_broot     = max (0.0, broot_aim     - cpatch%broot    (ico))
             delta_bsapwooda = max (0.0, bsapwooda_aim - cpatch%bsapwooda(ico))
             delta_bsapwoodb = max (0.0, bsapwoodb_aim - cpatch%bsapwoodb(ico))
-            delta_bbark     = max (0.0, bbark_aim     - cpatch%bbark    (ico))
+            delta_bbarka    = max (0.0, bbarka_aim    - cpatch%bbarka   (ico))
+            delta_bbarkb    = max (0.0, bbarkb_aim    - cpatch%bbarkb   (ico))
             !------------------------------------------------------------------------------!
             
             !------------------------------------------------------------------------------!
@@ -1024,26 +1084,36 @@ module growth_balive
                else
                   gtf_broot = gr_tfact0
                end if
-               if (delta_bbark > tiny_num) then
-                  gtf_bbark = ( cpatch%bark_maintenance(ico)                               &
-                              + gr_tfact0 * (delta_bbark - cpatch%bark_maintenance(ico)) ) &
-                            / delta_bbark
+               if (delta_bbarka > tiny_num) then
+                  gtf_bbarka = ( cpatch%barka_maintenance(ico)                             &
+                               + gr_tfact0                                                 &
+                               * (delta_bbarka - cpatch%barka_maintenance(ico)) )          &
+                            / delta_bbarka
                else
-                  gtf_bbark = gr_tfact0
+                  gtf_bbarka = gr_tfact0
                end if
-               !----- Correct deltas based on the time of the month and turnover. ------------!
+               if (delta_bbarkb > tiny_num) then
+                  gtf_bbarkb = ( cpatch%barkb_maintenance(ico)                             &
+                               + gr_tfact0                                                 &
+                               * (delta_bbarkb - cpatch%barkb_maintenance(ico)) )          &
+                            / delta_bbarkb
+               else
+                  gtf_bbarkb = gr_tfact0
+               end if
+               !----- Correct deltas based on the time of the month and turnover. ---------!
                delta_bleaf     = delta_bleaf     * gtf_bleaf
                delta_broot     = delta_broot     * gtf_broot
                delta_bsapwooda = delta_bsapwooda * gr_tfact0 ! sapwood turnover is zero.
                delta_bsapwoodb = delta_bsapwoodb * gr_tfact0 ! sapwood turnover is zero.
-               delta_bbark     = delta_bbark     * gtf_bbark
+               delta_bbarka    = delta_bbarka    * gtf_bbarka
+               delta_bbarkb    = delta_bbarkb    * gtf_bbarkb
             end if
             !------------------------------------------------------------------------------!
 
 
             !---- Total transfer. ---------------------------------------------------------!
             delta_btotal    = delta_bleaf + delta_broot + delta_bsapwooda                  &
-                            + delta_bsapwoodb + delta_bbark
+                            + delta_bsapwoodb + delta_bbarka + delta_bbarkb
             !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
@@ -1057,18 +1127,20 @@ module growth_balive
                tr_broot     = delta_broot      * f_total
                tr_bsapwooda = delta_bsapwooda  * f_total
                tr_bsapwoodb = delta_bsapwoodb  * f_total
-               tr_bbark     = delta_bbark      * f_total
+               tr_bbarka    = delta_bbarka     * f_total
+               tr_bbarkb    = delta_bbarkb     * f_total
             else
                tr_bleaf     = 0.
                tr_broot     = 0.
                tr_bsapwooda = 0.
                tr_bsapwoodb = 0.
-               tr_bbark     = 0.
+               tr_bbarka    = 0.
+               tr_bbarkb    = 0.
             end if
             !------------------------------------------------------------------------------!
 
-            tr_bstorage = carbon_balance - tr_bleaf - tr_broot - tr_bsapwooda              &
-                        - tr_bsapwoodb - tr_bbark
+            tr_bstorage = carbon_balance - tr_bleaf  - tr_broot  - tr_bsapwooda            &
+                        - tr_bsapwoodb   - tr_bbarka - tr_bbarkb
          case default
             !------------------------------------------------------------------------------!
             !     Put carbon gain into storage.  If we're not actively dropping leaves or  !
@@ -1109,16 +1181,19 @@ module growth_balive
                !     Find total biomass that can be lost.  We take an amount proportional  !
                ! to the current biomass of each the pools.                                 !
                !---------------------------------------------------------------------------!
-               bloss_max   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bbark(ico)
+               bloss_max   = cpatch%bleaf (ico) + cpatch%broot (ico)                       &
+                           + cpatch%bbarka(ico) + cpatch%bbarkb(ico)
                f_bleaf     = cpatch%bleaf    (ico) / bloss_max
                f_broot     = cpatch%broot    (ico) / bloss_max
-               f_bbark     = cpatch%bbark    (ico) / bloss_max
+               f_bbarka    = cpatch%bbarka   (ico) / bloss_max
+               f_bbarkb    = cpatch%bbarkb   (ico) / bloss_max
 
                if (bloss_max > carbon_debt) then
                   !----- Remove biomass accordingly. --------------------------------------!
                   tr_bleaf     = -1.0 * carbon_debt * f_bleaf
                   tr_broot     = -1.0 * carbon_debt * f_broot
-                  tr_bbark     = -1.0 * carbon_debt * f_bbark
+                  tr_bbarka    = -1.0 * carbon_debt * f_bbarka
+                  tr_bbarkb    = -1.0 * carbon_debt * f_bbarkb
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -1130,7 +1205,8 @@ module growth_balive
                   carbon_debt  = bloss_max
                   tr_bleaf     = -1.0 * cpatch%bleaf    (ico)
                   tr_broot     = -1.0 * cpatch%broot    (ico)
-                  tr_bbark     = -1.0 * cpatch%bbark    (ico)
+                  tr_bbarka    = -1.0 * cpatch%bbarka   (ico)
+                  tr_bbarkb    = -1.0 * cpatch%bbarkb   (ico)
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1143,22 +1219,26 @@ module growth_balive
             ! storage.  Bark is not 100% living tissue, but for simplicity we don't        !
             ! separate inner bark from outer bark.                                         !
             !------------------------------------------------------------------------------!
-            bloss_max   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bbark(ico)
+            bloss_max   = cpatch%bleaf (ico) + cpatch%broot (ico)                          &
+                        + cpatch%bbarka(ico) + cpatch%bbarkb(ico)
             if (bloss_max >= tiny_num) then
                f_bleaf     = cpatch%bleaf    (ico) / bloss_max
                f_broot     = cpatch%broot    (ico) / bloss_max
-               f_bbark     = cpatch%bbark    (ico) / bloss_max
+               f_bbarka    = cpatch%bbarka   (ico) / bloss_max
+               f_bbarkb    = cpatch%bbarkb   (ico) / bloss_max
             else
                f_bleaf     = 0.
                f_broot     = 0.
-               f_bbark     = 0.
+               f_bbarka    = 0.
+               f_bbarkb    = 0.
             end if
 
             if (bloss_max > carbon_debt) then
                !----- Remove biomass accordingly. -----------------------------------------!
                tr_bleaf     = -1.0 * carbon_debt * f_bleaf
                tr_broot     = -1.0 * carbon_debt * f_broot
-               tr_bbark     = -1.0 * carbon_debt * f_bbark
+               tr_bbarka    = -1.0 * carbon_debt * f_bbarka
+               tr_bbarkb    = -1.0 * carbon_debt * f_bbarkb
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
@@ -1167,7 +1247,8 @@ module growth_balive
                carbon_debt  = carbon_debt - bloss_max
                tr_bleaf     = -1.0 * cpatch%bleaf    (ico)
                tr_broot     = -1.0 * cpatch%broot    (ico)
-               tr_bbark     = -1.0 * cpatch%bbark    (ico)
+               tr_bbarka    = -1.0 * cpatch%bbarka   (ico)
+               tr_bbarkb    = -1.0 * cpatch%bbarkb   (ico)
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -1218,8 +1299,9 @@ module growth_balive
    !=======================================================================================!
    !=======================================================================================!
    subroutine apply_c_xfers(cpatch,ico,carbon_balance,tr_bleaf,tr_broot,tr_bsapwooda       &
-                           ,tr_bsapwoodb,tr_bbark,tr_bstorage)
+                           ,tr_bsapwoodb,tr_bbarka,tr_bbarkb,tr_bstorage)
       use ed_state_vars , only : patchtype  ! ! structure
+      use allometry     , only : ed_balive  ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target        :: cpatch
@@ -1229,7 +1311,8 @@ module growth_balive
       real           , intent(in)    :: tr_broot
       real           , intent(in)    :: tr_bsapwooda
       real           , intent(in)    :: tr_bsapwoodb
-      real           , intent(in)    :: tr_bbark
+      real           , intent(in)    :: tr_bbarka
+      real           , intent(in)    :: tr_bbarkb
       real           , intent(in)    :: tr_bstorage
       !------------------------------------------------------------------------------------!
 
@@ -1241,20 +1324,18 @@ module growth_balive
       cpatch%broot    (ico) = cpatch%broot    (ico) + tr_broot
       cpatch%bsapwooda(ico) = cpatch%bsapwooda(ico) + tr_bsapwooda
       cpatch%bsapwoodb(ico) = cpatch%bsapwoodb(ico) + tr_bsapwoodb
-      cpatch%bbark    (ico) = cpatch%bbark    (ico) + tr_bbark
-
-      cpatch%balive   (ico) = cpatch%bleaf(ico)     + cpatch%broot(ico)                    &
-                            + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                &
-                            + cpatch%bbark(ico)
+      cpatch%bbarka   (ico) = cpatch%bbarka   (ico) + tr_bbarka
+      cpatch%bbarkb   (ico) = cpatch%bbarkb   (ico) + tr_bbarkb
+      cpatch%balive   (ico) = ed_balive(cpatch,ico)
       !------------------------------------------------------------------------------------!
 
 
       !----- NPP allocation in diff pools in KgC/m2/day. ----------------------------------!
-      cpatch%today_nppleaf(ico)    = tr_bleaf       * cpatch%nplant(ico)
-      cpatch%today_nppfroot(ico)   = tr_broot       * cpatch%nplant(ico)
-      cpatch%today_nppsapwood(ico) = (tr_bsapwooda + tr_bsapwoodb)* cpatch%nplant(ico)
-      cpatch%today_nppbark(ico)    = tr_bbark       * cpatch%nplant(ico)
-      cpatch%today_nppdaily(ico)   = carbon_balance * cpatch%nplant(ico)
+      cpatch%today_nppleaf(ico)    = tr_bleaf                      * cpatch%nplant(ico)
+      cpatch%today_nppfroot(ico)   = tr_broot                      * cpatch%nplant(ico)
+      cpatch%today_nppsapwood(ico) = (tr_bsapwooda + tr_bsapwoodb) * cpatch%nplant(ico)
+      cpatch%today_nppbark(ico)    = (tr_bbarka    + tr_bbarkb   ) * cpatch%nplant(ico)
+      cpatch%today_nppdaily(ico)   = carbon_balance                * cpatch%nplant(ico)
       !------------------------------------------------------------------------------------!
 
 
@@ -1327,7 +1408,8 @@ module growth_balive
                                     - cpatch%root_growth_resp (ico)                        &
                                     - cpatch%sapa_growth_resp (ico)                        &
                                     - cpatch%sapb_growth_resp (ico)                        &
-                                    - cpatch%bark_growth_resp (ico)
+                                    - cpatch%barka_growth_resp(ico)                        &
+                                    - cpatch%barkb_growth_resp(ico)
       !------------------------------------------------------------------------------------!
 
       if (cpatch%nplant(ico) > tiny(1.0)) then
@@ -1395,30 +1477,31 @@ module growth_balive
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,25(1x,a18))')                                    &
+            write (unit=30+ipft,fmt='(a10,27(1x,a18))')                                    &
                '      TIME','             PATCH','            COHORT','            NPLANT' &
                            ,'          CB_TODAY','  LEAF_GROWTH_RESP','  ROOT_GROWTH_RESP' &
-                           ,'  SAPA_GROWTH_RESP','  SAPB_GROWTH_RESP','  BARK_GROWTH_RESP' &
-                           ,'         TODAY_GPP','TODAY_GPP_LIGHTMAX','TODAY_GPP_MOISTMAX' &
-                           ,'   TODAY_GPP_MLMAX','   TODAY_LEAF_RESP','   TODAY_ROOT_RESP' &
-                           ,' CB_LIGHTMAX_TODAY',' CB_MOISTMAX_TODAY','    CB_MLMAX_TODAY' &
-                           ,'                CB','       CB_LIGHTMAX','       CB_MOISTMAX' &
-                           ,'          CB_MLMAX','  LEAF_MAINTENANCE','  ROOT_MAINTENANCE' &
-                           ,'  BARK_MAINTENANCE'
+                           ,'  SAPA_GROWTH_RESP','  SAPB_GROWTH_RESP',' BARKA_GROWTH_RESP' &
+                           ,' BARKB_GROWTH_RESP','         TODAY_GPP','TODAY_GPP_LIGHTMAX' &
+                           ,'TODAY_GPP_MOISTMAX','   TODAY_GPP_MLMAX','   TODAY_LEAF_RESP' &
+                           ,'   TODAY_ROOT_RESP',' CB_LIGHTMAX_TODAY',' CB_MOISTMAX_TODAY' &
+                           ,'    CB_MLMAX_TODAY','                CB','       CB_LIGHTMAX' &
+                           ,'       CB_MOISTMAX','          CB_MLMAX','  LEAF_MAINTENANCE' &
+                           ,'  ROOT_MAINTENANCE',' BARKA_MAINTENANCE',' BARKB_MAINTENANCE'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),24(1x,es18.5))')               &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),25(1x,es18.5))')               &
               current_time%month,'/',current_time%date,'/',current_time%year               &
              ,ipa,ico,cpatch%nplant(ico),carbon_balance,cpatch%leaf_growth_resp(ico)       &
              ,cpatch%root_growth_resp(ico),cpatch%sapa_growth_resp(ico)                    &
-             ,cpatch%sapb_growth_resp(ico),cpatch%bark_growth_resp(ico)                    &
-             ,cpatch%today_gpp(ico),cpatch%today_gpp_lightmax(ico)                         &
-             ,cpatch%today_gpp_moistmax(ico),cpatch%today_gpp_mlmax(ico)                   &
-             ,cpatch%today_leaf_resp(ico),cpatch%today_root_resp(ico)                      &
-             ,carbon_balance_lightmax,carbon_balance_moistmax,carbon_balance_mlmax         &
-             ,cpatch%cb(13,ico),cpatch%cb_lightmax(13,ico),cpatch%cb_moistmax(13,ico)      &
-             ,cpatch%cb_mlmax(13,ico),cpatch%leaf_maintenance(ico)                         &
-             ,cpatch%root_maintenance(ico),cpatch%bark_maintenance(ico)
+             ,cpatch%sapb_growth_resp(ico),cpatch%barka_growth_resp(ico)                   &
+             ,cpatch%barkb_growth_resp(ico),cpatch%today_gpp(ico)                          &
+             ,cpatch%today_gpp_lightmax(ico),cpatch%today_gpp_moistmax(ico)                &
+             ,cpatch%today_gpp_mlmax(ico),cpatch%today_leaf_resp(ico)                      &
+             ,cpatch%today_root_resp(ico),carbon_balance_lightmax,carbon_balance_moistmax  &
+             ,carbon_balance_mlmax,cpatch%cb(13,ico),cpatch%cb_lightmax(13,ico)            &
+             ,cpatch%cb_moistmax(13,ico),cpatch%cb_mlmax(13,ico)                           &
+             ,cpatch%leaf_maintenance(ico),cpatch%root_maintenance(ico)                    &
+             ,cpatch%barka_maintenance(ico),cpatch%barkb_maintenance(ico)
       end if
 
       return
@@ -1528,8 +1611,10 @@ module growth_balive
       type(patchtype) , pointer    :: cpatch
       integer                      :: ico
       integer                      :: ipft
-      real                         :: f_litter
-      real                         :: s_litter
+      real                         :: fg_litter
+      real                         :: fs_litter
+      real                         :: sg_litter
+      real                         :: ss_litter
       !------------------------------------------------------------------------------------!
 
       cpatch => csite%patch(ipa)
@@ -1541,23 +1626,33 @@ module growth_balive
          ipft = cpatch%pft(ico)
 
          !----- Split litter into fast (labile) and structural. ---------------------------!
-         f_litter = cpatch%nplant(ico)                                                     &
-                  * ( f_labile_leaf(ipft)                                                  &
-                    * ( cpatch%leaf_maintenance(ico) + cpatch%root_maintenance(ico) )      &
-                    + f_labile_stem(ipft) * cpatch%bark_maintenance(ico) )
-         s_litter = cpatch%nplant(ico)                                                     &
-                  * ( ( 1.0 - f_labile_leaf(ipft) )                                        &
-                    * ( cpatch%leaf_maintenance(ico) + cpatch%root_maintenance(ico) )      &
-                    + ( 1.0 - f_labile_stem(ipft) ) * cpatch%bark_maintenance(ico)    )
+         fg_litter = cpatch%nplant(ico)                                                    &
+                  * ( f_labile_leaf(ipft) * cpatch%leaf_maintenance(ico)                   &
+                    + f_labile_stem(ipft) * cpatch%barka_maintenance(ico) )
+         fs_litter = cpatch%nplant(ico)                                                    &
+                  * ( f_labile_leaf(ipft) * cpatch%root_maintenance(ico)                   &
+                    + f_labile_stem(ipft) * cpatch%barkb_maintenance(ico) )
+         sg_litter = cpatch%nplant(ico)                                                    &
+                  * ( (1.0 - f_labile_leaf(ipft)) * cpatch%leaf_maintenance(ico)           &
+                    + (1.0 - f_labile_stem(ipft)) * cpatch%barka_maintenance(ico) )
+         ss_litter = cpatch%nplant(ico)                                                    &
+                  * ( (1.0 - f_labile_leaf(ipft)) * cpatch%root_maintenance(ico)           &
+                    + (1.0 - f_labile_stem(ipft)) * cpatch%barkb_maintenance(ico) )
          !---------------------------------------------------------------------------------!
 
 
 
          !------ Update soil carbon and soil nitrogen. ------------------------------------!
-         csite%fsc_in(ipa) = csite%fsc_in(ipa) + f_litter
-         csite%fsn_in(ipa) = csite%fsn_in(ipa) + f_litter / c2n_leaf(ipft)
-         csite%ssc_in(ipa) = csite%ssc_in(ipa) + s_litter
-         csite%ssl_in(ipa) = csite%ssl_in(ipa) + s_litter * l2n_stem / c2n_stem(ipft)
+         csite%fgc_in (ipa) = csite%fgc_in (ipa) + fg_litter
+         csite%fsc_in (ipa) = csite%fsc_in (ipa) + fs_litter
+         csite%fgn_in (ipa) = csite%fgn_in (ipa) + fg_litter / c2n_leaf(ipft)
+         csite%fsn_in (ipa) = csite%fsn_in (ipa) + fs_litter / c2n_leaf(ipft)
+         csite%stgc_in(ipa) = csite%stgc_in(ipa) + sg_litter
+         csite%stsc_in(ipa) = csite%stsc_in(ipa) + ss_litter
+         csite%stgl_in(ipa) = csite%stgl_in(ipa) + sg_litter * l2n_stem / c2n_stem(ipft)
+         csite%stsl_in(ipa) = csite%stsl_in(ipa) + ss_litter * l2n_stem / c2n_stem(ipft)
+         csite%stgn_in(ipa) = csite%stgn_in(ipa) + sg_litter / c2n_stem(ipft)
+         csite%stsn_in(ipa) = csite%stsn_in(ipa) + ss_litter / c2n_stem(ipft)
          !---------------------------------------------------------------------------------!
       end do
       return

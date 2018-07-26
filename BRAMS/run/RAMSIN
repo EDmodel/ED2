@@ -2468,12 +2468,15 @@ $ED2_INFO
    !                      limitation only).                                                !
    !                  1.  Lloyd and Taylor (1994) model                                    !
    !                      [[option 1 requires parameters to be set in xml]]                !
-   !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
-   !                      reaches a maximum at around 38C (using the default parameters),  !
-   !                      then quickly falls to zero at around 50C.  It applies a similar  !
-   !                      function for soil moisture, which allows higher decomposition    !
-   !                      rates when it is close to the optimal, plumetting when it is     !
-   !                      almost saturated.                                                !
+   !                  2.  RothC model, which contains one extra pools (microbial SOM),     !
+   !                      based on Sierra et al. (2012, GMD).  The inertial/passive pool   !
+   !                      was  not included because RothC assumes it to be completely      !
+   !                      detached from the other ground/soil carbon pools.  Thee temper-  !
+   !                      ature and moisture dependencies are similar to ED-1.0 and the    !
+   !                      CENTURY models, although the functional forms were rewritten so  !
+   !                      the functions were continuous AND differentiable (moisture) and  !
+   !                      without the risk of FPE due to the square root of negative       !
+   !                      numbers (temperature).                                           !
    !---------------------------------------------------------------------------------------!
    DECOMP_SCHEME   = 2,
    !---------------------------------------------------------------------------------------!

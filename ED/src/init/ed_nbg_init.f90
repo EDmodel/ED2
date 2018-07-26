@@ -28,6 +28,9 @@ module ed_nbg_init
                                 , init_ed_patch_vars  & ! subroutine
                                 , init_ed_site_vars   & ! subroutine
                                 , init_ed_poly_vars   ! ! subroutine
+      use decomp_coms    , only : agf_fsc             & ! intent(in)
+                                , agf_stsc            & ! intent(in)
+                                , c2n_structural      ! ! intent(in)
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
@@ -63,21 +66,33 @@ module ed_nbg_init
             !------------------------------------------------------------------------------!
             select case (n_plant_lim)
             case (0)
-               csite%fast_soil_C        (1) = 0.0
-               csite%slow_soil_C        (1) = 0.0
-               csite%structural_soil_C  (1) = 0.0
-               csite%structural_soil_L  (1) = 0.0
-               csite%mineralized_soil_N (1) = 0.0
-               csite%fast_soil_N        (1) = 0.0
-
+               csite%fast_grnd_C       (1) = 0.0
+               csite%fast_soil_C       (1) = 0.0
+               csite%structural_grnd_C (1) = 0.0
+               csite%structural_soil_C (1) = 0.0
+               csite%structural_grnd_L (1) = 0.0
+               csite%structural_soil_L (1) = 0.0
+               csite%microbial_soil_C  (1) = 0.0
+               csite%slow_soil_C       (1) = 0.0
+               csite%fast_grnd_N       (1) = 0.0
+               csite%fast_soil_N       (1) = 0.0
+               csite%structural_grnd_N (1) = 0.0
+               csite%structural_soil_N (1) = 0.0
+               csite%mineralized_soil_N(1) = 0.0
             case (1)
-               csite%fast_soil_C        (1) = 0.2
-               csite%slow_soil_C        (1) = 0.01
-               csite%structural_soil_C  (1) = 10.0
-               csite%structural_soil_L  (1) = csite%structural_soil_C (1)
-               csite%mineralized_soil_N (1) = 1.0
-               csite%fast_soil_N        (1) = 1.0
-
+               csite%fast_grnd_C       (1) = agf_fsc * 0.2
+               csite%fast_soil_C       (1) = (1.0 - agf_fsc) * 0.2
+               csite%structural_grnd_C (1) = agf_stsc * 10.0
+               csite%structural_soil_C (1) = (1.0 - agf_stsc) * 10.0
+               csite%structural_grnd_L (1) = csite%structural_grnd_C(1)
+               csite%structural_soil_L (1) = csite%structural_soil_C(1)
+               csite%microbial_soil_C  (1) = 0.2
+               csite%slow_soil_C       (1) = 0.01
+               csite%fast_grnd_N       (1) = agf_fsc * 1.0
+               csite%fast_soil_N       (1) = (1.0 - agf_fsc) * 1.0
+               csite%structural_grnd_N (1) = csite%structural_grnd_C(1) / c2n_structural
+               csite%structural_soil_N (1) = csite%structural_soil_C(1) / c2n_structural
+               csite%mineralized_soil_N(1) = 1.0
             end select
             !------------------------------------------------------------------------------!
 
@@ -149,6 +164,7 @@ module ed_nbg_init
                                     , size2bl             & ! function
                                     , size2bt             & ! function
                                     , size2xb             & ! function
+                                    , ed_balive           & ! function
                                     , ed_biomass          & ! function
                                     , area_indices        ! ! subroutine
       use fuse_fiss_utils    , only : sort_cohorts        ! ! subroutine
@@ -165,6 +181,7 @@ module ed_nbg_init
       integer               , intent(in) :: ipa_z             ! Last patch
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)       , pointer    :: cpatch            ! Current patch
+      real                               :: bdeadx            ! Heartwood biomass
       integer                            :: ipa               ! Patch number
       integer                            :: ico               ! Cohort counter
       integer                            :: mypfts            ! Number of included PFTs
@@ -257,19 +274,21 @@ module ed_nbg_init
             cpatch%hite(ico)             = hgt_min(ipft)
             cpatch%phenology_status(ico) = 0
             cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-            cpatch%bdead(ico)            = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
+            cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
             cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%sla(ico)              = sla(ipft)
             cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
-            cpatch%bsapwooda(ico)        = cpatch%bleaf(ico)                               &
-                                         * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
-            cpatch%bsapwoodb(ico)        = cpatch%bleaf(ico)                               &
-                                         * qsw(ipft) * cpatch%hite(ico) * (1.-agf_bs(ipft))
-            cpatch%bbark(ico)            = cpatch%bleaf(ico)                               &
+            cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)                &
+                                         * qsw(ipft) * cpatch%hite(ico)
+            cpatch%bsapwoodb(ico)        = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
+                                         * qsw(ipft) * cpatch%hite(ico)
+            cpatch%bbarka(ico)           = agf_bs(ipft) * cpatch%bleaf(ico)                &
                                          * qbark(ipft) * cpatch%hite(ico)
-            cpatch%balive(ico)           = cpatch%bleaf(ico) + cpatch%broot(ico)           &
-                                         + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)   &
-                                         + cpatch%bbark(ico)
+            cpatch%bbarkb(ico)           = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
+                                         * qbark(ipft) * cpatch%hite(ico)
+            cpatch%balive(ico)           = ed_balive(cpatch,ico)
             cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))          &
                                          * cpatch%balive(ico)
             !------------------------------------------------------------------------------!
@@ -316,10 +335,11 @@ module ed_nbg_init
             cpatch%agb    (ico) = ed_biomass(cpatch, ico)
             cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
             cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)                 &
-                                         ,cpatch%bdead(ico),cpatch%bsapwooda(ico)          &
-                                         ,cpatch%bbark(ico),cpatch%pft(ico))
+                                         ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)         &
+                                         ,cpatch%bbarka(ico),cpatch%pft(ico))
             cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)                 &
-                                         ,cpatch%bbark(ico),cpatch%pft(ico))
+                                         ,cpatch%bbarka(ico),cpatch%bbarkb(ico)            &
+                                         ,cpatch%pft(ico))
             !------------------------------------------------------------------------------!
 
 
@@ -382,6 +402,7 @@ module ed_nbg_init
                                     , size2bl             & ! function
                                     , size2bt             & ! function
                                     , size2xb             & ! function
+                                    , ed_balive           & ! function
                                     , ed_biomass          & ! function
                                     , area_indices        ! ! subroutine
       use fuse_fiss_utils    , only : sort_cohorts        ! ! subroutine
@@ -400,6 +421,7 @@ module ed_nbg_init
       integer                     :: ipa           ! Patch number
       integer                     :: ico           ! Cohort counter
       integer                     :: ipft          ! PFT counter
+      real                        :: bdeadx        ! Total heartwood biomass
       real                        :: height        ! Cohort initial height
       !----- Local constants. -------------------------------------------------------------!
       integer        , parameter  :: nlayers = 8   ! # of cohort layers to be included.
@@ -441,20 +463,21 @@ module ed_nbg_init
             cpatch%hite(ico)             = height
             cpatch%phenology_status(ico) = 0
             cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-            cpatch%bdead(ico)            = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
+            cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
             cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%sla(ico)              = sla(ipft)
-
-            cpatch%broot(ico)            = cpatch%bleaf(ico) * q(ipft)
-            cpatch%bsapwooda(ico)        = cpatch%bleaf(ico)                               &
-                                         * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
-            cpatch%bsapwoodb(ico)        = cpatch%bleaf(ico)                               &
-                                         * qsw(ipft) * cpatch%hite(ico) * (1.-agf_bs(ipft))
-            cpatch%bbark(ico)            = cpatch%bleaf(ico)                               &
+            cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
+            cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)                &
+                                         * qsw(ipft) * cpatch%hite(ico)
+            cpatch%bsapwoodb(ico)        = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
+                                         * qsw(ipft) * cpatch%hite(ico)
+            cpatch%bbarka(ico)           = agf_bs(ipft) * cpatch%bleaf(ico)                &
                                          * qbark(ipft) * cpatch%hite(ico)
-            cpatch%balive(ico)           = cpatch%bleaf(ico) + cpatch%broot(ico)           &
-                                         + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)   &
-                                         + cpatch%bbark(ico)
+            cpatch%bbarkb(ico)           = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
+                                         * qbark(ipft) * cpatch%hite(ico)
+            cpatch%balive(ico)           = ed_balive(cpatch,ico)
             cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))          &
                                          * cpatch%balive(ico)
 
@@ -499,10 +522,11 @@ module ed_nbg_init
             cpatch%agb    (ico) = ed_biomass(cpatch, ico)
             cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
             cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)                 &
-                                         ,cpatch%bdead(ico),cpatch%bsapwooda(ico)          &
-                                         ,cpatch%bbark(ico),cpatch%pft(ico))
+                                         ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)         &
+                                         ,cpatch%bbarka(ico),cpatch%pft(ico))
             cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)                 &
-                                         ,cpatch%bbark(ico),cpatch%pft(ico))
+                                         ,cpatch%bbarka(ico),cpatch%bbarkb(ico)            &
+                                         ,cpatch%pft(ico))
             !------------------------------------------------------------------------------!
 
             !----- Initialize other cohort-level variables. -------------------------------!
@@ -567,12 +591,16 @@ module ed_nbg_init
                                     , size2bl             & ! function
                                     , size2bt             & ! function
                                     , size2xb             & ! function
+                                    , ed_balive           & ! function
                                     , ed_biomass          & ! function
                                     , area_indices        ! ! subroutine
       use ed_type_init       , only : init_ed_cohort_vars & ! subroutine
                                     , init_ed_patch_vars  & ! subroutine
                                     , init_ed_site_vars   & ! subroutine
                                     , init_ed_poly_vars   ! ! subroutine
+      use decomp_coms        , only : agf_fsc             & ! intent(in)
+                                    , agf_stsc            & ! intent(in)
+                                    , c2n_structural      ! ! intent(in)
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
@@ -581,6 +609,7 @@ module ed_nbg_init
       type(polygontype) , pointer :: cpoly             ! Current polygon
       type(sitetype)    , pointer :: csite             ! Current site
       type(patchtype)   , pointer :: cpatch            ! Current patch
+      real                        :: bdeadx            ! Total heartwood biomass
       integer                     :: ipy               ! Patch counter
       integer                     :: ico               ! Cohort counter
       integer                     :: isi               ! Site counter
@@ -620,21 +649,35 @@ module ed_nbg_init
 
                select case (n_plant_lim)
                case (0)
-                  csite%fast_soil_C        (ipa) = 0.0
-                  csite%slow_soil_C        (ipa) = 0.0
-                  csite%structural_soil_C  (ipa) = 0.0
-                  csite%structural_soil_L  (ipa) = 0.0
-                  csite%mineralized_soil_N (ipa) = 0.0
-                  csite%fast_soil_N        (ipa) = 0.0
-
+                  csite%fast_grnd_C       (ipa) = 0.0
+                  csite%fast_soil_C       (ipa) = 0.0
+                  csite%structural_grnd_C (ipa) = 0.0
+                  csite%structural_soil_C (ipa) = 0.0
+                  csite%structural_grnd_L (ipa) = 0.0
+                  csite%structural_soil_L (ipa) = 0.0
+                  csite%microbial_soil_C  (ipa) = 0.0
+                  csite%slow_soil_C       (ipa) = 0.0
+                  csite%fast_grnd_N       (ipa) = 0.0
+                  csite%fast_soil_N       (ipa) = 0.0
+                  csite%structural_grnd_N (ipa) = 0.0
+                  csite%structural_soil_N (ipa) = 0.0
+                  csite%mineralized_soil_N(ipa) = 0.0
                case (1)
-                  csite%fast_soil_C        (ipa) = 0.2
-                  csite%slow_soil_C        (ipa) = 0.01
-                  csite%structural_soil_C  (ipa) = 10.0
-                  csite%structural_soil_L  (ipa) = csite%structural_soil_C (1)
-                  csite%mineralized_soil_N (ipa) = 1.0
-                  csite%fast_soil_N        (ipa) = 1.0
-
+                  csite%fast_grnd_C       (ipa) = agf_fsc * 0.2
+                  csite%fast_soil_C       (ipa) = (1.0 - agf_fsc) * 0.2
+                  csite%structural_grnd_C (ipa) = agf_stsc * 10.0
+                  csite%structural_soil_C (ipa) = (1.0 - agf_stsc) * 10.0
+                  csite%structural_grnd_L (ipa) = csite%structural_grnd_C(ipa)
+                  csite%structural_soil_L (ipa) = csite%structural_soil_C(ipa)
+                  csite%microbial_soil_C  (ipa) = 0.2
+                  csite%slow_soil_C       (ipa) = 0.01
+                  csite%fast_grnd_N       (ipa) = agf_fsc * 1.0
+                  csite%fast_soil_N       (ipa) = (1.0 - agf_fsc) * 1.0
+                  csite%structural_grnd_N (ipa) = csite%structural_grnd_C(ipa)             &
+                                                / c2n_structural
+                  csite%structural_soil_N (ipa) = csite%structural_soil_C(ipa)             &
+                                                / c2n_structural
+                  csite%mineralized_soil_N(ipa) = 1.0
                end select
                !---------------------------------------------------------------------------!
 
@@ -668,22 +711,23 @@ module ed_nbg_init
                   cpatch%dbh(ico)              = dbh_bigleaf(ipft)
                   cpatch%hite(ico)             = hgt_max(ipft)
                   cpatch%phenology_status(ico) = 0
-                  cpatch%bdead(ico)            = size2bd(cpatch%dbh(ico)                   &
-                                                        ,cpatch%hite(ico),ipft)
-                  cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico)                   &
-                                                        ,cpatch%hite(ico),ipft)
+                  bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico)  &
+                                                        ,ipft)
+                  cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
+                  cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
+                  cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)  &
+                                                        ,ipft)
                   cpatch%sla(ico)              = sla(ipft)
-
-                  cpatch%broot(ico)            = cpatch%bleaf(ico) * q(ipft)
-                  cpatch%bsapwooda(ico)        = cpatch%bleaf(ico) * qsw(ipft)             &
-                                               * cpatch%hite(ico)  * agf_bs(ipft)
-                  cpatch%bsapwoodb(ico)        = cpatch%bleaf(ico) * qsw(ipft)             &
-                                               * cpatch%hite(ico)  * (1. - agf_bs(ipft))
-                  cpatch%bbark(ico)            = cpatch%bleaf(ico)                         &
+                  cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
+                  cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)          &
+                                               * qsw(ipft) * cpatch%hite(ico)
+                  cpatch%bsapwoodb(ico)        = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)     &
+                                               * qsw(ipft) * cpatch%hite(ico)
+                  cpatch%bbarka(ico)           = agf_bs(ipft) * cpatch%bleaf(ico)          &
                                                * qbark(ipft) * cpatch%hite(ico)
-                  cpatch%balive(ico)           = cpatch%bleaf(ico) + cpatch%broot(ico)     &
-                                               + cpatch%bsapwooda(ico)                     &
-                                               + cpatch%bsapwoodb(ico) + cpatch%bbark(ico)
+                  cpatch%bbarkb(ico)           = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)     &
+                                               * qbark(ipft) * cpatch%hite(ico)
+                  cpatch%balive(ico)           = ed_balive(cpatch,ico)
                   cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))    &
                                                * cpatch%balive(ico)
 
@@ -726,10 +770,11 @@ module ed_nbg_init
                   cpatch%agb    (ico) = ed_biomass(cpatch, ico)
                   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
                   cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)           &
-                                               ,cpatch%bdead(ico),cpatch%bsapwooda(ico)    &
-                                               ,cpatch%bbark(ico),cpatch%pft(ico))
+                                               ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)   &
+                                               ,cpatch%bbarka(ico),cpatch%pft(ico))
                   cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)           &
-                                               ,cpatch%bbark(ico),cpatch%pft(ico))
+                                               ,cpatch%bbarka(ico),cpatch%bbarkb(ico)      &
+                                               ,cpatch%pft(ico))
                   !------------------------------------------------------------------------!
 
 

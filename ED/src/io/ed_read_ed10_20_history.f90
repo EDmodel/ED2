@@ -48,11 +48,16 @@ subroutine read_ed10_ed20_history_file
                              , size2bl             & ! function
                              , size2bt             & ! function
                              , size2xb             & ! function
+                             , ed_balive           & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
                              , sort_patches        ! ! subroutine
    use disturb_coms   , only : ianth_disturb       ! ! intent(in)
+   use decomp_coms    , only : decomp_scheme       & ! intent(in)
+                             , agf_fsc             & ! intent(in)
+                             , agf_stsc            & ! intent(in)
+                             , c2n_structural      ! ! intent(in)
    use physiology_coms, only : iddmort_scheme      ! ! intent(in)
    use ed_type_init   , only : init_ed_cohort_vars & ! subroutine
                              , init_ed_patch_vars  & ! subroutine
@@ -123,7 +128,7 @@ subroutine read_ed10_ed20_history_file
    real                 , dimension(huge_patch)           :: stsc
    real                 , dimension(huge_patch)           :: stsl
    real                 , dimension(huge_patch)           :: ssc
-   real                 , dimension(huge_patch)           :: psc
+   real                 , dimension(huge_patch)           :: msc
    real                 , dimension(huge_patch)           :: msn
    real                 , dimension(huge_patch)           :: fsn
    real                 , dimension(max_water,huge_patch) :: water
@@ -151,6 +156,7 @@ subroutine read_ed10_ed20_history_file
    real(kind=8)                                           :: dstsl
    real(kind=8)                                           :: dssc
    real(kind=8)                                           :: dpsc
+   real(kind=8)                                           :: dmsc
    real(kind=8)                                           :: dmsn
    real(kind=8)                                           :: dfsn
    !----- External function. --------------------------------------------------------------!
@@ -296,7 +302,7 @@ subroutine read_ed10_ed20_history_file
                   stsc  (ip) = sngloff(dstsc      ,min_ok  )
                   stsl  (ip) = sngloff(dstsl      ,min_ok  )
                   ssc   (ip) = sngloff(dssc       ,min_ok  )
-                  psc   (ip) = sngloff(dpsc       ,min_ok  )
+                  msc   (ip) = 0.0
                   msn   (ip) = sngloff(dmsn       ,min_ok  )
                   fsn   (ip) = sngloff(dfsn       ,min_ok  )
                   do nw=1,nwater
@@ -307,7 +313,7 @@ subroutine read_ed10_ed20_history_file
                   !----- Standard ED-2.0 file. --------------------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) time(ip),pname(ip),trk(ip),dage,darea    &
                                                  ,dwater(1),dfsc,dstsc,dstsl,dssc,dummy    &
-                                                 ,dmsn,dfsn
+                                                 ,dmsn,dfsn,dmsc
 
                   !------------------------------------------------------------------------!
                   !     Check whether the file has hit the end, and if so, leave the loop. !
@@ -323,13 +329,14 @@ subroutine read_ed10_ed20_history_file
                   ssc    (ip) = sngloff(dssc     ,min_ok  )
                   msn    (ip) = sngloff(dmsn     ,min_ok  )
                   fsn    (ip) = sngloff(dfsn     ,min_ok  )
+                  msc    (ip) = sngloff(dmsc     ,min_ok  )
                   water(1,ip) = sngloff(dwater(1),min_ok  )
 
                case (3)
                   !----- ED-2.0 file, with site information. ------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip)   &
                                                  ,age(ip),darea,water(1,ip),fsc(ip)        &
-                                                 ,stsc(ip),stsl(ip),ssc(ip),psc(ip)        &
+                                                 ,stsc(ip),stsl(ip),ssc(ip),dpsc           &
                                                  ,msn(ip),fsn(ip)
 
                   !------------------------------------------------------------------------!
@@ -484,16 +491,37 @@ subroutine read_ed10_ed20_history_file
                      csite%light_type        (ip2) = 1
                      csite%age               (ip2) = age (ip)
                      csite%area              (ip2) = area(ip)
-                     csite%fast_soil_C       (ip2) = fsc (ip)
+                     csite%fast_grnd_C       (ip2) =        agf_fsc  * fsc (ip)
+                     csite%fast_soil_C       (ip2) = (1.0 - agf_fsc) * fsc (ip)
                      csite%slow_soil_C       (ip2) = ssc (ip)
-                     csite%structural_soil_C (ip2) = stsc(ip)
-                     csite%structural_soil_L (ip2) = stsl(ip)
+                     csite%structural_grnd_C (ip2) =        agf_stsc  * stsc(ip)
+                     csite%structural_soil_C (ip2) = (1.0 - agf_stsc) * stsc(ip)
+                     csite%structural_grnd_L (ip2) =        agf_stsc  * stsl(ip)
+                     csite%structural_soil_L (ip2) = (1.0 - agf_stsc) * stsl(ip)
+                     csite%fast_grnd_N       (ip2) =        agf_fsc  * fsn (ip)
+                     csite%fast_soil_N       (ip2) = (1.0 - agf_fsc) * fsn (ip)
+                     csite%structural_grnd_N (ip2) = csite%structural_grnd_C (ip2)         &
+                                                   / c2n_structural
+                     csite%structural_soil_N (ip2) = csite%structural_soil_C (ip2)         &
+                                                   / c2n_structural
                      csite%mineralized_soil_N(ip2) = msn (ip)
-                     csite%fast_soil_N       (ip2) = fsn (ip)
                      csite%pname             (ip2) = trim(pname(ip))
                      csite%sum_dgd           (ip2) = 0.0
                      csite%sum_chd           (ip2) = 0.0
                      csite%cohort_count      (ip2) = 0
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !     Check decomposition scheme before assigning microbial carbon.   !
+                     !---------------------------------------------------------------------!
+                     select case (decomp_scheme)
+                     case (2)
+                        csite%microbial_soil_C(ip2) = msc(ip)
+                     case default
+                        csite%microbial_soil_C(ip2) = 0.0
+                     end select
+                     !---------------------------------------------------------------------!
                   end if
                end do
                !---- Initialize the cohort counts per patch. ------------------------------!
@@ -563,16 +591,36 @@ subroutine read_ed10_ed20_history_file
                   csite%light_type        (ip) = 1
                   csite%age               (ip) = age (ip)
                   csite%area              (ip) = area(ip)
-                  csite%fast_soil_C       (ip) = fsc (ip)
+                  csite%fast_grnd_C       (ip) =        agf_fsc  * fsc (ip)
+                  csite%fast_soil_C       (ip) = (1.0 - agf_fsc) * fsc (ip)
                   csite%slow_soil_C       (ip) = ssc (ip)
-                  csite%structural_soil_C (ip) = stsc(ip)
-                  csite%structural_soil_L (ip) = stsl(ip)
+                  csite%structural_grnd_C (ip) =        agf_stsc  * stsc(ip)
+                  csite%structural_soil_C (ip) = (1.0 - agf_stsc) * stsc(ip)
+                  csite%structural_grnd_L (ip) =        agf_stsc  * stsl(ip)
+                  csite%structural_soil_L (ip) = (1.0 - agf_stsc) * stsl(ip)
                   csite%mineralized_soil_N(ip) = msn (ip)
-                  csite%fast_soil_N       (ip) = fsn (ip)
+                  csite%fast_grnd_N       (ip) =        agf_fsc  * fsn (ip)
+                  csite%fast_soil_N       (ip) = (1.0 - agf_fsc) * fsn (ip)
+                  csite%structural_grnd_N (ip) = csite%structural_grnd_N (ip)              &
+                                               / c2n_structural
+                  csite%structural_soil_N (ip) = csite%structural_soil_N (ip)              &
+                                               / c2n_structural
                   csite%pname             (ip) = trim(pname(ip))
                   csite%sum_dgd           (ip) = 0.0
                   csite%sum_chd           (ip) = 0.0
                   csite%cohort_count      (ip) = 0
+
+
+                  !------------------------------------------------------------------------!
+                  !     Check decomposition scheme before assigning microbial carbon.      !
+                  !------------------------------------------------------------------------!
+                  select case (decomp_scheme)
+                  case (2)
+                     csite%microbial_soil_C(ip) = msc(ip)
+                  case default
+                     csite%microbial_soil_C(ip) = 0.0
+                  end select
+                  !------------------------------------------------------------------------!
                end do
                !---------------------------------------------------------------------------!
 
@@ -773,10 +821,12 @@ subroutine read_ed10_ed20_history_file
                         select case(ied_init_mode)
                         case (6)
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
-                           cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(cpatch%pft(ic2)))
-                           cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
-                           cpatch%bdead(ic2) = size2bd(cpatch%dbh(ic2),cpatch%hite(ic2)    &
-                                                      ,cpatch%pft(ic2))
+                           cpatch%dbh(ic2)    = max(dbh(ic),min_dbh(ipft(ic)))
+                           cpatch%hite(ic2)   = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
+                           bdead(ic)          = size2bd(cpatch%dbh(ic2),cpatch%hite(ic2)   &
+                                                       ,ipft(ic))
+                           cpatch%bdeada(ic2) =        agf_bs(ipft(ic))  * bdead(ic)
+                           cpatch%bdeadb(ic2) = (1.0 - agf_bs(ipft(ic))) * bdead(ic)
 
                         case default
                            !---------------------------------------------------------------!
@@ -787,14 +837,19 @@ subroutine read_ed10_ed20_history_file
                            ! equations.                                                    !
                            !---------------------------------------------------------------!
                            if (bdead(ic) > 0.0) then
-                              cpatch%bdead(ic2) = max(bdead(ic),min_bdead(cpatch%pft(ic2)))
-                              cpatch%dbh(ic2)   = bd2dbh(cpatch%pft(ic2),cpatch%bdead(ic2))
-                              cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
+                              bdead(ic)          = max(bdead(ic),min_bdead(ipft(ic)))
+                              cpatch%bdeada(ic2) =        agf_bs(ipft(ic))  * bdead(ic)
+                              cpatch%bdeadb(ic2) = (1.0 - agf_bs(ipft(ic))) * bdead(ic)
+                              cpatch%dbh(ic2)    = bd2dbh(ipft(ic),cpatch%bdeada(ic2)      &
+                                                         ,cpatch%bdeadb(ic2))
+                              cpatch%hite(ic2)   = dbh2h(ipft(ic),cpatch%dbh(ic2))
                            else
-                              cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(cpatch%pft(ic2)))
-                              cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
-                              cpatch%bdead(ic2) = size2bd(cpatch%dbh(ic2),cpatch%hite(ic2) &
-                                                         ,cpatch%pft(ic2))
+                              cpatch%dbh(ic2)    = max(dbh(ic),min_dbh(ipft(ic)))
+                              cpatch%hite(ic2)   = dbh2h(ipft(ic),cpatch%dbh(ic2))
+                              bdead(ic)          = size2bd(cpatch%dbh (ic2)                &
+                                                          ,cpatch%hite(ic2),ipft(ic) )
+                              cpatch%bdeada(ic2) =        agf_bs(ipft(ic))  * bdead(ic)
+                              cpatch%bdeadb(ic2) = (1.0 - agf_bs(ipft(ic))) * bdead(ic)
                            end if
                         end select
                         !------------------------------------------------------------------!
@@ -804,7 +859,7 @@ subroutine read_ed10_ed20_history_file
                         ! updated during phenology initialisation, but an initial assign-  !
                         ! ment is needed to obtain area indices.                           !
                         !------------------------------------------------------------------!
-                        cpatch%sla(ic2) = SLA(cpatch%pft(ic2))
+                        cpatch%sla(ic2) = SLA(ipft(ic))
                         !------------------------------------------------------------------!
 
 
@@ -813,21 +868,22 @@ subroutine read_ed10_ed20_history_file
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
                         cpatch%bleaf(ic2)     = size2bl(cpatch%dbh(ic2),cpatch%hite(ic2)   &
-                                                       ,cpatch%pft(ic2))
-                        cpatch%broot(ic2)     = cpatch%bleaf(ic2) * q(cpatch%pft(ic2))
-                        cpatch%bsapwooda(ic2) = agf_bs(cpatch%pft(ic2))                    &
+                                                       ,ipft(ic))
+                        cpatch%broot(ic2)     = cpatch%bleaf(ic2) * q(ipft(ic))
+                        cpatch%bsapwooda(ic2) = agf_bs(ipft(ic))                           &
                                               * cpatch%bleaf(ic2)                          &
-                                              * qsw(cpatch%pft(ic2))   * cpatch%hite(ic2)
-                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(cpatch%pft(ic2)))               &
+                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
+                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic)))                      &
                                               * cpatch%bleaf(ic2)                          &
-                                              * qsw(cpatch%pft(ic2))   * cpatch%hite(ic2)
-                        cpatch%bbark(ic2)     = cpatch%bleaf(ic2)                          &
-                                              * qbark(cpatch%pft(ic2)) * cpatch%hite(ic2)
-                        cpatch%balive(ic2)    = cpatch%bleaf(ic2) + cpatch%broot(ic2)      &
-                                              + cpatch%bsapwooda(ic2)                      &
-                                              + cpatch%bsapwoodb(ic2) + cpatch%bbark(ic2)
+                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
+                        cpatch%bbarka(ic2)    = agf_bs(ipft(ic))                           &
+                                              * cpatch%bleaf(ic2)                          &
+                                              * qbark(ipft(ic)) * cpatch%hite(ic2)
+                        cpatch%bbarkb(ic2)    = (1.-agf_bs(ipft(ic)))                      &
+                                              * cpatch%bleaf(ic2)                          &
+                                              * qbark(ipft(ic)) * cpatch%hite(ic2)
                         cpatch%bstorage(ic2)  = max( almost_zero                           &
-                                                   , f_bstorage_init(cpatch%pft(ic2)))     &
+                                                   , f_bstorage_init(ipft(ic)))     &
                                               * cpatch%balive(ic2)
                         !------------------------------------------------------------------!
 
@@ -838,6 +894,12 @@ subroutine read_ed10_ed20_history_file
                         ! phenology after this sub-routine.                                !
                         !------------------------------------------------------------------!
                         cpatch%phenology_status(ic2) = 0
+                        !------------------------------------------------------------------!
+
+
+
+                        !----- Assign biomass of living tissues. --------------------------!
+                        cpatch%balive(ic2) = ed_balive(cpatch, ic2)
                         !------------------------------------------------------------------!
 
 
@@ -888,13 +950,14 @@ subroutine read_ed10_ed20_history_file
                         cpatch%basarea(ic2) = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
                         cpatch%btimber(ic2) = size2bt( cpatch%dbh       (ic2)              &
                                                      , cpatch%hite      (ic2)              &
-                                                     , cpatch%bdead     (ic2)              &
+                                                     , cpatch%bdeada    (ic2)              &
                                                      , cpatch%bsapwooda (ic2)              &
-                                                     , cpatch%bbark     (ic2)              &
+                                                     , cpatch%bbarka    (ic2)              &
                                                      , cpatch%pft       (ic2) )
                         cpatch%thbark (ic2) = size2xb( cpatch%dbh       (ic2)              &
                                                      , cpatch%hite      (ic2)              &
-                                                     , cpatch%bbark     (ic2)              &
+                                                     , cpatch%bbarka    (ic2)              &
+                                                     , cpatch%bbarkb    (ic2)              &
                                                      , cpatch%pft       (ic2) )
 
                         !----- Growth rates, start with zero. -----------------------------!

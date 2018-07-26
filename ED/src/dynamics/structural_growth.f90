@@ -76,9 +76,11 @@ module structural_growth
       real                          :: broot_in
       real                          :: bsapwooda_in
       real                          :: bsapwoodb_in
-      real                          :: bbark_in
+      real                          :: bbarka_in
+      real                          :: bbarkb_in
       real                          :: balive_in
-      real                          :: bdead_in
+      real                          :: bdeada_in
+      real                          :: bdeadb_in
       real                          :: bevery_in
       real                          :: hite_in
       real                          :: dbh_in
@@ -99,24 +101,33 @@ module structural_growth
       real                          :: cbr_moist
       real                          :: cbr_ml
       real                          :: f_bseeds
-      real                          :: f_bdead
+      real                          :: f_bdeada
+      real                          :: f_bdeadb
       real                          :: f_growth
       real                          :: f_bstorage
-      real                          :: bfast_mort_litter
-      real                          :: bstruct_mort_litter
-      real                          :: bstorage_mort_litter
-      real                          :: bfast
-      real                          :: bstruct
-      real                          :: bstorage
+      real                          :: a_bfast_mort_litter
+      real                          :: b_bfast_mort_litter
+      real                          :: a_bstruct_mort_litter
+      real                          :: b_bstruct_mort_litter
+      real                          :: a_bstorage_mort_litter
+      real                          :: b_bstorage_mort_litter
+      real                          :: a_bfast
+      real                          :: b_bfast
+      real                          :: a_bstruct
+      real                          :: b_bstruct
+      real                          :: a_bstorage
+      real                          :: b_bstorage
       real                          :: dbh_aim
       real                          :: hite_aim
       real                          :: bleaf_aim
       real                          :: broot_aim
       real                          :: bsapwooda_aim
       real                          :: bsapwoodb_aim
-      real                          :: bbark_aim
+      real                          :: bbarka_aim
+      real                          :: bbarkb_aim
       real                          :: balive_aim
-      real                          :: bdead_aim
+      real                          :: bdeada_aim
+      real                          :: bdeadb_aim
       real                          :: bevery_aim
       real                          :: maxh !< maximum patch height
       real                          :: mort_litter
@@ -221,12 +232,14 @@ module structural_growth
                   ! back to these values later on in case vegetation dynamics is off).     !
                   !------------------------------------------------------------------------!
                   balive_in     = cpatch%balive          (ico)
-                  bdead_in      = cpatch%bdead           (ico)
+                  bdeada_in     = cpatch%bdeada          (ico)
+                  bdeadb_in     = cpatch%bdeadb          (ico)
                   bleaf_in      = cpatch%bleaf           (ico)
                   broot_in      = cpatch%broot           (ico)
                   bsapwooda_in  = cpatch%bsapwooda       (ico)
                   bsapwoodb_in  = cpatch%bsapwoodb       (ico)
-                  bbark_in      = cpatch%bbark           (ico)
+                  bbarka_in     = cpatch%bbarka          (ico)
+                  bbarkb_in     = cpatch%bbarkb          (ico)
                   hite_in       = cpatch%hite            (ico)
                   dbh_in        = cpatch%dbh             (ico)
                   nplant_in     = cpatch%nplant          (ico)
@@ -238,8 +251,8 @@ module structural_growth
                   wai_in        = cpatch%wai             (ico)
                   cai_in        = cpatch%crown_area      (ico)
                   krdepth_in    = cpatch%krdepth         (ico)
-                  bevery_in     = bleaf_in + broot_in + bsapwooda_in + bsapwoodb_in        &
-                                + bbark_in + bdead_in
+                  bevery_in     = bleaf_in  + broot_in  + bsapwooda_in + bsapwoodb_in      &
+                                + bbarka_in + bbarkb_in + bdeada_in    + bdeadb_in
                   bag_in        = sum(cpoly%basal_area_growth(ipft,:,isi))
                   bam_in        = sum(cpoly%basal_area_mort(ipft,:,isi))
                   !------------------------------------------------------------------------!
@@ -260,26 +273,37 @@ module structural_growth
                   !------------------------------------------------------------------------!
 
                   !----- Split biomass components that are labile or structural. ----------!
-                  bfast    = f_labile_leaf(ipft)                                           &
-                           * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                     &
-                           + f_labile_stem(ipft)                                           &
-                           * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)               &
-                             + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
-                  bstruct  = ( 1.0 - f_labile_leaf(ipft) )                                 &
-                           * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                     &
-                           + ( 1.0 - f_labile_stem(ipft) )                                 &
-                           * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)               &
-                             + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
-                  bstorage = cpatch%bstorage(ico)
+                  a_bfast    = f_labile_leaf(ipft) * cpatch%bleaf(ico)                     &
+                             + f_labile_stem(ipft)                                         &
+                             * ( cpatch%bsapwooda(ico) + cpatch%bbarka(ico)                &
+                               + cpatch%bdeada   (ico) )
+                  b_bfast    = f_labile_leaf(ipft) * cpatch%broot(ico)                     &
+                             + f_labile_stem(ipft)                                         &
+                             * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)                &
+                               + cpatch%bdeadb   (ico) )
+                  a_bstruct  = (1.0 - f_labile_leaf(ipft)) * cpatch%bleaf(ico)             &
+                             + (1.0 - f_labile_stem(ipft))                                 &
+                             * ( cpatch%bsapwooda(ico) + cpatch%bbarka(ico)                &
+                               + cpatch%bdeada   (ico) )
+                  b_bstruct  = (1.0 - f_labile_leaf(ipft)) * cpatch%broot(ico)             &
+                             + (1.0 - f_labile_stem(ipft))                                 &
+                             * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)                &
+                               + cpatch%bdeadb   (ico) )
+                  a_bstorage =        agf_bs(ipft)  * cpatch%bstorage(ico)
+                  b_bstorage = (1.0 - agf_bs(ipft)) * cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
 
 
                   !----- Calculate litter owing to mortality. -----------------------------!
-                  bfast_mort_litter    = - bfast    * cpatch%monthly_dndt(ico)
-                  bstruct_mort_litter  = - bstruct  * cpatch%monthly_dndt(ico)
-                  bstorage_mort_litter = - bstorage * cpatch%monthly_dndt(ico)
-                  mort_litter          = bfast_mort_litter  + bstruct_mort_litter          &
-                                       + bstorage_mort_litter 
+                  a_bfast_mort_litter    = - a_bfast    * cpatch%monthly_dndt(ico)
+                  b_bfast_mort_litter    = - b_bfast    * cpatch%monthly_dndt(ico)
+                  a_bstruct_mort_litter  = - a_bstruct  * cpatch%monthly_dndt(ico)
+                  b_bstruct_mort_litter  = - b_bstruct  * cpatch%monthly_dndt(ico)
+                  a_bstorage_mort_litter = - a_bstorage * cpatch%monthly_dndt(ico)
+                  b_bstorage_mort_litter = - b_bstorage * cpatch%monthly_dndt(ico)
+                  mort_litter            = a_bfast_mort_litter    + b_bfast_mort_litter    &
+                                         + a_bstruct_mort_litter  + b_bstruct_mort_litter  &
+                                         + a_bstorage_mort_litter + b_bstorage_mort_litter
                   !------------------------------------------------------------------------!
 
 
@@ -295,7 +319,7 @@ module structural_growth
                                                   ,cpatch%dbh(ico),cgrid%lat(ipy)          &
                                                   ,cpatch%phenology_status(ico)            &
                                                   ,cpatch%elongf(ico)                      &
-                                                  ,bdead_in, bstorage_in, maxh             &
+                                                  ,bdeada_in,bdeadb_in, bstorage_in, maxh  &
                                                   ,f_bseeds,f_growth,f_bstorage)
                   !------------------------------------------------------------------------!
 
@@ -318,23 +342,33 @@ module structural_growth
                         bevery_aim     = bevery_in + f_growth * cpatch%bstorage(ico)
                         call expand_bevery(cpatch%pft(ico),bevery_aim,dbh_aim,hite_aim     &
                                           ,bleaf_aim,broot_aim,bsapwooda_aim,bsapwoodb_aim &
-                                          ,bbark_aim,balive_aim,bdead_aim)
-                        if (bevery_aim > bevery_in .and. bdead_aim > bdead_in) then
-                           f_bdead     = f_growth * ( bdead_aim  - bdead_in  )             &
+                                          ,bbarka_aim,bbarkb_aim,balive_aim,bdeada_aim     &
+                                          ,bdeadb_aim)
+                        if (bevery_aim > bevery_in .and. bdeada_aim > bdeada_in) then
+                           f_bdeada    = f_growth * ( bdeada_aim - bdeada_in )             &
                                                   / ( bevery_aim - bevery_in )
                         else
-                           f_bdead     = 0.0
+                           f_bdeada    = 0.0
                         end if
-                        f_bstorage     = f_bstorage + f_growth - f_bdead
+                        if (bevery_aim > bevery_in .and. bdeadb_aim > bdeadb_in) then
+                           f_bdeadb    = f_growth * ( bdeadb_aim - bdeadb_in )             &
+                                                  / ( bevery_aim - bevery_in )
+                        else
+                           f_bdeadb    = 0.0
+                        end if
+                        f_bstorage     = f_bstorage + f_growth - f_bdeada - f_bdeadb
                      case default
-                        f_bdead        = f_growth
+                        f_bdeada       = f_growth * agf_bs(ipft)
+                        f_bdeadb       = f_growth * (1.0 - agf_bs(ipft))
                      end select
                   else
                      f_bstorage  = f_bstorage + f_growth
                      f_growth    = 0.
-                     f_bdead     = 0.
+                     f_bdeada    = 0.
+                     f_bdeadb    = 0.
                   end if
-                  cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
+                  cpatch%bdeada(ico) = cpatch%bdeada(ico) + f_bdeada * cpatch%bstorage(ico)
+                  cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + f_bdeadb * cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
 
 
@@ -345,11 +379,9 @@ module structural_growth
                   select case (ibigleaf)
                   case (0)
                      !------ NPP allocation to wood and coarse roots in KgC /m2 -----------!
-                     cpatch%today_nppwood    (ico) = agf_bs(ipft)                          &
-                                                   * f_bdead * cpatch%bstorage(ico)        &
+                     cpatch%today_nppwood    (ico) = f_bdeada * cpatch%bstorage(ico)       &
                                                    * cpatch%nplant(ico)
-                     cpatch%today_nppcroot   (ico) = (1. - agf_bs(ipft))                   &
-                                                   * f_bdead * cpatch%bstorage(ico)        &
+                     cpatch%today_nppcroot   (ico) = f_bdeadb * cpatch%bstorage(ico)       &
                                                    * cpatch%nplant(ico)
                   end select
                   !------------------------------------------------------------------------!
@@ -361,9 +393,13 @@ module structural_growth
                   ! ation to structural growth.  This is necessary because c2n_stem does   !
                   ! not necessarily equal c2n_storage.                                     !
                   !------------------------------------------------------------------------!
-                  net_stem_N_uptake = (cpatch%bdead(ico) - bdead_in) * cpatch%nplant(ico)  &
+                  net_stem_N_uptake = ( cpatch%bdeada(ico) + cpatch%bdeadb(ico)            &
+                                      - bdeada_in          - bdeadb_in          )          &
+                                    * cpatch%nplant(ico)                                   &
                                     * ( 1.0 / c2n_stem(cpatch%pft(ico)) - 1.0 / c2n_storage)
                   !------------------------------------------------------------------------!
+
+
 
                   !------------------------------------------------------------------------!
                   !      Calculate total seed production and seed litter.  The seed pool   !
@@ -433,16 +469,30 @@ module structural_growth
 
 
 
-                  !----- Finalize litter inputs. ------------------------------------------!
-                  csite%fsc_in(ipa) = csite%fsc_in(ipa) + bfast_mort_litter                &
-                                    + bstorage_mort_litter + bseeds_mort_litter
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa)                                    &
-                                    + bfast_mort_litter    / c2n_leaf   (ipft)             &
-                                    + bstorage_mort_litter / c2n_storage                   &
-                                    + bseeds_mort_litter   / c2n_recruit(ipft)
-                  csite%ssc_in(ipa) = csite%ssc_in(ipa) + bstruct_mort_litter
-                  csite%ssl_in(ipa) = csite%ssl_in(ipa)                                    &
-                                    + bstruct_mort_litter * l2n_stem / c2n_stem(ipft)
+                  !------------------------------------------------------------------------!
+                  !     Finalize litter inputs.                                            !
+                  !------------------------------------------------------------------------!
+                  csite%fgc_in (ipa) = csite%fgc_in(ipa) + a_bfast_mort_litter             &
+                                     + a_bstorage_mort_litter + bseeds_mort_litter
+                  csite%fsc_in (ipa) = csite%fsc_in(ipa) + b_bfast_mort_litter             &
+                                     + b_bstorage_mort_litter
+                  csite%fgn_in (ipa) = csite%fgn_in(ipa)                                   &
+                                     + a_bfast_mort_litter    / c2n_leaf   (ipft)          &
+                                     + a_bstorage_mort_litter / c2n_storage                &
+                                     + bseeds_mort_litter     / c2n_recruit(ipft)
+                  csite%fsn_in (ipa) = csite%fsn_in(ipa)                                   &
+                                     + b_bfast_mort_litter    / c2n_leaf   (ipft)          &
+                                     + b_bstorage_mort_litter / c2n_storage
+                  csite%stgc_in(ipa) = csite%stgc_in(ipa) + a_bstruct_mort_litter
+                  csite%stsc_in(ipa) = csite%stsc_in(ipa) + b_bstruct_mort_litter
+                  csite%stgl_in(ipa) = csite%stgl_in(ipa)                                  &
+                                     + a_bstruct_mort_litter * l2n_stem / c2n_stem(ipft)
+                  csite%stsl_in(ipa) = csite%stsl_in(ipa)                                  &
+                                     + b_bstruct_mort_litter * l2n_stem / c2n_stem(ipft)
+                  csite%stgn_in(ipa) = csite%stgn_in(ipa)                                  &
+                                     + a_bstruct_mort_litter  / c2n_stem   (ipft)
+                  csite%stsn_in(ipa) = csite%stsn_in(ipa)                                  &
+                                     + b_bstruct_mort_litter  / c2n_stem   (ipft)
                   csite%total_plant_nitrogen_uptake(ipa) =                                 &
                          csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake        &
                        + net_stem_N_uptake
@@ -631,12 +681,14 @@ module structural_growth
                   !------------------------------------------------------------------------!
                   if (.not. veget_dyn_on) then
                      cpatch%balive          (ico) = balive_in
-                     cpatch%bdead           (ico) = bdead_in
+                     cpatch%bdeada          (ico) = bdeada_in
+                     cpatch%bdeadb          (ico) = bdeadb_in
                      cpatch%bleaf           (ico) = bleaf_in
                      cpatch%broot           (ico) = broot_in
                      cpatch%bsapwooda       (ico) = bsapwooda_in
                      cpatch%bsapwoodb       (ico) = bsapwoodb_in
-                     cpatch%bbark           (ico) = bbark_in
+                     cpatch%bbarka          (ico) = bbarka_in
+                     cpatch%bbarkb          (ico) = bbarkb_in
                      cpatch%hite            (ico) = hite_in
                      cpatch%dbh             (ico) = dbh_in
                      cpatch%nplant          (ico) = nplant_in
@@ -662,8 +714,8 @@ module structural_growth
                   !------------------------------------------------------------------------!
                   old_leaf_hcap = cpatch%leaf_hcap(ico)
                   old_wood_hcap = cpatch%wood_hcap(ico)
-                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwooda(ico),cpatch%bbark(ico)               &
+                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                  &
+                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
@@ -726,8 +778,8 @@ module structural_growth
    !     This subroutine will decide the partition of storage biomass into seeds and dead  !
    ! (structural) biomass.                                                                 !
    !---------------------------------------------------------------------------------------!
-   subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,elongf,bdead       &
-                                         ,bstorage,maxh,f_bseeds,f_growth,f_bstorage)
+   subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,elongf,bdeada      &
+                                         ,bdeadb,bstorage,maxh,f_bseeds,f_growth,f_bstorage)
       use pft_coms      , only : phenology    & ! intent(in)
                                , repro_min_h  & ! intent(in)
                                , r_fract      & ! intent(in)
@@ -748,7 +800,8 @@ module structural_growth
       real   , intent(in)  :: hite
       real   , intent(in)  :: dbh
       real   , intent(in)  :: lat
-      real   , intent(in)  :: bdead      !> Current dead biomass
+      real   , intent(in)  :: bdeada     !> Current dead biomass
+      real   , intent(in)  :: bdeadb     !> Current dead biomass
       real   , intent(in)  :: bstorage   !> Current storage pool
       real   , intent(in)  :: maxh       !> Height of the tallest cohort in the patch
       integer, intent(in)  :: phen_status
@@ -825,7 +878,7 @@ module structural_growth
                   f_growth = 0.0
                else
                   bd_target = size2bd(h2dbh(maxh,ipft),maxh,ipft)
-                  delta_bd = bd_target - bdead
+                  delta_bd  = bd_target - bdeada - bdeadb
                   !------------------------------------------------------------------------!
                   !    If bstorage is 0 or lianas have already reached their bd_target     !
                   ! don't grow otherwise invest what is needed (or everything in case it's !
@@ -925,7 +978,7 @@ module structural_growth
          write (unit=66,fmt='(6(i6,1x),2(5x,l1,1x),10(f12.6,1x))')                         &
                current_time%year,current_time%month,current_time%date,ipft,phenology(ipft) &
               ,phen_status,late_spring,is_grass(ipft),hite,repro_min_h(ipft),dbh           &
-              ,dbh_crit(ipft),elongf,bdead,bstorage,f_bstorage,f_bseeds,f_growth
+              ,dbh_crit(ipft),elongf,bdeada+bdeadb,bstorage,f_bstorage,f_bseeds,f_growth
          close (unit=66,status='keep')
       end if
       !------------------------------------------------------------------------------------!

@@ -120,7 +120,8 @@ module fuse_fiss_utils
                                     , c2n_storage      & ! intent(in)
                                     , c2n_leaf         & ! intent(in)
                                     , f_labile_leaf    & ! intent(in)
-                                    , f_labile_stem    ! ! intent(in)
+                                    , f_labile_stem    & ! intent(in)
+                                    , agf_bs           ! ! intent(in)
 
       use ed_state_vars      , only : patchtype        & ! structure
                                     , sitetype         ! ! structure
@@ -157,7 +158,8 @@ module fuse_fiss_utils
 
          !----- Checking whether the cohort size is too small -----------------------------!
          csize = cpatch%nplant(ico)                                                        &
-               * (cpatch%balive(ico) + cpatch%bdead(ico) + cpatch%bstorage(ico))
+               * ( cpatch%balive(ico) + cpatch%bstorage(ico)                               &
+                 + cpatch%bdeada(ico) + cpatch%bdeadb  (ico) )
 
          if ( csize < min_cohort_size(ipft) ) then
             !----- Cohort is indeed too small, it won't remain ----------------------------!
@@ -166,36 +168,72 @@ module fuse_fiss_utils
             elim_lai    = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
 
             !----- Update litter pools ----------------------------------------------------!
-            csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
-                              * ( cpatch%bstorage(ico)                                     &
-                                + f_labile_leaf(ipft)                                      &
-                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
+            csite%fgc_in(ipa) = csite%fgc_in(ipa) + cpatch%nplant(ico)                     &
+                              * ( agf_bs(ipft) * cpatch%bstorage(ico)                      &
+                                + f_labile_leaf(ipft) * cpatch%bleaf(ico)                  &
                                 + f_labile_stem(ipft)                                      &
-                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
-                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )
+                                * ( cpatch%bsapwooda(ico) + cpatch%bbarka   (ico)          &
+                                  + cpatch%bdeada   (ico) ) )
+            csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
+                              * ( (1.0 - agf_bs(ipft)) * cpatch%bstorage(ico)              &
+                                + f_labile_leaf(ipft) * cpatch%broot(ico)                  &
+                                + f_labile_stem(ipft)                                      &
+                                * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb   (ico)          &
+                                  + cpatch%bdeadb   (ico) ) )
+
+            csite%stgc_in(ipa) = csite%stgc_in(ipa) + cpatch%nplant(ico)                     &
+                               * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%bleaf(ico)       &
+                                 + ( 1.0 - f_labile_stem(ipft) )                           &
+                                 * ( cpatch%bsapwooda(ico) + cpatch%bbarka(ico)            &
+                                   + cpatch%bdeada   (ico)                      ) )
+
+            csite%stsc_in(ipa) = csite%stsc_in(ipa) + cpatch%nplant(ico)                     &
+                               * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%broot(ico)       &
+                                 + ( 1.0 - f_labile_stem(ipft) )                           &
+                                 * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)            &
+                                   + cpatch%bdeadb   (ico)                      ) )
+
+            csite%stgl_in(ipa) = csite%stgl_in(ipa) + cpatch%nplant(ico)                   &
+                               * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%bleaf(ico)       &
+                                 + ( 1.0 - f_labile_stem(ipft) )                           &
+                                 * ( cpatch%bsapwooda(ico) + cpatch%bbarka   (ico)         &
+                                   + cpatch%bdeada   (ico)                         ) )     &
+                               * l2n_stem / c2n_stem(ipft)
+
+            csite%stsl_in(ipa) = csite%stsl_in(ipa) + cpatch%nplant(ico)                   &
+                               * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%broot(ico)       &
+                                 + ( 1.0 - f_labile_stem(ipft) )                           &
+                                 * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb   (ico)         &
+                                   + cpatch%bdeadb   (ico)                         ) )     &
+                               * l2n_stem / c2n_stem(ipft)
+
+            csite%fgn_in(ipa) = csite%fgn_in(ipa) + cpatch%nplant(ico)                     &
+                              * ( agf_bs(ipft) / c2n_storage * cpatch%bstorage(ico)        &
+                                + f_labile_leaf(ipft) / c2n_leaf(ipft) * cpatch%bleaf(ico) &
+                                + f_labile_stem(ipft) / c2n_leaf(ipft)                     &
+                                * ( cpatch%bsapwooda(ico) + cpatch%bbarka(ico)             &
+                                  + cpatch%bdeada   (ico)                      ) )
 
             csite%fsn_in(ipa) = csite%fsn_in(ipa) + cpatch%nplant(ico)                     &
-                              * ( cpatch%bstorage(ico) / c2n_storage                       &
-                                + f_labile_leaf(ipft)  / c2n_leaf(ipft)                    &
-                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
-                                + f_labile_stem(ipft)  / c2n_leaf(ipft)                    &
-                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
-                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )
+                              * ( (1.0-agf_bs(ipft))  / c2n_storage * cpatch%bstorage(ico) &
+                                + f_labile_leaf(ipft) / c2n_leaf(ipft) * cpatch%broot(ico) &
+                                + f_labile_stem(ipft) / c2n_leaf(ipft)                     &
+                                * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)             &
+                                  + cpatch%bdeadb   (ico) ) )
 
-            csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%nplant(ico)                     &
-                              * ( ( 1.0 - f_labile_leaf(ipft) )                            &
-                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
-                                + ( 1.0 - f_labile_stem(ipft) )                            &
-                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
-                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )
+            csite%stgn_in(ipa) = csite%stgn_in(ipa) + cpatch%nplant(ico)                   &
+                               * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%bleaf(ico)       &
+                                 + ( 1.0 - f_labile_stem(ipft) )                           &
+                                 * ( cpatch%bsapwooda(ico) + cpatch%bbarka(ico)            &
+                                   + cpatch%bdeada   (ico)                      ) )        &
+                                 / c2n_stem(ipft)
 
-            csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
-                              * ( ( 1.0 - f_labile_leaf(ipft) )                            &
-                                * ( cpatch%bleaf    (ico) + cpatch%broot    (ico) )        &
-                                + ( 1.0 - f_labile_stem(ipft) )                            &
-                                * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)          &
-                                  + cpatch%bbark    (ico) + cpatch%bdead    (ico) ) )      &
-                              * l2n_stem / c2n_stem(ipft)
+            csite%stsn_in(ipa) = csite%stsn_in(ipa) + cpatch%nplant(ico)                     &
+                               * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%broot(ico)       &
+                                 + ( 1.0 - f_labile_stem(ipft) )                           &
+                                 * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)            &
+                                   + cpatch%bdeadb   (ico)                      ) )        &
+                                 / c2n_stem(ipft)
          end if
       end do
 
@@ -641,36 +679,36 @@ module fuse_fiss_utils
       type(patchtype)        , pointer     :: cpatch         ! Current patch
       type(patchtype)        , pointer     :: temppatch      ! Scratch patch
       !----- Local scalars. ---------------------------------------------------------------!
-      integer      :: donc           ! Index: donor cohort
-      integer      :: recc           ! Index: receptor cohort
-      logical      :: donc_resolv    ! Donor cohort is resolvable
-      logical      :: dr_may_fuse    ! Donor and receptor may be fused.
-      logical      :: dr_eqv_recruit ! Donor and receptor have same recruitmentstatus.
-      logical      :: dr_eqv_phen    ! Donor and receptor have same phenology status.
-      logical      :: dr_le_lai_max  ! Donor and receptordo not exceed maximum LAI.
-      real         :: newn           ! New nplants of merged coh.
-      real         :: donc_lai_max   ! Maximum LAI: donor cohort
-      real         :: donc_bleaf_max ! Maximum BLeaf: donor cohort
-      real         :: donc_bsapa_max ! Maximum BSapwood (AG): donor cohort
-      real         :: donc_bbark_max ! Maximum BBark: donor cohort
-      real         :: donc_lhcap_max ! Maximum leaf heat capacity: donor cohort
-      real         :: donc_whcap_max ! Maximum wood heat capacity: donor cohort
-      real         :: recc_lai_max   ! Maximum LAI: receptor cohort
-      real         :: recc_bleaf_max ! Maximum BLeaf: receptor cohort
-      real         :: recc_bsapa_max ! Maximum BSapwood (AG): receptor cohort
-      real         :: recc_bbark_max ! Maximum BBark: receptor cohort
-      real         :: recc_lhcap_max ! Maximum leaf heat capacity: receptor cohort
-      real         :: recc_whcap_max ! Maximum wood heat capacity: receptor cohort
-      real         :: total_size     ! Total size
-      real         :: coh_size_tol   ! Relative size tolerance
-      integer      :: ncohorts_old   ! # of coh. before fusion test
-      real         :: diff_dbh       ! Absolute DBH difference
-      real         :: diff_hgt       ! Absolute height difference
-      real         :: new_size       ! New size
-      integer      :: ifus           ! Counter: fusion iteractions
-      integer      :: dpft           ! PFT of donor cohort
-      integer      :: rpft           ! PFT of receptor cohort
-      logical      :: any_fusion     ! Flag: was there any fusion?
+      integer      :: donc            ! Index: donor cohort
+      integer      :: recc            ! Index: receptor cohort
+      logical      :: donc_resolv     ! Donor cohort is resolvable
+      logical      :: dr_may_fuse     ! Donor and receptor may be fused.
+      logical      :: dr_eqv_recruit  ! Donor and receptor have same recruitmentstatus.
+      logical      :: dr_eqv_phen     ! Donor and receptor have same phenology status.
+      logical      :: dr_le_lai_max   ! Donor and receptordo not exceed maximum LAI.
+      real         :: newn            ! New nplants of merged coh.
+      real         :: donc_lai_max    ! Maximum LAI: donor cohort
+      real         :: donc_bleaf_max  ! Maximum BLeaf: donor cohort
+      real         :: donc_bsapa_max  ! Maximum BSapwood (AG): donor cohort
+      real         :: donc_bbarka_max ! Maximum BBark (AG): donor cohort
+      real         :: donc_lhcap_max  ! Maximum leaf heat capacity: donor cohort
+      real         :: donc_whcap_max  ! Maximum wood heat capacity: donor cohort
+      real         :: recc_lai_max    ! Maximum LAI: receptor cohort
+      real         :: recc_bleaf_max  ! Maximum BLeaf: receptor cohort
+      real         :: recc_bsapa_max  ! Maximum BSapwood (AG): receptor cohort
+      real         :: recc_bbarka_max ! Maximum BBark (AG): receptor cohort
+      real         :: recc_lhcap_max  ! Maximum leaf heat capacity: receptor cohort
+      real         :: recc_whcap_max  ! Maximum wood heat capacity: receptor cohort
+      real         :: total_size      ! Total size
+      real         :: coh_size_tol    ! Relative size tolerance
+      integer      :: ncohorts_old    ! # of coh. before fusion test
+      real         :: diff_dbh        ! Absolute DBH difference
+      real         :: diff_hgt        ! Absolute height difference
+      real         :: new_size        ! New size
+      integer      :: ifus            ! Counter: fusion iteractions
+      integer      :: dpft            ! PFT of donor cohort
+      integer      :: rpft            ! PFT of receptor cohort
+      logical      :: any_fusion      ! Flag: was there any fusion?
       !------------------------------------------------------------------------------------!
 
 
@@ -829,12 +867,13 @@ module fuse_fiss_utils
                   ! inside the donor loop because the receptor may change when we fuse     !
                   ! cohorts.                                                               !
                   !------------------------------------------------------------------------!
-                  recc_bleaf_max = size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)
-                  recc_bsapa_max = agf_bs(rpft)                                            &
-                                 * recc_bleaf_max * qsw  (rpft) * cpatch%hite(recc)
-                  recc_bbark_max = recc_bleaf_max * qbark(rpft) * cpatch%hite(recc)
-                  call calc_veg_hcap(recc_bleaf_max,cpatch%bdead(recc),recc_bsapa_max      &
-                                    ,recc_bbark_max,cpatch%nplant(recc),rpft               &
+                  recc_bleaf_max  = size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)
+                  recc_bsapa_max  = agf_bs(rpft)                                           &
+                                  * recc_bleaf_max * qsw  (rpft) * cpatch%hite(recc)
+                  recc_bbarka_max = agf_bs(rpft)                                           &
+                                  * recc_bleaf_max * qbark(rpft) * cpatch%hite(recc)
+                  call calc_veg_hcap(recc_bleaf_max,cpatch%bdeada(recc),recc_bsapa_max     &
+                                    ,recc_bbarka_max,cpatch%nplant(recc),rpft              &
                                     ,recc_lhcap_max,recc_whcap_max)
                   !------------------------------------------------------------------------!
 
@@ -843,12 +882,13 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   !    Find potential heat capacity -- Donor cohort.                       !
                   !------------------------------------------------------------------------!
-                  donc_bleaf_max = size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)
-                  donc_bsapa_max = agf_bs(dpft)                                            &
-                                 * donc_bleaf_max * qsw  (dpft) * cpatch%hite(donc)
-                  donc_bbark_max = donc_bleaf_max * qbark(dpft) * cpatch%hite(donc)
-                  call calc_veg_hcap(donc_bleaf_max,cpatch%bdead(donc),donc_bsapa_max      &
-                                    ,donc_bbark_max,cpatch%nplant(donc),dpft               &
+                  donc_bleaf_max  = size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)
+                  donc_bsapa_max  = agf_bs(dpft)                                           &
+                                  * donc_bleaf_max * qsw  (dpft) * cpatch%hite(donc)
+                  donc_bbarka_max = agf_bs(dpft)                                           &
+                                  * donc_bleaf_max * qbark(dpft) * cpatch%hite(donc)
+                  call calc_veg_hcap(donc_bleaf_max,cpatch%bdeada(donc),donc_bsapa_max     &
+                                    ,donc_bbarka_max,cpatch%nplant(donc),dpft              &
                                     ,donc_lhcap_max,donc_whcap_max)
                   !------------------------------------------------------------------------!
 
@@ -880,10 +920,12 @@ module fuse_fiss_utils
 
                   !----- Check the total size of this cohort before and after fusion. -----!
                   total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
-                                                     + cpatch%bdead(donc)                  &
+                                                     + cpatch%bdeada(donc)                 &
+                                                     + cpatch%bdeadb(donc)                 &
                                                      + cpatch%bstorage(donc) )             &
                              + cpatch%nplant(recc) * ( cpatch%balive(recc)                 &
-                                                     + cpatch%bdead(recc)                  &
+                                                     + cpatch%bdeada(recc)                 &
+                                                     + cpatch%bdeadb(recc)                 &
                                                      + cpatch%bstorage(recc) )
                   !------------------------------------------------------------------------!
 
@@ -902,7 +944,8 @@ module fuse_fiss_utils
                   
                   !----- Check whether total size and LAI are conserved. ------------------!
                   new_size = cpatch%nplant(recc) * ( cpatch%balive(recc)                   &
-                                                   + cpatch%bdead(recc)                    &
+                                                   + cpatch%bdeada(recc)                   &
+                                                   + cpatch%bdeadb(recc)                   &
                                                    + cpatch%bstorage(recc) )
                   if (new_size < 0.99* total_size .or. new_size > 1.01* total_size )       &
                   then
@@ -1153,11 +1196,13 @@ module fuse_fiss_utils
                   end if
 
                   !----- Checking the total size of this cohort before and after fusion. --!
-                  total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
-                                                     + cpatch%bdead(donc)                  &
+                  total_size = cpatch%nplant(donc) * ( cpatch%balive  (donc)               &
+                                                     + cpatch%bdeada  (donc)               &
+                                                     + cpatch%bdeadb  (donc)               &
                                                      + cpatch%bstorage(donc) )             &
-                             + cpatch%nplant(recc) * ( cpatch%balive(recc)                 &
-                                                     + cpatch%bdead(recc)                  &
+                             + cpatch%nplant(recc) * ( cpatch%balive  (recc)               &
+                                                     + cpatch%bdeada  (recc)               &
+                                                     + cpatch%bdeadb  (recc)               &
                                                      + cpatch%bstorage(recc) )
 
                   
@@ -1194,8 +1239,9 @@ module fuse_fiss_utils
                      fuse_table(donc) = .false.
                      
                      !----- Check whether total size and LAI are conserved. ---------------!
-                     new_size = cpatch%nplant(recc) * ( cpatch%balive(recc)                &
-                                                      + cpatch%bdead(recc)                 &
+                     new_size = cpatch%nplant(recc) * ( cpatch%balive  (recc)              &
+                                                      + cpatch%bdeada  (recc)              &
+                                                      + cpatch%bdeadb  (recc)              &
                                                       + cpatch%bstorage(recc) )
                      if (new_size < 0.99* total_size .or. new_size > 1.01* total_size )    &
                      then
@@ -1363,7 +1409,8 @@ module fuse_fiss_utils
             
             old_nplant = old_nplant + cpatch%nplant(ico)
             old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive  (ico)          &
-                                                           + cpatch%bdead   (ico)          &
+                                                           + cpatch%bdeada  (ico)          &
+                                                           + cpatch%bdeadb  (ico)          &
                                                            + cpatch%bstorage(ico) )
             !------------------------------------------------------------------------------! 
          end do
@@ -1447,13 +1494,17 @@ module fuse_fiss_utils
                      !---------------------------------------------------------------------!
                   else
                      !-- use bdead for trees and old grasses. -----------------------------!
-                     cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
-                     cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-                     cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+                     cpatch%bdeada(ico)  = cpatch%bdeada(ico) * (1.-epsilon)
+                     cpatch%bdeadb(ico)  = cpatch%bdeadb(ico) * (1.-epsilon)
+                     cpatch%dbh   (ico)  = bd2dbh(cpatch%pft(ico),cpatch%bdeada(ico)       &
+                                                 ,cpatch%bdeadb(ico))
+                     cpatch%hite  (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
-                     cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
-                     cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-                     cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+                     cpatch%bdeada(inew) = cpatch%bdeada(inew) * (1.+epsilon)
+                     cpatch%bdeadb(inew) = cpatch%bdeadb(inew) * (1.+epsilon)
+                     cpatch%dbh   (inew) = bd2dbh(cpatch%pft(inew),cpatch%bdeada(inew)     &
+                                                 ,cpatch%bdeadb(inew))
+                     cpatch%hite  (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
                      !---------------------------------------------------------------------!
                   end if
                   !------------------------------------------------------------------------!
@@ -1474,7 +1525,8 @@ module fuse_fiss_utils
             do ico=1,cpatch%ncohorts
                new_nplant = new_nplant + cpatch%nplant(ico)
                new_size   = new_size   + cpatch%nplant(ico) * ( cpatch%balive  (ico)       &
-                                                              + cpatch%bdead   (ico)       &
+                                                              + cpatch%bdeada  (ico)       &
+                                                              + cpatch%bdeadb  (ico)       &
                                                               + cpatch%bstorage(ico) )
             end do
             if (new_nplant < 0.99 * old_nplant .or. new_nplant > 1.01 * old_nplant .or.    &
@@ -1530,7 +1582,8 @@ module fuse_fiss_utils
                                     , bl2dbh                 & ! function
                                     , bl2h                   & ! function
                                     , dbh2h                  & ! function
-                                    , size2xb                ! ! function
+                                    , size2xb                & ! function
+                                    , ed_balive              ! ! function
       use ed_max_dims        , only : n_mort                 ! ! intent(in)
       use ed_misc_coms       , only : writing_long           & ! intent(in)
                                     , writing_eorq           & ! intent(in)
@@ -1628,8 +1681,10 @@ module fuse_fiss_utils
       !     Fuse all carbon pools.  This is done before we find DBH and height, as these   !
       ! quantities depend on whether the PFT is (new) grass or not.                        !
       !------------------------------------------------------------------------------------!
-      cpatch%bdead    (recc) = cpatch%bdead    (recc) * rnplant                            &
-                             + cpatch%bdead    (donc) * dnplant
+      cpatch%bdeada   (recc) = cpatch%bdeada   (recc) * rnplant                            &
+                             + cpatch%bdeada   (donc) * dnplant
+      cpatch%bdeadb   (recc) = cpatch%bdeadb   (recc) * rnplant                            &
+                             + cpatch%bdeadb   (donc) * dnplant
       cpatch%bleaf    (recc) = cpatch%bleaf    (recc) * rnplant                            &
                              + cpatch%bleaf    (donc) * dnplant
       cpatch%broot    (recc) = cpatch%broot    (recc) * rnplant                            &
@@ -1638,8 +1693,10 @@ module fuse_fiss_utils
                              + cpatch%bsapwooda(donc) * dnplant
       cpatch%bsapwoodb(recc) = cpatch%bsapwoodb(recc) * rnplant                            &
                              + cpatch%bsapwoodb(donc) * dnplant
-      cpatch%bbark    (recc) = cpatch%bbark    (recc) * rnplant                            &
-                             + cpatch%bbark    (donc) * dnplant
+      cpatch%bbarka   (recc) = cpatch%bbarka   (recc) * rnplant                            &
+                             + cpatch%bbarka   (donc) * dnplant
+      cpatch%bbarkb   (recc) = cpatch%bbarkb   (recc) * rnplant                            &
+                             + cpatch%bbarkb   (donc) * dnplant
       cpatch%bstorage (recc) = cpatch%bstorage (recc) * rnplant                            &
                              + cpatch%bstorage (donc) * dnplant
       cpatch%btimber  (recc) = cpatch%btimber  (recc) * rnplant                            &
@@ -1653,9 +1710,7 @@ module fuse_fiss_utils
 
 
       !------ Find balive from the other pools. -------------------------------------------!
-      cpatch%balive   (recc) = cpatch%bleaf    (recc) + cpatch%broot    (recc)             &
-                             + cpatch%bsapwooda(recc) + cpatch%bsapwoodb(recc)             &
-                             + cpatch%bbark    (recc)
+      cpatch%balive(recc) = ed_balive(cpatch,recc)
       !------------------------------------------------------------------------------------!
 
 
@@ -1669,8 +1724,9 @@ module fuse_fiss_utils
           !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
-          cpatch%dbh  (recc) = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
-          cpatch%hite (recc) = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+          cpatch%dbh  (recc) = bd2dbh(cpatch%pft(recc),cpatch%bdeada(recc)                 &
+                                                      ,cpatch%bdeadb(recc))
+          cpatch%hite (recc) = dbh2h(cpatch%pft(recc),cpatch%dbh(recc))
           !--------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1686,14 +1742,16 @@ module fuse_fiss_utils
 
 
       !----- Maintenance costs. -----------------------------------------------------------!
-      cpatch%leaf_maintenance (recc) = cpatch%leaf_maintenance(recc) * rnplant             &
-                                     + cpatch%leaf_maintenance(donc) * dnplant
-      cpatch%root_maintenance (recc) = cpatch%root_maintenance(recc) * rnplant             &
-                                     + cpatch%root_maintenance(donc) * dnplant
-      cpatch%bark_maintenance (recc) = cpatch%bark_maintenance(recc) * rnplant             &
-                                     + cpatch%bark_maintenance(donc) * dnplant
-      cpatch%leaf_drop        (recc) = cpatch%leaf_drop       (recc) * rnplant             &
-                                     + cpatch%leaf_drop       (donc) * dnplant
+      cpatch%leaf_maintenance  (recc) = cpatch%leaf_maintenance (recc) * rnplant           &
+                                      + cpatch%leaf_maintenance (donc) * dnplant
+      cpatch%root_maintenance  (recc) = cpatch%root_maintenance (recc) * rnplant           &
+                                      + cpatch%root_maintenance (donc) * dnplant
+      cpatch%barka_maintenance (recc) = cpatch%barka_maintenance(recc) * rnplant           &
+                                      + cpatch%barka_maintenance(donc) * dnplant
+      cpatch%barkb_maintenance (recc) = cpatch%barkb_maintenance(recc) * rnplant           &
+                                      + cpatch%barkb_maintenance(donc) * dnplant
+      cpatch%leaf_drop         (recc) = cpatch%leaf_drop        (recc) * rnplant           &
+                                      + cpatch%leaf_drop        (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1701,8 +1759,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Bark thickness is calculated based on the fused size and biomass.              !
       !------------------------------------------------------------------------------------!
-      cpatch%thbark(recc) = size2xb(cpatch%dbh(recc),cpatch%hite(recc),cpatch%bbark(recc)  &
-                                   ,cpatch%pft(recc))
+      cpatch%thbark(recc) = size2xb(cpatch%dbh(recc),cpatch%hite(recc),cpatch%bbarka(recc) &
+                                   ,cpatch%bbarkb(recc),cpatch%pft(recc))
       !------------------------------------------------------------------------------------!
 
 
@@ -1928,8 +1986,10 @@ module fuse_fiss_utils
                                        + cpatch%sapa_growth_resp   (donc) * dnplant
       cpatch%sapb_growth_resp   (recc) = cpatch%sapb_growth_resp   (recc) * rnplant        &
                                        + cpatch%sapb_growth_resp   (donc) * dnplant
-      cpatch%bark_growth_resp   (recc) = cpatch%bark_growth_resp   (recc) * rnplant        &
-                                       + cpatch%bark_growth_resp   (donc) * dnplant
+      cpatch%barka_growth_resp  (recc) = cpatch%barka_growth_resp  (recc) * rnplant        &
+                                       + cpatch%barka_growth_resp  (donc) * dnplant
+      cpatch%barkb_growth_resp  (recc) = cpatch%barkb_growth_resp  (recc) * rnplant        &
+                                       + cpatch%barkb_growth_resp  (donc) * dnplant
       cpatch%leaf_storage_resp  (recc) = cpatch%leaf_storage_resp  (recc) * rnplant        &
                                        + cpatch%leaf_storage_resp  (donc) * dnplant
       cpatch%root_storage_resp  (recc) = cpatch%root_storage_resp  (recc) * rnplant        &
@@ -1938,8 +1998,10 @@ module fuse_fiss_utils
                                        + cpatch%sapa_storage_resp  (donc) * dnplant
       cpatch%sapb_storage_resp  (recc) = cpatch%sapb_storage_resp  (recc) * rnplant        &
                                        + cpatch%sapb_storage_resp  (donc) * dnplant
-      cpatch%bark_storage_resp  (recc) = cpatch%bark_storage_resp  (recc) * rnplant        &
-                                       + cpatch%bark_storage_resp  (donc) * dnplant
+      cpatch%barka_storage_resp (recc) = cpatch%barka_storage_resp (recc) * rnplant        &
+                                       + cpatch%barka_storage_resp (donc) * dnplant
+      cpatch%barkb_storage_resp (recc) = cpatch%barkb_storage_resp (recc) * rnplant        &
+                                       + cpatch%barkb_storage_resp (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -2059,90 +2121,98 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%fmean_gpp             (recc) = cpatch%fmean_gpp             (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_gpp             (donc)         &
-                                             * dnplant
-         cpatch%fmean_npp             (recc) = cpatch%fmean_npp             (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_npp             (donc)         &
-                                             * dnplant
-         cpatch%fmean_leaf_resp       (recc) = cpatch%fmean_leaf_resp       (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_leaf_resp       (donc)         &
-                                             * dnplant
-         cpatch%fmean_root_resp       (recc) = cpatch%fmean_root_resp       (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_root_resp       (donc)         &
-                                             * dnplant
-         cpatch%fmean_leaf_growth_resp(recc) = cpatch%fmean_leaf_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_leaf_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%fmean_root_growth_resp(recc) = cpatch%fmean_root_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_root_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%fmean_sapa_growth_resp(recc) = cpatch%fmean_sapa_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_sapa_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%fmean_sapb_growth_resp(recc) = cpatch%fmean_sapb_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_sapb_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%fmean_bark_growth_resp(recc) = cpatch%fmean_bark_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_bark_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%fmean_leaf_storage_resp(recc)= cpatch%fmean_leaf_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_leaf_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%fmean_root_storage_resp(recc)= cpatch%fmean_root_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_root_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%fmean_sapa_storage_resp(recc)= cpatch%fmean_sapa_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_sapa_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%fmean_sapb_storage_resp(recc)= cpatch%fmean_sapb_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_sapb_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%fmean_bark_storage_resp(recc)= cpatch%fmean_bark_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_bark_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%fmean_plresp          (recc) = cpatch%fmean_plresp          (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_plresp          (donc)         &
-                                             * dnplant
-         cpatch%fmean_light_level     (recc) = cpatch%fmean_light_level     (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_light_level     (donc)         &
-                                             * dnplant
-         cpatch%fmean_light_level_beam(recc) = cpatch%fmean_light_level_beam(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_light_level_beam(donc)         &
-                                             * dnplant
-         cpatch%fmean_light_level_diff(recc) = cpatch%fmean_light_level_diff(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_light_level_diff(donc)         &
-                                             * dnplant
-         cpatch%fmean_par_level_beam  (recc) = cpatch%fmean_par_level_beam  (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_par_level_beam  (donc)         &
-                                             * dnplant
-         cpatch%fmean_par_level_diffd (recc) = cpatch%fmean_par_level_diffd (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_par_level_diffd (donc)         &
-                                             * dnplant
-         cpatch%fmean_par_level_diffu (recc) = cpatch%fmean_par_level_diffu (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_par_level_diffu (donc)         &
-                                             * dnplant
+         cpatch%fmean_gpp               (recc) = cpatch%fmean_gpp               (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_gpp               (donc)     &
+                                               * dnplant
+         cpatch%fmean_npp               (recc) = cpatch%fmean_npp               (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_npp               (donc)     &
+                                               * dnplant
+         cpatch%fmean_leaf_resp         (recc) = cpatch%fmean_leaf_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_leaf_resp         (donc)     &
+                                               * dnplant
+         cpatch%fmean_root_resp         (recc) = cpatch%fmean_root_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_root_resp         (donc)     &
+                                               * dnplant
+         cpatch%fmean_leaf_growth_resp  (recc) = cpatch%fmean_leaf_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_leaf_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%fmean_root_growth_resp  (recc) = cpatch%fmean_root_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_root_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%fmean_sapa_growth_resp  (recc) = cpatch%fmean_sapa_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_sapa_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%fmean_sapb_growth_resp  (recc) = cpatch%fmean_sapb_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_sapb_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%fmean_barka_growth_resp (recc) = cpatch%fmean_barka_growth_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_barka_growth_resp (donc)     &
+                                               * dnplant
+         cpatch%fmean_barkb_growth_resp (recc) = cpatch%fmean_barkb_growth_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_barkb_growth_resp (donc)     &
+                                               * dnplant
+         cpatch%fmean_leaf_storage_resp (recc) = cpatch%fmean_leaf_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_leaf_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%fmean_root_storage_resp (recc) = cpatch%fmean_root_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_root_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%fmean_sapa_storage_resp (recc) = cpatch%fmean_sapa_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_sapa_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%fmean_sapb_storage_resp (recc) = cpatch%fmean_sapb_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_sapb_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%fmean_barka_storage_resp(recc) = cpatch%fmean_barka_storage_resp(recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_barka_storage_resp(donc)     &
+                                               * dnplant
+         cpatch%fmean_barkb_storage_resp(recc) = cpatch%fmean_barkb_storage_resp(recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_barkb_storage_resp(donc)     &
+                                               * dnplant
+         cpatch%fmean_plresp            (recc) = cpatch%fmean_plresp            (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_plresp            (donc)     &
+                                               * dnplant
+         cpatch%fmean_light_level       (recc) = cpatch%fmean_light_level       (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_light_level       (donc)     &
+                                               * dnplant
+         cpatch%fmean_light_level_beam  (recc) = cpatch%fmean_light_level_beam  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_light_level_beam  (donc)     &
+                                               * dnplant
+         cpatch%fmean_light_level_diff  (recc) = cpatch%fmean_light_level_diff  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_light_level_diff  (donc)     &
+                                               * dnplant
+         cpatch%fmean_par_level_beam    (recc) = cpatch%fmean_par_level_beam    (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_par_level_beam    (donc)     &
+                                               * dnplant
+         cpatch%fmean_par_level_diffd   (recc) = cpatch%fmean_par_level_diffd   (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_par_level_diffd   (donc)     &
+                                               * dnplant
+         cpatch%fmean_par_level_diffu   (recc) = cpatch%fmean_par_level_diffu   (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_par_level_diffu   (donc)     &
+                                               * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -2304,122 +2374,130 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%dmean_nppleaf         (recc) = cpatch%dmean_nppleaf         (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppleaf         (donc)         &
-                                             * dnplant
-         cpatch%dmean_nppfroot        (recc) = cpatch%dmean_nppfroot        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppfroot        (donc)         &
-                                             * dnplant
-         cpatch%dmean_nppsapwood      (recc) = cpatch%dmean_nppsapwood      (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppsapwood      (donc)         &
-                                             * dnplant
-         cpatch%dmean_nppbark         (recc) = cpatch%dmean_nppbark         (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppbark         (donc)         &
-                                             * dnplant
-         cpatch%dmean_nppcroot        (recc) = cpatch%dmean_nppcroot        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppcroot        (donc)         &
-                                             * dnplant
-         cpatch%dmean_nppseeds        (recc) = cpatch%dmean_nppseeds        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppseeds        (donc)         &
-                                             * dnplant
-         cpatch%dmean_nppwood         (recc) = cpatch%dmean_nppwood         (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppwood         (donc)         &
-                                             * dnplant
-         cpatch%dmean_nppdaily        (recc) = cpatch%dmean_nppdaily        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_nppdaily        (donc)         &
-                                             * dnplant
-         cpatch%dmean_gpp             (recc) = cpatch%dmean_gpp             (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_gpp             (donc)         &
-                                             * dnplant
-         cpatch%dmean_npp             (recc) = cpatch%dmean_npp             (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_npp             (donc)         &
-                                             * dnplant
-         cpatch%dmean_leaf_resp       (recc) = cpatch%dmean_leaf_resp       (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_leaf_resp       (donc)         &
-                                             * dnplant
-         cpatch%dmean_root_resp       (recc) = cpatch%dmean_root_resp       (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_root_resp       (donc)         &
-                                             * dnplant
-         cpatch%dmean_leaf_growth_resp(recc) = cpatch%dmean_leaf_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_leaf_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%dmean_root_growth_resp(recc) = cpatch%dmean_root_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_root_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%dmean_sapa_growth_resp(recc) = cpatch%dmean_sapa_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_sapa_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%dmean_sapb_growth_resp(recc) = cpatch%dmean_sapb_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_sapb_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%dmean_bark_growth_resp(recc) = cpatch%dmean_bark_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_bark_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%dmean_leaf_storage_resp(recc)= cpatch%dmean_leaf_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_leaf_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%dmean_root_storage_resp(recc)= cpatch%dmean_root_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_root_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%dmean_sapa_storage_resp(recc)= cpatch%dmean_sapa_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_sapa_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%dmean_sapb_storage_resp(recc)= cpatch%dmean_sapb_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_sapb_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%dmean_bark_storage_resp(recc)= cpatch%dmean_bark_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_bark_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%dmean_plresp          (recc) = cpatch%dmean_plresp          (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_plresp          (donc)         &
-                                             * dnplant
-         cpatch%dmean_light_level     (recc) = cpatch%dmean_light_level     (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_light_level     (donc)         &
-                                             * dnplant
-         cpatch%dmean_light_level_beam(recc) = cpatch%dmean_light_level_beam(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_light_level_beam(donc)         &
-                                             * dnplant
-         cpatch%dmean_light_level_diff(recc) = cpatch%dmean_light_level_diff(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_light_level_diff(donc)         &
-                                             * dnplant
-         cpatch%dmean_par_level_beam  (recc) = cpatch%dmean_par_level_beam  (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_par_level_beam  (donc)         &
-                                             * dnplant
-         cpatch%dmean_par_level_diffd (recc) = cpatch%dmean_par_level_diffd (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_par_level_diffd (donc)         &
-                                             * dnplant
-         cpatch%dmean_par_level_diffu (recc) = cpatch%dmean_par_level_diffu (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_par_level_diffu (donc)         &
-                                             * dnplant
+         cpatch%dmean_nppleaf           (recc) = cpatch%dmean_nppleaf           (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppleaf           (donc)     &
+                                               * dnplant
+         cpatch%dmean_nppfroot          (recc) = cpatch%dmean_nppfroot          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppfroot          (donc)     &
+                                               * dnplant
+         cpatch%dmean_nppsapwood        (recc) = cpatch%dmean_nppsapwood        (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppsapwood        (donc)     &
+                                               * dnplant
+         cpatch%dmean_nppbark           (recc) = cpatch%dmean_nppbark           (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppbark           (donc)     &
+                                               * dnplant
+         cpatch%dmean_nppcroot          (recc) = cpatch%dmean_nppcroot          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppcroot          (donc)     &
+                                               * dnplant
+         cpatch%dmean_nppseeds          (recc) = cpatch%dmean_nppseeds          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppseeds          (donc)     &
+                                               * dnplant
+         cpatch%dmean_nppwood           (recc) = cpatch%dmean_nppwood           (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppwood           (donc)     &
+                                               * dnplant
+         cpatch%dmean_nppdaily          (recc) = cpatch%dmean_nppdaily          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_nppdaily          (donc)     &
+                                               * dnplant
+         cpatch%dmean_gpp               (recc) = cpatch%dmean_gpp               (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_gpp               (donc)     &
+                                               * dnplant
+         cpatch%dmean_npp               (recc) = cpatch%dmean_npp               (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_npp               (donc)     &
+                                               * dnplant
+         cpatch%dmean_leaf_resp         (recc) = cpatch%dmean_leaf_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_leaf_resp         (donc)     &
+                                               * dnplant
+         cpatch%dmean_root_resp         (recc) = cpatch%dmean_root_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_root_resp         (donc)     &
+                                               * dnplant
+         cpatch%dmean_leaf_growth_resp  (recc) = cpatch%dmean_leaf_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_leaf_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%dmean_root_growth_resp  (recc) = cpatch%dmean_root_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_root_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%dmean_sapa_growth_resp  (recc) = cpatch%dmean_sapa_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_sapa_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%dmean_sapb_growth_resp  (recc) = cpatch%dmean_sapb_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_sapb_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%dmean_barka_growth_resp (recc) = cpatch%dmean_barka_growth_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_barka_growth_resp (donc)     &
+                                               * dnplant
+         cpatch%dmean_barkb_growth_resp (recc) = cpatch%dmean_barkb_growth_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_barkb_growth_resp (donc)     &
+                                               * dnplant
+         cpatch%dmean_leaf_storage_resp (recc) = cpatch%dmean_leaf_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_leaf_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%dmean_root_storage_resp (recc) = cpatch%dmean_root_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_root_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%dmean_sapa_storage_resp (recc) = cpatch%dmean_sapa_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_sapa_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%dmean_sapb_storage_resp (recc) = cpatch%dmean_sapb_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_sapb_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%dmean_barka_storage_resp(recc) = cpatch%dmean_barka_storage_resp(recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_barka_storage_resp(donc)     &
+                                               * dnplant
+         cpatch%dmean_barkb_storage_resp(recc) = cpatch%dmean_barkb_storage_resp(recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_barkb_storage_resp(donc)     &
+                                               * dnplant
+         cpatch%dmean_plresp            (recc) = cpatch%dmean_plresp            (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_plresp            (donc)     &
+                                               * dnplant
+         cpatch%dmean_light_level       (recc) = cpatch%dmean_light_level       (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_light_level       (donc)     &
+                                               * dnplant
+         cpatch%dmean_light_level_beam  (recc) = cpatch%dmean_light_level_beam  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_light_level_beam  (donc)     &
+                                               * dnplant
+         cpatch%dmean_light_level_diff  (recc) = cpatch%dmean_light_level_diff  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_light_level_diff  (donc)     &
+                                               * dnplant
+         cpatch%dmean_par_level_beam    (recc) = cpatch%dmean_par_level_beam    (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_par_level_beam    (donc)     &
+                                               * dnplant
+         cpatch%dmean_par_level_diffd   (recc) = cpatch%dmean_par_level_diffd   (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_par_level_diffd   (donc)     &
+                                               * dnplant
+         cpatch%dmean_par_level_diffu   (recc) = cpatch%dmean_par_level_diffu   (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_par_level_diffu   (donc)     &
+                                               * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -2645,162 +2723,178 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%mmean_nppleaf         (recc) = cpatch%mmean_nppleaf         (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppleaf         (donc)         &
-                                             * dnplant
-         cpatch%mmean_nppfroot        (recc) = cpatch%mmean_nppfroot        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppfroot        (donc)         &
-                                             * dnplant
-         cpatch%mmean_nppsapwood      (recc) = cpatch%mmean_nppsapwood      (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppsapwood      (donc)         &
-                                             * dnplant
-         cpatch%mmean_nppbark         (recc) = cpatch%mmean_nppbark         (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppbark         (donc)         &
-                                             * dnplant
-         cpatch%mmean_nppcroot        (recc) = cpatch%mmean_nppcroot        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppcroot        (donc)         &
-                                             * dnplant
-         cpatch%mmean_nppseeds        (recc) = cpatch%mmean_nppseeds        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppseeds        (donc)         &
-                                             * dnplant
-         cpatch%mmean_nppwood         (recc) = cpatch%mmean_nppwood         (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppwood         (donc)         &
-                                             * dnplant
-         cpatch%mmean_nppdaily        (recc) = cpatch%mmean_nppdaily        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_nppdaily        (donc)         &
-                                             * dnplant
-         cpatch%mmean_gpp             (recc) = cpatch%mmean_gpp             (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_gpp             (donc)         &
-                                             * dnplant
-         cpatch%mmean_npp             (recc) = cpatch%mmean_npp             (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_npp             (donc)         &
-                                             * dnplant
-         cpatch%mmean_leaf_resp       (recc) = cpatch%mmean_leaf_resp       (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_leaf_resp       (donc)         &
-                                             * dnplant
-         cpatch%mmean_root_resp       (recc) = cpatch%mmean_root_resp       (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_root_resp       (donc)         &
-                                             * dnplant
-         cpatch%mmean_leaf_growth_resp(recc) = cpatch%mmean_leaf_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_leaf_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%mmean_root_growth_resp(recc) = cpatch%mmean_root_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_root_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%mmean_sapa_growth_resp(recc) = cpatch%mmean_sapa_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_sapa_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%mmean_sapb_growth_resp(recc) = cpatch%mmean_sapb_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_sapb_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%mmean_bark_growth_resp(recc) = cpatch%mmean_bark_growth_resp(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_bark_growth_resp(donc)         &
-                                             * dnplant
-         cpatch%mmean_leaf_storage_resp(recc)= cpatch%mmean_leaf_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_leaf_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%mmean_root_storage_resp(recc)= cpatch%mmean_root_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_root_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%mmean_sapa_storage_resp(recc)= cpatch%mmean_sapa_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_sapa_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%mmean_sapb_storage_resp(recc)= cpatch%mmean_sapb_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_sapb_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%mmean_bark_storage_resp(recc)= cpatch%mmean_bark_storage_resp(recc)        &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_bark_storage_resp(donc)        &
-                                             * dnplant
-         cpatch%mmean_plresp          (recc) = cpatch%mmean_plresp          (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_plresp          (donc)         &
-                                             * dnplant
-         cpatch%mmean_light_level     (recc) = cpatch%mmean_light_level     (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_light_level     (donc)         &
-                                             * dnplant
-         cpatch%mmean_light_level_beam(recc) = cpatch%mmean_light_level_beam(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_light_level_beam(donc)         &
-                                             * dnplant
-         cpatch%mmean_light_level_diff(recc) = cpatch%mmean_light_level_diff(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_light_level_diff(donc)         &
-                                             * dnplant
-         cpatch%mmean_bleaf           (recc) = cpatch%mmean_bleaf           (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_bleaf           (donc)         &
-                                             * dnplant
-         cpatch%mmean_broot           (recc) = cpatch%mmean_broot           (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_broot           (donc)         &
-                                             * dnplant
-         cpatch%mmean_bbark           (recc) = cpatch%mmean_bbark           (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_bbark           (donc)         &
-                                             * dnplant
-         cpatch%mmean_balive          (recc) = cpatch%mmean_balive          (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_balive          (donc)         &
-                                             * dnplant
-         cpatch%mmean_bstorage        (recc) = cpatch%mmean_bstorage        (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_bstorage        (donc)         &
-                                             * dnplant
-         cpatch%mmean_leaf_maintenance(recc) = cpatch%mmean_leaf_maintenance(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_leaf_maintenance(donc)         &
-                                             * dnplant
-         cpatch%mmean_root_maintenance(recc) = cpatch%mmean_root_maintenance(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_root_maintenance(donc)         &
-                                             * dnplant
-         cpatch%mmean_bark_maintenance(recc) = cpatch%mmean_bark_maintenance(recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_bark_maintenance(donc)         &
-                                             * dnplant
-         cpatch%mmean_leaf_drop       (recc) = cpatch%mmean_leaf_drop       (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_leaf_drop       (donc)         &
-                                             * dnplant
-         cpatch%mmean_cb              (recc) = cpatch%mmean_cb              (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_cb              (donc)         &
-                                             * dnplant
-         cpatch%mmean_par_level_beam  (recc) = cpatch%mmean_par_level_beam  (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_par_level_beam  (donc)         &
-                                             * dnplant
-         cpatch%mmean_par_level_diffd (recc) = cpatch%mmean_par_level_diffd (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_par_level_diffd (donc)         &
-                                             * dnplant
-         cpatch%mmean_par_level_diffu (recc) = cpatch%mmean_par_level_diffu (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_par_level_diffu (donc)         &
-                                             * dnplant
+         cpatch%mmean_nppleaf           (recc) = cpatch%mmean_nppleaf           (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppleaf           (donc)     &
+                                               * dnplant
+         cpatch%mmean_nppfroot          (recc) = cpatch%mmean_nppfroot          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppfroot          (donc)     &
+                                               * dnplant
+         cpatch%mmean_nppsapwood        (recc) = cpatch%mmean_nppsapwood        (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppsapwood        (donc)     &
+                                               * dnplant
+         cpatch%mmean_nppbark           (recc) = cpatch%mmean_nppbark           (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppbark           (donc)     &
+                                               * dnplant
+         cpatch%mmean_nppcroot          (recc) = cpatch%mmean_nppcroot          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppcroot          (donc)     &
+                                               * dnplant
+         cpatch%mmean_nppseeds          (recc) = cpatch%mmean_nppseeds          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppseeds          (donc)     &
+                                               * dnplant
+         cpatch%mmean_nppwood           (recc) = cpatch%mmean_nppwood           (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppwood           (donc)     &
+                                               * dnplant
+         cpatch%mmean_nppdaily          (recc) = cpatch%mmean_nppdaily          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_nppdaily          (donc)     &
+                                               * dnplant
+         cpatch%mmean_gpp               (recc) = cpatch%mmean_gpp               (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_gpp               (donc)     &
+                                               * dnplant
+         cpatch%mmean_npp               (recc) = cpatch%mmean_npp               (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_npp               (donc)     &
+                                               * dnplant
+         cpatch%mmean_leaf_resp         (recc) = cpatch%mmean_leaf_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_leaf_resp         (donc)     &
+                                               * dnplant
+         cpatch%mmean_root_resp         (recc) = cpatch%mmean_root_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_root_resp         (donc)     &
+                                               * dnplant
+         cpatch%mmean_leaf_growth_resp  (recc) = cpatch%mmean_leaf_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_leaf_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%mmean_root_growth_resp  (recc) = cpatch%mmean_root_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_root_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%mmean_sapa_growth_resp  (recc) = cpatch%mmean_sapa_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_sapa_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%mmean_sapb_growth_resp  (recc) = cpatch%mmean_sapb_growth_resp  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_sapb_growth_resp  (donc)     &
+                                               * dnplant
+         cpatch%mmean_barka_growth_resp (recc) = cpatch%mmean_barka_growth_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_barka_growth_resp (donc)     &
+                                               * dnplant
+         cpatch%mmean_barkb_growth_resp (recc) = cpatch%mmean_barkb_growth_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_barkb_growth_resp (donc)     &
+                                               * dnplant
+         cpatch%mmean_leaf_storage_resp (recc) = cpatch%mmean_leaf_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_leaf_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%mmean_root_storage_resp (recc) = cpatch%mmean_root_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_root_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%mmean_sapa_storage_resp (recc) = cpatch%mmean_sapa_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_sapa_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%mmean_sapb_storage_resp (recc) = cpatch%mmean_sapb_storage_resp (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_sapb_storage_resp (donc)     &
+                                               * dnplant
+         cpatch%mmean_barka_storage_resp(recc) = cpatch%mmean_barka_storage_resp(recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_barka_storage_resp(donc)     &
+                                               * dnplant
+         cpatch%mmean_barkb_storage_resp(recc) = cpatch%mmean_barkb_storage_resp(recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_barkb_storage_resp(donc)     &
+                                               * dnplant
+         cpatch%mmean_plresp            (recc) = cpatch%mmean_plresp            (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_plresp            (donc)     &
+                                               * dnplant
+         cpatch%mmean_light_level       (recc) = cpatch%mmean_light_level       (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_light_level       (donc)     &
+                                               * dnplant
+         cpatch%mmean_light_level_beam  (recc) = cpatch%mmean_light_level_beam  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_light_level_beam  (donc)     &
+                                               * dnplant
+         cpatch%mmean_light_level_diff  (recc) = cpatch%mmean_light_level_diff  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_light_level_diff  (donc)     &
+                                               * dnplant
+         cpatch%mmean_bleaf             (recc) = cpatch%mmean_bleaf             (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_bleaf             (donc)     &
+                                               * dnplant
+         cpatch%mmean_broot             (recc) = cpatch%mmean_broot             (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_broot             (donc)     &
+                                               * dnplant
+         cpatch%mmean_bbarka            (recc) = cpatch%mmean_bbarka            (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_bbarka            (donc)     &
+                                               * dnplant
+         cpatch%mmean_bbarkb            (recc) = cpatch%mmean_bbarkb            (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_bbarkb            (donc)     &
+                                               * dnplant
+         cpatch%mmean_balive            (recc) = cpatch%mmean_balive            (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_balive            (donc)     &
+                                               * dnplant
+         cpatch%mmean_bstorage          (recc) = cpatch%mmean_bstorage          (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_bstorage          (donc)     &
+                                               * dnplant
+         cpatch%mmean_leaf_maintenance  (recc) = cpatch%mmean_leaf_maintenance  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_leaf_maintenance  (donc)     &
+                                               * dnplant
+         cpatch%mmean_root_maintenance  (recc) = cpatch%mmean_root_maintenance  (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_root_maintenance  (donc)     &
+                                               * dnplant
+         cpatch%mmean_barka_maintenance (recc) = cpatch%mmean_barka_maintenance (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_barka_maintenance (donc)     &
+                                               * dnplant
+         cpatch%mmean_barkb_maintenance (recc) = cpatch%mmean_barkb_maintenance (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_barkb_maintenance (donc)     &
+                                               * dnplant
+         cpatch%mmean_leaf_drop         (recc) = cpatch%mmean_leaf_drop         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_leaf_drop         (donc)     &
+                                               * dnplant
+         cpatch%mmean_cb                (recc) = cpatch%mmean_cb                (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_cb                (donc)     &
+                                               * dnplant
+         cpatch%mmean_par_level_beam    (recc) = cpatch%mmean_par_level_beam    (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_par_level_beam    (donc)     &
+                                               * dnplant
+         cpatch%mmean_par_level_diffd   (recc) = cpatch%mmean_par_level_diffd   (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_par_level_diffd   (donc)     &
+                                               * dnplant
+         cpatch%mmean_par_level_diffu   (recc) = cpatch%mmean_par_level_diffu   (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_par_level_diffu   (donc)     &
+                                               * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -3075,90 +3169,98 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%qmean_gpp             (:,recc) = cpatch%qmean_gpp             (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_gpp             (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_npp             (:,recc) = cpatch%qmean_npp             (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_npp             (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_leaf_resp       (:,recc) = cpatch%qmean_leaf_resp       (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_leaf_resp       (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_root_resp       (:,recc) = cpatch%qmean_root_resp       (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_root_resp       (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_leaf_growth_resp(:,recc) = cpatch%qmean_leaf_growth_resp(:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_leaf_growth_resp(:,donc)     &
-                                               * dnplant
-         cpatch%qmean_root_growth_resp(:,recc) = cpatch%qmean_root_growth_resp(:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_root_growth_resp(:,donc)     &
-                                               * dnplant
-         cpatch%qmean_sapa_growth_resp(:,recc) = cpatch%qmean_sapa_growth_resp(:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_sapa_growth_resp(:,donc)     &
-                                               * dnplant
-         cpatch%qmean_sapb_growth_resp(:,recc) = cpatch%qmean_sapb_growth_resp(:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_sapb_growth_resp(:,donc)     &
-                                               * dnplant
-         cpatch%qmean_bark_growth_resp(:,recc) = cpatch%qmean_bark_growth_resp(:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_bark_growth_resp(:,donc)     &
-                                               * dnplant
-         cpatch%qmean_leaf_storage_resp(:,recc)= cpatch%qmean_leaf_storage_resp(:,recc)    &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_leaf_storage_resp(:,donc)    &
-                                               * dnplant
-         cpatch%qmean_root_storage_resp(:,recc)= cpatch%qmean_root_storage_resp(:,recc)    &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_root_storage_resp(:,donc)    &
-                                               * dnplant
-         cpatch%qmean_sapa_storage_resp(:,recc)= cpatch%qmean_sapa_storage_resp(:,recc)    &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_sapa_storage_resp(:,donc)    &
-                                               * dnplant
-         cpatch%qmean_sapb_storage_resp(:,recc)= cpatch%qmean_sapb_storage_resp(:,recc)    &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_sapb_storage_resp(:,donc)    &
-                                               * dnplant
-         cpatch%qmean_bark_storage_resp(:,recc)= cpatch%qmean_bark_storage_resp(:,recc)    &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_bark_storage_resp(:,donc)    &
-                                               * dnplant
-         cpatch%qmean_plresp          (:,recc) = cpatch%qmean_plresp          (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_plresp          (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_light_level     (:,recc) = cpatch%qmean_light_level     (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_light_level     (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_light_level_beam(:,recc) = cpatch%qmean_light_level_beam(:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_light_level_beam(:,donc)     &
-                                               * dnplant
-         cpatch%qmean_light_level_diff(:,recc) = cpatch%qmean_light_level_diff(:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_light_level_diff(:,donc)     &
-                                               * dnplant
-         cpatch%qmean_par_level_beam  (:,recc) = cpatch%qmean_par_level_beam  (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_par_level_beam  (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_par_level_diffd (:,recc) = cpatch%qmean_par_level_diffd (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_par_level_diffd (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_par_level_diffu (:,recc) = cpatch%qmean_par_level_diffu (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_par_level_diffu (:,donc)     &
-                                               * dnplant
+         cpatch%qmean_gpp               (:,recc) = cpatch%qmean_gpp               (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_gpp               (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_npp               (:,recc) = cpatch%qmean_npp               (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_npp               (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_leaf_resp         (:,recc) = cpatch%qmean_leaf_resp         (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_leaf_resp         (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_root_resp         (:,recc) = cpatch%qmean_root_resp         (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_root_resp         (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_leaf_growth_resp  (:,recc) = cpatch%qmean_leaf_growth_resp  (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_leaf_growth_resp  (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_root_growth_resp  (:,recc) = cpatch%qmean_root_growth_resp  (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_root_growth_resp  (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_sapa_growth_resp  (:,recc) = cpatch%qmean_sapa_growth_resp  (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_sapa_growth_resp  (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_sapb_growth_resp  (:,recc) = cpatch%qmean_sapb_growth_resp  (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_sapb_growth_resp  (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_barka_growth_resp (:,recc) = cpatch%qmean_barka_growth_resp (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_barka_growth_resp (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_barkb_growth_resp (:,recc) = cpatch%qmean_barkb_growth_resp (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_barkb_growth_resp (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_leaf_storage_resp (:,recc) = cpatch%qmean_leaf_storage_resp (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_leaf_storage_resp (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_root_storage_resp (:,recc) = cpatch%qmean_root_storage_resp (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_root_storage_resp (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_sapa_storage_resp (:,recc) = cpatch%qmean_sapa_storage_resp (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_sapa_storage_resp (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_sapb_storage_resp (:,recc) = cpatch%qmean_sapb_storage_resp (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_sapb_storage_resp (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_barka_storage_resp(:,recc) = cpatch%qmean_barka_storage_resp(:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_barka_storage_resp(:,donc) &
+                                                 * dnplant
+         cpatch%qmean_barkb_storage_resp(:,recc) = cpatch%qmean_barkb_storage_resp(:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_barkb_storage_resp(:,donc) &
+                                                 * dnplant
+         cpatch%qmean_plresp            (:,recc) = cpatch%qmean_plresp            (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_plresp            (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_light_level       (:,recc) = cpatch%qmean_light_level       (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_light_level       (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_light_level_beam  (:,recc) = cpatch%qmean_light_level_beam  (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_light_level_beam  (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_light_level_diff  (:,recc) = cpatch%qmean_light_level_diff  (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_light_level_diff  (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_par_level_beam    (:,recc) = cpatch%qmean_par_level_beam    (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_par_level_beam    (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_par_level_diffd   (:,recc) = cpatch%qmean_par_level_diffd   (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_par_level_diffd   (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_par_level_diffu   (:,recc) = cpatch%qmean_par_level_diffu   (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_par_level_diffu   (:,donc) &
+                                                 * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -5801,30 +5903,59 @@ module fuse_fiss_utils
                                      ( csite%fbeam(donp)              * csite%area(donp)   &
                                      + csite%fbeam(recp)              * csite%area(recp) )
 
+      csite%fast_grnd_C(recp)        = newareai *                                          &
+                                     ( csite%fast_grnd_C(donp)        * csite%area(donp)   &
+                                     + csite%fast_grnd_C(recp)        * csite%area(recp) )
+
       csite%fast_soil_C(recp)        = newareai *                                          &
                                      ( csite%fast_soil_C(donp)        * csite%area(donp)   &
                                      + csite%fast_soil_C(recp)        * csite%area(recp) )
+
+      csite%microbial_soil_C(recp)   = newareai *                                          &
+                                     ( csite%microbial_soil_C(donp)   * csite%area(donp)   &
+                                     + csite%microbial_soil_C(recp)   * csite%area(recp) )
 
       csite%slow_soil_C(recp)        = newareai *                                          &
                                      ( csite%slow_soil_C(donp)        * csite%area(donp)   &
                                      + csite%slow_soil_C(recp)        * csite%area(recp) )
 
+      csite%structural_grnd_C(recp)  = newareai *                                          &
+                                     ( csite%structural_grnd_C(donp)  * csite%area(donp)   &
+                                     + csite%structural_grnd_C(recp)  * csite%area(recp) )
+
       csite%structural_soil_C(recp)  = newareai *                                          &
                                      ( csite%structural_soil_C(donp)  * csite%area(donp)   &
                                      + csite%structural_soil_C(recp)  * csite%area(recp) )
+
+      csite%structural_grnd_L(recp)  = newareai *                                          &
+                                     ( csite%structural_grnd_L(donp)  * csite%area(donp)   &
+                                     + csite%structural_grnd_L(recp)  * csite%area(recp) )
+                                     
 
       csite%structural_soil_L(recp)  = newareai *                                          &
                                      ( csite%structural_soil_L(donp)  * csite%area(donp)   &
                                      + csite%structural_soil_L(recp)  * csite%area(recp) )
                                      
 
-      csite%mineralized_soil_N(recp) = newareai *                                          &
-                                     ( csite%mineralized_soil_N(donp) * csite%area(donp)   &
-                                     + csite%mineralized_soil_N(recp) * csite%area(recp) )
+      csite%fast_grnd_N(recp)        = newareai *                                          &
+                                     ( csite%fast_grnd_N(donp)        * csite%area(donp)   &
+                                     + csite%fast_grnd_N(recp)        * csite%area(recp) )
 
       csite%fast_soil_N(recp)        = newareai *                                          &
                                      ( csite%fast_soil_N(donp)        * csite%area(donp)   &
                                      + csite%fast_soil_N(recp)        * csite%area(recp) )
+
+      csite%structural_grnd_N(recp)  = newareai *                                          &
+                                     ( csite%structural_grnd_N(donp)  * csite%area(donp)   &
+                                     + csite%structural_grnd_N(recp)  * csite%area(recp) )
+
+      csite%structural_soil_N(recp)  = newareai *                                          &
+                                     ( csite%structural_soil_N(donp)  * csite%area(donp)   &
+                                     + csite%structural_soil_N(recp)  * csite%area(recp) )
+
+      csite%mineralized_soil_N(recp) = newareai *                                          &
+                                     ( csite%mineralized_soil_N(donp) * csite%area(donp)   &
+                                     + csite%mineralized_soil_N(recp) * csite%area(recp) )
 
       csite%sum_dgd(recp)            = newareai *                                          &
                                      ( csite%sum_dgd(donp)            * csite%area(donp)   &
@@ -6018,9 +6149,17 @@ module fuse_fiss_utils
                                          ( csite%today_A_decomp(donp) * csite%area(donp)   &
                                          + csite%today_A_decomp(recp) * csite%area(recp) )
 
+      csite%today_B_decomp(recp)         = newareai *                                      &
+                                         ( csite%today_B_decomp(donp) * csite%area(donp)   &
+                                         + csite%today_B_decomp(recp) * csite%area(recp) )
+
       csite%today_Af_decomp(recp)        = newareai *                                      &
                                          ( csite%today_Af_decomp(donp)* csite%area(donp)   &
                                          + csite%today_Af_decomp(recp)* csite%area(recp) )
+
+      csite%today_Bf_decomp(recp)        = newareai *                                      &
+                                         ( csite%today_Bf_decomp(donp)* csite%area(donp)   &
+                                         + csite%today_Bf_decomp(recp)* csite%area(recp) )
 
       do iii = 1,n_pft
          csite%repro(iii,recp)           = newareai *                                      &
@@ -6151,9 +6290,34 @@ module fuse_fiss_utils
                                                    + csite%fmean_rh                (donp)  &
                                                    * csite%area                    (donp)) &
                                                  *   newareai
-         csite%fmean_cwd_rh               (recp) = ( csite%fmean_cwd_rh            (recp)  &
+         csite%fmean_fgc_rh               (recp) = ( csite%fmean_fgc_rh            (recp)  &
                                                    * csite%area                    (recp)  &
-                                                   + csite%fmean_cwd_rh            (donp)  &
+                                                   + csite%fmean_fgc_rh            (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_fsc_rh               (recp) = ( csite%fmean_fsc_rh            (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_fsc_rh            (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_stgc_rh              (recp) = ( csite%fmean_stgc_rh           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_stgc_rh           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_stsc_rh              (recp) = ( csite%fmean_stsc_rh           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_stsc_rh           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_msc_rh               (recp) = ( csite%fmean_msc_rh            (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_msc_rh            (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_ssc_rh               (recp) = ( csite%fmean_ssc_rh            (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_ssc_rh            (donp)  &
                                                    * csite%area                    (donp)) &
                                                  *   newareai
          csite%fmean_nep                  (recp) = ( csite%fmean_nep               (recp)  &
@@ -6477,9 +6641,19 @@ module fuse_fiss_utils
                                                  + csite%dmean_A_decomp           (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
+            csite%dmean_B_decomp        (recp) = ( csite%dmean_B_decomp           (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_B_decomp           (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
             csite%dmean_Af_decomp       (recp) = ( csite%dmean_Af_decomp          (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_Af_decomp          (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%dmean_Bf_decomp       (recp) = ( csite%dmean_Bf_decomp          (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_Bf_decomp          (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%dmean_co2_residual    (recp) = ( csite%dmean_co2_residual       (recp)   &
@@ -6502,9 +6676,34 @@ module fuse_fiss_utils
                                                  + csite%dmean_rh                 (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-            csite%dmean_cwd_rh          (recp) = ( csite%dmean_cwd_rh             (recp)   &
+            csite%dmean_fgc_rh          (recp) = ( csite%dmean_fgc_rh             (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%dmean_cwd_rh             (donp)   &
+                                                 + csite%dmean_fgc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%dmean_fsc_rh          (recp) = ( csite%dmean_fsc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_fsc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%dmean_stgc_rh         (recp) = ( csite%dmean_stgc_rh            (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_stgc_rh            (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%dmean_stsc_rh         (recp) = ( csite%dmean_stsc_rh            (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_stsc_rh            (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%dmean_msc_rh          (recp) = ( csite%dmean_msc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_msc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%dmean_ssc_rh          (recp) = ( csite%dmean_ssc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_ssc_rh             (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%dmean_nep             (recp) = ( csite%dmean_nep                (recp)   &
@@ -6827,11 +7026,46 @@ module fuse_fiss_utils
                                                      , csite%mmsqu_rh         (donp)       &
                                                      , csite%area             (donp)       &
                                                      , corr_patch, .false.)
-            csite%mmsqu_cwd_rh     (recp) = fuse_msqu( csite%mmean_cwd_rh     (recp)       &
-                                                     , csite%mmsqu_cwd_rh     (recp)       &
+            csite%mmsqu_fgc_rh     (recp) = fuse_msqu( csite%mmean_fgc_rh     (recp)       &
+                                                     , csite%mmsqu_fgc_rh     (recp)       &
                                                      , csite%area             (recp)       &
-                                                     , csite%mmean_cwd_rh     (donp)       &
-                                                     , csite%mmsqu_cwd_rh     (donp)       &
+                                                     , csite%mmean_fgc_rh     (donp)       &
+                                                     , csite%mmsqu_fgc_rh     (donp)       &
+                                                     , csite%area             (donp)       &
+                                                     , corr_patch, .false.)
+            csite%mmsqu_fsc_rh     (recp) = fuse_msqu( csite%mmean_fsc_rh     (recp)       &
+                                                     , csite%mmsqu_fsc_rh     (recp)       &
+                                                     , csite%area             (recp)       &
+                                                     , csite%mmean_fsc_rh     (donp)       &
+                                                     , csite%mmsqu_fsc_rh     (donp)       &
+                                                     , csite%area             (donp)       &
+                                                     , corr_patch, .false.)
+            csite%mmsqu_stgc_rh    (recp) = fuse_msqu( csite%mmean_stgc_rh    (recp)       &
+                                                     , csite%mmsqu_stgc_rh    (recp)       &
+                                                     , csite%area             (recp)       &
+                                                     , csite%mmean_stgc_rh    (donp)       &
+                                                     , csite%mmsqu_stgc_rh    (donp)       &
+                                                     , csite%area             (donp)       &
+                                                     , corr_patch, .false.)
+            csite%mmsqu_stsc_rh    (recp) = fuse_msqu( csite%mmean_stsc_rh    (recp)       &
+                                                     , csite%mmsqu_stsc_rh    (recp)       &
+                                                     , csite%area             (recp)       &
+                                                     , csite%mmean_stsc_rh    (donp)       &
+                                                     , csite%mmsqu_stsc_rh    (donp)       &
+                                                     , csite%area             (donp)       &
+                                                     , corr_patch, .false.)
+            csite%mmsqu_msc_rh     (recp) = fuse_msqu( csite%mmean_msc_rh     (recp)       &
+                                                     , csite%mmsqu_msc_rh     (recp)       &
+                                                     , csite%area             (recp)       &
+                                                     , csite%mmean_msc_rh     (donp)       &
+                                                     , csite%mmsqu_msc_rh     (donp)       &
+                                                     , csite%area             (donp)       &
+                                                     , corr_patch, .false.)
+            csite%mmsqu_ssc_rh     (recp) = fuse_msqu( csite%mmean_ssc_rh     (recp)       &
+                                                     , csite%mmsqu_ssc_rh     (recp)       &
+                                                     , csite%area             (recp)       &
+                                                     , csite%mmean_ssc_rh     (donp)       &
+                                                     , csite%mmsqu_ssc_rh     (donp)       &
                                                      , csite%area             (donp)       &
                                                      , corr_patch, .false.)
             csite%mmsqu_nep        (recp) = fuse_msqu( csite%mmean_nep        (recp)       &
@@ -6940,9 +7174,34 @@ module fuse_fiss_utils
                                                  + csite%mmean_rh                 (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-            csite%mmean_cwd_rh          (recp) = ( csite%mmean_cwd_rh             (recp)   &
+            csite%mmean_fgc_rh          (recp) = ( csite%mmean_fgc_rh             (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%mmean_cwd_rh             (donp)   &
+                                                 + csite%mmean_fgc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_fsc_rh          (recp) = ( csite%mmean_fsc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_fsc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_stgc_rh         (recp) = ( csite%mmean_stgc_rh            (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_stgc_rh            (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_stsc_rh         (recp) = ( csite%mmean_stsc_rh            (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_stsc_rh            (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_msc_rh          (recp) = ( csite%mmean_msc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_msc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_ssc_rh          (recp) = ( csite%mmean_ssc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_ssc_rh             (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%mmean_nep             (recp) = ( csite%mmean_nep                (recp)   &
@@ -7155,9 +7414,19 @@ module fuse_fiss_utils
                                                  + csite%mmean_qdrainage          (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
+            csite%mmean_fast_grnd_c     (recp) = ( csite%mmean_fast_grnd_c        (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_fast_grnd_c        (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
             csite%mmean_fast_soil_c     (recp) = ( csite%mmean_fast_soil_c        (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_fast_soil_c        (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_microbe_soil_c  (recp) = ( csite%mmean_microbe_soil_c     (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_microbe_soil_c     (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%mmean_slow_soil_c     (recp) = ( csite%mmean_slow_soil_c        (recp)   &
@@ -7165,9 +7434,19 @@ module fuse_fiss_utils
                                                  + csite%mmean_slow_soil_c        (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
+            csite%mmean_struct_grnd_c   (recp) = ( csite%mmean_struct_grnd_c      (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_struct_grnd_c      (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
             csite%mmean_struct_soil_c   (recp) = ( csite%mmean_struct_soil_c      (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_struct_soil_c      (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_struct_grnd_l   (recp) = ( csite%mmean_struct_grnd_l      (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_struct_grnd_l      (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%mmean_struct_soil_l   (recp) = ( csite%mmean_struct_soil_l      (recp)   &
@@ -7175,9 +7454,24 @@ module fuse_fiss_utils
                                                  + csite%mmean_struct_soil_l      (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
+            csite%mmean_fast_grnd_n     (recp) = ( csite%mmean_fast_grnd_n        (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_fast_grnd_n        (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
             csite%mmean_fast_soil_n     (recp) = ( csite%mmean_fast_soil_n        (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_fast_soil_n        (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_struct_grnd_n   (recp) = ( csite%mmean_struct_grnd_n      (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_struct_grnd_n      (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_struct_soil_n   (recp) = ( csite%mmean_struct_soil_n      (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_struct_soil_n      (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%mmean_mineral_soil_n  (recp) = ( csite%mmean_mineral_soil_n     (recp)   &
@@ -7190,9 +7484,19 @@ module fuse_fiss_utils
                                                  + csite%mmean_A_decomp           (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
+            csite%mmean_B_decomp        (recp) = ( csite%mmean_B_decomp           (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_B_decomp           (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
             csite%mmean_Af_decomp       (recp) = ( csite%mmean_Af_decomp          (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_Af_decomp          (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_Bf_decomp       (recp) = ( csite%mmean_Bf_decomp          (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_Bf_decomp          (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%mmean_co2_residual    (recp) = ( csite%mmean_co2_residual       (recp)   &
@@ -7322,11 +7626,46 @@ module fuse_fiss_utils
                                                          , csite%qmsqu_rh        (t,donp)  &
                                                          , csite%area              (donp)  &
                                                          , corr_patch, .false.)
-               csite%qmsqu_cwd_rh    (t,recp) = fuse_msqu( csite%qmean_cwd_rh    (t,recp)  &
-                                                         , csite%qmsqu_cwd_rh    (t,recp)  &
+               csite%qmsqu_fgc_rh    (t,recp) = fuse_msqu( csite%qmean_fgc_rh    (t,recp)  &
+                                                         , csite%qmsqu_fgc_rh    (t,recp)  &
                                                          , csite%area              (recp)  &
-                                                         , csite%qmean_cwd_rh    (t,donp)  &
-                                                         , csite%qmsqu_cwd_rh    (t,donp)  &
+                                                         , csite%qmean_fgc_rh    (t,donp)  &
+                                                         , csite%qmsqu_fgc_rh    (t,donp)  &
+                                                         , csite%area              (donp)  &
+                                                         , corr_patch, .false.)
+               csite%qmsqu_fsc_rh    (t,recp) = fuse_msqu( csite%qmean_fsc_rh    (t,recp)  &
+                                                         , csite%qmsqu_fsc_rh    (t,recp)  &
+                                                         , csite%area              (recp)  &
+                                                         , csite%qmean_fsc_rh    (t,donp)  &
+                                                         , csite%qmsqu_fsc_rh    (t,donp)  &
+                                                         , csite%area              (donp)  &
+                                                         , corr_patch, .false.)
+               csite%qmsqu_stgc_rh    (t,recp) = fuse_msqu( csite%qmean_stgc_rh  (t,recp)  &
+                                                         , csite%qmsqu_stgc_rh   (t,recp)  &
+                                                         , csite%area              (recp)  &
+                                                         , csite%qmean_stgc_rh   (t,donp)  &
+                                                         , csite%qmsqu_stgc_rh   (t,donp)  &
+                                                         , csite%area              (donp)  &
+                                                         , corr_patch, .false.)
+               csite%qmsqu_stsc_rh   (t,recp) = fuse_msqu( csite%qmean_stsc_rh   (t,recp)  &
+                                                         , csite%qmsqu_stsc_rh   (t,recp)  &
+                                                         , csite%area              (recp)  &
+                                                         , csite%qmean_stsc_rh   (t,donp)  &
+                                                         , csite%qmsqu_stsc_rh   (t,donp)  &
+                                                         , csite%area              (donp)  &
+                                                         , corr_patch, .false.)
+               csite%qmsqu_msc_rh    (t,recp) = fuse_msqu( csite%qmean_msc_rh    (t,recp)  &
+                                                         , csite%qmsqu_msc_rh    (t,recp)  &
+                                                         , csite%area              (recp)  &
+                                                         , csite%qmean_msc_rh    (t,donp)  &
+                                                         , csite%qmsqu_msc_rh    (t,donp)  &
+                                                         , csite%area              (donp)  &
+                                                         , corr_patch, .false.)
+               csite%qmsqu_ssc_rh    (t,recp) = fuse_msqu( csite%qmean_ssc_rh    (t,recp)  &
+                                                         , csite%qmsqu_ssc_rh    (t,recp)  &
+                                                         , csite%area              (recp)  &
+                                                         , csite%qmean_ssc_rh    (t,donp)  &
+                                                         , csite%qmsqu_ssc_rh    (t,donp)  &
                                                          , csite%area              (donp)  &
                                                          , corr_patch, .false.)
                csite%qmsqu_nep       (t,recp) = fuse_msqu( csite%qmean_nep       (t,recp)  &
@@ -7438,9 +7777,34 @@ module fuse_fiss_utils
                                                   + csite%qmean_rh              (:,donp)   &
                                                   * csite%area                    (donp) ) &
                                                 *   newareai
-            csite%qmean_cwd_rh         (:,recp) = ( csite%qmean_cwd_rh          (:,recp)   &
+            csite%qmean_fgc_rh         (:,recp) = ( csite%qmean_fgc_rh          (:,recp)   &
                                                   * csite%area                    (recp)   &
-                                                  + csite%qmean_cwd_rh          (:,donp)   &
+                                                  + csite%qmean_fgc_rh          (:,donp)   &
+                                                  * csite%area                    (donp) ) &
+                                                *   newareai
+            csite%qmean_fsc_rh         (:,recp) = ( csite%qmean_fsc_rh          (:,recp)   &
+                                                  * csite%area                    (recp)   &
+                                                  + csite%qmean_fsc_rh          (:,donp)   &
+                                                  * csite%area                    (donp) ) &
+                                                *   newareai
+            csite%qmean_stgc_rh        (:,recp) = ( csite%qmean_stgc_rh         (:,recp)   &
+                                                  * csite%area                    (recp)   &
+                                                  + csite%qmean_stgc_rh         (:,donp)   &
+                                                  * csite%area                    (donp) ) &
+                                                *   newareai
+            csite%qmean_stsc_rh        (:,recp) = ( csite%qmean_stsc_rh         (:,recp)   &
+                                                  * csite%area                    (recp)   &
+                                                  + csite%qmean_stsc_rh         (:,donp)   &
+                                                  * csite%area                    (donp) ) &
+                                                *   newareai
+            csite%qmean_msc_rh         (:,recp) = ( csite%qmean_msc_rh          (:,recp)   &
+                                                  * csite%area                    (recp)   &
+                                                  + csite%qmean_msc_rh          (:,donp)   &
+                                                  * csite%area                    (donp) ) &
+                                                *   newareai
+            csite%qmean_ssc_rh         (:,recp) = ( csite%qmean_ssc_rh          (:,recp)   &
+                                                  * csite%area                    (recp)   &
+                                                  + csite%qmean_ssc_rh          (:,donp)   &
                                                   * csite%area                    (donp) ) &
                                                 *   newareai
             csite%qmean_nep            (:,recp) = ( csite%qmean_nep             (:,recp)   &

@@ -92,23 +92,23 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: N_immobil_supply_scale
    !---------------------------------------------------------------------------------------!
-   !     Fraction of structural material that goes to coarse woody debris upon mortality.  !
-   ! Note that currently CWD decomposed at a rate identical to structural soil C.          !
-   !---------------------------------------------------------------------------------------!
-   real :: cwd_frac
-   !---------------------------------------------------------------------------------------!
    !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
    !---------------------------------------------------------------------------------------!
    real :: r_fsc
    !---------------------------------------------------------------------------------------!
-   !     Fraction of structural pool decomposition going to heterotrophic respiration      !
-   ! instead of the slow pool.                                                             !
+   !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
    !---------------------------------------------------------------------------------------!
    real :: r_stsc
    !---------------------------------------------------------------------------------------!
-   !     Fraction of structural pool decomposition going to heterotrophic respiration      !
+   !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
    !---------------------------------------------------------------------------------------!
-   real :: r_ssc
+   real :: r_msc
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
+   ! This is disabled because it must be 1.0 for the original ED-2 soil decomposition      !
+   ! schemes, and it is not used by the new scheme based on RothC (Sierra et al. 2012).    !
+   !---------------------------------------------------------------------------------------!
+   ! real :: r_ssc
    !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of structural pool soil carbon (1/days); this is modulated   !
    ! by Lc.                                                                                !
@@ -119,10 +119,49 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_fsc
    !---------------------------------------------------------------------------------------!
+   !     Intrinsic decay rate of microbial soil carbon (1/days).                           !
+   !---------------------------------------------------------------------------------------!
+   real :: decay_rate_msc
+   !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of slow pool soil carbon (1/days).  This pool has already    !
    ! decayed from the structural pool.                                                     !
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_ssc
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of decay that is transferred to microbial carbon pool.  This parameter   !
+   ! is used only when decomp_scheme is set to 2.                                          !
+   !---------------------------------------------------------------------------------------!
+   real :: fx_msc
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Coefficients to obtain parameter x for the RothC model as implemented by Sierra   !
+   ! et al. (2012).                                                                        !
+   !---------------------------------------------------------------------------------------!
+   real :: xrothc_a
+   real :: xrothc_b
+   real :: xrothc_c
+   real :: xrothc_d
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Temporary parameters to indicate above-ground (and flammable) necromass.  In the  !
+   ! future we should split the necromass pools into above- and below-ground.              !
+   !---------------------------------------------------------------------------------------!
+   real :: agf_fsc
+   real :: agf_stsc
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Carbon to Nitrogen ratio, structural pool. --------------------------------------!
+   real :: c2n_structural
+   !----- Carbon to Nitrogen ratio, slow pool. --------------------------------------------!
+   real :: c2n_slow
    !---------------------------------------------------------------------------------------!
 
 end Module decomp_coms

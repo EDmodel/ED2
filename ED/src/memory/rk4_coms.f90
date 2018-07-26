@@ -153,8 +153,12 @@ module rk4_coms
 
 
       !----- Heterotrophic respiration.[umol/m2/s] ----------------------------------------!
-      real(kind=8)                        :: cwd_rh
-      real(kind=8)                        :: rh
+      real(kind=8)                        :: fgc_rh
+      real(kind=8)                        :: fsc_rh
+      real(kind=8)                        :: stgc_rh
+      real(kind=8)                        :: stsc_rh
+      real(kind=8)                        :: msc_rh
+      real(kind=8)                        :: ssc_rh
       !------------------------------------------------------------------------------------!
 
 
@@ -219,19 +223,21 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: psi_open     ! Water demand (op.)  [kg/m2lf/s]
       real(kind=8), pointer, dimension(:) :: psi_closed   ! Water demand (clos.)[kg/m2lf/s]
       real(kind=8), pointer, dimension(:) :: fs_open      ! Frac. of op. stom.  [      ---]
-      real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: leaf_storage_resp ! Storage resp   [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: root_storage_resp ! Storage resp   [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapa_storage_resp ! Storage resp   [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapb_storage_resp ! Storage resp   [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: bark_storage_resp ! Storage resp   [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: leaf_growth_resp !                 [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: root_growth_resp !                 [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapa_growth_resp !                 [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapb_growth_resp !                 [µmol/m2/s]
-      real(kind=8), pointer, dimension(:) :: bark_growth_resp !                 [µmol/m2/s]
+      real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: leaf_storage_resp  ! Storage resp  [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: root_storage_resp  ! Storage resp  [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: sapa_storage_resp  ! Storage resp  [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: sapb_storage_resp  ! Storage resp  [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: barka_storage_resp ! Storage resp  [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: barkb_storage_resp ! Storage resp  [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: leaf_growth_resp   !               [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: root_growth_resp   !               [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: sapa_growth_resp   !               [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: sapb_growth_resp   !               [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: barka_growth_resp  !               [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: barkb_growth_resp  !               [umol/m2/s]
 
 
       !------ Variables used for hybrid stepping -----------------------------------------!
@@ -1035,8 +1041,13 @@ module rk4_coms
 
       y%rasveg                         = 0.d0
       y%root_res_fac                   = 0.d0
-      y%cwd_rh                         = 0.d0
-      y%rh                             = 0.d0
+
+      y%fgc_rh                         = 0.d0
+      y%fsc_rh                         = 0.d0
+      y%stgc_rh                        = 0.d0
+      y%stsc_rh                        = 0.d0
+      y%msc_rh                         = 0.d0
+      y%ssc_rh                         = 0.d0
 
       y%upwp                           = 0.d0
       y%wpwp                           = 0.d0
@@ -1146,78 +1157,80 @@ module rk4_coms
       call nullify_rk4_cohort(y)
 
 
-      allocate(y%leaf_energy      (maxcohort))
-      allocate(y%leaf_water       (maxcohort))
-      allocate(y%leaf_temp        (maxcohort))
-      allocate(y%leaf_fliq        (maxcohort))
-      allocate(y%leaf_hcap        (maxcohort))
-      allocate(y%leaf_reynolds    (maxcohort))
-      allocate(y%leaf_grashof     (maxcohort))
-      allocate(y%leaf_nussfree    (maxcohort))
-      allocate(y%leaf_nussforc    (maxcohort))
-      allocate(y%lint_shv         (maxcohort))
-      allocate(y%leaf_resolvable  (maxcohort))
-      allocate(y%leaf_gbh         (maxcohort))
-      allocate(y%leaf_gbw         (maxcohort))
-      allocate(y%gsw_open         (maxcohort))
-      allocate(y%gsw_closed       (maxcohort))
-      allocate(y%rshort_l         (maxcohort))
-      allocate(y%rlong_l          (maxcohort))
-      allocate(y%wood_energy      (maxcohort))
-      allocate(y%wood_water       (maxcohort))
-      allocate(y%wood_temp        (maxcohort))
-      allocate(y%wood_fliq        (maxcohort))
-      allocate(y%wood_hcap        (maxcohort))
-      allocate(y%wood_reynolds    (maxcohort))
-      allocate(y%wood_grashof     (maxcohort))
-      allocate(y%wood_nussfree    (maxcohort))
-      allocate(y%wood_nussforc    (maxcohort))
-      allocate(y%wood_resolvable  (maxcohort))
-      allocate(y%wood_gbh         (maxcohort))
-      allocate(y%wood_gbw         (maxcohort))
-      allocate(y%rshort_w         (maxcohort))
-      allocate(y%rlong_w          (maxcohort))
-      allocate(y%veg_energy       (maxcohort))
-      allocate(y%veg_water        (maxcohort))
-      allocate(y%veg_hcap         (maxcohort))
-      allocate(y%veg_resolvable   (maxcohort))
-      allocate(y%nplant           (maxcohort))
-      allocate(y%veg_wind         (maxcohort))
-      allocate(y%lai              (maxcohort))
-      allocate(y%wai              (maxcohort))
-      allocate(y%tai              (maxcohort))
-      allocate(y%crown_area       (maxcohort))
-      allocate(y%elongf           (maxcohort))
-      allocate(y%psi_open         (maxcohort))
-      allocate(y%psi_closed       (maxcohort))
-      allocate(y%fs_open          (maxcohort))
-      allocate(y%gpp              (maxcohort))
-      allocate(y%leaf_resp        (maxcohort))
-      allocate(y%root_resp        (maxcohort))
-      allocate(y%leaf_growth_resp (maxcohort))
-      allocate(y%root_growth_resp (maxcohort))
-      allocate(y%sapa_growth_resp (maxcohort))
-      allocate(y%sapb_growth_resp (maxcohort))
-      allocate(y%bark_growth_resp (maxcohort))
-      allocate(y%leaf_storage_resp(maxcohort))
-      allocate(y%root_storage_resp(maxcohort))
-      allocate(y%sapa_storage_resp(maxcohort))
-      allocate(y%sapb_storage_resp(maxcohort))
-      allocate(y%bark_storage_resp(maxcohort))
+      allocate(y%leaf_energy       (maxcohort))
+      allocate(y%leaf_water        (maxcohort))
+      allocate(y%leaf_temp         (maxcohort))
+      allocate(y%leaf_fliq         (maxcohort))
+      allocate(y%leaf_hcap         (maxcohort))
+      allocate(y%leaf_reynolds     (maxcohort))
+      allocate(y%leaf_grashof      (maxcohort))
+      allocate(y%leaf_nussfree     (maxcohort))
+      allocate(y%leaf_nussforc     (maxcohort))
+      allocate(y%lint_shv          (maxcohort))
+      allocate(y%leaf_resolvable   (maxcohort))
+      allocate(y%leaf_gbh          (maxcohort))
+      allocate(y%leaf_gbw          (maxcohort))
+      allocate(y%gsw_open          (maxcohort))
+      allocate(y%gsw_closed        (maxcohort))
+      allocate(y%rshort_l          (maxcohort))
+      allocate(y%rlong_l           (maxcohort))
+      allocate(y%wood_energy       (maxcohort))
+      allocate(y%wood_water        (maxcohort))
+      allocate(y%wood_temp         (maxcohort))
+      allocate(y%wood_fliq         (maxcohort))
+      allocate(y%wood_hcap         (maxcohort))
+      allocate(y%wood_reynolds     (maxcohort))
+      allocate(y%wood_grashof      (maxcohort))
+      allocate(y%wood_nussfree     (maxcohort))
+      allocate(y%wood_nussforc     (maxcohort))
+      allocate(y%wood_resolvable   (maxcohort))
+      allocate(y%wood_gbh          (maxcohort))
+      allocate(y%wood_gbw          (maxcohort))
+      allocate(y%rshort_w          (maxcohort))
+      allocate(y%rlong_w           (maxcohort))
+      allocate(y%veg_energy        (maxcohort))
+      allocate(y%veg_water         (maxcohort))
+      allocate(y%veg_hcap          (maxcohort))
+      allocate(y%veg_resolvable    (maxcohort))
+      allocate(y%nplant            (maxcohort))
+      allocate(y%veg_wind          (maxcohort))
+      allocate(y%lai               (maxcohort))
+      allocate(y%wai               (maxcohort))
+      allocate(y%tai               (maxcohort))
+      allocate(y%crown_area        (maxcohort))
+      allocate(y%elongf            (maxcohort))
+      allocate(y%psi_open          (maxcohort))
+      allocate(y%psi_closed        (maxcohort))
+      allocate(y%fs_open           (maxcohort))
+      allocate(y%gpp               (maxcohort))
+      allocate(y%leaf_resp         (maxcohort))
+      allocate(y%root_resp         (maxcohort))
+      allocate(y%leaf_growth_resp  (maxcohort))
+      allocate(y%root_growth_resp  (maxcohort))
+      allocate(y%sapa_growth_resp  (maxcohort))
+      allocate(y%sapb_growth_resp  (maxcohort))
+      allocate(y%barka_growth_resp (maxcohort))
+      allocate(y%barkb_growth_resp (maxcohort))
+      allocate(y%leaf_storage_resp (maxcohort))
+      allocate(y%root_storage_resp (maxcohort))
+      allocate(y%sapa_storage_resp (maxcohort))
+      allocate(y%sapb_storage_resp (maxcohort))
+      allocate(y%barka_storage_resp(maxcohort))
+      allocate(y%barkb_storage_resp(maxcohort))
 
-      allocate(y%wflxlc           (maxcohort))
-      allocate(y%wflxwc           (maxcohort))
-      allocate(y%wflxtr           (maxcohort))
-      allocate(y%hflx_wrsti       (maxcohort))
-      allocate(y%hflx_lrsti       (maxcohort))
+      allocate(y%wflxlc            (maxcohort))
+      allocate(y%wflxwc            (maxcohort))
+      allocate(y%wflxtr            (maxcohort))
+      allocate(y%hflx_wrsti        (maxcohort))
+      allocate(y%hflx_lrsti        (maxcohort))
 
-      allocate(y%cfx_hflxlc       (maxcohort))
-      allocate(y%cfx_hflxwc       (maxcohort))
-      allocate(y%cfx_qwflxlc      (maxcohort))
-      allocate(y%cfx_qwflxwc      (maxcohort))
-      allocate(y%cfx_qwshed       (maxcohort))
-      allocate(y%cfx_qtransp      (maxcohort))
-      allocate(y%cfx_qintercepted (maxcohort))
+      allocate(y%cfx_hflxlc        (maxcohort))
+      allocate(y%cfx_hflxwc        (maxcohort))
+      allocate(y%cfx_qwflxlc       (maxcohort))
+      allocate(y%cfx_qwflxwc       (maxcohort))
+      allocate(y%cfx_qwshed        (maxcohort))
+      allocate(y%cfx_qtransp       (maxcohort))
+      allocate(y%cfx_qintercepted  (maxcohort))
 
       allocate(y%avg_sensible_lc   (maxcohort))
       allocate(y%avg_sensible_wc   (maxcohort))
@@ -1252,78 +1265,80 @@ module rk4_coms
       type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
-      nullify(y%leaf_energy      )
-      nullify(y%leaf_water       )
-      nullify(y%leaf_temp        )
-      nullify(y%leaf_fliq        )
-      nullify(y%leaf_hcap        )
-      nullify(y%leaf_reynolds    )
-      nullify(y%leaf_grashof     )
-      nullify(y%leaf_nussfree    )
-      nullify(y%leaf_nussforc    )
-      nullify(y%lint_shv         )
-      nullify(y%leaf_resolvable  )
-      nullify(y%leaf_gbh         )
-      nullify(y%leaf_gbw         )
-      nullify(y%gsw_open         )
-      nullify(y%gsw_closed       )
-      nullify(y%rshort_l         )
-      nullify(y%rlong_l          )
-      nullify(y%wood_energy      )
-      nullify(y%wood_water       )
-      nullify(y%wood_temp        )
-      nullify(y%wood_fliq        )
-      nullify(y%wood_hcap        )
-      nullify(y%wood_reynolds    )
-      nullify(y%wood_grashof     )
-      nullify(y%wood_nussfree    )
-      nullify(y%wood_nussforc    )
-      nullify(y%wood_resolvable  )
-      nullify(y%wood_gbh         )
-      nullify(y%wood_gbw         )
-      nullify(y%rshort_w         )
-      nullify(y%rlong_w          )
-      nullify(y%veg_energy       )
-      nullify(y%veg_water        )
-      nullify(y%veg_hcap         )
-      nullify(y%veg_resolvable   )
-      nullify(y%nplant           )
-      nullify(y%veg_wind         )
-      nullify(y%lai              )
-      nullify(y%wai              )
-      nullify(y%tai              )
-      nullify(y%crown_area       )
-      nullify(y%elongf           )
-      nullify(y%psi_open         )
-      nullify(y%psi_closed       )
-      nullify(y%fs_open          )
-      nullify(y%gpp              )
-      nullify(y%leaf_resp        )
-      nullify(y%root_resp        )
-      nullify(y%leaf_growth_resp )
-      nullify(y%root_growth_resp )
-      nullify(y%sapa_growth_resp )
-      nullify(y%sapb_growth_resp )
-      nullify(y%bark_growth_resp )
-      nullify(y%leaf_storage_resp)
-      nullify(y%root_storage_resp)
-      nullify(y%sapa_storage_resp)
-      nullify(y%sapb_storage_resp)
-      nullify(y%bark_storage_resp)
+      nullify(y%leaf_energy       )
+      nullify(y%leaf_water        )
+      nullify(y%leaf_temp         )
+      nullify(y%leaf_fliq         )
+      nullify(y%leaf_hcap         )
+      nullify(y%leaf_reynolds     )
+      nullify(y%leaf_grashof      )
+      nullify(y%leaf_nussfree     )
+      nullify(y%leaf_nussforc     )
+      nullify(y%lint_shv          )
+      nullify(y%leaf_resolvable   )
+      nullify(y%leaf_gbh          )
+      nullify(y%leaf_gbw          )
+      nullify(y%gsw_open          )
+      nullify(y%gsw_closed        )
+      nullify(y%rshort_l          )
+      nullify(y%rlong_l           )
+      nullify(y%wood_energy       )
+      nullify(y%wood_water        )
+      nullify(y%wood_temp         )
+      nullify(y%wood_fliq         )
+      nullify(y%wood_hcap         )
+      nullify(y%wood_reynolds     )
+      nullify(y%wood_grashof      )
+      nullify(y%wood_nussfree     )
+      nullify(y%wood_nussforc     )
+      nullify(y%wood_resolvable   )
+      nullify(y%wood_gbh          )
+      nullify(y%wood_gbw          )
+      nullify(y%rshort_w          )
+      nullify(y%rlong_w           )
+      nullify(y%veg_energy        )
+      nullify(y%veg_water         )
+      nullify(y%veg_hcap          )
+      nullify(y%veg_resolvable    )
+      nullify(y%nplant            )
+      nullify(y%veg_wind          )
+      nullify(y%lai               )
+      nullify(y%wai               )
+      nullify(y%tai               )
+      nullify(y%crown_area        )
+      nullify(y%elongf            )
+      nullify(y%psi_open          )
+      nullify(y%psi_closed        )
+      nullify(y%fs_open           )
+      nullify(y%gpp               )
+      nullify(y%leaf_resp         )
+      nullify(y%root_resp         )
+      nullify(y%leaf_growth_resp  )
+      nullify(y%root_growth_resp  )
+      nullify(y%sapa_growth_resp  )
+      nullify(y%sapb_growth_resp  )
+      nullify(y%barka_growth_resp )
+      nullify(y%barkb_growth_resp )
+      nullify(y%leaf_storage_resp )
+      nullify(y%root_storage_resp )
+      nullify(y%sapa_storage_resp )
+      nullify(y%sapb_storage_resp )
+      nullify(y%barka_storage_resp)
+      nullify(y%barkb_storage_resp)
 
-      nullify(y%wflxlc           )
-      nullify(y%wflxwc           )
-      nullify(y%wflxtr           )
-      nullify(y%hflx_lrsti       )
-      nullify(y%hflx_wrsti       )
+      nullify(y%wflxlc            )
+      nullify(y%wflxwc            )
+      nullify(y%wflxtr            )
+      nullify(y%hflx_lrsti        )
+      nullify(y%hflx_wrsti        )
 
-      nullify(y%cfx_hflxlc       )
-      nullify(y%cfx_hflxwc       )
-      nullify(y%cfx_qwflxlc      )
-      nullify(y%cfx_qwflxwc      )
-      nullify(y%cfx_qwshed       )
-      nullify(y%cfx_qtransp      )
-      nullify(y%cfx_qintercepted )
+      nullify(y%cfx_hflxlc        )
+      nullify(y%cfx_hflxwc        )
+      nullify(y%cfx_qwflxlc       )
+      nullify(y%cfx_qwflxwc       )
+      nullify(y%cfx_qwshed        )
+      nullify(y%cfx_qtransp       )
+      nullify(y%cfx_qintercepted  )
 
 
 
@@ -1357,89 +1372,91 @@ module rk4_coms
       type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
-      if (associated(y%leaf_energy      )) y%leaf_energy      = 0.d0
-      if (associated(y%leaf_water       )) y%leaf_water       = 0.d0
-      if (associated(y%leaf_temp        )) y%leaf_temp        = 0.d0
-      if (associated(y%leaf_fliq        )) y%leaf_fliq        = 0.d0
-      if (associated(y%leaf_hcap        )) y%leaf_hcap        = 0.d0
-      if (associated(y%leaf_reynolds    )) y%leaf_reynolds    = 0.d0
-      if (associated(y%leaf_grashof     )) y%leaf_grashof     = 0.d0
-      if (associated(y%leaf_nussfree    )) y%leaf_nussfree    = 0.d0
-      if (associated(y%leaf_nussforc    )) y%leaf_nussforc    = 0.d0
-      if (associated(y%lint_shv         )) y%lint_shv         = 0.d0
-      if (associated(y%leaf_resolvable  )) y%leaf_resolvable  = .false.
-      if (associated(y%leaf_gbh         )) y%leaf_gbh         = 0.d0
-      if (associated(y%leaf_gbw         )) y%leaf_gbw         = 0.d0
-      if (associated(y%gsw_open         )) y%gsw_open         = 0.d0
-      if (associated(y%gsw_closed       )) y%gsw_closed       = 0.d0
-      if (associated(y%rshort_l         )) y%rshort_l         = 0.d0
-      if (associated(y%rlong_l          )) y%rlong_l          = 0.d0
-      if (associated(y%wood_energy      )) y%wood_energy      = 0.d0
-      if (associated(y%wood_water       )) y%wood_water       = 0.d0
-      if (associated(y%wood_temp        )) y%wood_temp        = 0.d0
-      if (associated(y%wood_fliq        )) y%wood_fliq        = 0.d0
-      if (associated(y%wood_hcap        )) y%wood_hcap        = 0.d0
-      if (associated(y%wood_reynolds    )) y%wood_reynolds    = 0.d0
-      if (associated(y%wood_grashof     )) y%wood_grashof     = 0.d0
-      if (associated(y%wood_nussfree    )) y%wood_nussfree    = 0.d0
-      if (associated(y%wood_nussforc    )) y%wood_nussforc    = 0.d0
-      if (associated(y%wood_resolvable  )) y%wood_resolvable  = .false.
-      if (associated(y%wood_gbh         )) y%wood_gbh         = 0.d0
-      if (associated(y%wood_gbw         )) y%wood_gbw         = 0.d0
-      if (associated(y%rshort_w         )) y%rshort_w         = 0.d0
-      if (associated(y%rlong_w          )) y%rlong_w          = 0.d0
-      if (associated(y%veg_energy       )) y%veg_energy       = 0.d0
-      if (associated(y%veg_water        )) y%veg_water        = 0.d0
-      if (associated(y%veg_hcap         )) y%veg_hcap         = 0.d0
-      if (associated(y%veg_resolvable   )) y%veg_resolvable   = .false.
-      if (associated(y%nplant           )) y%nplant           = 0.d0
-      if (associated(y%veg_wind         )) y%veg_wind         = 0.d0
-      if (associated(y%lai              )) y%lai              = 0.d0
-      if (associated(y%wai              )) y%wai              = 0.d0
-      if (associated(y%tai              )) y%tai              = 0.d0
-      if (associated(y%crown_area       )) y%crown_area       = 0.d0
-      if (associated(y%elongf           )) y%elongf           = 0.d0
-      if (associated(y%psi_open         )) y%psi_open         = 0.d0
-      if (associated(y%psi_closed       )) y%psi_closed       = 0.d0
-      if (associated(y%fs_open          )) y%fs_open          = 0.d0
-      if (associated(y%gpp              )) y%gpp              = 0.d0
-      if (associated(y%leaf_resp        )) y%leaf_resp        = 0.d0
-      if (associated(y%root_resp        )) y%root_resp        = 0.d0
-      if (associated(y%leaf_growth_resp )) y%leaf_growth_resp = 0.d0
-      if (associated(y%root_growth_resp )) y%root_growth_resp = 0.d0
-      if (associated(y%sapa_growth_resp )) y%sapa_growth_resp = 0.d0
-      if (associated(y%sapb_growth_resp )) y%sapb_growth_resp = 0.d0
-      if (associated(y%bark_growth_resp )) y%bark_growth_resp = 0.d0
-      if (associated(y%leaf_storage_resp)) y%leaf_storage_resp = 0.d0
-      if (associated(y%root_storage_resp)) y%root_storage_resp = 0.d0
-      if (associated(y%sapa_storage_resp)) y%sapa_storage_resp = 0.d0
-      if (associated(y%sapb_storage_resp)) y%sapb_storage_resp = 0.d0
-      if (associated(y%bark_storage_resp)) y%bark_storage_resp = 0.d0
+      if (associated(y%leaf_energy       )) y%leaf_energy        = 0.d0
+      if (associated(y%leaf_water        )) y%leaf_water         = 0.d0
+      if (associated(y%leaf_temp         )) y%leaf_temp          = 0.d0
+      if (associated(y%leaf_fliq         )) y%leaf_fliq          = 0.d0
+      if (associated(y%leaf_hcap         )) y%leaf_hcap          = 0.d0
+      if (associated(y%leaf_reynolds     )) y%leaf_reynolds      = 0.d0
+      if (associated(y%leaf_grashof      )) y%leaf_grashof       = 0.d0
+      if (associated(y%leaf_nussfree     )) y%leaf_nussfree      = 0.d0
+      if (associated(y%leaf_nussforc     )) y%leaf_nussforc      = 0.d0
+      if (associated(y%lint_shv          )) y%lint_shv           = 0.d0
+      if (associated(y%leaf_resolvable   )) y%leaf_resolvable    = .false.
+      if (associated(y%leaf_gbh          )) y%leaf_gbh           = 0.d0
+      if (associated(y%leaf_gbw          )) y%leaf_gbw           = 0.d0
+      if (associated(y%gsw_open          )) y%gsw_open           = 0.d0
+      if (associated(y%gsw_closed        )) y%gsw_closed         = 0.d0
+      if (associated(y%rshort_l          )) y%rshort_l           = 0.d0
+      if (associated(y%rlong_l           )) y%rlong_l            = 0.d0
+      if (associated(y%wood_energy       )) y%wood_energy        = 0.d0
+      if (associated(y%wood_water        )) y%wood_water         = 0.d0
+      if (associated(y%wood_temp         )) y%wood_temp          = 0.d0
+      if (associated(y%wood_fliq         )) y%wood_fliq          = 0.d0
+      if (associated(y%wood_hcap         )) y%wood_hcap          = 0.d0
+      if (associated(y%wood_reynolds     )) y%wood_reynolds      = 0.d0
+      if (associated(y%wood_grashof      )) y%wood_grashof       = 0.d0
+      if (associated(y%wood_nussfree     )) y%wood_nussfree      = 0.d0
+      if (associated(y%wood_nussforc     )) y%wood_nussforc      = 0.d0
+      if (associated(y%wood_resolvable   )) y%wood_resolvable    = .false.
+      if (associated(y%wood_gbh          )) y%wood_gbh           = 0.d0
+      if (associated(y%wood_gbw          )) y%wood_gbw           = 0.d0
+      if (associated(y%rshort_w          )) y%rshort_w           = 0.d0
+      if (associated(y%rlong_w           )) y%rlong_w            = 0.d0
+      if (associated(y%veg_energy        )) y%veg_energy         = 0.d0
+      if (associated(y%veg_water         )) y%veg_water          = 0.d0
+      if (associated(y%veg_hcap          )) y%veg_hcap           = 0.d0
+      if (associated(y%veg_resolvable    )) y%veg_resolvable     = .false.
+      if (associated(y%nplant            )) y%nplant             = 0.d0
+      if (associated(y%veg_wind          )) y%veg_wind           = 0.d0
+      if (associated(y%lai               )) y%lai                = 0.d0
+      if (associated(y%wai               )) y%wai                = 0.d0
+      if (associated(y%tai               )) y%tai                = 0.d0
+      if (associated(y%crown_area        )) y%crown_area         = 0.d0
+      if (associated(y%elongf            )) y%elongf             = 0.d0
+      if (associated(y%psi_open          )) y%psi_open           = 0.d0
+      if (associated(y%psi_closed        )) y%psi_closed         = 0.d0
+      if (associated(y%fs_open           )) y%fs_open            = 0.d0
+      if (associated(y%gpp               )) y%gpp                = 0.d0
+      if (associated(y%leaf_resp         )) y%leaf_resp          = 0.d0
+      if (associated(y%root_resp         )) y%root_resp          = 0.d0
+      if (associated(y%leaf_growth_resp  )) y%leaf_growth_resp   = 0.d0
+      if (associated(y%root_growth_resp  )) y%root_growth_resp   = 0.d0
+      if (associated(y%sapa_growth_resp  )) y%sapa_growth_resp   = 0.d0
+      if (associated(y%sapb_growth_resp  )) y%sapb_growth_resp   = 0.d0
+      if (associated(y%barka_growth_resp )) y%barka_growth_resp  = 0.d0
+      if (associated(y%barkb_growth_resp )) y%barkb_growth_resp  = 0.d0
+      if (associated(y%leaf_storage_resp )) y%leaf_storage_resp  = 0.d0
+      if (associated(y%root_storage_resp )) y%root_storage_resp  = 0.d0
+      if (associated(y%sapa_storage_resp )) y%sapa_storage_resp  = 0.d0
+      if (associated(y%sapb_storage_resp )) y%sapb_storage_resp  = 0.d0
+      if (associated(y%barka_storage_resp)) y%barka_storage_resp = 0.d0
+      if (associated(y%barkb_storage_resp)) y%barkb_storage_resp = 0.d0
 
-      if (associated(y%wflxlc           )) y%wflxlc           = 0.d0
-      if (associated(y%wflxwc           )) y%wflxwc           = 0.d0
-      if (associated(y%wflxtr           )) y%wflxtr           = 0.d0
-      if (associated(y%hflx_wrsti       )) y%hflx_wrsti       = 0.d0      
-      if (associated(y%hflx_lrsti       )) y%hflx_lrsti       = 0.d0
+      if (associated(y%wflxlc            )) y%wflxlc             = 0.d0
+      if (associated(y%wflxwc            )) y%wflxwc             = 0.d0
+      if (associated(y%wflxtr            )) y%wflxtr             = 0.d0
+      if (associated(y%hflx_wrsti        )) y%hflx_wrsti         = 0.d0
+      if (associated(y%hflx_lrsti        )) y%hflx_lrsti         = 0.d0
 
-      if (associated(y%cfx_hflxlc       )) y%cfx_hflxlc       = 0.d0
-      if (associated(y%cfx_hflxwc       )) y%cfx_hflxwc       = 0.d0
-      if (associated(y%cfx_qwflxlc      )) y%cfx_qwflxlc      = 0.d0
-      if (associated(y%cfx_qwflxwc      )) y%cfx_qwflxwc      = 0.d0
-      if (associated(y%cfx_qwshed       )) y%cfx_qwshed       = 0.d0
-      if (associated(y%cfx_qtransp      )) y%cfx_qtransp      = 0.d0
-      if (associated(y%cfx_qintercepted )) y%cfx_qintercepted = 0.d0
+      if (associated(y%cfx_hflxlc        )) y%cfx_hflxlc         = 0.d0
+      if (associated(y%cfx_hflxwc        )) y%cfx_hflxwc         = 0.d0
+      if (associated(y%cfx_qwflxlc       )) y%cfx_qwflxlc        = 0.d0
+      if (associated(y%cfx_qwflxwc       )) y%cfx_qwflxwc        = 0.d0
+      if (associated(y%cfx_qwshed        )) y%cfx_qwshed         = 0.d0
+      if (associated(y%cfx_qtransp       )) y%cfx_qtransp        = 0.d0
+      if (associated(y%cfx_qintercepted  )) y%cfx_qintercepted   = 0.d0
 
 
-      if(associated(y%avg_sensible_lc   )) y%avg_sensible_lc    = 0.d0
-      if(associated(y%avg_sensible_wc   )) y%avg_sensible_wc    = 0.d0
-      if(associated(y%avg_vapor_lc      )) y%avg_vapor_lc       = 0.d0
-      if(associated(y%avg_vapor_wc      )) y%avg_vapor_wc       = 0.d0
-      if(associated(y%avg_transp        )) y%avg_transp         = 0.d0
-      if(associated(y%avg_intercepted_al)) y%avg_intercepted_al = 0.d0
-      if(associated(y%avg_intercepted_aw)) y%avg_intercepted_aw = 0.d0
-      if(associated(y%avg_wshed_lg      )) y%avg_wshed_lg       = 0.d0
-      if(associated(y%avg_wshed_wg      )) y%avg_wshed_wg       = 0.d0
+      if (associated(y%avg_sensible_lc   )) y%avg_sensible_lc    = 0.d0
+      if (associated(y%avg_sensible_wc   )) y%avg_sensible_wc    = 0.d0
+      if (associated(y%avg_vapor_lc      )) y%avg_vapor_lc       = 0.d0
+      if (associated(y%avg_vapor_wc      )) y%avg_vapor_wc       = 0.d0
+      if (associated(y%avg_transp        )) y%avg_transp         = 0.d0
+      if (associated(y%avg_intercepted_al)) y%avg_intercepted_al = 0.d0
+      if (associated(y%avg_intercepted_aw)) y%avg_intercepted_aw = 0.d0
+      if (associated(y%avg_wshed_lg      )) y%avg_wshed_lg       = 0.d0
+      if (associated(y%avg_wshed_wg      )) y%avg_wshed_wg       = 0.d0
 
       return
    end subroutine zero_rk4_cohort
@@ -1461,91 +1478,93 @@ module rk4_coms
       type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
-      if (associated(y%leaf_energy      )) deallocate(y%leaf_energy       )
-      if (associated(y%leaf_water       )) deallocate(y%leaf_water        )
-      if (associated(y%leaf_temp        )) deallocate(y%leaf_temp         )
-      if (associated(y%leaf_fliq        )) deallocate(y%leaf_fliq         )
-      if (associated(y%leaf_hcap        )) deallocate(y%leaf_hcap         )
-      if (associated(y%leaf_reynolds    )) deallocate(y%leaf_reynolds     )
-      if (associated(y%leaf_grashof     )) deallocate(y%leaf_grashof      )
-      if (associated(y%leaf_nussfree    )) deallocate(y%leaf_nussfree     )
-      if (associated(y%leaf_nussforc    )) deallocate(y%leaf_nussforc     )
-      if (associated(y%lint_shv         )) deallocate(y%lint_shv          )
-      if (associated(y%leaf_resolvable  )) deallocate(y%leaf_resolvable   )
-      if (associated(y%leaf_gbh         )) deallocate(y%leaf_gbh          )
-      if (associated(y%leaf_gbw         )) deallocate(y%leaf_gbw          )
-      if (associated(y%gsw_open         )) deallocate(y%gsw_open          )
-      if (associated(y%gsw_closed       )) deallocate(y%gsw_closed        )
-      if (associated(y%rshort_l         )) deallocate(y%rshort_l          )
-      if (associated(y%rlong_l          )) deallocate(y%rlong_l           )
-      if (associated(y%wood_energy      )) deallocate(y%wood_energy       )
-      if (associated(y%wood_water       )) deallocate(y%wood_water        )
-      if (associated(y%wood_temp        )) deallocate(y%wood_temp         )
-      if (associated(y%wood_fliq        )) deallocate(y%wood_fliq         )
-      if (associated(y%wood_hcap        )) deallocate(y%wood_hcap         )
-      if (associated(y%wood_reynolds    )) deallocate(y%wood_reynolds     )
-      if (associated(y%wood_grashof     )) deallocate(y%wood_grashof      )
-      if (associated(y%wood_nussfree    )) deallocate(y%wood_nussfree     )
-      if (associated(y%wood_nussforc    )) deallocate(y%wood_nussforc     )
-      if (associated(y%wood_resolvable  )) deallocate(y%wood_resolvable   )
-      if (associated(y%wood_gbh         )) deallocate(y%wood_gbh          )
-      if (associated(y%wood_gbw         )) deallocate(y%wood_gbw          )
-      if (associated(y%rshort_w         )) deallocate(y%rshort_w          )
-      if (associated(y%rlong_w          )) deallocate(y%rlong_w           )
-      if (associated(y%veg_energy       )) deallocate(y%veg_energy        )
-      if (associated(y%veg_water        )) deallocate(y%veg_water         )
-      if (associated(y%veg_hcap         )) deallocate(y%veg_hcap          )
-      if (associated(y%veg_resolvable   )) deallocate(y%veg_resolvable    )
-      if (associated(y%nplant           )) deallocate(y%nplant            )
-      if (associated(y%veg_wind         )) deallocate(y%veg_wind          )
-      if (associated(y%lai              )) deallocate(y%lai               )
-      if (associated(y%wai              )) deallocate(y%wai               )
-      if (associated(y%tai              )) deallocate(y%tai               )
-      if (associated(y%crown_area       )) deallocate(y%crown_area        )
-      if (associated(y%elongf           )) deallocate(y%elongf            )
-      if (associated(y%psi_open         )) deallocate(y%psi_open          )
-      if (associated(y%psi_closed       )) deallocate(y%psi_closed        )
-      if (associated(y%fs_open          )) deallocate(y%fs_open           )
-      if (associated(y%gpp              )) deallocate(y%gpp               )
-      if (associated(y%leaf_resp        )) deallocate(y%leaf_resp         )
-      if (associated(y%root_resp        )) deallocate(y%root_resp         )
-      if (associated(y%leaf_growth_resp )) deallocate(y%leaf_growth_resp  )
-      if (associated(y%root_growth_resp )) deallocate(y%root_growth_resp  )
-      if (associated(y%sapa_growth_resp )) deallocate(y%sapa_growth_resp  )
-      if (associated(y%sapb_growth_resp )) deallocate(y%sapb_growth_resp  )
-      if (associated(y%bark_growth_resp )) deallocate(y%bark_growth_resp  )
-      if (associated(y%leaf_storage_resp)) deallocate(y%leaf_storage_resp )
-      if (associated(y%root_storage_resp)) deallocate(y%root_storage_resp )
-      if (associated(y%sapa_storage_resp)) deallocate(y%sapa_storage_resp )
-      if (associated(y%sapb_storage_resp)) deallocate(y%sapb_storage_resp )
-      if (associated(y%bark_storage_resp)) deallocate(y%bark_storage_resp )
+      if (associated(y%leaf_energy       )) deallocate(y%leaf_energy       )
+      if (associated(y%leaf_water        )) deallocate(y%leaf_water        )
+      if (associated(y%leaf_temp         )) deallocate(y%leaf_temp         )
+      if (associated(y%leaf_fliq         )) deallocate(y%leaf_fliq         )
+      if (associated(y%leaf_hcap         )) deallocate(y%leaf_hcap         )
+      if (associated(y%leaf_reynolds     )) deallocate(y%leaf_reynolds     )
+      if (associated(y%leaf_grashof      )) deallocate(y%leaf_grashof      )
+      if (associated(y%leaf_nussfree     )) deallocate(y%leaf_nussfree     )
+      if (associated(y%leaf_nussforc     )) deallocate(y%leaf_nussforc     )
+      if (associated(y%lint_shv          )) deallocate(y%lint_shv          )
+      if (associated(y%leaf_resolvable   )) deallocate(y%leaf_resolvable   )
+      if (associated(y%leaf_gbh          )) deallocate(y%leaf_gbh          )
+      if (associated(y%leaf_gbw          )) deallocate(y%leaf_gbw          )
+      if (associated(y%gsw_open          )) deallocate(y%gsw_open          )
+      if (associated(y%gsw_closed        )) deallocate(y%gsw_closed        )
+      if (associated(y%rshort_l          )) deallocate(y%rshort_l          )
+      if (associated(y%rlong_l           )) deallocate(y%rlong_l           )
+      if (associated(y%wood_energy       )) deallocate(y%wood_energy       )
+      if (associated(y%wood_water        )) deallocate(y%wood_water        )
+      if (associated(y%wood_temp         )) deallocate(y%wood_temp         )
+      if (associated(y%wood_fliq         )) deallocate(y%wood_fliq         )
+      if (associated(y%wood_hcap         )) deallocate(y%wood_hcap         )
+      if (associated(y%wood_reynolds     )) deallocate(y%wood_reynolds     )
+      if (associated(y%wood_grashof      )) deallocate(y%wood_grashof      )
+      if (associated(y%wood_nussfree     )) deallocate(y%wood_nussfree     )
+      if (associated(y%wood_nussforc     )) deallocate(y%wood_nussforc     )
+      if (associated(y%wood_resolvable   )) deallocate(y%wood_resolvable   )
+      if (associated(y%wood_gbh          )) deallocate(y%wood_gbh          )
+      if (associated(y%wood_gbw          )) deallocate(y%wood_gbw          )
+      if (associated(y%rshort_w          )) deallocate(y%rshort_w          )
+      if (associated(y%rlong_w           )) deallocate(y%rlong_w           )
+      if (associated(y%veg_energy        )) deallocate(y%veg_energy        )
+      if (associated(y%veg_water         )) deallocate(y%veg_water         )
+      if (associated(y%veg_hcap          )) deallocate(y%veg_hcap          )
+      if (associated(y%veg_resolvable    )) deallocate(y%veg_resolvable    )
+      if (associated(y%nplant            )) deallocate(y%nplant            )
+      if (associated(y%veg_wind          )) deallocate(y%veg_wind          )
+      if (associated(y%lai               )) deallocate(y%lai               )
+      if (associated(y%wai               )) deallocate(y%wai               )
+      if (associated(y%tai               )) deallocate(y%tai               )
+      if (associated(y%crown_area        )) deallocate(y%crown_area        )
+      if (associated(y%elongf            )) deallocate(y%elongf            )
+      if (associated(y%psi_open          )) deallocate(y%psi_open          )
+      if (associated(y%psi_closed        )) deallocate(y%psi_closed        )
+      if (associated(y%fs_open           )) deallocate(y%fs_open           )
+      if (associated(y%gpp               )) deallocate(y%gpp               )
+      if (associated(y%leaf_resp         )) deallocate(y%leaf_resp         )
+      if (associated(y%root_resp         )) deallocate(y%root_resp         )
+      if (associated(y%leaf_growth_resp  )) deallocate(y%leaf_growth_resp  )
+      if (associated(y%root_growth_resp  )) deallocate(y%root_growth_resp  )
+      if (associated(y%sapa_growth_resp  )) deallocate(y%sapa_growth_resp  )
+      if (associated(y%sapb_growth_resp  )) deallocate(y%sapb_growth_resp  )
+      if (associated(y%barka_growth_resp )) deallocate(y%barka_growth_resp )
+      if (associated(y%barkb_growth_resp )) deallocate(y%barkb_growth_resp )
+      if (associated(y%leaf_storage_resp )) deallocate(y%leaf_storage_resp )
+      if (associated(y%root_storage_resp )) deallocate(y%root_storage_resp )
+      if (associated(y%sapa_storage_resp )) deallocate(y%sapa_storage_resp )
+      if (associated(y%sapb_storage_resp )) deallocate(y%sapb_storage_resp )
+      if (associated(y%barka_storage_resp)) deallocate(y%barka_storage_resp)
+      if (associated(y%barkb_storage_resp)) deallocate(y%barkb_storage_resp)
 
-      if (associated(y%wflxlc           )) deallocate(y%wflxlc            )
-      if (associated(y%wflxwc           )) deallocate(y%wflxwc            )
-      if (associated(y%wflxtr           )) deallocate(y%wflxtr            )
-      if (associated(y%hflx_lrsti       )) deallocate(y%hflx_lrsti        )
-      if (associated(y%hflx_wrsti       )) deallocate(y%hflx_wrsti        )
-
-
-      if (associated(y%cfx_hflxlc       )) deallocate(y%cfx_hflxlc        )
-      if (associated(y%cfx_hflxwc       )) deallocate(y%cfx_hflxwc        )
-      if (associated(y%cfx_qwflxlc      )) deallocate(y%cfx_qwflxlc       )
-      if (associated(y%cfx_qwflxwc      )) deallocate(y%cfx_qwflxwc       )
-      if (associated(y%cfx_qwshed       )) deallocate(y%cfx_qwshed        )
-      if (associated(y%cfx_qtransp      )) deallocate(y%cfx_qtransp       )
-      if (associated(y%cfx_qintercepted )) deallocate(y%cfx_qintercepted  )
+      if (associated(y%wflxlc            )) deallocate(y%wflxlc            )
+      if (associated(y%wflxwc            )) deallocate(y%wflxwc            )
+      if (associated(y%wflxtr            )) deallocate(y%wflxtr            )
+      if (associated(y%hflx_lrsti        )) deallocate(y%hflx_lrsti        )
+      if (associated(y%hflx_wrsti        )) deallocate(y%hflx_wrsti        )
 
 
+      if (associated(y%cfx_hflxlc        )) deallocate(y%cfx_hflxlc        )
+      if (associated(y%cfx_hflxwc        )) deallocate(y%cfx_hflxwc        )
+      if (associated(y%cfx_qwflxlc       )) deallocate(y%cfx_qwflxlc       )
+      if (associated(y%cfx_qwflxwc       )) deallocate(y%cfx_qwflxwc       )
+      if (associated(y%cfx_qwshed        )) deallocate(y%cfx_qwshed        )
+      if (associated(y%cfx_qtransp       )) deallocate(y%cfx_qtransp       )
+      if (associated(y%cfx_qintercepted  )) deallocate(y%cfx_qintercepted  )
 
-      if(associated(y%avg_sensible_lc   )) deallocate(y%avg_sensible_lc   )
-      if(associated(y%avg_sensible_wc   )) deallocate(y%avg_sensible_wc   )
-      if(associated(y%avg_vapor_lc      )) deallocate(y%avg_vapor_lc      )
-      if(associated(y%avg_vapor_wc      )) deallocate(y%avg_vapor_wc      )
-      if(associated(y%avg_transp        )) deallocate(y%avg_transp        )
-      if(associated(y%avg_intercepted_al)) deallocate(y%avg_intercepted_al)
-      if(associated(y%avg_intercepted_aw)) deallocate(y%avg_intercepted_aw)
-      if(associated(y%avg_wshed_lg      )) deallocate(y%avg_wshed_lg      )
-      if(associated(y%avg_wshed_wg      )) deallocate(y%avg_wshed_wg      )
+
+
+      if (associated(y%avg_sensible_lc   )) deallocate(y%avg_sensible_lc   )
+      if (associated(y%avg_sensible_wc   )) deallocate(y%avg_sensible_wc   )
+      if (associated(y%avg_vapor_lc      )) deallocate(y%avg_vapor_lc      )
+      if (associated(y%avg_vapor_wc      )) deallocate(y%avg_vapor_wc      )
+      if (associated(y%avg_transp        )) deallocate(y%avg_transp        )
+      if (associated(y%avg_intercepted_al)) deallocate(y%avg_intercepted_al)
+      if (associated(y%avg_intercepted_aw)) deallocate(y%avg_intercepted_aw)
+      if (associated(y%avg_wshed_lg      )) deallocate(y%avg_wshed_lg      )
+      if (associated(y%avg_wshed_wg      )) deallocate(y%avg_wshed_wg      )
       return
    end subroutine deallocate_rk4_coh
    !=======================================================================================!

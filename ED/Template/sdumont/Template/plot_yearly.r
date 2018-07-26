@@ -131,13 +131,8 @@ nout    = length (outform)
 #------------------------------------------------------------------------------------------#
 
 
-#----- Avoid unecessary and extremely annoying beeps. -------------------------------------#
-options(locatorBell=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = file.path(srcdir,"LBA_MIP.v8.RData")
+obsrfile = file.path(srcdir,"LBA_MIP.v9.RData")
 load(file=obsrfile)
 #------------------------------------------------------------------------------------------#
 
@@ -559,23 +554,12 @@ for (place in myplaces){
          #----- Loop over output formats. -------------------------------------------------#
          for (o in sequence(nout)){
             fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
-            if(outform[o] %in% "x11"){
-               X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-            }else if(outform[o] %in% "quartz"){
-               quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-            }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                  ,pointsize=ptsz,res=depth,bg="transparent")
-            }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-            }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=eysize$width,height=eysize$height
-                         ,pointsize=ptsz,paper=eysize$paper)
-            }else if(outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE
-                  ,width=eysize$width,height=eysize$height,pointsize=ptsz,paper=eysize$paper)
-            }#end if
+            dummy   = open.plot( fichier = fichier
+                               , outform = outform[o]
+                               , size    = eysize
+                               , ptsz    = ptsz
+                               , depth   = depth
+                               )#end open.plot
 
 
             #------------------------------------------------------------------------------#
@@ -664,13 +648,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] %in% c("x11","quartz")){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-            dummy=clean.tmp()
+            dummy = close.plot(outform=outform[o])
             #------------------------------------------------------------------------------#
          } #end for outform
       }#end if (tseragbpft)
@@ -758,24 +736,12 @@ for (place in myplaces){
                fichier = file.path( outvar
                                   , paste0(vnam,"-",pftlab,"-",suffix,".",outform[o])
                                   )#end file.path
-               if (outform[o] %in% "x11"){
-                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "quartz"){
-                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                     ,pointsize=ptsz,res=depth,bg="transparent")
-               }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-               }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=eysize$width,height=eysize$height
-                            ,pointsize=ptsz,paper=eysize$paper)
-               }else if (outform[o] %in% "pdf"){
-                  pdf(file=fichier,onefile=FALSE
-                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
-                     ,paper=eysize$paper)
-               }#end if
+               dummy   = open.plot( fichier = fichier
+                                  , outform = outform[o]
+                                  , size    = eysize
+                                  , ptsz    = ptsz
+                                  , depth   = depth
+                                  )#end open.plot
                #---------------------------------------------------------------------------#
 
 
@@ -845,13 +811,7 @@ for (place in myplaces){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] %in% c("x11","quartz")){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-               dummy=clean.tmp()
+               dummy = close.plot(outform=outform[o])
                #---------------------------------------------------------------------------#
             }#end for outform
             #------------------------------------------------------------------------------#
@@ -960,24 +920,13 @@ for (place in myplaces){
             #----- Loop over formats. -----------------------------------------------------#
             for (o in sequence(nout)){
                fichier = file.path(outvar,paste0(vname,"-",cyear,".",outform[o]))
-               if (outform[o] %in% "x11"){
-                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "quartz"){
-                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                     ,pointsize=ptsz,res=depth,bg="transparent")
-               }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-               }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=eysize$width,height=eysize$height
-                            ,pointsize=ptsz,paper=eysize$paper)
-               }else if (outform[o] %in% "pdf"){
-                  pdf(file=fichier,onefile=FALSE
-                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
-                     ,paper=eysize$paper)
-               }#end if
+               dummy   = open.plot( fichier = fichier
+                                  , outform = outform[o]
+                                  , size    = eysize
+                                  , ptsz    = ptsz
+                                  , depth   = depth
+                                  )#end open.plot
+               #---------------------------------------------------------------------------#
 
 
 
@@ -1050,13 +999,7 @@ for (place in myplaces){
 
 
                #----- Close plotting window. ----------------------------------------------#
-               if (outform[o] %in% c("x11","quartz")){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-               dummy=clean.tmp()
+               dummy = close.plot(outform=outform[o])
                #---------------------------------------------------------------------------#
             }#end for outform
             #------------------------------------------------------------------------------#
@@ -1111,24 +1054,13 @@ for (place in myplaces){
          #----- Loop over output formats. -------------------------------------------------#
          for (o in sequence(nout)){
             fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
-            if (outform[o] %in% "x11"){
-               X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-            }else if (outform[o] %in% "quartz"){
-               quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-            }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                  ,pointsize=ptsz,res=depth,bg="transparent")
-            }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-            }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=eysize$width,height=eysize$height
-                         ,pointsize=ptsz,paper=eysize$paper)
-            }else if(outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE
-                  ,width=eysize$width,height=eysize$height,pointsize=ptsz
-                  ,paper=eysize$paper)
-            }#end if
+            dummy   = open.plot( fichier = fichier
+                               , outform = outform[o]
+                               , size    = eysize
+                               , ptsz    = ptsz
+                               , depth   = depth
+                               )#end open.plot
+            #------------------------------------------------------------------------------#
 
 
             #------------------------------------------------------------------------------#
@@ -1218,13 +1150,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] %in% c("x11","quartz")){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-            dummy=clean.tmp()
+            dummy = close.plot(outform=outform[o])
             #------------------------------------------------------------------------------#
          }#end for outform
          #---------------------------------------------------------------------------------#
@@ -1244,23 +1170,15 @@ for (place in myplaces){
       cat0("      + Disturbance rate time series for all disturbances.")
       for (o in sequence(nout)){
          fichier = file.path(outpref,paste0("disturb-",suffix,".",outform[o]))
-         if (outform[o] %in% "x11"){
-            X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-         }else if (outform[o] %in% "quartz"){
-            quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-         }else if(outform[o] %in% "png"){
-            png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-               ,pointsize=ptsz,res=depth,bg="transparent")
-         }else if(outform[o] %in% "tif"){
-            tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-         }else if(outform[o] %in% "eps"){
-            postscript(file=fichier,width=eysize$width,height=eysize$height
-                      ,pointsize=ptsz,paper=eysize$paper)
-         }else if(outform[o] %in% "pdf"){
-            pdf(file=fichier,onefile=FALSE
-               ,width=eysize$width,height=eysize$height,pointsize=ptsz,paper=eysize$paper)
-         }#end if
+         dummy   = open.plot( fichier = fichier
+                            , outform = outform[o]
+                            , size    = eysize
+                            , ptsz    = ptsz
+                            , depth   = depth
+                            )#end open.plot
+         #---------------------------------------------------------------------------------#
+
+
 
          #---------------------------------------------------------------------------------#
          #     Find the limit, make some room for the legend, and in case the field is a   #
@@ -1362,13 +1280,7 @@ for (place in myplaces){
 
 
          #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] %in% c("x11","quartz")){
-            locator(n=1)
-            dev.off()
-         }else{
-            dev.off()
-         }#end if
-         dummy=clean.tmp()
+         dummy = close.plot(outform=outform[o])
          #---------------------------------------------------------------------------------#
       } #end for outform
       #------------------------------------------------------------------------------------#
@@ -1455,24 +1367,12 @@ for (place in myplaces){
          for (o in sequence(nout)){
             #------ Open file. ------------------------------------------------------------#
             fichier = file.path(outdir,paste0(prefix,"-",suffix,".",outform[o]))
-            if (outform[o] %in% "x11"){
-               X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-            }else if (outform[o] %in% "quartz"){
-               quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-            }else if (outform[o] %in% "png"){
-               png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                  ,pointsize=ptsz,res=depth,bg="transparent")
-            }else if (outform[o] %in% "tiff"){
-               tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                  ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-            }else if (outform[o] %in% "eps"){
-               postscript(file=fichier,width=eysize$width,height=eysize$height
-                         ,pointsize=ptsz,paper=eysize$paper)
-            }else if (outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE
-                  ,width=eysize$width,height=eysize$height,pointsize=ptsz
-                  ,paper=eysize$paper)
-            }#end if
+            dummy   = open.plot( fichier = fichier
+                               , outform = outform[o]
+                               , size    = eysize
+                               , ptsz    = ptsz
+                               , depth   = depth
+                               )#end open.plot
             #------------------------------------------------------------------------------#
 
 
@@ -1542,13 +1442,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] %in% c("x11","quartz")){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-            dummy=clean.tmp()
+            dummy = close.plot(outform=outform[o])
             #------------------------------------------------------------------------------#
          } #end for outform
          #---------------------------------------------------------------------------------#
@@ -1628,24 +1522,12 @@ for (place in myplaces){
                fichier = file.path( outtheme
                                   , paste0(prefix,"-",cyear,"-",suffix,".",outform[o])
                                   )#end file.path
-               if (outform[o] %in% "x11"){
-                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "quartz"){
-                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                     ,pointsize=ptsz,res=depth,bg="transparent")
-               }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-               }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=eysize$width,height=eysize$height
-                            ,pointsize=ptsz,paper=eysize$paper)
-               }else if (outform[o] %in% "pdf"){
-                  pdf(file=fichier,onefile=FALSE
-                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
-                     ,paper=eysize$paper)
-               }#end if
+               dummy   = open.plot( fichier = fichier
+                                  , outform = outform[o]
+                                  , size    = eysize
+                                  , ptsz    = ptsz
+                                  , depth   = depth
+                                  )#end open.plot
                #---------------------------------------------------------------------------#
 
 
@@ -1709,13 +1591,7 @@ for (place in myplaces){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] %in% c("x11","quartz")){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-               dummy=clean.tmp()
+               dummy = close.plot(outform=outform[o])
                #---------------------------------------------------------------------------#
             } #end for outform
             #------------------------------------------------------------------------------#
@@ -1800,24 +1676,12 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in sequence(nout)){
             fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
-            if (outform[o] %in% "x11"){
-               X11(width=exsize$width,height=exsize$height,pointsize=ptsz)
-            }else if (outform[o] %in% "quartz"){
-               quartz(width=exsize$width,height=exsize$height,pointsize=ptsz)
-            }else if (outform[o] %in% "png"){
-               png(filename=fichier,width=exsize$width*depth,height=exsize$height*depth
-                  ,pointsize=ptsz,res=depth,bg="transparent")
-            }else if (outform[o] %in% "tif"){
-               tiff(filename=fichier,width=exsize$width*depth,height=exsize$height*depth
-                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-            }else if (outform[o] %in% "eps"){
-               postscript(file=fichier,width=exsize$width,height=exsize$height
-                         ,pointsize=ptsz,paper=exsize$paper)
-            }else if (outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE
-                  ,width=exsize$width,height=exsize$height,pointsize=ptsz
-                  ,paper=exsize$paper)
-            }#end if
+            dummy   = open.plot( fichier = fichier
+                               , outform = outform[o]
+                               , size    = exsize
+                               , ptsz    = ptsz
+                               , depth   = depth
+                               )#end open.plot
 
             letitre = paste0(description,"\n",lieu)
             ley     = desc.unit(desc="Soil depth",unit=untab$m)
@@ -1836,13 +1700,7 @@ for (place in myplaces){
                                 }#end plot.axes
                      )
 
-            if (outform[o] %in% c("x11","quartz")){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-            dummy = clean.tmp()
+            dummy = close.plot(outform=outform[o])
          } #end for outform
       }#end if plotit
    }#end for nhov
@@ -1940,24 +1798,12 @@ for (place in myplaces){
                fichier = file.path( outdir
                                   , paste0(vnam,"-",cyear,"-",suffix,".",outform[o])
                                   )#end file.path
-               if (outform[o] %in% "x11"){
-                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "quartz"){
-                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-               }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                     ,pointsize=ptsz,res=depth,bg="transparent")
-               }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
-                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-               }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=eysize$width,height=eysize$height
-                            ,pointsize=ptsz,paper=eysize$paper)
-               }else if (outform[o] %in% "pdf"){
-                  pdf(file=fichier,onefile=FALSE
-                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
-                     ,paper=eysize$paper)
-               }#end if
+               dummy   = open.plot( fichier = fichier
+                                  , outform = outform[o]
+                                  , size    = eysize
+                                  , ptsz    = ptsz
+                                  , depth   = depth
+                                  )#end open.plot
                #---------------------------------------------------------------------------#
 
 
@@ -2010,13 +1856,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Close the device.                                                     #
                #---------------------------------------------------------------------------#
-               if (outform[o] %in% c("x11","quartz")){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-               dummy = clean.tmp()
+               dummy = close.plot(outform=outform[o])
                #---------------------------------------------------------------------------#
             } #end for outform
             #------------------------------------------------------------------------------#
@@ -2195,25 +2035,12 @@ for (place in myplaces){
                                              ,".",outform[o]
                                              )#end paste0
                                      )#end file.path
-                  if (outform[o] %in% "x11"){
-                     X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
-                  }else if (outform[o] %in% "quartz"){
-                     quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
-                  }else if(outform[o] %in% "png"){
-                     png(filename=fichier,width=eysize$width*depth
-                        ,height=eysize$height*depth
-                        ,pointsize=ptsz,res=depth,bg="transparent")
-                  }else if(outform[o] %in% "tif"){
-                     tiff(filename=fichier,width=eysize$width*depth
-                         ,height=eysize$height*depth
-                         ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-                  }else if(outform[o] %in% "eps"){
-                     postscript(file=fichier,width=eysize$width,height=eysize$height
-                               ,pointsize=ptsz,paper=eysize$paper)
-                  }else if(outform[o] %in% "pdf"){
-                     pdf(file=fichier,onefile=FALSE,width=eysize$width,height=eysize$height
-                        ,pointsize=ptsz,paper=eysize$paper)
-                  }#end if
+                  dummy   = open.plot( fichier = fichier
+                                     , outform = outform[o]
+                                     , size    = eysize
+                                     , ptsz    = ptsz
+                                     , depth   = depth
+                                     )#end open.plot
                   #------------------------------------------------------------------------#
 
 
@@ -2283,13 +2110,7 @@ for (place in myplaces){
 
 
                   #----- Close the device. ------------------------------------------------#
-                  if (outform[o] %in% c("x11","quartz")){
-                     locator(n=1)
-                     dev.off()
-                  }else{
-                     dev.off()
-                  }#end if
-                  dummy = clean.tmp()
+                  dummy = close.plot(outform=outform[o])
                   #------------------------------------------------------------------------#
                }#end for outform
                #---------------------------------------------------------------------------#

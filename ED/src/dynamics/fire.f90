@@ -35,9 +35,7 @@ module fire
                                , fire_dryness_threshold & ! intent(in)
                                , k_fire_first           & ! intent(in)
                                , fire_parameter         & ! intent(in)
-                               , fuel_height_max        & ! intent(in)
-                               , agf_fsc                & ! intent(in)
-                               , agf_stsc               ! ! intent(in)
+                               , fuel_height_max        ! ! intent(in)
       use consts_coms   , only : wdns                   & ! intent(in)
                                , wdnsi                  & ! intent(in)
                                , day_sec                ! ! intent(in)
@@ -147,8 +145,7 @@ module fire
                !---------------------------------------------------------------------------!
                select case (include_fire)
                case (3)
-                  fuel = agf_fsc  * csite%fast_soil_C      (ipa)                           &
-                       + agf_stsc * csite%structural_soil_C(ipa)
+                  fuel = csite%fast_grnd_C(ipa) + csite%structural_grnd_C(ipa)
                   fuelcohloop_3: do ico = 1,cpatch%ncohorts
                      ipft = cpatch%pft(ico)
                      if (is_grass(ipft) .or. cpatch%hite(ico) <= fuel_height_max) then

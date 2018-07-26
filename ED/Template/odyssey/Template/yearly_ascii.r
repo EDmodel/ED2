@@ -131,7 +131,7 @@ options(locatorBell=FALSE)
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = file.path(srcdir,"LBA_MIP.v8.RData")
+obsrfile = file.path(srcdir,"LBA_MIP.v9.RData")
 load(file=obsrfile)
 
 #----- Define plot window size ------------------------------------------------------------#

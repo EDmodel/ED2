@@ -346,7 +346,8 @@ module phenology_aux
                                , patchtype        ! ! structure
       use ed_therm_lib  , only : calc_veg_hcap    ! ! function
       use ed_max_dims   , only : n_pft            ! ! intent(in)
-      use allometry     , only : ed_biomass       & ! subroutine
+      use allometry     , only : ed_balive        & ! function
+                               , ed_biomass       & ! function
                                , area_indices     ! ! subroutine
       use grid_coms     , only : nzg              ! ! intent(in)
       use therm_lib     , only : cmtl2uext        ! ! function
@@ -396,11 +397,16 @@ module phenology_aux
                                                ,cpatch%phenology_status(ico)               &
                                                ,cpatch%bleaf(ico),cpatch%broot(ico)        &
                                                ,cpatch%bsapwooda(ico)                      &
-                                               ,cpatch%bsapwoodb(ico),cpatch%bbark(ico)    &
-                                               ,cpatch%balive(ico),cpatch%bstorage(ico)    &
+                                               ,cpatch%bsapwoodb(ico),cpatch%bbarka(ico)   &
+                                               ,cpatch%bbarkb(ico),cpatch%bstorage(ico)    &
                                                ,cpatch%cb(:,ico),cpatch%cb_lightmax(:,ico) &
                                                ,cpatch%cb_moistmax(:,ico)                  &
                                                ,cpatch%cb_mlmax(:,ico),cpatch%cbr_bar(ico))
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Find Balive. -----------------------------------------------------!
+                  cpatch%balive(ico) = ed_balive(cpatch, ico)
                   !------------------------------------------------------------------------!
 
 
@@ -410,8 +416,8 @@ module phenology_aux
 
 
                   !----- Find heat capacity and vegetation internal energy. ---------------!
-                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwooda(ico),cpatch%bbark(ico)               &
+                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                  &
+                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                   cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)               &
@@ -465,8 +471,9 @@ module phenology_aux
    !---------------------------------------------------------------------------------------!
    subroutine pheninit_balive_bstorage(mzg,ipft,kroot,height,dbh,soil_water,ntext_soil     &
                                       ,paw_avg,elongf,phenology_status                     &
-                                      ,bleaf,broot,bsapwooda,bsapwoodb,bbark,balive        &
-                                      ,bstorage,cb,cb_lightmax,cb_moistmax,cb_mlmax,cbr_bar)
+                                      ,bleaf,broot,bsapwooda,bsapwoodb,bbarka,bbarkb       &
+                                      ,bstorage,cb,cb_lightmax,cb_moistmax,cb_mlmax        &
+                                      ,cbr_bar)
       use soil_coms      , only : soil                & ! intent(in), look-up table
                                 , slz                 & ! intent(in)
                                 , slzt                & ! intent(in)
@@ -501,8 +508,8 @@ module phenology_aux
       real                     , intent(out) :: broot             ! Root biomass
       real                     , intent(out) :: bsapwooda         ! AG Sapwood biomass 
       real                     , intent(out) :: bsapwoodb         ! BG Sapwood biomass 
-      real                     , intent(out) :: bbark             ! Bark biomass 
-      real                     , intent(out) :: balive            ! Living tissue biomass
+      real                     , intent(out) :: bbarka            ! AG Bark biomass 
+      real                     , intent(out) :: bbarkb            ! BG Bark biomass 
       real                     , intent(out) :: bstorage          ! Storage biomass
       real   , dimension(13)   , intent(out) :: cb                ! Carbon balance
       real   , dimension(13)   , intent(out) :: cb_lightmax       ! Light-plenty CB
@@ -584,8 +591,8 @@ module phenology_aux
       broot      = bleaf_max * q    (ipft)
       bsapwooda  = bleaf_max * qsw  (ipft) * height * agf_bs(ipft)
       bsapwoodb  = bleaf_max * qsw  (ipft) * height * (1.0 - agf_bs(ipft))
-      bbark      = bleaf_max * qbark(ipft) * height
-      balive     = bleaf + broot + bsapwooda + bsapwoodb + bbark
+      bbarka     = bleaf_max * qbark(ipft) * height * agf_bs(ipft)
+      bbarkb     = bleaf_max * qbark(ipft) * height * (1.0 - agf_bs(ipft))
       !------------------------------------------------------------------------------------!
 
 

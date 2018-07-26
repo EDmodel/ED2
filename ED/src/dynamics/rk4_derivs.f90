@@ -835,7 +835,6 @@ module rk4_derivs
                                        , tl2uint8             ! ! function
       use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
       use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
-      use pft_coms              , only : agf_bs               ! ! intent(in)
       use budget_utils          , only : compute_netrad       ! ! function
 
       implicit none
@@ -887,7 +886,7 @@ module rk4_derivs
       real(kind=8)                 :: sigmaw            !
       real(kind=8)                 :: wflxlc            ! Leaf sfc -> canopy water flux
       real(kind=8)                 :: wflxwc            ! Wood sfc -> canopy water flux
-      real(kind=8)                 :: cflxgc            !
+      real(kind=8)                 :: cflxgc            ! Ground -> canopy carbon flux
       real(kind=8)                 :: wshed             ! Water shed from leaves
       real(kind=8)                 :: qwshed            ! Internal energy of water shed
       real(kind=8)                 :: dwshed            ! Depth of water shed
@@ -902,12 +901,12 @@ module rk4_derivs
       real(kind=8)                 :: qtransp_tot       ! Total transpiration (energy)
       real(kind=8)                 :: cflxlc_tot        ! Total leaf -> CAS CO2 flux
       real(kind=8)                 :: cflxwc_tot        ! Total wood -> CAS CO2 flux
+      real(kind=8)                 :: cflxsc_tot        ! Total soil -> CAS CO2 flux
       real(kind=8)                 :: wflxlc_tot        ! Leaf -> CAS evaporation (water)
       real(kind=8)                 :: wflxwc_tot        ! Wood -> CAS evaporation (water)
       real(kind=8)                 :: qwflxlc_tot       ! Leaf -> CAS evaporation (energy)
       real(kind=8)                 :: qwflxwc_tot       ! Wood -> CAS evaporation (energy)
       real(kind=8)                 :: rho_ustar         !
-      real(kind=8)                 :: leaf_flux         !
       real(kind=8)                 :: min_leaf_water    !
       real(kind=8)                 :: max_leaf_water    !
       real(kind=8)                 :: min_wood_water    !
@@ -1226,34 +1225,37 @@ module rk4_derivs
       ! avoid double counting.                                                             !
       !------------------------------------------------------------------------------------!
       cflxlc_tot       = 0.d0
-      cflxwc_tot       = initp%cwd_rh
-      cflxgc           = initp%rh - initp%cwd_rh
+      cflxwc_tot       = 0.d0
+      cflxsc_tot       = initp%fsc_rh + initp%stsc_rh + initp%msc_rh + initp%ssc_rh
+      cflxgc           = initp%fgc_rh + initp%stgc_rh
       !------------------------------------------------------------------------------------!
 
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft = cpatch%pft(ico)
 
-         cflxgc = cflxgc + initp%root_resp(ico)                                            &
-                         + initp%root_growth_resp(ico)                                     &
-                         + initp%sapb_growth_resp(ico)                                     &
-                         + dble(1.0 - agf_bs(ipft)) * initp%bark_growth_resp(ico)          &
-                         + initp%root_storage_resp(ico)                                    &
-                         + initp%sapb_storage_resp(ico)                                    &
-                         + dble(1.0 - agf_bs(ipft)) * initp%bark_storage_resp(ico)
+         cflxsc_tot = cflxsc_tot + initp%root_resp         (ico)                           &
+                                 + initp%root_growth_resp  (ico)                           &
+                                 + initp%sapb_growth_resp  (ico)                           &
+                                 + initp%barkb_growth_resp (ico)                           &
+                                 + initp%root_storage_resp (ico)                           &
+                                 + initp%sapb_storage_resp (ico)                           &
+                                 + initp%barkb_storage_resp(ico)
 
          !---------------------------------------------------------------------------------!
          !    Add the respiration terms according to their "source".                       !
-         ! Ground -> CAS : root respiration and non-CWD heterotrophic respiration.         !
-         ! Wood   -> CAS : CWD respiration, Growth respiration, and storage (the latter    !
-         !                 due to lack of a better place to put).                          !
-         ! Leaf   -> CAS : Leaf respiration, Virtual leaf respiration - GPP.               !
+         ! Ground -> CAS : surface litter and woody debris.                                !
+         ! Soil   -> CAS : soil Carbon, fine root and coarse root respiration.             !
+         ! Wood   -> CAS : wood respiration (AG sapwood and bark).                         !
+         ! Leaf   -> CAS : Leaf respiration - GPP.                                         !
          !---------------------------------------------------------------------------------!
-         cflxlc_tot = cflxlc_tot + initp%leaf_growth_resp(ico)                             &
-                                 + initp%leaf_storage_resp(ico)
-         cflxwc_tot = cflxwc_tot + initp%sapa_growth_resp(ico)                             &
-                                 + dble(agf_bs(ipft)) * initp%bark_growth_resp(ico)        &
-                                 + initp%sapa_storage_resp(ico)                            &
-                                 + dble(agf_bs(ipft)) * initp%bark_storage_resp(ico)
+         cflxlc_tot = cflxlc_tot + initp%leaf_resp         (ico)                           &
+                                 + initp%leaf_growth_resp  (ico)                           &
+                                 + initp%leaf_storage_resp (ico)                           &
+                                 - initp%gpp               (ico)
+         cflxwc_tot = cflxwc_tot + initp%sapa_growth_resp  (ico)                           &
+                                 + initp%barka_growth_resp (ico)                           &
+                                 + initp%sapa_storage_resp (ico)                           &
+                                 + initp%barka_storage_resp(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -1294,13 +1296,6 @@ module rk4_derivs
             dthroughfall      = 0.d0
             !------------------------------------------------------------------------------!
 
-
-
-            !------  Calculate leaf-level CO2 flux ----------------------------------------!
-            leaf_flux = initp%gpp(ico) - initp%leaf_resp(ico)
-
-            !------ Update CO2 flux from vegetation to canopy air space. ------------------!
-            cflxlc_tot = cflxlc_tot - leaf_flux
 
             !------------------------------------------------------------------------------!
             !     Define the minimum leaf water to be considered, and the maximum amount   !
@@ -1887,7 +1882,7 @@ module rk4_derivs
                             + wflxac                                  )                    &
                           * rk4aux(ibuff)%wcapcani
       dinitp%can_co2      = ( cflxgc      + cflxlc_tot  + cflxwc_tot                       &
-                            + cflxac                                  )                    &
+                            + cflxsc_tot  + cflxac                    )                    &
                           * rk4aux(ibuff)%ccapcani
       !------------------------------------------------------------------------------------!
 
@@ -1895,7 +1890,7 @@ module rk4_derivs
       if (.false.) then
       !if (is_hybrid) then
 
-         a = ( cflxgc + cflxlc_tot + cflxwc_tot                                            &
+         a = ( cflxgc + cflxlc_tot + cflxwc_tot + cflxsc_tot                               &
              + initp%can_rhos*initp%ggbare*mmdryi8*rk4site%atm_co2)                        &
              * rk4aux(ibuff)%ccapcani
 
@@ -1911,7 +1906,7 @@ module rk4_derivs
                 * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +                      &
                    c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
 
-         dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxwc_tot + cflxac)                     &
+         dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxwc_tot + cflxsc_tot + cflxac)        &
                         * rk4aux(ibuff)%ccapcani
 
       end if
@@ -1937,7 +1932,8 @@ module rk4_derivs
 
          dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy
          dinitp%avg_carbon_st    = cflxgc     + cflxwc_tot                                 &
-                                 + cflxlc_tot + cflxac          ! Carbon storage flux
+                                 + cflxlc_tot + cflxsc_tot                                 &
+                                 + cflxac                       ! Carbon storage flux
          dinitp%avg_sensible_ac  = hflxac                       ! Sens. heat,  Atmo->Canopy
          dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
@@ -1968,7 +1964,7 @@ module rk4_derivs
          dinitp%ebudget_loss2atm   = - eflxac
          dinitp%wbudget_loss2atm   = - wflxac
          dinitp%co2budget_storage  = dinitp%co2budget_storage                              &
-                                   + cflxgc + cflxlc_tot + cflxwc_tot + cflxac
+                                   + cflxgc + cflxlc_tot + cflxwc_tot + cflxsc_tot + cflxac
          dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
          dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad      &
                                    + rk4site%qpcpg - dinitp%ebudget_loss2atm

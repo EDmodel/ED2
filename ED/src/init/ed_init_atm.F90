@@ -213,8 +213,8 @@ subroutine ed_init_atm()
                   end if
                   
                   
-                  call calc_veg_hcap( cpatch%bleaf     (ico) , cpatch%bdead    (ico)       &
-                                    , cpatch%bsapwooda (ico) , cpatch%bbark    (ico)       &
+                  call calc_veg_hcap( cpatch%bleaf     (ico) , cpatch%bdeada   (ico)       &
+                                    , cpatch%bsapwooda (ico) , cpatch%bbarka   (ico)       &
                                     , cpatch%nplant   (ico)  , cpatch%pft      (ico)       &
                                     , cpatch%leaf_hcap(ico)  , cpatch%wood_hcap(ico) )
 

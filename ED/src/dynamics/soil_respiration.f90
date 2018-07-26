@@ -96,6 +96,20 @@ module soil_respiration
 
 
 
+
+      !------------------------------------------------------------------------------------!
+      !     Find the scaling factor for decomposition of surface materials, using the top  !
+      ! soil layer to define their temperature and moisture.                               !
+      !------------------------------------------------------------------------------------!
+      k                   = mzg
+      nsoil               = ntext_soil(k)
+      rel_soil_moist      = min(1.0, max(0.0                                               &
+                                        , (csite%soil_water(k,ipa) - soil(nsoil)%soilcp)   &
+                                        / (soil(nsoil)%slmsts      - soil(nsoil)%soilcp) ) )
+      csite%A_decomp(ipa) = het_resp_weight(csite%soil_tempk(k,ipa),rel_soil_moist)
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !     Integrate the soil extensive properties, plus the minimum and maximum possible !
       ! soil water content of the active layer.                                            !
@@ -132,36 +146,50 @@ module soil_respiration
 
 
 
-      !----- Compute soil/temperature modulation of heterotrophic respiration. ------------!
-      csite%A_decomp(ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist)
+      !----- Compute soil/temperature modulation of soil heterotrophic respiration. -------!
+      csite%B_decomp(ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist)
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Compute nitrogen immobilization factor. --------------------------------------!
-      call resp_f_decomp(csite,ipa, Lc)
+      nsoil = ntext_soil(mzg)
+      call resp_f_decomp(csite,ipa, Lc,nsoil)
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Compute heterotrophic respiration. -------------------------------------------!
-      call resp_rh(csite,ipa, Lc)
+      call resp_rh(csite,ipa, Lc,nsoil)
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Update averaged variables. ---------------------------------------------------!
       csite%today_A_decomp (ipa) = csite%today_A_decomp (ipa) + csite%A_decomp(ipa)
+      csite%today_B_decomp (ipa) = csite%today_B_decomp (ipa) + csite%B_decomp(ipa)
       csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa)                              &
                                  + csite%A_decomp       (ipa) * csite%f_decomp(ipa)
+      csite%today_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa)                              &
+                                 + csite%B_decomp       (ipa) * csite%f_decomp(ipa)
       !------------------------------------------------------------------------------------!
 
 
       !----- The output is converted to kgC/m2/yr. ----------------------------------------!
-      csite%fmean_rh    (ipa) = csite%fmean_rh    (ipa)                                    &
-                              + csite%rh          (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
-      csite%fmean_cwd_rh(ipa) = csite%fmean_cwd_rh(ipa)                                    &
-                              + csite%cwd_rh      (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+      csite%fmean_rh     (ipa) = csite%fmean_rh     (ipa)                                  &
+                               + csite%rh           (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+      csite%fmean_fgc_rh (ipa) = csite%fmean_fgc_rh (ipa)                                  &
+                               + csite%fgc_rh       (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+      csite%fmean_fsc_rh (ipa) = csite%fmean_fsc_rh (ipa)                                  &
+                               + csite%fsc_rh       (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+      csite%fmean_stgc_rh(ipa) = csite%fmean_stgc_rh(ipa)                                  &
+                               + csite%stgc_rh      (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+      csite%fmean_stsc_rh(ipa) = csite%fmean_stsc_rh(ipa)                                  &
+                               + csite%stsc_rh      (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+      csite%fmean_msc_rh (ipa) = csite%fmean_msc_rh (ipa)                                  &
+                               + csite%msc_rh       (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+      csite%fmean_ssc_rh (ipa) = csite%fmean_ssc_rh (ipa)                                  &
+                               + csite%ssc_rh       (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
       !------------------------------------------------------------------------------------!
 
       return
@@ -179,23 +207,32 @@ module soil_respiration
    !=======================================================================================!
    !     This subroutine computes the Nitrogen immobilization factor.                      !
    !---------------------------------------------------------------------------------------!
-   subroutine resp_f_decomp(csite,ipa,Lc)
+   subroutine resp_f_decomp(csite,ipa,Lc,ntext)
 
       use ed_state_vars, only : sitetype               ! ! structure
-      use decomp_coms  , only : r_stsc                 & ! intent(in)
+      use decomp_coms  , only : decomp_scheme          & ! intent(in)
+                              , r_stsc                 & ! intent(in)
                               , N_immobil_supply_scale & ! intent(in)
                               , decay_rate_stsc        & ! intent(in)
-                              , n_decomp_lim           ! ! intent(in)
-      use pft_coms     , only : c2n_structural         & ! intent(in)
+                              , n_decomp_lim           & ! intent(in)
+                              , xrothc_a               & ! intent(in)
+                              , xrothc_b               & ! intent(in)
+                              , xrothc_c               & ! intent(in)
+                              , xrothc_d               & ! intent(in)
+                              , c2n_structural         & ! intent(in)
                               , c2n_slow               ! ! intent(in)
+      use soil_coms    , only : soil                   ! ! look-up table
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype), target      :: csite
       integer       , intent(in)  :: ipa
       real          , intent(out) :: Lc
+      integer       , intent(in)  :: ntext
       !----- Local variables. -------------------------------------------------------------!
       real                        :: N_immobilization_demand
+      real                        :: xrothc
+      real                        :: er_stsc
       !------------------------------------------------------------------------------------!
 
     
@@ -208,11 +245,26 @@ module soil_respiration
       else
          Lc=0.0
       end if
-      
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide the respiration factors based on the method.                           !
+      !------------------------------------------------------------------------------------!
+      select case (decomp_scheme)
+      case (2)
+         xrothc  = xrothc_a * (xrothc_b + xrothc_c * exp( xrothc_d * soil(ntext)%xclay) )
+         er_stsc = xrothc / (1.0 + xrothc)
+      case default
+         er_stsc = r_stsc
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
       if (n_decomp_lim == 1) then
          N_immobilization_demand = csite%A_decomp(ipa) * Lc * decay_rate_stsc              &
                                  * csite%structural_soil_C(ipa)                            &
-                                 * ((1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
+                                 * ((1.0 - er_stsc) / c2n_slow - 1.0 / c2n_structural)
          
          csite%f_decomp(ipa)     = N_immobil_supply_scale * csite%mineralized_soil_N(ipa)  &
                                  / ( N_immobilization_demand                               &
@@ -237,45 +289,154 @@ module soil_respiration
    !=======================================================================================!
    !     This subroutine computes the heterotrophic respiration.                           !
    !---------------------------------------------------------------------------------------!
-   subroutine resp_rh(csite,ipa,Lc)
+   subroutine resp_rh(csite,ipa,Lc,ntext)
 
       use ed_state_vars, only : sitetype        ! ! structure
-      use consts_coms  , only : kgCday_2_umols  ! ! intent(in)
-      use decomp_coms  , only : decay_rate_stsc & ! intent(in)
+      use ed_misc_coms , only : current_time    ! ! intent(in)
+      use consts_coms  , only : kgCday_2_umols  & ! intent(in)
+                              , umols_2_kgCyr   ! ! intent(in)
+      use soil_coms    , only : soil            ! ! look-up table
+      use decomp_coms  , only : decomp_scheme   & ! intent(in)
+                              , decay_rate_stsc & ! intent(in)
+                              , decay_rate_msc  & ! intent(in)
                               , decay_rate_fsc  & ! intent(in)
                               , decay_rate_ssc  & ! intent(in)
                               , r_fsc           & ! intent(in)
-                              , r_ssc           & ! intent(in)
+                              , r_msc           & ! intent(in)
                               , r_stsc          & ! intent(in)
-                              , cwd_frac        ! ! intent(in)
+                              , xrothc_a        & ! intent(in)
+                              , xrothc_b        & ! intent(in)
+                              , xrothc_c        & ! intent(in)
+                              , xrothc_d        ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target       :: csite
-      integer       , intent(in)   :: ipa
-      real          , intent(in)   :: Lc
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: ipa
+      real             , intent(in) :: Lc
+      integer          , intent(in) :: ntext
       !----- Local variables. -------------------------------------------------------------!
-      real                         :: fast_C_loss
-      real                         :: structural_C_loss
-      real                         :: slow_C_loss
+      real                          :: fgc_C_loss
+      real                          :: fsc_C_loss
+      real                          :: stgc_C_loss
+      real                          :: stsc_C_loss
+      real                          :: msc_C_loss
+      real                          :: ssc_C_loss
+      real                          :: tot_C_loss
+      real                          :: er_fsc
+      real                          :: er_ssc
+      real                          :: er_msc
+      real                          :: er_stsc
+      real                          :: xrothc
+      !----- Local constants. -------------------------------------------------------------!
+      logical          , parameter  :: print_debug = .false.
+      character(len=12), parameter  :: rhetfile    = 'het_resp.txt'
+      !----- Locally saved variables. -----------------------------------------------------!
+      logical          , save       :: first_time = .true.
+      !------------------------------------------------------------------------------------!
+
+
+      !----- First time, and the user wants to print the output.  Make a header. ----------!
+      if (first_time) then
+
+         !----- Make the header. ----------------------------------------------------------!
+         if (print_debug) then
+            open (unit=84,file=rhetfile,status='replace',action='write')
+            write (unit=84,fmt='(27(a,1x))')                                               &
+                     '  YEAR',      ' MONTH',      '   DAY',      '  HOUR',      '   MIN'  &
+              ,      '   IPA','       C_FGC','       C_FSC','      C_STGC','      C_STSC'  &
+              ,'       C_MSC','       C_SSC','      F_FAST','    F_STRUCT','   F_MICROBE'  &
+              ,'      F_SLOW','      RH_FGC','      RH_FSC','     RH_STGC','     RH_STSC'  &
+              ,'      RH_MSC','      RH_SSC','    RH_TOTAL','    A_DECOMP','    B_DECOMP'  &
+              ,'    F_DECOMP','          LC'
+            close (unit=84,status='keep')
+         end if
+         !---------------------------------------------------------------------------------!
+
+         first_time = .false.
+      end if
       !------------------------------------------------------------------------------------!
 
 
 
       !----- The following variables have units of [umol_CO2/m2/s]. -----------------------!
-      fast_C_loss       = kgCday_2_umols * csite%A_decomp(ipa)                             &
-                        * decay_rate_fsc * csite%fast_soil_C(ipa)
-      structural_C_loss = kgCday_2_umols * csite%A_decomp(ipa) * Lc * decay_rate_stsc      &
-                        * csite%structural_soil_C(ipa)* csite%f_decomp(ipa)
-      slow_C_loss       = kgCday_2_umols * csite%A_decomp(ipa)                             &
+      fgc_C_loss        = kgCday_2_umols  * csite%A_decomp(ipa)                            &
+                        * decay_rate_fsc  * csite%fast_grnd_C(ipa)
+      fsc_C_loss        = kgCday_2_umols  * csite%B_decomp(ipa)                            &
+                        * decay_rate_fsc  * csite%fast_soil_C(ipa)
+      stgc_C_loss       = kgCday_2_umols  * csite%A_decomp(ipa) * csite%f_decomp(ipa) * Lc &
+                        * decay_rate_stsc * csite%structural_grnd_C(ipa)
+      stsc_C_loss       = kgCday_2_umols  * csite%B_decomp(ipa) * csite%f_decomp(ipa) * Lc &
+                        * decay_rate_stsc * csite%structural_soil_C(ipa)
+      msc_C_loss        = kgCday_2_umols * csite%B_decomp(ipa)                             &
+                        * decay_rate_msc * csite%microbial_soil_C(ipa)
+      ssc_C_loss        = kgCday_2_umols * csite%B_decomp(ipa)                             &
                         * decay_rate_ssc * csite%slow_soil_C(ipa)
       !------------------------------------------------------------------------------------!
 
-      !----- Find the heterotrophic respiration and the fraction due to CWD. --------------!
-      csite%rh(ipa)     = r_fsc * fast_C_loss + r_stsc * structural_C_loss                 &
-                        + r_ssc * slow_C_loss
-      csite%cwd_rh(ipa) = cwd_frac * (r_stsc * structural_C_loss + r_ssc * slow_C_loss)
-      ! csite%cwd_rh(ipa) = r_stsc * structural_C_loss
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide the respiration factors based on the method.                           !
+      !------------------------------------------------------------------------------------!
+      select case (decomp_scheme)
+      case (2)
+         xrothc  = xrothc_a * (xrothc_b + xrothc_c * exp( xrothc_d * soil(ntext)%xclay) )
+         er_fsc  = xrothc / (1.0 + xrothc)
+         er_msc  = er_fsc
+         er_stsc = er_fsc
+         er_ssc  = er_fsc
+      case default
+         er_fsc  = r_fsc
+         er_msc  = r_msc
+         er_stsc = r_stsc
+         er_ssc  = 1.0    ! This has to be 1.0 because it is the only outlet for SSC.
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the heterotrophic respiration (total and components). -------------------!
+      csite%fgc_rh (ipa) = er_fsc  * fgc_C_loss
+      csite%fsc_rh (ipa) = er_fsc  * fsc_C_loss
+      csite%stgc_rh(ipa) = er_stsc * stgc_C_loss
+      csite%stsc_rh(ipa) = er_stsc * stsc_C_loss
+      csite%msc_rh (ipa) = er_msc  * msc_C_loss
+      csite%ssc_rh (ipa) = er_ssc  * ssc_C_loss
+      csite%rh     (ipa) = csite%fgc_rh (ipa) + csite%fsc_rh (ipa) + csite%stgc_rh(ipa)    &
+                         + csite%stsc_rh(ipa) + csite%msc_rh (ipa) + csite%ssc_rh (ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Write debugging information. -------------------------------------------------!
+      if (print_debug) then
+         !----- Convert units for output. -------------------------------------------------!
+         fgc_C_loss  = umols_2_kgCyr * csite%fgc_rh (ipa)
+         fsc_C_loss  = umols_2_kgCyr * csite%fsc_rh (ipa)
+         stgc_C_loss = umols_2_kgCyr * csite%stgc_rh(ipa)
+         stsc_C_loss = umols_2_kgCyr * csite%stsc_rh(ipa)
+         msc_C_loss  = umols_2_kgCyr * csite%msc_rh (ipa)
+         ssc_C_loss  = umols_2_kgCyr * csite%ssc_rh (ipa)
+         tot_C_loss  = umols_2_kgCyr * csite%rh     (ipa)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Append step to the output file. -------------------------------------------!
+         open (unit=84,file=rhetfile,status='old',position='append',action='write')
+         write (unit=84,fmt='(6(i6,1x),21(f12.6,1x))')                                     &
+                        current_time%year,current_time%month,current_time%date             &
+                       ,current_time%hour,current_time%min,ipa                             &
+                       ,csite%fast_grnd_C(ipa),csite%fast_soil_C(ipa)                      &
+                       ,csite%structural_grnd_C(ipa),csite%structural_soil_C(ipa)          &
+                       ,csite%microbial_soil_C(ipa),csite%slow_soil_C(ipa)                 &
+                       ,er_fsc,er_stsc,er_msc,er_ssc,fgc_C_loss,fsc_C_loss,stgc_C_loss     &
+                       ,stsc_C_loss,msc_C_loss,ssc_C_loss,tot_C_loss,csite%A_decomp(ipa)   &
+                       ,csite%B_decomp(ipa),csite%f_decomp(ipa),Lc
+         close (unit=84,status='keep')
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -293,15 +454,25 @@ module soil_respiration
    !     This subroutine will update the soil carbon and nitrogen pools.                   !
    !---------------------------------------------------------------------------------------!
    subroutine update_C_and_N_pools(cgrid)
-      
       use ed_state_vars, only : edtype          & ! structure
                               , polygontype     & ! structure
                               , sitetype        ! ! structure
-      use decomp_coms  , only : decay_rate_fsc  & ! intent(in)
+      use grid_coms    , only : nzg             ! ! intent(in)
+      use soil_coms    , only : soil            ! ! look-up table
+      use decomp_coms  , only : decomp_scheme   & ! intent(in)
+                              , decay_rate_fsc  & ! intent(in)
                               , decay_rate_stsc & ! intent(in)
+                              , decay_rate_msc  & ! intent(in)
                               , decay_rate_ssc  & ! intent(in)
-                              , r_stsc          ! ! intent(in)
-      use pft_coms     , only : c2n_slow        & ! intent(in)
+                              , r_fsc           & ! intent(in)
+                              , r_msc           & ! intent(in)
+                              , r_stsc          & ! intent(in)
+                              , xrothc_a        & ! intent(in)
+                              , xrothc_b        & ! intent(in)
+                              , xrothc_c        & ! intent(in)
+                              , xrothc_d        & ! intent(in)
+                              , fx_msc          & ! intent(in)
+                              , c2n_slow        & ! intent(in)
                               , c2n_structural  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -312,13 +483,28 @@ module soil_respiration
       integer                     :: ipy
       integer                     :: isi
       integer                     :: ipa
+      integer                     :: nsoil
       real                        :: Lc
-      real                        :: fast_C_loss
-      real                        :: fast_N_loss
-      real                        :: structural_C_loss
-      real                        :: structural_L_loss
-      real                        :: slow_C_input
-      real                        :: slow_C_loss
+      real                        :: fg_C_loss
+      real                        :: fs_C_loss
+      real                        :: fg_N_loss
+      real                        :: fs_N_loss
+      real                        :: stg_C_loss
+      real                        :: sts_C_loss
+      real                        :: stg_L_loss
+      real                        :: sts_L_loss
+      real                        :: stg_N_loss
+      real                        :: sts_N_loss
+      real                        :: stg_N_demand
+      real                        :: sts_N_demand
+      real                        :: ms_C_input
+      real                        :: ms_C_loss
+      real                        :: ss_C_input
+      real                        :: ss_C_loss
+      real                        :: er_stsc
+      real                        :: ei_msc
+      real                        :: ei_ssc
+      real                        :: xrothc
       !------------------------------------------------------------------------------------!
 
       polygonloop: do ipy = 1,cgrid%npolygons
@@ -327,6 +513,33 @@ module soil_respiration
 
          siteloop: do isi = 1,cpoly%nsites
             
+            !------------------------------------------------------------------------------!
+            !      Define the scheme-dependent, heterotrophic respiration and transfer     !
+            ! factors.                                                                     !
+            !------------------------------------------------------------------------------!
+            nsoil = cpoly%ntext_soil(nzg,isi)
+            select case (decomp_scheme)
+            case (2)
+               !---------------------------------------------------------------------------!
+               !   RothC model, following Sierra et al. (2012).  Loss of decayed necro-    !
+               ! mass as CO2 depends on soil moisture.                                     !
+               !---------------------------------------------------------------------------!
+               xrothc  = xrothc_a                                                          &
+                       * (xrothc_b + xrothc_c * exp( xrothc_d * soil(nsoil)%xclay) )
+               er_stsc = xrothc / (1.0 + xrothc)
+               ei_msc  = fx_msc / (1.0 + xrothc)
+               ei_ssc  = (1.0 - fx_msc) / (1.0 + xrothc)
+               !---------------------------------------------------------------------------!
+            case default
+               er_stsc = r_stsc
+               !------ Not used. ----------------------------------------------------------!
+               ei_msc  = 0.0
+               ei_ssc  = 1.0
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
+
+
             csite => cpoly%site(isi)
 
             patchloop: do ipa = 1,csite%npatches
@@ -343,69 +556,165 @@ module soil_respiration
                end if
          
                !----- Fast pools. ---------------------------------------------------------!
-               fast_C_loss = csite%today_A_decomp(ipa) * decay_rate_fsc                    &
-                           * csite%fast_soil_C(ipa)
-               fast_N_loss = csite%today_A_decomp(ipa) * decay_rate_fsc                    &
-                           * csite%fast_soil_N(ipa)
+               fg_C_loss  = csite%today_A_decomp(ipa)         * decay_rate_fsc             &
+                          * csite%fast_grnd_C(ipa)
+               fs_C_loss  = csite%today_B_decomp(ipa)         * decay_rate_fsc             &
+                          * csite%fast_soil_C(ipa)
+               fg_N_loss  = csite%today_A_decomp(ipa)         * decay_rate_fsc             &
+                          * csite%fast_grnd_N(ipa)
+               fs_N_loss  = csite%today_B_decomp(ipa)         * decay_rate_fsc             &
+                          * csite%fast_soil_N(ipa)
 
                !----- Structural pools. ---------------------------------------------------!
-               structural_C_loss = csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc       &
-                                 * csite%structural_soil_C(ipa)
-               structural_L_loss = csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc       &
-                                 * csite%structural_soil_L(ipa)
+               stg_C_loss   = csite%today_Af_decomp(ipa)   * Lc * decay_rate_stsc          &
+                            * csite%structural_grnd_C(ipa)
+               sts_C_loss   = csite%today_Bf_decomp(ipa)   * Lc * decay_rate_stsc          &
+                            * csite%structural_soil_C(ipa)
+               stg_L_loss   = csite%today_Af_decomp(ipa)   * Lc * decay_rate_stsc          &
+                            * csite%structural_grnd_L(ipa)
+               sts_L_loss   = csite%today_Bf_decomp(ipa)   * Lc * decay_rate_stsc          &
+                            * csite%structural_soil_L(ipa)
+               stg_N_loss   = csite%today_Af_decomp(ipa)   * Lc * decay_rate_stsc          &
+                            * csite%structural_grnd_N(ipa)
+               sts_N_loss   = csite%today_Bf_decomp(ipa)   * Lc * decay_rate_stsc          &
+                            * csite%structural_soil_N(ipa)
+               !----- Demand to maintain stoichiometry (see Moorcroft et al. 2001). -------!
+               stg_N_demand = stg_C_loss                                                   &
+                            * ( (1.0 - er_stsc) * (1./c2n_slow) - (1./c2n_structural) )
+               sts_N_demand = sts_C_loss                                                   &
+                            * ( (1.0 - er_stsc) * (1./c2n_slow) - (1./c2n_structural) )
+               !---------------------------------------------------------------------------!
 
-               !----- Slow pools. ---------------------------------------------------------!
-               slow_C_input = (1.0 - r_stsc) * structural_C_loss
-               slow_C_loss  = csite%today_A_decomp(ipa) * decay_rate_ssc                   &
-                            * csite%slow_soil_C(ipa)
-               
+
+               !----- Microbial pool (carbon only). ---------------------------------------!
+               ms_C_loss  = csite%today_B_decomp(ipa)         * decay_rate_msc             &
+                          * csite%microbial_soil_C(ipa)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Slow pool (carbon only). --------------------------------------------!
+               ss_C_loss  = csite%today_B_decomp(ipa)         * decay_rate_ssc             &
+                          * csite%slow_soil_C(ipa)
+               !---------------------------------------------------------------------------!
+
+
+
+
                !----- Mineralized pool. ---------------------------------------------------!
-               csite%mineralized_N_input = fast_N_loss + slow_C_loss / c2n_slow
-               csite%mineralized_N_loss  = csite%total_plant_nitrogen_uptake(ipa)          &
-                                         + csite%today_Af_decomp(ipa)                      &
-                                         * Lc * decay_rate_stsc                            &
-                                         * csite%structural_soil_C(ipa)                    &
-                                         * ( (1.0 - r_stsc) / c2n_slow                     &
-                                           - 1.0 / c2n_structural)
+               csite%mineralized_N_input(ipa) = fg_N_loss  + fs_N_loss                     &
+                                              + stg_N_loss + sts_N_loss
+               csite%mineralized_N_loss (ipa) = csite%total_plant_nitrogen_uptake(ipa)     &
+                                              + stg_N_demand + sts_N_demand
+               !---------------------------------------------------------------------------!
 
+
+               !---------------------------------------------------------------------------!
+               !    Inputs for the microbial and humified (slow) soil pools depend on the  !
+               ! decomposition scheme.                                                     !
+               !---------------------------------------------------------------------------!
+               select case (decomp_scheme)
+               case (2)
+                  !------------------------------------------------------------------------!
+                  !     Microbial pool.  Note that part of the loss term is added back as  !
+                  ! input, so we represent the (1-alpha_3,3) term in Sierra et al. (2012)  !
+                  ! equation 21.                                                           !
+                  !------------------------------------------------------------------------!
+                  ms_C_input = ei_msc * ( fg_C_loss  + fs_C_loss  + stg_C_loss             &
+                                        + sts_C_loss + ms_C_loss  + ss_C_loss  )
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Humified (slow) pool.  Note that part of the loss term is added    !
+                  ! back as input, so we represent the (1-alpha_4,4) term in Sierra et al. !
+                  ! (2012) equation 21.                                                    !
+                  !------------------------------------------------------------------------!
+                  ss_C_input = ei_ssc * ( fg_C_loss  + fs_C_loss  + stg_C_loss             &
+                                        + sts_C_loss + ms_C_loss  + ss_C_loss  )
+                  !------------------------------------------------------------------------!
+               case default
+                  !----- Microbial pool is inactive. --------------------------------------!
+                  ms_C_input = 0.0
+                  !------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !     Slow carbon receives everything that decayed and was not lost as   !
+                  ! CO2 (heterotrophic respiration).                                       !
+                  !------------------------------------------------------------------------!
+                  ss_C_input = (1.0 - r_fsc ) * ( fg_C_loss  + fs_C_loss  )                &
+                             + (1.0 - r_stsc) * ( stg_C_loss + sts_C_loss )                &
+                             + (1.0 - r_msc ) * ms_C_loss
+                  !------------------------------------------------------------------------!
+               end select
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !      All carbon fluxes have units kgC/m2/day, and we are updating on the  !
                ! daily time step.                                                          !
                !---------------------------------------------------------------------------!
-               csite%fast_soil_C(ipa)       = csite%fast_soil_C(ipa) + csite%fsc_in(ipa)   &
-                                            - fast_C_loss
+               csite%fast_grnd_C(ipa)       = csite%fast_grnd_C      (ipa)                 &
+                                            + csite%fgc_in           (ipa) - fg_C_loss
+               csite%fast_soil_C(ipa)       = csite%fast_soil_C      (ipa)                 &
+                                            + csite%fsc_in           (ipa) - fs_C_loss
+               csite%structural_grnd_C(ipa) = csite%structural_grnd_C(ipa)                 &
+                                            + csite%stgc_in          (ipa) - stg_C_loss
                csite%structural_soil_C(ipa) = csite%structural_soil_C(ipa)                 &
-                                            + csite%ssc_in(ipa) - structural_C_loss
+                                            + csite%stsc_in          (ipa) - sts_C_loss
+               csite%structural_grnd_L(ipa) = csite%structural_grnd_L(ipa)                 &
+                                            + csite%stgl_in          (ipa) - stg_L_loss
                csite%structural_soil_L(ipa) = csite%structural_soil_L(ipa)                 &
-                                            + csite%ssl_in(ipa) - structural_L_loss
-               csite%slow_soil_C(ipa)       = csite%slow_soil_C(ipa) + slow_C_input        &
-                                            - slow_C_loss
-               
+                                            + csite%stsl_in          (ipa) - sts_L_loss
+               csite%microbial_soil_C(ipa)  = csite%microbial_soil_C (ipa)                 &
+                                            + ms_C_input                   - ms_C_loss
+               csite%slow_soil_C(ipa)       = csite%slow_soil_C      (ipa)                 &
+                                            + ss_C_input                   - ss_C_loss
+               !---------------------------------------------------------------------------!
+
+
                !---------------------------------------------------------------------------!
                !      All nitrogen fluxes have units kgN/m2/day, and we are updating on    !
-               ! the daily time step.                                                      !
+               ! the daily time step.  Currently the microbial pool does not have          !
+               ! nitrogen, but this should be changed in the future.                       !
                !---------------------------------------------------------------------------!
-               csite%fast_soil_N(ipa)        = csite%fast_soil_N(ipa) + csite%fsn_in(ipa)  &
-                                             - fast_N_loss
-               csite%mineralized_soil_N(ipa) = csite%mineralized_soil_N(ipa)               &
+               csite%fast_grnd_N       (ipa) = csite%fast_grnd_N(ipa) + csite%fgn_in(ipa)  &
+                                             - fg_N_loss
+               csite%fast_soil_N       (ipa) = csite%fast_soil_N(ipa) + csite%fsn_in(ipa)  &
+                                             - fs_N_loss
+               csite%structural_grnd_N (ipa) = csite%structural_grnd_N(ipa)                &
+                                             + csite%stgn_in          (ipa)                &
+                                             + stg_N_demand - stg_N_loss
+               csite%structural_soil_N (ipa) = csite%structural_soil_N(ipa)                &
+                                             + csite%stsn_in          (ipa)                &
+                                             + sts_N_demand - sts_N_loss
+               csite%mineralized_soil_N(ipa) = csite%mineralized_soil_N (ipa)              &
                                              + csite%mineralized_N_input(ipa)              &
-                                             - csite%mineralized_N_loss(ipa)
+                                             - csite%mineralized_N_loss (ipa)
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !      Force all pools to be either zero or positive.                       !
                !---------------------------------------------------------------------------!
-               csite%fast_soil_C(ipa)        = max(0.0,csite%fast_soil_C(ipa))
-               csite%structural_soil_C(ipa)  = max(0.0,csite%structural_soil_C(ipa))
-               csite%structural_soil_L(ipa)  = max(0.0,csite%structural_soil_L(ipa))
-               csite%slow_soil_C(ipa)        = max(0.0,csite%slow_soil_C(ipa))
-               csite%fast_soil_N(ipa)        = max(0.0,csite%fast_soil_N(ipa))
+               csite%fast_grnd_C       (ipa) = max(0.0,csite%fast_grnd_C       (ipa))
+               csite%fast_soil_C       (ipa) = max(0.0,csite%fast_soil_C       (ipa))
+               csite%structural_grnd_C (ipa) = max(0.0,csite%structural_grnd_C (ipa))
+               csite%structural_soil_C (ipa) = max(0.0,csite%structural_soil_C (ipa))
+               csite%structural_grnd_L (ipa) = max(0.0,csite%structural_grnd_L (ipa))
+               csite%structural_soil_L (ipa) = max(0.0,csite%structural_soil_L (ipa))
+               csite%microbial_soil_C  (ipa) = max(0.0,csite%microbial_soil_C  (ipa))
+               csite%slow_soil_C       (ipa) = max(0.0,csite%slow_soil_C       (ipa))
+               csite%fast_grnd_N       (ipa) = max(0.0,csite%fast_grnd_N       (ipa))
+               csite%fast_soil_N       (ipa) = max(0.0,csite%fast_soil_N       (ipa))
                csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa))
-               
+               !---------------------------------------------------------------------------!
             end do patchloop
+            !------------------------------------------------------------------------------!
          end do siteloop
+         !---------------------------------------------------------------------------------!
       end do polygonloop
-      
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine update_C_and_N_pools
    !=======================================================================================!

@@ -219,9 +219,9 @@ subroutine ed_driver()
    ! -2 -- Keep the one with the lowest LAI                                                !
    !---------------------------------------------------------------------------------------!
    patch_detailed = ibclr(idetailed,5) > 0
-   if (patch_detailed) then
+!   if (patch_detailed) then
       call exterminate_patches_except(patch_keep)
-   end if
+!   end if
    !---------------------------------------------------------------------------------------!
 
 

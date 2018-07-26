@@ -5,13 +5,14 @@
 #------------------------------------------------------------------------------------------#
 optim.gbm <<- function( formula
                       , data
-                      , sy.data  = NULL
-                      , n.boot   = 1000
-                      , ci.level = 0.95
-                      , verbose  = FALSE
-                      , n.syobs  = 10000
-                      , yrdm.min = -Inf
-                      , yrdm.max = +Inf
+                      , sy.data    = NULL
+                      , n.boot     = 1000
+                      , boot.class = NULL
+                      , ci.level   = 0.95
+                      , verbose    = FALSE
+                      , n.syobs    = 10000
+                      , yrdm.min   = -Inf
+                      , yrdm.max   = +Inf
                       ,...
                       ){
    #----- Save number of data points. -----------------------------------------------------#
@@ -113,7 +114,17 @@ optim.gbm <<- function( formula
       #------------------------------------------------------------------------------------#
    }#end if (is.null(sy.data))
    #---------------------------------------------------------------------------------------#
- 
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Decide the classes for bootstrap.                                                #
+   #---------------------------------------------------------------------------------------#
+   if (! is.null(boot.class)){
+      uniq.class   = sort(unique(boot.class))
+      n.uniq.class = length(uniq.class)
+   }#end if (! is.null (boot.class))
+   #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -123,8 +134,23 @@ optim.gbm <<- function( formula
    ib = 0
    while (ib < n.boot){
       #----- Select samples for this realisation. -----------------------------------------#
-      idx         = sample.int(n=n.data,replace=TRUE)
-      ixval       = which(! (sequence(n.data) %in% idx))
+      if (is.null (boot.class)){
+         idx         = sample.int(n=n.data,replace=TRUE)
+         ixval       = which(! (sequence(n.data) %in% idx))
+      }else{
+         use.class   = lit.sample(x=uniq.class,size=n.uniq.class,replace=TRUE)
+         use.sample  = mapply( FUN      = function(x,y) which(y %in% x)
+                             , x        = use.class
+                             , MoreArgs = list(y=boot.class)
+                             )#end mapply
+         use.sample  = c(unlist(use.sample))
+         idx         = lit.sample(x=use.sample,size=n.data,replace=TRUE)
+         ixval       = which(! boot.class %in% use.class)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Set training and testing data sets. ------------------------------------------#
       boot.data   = data[  idx,,drop=FALSE]
       xval.data   = data[ixval,,drop=FALSE]
       #------------------------------------------------------------------------------------#

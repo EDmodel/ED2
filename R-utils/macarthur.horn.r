@@ -1,32 +1,55 @@
 #==========================================================================================#
 #==========================================================================================#
-#     This function defines the density profile corrected by the pulse intensity, follow-  #
-# ing the MacArthur and Horn (1969) correction.                                            #
+#     This function defines the density profile corrected by the return distribution,      #
+# following the MH69 correction and following NM01 implementation.  To convert the         #
+# discrete returns into power return, we apply a waveform simulator following BH99.  In    #
+# case we should use only the regular return count, set wfsim to FALSE.                    #
 #                                                                                          #
-# Reference: MacArthur, R. A. and H. S. Horn, 1969: Foliage profile by vertical            #
-#               measurements, Ecology, 50(5), 802--804.                                    #
+# References:                                                                              #
+#                                                                                          #
+# Blair JB, Hofton, MA. Modeling laser altimeter return waveforms over complex vegetation  #
+#    using high- resolution elevation data. Geophys. Res. Lett. 26(16):2509--2512,         #
+#    doi:10.1029/1999GL010484 (BH99).                                                      #
+#                                                                                          #
+# MacArthur RA, Horn HS, 1969: Foliage profile by vertical measurements, Ecology 50(5),    #
+#    802--804, doi:10.2307/1933693 (MH69).                                                 #
+#                                                                                          #
+# Ni-Meister W, Jupp D, and Dubayah R, 2001. Modeling lidar waveforms in heterogeneous and #
+#    discrete canopies. IEEE T. Geosci. Remote Sens. 39(9):1943--1958,                     #
+#    doi:10.1109/36.951085 (NM01).                                                         #
+#                                                                                          #
+# Popescu SC, Zhao K, Neuenschwander A, Lin C. 2011. Satellite lidar vs. small footprint   #
+#    airborne lidar: Comparing the accuracy of aboveground biomass estimates and forest    #
+#    structure metrics at footprint level. Remote Sens. Environ. 115(11):2786--2797,       #
+#    doi:10.1016/j.rse.2011.01.026 (P11).   doi:10.1016/j.rse.2011.01.026 (P11).           #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
 macarthur.horn <<- function( pt.cloud
                            , zh            = max(pt.cloud$z,na.rm=TRUE)
                            , zo            = 0.
                            , nz            = 512
-                           , rvorg         = NA
+                           , rvorg         = NA_real_
+                           , sigma.t       = 1e-8
                            , Gmu           = 0.5
                            , tall.at.zh    = FALSE
                            , use.intensity = FALSE
+                           , wfsim         = FALSE
+                           , zair          = 850.
                            ){
+
+
 
    #---------------------------------------------------------------------------------------#
    #      Make sure the settings make sense.                                               #
    #---------------------------------------------------------------------------------------#
    #----- Check additional values. --------------------------------------------------------#
-   if (! ( zh  %>%  0                      &&
-           nz  %>%  0                      &&
-           zh  %>%  zo                     &&
-           zo  %>=% 0                      &&
-           ( is.na(rvorg) || rvorg %>% 0 ) &&
-           ( is.logical(tall.at.zh)      ) && 
+   if (! ( zh  %>%  0                                                              &&
+           nz  %>%  0                                                              &&
+           zh  %>%  zo                                                             &&
+           zo  %>=% 0                                                              &&
+           ( is.na(rvorg) || rvorg %>% 0 )                                         &&
+           ( is.logical(tall.at.zh)      )                                         &&
+           ( (sigma.t %>% 0) || (! wfsim) )                                        &&
            Gmu %>%0
          ) ){
       cat0("------------------------------------------------------------------")
@@ -37,6 +60,7 @@ macarthur.horn <<- function( pt.cloud
       cat0(" NZ         = ",nz                                                 )
       cat0(" RVORG      = ",rvorg                                              )
       cat0(" TALL.AT.ZH = ",tall.at.zh                                         )
+      cat0(" SIGMA.T    = ",sigma.t                                            )
       cat0(" Gmu        = ",Gmu                                                )
       cat0(" "                                                                 )
       cat0(" Please check the following:"                                      )
@@ -44,13 +68,13 @@ macarthur.horn <<- function( pt.cloud
       cat0(" NZ must be positive."                                             )
       cat0(" RVORG must be positive or NA."                                    )
       cat0(" TALL.AT.ZH must be logical."                                      )
+      cat0(" SIGMA.T must be positive when simulating waveform."               )
       cat0(" Gmu must be positive."                                            )
       cat0(" "                                                                 )
       cat0("------------------------------------------------------------------")
       stop("Invalid height settings.")
    }#end if
    #---------------------------------------------------------------------------------------#
-
 
 
    #---------------------------------------------------------------------------------------#
@@ -111,9 +135,8 @@ macarthur.horn <<- function( pt.cloud
 
    #----- Find the height breaks in case none has been given. -----------------------------#
    zmid    = seq(from=0,to=zh,length.out=nz)
-   dzbar   = mean(diff(zmid))
-   zbreaks = seq(from=0-0.5*dzbar,to=zh+0.5*dzbar,length.out=nz+1)
-   deltaz  = diff(zbreaks)
+   deltaz  = mean(diff(zmid))
+   zbreaks = seq(from=0-0.5*deltaz,to=zh+0.5*deltaz,length.out=nz+1)
    #---------------------------------------------------------------------------------------#
 
 
@@ -127,70 +150,106 @@ macarthur.horn <<- function( pt.cloud
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Assume that everything with height zero is ground. ------------------------------#
+   pt.cloud$pt.class[pt.cloud$z %<=% 0] = 2
+   #---------------------------------------------------------------------------------------#
+
+
    #----- Keep only the points that are within bounds. ------------------------------------#
    keep     = pt.cloud$z %>=% 0 & pt.cloud$z %<% zh & pt.cloud$pt.class %in% c(0,1,2,3,4,5)
    pt.cloud = pt.cloud[keep,,drop=FALSE]
    #---------------------------------------------------------------------------------------#
 
 
-
    #---------------------------------------------------------------------------------------#
-   #      In case intensity is not to be used, keep only first returns, and set            #
-   # intensities to 1.                                                                     #
+   #      In case intensity is not to be used, set intensities to 1.                       #
    #---------------------------------------------------------------------------------------#
    if (! use.intensity){
-      first              = unlist( tapply( X     = pt.cloud$retn.number
-                                         , INDEX = pt.cloud$pulse.number
-                                         , FUN   = function(x) x %==% min(x)
-                                         )#end tapply
-                                 )#end unlist
-      pt.cloud           = pt.cloud[first,,drop=FALSE]
       pt.cloud$intensity = 0. * pt.cloud$intensity + 1
    }#end if (use.intensity)
    #---------------------------------------------------------------------------------------#
 
 
+
    #----- Generate flags for ground and vegetation returns. -------------------------------#
-   veg.cloud = pt.cloud[pt.cloud$pt.class %in% c(0,1,3,4,5),]
-   gnd.cloud = pt.cloud[pt.cloud$pt.class %in% c(2)        ,]
+   veg.cloud = pt.cloud[pt.cloud$pt.class %in% c(0,1,3,4,5),,drop=FALSE]
+   gnd.cloud = pt.cloud[pt.cloud$pt.class %in% c(2)        ,,drop=FALSE]
    #---------------------------------------------------------------------------------------#
 
 
 
    #---------------------------------------------------------------------------------------#
-   #       In case no ground return exists, add one point with minimal intensity and near  #
-   # the ground.                                                                           #
+   #    Decide how to determine the vertical profile.                                      #
    #---------------------------------------------------------------------------------------#
-   if (nrow(gnd.cloud) == 0){
-      idx                      = which.min(veg.cloud$z)
-      gnd.cloud                = veg.cloud[idx,]
-      gnd.cloud$x              = mean(veg.cloud$x)
-      gnd.cloud$y              = mean(veg.cloud$y)
-      gnd.cloud$z              = 0.01
-      gnd.cloud$intensity      = min(veg.cloud$intensity)
-      gnd.cloud$retn.number    = min(veg.cloud$retn.number)
-      gnd.cloud$number.retn.gp = commonest(veg.cloud$number.retn.gp)
-      gnd.cloud$pt.class       = 2
-      gnd.cloud$gpstime        = max(veg.cloud$gpstime)
-   }#end if
-   #---------------------------------------------------------------------------------------#
+   if (wfsim){
+      #------------------------------------------------------------------------------------#
+      #    Find the horizontal contribution from each layer, assuming that all returns     #
+      # contribute proportionally to their intensity (i.e. assume footprint to be square   #
+      # as opposed to Gaussian).                                                           #
+      #------------------------------------------------------------------------------------#
+      zcut    = as.integer(cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE))
+      wh      = rep(0,times=nz)
+      aux     = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
+      idx     = as.numeric(names(aux))
+      wh[idx] = aux
+      wh[1]   = sum(gnd.cloud$intensity)
+      #------------------------------------------------------------------------------------#
 
 
 
-   #----- Find the total energy returned from each layer. ---------------------------------#
-   zcut       = cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE)
-   zcut       = match(zcut,levels(zcut))
-   Rvlyr      = rep(0,times=nz)
-   aux        = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
-   idx        = as.numeric(names(aux))
-   Rvlyr[idx] = aux
-   #---------------------------------------------------------------------------------------#
+      #----- Find the vertical distribution of emitted pulses. ----------------------------#
+      tt      = 2 * (zh-zmid) / clight
+      wv      = exp(-2 * tt^2 / sigma.t^2)
+      #------------------------------------------------------------------------------------#
 
 
-   #----- Find the total intensity returned and flagged as vegetation and as ground. ------#
-   Rv  = rev(cumsum(rev(Rvlyr)))
-   Rv0 = sum(veg.cloud$intensity)
-   Rg  = sum(gnd.cloud$intensity)
+      #----- Run the convolution. ---------------------------------------------------------#
+      Rvlyr = rev(convolve(rev(wh),rev(wv)))
+      Rvlyr = pmax(0,Rvlyr) + 0. * Rvlyr
+      Rv    = rev(cumsum(rev(Rvlyr)))
+      Rv0   = sum(Rvlyr)
+      Rg    = Rvlyr[1]
+      #------------------------------------------------------------------------------------#
+   }else{
+
+
+      #------------------------------------------------------------------------------------#
+      #       In case no ground return exists, add one point with minimal intensity and    #
+      # near the ground.                                                                   #
+      #------------------------------------------------------------------------------------#
+      if (nrow(gnd.cloud) == 0){
+         idx                      = which.min(veg.cloud$z)
+         gnd.cloud                = veg.cloud[idx,]
+         gnd.cloud$x              = mean(veg.cloud$x)
+         gnd.cloud$y              = mean(veg.cloud$y)
+         gnd.cloud$z              = 0.01
+         gnd.cloud$intensity      = min(veg.cloud$intensity)
+         gnd.cloud$retn.number    = min(veg.cloud$retn.number)
+         gnd.cloud$number.retn.gp = commonest(veg.cloud$number.retn.gp)
+         gnd.cloud$pt.class       = 2
+         gnd.cloud$gpstime        = max(veg.cloud$gpstime)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find the total energy returned from each layer. ------------------------------#
+      zcut       = cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE)
+      zcut       = match(zcut,levels(zcut))
+      Rvlyr      = rep(0,times=nz)
+      aux        = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
+      idx        = as.numeric(names(aux))
+      Rvlyr[idx] = aux
+      Rvlyr[1]   = sum(gnd.cloud$intensity)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Find the total intensity returned and flagged as vegetation and as ground. ---#
+      Rv  = rev(cumsum(rev(Rvlyr)))
+      Rv0 = sum(veg.cloud$intensity)
+      Rg  = sum(gnd.cloud$intensity)
+      #------------------------------------------------------------------------------------#
+   }#end if(wfsim)
    #---------------------------------------------------------------------------------------#
 
 
@@ -200,7 +259,7 @@ macarthur.horn <<- function( pt.cloud
    #---------------------------------------------------------------------------------------#
    if (is.na(rvorg)){
      #kuse = 0.825 # Mean value by Antonarakis et al. (2014).
-     kuse = 1.03  # Mean value by Tang and Dubayah (2017).
+     kuse = 1.03   # Mean value by Tang and Dubayah (2017).
    }else{
      kuse = rvorg
    }#end if
@@ -230,10 +289,9 @@ macarthur.horn <<- function( pt.cloud
    #---------------------------------------------------------------------------------------#
    #     Create a pseudo point cloud using the correction by MacArthur and Horn.           #
    #---------------------------------------------------------------------------------------#
-   dzbar = mean(diff(zmid))
    if (! all(is.finite(lad))) browser()
    nzmah = ceiling(3.*Rv0/min(veg.cloud$intensity[veg.cloud$intensity %>% 0]))
-   zmah  = jitter(x= sample(x=zmid,size=nzmah,replace=TRUE,prob=lad),amount=0.5*dzbar)
+   zmah  = jitter(x= sample(x=zmid,size=nzmah,replace=TRUE,prob=lad),amount=0.5*deltaz)
    #---------------------------------------------------------------------------------------#
 
 
@@ -274,7 +332,7 @@ macarthur.horn <<- function( pt.cloud
    keep    = zmid >= zo
    zmid    = zmid   [keep]
    lad     = lad    [keep]
-   deltaz  = deltaz [keep]
+   deltaz  = deltaz + 0*zmid
    Rvlyr   = Rvlyr  [keep]
    Rv      = Rv     [keep]
    gap.top = gap.top[keep]
@@ -282,6 +340,10 @@ macarthur.horn <<- function( pt.cloud
    gap.mid = gap.mid[keep]
    lpdf    = data.frame(x=lpdf$x[keep],y=lpdf$y[keep])
    lcdf    = lcdf   [keep] / max(lcdf[keep])
+   if (wfsim){
+      wh = wh[keep]
+      wv = wv[keep]
+   }#end if (wfsim)
    #---------------------------------------------------------------------------------------#
 
 

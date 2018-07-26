@@ -595,36 +595,42 @@ module photosyn_driv
          ! them by the number of years per day so the output is in kgC/plant/yr.  High     !
          ! time we switched everything to SI...                                            !
          !---------------------------------------------------------------------------------!
-         cpatch%fmean_leaf_growth_resp (ico) = cpatch%fmean_leaf_growth_resp  (ico)        &
-                                             + cpatch%leaf_growth_resp        (ico)        &
-                                             *  dtlsm_o_frqsum * yr_day
-         cpatch%fmean_root_growth_resp (ico) = cpatch%fmean_root_growth_resp  (ico)        &
-                                             + cpatch%root_growth_resp        (ico)        &
-                                             *  dtlsm_o_frqsum * yr_day
-         cpatch%fmean_sapa_growth_resp (ico) = cpatch%fmean_sapa_growth_resp  (ico)        &
-                                             + cpatch%sapa_growth_resp        (ico)        &
-                                             *  dtlsm_o_frqsum * yr_day
-         cpatch%fmean_sapb_growth_resp (ico) = cpatch%fmean_sapb_growth_resp  (ico)        &
-                                             + cpatch%sapb_growth_resp        (ico)        &
-                                             *  dtlsm_o_frqsum * yr_day
-         cpatch%fmean_bark_growth_resp (ico) = cpatch%fmean_bark_growth_resp  (ico)        &
-                                             + cpatch%bark_growth_resp        (ico)        &
-                                             *  dtlsm_o_frqsum * yr_day
-         cpatch%fmean_leaf_storage_resp(ico) = cpatch%fmean_leaf_storage_resp (ico)        &
-                                             + cpatch%leaf_storage_resp(ico)               &
-                                             * dtlsm_o_frqsum * yr_day
-         cpatch%fmean_root_storage_resp(ico) = cpatch%fmean_root_storage_resp (ico)        &
-                                             + cpatch%root_storage_resp(ico)               &
-                                             * dtlsm_o_frqsum * yr_day
-         cpatch%fmean_sapa_storage_resp(ico) = cpatch%fmean_sapa_storage_resp (ico)        &
-                                             + cpatch%sapa_storage_resp(ico)               &
-                                             * dtlsm_o_frqsum * yr_day
-         cpatch%fmean_sapb_storage_resp(ico) = cpatch%fmean_sapb_storage_resp (ico)        &
-                                             + cpatch%sapb_storage_resp(ico)               &
-                                             * dtlsm_o_frqsum * yr_day
-         cpatch%fmean_bark_storage_resp(ico) = cpatch%fmean_bark_storage_resp (ico)        &
-                                             + cpatch%bark_storage_resp(ico)               &
-                                             * dtlsm_o_frqsum * yr_day
+         cpatch%fmean_leaf_growth_resp  (ico) = cpatch%fmean_leaf_growth_resp  (ico)       &
+                                              + cpatch%leaf_growth_resp        (ico)       &
+                                              *  dtlsm_o_frqsum * yr_day
+         cpatch%fmean_root_growth_resp  (ico) = cpatch%fmean_root_growth_resp  (ico)       &
+                                              + cpatch%root_growth_resp        (ico)       &
+                                              *  dtlsm_o_frqsum * yr_day
+         cpatch%fmean_sapa_growth_resp  (ico) = cpatch%fmean_sapa_growth_resp  (ico)       &
+                                              + cpatch%sapa_growth_resp        (ico)       &
+                                              *  dtlsm_o_frqsum * yr_day
+         cpatch%fmean_sapb_growth_resp  (ico) = cpatch%fmean_sapb_growth_resp  (ico)       &
+                                              + cpatch%sapb_growth_resp        (ico)       &
+                                              *  dtlsm_o_frqsum * yr_day
+         cpatch%fmean_barka_growth_resp (ico) = cpatch%fmean_barka_growth_resp (ico)       &
+                                              + cpatch%barka_growth_resp       (ico)       &
+                                              *  dtlsm_o_frqsum * yr_day
+         cpatch%fmean_barkb_growth_resp (ico) = cpatch%fmean_barkb_growth_resp (ico)       &
+                                              + cpatch%barkb_growth_resp       (ico)       &
+                                              *  dtlsm_o_frqsum * yr_day
+         cpatch%fmean_leaf_storage_resp (ico) = cpatch%fmean_leaf_storage_resp (ico)       &
+                                              + cpatch%leaf_storage_resp       (ico)       &
+                                              * dtlsm_o_frqsum * yr_day
+         cpatch%fmean_root_storage_resp (ico) = cpatch%fmean_root_storage_resp (ico)       &
+                                              + cpatch%root_storage_resp       (ico)       &
+                                              * dtlsm_o_frqsum * yr_day
+         cpatch%fmean_sapa_storage_resp (ico) = cpatch%fmean_sapa_storage_resp (ico)       &
+                                              + cpatch%sapa_storage_resp       (ico)       &
+                                              * dtlsm_o_frqsum * yr_day
+         cpatch%fmean_sapb_storage_resp (ico) = cpatch%fmean_sapb_storage_resp (ico)       &
+                                              + cpatch%sapb_storage_resp       (ico)       &
+                                              * dtlsm_o_frqsum * yr_day
+         cpatch%fmean_barka_storage_resp(ico) = cpatch%fmean_barka_storage_resp(ico)       &
+                                              + cpatch%barka_storage_resp      (ico)       &
+                                              * dtlsm_o_frqsum * yr_day
+         cpatch%fmean_barkb_storage_resp(ico) = cpatch%fmean_barkb_storage_resp(ico)       &
+                                              + cpatch%barkb_storage_resp      (ico)       &
+                                              * dtlsm_o_frqsum * yr_day
          !---------------------------------------------------------------------------------!
 
          if (print_photo_debug) then

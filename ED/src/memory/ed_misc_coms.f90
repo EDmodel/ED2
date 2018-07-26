@@ -189,10 +189,15 @@ Module ed_misc_coms
 
    ! soil biogeochem initial conditions (over-rides patch files)
    ! useful for data assimilation & sensitivity analysis
+   real    :: init_fgc 
    real    :: init_fsc 
+   real    :: init_stgc 
    real    :: init_stsc 
+   real    :: init_msc 
    real    :: init_ssc 
+   real    :: init_stgl 
    real    :: init_stsl 
+   real    :: init_fgn 
    real    :: init_fsn 
    real    :: init_msn 
 

@@ -96,7 +96,7 @@ module vegetation_dynamics
          call normalize_ed_today_vars(cgrid)
          !----- Update phenology and growth of live tissues. ------------------------------!
          call phenology_driver(cgrid,doy,current_time%month, dtlsm_o_day,veget_dyn_on)
-         call dbalive_dt(cgrid,gr_tfact0,year_o_day,.true.)
+         call dbalive_dt(cgrid,gr_tfact0,year_o_day,veget_dyn_on)
          !---------------------------------------------------------------------------------!
 
 

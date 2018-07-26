@@ -1674,12 +1674,19 @@ module disturbance
       csite%ustar                      (np) = 0.0
       csite%htry                       (np) = 0.0
       csite%hprev                      (np) = 0.0
+      csite%fast_grnd_C                (np) = 0.0
       csite%fast_soil_C                (np) = 0.0
-      csite%slow_soil_C                (np) = 0.0
+      csite%structural_grnd_C          (np) = 0.0
       csite%structural_soil_C          (np) = 0.0
+      csite%structural_grnd_L          (np) = 0.0
       csite%structural_soil_L          (np) = 0.0
-      csite%mineralized_soil_N         (np) = 0.0
+      csite%microbial_soil_C           (np) = 0.0
+      csite%slow_soil_C                (np) = 0.0
+      csite%fast_grnd_N                (np) = 0.0
       csite%fast_soil_N                (np) = 0.0
+      csite%structural_grnd_N          (np) = 0.0
+      csite%structural_soil_N          (np) = 0.0
+      csite%mineralized_soil_N         (np) = 0.0
       csite%sum_dgd                    (np) = 0.0
       csite%sum_chd                    (np) = 0.0
       !------------------------------------------------------------------------------------!
@@ -1722,23 +1729,44 @@ module disturbance
       csite%hprev                      (np) = csite%hprev                      (np)        &
                                             + csite%hprev                      (cp)        &
                                             * area_fac
+      csite%fast_grnd_C                (np) = csite%fast_grnd_C                (np)        &
+                                            + csite%fast_grnd_C                (cp)        &
+                                            * area_fac
       csite%fast_soil_C                (np) = csite%fast_soil_C                (np)        &
                                             + csite%fast_soil_C                (cp)        &
                                             * area_fac
-      csite%slow_soil_C                (np) = csite%slow_soil_C                (np)        &
-                                            + csite%slow_soil_C                (cp)        &
+      csite%structural_grnd_C          (np) = csite%structural_grnd_C          (np)        &
+                                            + csite%structural_grnd_C          (cp)        &
                                             * area_fac
       csite%structural_soil_C          (np) = csite%structural_soil_C          (np)        &
                                             + csite%structural_soil_C          (cp)        &
                                             * area_fac
+      csite%structural_grnd_L          (np) = csite%structural_grnd_L          (np)        &
+                                            + csite%structural_grnd_L          (cp)        &
+                                            * area_fac
       csite%structural_soil_L          (np) = csite%structural_soil_L          (np)        &
                                             + csite%structural_soil_L          (cp)        &
                                             * area_fac
-      csite%mineralized_soil_N         (np) = csite%mineralized_soil_N         (np)        &
-                                            + csite%mineralized_soil_N         (cp)        &
+      csite%microbial_soil_C           (np) = csite%microbial_soil_C           (np)        &
+                                            + csite%microbial_soil_C           (cp)        &
+                                            * area_fac
+      csite%slow_soil_C                (np) = csite%slow_soil_C                (np)        &
+                                            + csite%slow_soil_C                (cp)        &
+                                            * area_fac
+      csite%fast_grnd_N                (np) = csite%fast_grnd_N                (np)        &
+                                            + csite%fast_grnd_N                (cp)        &
                                             * area_fac
       csite%fast_soil_N                (np) = csite%fast_soil_N                (np)        &
                                             + csite%fast_soil_N                (cp)        &
+                                            * area_fac
+      csite%structural_grnd_N          (np) = csite%structural_grnd_N          (np)        &
+                                            + csite%structural_grnd_N          (cp)        &
+                                            * area_fac
+      csite%structural_soil_N          (np) = csite%structural_soil_N          (np)        &
+                                            + csite%structural_soil_N          (cp)        &
+                                            * area_fac
+      csite%mineralized_soil_N         (np) = csite%mineralized_soil_N         (np)        &
+                                            + csite%mineralized_soil_N         (cp)        &
                                             * area_fac
       csite%sum_dgd                    (np) = csite%sum_dgd                    (np)        &
                                             + csite%sum_dgd                    (cp)        &
@@ -1797,20 +1825,44 @@ module disturbance
       csite%today_A_decomp             (np) = csite%today_A_decomp             (np)        &
                                             + csite%today_A_decomp             (cp)        &
                                             * area_fac
+      csite%today_B_decomp             (np) = csite%today_B_decomp             (np)        &
+                                            + csite%today_B_decomp             (cp)        &
+                                            * area_fac
       csite%today_Af_decomp            (np) = csite%today_Af_decomp            (np)        &
                                             + csite%today_Af_decomp            (cp)        &
+                                            * area_fac
+      csite%today_Bf_decomp            (np) = csite%today_Bf_decomp            (np)        &
+                                            + csite%today_Bf_decomp            (cp)        &
+                                            * area_fac
+      csite%fgc_in                     (np) = csite%fgc_in                     (np)        &
+                                            + csite%fgc_in                     (cp)        &
                                             * area_fac
       csite%fsc_in                     (np) = csite%fsc_in                     (np)        &
                                             + csite%fsc_in                     (cp)        &
                                             * area_fac
-      csite%ssc_in                     (np) = csite%ssc_in                     (np)        &
-                                            + csite%ssc_in                     (cp)        &
+      csite%stgc_in                    (np) = csite%stgc_in                    (np)        &
+                                            + csite%stgc_in                    (cp)        &
                                             * area_fac
-      csite%ssl_in                     (np) = csite%ssl_in                     (np)        &
-                                            + csite%ssl_in                     (cp)        &
+      csite%stsc_in                    (np) = csite%stsc_in                    (np)        &
+                                            + csite%stsc_in                    (cp)        &
+                                            * area_fac
+      csite%stgl_in                    (np) = csite%stgl_in                    (np)        &
+                                            + csite%stgl_in                    (cp)        &
+                                            * area_fac
+      csite%stsl_in                    (np) = csite%stsl_in                    (np)        &
+                                            + csite%stsl_in                    (cp)        &
+                                            * area_fac
+      csite%fgn_in                     (np) = csite%fgn_in                     (np)        &
+                                            + csite%fgn_in                     (cp)        &
                                             * area_fac
       csite%fsn_in                     (np) = csite%fsn_in                     (np)        &
                                             + csite%fsn_in                     (cp)        &
+                                            * area_fac
+      csite%stgn_in                    (np) = csite%stgn_in                    (np)        &
+                                            + csite%stgn_in                    (cp)        &
+                                            * area_fac
+      csite%stsn_in                    (np) = csite%stsn_in                    (np)        &
+                                            + csite%stsn_in                    (cp)        &
                                             * area_fac
       csite%total_plant_nitrogen_uptake(np) = csite%total_plant_nitrogen_uptake(np)        &
                                             + csite%total_plant_nitrogen_uptake(cp)        &
@@ -1882,8 +1934,23 @@ module disturbance
       csite%fmean_rh             (np) = csite%fmean_rh             (np)                    &
                                       + csite%fmean_rh             (cp)                    &
                                       * area_fac
-      csite%fmean_cwd_rh         (np) = csite%fmean_cwd_rh         (np)                    &
-                                      + csite%fmean_cwd_rh         (cp)                    &
+      csite%fmean_fgc_rh         (np) = csite%fmean_fgc_rh         (np)                    &
+                                      + csite%fmean_fgc_rh         (cp)                    &
+                                      * area_fac
+      csite%fmean_fsc_rh         (np) = csite%fmean_fsc_rh         (np)                    &
+                                      + csite%fmean_fsc_rh         (cp)                    &
+                                      * area_fac
+      csite%fmean_stgc_rh        (np) = csite%fmean_stgc_rh        (np)                    &
+                                      + csite%fmean_stgc_rh        (cp)                    &
+                                      * area_fac
+      csite%fmean_stsc_rh        (np) = csite%fmean_stsc_rh        (np)                    &
+                                      + csite%fmean_stsc_rh        (cp)                    &
+                                      * area_fac
+      csite%fmean_msc_rh         (np) = csite%fmean_msc_rh         (np)                    &
+                                      + csite%fmean_msc_rh         (cp)                    &
+                                      * area_fac
+      csite%fmean_ssc_rh         (np) = csite%fmean_ssc_rh         (np)                    &
+                                      + csite%fmean_ssc_rh         (cp)                    &
                                       * area_fac
       csite%fmean_nep            (np) = csite%fmean_nep            (np)                    &
                                       + csite%fmean_nep            (cp)                    &
@@ -2052,8 +2119,14 @@ module disturbance
          csite%dmean_A_decomp       (    np) = csite%dmean_A_decomp       (    np)         &
                                              + csite%dmean_A_decomp       (    cp)         &
                                              * area_fac
+         csite%dmean_B_decomp       (    np) = csite%dmean_B_decomp       (    np)         &
+                                             + csite%dmean_B_decomp       (    cp)         &
+                                             * area_fac
          csite%dmean_Af_decomp      (    np) = csite%dmean_Af_decomp      (    np)         &
                                              + csite%dmean_Af_decomp      (    cp)         &
+                                             * area_fac
+         csite%dmean_Bf_decomp      (    np) = csite%dmean_Bf_decomp      (    np)         &
+                                             + csite%dmean_Bf_decomp      (    cp)         &
                                              * area_fac
          csite%dmean_co2_residual   (    np) = csite%dmean_co2_residual   (    np)         &
                                              + csite%dmean_co2_residual   (    cp)         &
@@ -2067,8 +2140,23 @@ module disturbance
          csite%dmean_rh             (    np) = csite%dmean_rh             (    np)         &
                                              + csite%dmean_rh             (    cp)         &
                                              * area_fac
-         csite%dmean_cwd_rh         (    np) = csite%dmean_cwd_rh         (    np)         &
-                                             + csite%dmean_cwd_rh         (    cp)         &
+         csite%dmean_fgc_rh         (    np) = csite%dmean_fgc_rh         (    np)         &
+                                             + csite%dmean_fgc_rh         (    cp)         &
+                                             * area_fac
+         csite%dmean_fsc_rh         (    np) = csite%dmean_fsc_rh         (    np)         &
+                                             + csite%dmean_fsc_rh         (    cp)         &
+                                             * area_fac
+         csite%dmean_stgc_rh        (    np) = csite%dmean_stgc_rh        (    np)         &
+                                             + csite%dmean_stgc_rh        (    cp)         &
+                                             * area_fac
+         csite%dmean_stsc_rh        (    np) = csite%dmean_stsc_rh        (    np)         &
+                                             + csite%dmean_stsc_rh        (    cp)         &
+                                             * area_fac
+         csite%dmean_msc_rh         (    np) = csite%dmean_msc_rh         (    np)         &
+                                             + csite%dmean_msc_rh         (    cp)         &
+                                             * area_fac
+         csite%dmean_ssc_rh         (    np) = csite%dmean_ssc_rh         (    np)         &
+                                             + csite%dmean_ssc_rh         (    cp)         &
                                              * area_fac
          csite%dmean_nep            (    np) = csite%dmean_nep            (    np)         &
                                              + csite%dmean_nep            (    cp)         &
@@ -2251,20 +2339,41 @@ module disturbance
       !     Monthly means...                                                               !
       !------------------------------------------------------------------------------------!
       if (writing_eorq) then
+         csite%mmean_fast_grnd_c    (    np) = csite%mmean_fast_grnd_c    (    np)         &
+                                             + csite%mmean_fast_grnd_c    (    cp)         &
+                                             * area_fac
          csite%mmean_fast_soil_c    (    np) = csite%mmean_fast_soil_c    (    np)         &
                                              + csite%mmean_fast_soil_c    (    cp)         &
                                              * area_fac
-         csite%mmean_slow_soil_c    (    np) = csite%mmean_slow_soil_c    (    np)         &
-                                             + csite%mmean_slow_soil_c    (    cp)         &
+         csite%mmean_struct_grnd_c  (    np) = csite%mmean_struct_grnd_c  (    np)         &
+                                             + csite%mmean_struct_grnd_c  (    cp)         &
                                              * area_fac
          csite%mmean_struct_soil_c  (    np) = csite%mmean_struct_soil_c  (    np)         &
                                              + csite%mmean_struct_soil_c  (    cp)         &
                                              * area_fac
+         csite%mmean_struct_grnd_l  (    np) = csite%mmean_struct_grnd_l  (    np)         &
+                                             + csite%mmean_struct_grnd_l  (    cp)         &
+                                             * area_fac
          csite%mmean_struct_soil_l  (    np) = csite%mmean_struct_soil_l  (    np)         &
                                              + csite%mmean_struct_soil_l  (    cp)         &
                                              * area_fac
+         csite%mmean_microbe_soil_c (    np) = csite%mmean_microbe_soil_c (    np)         &
+                                             + csite%mmean_microbe_soil_c (    cp)         &
+                                             * area_fac
+         csite%mmean_slow_soil_c    (    np) = csite%mmean_slow_soil_c    (    np)         &
+                                             + csite%mmean_slow_soil_c    (    cp)         &
+                                             * area_fac
+         csite%mmean_fast_grnd_n    (    np) = csite%mmean_fast_grnd_n    (    np)         &
+                                             + csite%mmean_fast_grnd_n    (    cp)         &
+                                             * area_fac
          csite%mmean_fast_soil_n    (    np) = csite%mmean_fast_soil_n    (    np)         &
                                              + csite%mmean_fast_soil_n    (    cp)         &
+                                             * area_fac
+         csite%mmean_struct_grnd_n  (    np) = csite%mmean_struct_grnd_n  (    np)         &
+                                             + csite%mmean_struct_grnd_n  (    cp)         &
+                                             * area_fac
+         csite%mmean_struct_soil_n  (    np) = csite%mmean_struct_soil_n  (    np)         &
+                                             + csite%mmean_struct_soil_n  (    cp)         &
                                              * area_fac
          csite%mmean_mineral_soil_n (    np) = csite%mmean_mineral_soil_n (    np)         &
                                              + csite%mmean_mineral_soil_n (    cp)         &
@@ -2281,8 +2390,23 @@ module disturbance
          csite%mmean_rh             (    np) = csite%mmean_rh             (    np)         &
                                              + csite%mmean_rh             (    cp)         &
                                              * area_fac
-         csite%mmean_cwd_rh         (    np) = csite%mmean_cwd_rh         (    np)         &
-                                             + csite%mmean_cwd_rh         (    cp)         &
+         csite%mmean_fgc_rh         (    np) = csite%mmean_fgc_rh         (    np)         &
+                                             + csite%mmean_fgc_rh         (    cp)         &
+                                             * area_fac
+         csite%mmean_fsc_rh         (    np) = csite%mmean_fsc_rh         (    np)         &
+                                             + csite%mmean_fsc_rh         (    cp)         &
+                                             * area_fac
+         csite%mmean_stgc_rh        (    np) = csite%mmean_stgc_rh        (    np)         &
+                                             + csite%mmean_stgc_rh        (    cp)         &
+                                             * area_fac
+         csite%mmean_stsc_rh        (    np) = csite%mmean_stsc_rh        (    np)         &
+                                             + csite%mmean_stsc_rh        (    cp)         &
+                                             * area_fac
+         csite%mmean_msc_rh         (    np) = csite%mmean_msc_rh         (    np)         &
+                                             + csite%mmean_msc_rh         (    cp)         &
+                                             * area_fac
+         csite%mmean_ssc_rh         (    np) = csite%mmean_ssc_rh         (    np)         &
+                                             + csite%mmean_ssc_rh         (    cp)         &
                                              * area_fac
          csite%mmean_nep            (    np) = csite%mmean_nep            (    np)         &
                                              + csite%mmean_nep            (    cp)         &
@@ -2290,8 +2414,14 @@ module disturbance
          csite%mmean_A_decomp       (    np) = csite%mmean_A_decomp       (    np)         &
                                              + csite%mmean_A_decomp       (    cp)         &
                                              * area_fac
+         csite%mmean_B_decomp       (    np) = csite%mmean_B_decomp       (    np)         &
+                                             + csite%mmean_B_decomp       (    cp)         &
+                                             * area_fac
          csite%mmean_Af_decomp      (    np) = csite%mmean_Af_decomp      (    np)         &
                                              + csite%mmean_Af_decomp      (    cp)         &
+                                             * area_fac
+         csite%mmean_Bf_decomp      (    np) = csite%mmean_Bf_decomp      (    np)         &
+                                             + csite%mmean_Bf_decomp      (    cp)         &
                                              * area_fac
          csite%mmean_rk4step        (    np) = csite%mmean_rk4step        (    np)         &
                                              + csite%mmean_rk4step        (    cp)         &
@@ -2440,8 +2570,14 @@ module disturbance
          csite%mmean_A_decomp       (    np) = csite%mmean_A_decomp       (    np)         &
                                              + csite%mmean_A_decomp       (    cp)         &
                                              * area_fac
+         csite%mmean_B_decomp       (    np) = csite%mmean_B_decomp       (    np)         &
+                                             + csite%mmean_B_decomp       (    cp)         &
+                                             * area_fac
          csite%mmean_Af_decomp      (    np) = csite%mmean_Af_decomp      (    np)         &
                                              + csite%mmean_Af_decomp      (    cp)         &
+                                             * area_fac
+         csite%mmean_Bf_decomp      (    np) = csite%mmean_Bf_decomp      (    np)         &
+                                             + csite%mmean_Bf_decomp      (    cp)         &
                                              * area_fac
          csite%mmean_co2_residual   (    np) = csite%mmean_co2_residual   (    np)         &
                                              + csite%mmean_co2_residual   (    cp)         &
@@ -2455,8 +2591,23 @@ module disturbance
          csite%mmsqu_rh             (    np) = csite%mmsqu_rh             (    np)         &
                                              + csite%mmsqu_rh             (    cp)         &
                                              * area_fac
-         csite%mmsqu_cwd_rh         (    np) = csite%mmsqu_cwd_rh         (    np)         &
-                                             + csite%mmsqu_cwd_rh         (    cp)         &
+         csite%mmsqu_fgc_rh         (    np) = csite%mmsqu_fgc_rh         (    np)         &
+                                             + csite%mmsqu_fgc_rh         (    cp)         &
+                                             * area_fac
+         csite%mmsqu_fsc_rh         (    np) = csite%mmsqu_fsc_rh         (    np)         &
+                                             + csite%mmsqu_fsc_rh         (    cp)         &
+                                             * area_fac
+         csite%mmsqu_stgc_rh        (    np) = csite%mmsqu_stgc_rh        (    np)         &
+                                             + csite%mmsqu_stgc_rh        (    cp)         &
+                                             * area_fac
+         csite%mmsqu_stsc_rh        (    np) = csite%mmsqu_stsc_rh        (    np)         &
+                                             + csite%mmsqu_stsc_rh        (    cp)         &
+                                             * area_fac
+         csite%mmsqu_msc_rh         (    np) = csite%mmsqu_msc_rh         (    np)         &
+                                             + csite%mmsqu_msc_rh         (    cp)         &
+                                             * area_fac
+         csite%mmsqu_ssc_rh         (    np) = csite%mmsqu_ssc_rh         (    np)         &
+                                             + csite%mmsqu_ssc_rh         (    cp)         &
                                              * area_fac
          csite%mmsqu_nep            (    np) = csite%mmsqu_nep            (    np)         &
                                              + csite%mmsqu_nep            (    cp)         &
@@ -2537,8 +2688,23 @@ module disturbance
          csite%qmean_rh             (  :,np) = csite%qmean_rh             (  :,np)         &
                                              + csite%qmean_rh             (  :,cp)         &
                                              * area_fac
-         csite%qmean_cwd_rh         (  :,np) = csite%qmean_cwd_rh         (  :,np)         &
-                                             + csite%qmean_cwd_rh         (  :,cp)         &
+         csite%qmean_fgc_rh         (  :,np) = csite%qmean_fgc_rh         (  :,np)         &
+                                             + csite%qmean_fgc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmean_fsc_rh         (  :,np) = csite%qmean_fsc_rh         (  :,np)         &
+                                             + csite%qmean_fsc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmean_stgc_rh        (  :,np) = csite%qmean_stgc_rh        (  :,np)         &
+                                             + csite%qmean_stgc_rh        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_stsc_rh        (  :,np) = csite%qmean_stsc_rh        (  :,np)         &
+                                             + csite%qmean_stsc_rh        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_msc_rh         (  :,np) = csite%qmean_msc_rh         (  :,np)         &
+                                             + csite%qmean_msc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmean_ssc_rh         (  :,np) = csite%qmean_ssc_rh         (  :,np)         &
+                                             + csite%qmean_ssc_rh         (  :,cp)         &
                                              * area_fac
          csite%qmean_nep            (  :,np) = csite%qmean_nep            (  :,np)         &
                                              + csite%qmean_nep            (  :,cp)         &
@@ -2714,8 +2880,23 @@ module disturbance
          csite%qmsqu_rh             (  :,np) = csite%qmsqu_rh             (  :,np)         &
                                              + csite%qmsqu_rh             (  :,cp)         &
                                              * area_fac
-         csite%qmsqu_cwd_rh         (  :,np) = csite%qmsqu_cwd_rh         (  :,np)         &
-                                             + csite%qmsqu_cwd_rh         (  :,cp)         &
+         csite%qmsqu_fgc_rh         (  :,np) = csite%qmsqu_fgc_rh         (  :,np)         &
+                                             + csite%qmsqu_fgc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_fsc_rh         (  :,np) = csite%qmsqu_fsc_rh         (  :,np)         &
+                                             + csite%qmsqu_fsc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_stgc_rh        (  :,np) = csite%qmsqu_stgc_rh        (  :,np)         &
+                                             + csite%qmsqu_stgc_rh        (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_stsc_rh        (  :,np) = csite%qmsqu_stsc_rh        (  :,np)         &
+                                             + csite%qmsqu_stsc_rh        (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_msc_rh         (  :,np) = csite%qmsqu_msc_rh         (  :,np)         &
+                                             + csite%qmsqu_msc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_ssc_rh         (  :,np) = csite%qmsqu_ssc_rh         (  :,np)         &
+                                             + csite%qmsqu_ssc_rh         (  :,cp)         &
                                              * area_fac
          csite%qmsqu_nep            (  :,np) = csite%qmsqu_nep            (  :,np)         &
                                              + csite%qmsqu_nep            (  :,cp)         &
@@ -2910,25 +3091,25 @@ module disturbance
    !---------------------------------------------------------------------------------------!
    subroutine accum_dist_harv_litt(cpoly,isi,census_flag,np,cp,new_lu,area_fac             &
                                   ,mindbh_harvest)
-      use ed_state_vars, only : sitetype            & ! structure
-                              , patchtype           & ! structure
-                              , polygontype         ! ! structure
-      use disturb_coms , only : include_fire        & ! intent(in)
-                              , cl_fleaf_harvest    & ! intent(in)
-                              , cl_fstorage_harvest & ! intent(in)
-                              , f_combusted_fast    & ! intent(in)
-                              , f_combusted_struct  & ! intent(in)
-                              , agf_fsc             & ! intent(in)
-                              , agf_stsc            ! ! intent(in)
-      use ed_max_dims  , only : n_pft               ! ! intent(in)
-      use pft_coms     , only : c2n_storage         & ! intent(in)
-                              , c2n_leaf            & ! intent(in)
-                              , c2n_stem            & ! intent(in)
-                              , l2n_stem            & ! intent(in)
-                              , agf_bs              & ! intent(in)
-                              , f_labile_leaf       & ! intent(in)
-                              , f_labile_stem       ! ! intent(in)
-      use mortality    , only : survivorship        ! ! function
+      use ed_state_vars, only : sitetype              & ! structure
+                              , patchtype             & ! structure
+                              , polygontype           ! ! structure
+      use disturb_coms , only : include_fire          & ! intent(in)
+                              , cl_fleaf_harvest      & ! intent(in)
+                              , cl_fstorage_harvest   & ! intent(in)
+                              , f_combusted_fast_c    & ! intent(in)
+                              , f_combusted_struct_c  & ! intent(in)
+                              , f_combusted_fast_n    & ! intent(in)
+                              , f_combusted_struct_n  ! ! intent(in)
+      use ed_max_dims  , only : n_pft                 ! ! intent(in)
+      use pft_coms     , only : c2n_storage           & ! intent(in)
+                              , c2n_leaf              & ! intent(in)
+                              , c2n_stem              & ! intent(in)
+                              , l2n_stem              & ! intent(in)
+                              , agf_bs                & ! intent(in)
+                              , f_labile_leaf         & ! intent(in)
+                              , f_labile_stem         ! ! intent(in)
+      use mortality    , only : survivorship          ! ! function
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -2947,40 +3128,57 @@ module disturbance
       integer                                         :: ico
       integer                                         :: ipft
       integer                                         :: bdbh
-      real                                            :: bfast_before
-      real                                            :: bstruct_before
-      real                                            :: bstorage_before
-      real                                            :: bfast_remove
-      real                                            :: bstruct_remove
-      real                                            :: bstorage_remove
-      real                                            :: bfast_remain
-      real                                            :: bstruct_remain
-      real                                            :: bstorage_remain
-      real                                            :: bcrop_harvest
-      real                                            :: blogging_harvest
-      real                                            :: bcombusted_fuel
+      real                                            :: a_bfast_before
+      real                                            :: a_bstruct_before
+      real                                            :: a_bstorage_before
+      real                                            :: b_bfast_before
+      real                                            :: b_bstruct_before
+      real                                            :: b_bstorage_before
+      real                                            :: a_bfast_remove
+      real                                            :: a_bstruct_remove
+      real                                            :: a_bstorage_remove
+      real                                            :: a_bfast_remain
+      real                                            :: a_bstruct_remain
+      real                                            :: a_bstorage_remain
+      real                                            :: a_bcrop_harvest
+      real                                            :: a_blogging_harvest
+      real                                            :: a_bcombusted_fuel
       real                                            :: agb_cut
       real                                            :: agb_mort
       real                                            :: ba_cut
       real                                            :: ba_mort
-      real                                            :: fast_litter
-      real                                            :: struct_litter
-      real                                            :: struct_lignin
-      real                                            :: fast_litter_n
-      real                                            :: struct_cohort
+      real                                            :: a_fast_litter
+      real                                            :: a_struct_litter
+      real                                            :: a_struct_lignin
+      real                                            :: a_fast_litter_n
+      real                                            :: a_struct_litter_n
+      real                                            :: b_fast_litter
+      real                                            :: b_struct_litter
+      real                                            :: b_struct_lignin
+      real                                            :: b_fast_litter_n
+      real                                            :: b_struct_litter_n
+      real                                            :: a_struct_cohort
+      real                                            :: b_struct_cohort
       real                                            :: survival_fac
-      real                                            :: fast_combusted
-      real                                            :: fast_combusted_n
-      real                                            :: struct_combusted
-      real                                            :: lignin_combusted
+      real                                            :: a_fast_combusted
+      real                                            :: a_struct_combusted
+      real                                            :: a_lignin_combusted
+      real                                            :: a_fast_combusted_n
+      real                                            :: a_struct_combusted_n
       !------------------------------------------------------------------------------------!
 
 
       !---- Initialise the non-scaled litter pools. ---------------------------------------!
-      fast_litter   = 0.0
-      struct_litter = 0.0
-      struct_lignin = 0.0
-      fast_litter_n = 0.0
+      a_fast_litter     = 0.0
+      b_fast_litter     = 0.0
+      a_struct_litter   = 0.0
+      b_struct_litter   = 0.0
+      a_struct_lignin   = 0.0
+      b_struct_lignin   = 0.0
+      a_fast_litter_n   = 0.0
+      b_fast_litter_n   = 0.0
+      a_struct_litter_n = 0.0
+      b_struct_litter_n = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -3001,17 +3199,20 @@ module disturbance
          bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
 
          !----- Split biomass components that are labile or structural. -------------------!
-         bfast_before    = f_labile_leaf(ipft)                                             &
-                         * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                       &
-                         + f_labile_stem(ipft)                                             &
-                         * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                 &
-                           + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
-         bstruct_before  = ( 1.0 - f_labile_leaf(ipft) )                                   &
-                         * ( cpatch%bleaf(ico) + cpatch%broot(ico) )                       &
-                         + ( 1.0 - f_labile_stem(ipft) )                                   &
-                         * ( cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)                 &
-                           + cpatch%bbark    (ico) + cpatch%bdead    (ico) )
-         bstorage_before = cpatch%bstorage(ico)
+         a_bfast_before    = f_labile_leaf(ipft) * cpatch%bleaf(ico)                       &
+                           + f_labile_stem(ipft)                                           &
+                           * (cpatch%bsapwooda(ico)+cpatch%bbarka(ico)+cpatch%bdeada(ico))
+         b_bfast_before    = f_labile_leaf(ipft) * cpatch%broot(ico)                       &
+                           + f_labile_stem(ipft)                                           &
+                           * (cpatch%bsapwoodb(ico)+cpatch%bbarkb(ico)+cpatch%bdeadb(ico))
+         a_bstruct_before  = (1.0 - f_labile_leaf(ipft)) * cpatch%bleaf(ico)               &
+                           + (1.0 - f_labile_stem(ipft))                                   &
+                           * (cpatch%bsapwooda(ico)+cpatch%bbarka(ico)+cpatch%bdeada(ico))
+         b_bstruct_before  = (1.0 - f_labile_leaf(ipft)) * cpatch%broot(ico)               &
+                           + (1.0 - f_labile_stem(ipft))                                   &
+                           * (cpatch%bsapwoodb(ico)+cpatch%bbarkb(ico)+cpatch%bdeadb(ico))
+         a_bstorage_before =        agf_bs(ipft)  * cpatch%bstorage(ico)
+         b_bstorage_before = (1.0 - agf_bs(ipft)) * cpatch%bstorage(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -3026,60 +3227,60 @@ module disturbance
          select case(new_lu)
          case (8)
             !------ Agriculture. Harvest living tissues and NSC. --------------------------!
-            bfast_remove     = f_labile_leaf(ipft) * cl_fleaf_harvest * cpatch%bleaf(ico)
-            bstruct_remove   = ( 1.0 - f_labile_leaf(ipft) )                               &
-                             * cl_fleaf_harvest * cpatch%bleaf(ico)
-            bstorage_remove  = cl_fstorage_harvest * cpatch%bstorage(ico)
-            bcrop_harvest    = cl_fleaf_harvest    * cpatch%bleaf   (ico)                  & 
-                             + cl_fstorage_harvest * cpatch%bstorage(ico)
-            blogging_harvest = 0.0
-            bcombusted_fuel  = 0.0
+            a_bfast_remove     = f_labile_leaf(ipft) * cl_fleaf_harvest * cpatch%bleaf(ico)
+            a_bstruct_remove   = ( 1.0 - f_labile_leaf(ipft) )                             &
+                               * cl_fleaf_harvest * cpatch%bleaf(ico)
+            a_bstorage_remove  = cl_fstorage_harvest * agf_bs(ipft) * cpatch%bstorage(ico)
+            a_bcrop_harvest    = cl_fleaf_harvest    * cpatch%bleaf   (ico)                & 
+                               + cl_fstorage_harvest * agf_bs(ipft) * cpatch%bstorage(ico)
+            a_blogging_harvest = 0.0
+            a_bcombusted_fuel  = 0.0
             !------------------------------------------------------------------------------!
          case (2,6)
             !------ Felling / forest plantation.  Harvest commercial timber. --------------!
-            bfast_remove     =         f_labile_stem(ipft)   * cpatch%btimber(ico)
-            bstruct_remove   = ( 1.0 - f_labile_stem(ipft) ) * cpatch%btimber(ico)
-            bstorage_remove  = 0.0
-            bcrop_harvest    = 0.0
-            blogging_harvest = cpatch%btimber(ico)
-            bcombusted_fuel  = 0.0
+            a_bfast_remove     =         f_labile_stem(ipft)   * cpatch%btimber(ico)
+            a_bstruct_remove   = ( 1.0 - f_labile_stem(ipft) ) * cpatch%btimber(ico)
+            a_bstorage_remove  = 0.0
+            a_bcrop_harvest    = 0.0
+            a_blogging_harvest = cpatch%btimber(ico)
+            a_bcombusted_fuel  = 0.0
             !------------------------------------------------------------------------------!
          case (4)
             !------------------------------------------------------------------------------!
             !    Fire.  For the time being, assume all "fast" AG biomass is lost, and      !
             ! that a fraction of the structural biomass is lost through combustion.        !
             !------------------------------------------------------------------------------!
-            bfast_remove   = ( f_labile_leaf(ipft) * cpatch%bleaf(ico)                     &
-                             + f_labile_stem(ipft)                                         &
-                             * ( cpatch%bsapwooda(ico)                                     &
-                               + agf_bs(ipft) * (cpatch%bbark(ico) +cpatch%bdead(ico)) ))  &
-                             * f_combusted_fast
-            bstruct_remove = ( (1.0-f_labile_leaf(ipft)) * cpatch%bleaf(ico)               &
-                             + (1.0-f_labile_stem(ipft))                                   &
-                             * ( cpatch%bsapwooda(ico)                                     &
-                               + agf_bs(ipft) * (cpatch%bbark(ico) + cpatch%bdead(ico)) )) &
-                             * f_combusted_struct
-            bstorage_remove  = agf_bs(ipft) * cpatch%bstorage(ico)
-            bcrop_harvest    = 0.0
-            blogging_harvest = 0.0
-            bcombusted_fuel  = bfast_remove + bstruct_remove + bstorage_remove
+            a_bfast_remove   = ( f_labile_leaf(ipft) * cpatch%bleaf(ico)                   &
+                               + f_labile_stem(ipft)                                       &
+                               * ( cpatch%bsapwooda(ico)                                   &
+                                 + cpatch%bbarka   (ico) + cpatch%bdeada (ico)) )          &
+                               * f_combusted_fast_c
+            a_bstruct_remove = ( (1.0-f_labile_leaf(ipft)) * cpatch%bleaf(ico)             &
+                               + (1.0-f_labile_stem(ipft))                                 &
+                               * ( cpatch%bsapwooda(ico)                                   &
+                                 + cpatch%bbarka   (ico) + cpatch%bdeada (ico)) )          &
+                               * f_combusted_struct_c
+            a_bstorage_remove  = agf_bs(ipft) * cpatch%bstorage(ico)
+            a_bcrop_harvest    = 0.0
+            a_blogging_harvest = 0.0
+            a_bcombusted_fuel  = a_bfast_remove + a_bstruct_remove + a_bstorage_remove
          case default
             !------ Other types.  Everything remains in. ----------------------------------!
-            bfast_remove     = 0.0
-            bstruct_remove   = 0.0
-            bstorage_remove  = 0.0
-            bcrop_harvest    = 0.0
-            blogging_harvest = 0.0
-            bcombusted_fuel  = 0.0
+            a_bfast_remove     = 0.0
+            a_bstruct_remove   = 0.0
+            a_bstorage_remove  = 0.0
+            a_bcrop_harvest    = 0.0
+            a_blogging_harvest = 0.0
+            a_bcombusted_fuel  = 0.0
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
 
 
          !----- Find the remaining biomass that will go to different soil carbon pools. ---!
-         bfast_remain    = bfast_before    - bfast_remove
-         bstruct_remain  = bstruct_before  - bstruct_remove
-         bstorage_remain = bstorage_before - bstorage_remove
+         a_bfast_remain    = a_bfast_before    - a_bfast_remove
+         a_bstruct_remain  = a_bstruct_before  - a_bstruct_remove
+         a_bstorage_remain = a_bstorage_before - a_bstorage_remove
          !---------------------------------------------------------------------------------!
 
 
@@ -3136,13 +3337,13 @@ module disturbance
          !---------------------------------------------------------------------------------!
          cpoly%crop_harvest(isi)    = cpoly%crop_harvest(isi)                              &
                                     + (1.-survival_fac) * cpatch%nplant(ico)               &
-                                    * bcrop_harvest * area_fac * csite%area(np)
+                                    * a_bcrop_harvest * area_fac * csite%area(np)
          cpoly%logging_harvest(isi) = cpoly%logging_harvest(isi)                           &
                                     + (1.-survival_fac) * cpatch%nplant(ico)               &
-                                    * blogging_harvest  * area_fac * csite%area(np)
+                                    * a_blogging_harvest  * area_fac * csite%area(np)
          cpoly%combusted_fuel (isi) = cpoly%combusted_fuel (isi)                           &
                                     + (1.-survival_fac) * cpatch%nplant(ico)               &
-                                    * bcombusted_fuel   * area_fac * csite%area(np)
+                                    * a_bcombusted_fuel   * area_fac * csite%area(np)
          !---------------------------------------------------------------------------------!
 
 
@@ -3168,16 +3369,63 @@ module disturbance
 
 
 
-         !------ Update soil carbon inputs. -----------------------------------------------!
-         fast_litter   = fast_litter                                                       &
-                       + (1. - survival_fac) * cpatch%nplant(ico)                          &
-                       * ( bfast_remain + bstorage_remain )
-         fast_litter_n = fast_litter_n                                                     &
-                       + (1. - survival_fac) * cpatch%nplant(ico)                          &
-                       * ( bfast_remain / c2n_leaf(ipft) + bstorage_remain / c2n_storage )
-         struct_cohort = (1. - survival_fac) * cpatch%nplant(ico) * bstruct_remain
-         struct_litter = struct_litter + struct_cohort
-         struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
+         !---------------------------------------------------------------------------------!
+         !     Update necromass pools (both carbon and nitrogen).  For nitrogen, we assume !
+         ! that all inputs go to the fast pool, so nitrogen is conserved.  In the case     !
+         ! the new patch is a burnt patch, we also must account for differences in C and N !
+         ! volatilisation fractions.                                                       !
+         !---------------------------------------------------------------------------------!
+         a_fast_litter   = a_fast_litter                                                   &
+                         + (1. - survival_fac) * cpatch%nplant(ico)                        &
+                         * ( a_bfast_remain + a_bstorage_remain )
+         b_fast_litter   = b_fast_litter                                                   &
+                         + (1. - survival_fac) * cpatch%nplant(ico)                        &
+                         * ( b_bfast_before + b_bstorage_before )
+         select case (new_lu)
+         case (4)
+            !----- Add labile component. --------------------------------------------------!
+            if (f_combusted_fast_c > 0.0) then
+               a_fast_litter_n = a_fast_litter_n                                           &
+                               + (1. - survival_fac) * cpatch%nplant(ico)                  &
+                               * ( a_bfast_remain    / c2n_leaf(ipft)                      &
+                                 + a_bstorage_remain / c2n_storage        )                &
+                               * f_combusted_fast_n / f_combusted_fast_c
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !----- Add lignified component. -----------------------------------------------!
+            if (f_combusted_struct_c > 0.0) then
+               a_struct_litter_n = a_struct_litter_n                                       &
+                                 + (1. - survival_fac) * cpatch%nplant(ico)                &
+                                 * a_bstruct_remain     / c2n_stem(ipft)                   &
+                                 * f_combusted_struct_n / f_combusted_struct_c
+            end if
+            !------------------------------------------------------------------------------!
+         case default
+            !------ Other cases, everything goes to litter. -------------------------------!
+            a_fast_litter_n = a_fast_litter_n                                              &
+                            + (1. - survival_fac) * cpatch%nplant(ico)                     &
+                            * ( a_bfast_remain    / c2n_leaf(ipft)                         &
+                              + a_bstorage_remain / c2n_storage       )
+            a_struct_litter_n = a_struct_litter_n                                          &
+                              + (1. - survival_fac) * cpatch%nplant(ico)                   &
+                              *  a_bstruct_remain  / c2n_stem(ipft)
+            !------------------------------------------------------------------------------!
+         end select
+         b_fast_litter_n   = b_fast_litter_n                                               &
+                           + (1. - survival_fac) * cpatch%nplant(ico)                      &
+                           * ( b_bfast_before    / c2n_leaf(ipft)                          &
+                             + b_bstorage_before / c2n_storage        )
+         b_struct_litter_n = b_struct_litter_n                                             &
+                           + (1. - survival_fac) * cpatch%nplant(ico)                      &
+                           * b_bstruct_before   / c2n_stem(ipft) 
+         a_struct_cohort   = (1. - survival_fac) * cpatch%nplant(ico) * a_bstruct_remain
+         b_struct_cohort   = (1. - survival_fac) * cpatch%nplant(ico) * b_bstruct_before
+         a_struct_litter   = a_struct_litter + a_struct_cohort
+         b_struct_litter   = b_struct_litter + b_struct_cohort
+         a_struct_lignin   = a_struct_lignin + a_struct_cohort * l2n_stem / c2n_stem(ipft)
+         b_struct_lignin   = b_struct_lignin + b_struct_cohort * l2n_stem / c2n_stem(ipft)
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -3192,28 +3440,38 @@ module disturbance
       ! follow the standard tropical allometric parameters.                                !
       !------------------------------------------------------------------------------------!
       if (new_lu == 4 .and. include_fire == 3) then
-         fast_combusted   = agf_fsc  * f_combusted_fast   * csite%fast_soil_C      (np)
-         fast_combusted_n = agf_fsc  * f_combusted_fast   * csite%fast_soil_N      (np)
-         struct_combusted = agf_stsc * f_combusted_struct * csite%structural_soil_C(np)
-         lignin_combusted = agf_stsc * f_combusted_struct * csite%structural_soil_L(np)
+         a_fast_combusted   = f_combusted_fast_c   * csite%fast_grnd_C      (np)
+         a_fast_combusted_n = f_combusted_fast_n   * csite%fast_grnd_N      (np)
+         a_struct_combusted = f_combusted_struct_c * csite%structural_grnd_C(np)
+         a_lignin_combusted = f_combusted_struct_c * csite%structural_grnd_L(np)
       else
-         fast_combusted    = 0.0
-         fast_combusted_n  = 0.0
-         struct_combusted  = 0.0
-         lignin_combusted  = 0.0
+         a_fast_combusted    = 0.0
+         a_fast_combusted_n  = 0.0
+         a_struct_combusted  = 0.0
+         a_lignin_combusted  = 0.0
       end if
       !------------------------------------------------------------------------------------!
 
 
       !----- Load disturbance litter directly into carbon and N pools. --------------------!
+      csite%fast_grnd_C      (np) = csite%fast_grnd_C      (np)                            &
+                                  + ( a_fast_litter     - a_fast_combusted     ) * area_fac
       csite%fast_soil_C      (np) = csite%fast_soil_C      (np)                            &
-                                  + ( fast_litter   - fast_combusted   ) * area_fac
+                                  + b_fast_litter * area_fac
+      csite%structural_grnd_C(np) = csite%structural_grnd_C(np)                            &
+                                  + ( a_struct_litter   - a_struct_combusted   ) * area_fac
       csite%structural_soil_C(np) = csite%structural_soil_C(np)                            &
-                                  + ( struct_litter - struct_combusted ) * area_fac
+                                  + b_struct_litter * area_fac
+      csite%structural_grnd_L(np) = csite%structural_grnd_L(np)                            &
+                                  + ( a_struct_lignin   - a_lignin_combusted   ) * area_fac
       csite%structural_soil_L(np) = csite%structural_soil_L(np)                            &
-                                  + ( struct_lignin - struct_combusted ) * area_fac
-      csite%fast_soil_N      (np) = csite%fast_soil_N      (np)                            &
-                                  + ( fast_litter_n - fast_combusted_n ) * area_fac
+                                  + b_struct_lignin * area_fac
+      csite%fast_grnd_N      (np) = csite%fast_grnd_N      (np)                            &
+                                  + ( a_fast_litter_n   - a_fast_combusted_n   ) * area_fac
+      csite%structural_grnd_N(np) = csite%structural_grnd_N(np)                            &
+                                  + ( a_struct_litter_n - a_struct_combusted_n ) * area_fac
+      csite%structural_soil_N(np) = csite%structural_soil_N(np)                            &
+                                  + b_struct_litter_n * area_fac
       !------------------------------------------------------------------------------------!
 
       return
@@ -3236,6 +3494,7 @@ module disturbance
                                 , patchtype                ! ! structure
       use pft_coms       , only : hgt_min                  & ! intent(in)
                                 , hgt_max                  & ! intent(in)
+                                , agf_bs                   & ! intent(in)
                                 , dbh_bigleaf              ! ! intent(in)
       use ed_misc_coms   , only : ibigleaf                 ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
@@ -3247,6 +3506,7 @@ module disturbance
                                 , size2bt                  & ! function
                                 , size2xb                  & ! function
                                 , area_indices             & ! function
+                                , ed_balive                & ! function
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
       use phenology_aux  , only : pheninit_balive_bstorage ! ! intent(in)
@@ -3266,6 +3526,7 @@ module disturbance
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)                 , pointer    :: cpatch
       type(patchtype)                 , pointer    :: tpatch
+      real                                         :: bdead
       integer                                      :: nc
       !------------------------------------------------------------------------------------!
 
@@ -3310,9 +3571,11 @@ module disturbance
          !    SAS approximation, assign height and use it to find DBH and the structural   !
          ! (dead) biomass.                                                                 !
          !---------------------------------------------------------------------------------!
-         cpatch%hite (nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
-         cpatch%dbh  (nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-         cpatch%bdead(nc) = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%hite  (nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
+         cpatch%dbh   (nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+         bdead             = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%bdeada(nc) =        agf_bs(cpatch%pft(nc))   * bdead
+         cpatch%bdeadb(nc) = (1.0 - agf_bs(cpatch%pft(nc)) ) * bdead
          !---------------------------------------------------------------------------------!
 
       case (1)
@@ -3320,9 +3583,11 @@ module disturbance
          !    Big leaf approximation, assign the typical DBH and height and use them to    !
          ! find height and the structural (dead) biomass.                                  !
          !---------------------------------------------------------------------------------!
-         cpatch%hite (nc) = hgt_max(cpatch%pft(nc))
-         cpatch%dbh  (nc) = dbh_bigleaf(cpatch%pft(nc))
-         cpatch%bdead(nc) = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%hite  (nc) = hgt_max(cpatch%pft(nc))
+         cpatch%dbh   (nc) = dbh_bigleaf(cpatch%pft(nc))
+         bdead             = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%bdeada(nc) =        agf_bs(cpatch%pft(nc))   * bdead
+         cpatch%bdeadb(nc) = (1.0 - agf_bs(cpatch%pft(nc)) ) * bdead
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -3347,10 +3612,16 @@ module disturbance
                                    ,cpatch%paw_avg(nc),cpatch%elongf(nc)                   &
                                    ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
                                    ,cpatch%broot(nc),cpatch%bsapwooda(nc)                  &
-                                   ,cpatch%bsapwoodb(nc),cpatch%bbark(nc)                  &
-                                   ,cpatch%balive(nc),cpatch%bstorage(nc),cpatch%cb(:,nc)  &
+                                   ,cpatch%bsapwoodb(nc),cpatch%bbarka(nc)                 &
+                                   ,cpatch%bbarkb(nc),cpatch%bstorage(nc),cpatch%cb(:,nc)  &
                                    ,cpatch%cb_lightmax(:,nc),cpatch%cb_moistmax(:,nc)      &
                                    ,cpatch%cb_mlmax(:,nc),cpatch%cbr_bar(nc))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Update balive. ---------------------------------------------------------------!
+      cpatch%balive(nc) = ed_balive(cpatch, nc)
       !------------------------------------------------------------------------------------!
 
 
@@ -3363,11 +3634,11 @@ module disturbance
       !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea      (nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
       cpatch%agb          (nc) = ed_biomass(cpatch, nc)
-      cpatch%btimber      (nc) = size2bt(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bdead(nc)   &
-                                        ,cpatch%bsapwooda(nc),cpatch%bbark(nc)             &
+      cpatch%btimber      (nc) = size2bt(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bdeada(nc)  &
+                                        ,cpatch%bsapwooda(nc),cpatch%bbarka(nc)            &
                                         ,cpatch%pft(nc))
-      cpatch%thbark       (nc) = size2xb(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bbark(nc)   &
-                                        ,cpatch%pft(nc))
+      cpatch%thbark       (nc) = size2xb(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bbarka(nc)  &
+                                        ,cpatch%bbarkb(nc),cpatch%pft(nc))
       cpatch%leaf_temp    (nc) = csite%can_temp  (np)
       cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
       cpatch%leaf_water   (nc) = 0.0
@@ -3380,8 +3651,8 @@ module disturbance
       !------------------------------------------------------------------------------------!
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
-      call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)            &
-                        ,cpatch%bbark(nc),cpatch%nplant(nc),cpatch%pft(nc)                 &
+      call calc_veg_hcap(cpatch%bleaf (nc),cpatch%bdeada(nc),cpatch%bsapwooda(nc)          &
+                        ,cpatch%bbarka(nc),cpatch%nplant(nc),cpatch%pft(nc)                &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
       cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc),cpatch%leaf_water(nc)       &
@@ -3454,15 +3725,15 @@ module disturbance
       integer                                      :: ipft
       real                                         :: maxh
       real                                         :: h_pruning_factor !< height rescale factor
-      real                                         :: struct_cohort
-      real                                         :: fast_litter
-      real                                         :: struct_litter
-      real                                         :: struct_lignin
-      real                                         :: fast_litter_n
+      real                                         :: a_struct_cohort
+      real                                         :: a_fast_litter
+      real                                         :: a_struct_litter
+      real                                         :: a_struct_lignin
+      real                                         :: a_fast_litter_n
       real                                         :: bleaf_in
       real                                         :: bsapa_in
-      real                                         :: bdead_in
-      real                                         :: bbark_in
+      real                                         :: bdeada_in
+      real                                         :: bbarka_in
       real                                         :: old_leaf_hcap
       real                                         :: old_wood_hcap
       real                                         :: bleaf_max
@@ -3492,10 +3763,10 @@ module disturbance
       h_pruning_factor    = maxh / hgt_max(17)
 
       !-------------------- Initialise the non-scaled litter pools. -----------------------!
-      fast_litter   = 0.0
-      struct_litter = 0.0
-      struct_lignin = 0.0
-      fast_litter_n = 0.0
+      a_fast_litter   = 0.0
+      a_struct_litter = 0.0
+      a_struct_lignin = 0.0
+      a_fast_litter_n = 0.0
 
       cohortloop2: do ico=1,cpatch%ncohorts
 
@@ -3509,8 +3780,8 @@ module disturbance
 
             bleaf_in      = cpatch%bleaf    (ico)
             bsapa_in      = cpatch%bsapwooda(ico)
-            bdead_in      = cpatch%bdead    (ico)
-            bbark_in      = cpatch%bbark    (ico)
+            bdeada_in     = cpatch%bdeada   (ico)
+            bbarka_in     = cpatch%bbarka   (ico)
             old_leaf_hcap = cpatch%leaf_hcap(ico)
             old_wood_hcap = cpatch%wood_hcap(ico)
             !add the agb_f to bdead
@@ -3521,59 +3792,65 @@ module disturbance
             cpatch%dbh(ico)       = h2dbh (cpatch%hite(ico), ipft)
             bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico), ipft)
             cpatch%bleaf(ico)     = bleaf_max * cpatch%elongf(ico)
-            cpatch%bdead(ico)     = size2bd(cpatch%dbh(ico), cpatch%hite(ico), ipft)
-            cpatch%bsapwooda(ico) = bleaf_max * qsw(ipft) * cpatch%hite(ico)
+            cpatch%bdeada(ico)    = agf_bs(ipft)                                           &
+                                  * size2bd(cpatch%dbh(ico), cpatch%hite(ico), ipft)
+            cpatch%bsapwooda(ico) = agf_bs(ipft) * bleaf_max * qsw(ipft) * cpatch%hite(ico)
             !  (MLO) Manfredo: although qbark is set to zero, check whether these changes
             !  are consistent with your rationale.
-            cpatch%bbark    (ico) = (1.0 - agf_bs(ipft)) * bbark_in                        &
-                                  + agf_bs(ipft) * bleaf_max * qbark(ipft)                 &
+            cpatch%bbarka   (ico) = agf_bs(ipft) * bleaf_max * qbark(ipft)                 &
                                   * cpatch%hite(ico)
 
 
-            !----- Updating LAI, WAI, and CAI. --------------------------------------!
+            !----- Updating LAI, WAI, and CAI. --------------------------------------------!
             call area_indices(cpatch, ico)
-            !------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
 
-            !----- Finding the new basal area and above-ground biomass. -------------!
+            !----- Finding the new basal area and above-ground biomass. -------------------!
             cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
             cpatch%agb(ico)     = ed_biomass(cpatch, ico)
 
-            !----- Update rooting depth ---------------------------------------------!
+            !----- Update rooting depth ---------------------------------------------------!
             cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
             !if new root depth is smaller keep the old one
 
-            !------------------------------------------------------------------------!
-            !     It is likely that biomass has changed, therefore, update           !
-            ! vegetation energy and heat capacity.                                   !
-            !------------------------------------------------------------------------!
-            call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)   &
-                              ,cpatch%bbark(ico),cpatch%nplant(ico), cpatch%pft(ico)       &
+            !------------------------------------------------------------------------------!
+            !     It is likely that biomass has changed, therefore, update                 !
+            ! vegetation energy and heat capacity.                                         !
+            !------------------------------------------------------------------------------!
+            call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico),cpatch%bsapwooda(ico)  &
+                              ,cpatch%bbarka(ico),cpatch%nplant(ico), cpatch%pft(ico)      &
                               ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
             call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap)
-            !----- Update the stability status. -------------------------------------!
+            !----- Update the stability status. -------------------------------------------!
             call is_resolvable(csite,np,ico)
-            !------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
 
 
-            !-- Compute the amount of carbon lost due to pruning and send to litter -------!
-            delta_blfrt = f_labile_leaf(ipft) * ( bleaf_in - cpatch%bleaf(ico) )           &
+            !------------------------------------------------------------------------------!
+            !     Compute the amount of carbon and nitrogen lost due to pruning and send   !
+            ! to the necromass pools.                                                      !
+            !------------------------------------------------------------------------------!
+            delta_blfrt = f_labile_leaf(ipft)                                              &
+                        * ( bleaf_in - cpatch%bleaf(ico) )                                 &
                         + f_labile_stem(ipft)                                              &
-                        * ( bsapa_in - cpatch%bsapwooda(ico)                               &
-                          + agf_bs(ipft) * ( bbark_in - cpatch%bbark(ico)                  &
-                                           + bdead_in - cpatch%bdead(ico) ) )
-            delta_bwood = ( 1.0 - f_labile_leaf(ipft) ) * ( bleaf_in - cpatch%bleaf(ico) ) &
+                        * ( bsapa_in  - cpatch%bsapwooda(ico)                              &
+                          + bbarka_in - cpatch%bbarka   (ico)                              &
+                          + bdeada_in - cpatch%bdeada   (ico) )
+            delta_bwood = ( 1.0 - f_labile_leaf(ipft) )                                    &
+                        * ( bleaf_in - cpatch%bleaf(ico) )                                 &
                         + ( 1.0 - f_labile_stem(ipft) )                                    &
-                        * ( bsapa_in - cpatch%bsapwooda(ico)                               &
-                          + agf_bs(ipft) * ( bbark_in - cpatch%bbark(ico)                  &
-                                           + bdead_in - cpatch%bdead(ico) ) )
+                        * ( bsapa_in  - cpatch%bsapwooda(ico)                              &
+                          + bbarka_in - cpatch%bbarka   (ico)                              &
+                          + bdeada_in - cpatch%bdeada   (ico) )
 
-            fast_litter   = fast_litter + delta_blfrt * cpatch%nplant(ico)
-            fast_litter_n = fast_litter_n                                                  &
-                          + delta_blfrt / c2n_leaf(ipft) * cpatch%nplant(ico)
+            a_fast_litter   = a_fast_litter + delta_blfrt * cpatch%nplant(ico)
+            a_fast_litter_n = a_fast_litter_n                                              &
+                            + delta_blfrt / c2n_leaf(ipft) * cpatch%nplant(ico)            &
+                            + delta_bwood / c2n_stem(ipft) * cpatch%nplant(ico)
 
-            struct_cohort = delta_bwood * cpatch%nplant(ico)
-            struct_litter = struct_litter + struct_cohort
-            struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
+            a_struct_cohort = delta_bwood * cpatch%nplant(ico)
+            a_struct_litter = a_struct_litter + a_struct_cohort
+            a_struct_lignin = a_struct_lignin + a_struct_cohort * l2n_stem / c2n_stem(ipft)
             !------------------------------------------------------------------------------!
 
          end if
@@ -3581,24 +3858,24 @@ module disturbance
       end do cohortloop2
 
 
-      !--- Sort the cohorts so that the new cohort is at the correct height bin. ---!
+      !--- Sort the cohorts so that the new cohort is at the correct height bin. ----------!
       call sort_cohorts(cpatch)
-      !-----------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
-      !----- Load disturbance litter directly into carbon and N pools. -------------!
-      csite%fast_soil_C(np)       = csite%fast_soil_C(np)       + fast_litter
-      csite%structural_soil_C(np) = csite%structural_soil_C(np) + struct_litter
-      csite%structural_soil_L(np) = csite%structural_soil_L(np) + struct_lignin
-      csite%fast_soil_N(np)       = csite%fast_soil_N(np)       + fast_litter_n
-      !-----------------------------------------------------------------------------!
+      !----- Load disturbance litter directly into carbon and N pools. --------------------!
+      csite%fast_grnd_C(np)       = csite%fast_grnd_C(np)       + a_fast_litter
+      csite%structural_grnd_C(np) = csite%structural_grnd_C(np) + a_struct_litter
+      csite%structural_grnd_L(np) = csite%structural_grnd_L(np) + a_struct_lignin
+      csite%fast_grnd_N(np)       = csite%fast_grnd_N(np)       + a_fast_litter_n
+      !------------------------------------------------------------------------------------!
 
-      !------------------- Update patch LAI, WAI, height, roughness... -------------!
+      !------------------- Update patch LAI, WAI, height, roughness... --------------------!
       call update_patch_derived_props(csite,np)
-      !-----------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
-      !----- Recalculate storage terms (for budget assessment). --------------------!
+      !----- Recalculate storage terms (for budget assessment). ---------------------------!
       call update_budget(csite,lsl,np)
-      !-----------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
       return
 
