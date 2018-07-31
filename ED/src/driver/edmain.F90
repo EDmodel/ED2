@@ -290,6 +290,7 @@ program main
    end if
 #endif
    if (icall == 0) then
+      call MPI_Finalize(ierr)
       write(unit=*,fmt='(a)') ' ------ ED-2.2 execution ends ------'
    end if
    !---------------------------------------------------------------------------------------!
