@@ -5911,14 +5911,6 @@ module fuse_fiss_utils
                                      ( csite%fast_soil_C(donp)        * csite%area(donp)   &
                                      + csite%fast_soil_C(recp)        * csite%area(recp) )
 
-      csite%microbial_soil_C(recp)   = newareai *                                          &
-                                     ( csite%microbial_soil_C(donp)   * csite%area(donp)   &
-                                     + csite%microbial_soil_C(recp)   * csite%area(recp) )
-
-      csite%slow_soil_C(recp)        = newareai *                                          &
-                                     ( csite%slow_soil_C(donp)        * csite%area(donp)   &
-                                     + csite%slow_soil_C(recp)        * csite%area(recp) )
-
       csite%structural_grnd_C(recp)  = newareai *                                          &
                                      ( csite%structural_grnd_C(donp)  * csite%area(donp)   &
                                      + csite%structural_grnd_C(recp)  * csite%area(recp) )
@@ -5936,6 +5928,18 @@ module fuse_fiss_utils
                                      ( csite%structural_soil_L(donp)  * csite%area(donp)   &
                                      + csite%structural_soil_L(recp)  * csite%area(recp) )
                                      
+
+      csite%microbial_soil_C(recp)   = newareai *                                          &
+                                     ( csite%microbial_soil_C(donp)   * csite%area(donp)   &
+                                     + csite%microbial_soil_C(recp)   * csite%area(recp) )
+
+      csite%slow_soil_C(recp)        = newareai *                                          &
+                                     ( csite%slow_soil_C(donp)        * csite%area(donp)   &
+                                     + csite%slow_soil_C(recp)        * csite%area(recp) )
+
+      csite%passive_soil_C(recp)     = newareai *                                          &
+                                     ( csite%passive_soil_C(donp)     * csite%area(donp)   &
+                                     + csite%passive_soil_C(recp)     * csite%area(recp) )
 
       csite%fast_grnd_N(recp)        = newareai *                                          &
                                      ( csite%fast_grnd_N(donp)        * csite%area(donp)   &
@@ -6318,6 +6322,11 @@ module fuse_fiss_utils
          csite%fmean_ssc_rh               (recp) = ( csite%fmean_ssc_rh            (recp)  &
                                                    * csite%area                    (recp)  &
                                                    + csite%fmean_ssc_rh            (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_psc_rh               (recp) = ( csite%fmean_psc_rh            (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_psc_rh            (donp)  &
                                                    * csite%area                    (donp)) &
                                                  *   newareai
          csite%fmean_nep                  (recp) = ( csite%fmean_nep               (recp)  &
@@ -6706,6 +6715,11 @@ module fuse_fiss_utils
                                                  + csite%dmean_ssc_rh             (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
+            csite%dmean_psc_rh          (recp) = ( csite%dmean_psc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_psc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
             csite%dmean_nep             (recp) = ( csite%dmean_nep                (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_nep                (donp)   &
@@ -7068,6 +7082,13 @@ module fuse_fiss_utils
                                                      , csite%mmsqu_ssc_rh     (donp)       &
                                                      , csite%area             (donp)       &
                                                      , corr_patch, .false.)
+            csite%mmsqu_psc_rh     (recp) = fuse_msqu( csite%mmean_psc_rh     (recp)       &
+                                                     , csite%mmsqu_psc_rh     (recp)       &
+                                                     , csite%area             (recp)       &
+                                                     , csite%mmean_psc_rh     (donp)       &
+                                                     , csite%mmsqu_psc_rh     (donp)       &
+                                                     , csite%area             (donp)       &
+                                                     , corr_patch, .false.)
             csite%mmsqu_nep        (recp) = fuse_msqu( csite%mmean_nep        (recp)       &
                                                      , csite%mmsqu_nep        (recp)       &
                                                      , csite%area             (recp)       &
@@ -7202,6 +7223,11 @@ module fuse_fiss_utils
             csite%mmean_ssc_rh          (recp) = ( csite%mmean_ssc_rh             (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_ssc_rh             (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_psc_rh          (recp) = ( csite%mmean_psc_rh             (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_psc_rh             (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%mmean_nep             (recp) = ( csite%mmean_nep                (recp)   &
@@ -7424,16 +7450,6 @@ module fuse_fiss_utils
                                                  + csite%mmean_fast_soil_c        (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-            csite%mmean_microbe_soil_c  (recp) = ( csite%mmean_microbe_soil_c     (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%mmean_microbe_soil_c     (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-            csite%mmean_slow_soil_c     (recp) = ( csite%mmean_slow_soil_c        (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%mmean_slow_soil_c        (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
             csite%mmean_struct_grnd_c   (recp) = ( csite%mmean_struct_grnd_c      (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_struct_grnd_c      (donp)   &
@@ -7452,6 +7468,21 @@ module fuse_fiss_utils
             csite%mmean_struct_soil_l   (recp) = ( csite%mmean_struct_soil_l      (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_struct_soil_l      (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_microbe_soil_c  (recp) = ( csite%mmean_microbe_soil_c     (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_microbe_soil_c     (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_slow_soil_c     (recp) = ( csite%mmean_slow_soil_c        (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_slow_soil_c        (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+            csite%mmean_passive_soil_c  (recp) = ( csite%mmean_passive_soil_c     (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_passive_soil_c     (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
             csite%mmean_fast_grnd_n     (recp) = ( csite%mmean_fast_grnd_n        (recp)   &
@@ -7668,6 +7699,13 @@ module fuse_fiss_utils
                                                          , csite%qmsqu_ssc_rh    (t,donp)  &
                                                          , csite%area              (donp)  &
                                                          , corr_patch, .false.)
+               csite%qmsqu_psc_rh    (t,recp) = fuse_msqu( csite%qmean_psc_rh    (t,recp)  &
+                                                         , csite%qmsqu_psc_rh    (t,recp)  &
+                                                         , csite%area              (recp)  &
+                                                         , csite%qmean_psc_rh    (t,donp)  &
+                                                         , csite%qmsqu_psc_rh    (t,donp)  &
+                                                         , csite%area              (donp)  &
+                                                         , corr_patch, .false.)
                csite%qmsqu_nep       (t,recp) = fuse_msqu( csite%qmean_nep       (t,recp)  &
                                                          , csite%qmsqu_nep       (t,recp)  &
                                                          , csite%area              (recp)  &
@@ -7805,6 +7843,11 @@ module fuse_fiss_utils
             csite%qmean_ssc_rh         (:,recp) = ( csite%qmean_ssc_rh          (:,recp)   &
                                                   * csite%area                    (recp)   &
                                                   + csite%qmean_ssc_rh          (:,donp)   &
+                                                  * csite%area                    (donp) ) &
+                                                *   newareai
+            csite%qmean_psc_rh         (:,recp) = ( csite%qmean_psc_rh          (:,recp)   &
+                                                  * csite%area                    (recp)   &
+                                                  + csite%qmean_psc_rh          (:,donp)   &
                                                   * csite%area                    (donp) ) &
                                                 *   newareai
             csite%qmean_nep            (:,recp) = ( csite%qmean_nep             (:,recp)   &

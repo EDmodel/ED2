@@ -841,6 +841,7 @@ module hybrid_driver
       targetp%stsc_rh          = sourcep%stsc_rh
       targetp%msc_rh           = sourcep%msc_rh
       targetp%ssc_rh           = sourcep%ssc_rh
+      targetp%psc_rh           = sourcep%psc_rh
 
       targetp%water_deficit    = sourcep%water_deficit
 

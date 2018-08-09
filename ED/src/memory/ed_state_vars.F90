@@ -1034,6 +1034,9 @@ module ed_state_vars
       real , pointer,dimension(:) :: slow_soil_C 
       !<Soil carbon density, slow (humified) pool (kg/m2)
 
+      real , pointer,dimension(:) :: passive_soil_C 
+      !<Soil carbon density, passive pool (kg/m2)
+
       real , pointer,dimension(:) :: fast_grnd_N 
       !<Ground nitrogen density, fast pool (kg/m2)
 
@@ -1444,6 +1447,14 @@ module ed_state_vars
       !<damping of decomposition due to nitrogen immobilization 
       !<(0-1 coefficient)
 
+      real , pointer,dimension(:) :: Lg_decomp
+      !<damping of decomposition due to lignin content (aboveground)
+      !<(0-1 coefficient)
+
+      real , pointer,dimension(:) :: Ls_decomp
+      !<damping of decomposition due to lignin content (belowground)
+      !<(0-1 coefficient)
+
       real , pointer,dimension(:) :: rh
       !<total heterotrophic respiration (&mu;mol/m2/s)
 
@@ -1464,6 +1475,9 @@ module ed_state_vars
 
       real , pointer,dimension(:) :: ssc_rh
       !<rh due to (humified) slow soil carbon (&mu;mol/m2/s)
+
+      real , pointer,dimension(:) :: psc_rh
+      !<rh due to passive soil carbon (&mu;mol/m2/s)
 
       real, pointer,dimension(:,:,:) :: cumlai_profile !(n_pft,ff_nhgt,npatches)
       !<Plant density broken down into size and PFT bins.  Used in patch fusion
@@ -1545,6 +1559,7 @@ module ed_state_vars
       !   STSC      -- structural soil carbon (woody debris)                               !
       !   MSC       -- microbial soil carbon                                               !
       !   SSC       -- slow (humified) soil carbon                                         !
+      !   PSC       -- passive soil carbon                                                 !
       !------------------------------------------------------------------------------------!
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rh              !<Heterotr. resp.    [umol/m2/s]
@@ -1554,6 +1569,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_stsc_rh         !<STSC respiration   [umol/m2/s]
       real,pointer,dimension(:)   :: fmean_msc_rh          !<MSC respiration    [umol/m2/s]
       real,pointer,dimension(:)   :: fmean_ssc_rh          !<SSC respiration    [umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_psc_rh          !<PSC respiration    [umol/m2/s]
       real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [umol/m2/s]
       !----- State variables. -------------------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rk4step         !<RK4 time step      [        s]
@@ -1632,6 +1648,7 @@ module ed_state_vars
       real,pointer,dimension(:) :: mmean_struct_soil_l  !<Struct. soil lignin   [   kgL/m2]
       real,pointer,dimension(:) :: mmean_microbe_soil_c !<Microbial soil carbon [   kgC/m2]
       real,pointer,dimension(:) :: mmean_slow_soil_c    !<Slow soil carbon      [   kgC/m2]
+      real,pointer,dimension(:) :: mmean_passive_soil_c !<Passive soil carbon   [   kgC/m2]
       real,pointer,dimension(:) :: mmean_fast_grnd_n    !<Fast grnd nitrogen    [   kgN/m2]
       real,pointer,dimension(:) :: mmean_fast_soil_n    !<Fast soil nitrogen    [   kgN/m2]
       real,pointer,dimension(:) :: mmean_struct_grnd_n  !<Struct. grnd carbon   [   kgN/m2]
@@ -1645,6 +1662,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_stsc_rh
       real,pointer,dimension(:)     :: dmean_msc_rh
       real,pointer,dimension(:)     :: dmean_ssc_rh
+      real,pointer,dimension(:)     :: dmean_psc_rh
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
       real,pointer,dimension(:)     :: dmean_available_water
@@ -1710,6 +1728,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_stsc_rh
       real,pointer,dimension(:)     :: mmean_msc_rh
       real,pointer,dimension(:)     :: mmean_ssc_rh
+      real,pointer,dimension(:)     :: mmean_psc_rh
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
       real,pointer,dimension(:)     :: mmean_available_water
@@ -1782,6 +1801,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmsqu_stsc_rh
       real,pointer,dimension(:)     :: mmsqu_msc_rh
       real,pointer,dimension(:)     :: mmsqu_ssc_rh
+      real,pointer,dimension(:)     :: mmsqu_psc_rh
       real,pointer,dimension(:)     :: mmsqu_nep
       real,pointer,dimension(:)     :: mmsqu_rlongup
       real,pointer,dimension(:)     :: mmsqu_parup
@@ -1805,6 +1825,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_stsc_rh
       real,pointer,dimension(:,:)   :: qmean_msc_rh
       real,pointer,dimension(:,:)   :: qmean_ssc_rh
+      real,pointer,dimension(:,:)   :: qmean_psc_rh
       real,pointer,dimension(:,:)   :: qmean_nep
       real,pointer,dimension(:,:)   :: qmean_rk4step
       real,pointer,dimension(:,:)   :: qmean_available_water
@@ -1870,6 +1891,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmsqu_stsc_rh
       real,pointer,dimension(:,:)   :: qmsqu_msc_rh
       real,pointer,dimension(:,:)   :: qmsqu_ssc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_psc_rh
       real,pointer,dimension(:,:)   :: qmsqu_nep
       real,pointer,dimension(:,:)   :: qmsqu_rlongup
       real,pointer,dimension(:,:)   :: qmsqu_parup
@@ -2506,6 +2528,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: struct_soil_l
       real,pointer,dimension(:)   :: microbe_soil_c
       real,pointer,dimension(:)   :: slow_soil_c
+      real,pointer,dimension(:)   :: passive_soil_c
       real,pointer,dimension(:)   :: fast_grnd_n
       real,pointer,dimension(:)   :: fast_soil_n
       real,pointer,dimension(:)   :: struct_grnd_n
@@ -2636,6 +2659,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_stsc_rh         !<STSC respiration   [ kgC/m2/yr]
       real,pointer,dimension(:)   :: fmean_msc_rh          !<MSC respiration    [ kgC/m2/yr]
       real,pointer,dimension(:)   :: fmean_ssc_rh          !<SSC respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_psc_rh          !<PSC respiration    [ kgC/m2/yr]
       real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [ kgC/m2/yr]
       !----- State variables. -------------------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rk4step         !<RK4 time step      [         s]
@@ -2766,6 +2790,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_struct_soil_l     !<Struct. soil L  [   kgL/m2]
       real,pointer,dimension(:)     :: mmean_microbe_soil_c    !<Microb. soil C  [   kgC/m2]
       real,pointer,dimension(:)     :: mmean_slow_soil_c       !<Slow soil C     [   kgC/m2]
+      real,pointer,dimension(:)     :: mmean_passive_soil_c    !<Passive soil C  [   kgC/m2]
       real,pointer,dimension(:)     :: mmean_fast_grnd_n       !<Fast grnd N     [   kgN/m2]
       real,pointer,dimension(:)     :: mmean_fast_soil_n       !<Fast soil N     [   kgN/m2]
       real,pointer,dimension(:)     :: mmean_struct_grnd_n     !<Struct. grnd N  [   kgN/m2]
@@ -2838,6 +2863,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_stsc_rh
       real,pointer,dimension(:)     :: dmean_msc_rh
       real,pointer,dimension(:)     :: dmean_ssc_rh
+      real,pointer,dimension(:)     :: dmean_psc_rh
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
       real,pointer,dimension(:)     :: dmean_available_water
@@ -2979,6 +3005,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_stsc_rh
       real,pointer,dimension(:)     :: mmean_msc_rh
       real,pointer,dimension(:)     :: mmean_ssc_rh
+      real,pointer,dimension(:)     :: mmean_psc_rh
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
       real,pointer,dimension(:)     :: mmean_available_water
@@ -3084,6 +3111,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmsqu_stsc_rh
       real,pointer,dimension(:)     :: mmsqu_msc_rh
       real,pointer,dimension(:)     :: mmsqu_ssc_rh
+      real,pointer,dimension(:)     :: mmsqu_psc_rh
       real,pointer,dimension(:)     :: mmsqu_nep
       real,pointer,dimension(:)     :: mmsqu_rlongup
       real,pointer,dimension(:)     :: mmsqu_parup
@@ -3165,6 +3193,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_stsc_rh
       real,pointer,dimension(:,:)   :: qmean_msc_rh
       real,pointer,dimension(:,:)   :: qmean_ssc_rh
+      real,pointer,dimension(:,:)   :: qmean_psc_rh
       real,pointer,dimension(:,:)   :: qmean_nep
       real,pointer,dimension(:,:)   :: qmean_rk4step
       real,pointer,dimension(:,:)   :: qmean_available_water
@@ -3255,6 +3284,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmsqu_stsc_rh
       real,pointer,dimension(:,:)   :: qmsqu_msc_rh
       real,pointer,dimension(:,:)   :: qmsqu_ssc_rh
+      real,pointer,dimension(:,:)   :: qmsqu_psc_rh
       real,pointer,dimension(:,:)   :: qmsqu_nep
       real,pointer,dimension(:,:)   :: qmsqu_rlongup
       real,pointer,dimension(:,:)   :: qmsqu_parup
@@ -3543,6 +3573,7 @@ module ed_state_vars
       allocate(cgrid%struct_soil_l              (                    npolygons))
       allocate(cgrid%microbe_soil_c             (                    npolygons))
       allocate(cgrid%slow_soil_c                (                    npolygons))
+      allocate(cgrid%passive_soil_c             (                    npolygons))
       allocate(cgrid%fast_grnd_n                (                    npolygons))
       allocate(cgrid%fast_soil_n                (                    npolygons))
       allocate(cgrid%struct_grnd_n              (                    npolygons))
@@ -3633,6 +3664,7 @@ module ed_state_vars
       allocate(cgrid%fmean_stsc_rh              (                    npolygons))
       allocate(cgrid%fmean_msc_rh               (                    npolygons))
       allocate(cgrid%fmean_ssc_rh               (                    npolygons))
+      allocate(cgrid%fmean_psc_rh               (                    npolygons))
       allocate(cgrid%fmean_nep                  (                    npolygons))
       allocate(cgrid%fmean_rk4step              (                    npolygons))
       allocate(cgrid%fmean_available_water      (                    npolygons))
@@ -3801,6 +3833,7 @@ module ed_state_vars
          allocate(cgrid%dmean_stsc_rh           (                     npolygons))
          allocate(cgrid%dmean_msc_rh            (                     npolygons))
          allocate(cgrid%dmean_ssc_rh            (                     npolygons))
+         allocate(cgrid%dmean_psc_rh            (                     npolygons))
          allocate(cgrid%dmean_nep               (                     npolygons))
          allocate(cgrid%dmean_rk4step           (                     npolygons))
          allocate(cgrid%dmean_available_water   (                     npolygons))
@@ -3913,6 +3946,7 @@ module ed_state_vars
          allocate(cgrid%mmean_struct_soil_l     (                     npolygons)) 
          allocate(cgrid%mmean_microbe_soil_c    (                     npolygons)) 
          allocate(cgrid%mmean_slow_soil_c       (                     npolygons)) 
+         allocate(cgrid%mmean_passive_soil_c    (                     npolygons)) 
          allocate(cgrid%mmean_fast_grnd_n       (                     npolygons)) 
          allocate(cgrid%mmean_fast_soil_n       (                     npolygons)) 
          allocate(cgrid%mmean_struct_grnd_n     (                     npolygons)) 
@@ -3984,6 +4018,7 @@ module ed_state_vars
          allocate(cgrid%mmean_stsc_rh           (                     npolygons))
          allocate(cgrid%mmean_msc_rh            (                     npolygons))
          allocate(cgrid%mmean_ssc_rh            (                     npolygons))
+         allocate(cgrid%mmean_psc_rh            (                     npolygons))
          allocate(cgrid%mmean_nep               (                     npolygons)) 
          allocate(cgrid%mmean_rk4step           (                     npolygons)) 
          allocate(cgrid%mmean_available_water   (                     npolygons)) 
@@ -4088,6 +4123,7 @@ module ed_state_vars
          allocate(cgrid%mmsqu_stsc_rh           (                     npolygons))
          allocate(cgrid%mmsqu_msc_rh            (                     npolygons))
          allocate(cgrid%mmsqu_ssc_rh            (                     npolygons))
+         allocate(cgrid%mmsqu_psc_rh            (                     npolygons))
          allocate(cgrid%mmsqu_nep               (                     npolygons)) 
          allocate(cgrid%mmsqu_rlongup           (                     npolygons)) 
          allocate(cgrid%mmsqu_parup             (                     npolygons)) 
@@ -4179,6 +4215,7 @@ module ed_state_vars
          allocate(cgrid%qmean_stsc_rh           (             ndcycle,npolygons))
          allocate(cgrid%qmean_msc_rh            (             ndcycle,npolygons))
          allocate(cgrid%qmean_ssc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmean_psc_rh            (             ndcycle,npolygons))
          allocate(cgrid%qmean_nep               (             ndcycle,npolygons))
          allocate(cgrid%qmean_rk4step           (             ndcycle,npolygons))
          allocate(cgrid%qmean_available_water   (             ndcycle,npolygons))
@@ -4268,6 +4305,7 @@ module ed_state_vars
          allocate(cgrid%qmsqu_stsc_rh           (             ndcycle,npolygons))
          allocate(cgrid%qmsqu_msc_rh            (             ndcycle,npolygons))
          allocate(cgrid%qmsqu_ssc_rh            (             ndcycle,npolygons))
+         allocate(cgrid%qmsqu_psc_rh            (             ndcycle,npolygons))
          allocate(cgrid%qmsqu_nep               (             ndcycle,npolygons))
          allocate(cgrid%qmsqu_rlongup           (             ndcycle,npolygons))
          allocate(cgrid%qmsqu_parup             (             ndcycle,npolygons))
@@ -4554,6 +4592,7 @@ module ed_state_vars
       allocate(csite%structural_soil_L             (              npatches))
       allocate(csite%microbial_soil_C              (              npatches))
       allocate(csite%slow_soil_C                   (              npatches))
+      allocate(csite%passive_soil_C                (              npatches))
       allocate(csite%fast_grnd_N                   (              npatches))
       allocate(csite%fast_soil_N                   (              npatches))
       allocate(csite%structural_grnd_N             (              npatches))
@@ -4679,6 +4718,8 @@ module ed_state_vars
       allocate(csite%A_decomp                      (              npatches))
       allocate(csite%B_decomp                      (              npatches))
       allocate(csite%f_decomp                      (              npatches))
+      allocate(csite%Lg_decomp                     (              npatches))
+      allocate(csite%Ls_decomp                     (              npatches))
       allocate(csite%rh                            (              npatches))
       allocate(csite%fgc_rh                        (              npatches))
       allocate(csite%fsc_rh                        (              npatches))
@@ -4686,6 +4727,7 @@ module ed_state_vars
       allocate(csite%stsc_rh                       (              npatches))
       allocate(csite%msc_rh                        (              npatches))
       allocate(csite%ssc_rh                        (              npatches))
+      allocate(csite%psc_rh                        (              npatches))
       allocate(csite%cumlai_profile                (n_pft,ff_nhgt,npatches))
       allocate(csite%plant_ag_biomass              (              npatches))
       allocate(csite%htry                          (              npatches))
@@ -4718,6 +4760,7 @@ module ed_state_vars
       allocate(csite%fmean_stsc_rh                 (              npatches))
       allocate(csite%fmean_msc_rh                  (              npatches))
       allocate(csite%fmean_ssc_rh                  (              npatches))
+      allocate(csite%fmean_psc_rh                  (              npatches))
       allocate(csite%fmean_nep                     (              npatches))
       allocate(csite%fmean_rk4step                 (              npatches))
       allocate(csite%fmean_available_water         (              npatches))
@@ -4791,6 +4834,7 @@ module ed_state_vars
          allocate(csite%dmean_stsc_rh              (              npatches))
          allocate(csite%dmean_msc_rh               (              npatches))
          allocate(csite%dmean_ssc_rh               (              npatches))
+         allocate(csite%dmean_psc_rh               (              npatches))
          allocate(csite%dmean_nep                  (              npatches))
          allocate(csite%dmean_rk4step              (              npatches))
          allocate(csite%dmean_available_water      (              npatches))
@@ -4858,6 +4902,7 @@ module ed_state_vars
          allocate(csite%mmean_struct_soil_l        (              npatches))
          allocate(csite%mmean_microbe_soil_c       (              npatches))
          allocate(csite%mmean_slow_soil_c          (              npatches))
+         allocate(csite%mmean_passive_soil_c       (              npatches))
          allocate(csite%mmean_fast_grnd_n          (              npatches))
          allocate(csite%mmean_fast_soil_n          (              npatches))
          allocate(csite%mmean_struct_grnd_n        (              npatches))
@@ -4873,6 +4918,7 @@ module ed_state_vars
          allocate(csite%mmean_stsc_rh              (              npatches))
          allocate(csite%mmean_msc_rh               (              npatches))
          allocate(csite%mmean_ssc_rh               (              npatches))
+         allocate(csite%mmean_psc_rh               (              npatches))
          allocate(csite%mmean_nep                  (              npatches))
          allocate(csite%mmean_A_decomp             (              npatches))
          allocate(csite%mmean_B_decomp             (              npatches))
@@ -4948,6 +4994,7 @@ module ed_state_vars
          allocate(csite%mmsqu_stsc_rh              (              npatches))
          allocate(csite%mmsqu_msc_rh               (              npatches))
          allocate(csite%mmsqu_ssc_rh               (              npatches))
+         allocate(csite%mmsqu_psc_rh               (              npatches))
          allocate(csite%mmsqu_nep                  (              npatches))
          allocate(csite%mmsqu_rlongup              (              npatches))
          allocate(csite%mmsqu_parup                (              npatches))
@@ -4971,6 +5018,7 @@ module ed_state_vars
          allocate(csite%qmean_stsc_rh              (      ndcycle,npatches))
          allocate(csite%qmean_msc_rh               (      ndcycle,npatches))
          allocate(csite%qmean_ssc_rh               (      ndcycle,npatches))
+         allocate(csite%qmean_psc_rh               (      ndcycle,npatches))
          allocate(csite%qmean_nep                  (      ndcycle,npatches))
          allocate(csite%qmean_rk4step              (      ndcycle,npatches))
          allocate(csite%qmean_available_water      (      ndcycle,npatches))
@@ -5035,6 +5083,7 @@ module ed_state_vars
          allocate(csite%qmsqu_stsc_rh              (      ndcycle,npatches))
          allocate(csite%qmsqu_msc_rh               (      ndcycle,npatches))
          allocate(csite%qmsqu_ssc_rh               (      ndcycle,npatches))
+         allocate(csite%qmsqu_psc_rh               (      ndcycle,npatches))
          allocate(csite%qmsqu_nep                  (      ndcycle,npatches))
          allocate(csite%qmsqu_rlongup              (      ndcycle,npatches))
          allocate(csite%qmsqu_parup                (      ndcycle,npatches))
@@ -5691,6 +5740,7 @@ module ed_state_vars
       nullify(cgrid%struct_soil_l           )
       nullify(cgrid%microbe_soil_c          )
       nullify(cgrid%slow_soil_c             )
+      nullify(cgrid%passive_soil_c          )
       nullify(cgrid%fast_grnd_n             )
       nullify(cgrid%fast_soil_n             )
       nullify(cgrid%struct_grnd_n           )
@@ -5780,6 +5830,7 @@ module ed_state_vars
       nullify(cgrid%fmean_stsc_rh           )
       nullify(cgrid%fmean_msc_rh            )
       nullify(cgrid%fmean_ssc_rh            )
+      nullify(cgrid%fmean_psc_rh            )
       nullify(cgrid%fmean_nep               )
       nullify(cgrid%fmean_rk4step           )
       nullify(cgrid%fmean_available_water   )
@@ -5940,6 +5991,7 @@ module ed_state_vars
       nullify(cgrid%dmean_stsc_rh           )
       nullify(cgrid%dmean_msc_rh            )
       nullify(cgrid%dmean_ssc_rh            )
+      nullify(cgrid%dmean_psc_rh            )
       nullify(cgrid%dmean_nep               )
       nullify(cgrid%dmean_rk4step           )
       nullify(cgrid%dmean_available_water   )
@@ -6041,6 +6093,7 @@ module ed_state_vars
       nullify(cgrid%mmean_struct_soil_l     )
       nullify(cgrid%mmean_microbe_soil_c    )
       nullify(cgrid%mmean_slow_soil_c       )
+      nullify(cgrid%mmean_passive_soil_c    )
       nullify(cgrid%mmean_fast_grnd_n       )
       nullify(cgrid%mmean_fast_soil_n       )
       nullify(cgrid%mmean_struct_grnd_n     )
@@ -6112,6 +6165,7 @@ module ed_state_vars
       nullify(cgrid%mmean_stsc_rh           )
       nullify(cgrid%mmean_msc_rh            )
       nullify(cgrid%mmean_ssc_rh            )
+      nullify(cgrid%mmean_psc_rh            )
       nullify(cgrid%mmean_nep               )
       nullify(cgrid%mmean_rk4step           )
       nullify(cgrid%mmean_available_water   )
@@ -6216,6 +6270,7 @@ module ed_state_vars
       nullify(cgrid%mmsqu_stsc_rh           )
       nullify(cgrid%mmsqu_msc_rh            )
       nullify(cgrid%mmsqu_ssc_rh            )
+      nullify(cgrid%mmsqu_psc_rh            )
       nullify(cgrid%mmsqu_nep               )
       nullify(cgrid%mmsqu_rlongup           )
       nullify(cgrid%mmsqu_parup             )
@@ -6296,6 +6351,7 @@ module ed_state_vars
       nullify(cgrid%qmean_stsc_rh           )
       nullify(cgrid%qmean_msc_rh            )
       nullify(cgrid%qmean_ssc_rh            )
+      nullify(cgrid%qmean_psc_rh            )
       nullify(cgrid%qmean_nep               )
       nullify(cgrid%qmean_rk4step           )
       nullify(cgrid%qmean_available_water   )
@@ -6385,6 +6441,7 @@ module ed_state_vars
       nullify(cgrid%qmsqu_stsc_rh           )
       nullify(cgrid%qmsqu_msc_rh            )
       nullify(cgrid%qmsqu_ssc_rh            )
+      nullify(cgrid%qmsqu_psc_rh            )
       nullify(cgrid%qmsqu_nep               )
       nullify(cgrid%qmsqu_rlongup           )
       nullify(cgrid%qmsqu_parup             )
@@ -6592,14 +6649,13 @@ module ed_state_vars
       nullify(csite%light_type                 )
       nullify(csite%fast_grnd_C                )
       nullify(csite%fast_soil_C                )
-      nullify(csite%microbial_soil_C           )
-      nullify(csite%slow_soil_C                )
       nullify(csite%structural_grnd_C          )
       nullify(csite%structural_soil_C          )
       nullify(csite%structural_grnd_L          )
       nullify(csite%structural_soil_L          )
       nullify(csite%microbial_soil_C           )
       nullify(csite%slow_soil_C                )
+      nullify(csite%passive_soil_C             )
       nullify(csite%fast_grnd_N                )
       nullify(csite%fast_soil_N                )
       nullify(csite%structural_grnd_N          )
@@ -6725,6 +6781,8 @@ module ed_state_vars
       nullify(csite%A_decomp                   )
       nullify(csite%B_decomp                   )
       nullify(csite%f_decomp                   )
+      nullify(csite%Lg_decomp                  )
+      nullify(csite%Ls_decomp                  )
       nullify(csite%rh                         )
       nullify(csite%fgc_rh                     )
       nullify(csite%fsc_rh                     )
@@ -6732,6 +6790,7 @@ module ed_state_vars
       nullify(csite%stsc_rh                    )
       nullify(csite%msc_rh                     )
       nullify(csite%ssc_rh                     )
+      nullify(csite%psc_rh                     )
       nullify(csite%cumlai_profile             )
       nullify(csite%plant_ag_biomass           )
       nullify(csite%htry                       )
@@ -6764,6 +6823,7 @@ module ed_state_vars
       nullify(csite%fmean_stsc_rh              )
       nullify(csite%fmean_msc_rh               )
       nullify(csite%fmean_ssc_rh               )
+      nullify(csite%fmean_psc_rh               )
       nullify(csite%fmean_nep                  )
       nullify(csite%fmean_rk4step              )
       nullify(csite%fmean_available_water      )
@@ -6835,6 +6895,7 @@ module ed_state_vars
       nullify(csite%dmean_stsc_rh              )
       nullify(csite%dmean_msc_rh               )
       nullify(csite%dmean_ssc_rh               )
+      nullify(csite%dmean_psc_rh               )
       nullify(csite%dmean_nep                  )
       nullify(csite%dmean_rk4step              )
       nullify(csite%dmean_available_water      )
@@ -6900,6 +6961,7 @@ module ed_state_vars
       nullify(csite%mmean_struct_soil_l        )
       nullify(csite%mmean_microbe_soil_c       )
       nullify(csite%mmean_slow_soil_c          )
+      nullify(csite%mmean_passive_soil_c       )
       nullify(csite%mmean_fast_grnd_n          )
       nullify(csite%mmean_fast_soil_n          )
       nullify(csite%mmean_struct_grnd_n        )
@@ -6915,6 +6977,7 @@ module ed_state_vars
       nullify(csite%mmean_stsc_rh              )
       nullify(csite%mmean_msc_rh               )
       nullify(csite%mmean_ssc_rh               )
+      nullify(csite%mmean_psc_rh               )
       nullify(csite%mmean_nep                  )
       nullify(csite%mmean_A_decomp             )
       nullify(csite%mmean_B_decomp             )
@@ -6990,6 +7053,7 @@ module ed_state_vars
       nullify(csite%mmsqu_stsc_rh              )
       nullify(csite%mmsqu_msc_rh               )
       nullify(csite%mmsqu_ssc_rh               )
+      nullify(csite%mmsqu_psc_rh               )
       nullify(csite%mmsqu_nep                  )
       nullify(csite%mmsqu_rlongup              )
       nullify(csite%mmsqu_parup                )
@@ -7011,6 +7075,7 @@ module ed_state_vars
       nullify(csite%qmean_stsc_rh              )
       nullify(csite%qmean_msc_rh               )
       nullify(csite%qmean_ssc_rh               )
+      nullify(csite%qmean_psc_rh               )
       nullify(csite%qmean_nep                  )
       nullify(csite%qmean_rk4step              )
       nullify(csite%qmean_available_water      )
@@ -7075,6 +7140,7 @@ module ed_state_vars
       nullify(csite%qmsqu_stsc_rh              )
       nullify(csite%qmsqu_msc_rh               )
       nullify(csite%qmsqu_ssc_rh               )
+      nullify(csite%qmsqu_psc_rh               )
       nullify(csite%qmsqu_nep                  )
       nullify(csite%qmsqu_rlongup              )
       nullify(csite%qmsqu_parup                )
@@ -7631,6 +7697,7 @@ module ed_state_vars
       if(associated(csite%structural_soil_L          )) deallocate(csite%structural_soil_L          )
       if(associated(csite%microbial_soil_C           )) deallocate(csite%microbial_soil_C           )
       if(associated(csite%slow_soil_C                )) deallocate(csite%slow_soil_C                )
+      if(associated(csite%passive_soil_C             )) deallocate(csite%passive_soil_C             )
       if(associated(csite%fast_grnd_N                )) deallocate(csite%fast_grnd_N                )
       if(associated(csite%fast_soil_N                )) deallocate(csite%fast_soil_N                )
       if(associated(csite%structural_grnd_N          )) deallocate(csite%structural_grnd_N          )
@@ -7756,6 +7823,8 @@ module ed_state_vars
       if(associated(csite%A_decomp                   )) deallocate(csite%A_decomp                   )
       if(associated(csite%B_decomp                   )) deallocate(csite%B_decomp                   )
       if(associated(csite%f_decomp                   )) deallocate(csite%f_decomp                   )
+      if(associated(csite%Lg_decomp                  )) deallocate(csite%Lg_decomp                  )
+      if(associated(csite%Ls_decomp                  )) deallocate(csite%Ls_decomp                  )
       if(associated(csite%rh                         )) deallocate(csite%rh                         )
       if(associated(csite%fgc_rh                     )) deallocate(csite%fgc_rh                     )
       if(associated(csite%fsc_rh                     )) deallocate(csite%fsc_rh                     )
@@ -7763,6 +7832,7 @@ module ed_state_vars
       if(associated(csite%stsc_rh                    )) deallocate(csite%stsc_rh                    )
       if(associated(csite%msc_rh                     )) deallocate(csite%msc_rh                     )
       if(associated(csite%ssc_rh                     )) deallocate(csite%ssc_rh                     )
+      if(associated(csite%psc_rh                     )) deallocate(csite%psc_rh                     )
       if(associated(csite%cumlai_profile             )) deallocate(csite%cumlai_profile             )
       if(associated(csite%plant_ag_biomass           )) deallocate(csite%plant_ag_biomass           )
       if(associated(csite%htry                       )) deallocate(csite%htry                       )
@@ -7795,6 +7865,7 @@ module ed_state_vars
       if(associated(csite%fmean_stsc_rh              )) deallocate(csite%fmean_stsc_rh              )
       if(associated(csite%fmean_msc_rh               )) deallocate(csite%fmean_msc_rh               )
       if(associated(csite%fmean_ssc_rh               )) deallocate(csite%fmean_ssc_rh               )
+      if(associated(csite%fmean_psc_rh               )) deallocate(csite%fmean_psc_rh               )
       if(associated(csite%fmean_nep                  )) deallocate(csite%fmean_nep                  )
       if(associated(csite%fmean_rk4step              )) deallocate(csite%fmean_rk4step              )
       if(associated(csite%fmean_available_water      )) deallocate(csite%fmean_available_water      )
@@ -7866,6 +7937,7 @@ module ed_state_vars
       if(associated(csite%dmean_stsc_rh              )) deallocate(csite%dmean_stsc_rh              )
       if(associated(csite%dmean_msc_rh               )) deallocate(csite%dmean_msc_rh               )
       if(associated(csite%dmean_ssc_rh               )) deallocate(csite%dmean_ssc_rh               )
+      if(associated(csite%dmean_psc_rh               )) deallocate(csite%dmean_psc_rh               )
       if(associated(csite%dmean_nep                  )) deallocate(csite%dmean_nep                  )
       if(associated(csite%dmean_rk4step              )) deallocate(csite%dmean_rk4step              )
       if(associated(csite%dmean_available_water      )) deallocate(csite%dmean_available_water      )
@@ -7931,6 +8003,7 @@ module ed_state_vars
       if(associated(csite%mmean_struct_soil_l        )) deallocate(csite%mmean_struct_soil_l        )
       if(associated(csite%mmean_microbe_soil_c       )) deallocate(csite%mmean_microbe_soil_c       )
       if(associated(csite%mmean_slow_soil_c          )) deallocate(csite%mmean_slow_soil_c          )
+      if(associated(csite%mmean_passive_soil_c       )) deallocate(csite%mmean_passive_soil_c       )
       if(associated(csite%mmean_fast_grnd_n          )) deallocate(csite%mmean_fast_grnd_n          )
       if(associated(csite%mmean_fast_soil_n          )) deallocate(csite%mmean_fast_soil_n          )
       if(associated(csite%mmean_struct_grnd_n        )) deallocate(csite%mmean_struct_grnd_n        )
@@ -7946,6 +8019,7 @@ module ed_state_vars
       if(associated(csite%mmean_stsc_rh              )) deallocate(csite%mmean_stsc_rh              )
       if(associated(csite%mmean_msc_rh               )) deallocate(csite%mmean_msc_rh               )
       if(associated(csite%mmean_ssc_rh               )) deallocate(csite%mmean_ssc_rh               )
+      if(associated(csite%mmean_psc_rh               )) deallocate(csite%mmean_psc_rh               )
       if(associated(csite%mmean_nep                  )) deallocate(csite%mmean_nep                  )
       if(associated(csite%mmean_A_decomp             )) deallocate(csite%mmean_A_decomp             )
       if(associated(csite%mmean_B_decomp             )) deallocate(csite%mmean_B_decomp             )
@@ -8021,6 +8095,7 @@ module ed_state_vars
       if(associated(csite%mmsqu_stsc_rh              )) deallocate(csite%mmsqu_stsc_rh              )
       if(associated(csite%mmsqu_msc_rh               )) deallocate(csite%mmsqu_msc_rh               )
       if(associated(csite%mmsqu_ssc_rh               )) deallocate(csite%mmsqu_ssc_rh               )
+      if(associated(csite%mmsqu_psc_rh               )) deallocate(csite%mmsqu_psc_rh               )
       if(associated(csite%mmsqu_nep                  )) deallocate(csite%mmsqu_nep                  )
       if(associated(csite%mmsqu_rlongup              )) deallocate(csite%mmsqu_rlongup              )
       if(associated(csite%mmsqu_parup                )) deallocate(csite%mmsqu_parup                )
@@ -8042,6 +8117,7 @@ module ed_state_vars
       if(associated(csite%qmean_stsc_rh              )) deallocate(csite%qmean_stsc_rh              )
       if(associated(csite%qmean_msc_rh               )) deallocate(csite%qmean_msc_rh               )
       if(associated(csite%qmean_ssc_rh               )) deallocate(csite%qmean_ssc_rh               )
+      if(associated(csite%qmean_psc_rh               )) deallocate(csite%qmean_psc_rh               )
       if(associated(csite%qmean_nep                  )) deallocate(csite%qmean_nep                  )
       if(associated(csite%qmean_rk4step              )) deallocate(csite%qmean_rk4step              )
       if(associated(csite%qmean_available_water      )) deallocate(csite%qmean_available_water      )
@@ -8106,6 +8182,7 @@ module ed_state_vars
       if(associated(csite%qmsqu_stsc_rh              )) deallocate(csite%qmsqu_stsc_rh              )
       if(associated(csite%qmsqu_msc_rh               )) deallocate(csite%qmsqu_msc_rh               )
       if(associated(csite%qmsqu_ssc_rh               )) deallocate(csite%qmsqu_ssc_rh               )
+      if(associated(csite%qmsqu_psc_rh               )) deallocate(csite%qmsqu_psc_rh               )
       if(associated(csite%qmsqu_nep                  )) deallocate(csite%qmsqu_nep                  )
       if(associated(csite%qmsqu_rlongup              )) deallocate(csite%qmsqu_rlongup              )
       if(associated(csite%qmsqu_parup                )) deallocate(csite%qmsqu_parup                )
@@ -8704,6 +8781,7 @@ module ed_state_vars
          osite%structural_soil_L          (opa) = isite%structural_soil_L          (ipa)
          osite%microbial_soil_C           (opa) = isite%microbial_soil_C           (ipa)
          osite%slow_soil_C                (opa) = isite%slow_soil_C                (ipa)
+         osite%passive_soil_C             (opa) = isite%passive_soil_C             (ipa)
          osite%fast_grnd_N                (opa) = isite%fast_grnd_N                (ipa)
          osite%fast_soil_N                (opa) = isite%fast_soil_N                (ipa)
          osite%structural_grnd_N          (opa) = isite%structural_grnd_N          (ipa)
@@ -8809,6 +8887,8 @@ module ed_state_vars
          osite%A_decomp                   (opa) = isite%A_decomp                   (ipa)
          osite%B_decomp                   (opa) = isite%B_decomp                   (ipa)
          osite%f_decomp                   (opa) = isite%f_decomp                   (ipa)
+         osite%Lg_decomp                  (opa) = isite%Lg_decomp                  (ipa)
+         osite%Ls_decomp                  (opa) = isite%Ls_decomp                  (ipa)
          osite%rh                         (opa) = isite%rh                         (ipa)
          osite%fgc_rh                     (opa) = isite%fgc_rh                     (ipa)
          osite%fsc_rh                     (opa) = isite%fsc_rh                     (ipa)
@@ -8816,6 +8896,7 @@ module ed_state_vars
          osite%stsc_rh                    (opa) = isite%stsc_rh                    (ipa)
          osite%msc_rh                     (opa) = isite%msc_rh                     (ipa)
          osite%ssc_rh                     (opa) = isite%ssc_rh                     (ipa)
+         osite%psc_rh                     (opa) = isite%psc_rh                     (ipa)
          osite%plant_ag_biomass           (opa) = isite%plant_ag_biomass           (ipa)
          osite%htry                       (opa) = isite%htry                       (ipa)
          osite%hprev                      (opa) = isite%hprev                      (ipa)
@@ -8846,6 +8927,7 @@ module ed_state_vars
          osite%fmean_stsc_rh              (opa) = isite%fmean_stsc_rh              (ipa)
          osite%fmean_msc_rh               (opa) = isite%fmean_msc_rh               (ipa)
          osite%fmean_ssc_rh               (opa) = isite%fmean_ssc_rh               (ipa)
+         osite%fmean_psc_rh               (opa) = isite%fmean_psc_rh               (ipa)
          osite%fmean_nep                  (opa) = isite%fmean_nep                  (ipa)
          osite%fmean_rk4step              (opa) = isite%fmean_rk4step              (ipa)
          osite%fmean_available_water      (opa) = isite%fmean_available_water      (ipa)
@@ -8971,7 +9053,8 @@ module ed_state_vars
             osite%dmean_stgc_rh        (opa) = isite%dmean_stgc_rh        (ipa)
             osite%dmean_stsc_rh        (opa) = isite%dmean_stsc_rh        (ipa)
             osite%dmean_msc_rh         (opa) = isite%dmean_msc_rh         (ipa)
-            osite%dmean_ssc_rh         (opa) = isite%dmean_ssc_rh         (ipa)
+            osite%dmean_msc_rh         (opa) = isite%dmean_msc_rh         (ipa)
+            osite%dmean_psc_rh         (opa) = isite%dmean_psc_rh         (ipa)
             osite%dmean_nep            (opa) = isite%dmean_nep            (ipa)
             osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (ipa)
             osite%dmean_available_water(opa) = isite%dmean_available_water(ipa)
@@ -9054,6 +9137,7 @@ module ed_state_vars
             osite%mmean_struct_soil_l  (opa) = isite%mmean_struct_soil_l  (ipa)
             osite%mmean_microbe_soil_c (opa) = isite%mmean_microbe_soil_c (ipa)
             osite%mmean_slow_soil_c    (opa) = isite%mmean_slow_soil_c    (ipa)
+            osite%mmean_passive_soil_c (opa) = isite%mmean_passive_soil_c (ipa)
             osite%mmean_fast_grnd_n    (opa) = isite%mmean_fast_grnd_n    (ipa)
             osite%mmean_fast_soil_n    (opa) = isite%mmean_fast_soil_n    (ipa)
             osite%mmean_struct_grnd_n  (opa) = isite%mmean_struct_grnd_n  (ipa)
@@ -9069,6 +9153,7 @@ module ed_state_vars
             osite%mmean_stsc_rh        (opa) = isite%mmean_stsc_rh        (ipa)
             osite%mmean_msc_rh         (opa) = isite%mmean_msc_rh         (ipa)
             osite%mmean_ssc_rh         (opa) = isite%mmean_ssc_rh         (ipa)
+            osite%mmean_psc_rh         (opa) = isite%mmean_psc_rh         (ipa)
             osite%mmean_nep            (opa) = isite%mmean_nep            (ipa)
             osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
             osite%mmean_B_decomp       (opa) = isite%mmean_B_decomp       (ipa)
@@ -9136,6 +9221,7 @@ module ed_state_vars
             osite%mmsqu_stsc_rh        (opa) = isite%mmsqu_stsc_rh        (ipa)
             osite%mmsqu_msc_rh         (opa) = isite%mmsqu_msc_rh         (ipa)
             osite%mmsqu_ssc_rh         (opa) = isite%mmsqu_ssc_rh         (ipa)
+            osite%mmsqu_psc_rh         (opa) = isite%mmsqu_psc_rh         (ipa)
             osite%mmsqu_nep            (opa) = isite%mmsqu_nep            (ipa)
             osite%mmsqu_rlongup        (opa) = isite%mmsqu_rlongup        (ipa)
             osite%mmsqu_parup          (opa) = isite%mmsqu_parup          (ipa)
@@ -9183,6 +9269,7 @@ module ed_state_vars
                osite%qmean_stsc_rh        (n,opa) = isite%qmean_stsc_rh        (n,ipa)
                osite%qmean_msc_rh         (n,opa) = isite%qmean_msc_rh         (n,ipa)
                osite%qmean_ssc_rh         (n,opa) = isite%qmean_ssc_rh         (n,ipa)
+               osite%qmean_psc_rh         (n,opa) = isite%qmean_psc_rh         (n,ipa)
                osite%qmean_nep            (n,opa) = isite%qmean_nep            (n,ipa)
                osite%qmean_rk4step        (n,opa) = isite%qmean_rk4step        (n,ipa)
                osite%qmean_available_water(n,opa) = isite%qmean_available_water(n,ipa)
@@ -9239,6 +9326,7 @@ module ed_state_vars
                osite%qmsqu_stsc_rh        (n,opa) = isite%qmsqu_stsc_rh        (n,ipa)
                osite%qmsqu_msc_rh         (n,opa) = isite%qmsqu_msc_rh         (n,ipa)
                osite%qmsqu_ssc_rh         (n,opa) = isite%qmsqu_ssc_rh         (n,ipa)
+               osite%qmsqu_psc_rh         (n,opa) = isite%qmsqu_psc_rh         (n,ipa)
                osite%qmsqu_nep            (n,opa) = isite%qmsqu_nep            (n,ipa)
                osite%qmsqu_rlongup        (n,opa) = isite%qmsqu_rlongup        (n,ipa)
                osite%qmsqu_parup          (n,opa) = isite%qmsqu_parup          (n,ipa)
@@ -9413,6 +9501,7 @@ module ed_state_vars
       osite%structural_soil_L          (1:z) = pack(isite%structural_soil_L          ,lmask)
       osite%microbial_soil_C           (1:z) = pack(isite%microbial_soil_C           ,lmask)
       osite%slow_soil_C                (1:z) = pack(isite%slow_soil_C                ,lmask)
+      osite%passive_soil_C             (1:z) = pack(isite%passive_soil_C             ,lmask)
       osite%fast_grnd_N                (1:z) = pack(isite%fast_grnd_N                ,lmask)
       osite%fast_soil_N                (1:z) = pack(isite%fast_soil_N                ,lmask)
       osite%structural_grnd_N          (1:z) = pack(isite%structural_grnd_N          ,lmask)
@@ -9518,6 +9607,8 @@ module ed_state_vars
       osite%A_decomp                   (1:z) = pack(isite%A_decomp                   ,lmask)
       osite%B_decomp                   (1:z) = pack(isite%B_decomp                   ,lmask)
       osite%f_decomp                   (1:z) = pack(isite%f_decomp                   ,lmask)
+      osite%Lg_decomp                  (1:z) = pack(isite%Lg_decomp                  ,lmask)
+      osite%Ls_decomp                  (1:z) = pack(isite%Ls_decomp                  ,lmask)
       osite%rh                         (1:z) = pack(isite%rh                         ,lmask)
       osite%fgc_rh                     (1:z) = pack(isite%fgc_rh                     ,lmask)
       osite%fsc_rh                     (1:z) = pack(isite%fsc_rh                     ,lmask)
@@ -9525,6 +9616,7 @@ module ed_state_vars
       osite%stsc_rh                    (1:z) = pack(isite%stsc_rh                    ,lmask)
       osite%msc_rh                     (1:z) = pack(isite%msc_rh                     ,lmask)
       osite%ssc_rh                     (1:z) = pack(isite%ssc_rh                     ,lmask)
+      osite%psc_rh                     (1:z) = pack(isite%psc_rh                     ,lmask)
       osite%plant_ag_biomass           (1:z) = pack(isite%plant_ag_biomass           ,lmask)
       osite%htry                       (1:z) = pack(isite%htry                       ,lmask)
       osite%hprev                      (1:z) = pack(isite%hprev                      ,lmask)
@@ -9636,6 +9728,7 @@ module ed_state_vars
       osite%fmean_stsc_rh             (1:z) = pack(isite%fmean_stsc_rh             ,lmask)
       osite%fmean_msc_rh              (1:z) = pack(isite%fmean_msc_rh              ,lmask)
       osite%fmean_ssc_rh              (1:z) = pack(isite%fmean_ssc_rh              ,lmask)
+      osite%fmean_psc_rh              (1:z) = pack(isite%fmean_psc_rh              ,lmask)
       osite%fmean_nep                 (1:z) = pack(isite%fmean_nep                 ,lmask)
       osite%fmean_rk4step             (1:z) = pack(isite%fmean_rk4step             ,lmask)
       osite%fmean_available_water     (1:z) = pack(isite%fmean_available_water     ,lmask)
@@ -9749,6 +9842,7 @@ module ed_state_vars
       osite%dmean_stsc_rh        (1:z) = pack(isite%dmean_stsc_rh        (:),lmask)
       osite%dmean_msc_rh         (1:z) = pack(isite%dmean_msc_rh         (:),lmask)
       osite%dmean_ssc_rh         (1:z) = pack(isite%dmean_ssc_rh         (:),lmask)
+      osite%dmean_psc_rh         (1:z) = pack(isite%dmean_psc_rh         (:),lmask)
       osite%dmean_nep            (1:z) = pack(isite%dmean_nep            (:),lmask)
       osite%dmean_rk4step        (1:z) = pack(isite%dmean_rk4step        (:),lmask)
       osite%dmean_available_water(1:z) = pack(isite%dmean_available_water(:),lmask)
@@ -9858,6 +9952,7 @@ module ed_state_vars
       osite%mmean_struct_soil_l  (1:z) = pack(isite%mmean_struct_soil_l  (:),lmask)
       osite%mmean_microbe_soil_c (1:z) = pack(isite%mmean_microbe_soil_c (:),lmask)
       osite%mmean_slow_soil_c    (1:z) = pack(isite%mmean_slow_soil_c    (:),lmask)
+      osite%mmean_passive_soil_c (1:z) = pack(isite%mmean_passive_soil_c (:),lmask)
       osite%mmean_fast_grnd_n    (1:z) = pack(isite%mmean_fast_grnd_n    (:),lmask)
       osite%mmean_fast_soil_n    (1:z) = pack(isite%mmean_fast_soil_n    (:),lmask)
       osite%mmean_struct_grnd_n  (1:z) = pack(isite%mmean_struct_grnd_n  (:),lmask)
@@ -9873,6 +9968,7 @@ module ed_state_vars
       osite%mmean_stsc_rh        (1:z) = pack(isite%mmean_stsc_rh        (:),lmask)
       osite%mmean_msc_rh         (1:z) = pack(isite%mmean_msc_rh         (:),lmask)
       osite%mmean_ssc_rh         (1:z) = pack(isite%mmean_ssc_rh         (:),lmask)
+      osite%mmean_psc_rh         (1:z) = pack(isite%mmean_psc_rh         (:),lmask)
       osite%mmean_nep            (1:z) = pack(isite%mmean_nep            (:),lmask)
       osite%mmean_A_decomp       (1:z) = pack(isite%mmean_A_decomp       (:),lmask)
       osite%mmean_B_decomp       (1:z) = pack(isite%mmean_B_decomp       (:),lmask)
@@ -9940,6 +10036,7 @@ module ed_state_vars
       osite%mmsqu_stsc_rh        (1:z) = pack(isite%mmsqu_stsc_rh        (:),lmask)
       osite%mmsqu_msc_rh         (1:z) = pack(isite%mmsqu_msc_rh         (:),lmask)
       osite%mmsqu_ssc_rh         (1:z) = pack(isite%mmsqu_ssc_rh         (:),lmask)
+      osite%mmsqu_psc_rh         (1:z) = pack(isite%mmsqu_psc_rh         (:),lmask)
       osite%mmsqu_nep            (1:z) = pack(isite%mmsqu_nep            (:),lmask)
       osite%mmsqu_rlongup        (1:z) = pack(isite%mmsqu_rlongup        (:),lmask)
       osite%mmsqu_parup          (1:z) = pack(isite%mmsqu_parup          (:),lmask)
@@ -10014,6 +10111,7 @@ module ed_state_vars
          osite%qmean_stsc_rh        (n,1:z) = pack(isite%qmean_stsc_rh        (n,:),lmask)
          osite%qmean_msc_rh         (n,1:z) = pack(isite%qmean_msc_rh         (n,:),lmask)
          osite%qmean_ssc_rh         (n,1:z) = pack(isite%qmean_ssc_rh         (n,:),lmask)
+         osite%qmean_psc_rh         (n,1:z) = pack(isite%qmean_psc_rh         (n,:),lmask)
          osite%qmean_nep            (n,1:z) = pack(isite%qmean_nep            (n,:),lmask)
          osite%qmean_rk4step        (n,1:z) = pack(isite%qmean_rk4step        (n,:),lmask)
          osite%qmean_available_water(n,1:z) = pack(isite%qmean_available_water(n,:),lmask)
@@ -10070,6 +10168,7 @@ module ed_state_vars
          osite%qmsqu_stsc_rh        (n,1:z) = pack(isite%qmsqu_stsc_rh        (n,:),lmask)
          osite%qmsqu_msc_rh         (n,1:z) = pack(isite%qmsqu_msc_rh         (n,:),lmask)
          osite%qmsqu_ssc_rh         (n,1:z) = pack(isite%qmsqu_ssc_rh         (n,:),lmask)
+         osite%qmsqu_psc_rh         (n,1:z) = pack(isite%qmsqu_psc_rh         (n,:),lmask)
          osite%qmsqu_nep            (n,1:z) = pack(isite%qmsqu_nep            (n,:),lmask)
          osite%qmsqu_rlongup        (n,1:z) = pack(isite%qmsqu_rlongup        (n,:),lmask)
          osite%qmsqu_parup          (n,1:z) = pack(isite%qmsqu_parup          (n,:),lmask)
@@ -12650,6 +12749,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Soil Carbon (Slow/Humified pool)'                    &
                            ,'[kgC/m2]','(ipoly)')
       end if
+      if(associated(cgrid%passive_soil_c )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%passive_soil_c                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'PASSIVE_SOIL_C_PY  :11:hist:anal:dail:opti')
+         call metadata_edio(nvar,igr,'Soil Carbon (Passive pool)'                          &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
       if(associated(cgrid%fast_grnd_n    )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%fast_grnd_n                                         &
@@ -13362,6 +13469,15 @@ module ed_state_vars
                            ,'FMEAN_SSC_RH_PY            :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Slow (humified) soil carbon respiration'     &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_psc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_PSC_RH_PY            :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Passive soil carbon respiration'             &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_nep             )) then
@@ -14788,6 +14904,15 @@ module ed_state_vars
                            ,'Daily mean - Slow (humified) soil carbon respiration'         &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_psc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_PSC_RH_PY            :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Passive soil carbon respiration'                 &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_nep             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nep                                           &
@@ -16033,6 +16158,15 @@ module ed_state_vars
                            ,'Monthly mean - Slow (humified) soil carbon respiration'       &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%mmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_psc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_PSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Passive soil carbon respiration'               &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%mmean_nep             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nep                                           &
@@ -16826,6 +16960,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Slow/Humified pool)'     &
                            ,'[kgC/m2]','(ipoly)')
       end if
+      if(associated(cgrid%mmean_passive_soil_c )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_passive_soil_c                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_PASSIVE_SOIL_C_PY  :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Passive pool)'           &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
       if(associated(cgrid%mmean_fast_grnd_n    )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_fast_grnd_n                                   &
@@ -16999,6 +17141,15 @@ module ed_state_vars
                            ,'MMSQU_SSC_RH_PY            :11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Slow (humified) soil carbon respiration'       &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmsqu_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_psc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_PSC_RH_PY            :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Passive soil carbon respiration'               &
                            ,'[ kg2/m4/yr2]','(ipoly)'            )
       end if
       if (associated(cgrid%mmsqu_nep             )) then
@@ -17775,6 +17926,15 @@ module ed_state_vars
                            ,'Mean diel - Slow (humified) soil carbon respiration'          &
                            ,'[   kg/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%qmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_psc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_PSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Passive soil carbon respiration'                  &
+                           ,'[   kg/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%qmean_nep             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_nep                                           &
@@ -18502,6 +18662,15 @@ module ed_state_vars
                            ,'QMSQU_SSC_RH_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Slow (humified) soil carbon respiration'          &
+                           ,'[ kg2/m4/yr2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%qmsqu_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_psc_rh                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_PSC_RH_PY           :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Passive soil carbon respiration'                  &
                            ,'[ kg2/m4/yr2]','(ipoly)'            )
       end if
       if (associated(cgrid%qmsqu_nep             )) then
@@ -21648,6 +21817,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%passive_soil_C)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%passive_soil_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PASSIVE_SOIL_C :31:hist:year:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%fast_grnd_N)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fast_grnd_N,nvar,igr,init,csite%paglob_id, &
@@ -22097,6 +22273,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%stgl_in)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%stgl_in,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STGL_IN :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%stsl_in)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%stsl_in,nvar,igr,init,csite%paglob_id, &
@@ -22350,6 +22533,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%Lg_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%Lg_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'LG_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%Ls_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%Ls_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'LS_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%rh)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%rh,nvar,igr,init,csite%paglob_id, &
@@ -22396,6 +22593,13 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ssc_rh,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'SSC_RH :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%psc_rh)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%psc_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PSC_RH :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -22643,6 +22847,15 @@ module ed_state_vars
                            ,'FMEAN_SSC_RH_PA            :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Slow (humified) soil carbon respiration'     &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_psc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_PSC_RH_PA            :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Passive soil carbon respiration'             &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
       if (associated(csite%fmean_nep             )) then
@@ -23267,6 +23480,15 @@ module ed_state_vars
                            ,'Daily mean - Slow (humified) soil carbon respiration'         &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
+      if (associated(csite%dmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_psc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_PSC_RH_PA            :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Passive soil carbon respiration'                 &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
       if (associated(csite%dmean_nep             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_nep                                           &
@@ -23834,6 +24056,15 @@ module ed_state_vars
                            ,'Monthly mean - Slow (humified) soil carbon respiration'       &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
+      if (associated(csite%mmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_psc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_PSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Passive soil carbon respiration'               &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
       if (associated(csite%mmean_nep             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_nep                                           &
@@ -24347,6 +24578,15 @@ module ed_state_vars
                            ,'Monthly mean - Soil Carbon (Slow/Humified pool)'              &
                            ,'[     kgC/m2]','(ipatch)'            )
       end if
+      if (associated(csite%mmean_passive_soil_c  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_passive_soil_c                                &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_PASSIVE_SOIL_C_PA    :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Soil Carbon (Passive pool)'                    &
+                           ,'[     kgC/m2]','(ipatch)'            )
+      end if
       if (associated(csite%mmean_fast_grnd_n     )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_fast_grnd_n                                   &
@@ -24516,6 +24756,15 @@ module ed_state_vars
                            ,'MMSQU_SSC_RH_PA            :31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Slow (humified) soil carbon respiration'       &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmsqu_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmsqu_psc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMSQU_PSC_RH_PA            :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly MSSq - Passive soil carbon respiration'               &
                            ,'[ kg2/m4/yr2]','(ipatch)'            )
       end if
       if (associated(csite%mmsqu_nep             )) then
@@ -24773,6 +25022,15 @@ module ed_state_vars
                            ,'QMEAN_SSC_RH_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Slow (humified) soil carbon respiration'          &
+                           ,'[   kg/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%qmean_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_psc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_PSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Passive soil carbon respiration'                  &
                            ,'[   kg/m2/yr]','(ipatch)'            )
       end if
       if (associated(csite%qmean_nep             )) then
@@ -25277,6 +25535,15 @@ module ed_state_vars
                            ,'QMSQU_SSC_RH_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Slow (humified) soil carbon respiration'          &
+                           ,'[ kg2/m4/yr2]','(ipatch)'            )
+      end if
+      if (associated(csite%qmsqu_psc_rh          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmsqu_psc_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMSQU_PSC_RH_PA           :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'MSSq diel - Passive soil carbon respiration'                  &
                            ,'[ kg2/m4/yr2]','(ipatch)'            )
       end if
       if (associated(csite%qmsqu_nep             )) then

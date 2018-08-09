@@ -195,6 +195,7 @@ Module ed_misc_coms
    real    :: init_stsc 
    real    :: init_msc 
    real    :: init_ssc 
+   real    :: init_psc 
    real    :: init_stgl 
    real    :: init_stsl 
    real    :: init_fgn 

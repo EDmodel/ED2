@@ -559,7 +559,7 @@ standard.scientific.name <<- function(dat,nafill=TRUE){
    # capitalised (e.g.  scientific name: Araucaria angustifolia; family: Araucariaceae.    #
    #---------------------------------------------------------------------------------------#
    nplants = nrow(dat)
-   #----- Remove cf., assume that we know all species for sure. ---------------------------#
+   #----- Make it case-insensitive. -------------------------------------------------------#
    dat$scientific = tolower(dat$scientific)
    #----- Break into genus and species. ---------------------------------------------------#
    g.s     = keep.gen.spe.only(dat$scientific)
@@ -1862,7 +1862,7 @@ scientific.lookup.tnf <<- function(datum){
                    )#end data.frame
    #---------------------------------------------------------------------------------------#
 
-
+   browser()
 
    #---------------------------------------------------------------------------------------#
    #     Create an output data frame with the scientific names.  The default "no-name"     #
@@ -1899,13 +1899,6 @@ scientific.lookup.tnf <<- function(datum){
                            )#end cbind
    datum$genus      = capwords(gs.mat[,1],strict=TRUE)
    datum$scientific = paste(datum$genus,tolower (gs.mat[,2]),sep=" ")
-   #---------------------------------------------------------------------------------------#
-   
-
-   #---------------------------------------------------------------------------------------#
-   #      Fill in the family.                                                              #
-   #---------------------------------------------------------------------------------------#
-   datum = standard.family.name(datum)
    #---------------------------------------------------------------------------------------#
 
    return(datum)
@@ -3109,6 +3102,10 @@ keep.gen.spe.only <<- function(x,out=c("both","genus","species"),is.debug=FALSE)
 
       #----- In case there is an " x ", attach it to the epithet. -------------------------#
       x = gsub(pattern="\\ x\\ ",replacement=" x_",ignore.case=TRUE,x=x)
+      #------------------------------------------------------------------------------------#
+
+      #----- Separate the bogus _form2 that appears in some Paracou species. --------------#
+      x = gsub(pattern="_form2$",replacement=" form2",x=x)
       #------------------------------------------------------------------------------------#
 
 

@@ -547,6 +547,7 @@ module rk4_misc
       targetp%stsc_rh = dble(sourcesite%stsc_rh(ipa))
       targetp%msc_rh  = dble(sourcesite%msc_rh (ipa))
       targetp%ssc_rh  = dble(sourcesite%ssc_rh (ipa))
+      targetp%psc_rh  = dble(sourcesite%psc_rh (ipa))
 
       return
    end subroutine copy_patch_init_carbon
@@ -3589,15 +3590,16 @@ module rk4_misc
       write (unit=*,fmt='(a)'  ) ' '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-      write (unit=*,fmt='(13(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'      &
+      write (unit=*,fmt='(14(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'      &
                                         ,'          RH','      FGC_RH','      FSC_RH'      &
                                         ,'     STGC_RH','     STSC_RH','      MSC_RH'      &
-                                        ,'      SSC_RH','AVGDAILY_TMP','     SUM_CHD'      &
-                                        ,'     SUM_DGD'
+                                        ,'      SSC_RH','      PSC_RH','AVGDAILY_TMP'      &
+                                        ,'     SUM_CHD','     SUM_DGD'
       write (unit=*,fmt='(i12,1x,12(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)     &
             ,csite%area(ipa),csite%rh(ipa),csite%fgc_rh(ipa),csite%fsc_rh(ipa)             &
             ,csite%stgc_rh(ipa),csite%stsc_rh(ipa),csite%msc_rh(ipa),csite%ssc_rh(ipa)     &
-            ,csite%avg_daily_temp(ipa),csite%sum_chd(ipa),csite%sum_dgd(ipa)
+            ,csite%psc_rh(ipa),csite%avg_daily_temp(ipa),csite%sum_chd(ipa)                &
+            ,csite%sum_dgd(ipa)
 
       write (unit=*,fmt='(a)'  ) ' '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3943,10 +3945,11 @@ module rk4_misc
 
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-      write (unit=*,fmt='(6(a12,1x))')  '      FGC_RH','      FSC_RH','     STGC_RH'       &
-                                       ,'     STSC_RH','      MSC_RH','      SSC_RH'
-      write (unit=*,fmt='(6(es12.4,1x))') y%fgc_rh,y%fsc_rh,y%stgc_rh,y%stsc_rh,y%msc_rh   &
-                                         ,y%ssc_rh
+      write (unit=*,fmt='(7(a12,1x))')  '      FGC_RH','      FSC_RH','     STGC_RH'       &
+                                       ,'     STSC_RH','      MSC_RH','      SSC_RH'       &
+                                       ,'      PSC_RH'
+      write (unit=*,fmt='(7(es12.4,1x))') y%fgc_rh,y%fsc_rh,y%stgc_rh,y%stsc_rh,y%msc_rh   &
+                                         ,y%ssc_rh,y%psc_rh
 
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -4063,9 +4066,9 @@ module rk4_misc
       real(kind=8)                       :: can_theiv
       real(kind=8)                       :: can_vpdef
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: phfmt='(89(a,1x))'
+      character(len=10), parameter :: phfmt='(90(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),79(es13.6,1x))'
+                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),80(es13.6,1x))'
       character(len=10), parameter :: chfmt='(66(a,1x))'
       character(len=48), parameter ::                                                      &
                                    cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),58(es13.6,1x))'
@@ -4234,10 +4237,11 @@ module rk4_misc
                                   , '       HFLXWC' , '       HFLXAC', '       CFLXAC'     &
                                   , '       CFLXST' , '       FGC.RH', '       FSC.RH'     &
                                   , '      STGC.RH' , '      STSC.RH', '       MSC.RH'     &
-                                  , '       SSC.RH' , '          GPP', '       PLRESP'     &
-                                  , ' PAR.BEAM.TOP' , ' PAR.DIFF.TOP', ' NIR.BEAM.TOP'     &
-                                  , ' NIR.DIFF.TOP' , ' PAR.BEAM.BOT', ' PAR.DIFF.BOT'     &
-                                  , ' NIR.BEAM.BOT' , ' NIR.DIFF.BOT'
+                                  , '       SSC.RH' , '       PSC.RH', '          GPP'     &
+                                  , '       PLRESP' , ' PAR.BEAM.TOP' , ' PAR.DIFF.TOP'    &
+                                  , ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP' , ' PAR.BEAM.BOT'    &
+                                  , ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT' , ' NIR.DIFF.BOT'
+                                  
          close (unit=83,status='keep')
       end if
       !------------------------------------------------------------------------------------!
@@ -4275,10 +4279,11 @@ module rk4_misc
                    , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
                    , fluxp%flx_carbon_st   , initp%fgc_rh          , initp%fsc_rh          &
                    , initp%stgc_rh         , initp%stsc_rh         , initp%msc_rh          &
-                   , initp%ssc_rh          , sum_gpp               , sum_plresp            &
-                   , rk4site%par_beam      , rk4site%par_diffuse   , rk4site%nir_beam      &
-                   , rk4site%nir_diffuse   , par_b_beam            , par_b_diff            &
-                   , nir_b_beam            , nir_b_diff            
+                   , initp%ssc_rh          , initp%psc_rh          , sum_gpp               &
+                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
+                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
+                   , par_b_diff            , nir_b_beam            , nir_b_diff
+                   
       close(unit=83,status='keep')
       !------------------------------------------------------------------------------------!
 

@@ -659,6 +659,8 @@ module ed_init_history
                         ,'MICROBE_SOIL_C_PY '        ,dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%slow_soil_c             (ipy:ipy)                           &
                         ,'SLOW_SOIL_C_PY '           ,dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%passive_soil_c          (ipy:ipy)                           &
+                        ,'PASSIVE_SOIL_C_PY '        ,dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%fast_grnd_n             (ipy:ipy)                           &
                         ,'FAST_GRND_N_PY '           ,dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%fast_soil_n             (ipy:ipy)                           &
@@ -937,6 +939,8 @@ module ed_init_history
                         ,'DMEAN_MSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_ssc_rh         (ipy:ipy)                           &
                         ,'DMEAN_SSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_psc_rh         (ipy:ipy)                           &
+                        ,'DMEAN_PSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_nep            (ipy:ipy)                           &
                         ,'DMEAN_NEP_PY              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_rk4step        (ipy:ipy)                           &
@@ -1183,6 +1187,8 @@ module ed_init_history
                         ,'MMEAN_MICROBE_SOIL_C_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_slow_soil_c    (ipy:ipy)                           &
                         ,'MMEAN_SLOW_SOIL_C_PY      ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_passive_soil_c (ipy:ipy)                           &
+                        ,'MMEAN_PASSIVE_SOIL_C_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_fast_grnd_n    (ipy:ipy)                           &
                         ,'MMEAN_FAST_GRND_N_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_fast_soil_n    (ipy:ipy)                           &
@@ -1341,6 +1347,8 @@ module ed_init_history
                         ,'MMEAN_MSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_ssc_rh         (ipy:ipy)                           &
                         ,'MMEAN_SSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_psc_rh         (ipy:ipy)                           &
+                        ,'MMEAN_PSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_nep            (ipy:ipy)                           &
                         ,'MMEAN_NEP_PY              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_rk4step        (ipy:ipy)                           &
@@ -1533,6 +1541,8 @@ module ed_init_history
                         ,'MMSQU_MSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmsqu_ssc_rh         (ipy:ipy)                           &
                         ,'MMSQU_SSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmsqu_psc_rh         (ipy:ipy)                           &
+                        ,'MMSQU_PSC_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmsqu_nep            (ipy:ipy)                           &
                         ,'MMSQU_NEP_PY              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmsqu_rlongup        (ipy:ipy)                           &
@@ -1944,6 +1954,8 @@ module ed_init_history
                         ,'QMEAN_MSC_RH_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_ssc_rh         (:,ipy)                             &
                         ,'QMEAN_SSC_RH_PY          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_psc_rh         (:,ipy)                             &
+                        ,'QMEAN_PSC_RH_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_nep            (:,ipy)                             &
                         ,'QMEAN_NEP_PY             ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_rk4step        (:,ipy)                             &
@@ -2106,6 +2118,8 @@ module ed_init_history
                         ,'QMSQU_MSC_RH_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_ssc_rh         (:,ipy)                             &
                         ,'QMSQU_SSC_RH_PY          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_psc_rh         (:,ipy)                             &
+                        ,'QMSQU_PSC_RH_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmsqu_nep            (:,ipy)                             &
                         ,'QMSQU_NEP_PY             ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmsqu_rlongup        (:,ipy)                             &
@@ -3577,9 +3591,11 @@ module ed_init_history
       call hdf_getslab_r(csite%structural_soil_L                                           &
                      ,'STRUCTURAL_SOIL_L           ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%microbial_soil_C                                            &
-                     ,'MICROBIAL_SOIL_C            ',dsetrank,iparallel,.false.,foundvar)
+                     ,'MICROBIAL_SOIL_C            ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%slow_soil_C                                                 &
                      ,'SLOW_SOIL_C                 ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%passive_soil_C                                            &
+                     ,'PASSIVE_SOIL_C              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%fast_grnd_N                                                 &
                      ,'FAST_GRND_N                 ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%fast_soil_N                                                 &
@@ -3788,6 +3804,10 @@ module ed_init_history
                      ,'B_DECOMP                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%f_decomp                                                    &
                      ,'F_DECOMP                    ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%Lg_decomp                                                   &
+                     ,'LG_DECOMP                   ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%Ls_decomp                                                   &
+                     ,'LS_DECOMP                   ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%rh                                                          &
                      ,'RH                          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%fgc_rh                                                      &
@@ -3802,6 +3822,8 @@ module ed_init_history
                      ,'MSC_RH                      ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ssc_rh                                                      &
                      ,'SSC_RH                      ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%psc_rh                                                      &
+                     ,'PSC_RH                      ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%plant_ag_biomass                                            &
                      ,'PLANT_AG_BIOMASS            ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ustar                                                       &
@@ -3860,6 +3882,8 @@ module ed_init_history
                         ,'DMEAN_MSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_ssc_rh                                             &
                         ,'DMEAN_SSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%dmean_psc_rh                                             &
+                        ,'DMEAN_PSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_nep                                                &
                         ,'DMEAN_NEP_PA              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_rk4step                                            &
@@ -3977,6 +4001,8 @@ module ed_init_history
                         ,'MMEAN_MICROBE_SOIL_C_PA   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_slow_soil_c                                        &
                         ,'MMEAN_SLOW_SOIL_C_PA      ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_passive_soil_c                                     &
+                        ,'MMEAN_PASSIVE_SOIL_C_PA   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_fast_grnd_n                                        &
                         ,'MMEAN_FAST_GRND_N_PA      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_fast_soil_n                                        &
@@ -4007,6 +4033,8 @@ module ed_init_history
                         ,'MMEAN_MSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_ssc_rh                                             &
                         ,'MMEAN_SSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_psc_rh                                             &
+                        ,'MMEAN_PSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_nep                                                &
                         ,'MMEAN_NEP_PA              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_A_decomp                                           &
@@ -4141,6 +4169,8 @@ module ed_init_history
                         ,'MMSQU_MSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmsqu_ssc_rh                                             &
                         ,'MMSQU_SSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmsqu_psc_rh                                             &
+                        ,'MMSQU_PSC_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmsqu_nep                                                &
                         ,'MMSQU_NEP_PA              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmsqu_rlongup                                            &
@@ -4214,6 +4244,8 @@ module ed_init_history
                         ,'QMEAN_MSC_RH_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_ssc_rh                                             &
                         ,'QMEAN_SSC_RH_PA          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%qmean_psc_rh                                             &
+                        ,'QMEAN_PSC_RH_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_nep                                                &
                         ,'QMEAN_NEP_PA             ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_rk4step                                            &
@@ -4326,6 +4358,8 @@ module ed_init_history
                         ,'QMSQU_MSC_RH_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmsqu_ssc_rh                                             &
                         ,'QMSQU_SSC_RH_PA          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%qmsqu_psc_rh                                             &
+                        ,'QMSQU_PSC_RH_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmsqu_nep                                                &
                         ,'QMSQU_NEP_PA             ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmsqu_rlongup                                            &

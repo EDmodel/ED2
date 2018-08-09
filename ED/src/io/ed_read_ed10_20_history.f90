@@ -57,6 +57,9 @@ subroutine read_ed10_ed20_history_file
    use decomp_coms    , only : decomp_scheme       & ! intent(in)
                              , agf_fsc             & ! intent(in)
                              , agf_stsc            & ! intent(in)
+                             , f0_msc              & ! intent(in)
+                             , f0_ssc              & ! intent(in)
+                             , f0_psc              & ! intent(in)
                              , c2n_structural      ! ! intent(in)
    use physiology_coms, only : iddmort_scheme      ! ! intent(in)
    use ed_type_init   , only : init_ed_cohort_vars & ! subroutine
@@ -128,7 +131,6 @@ subroutine read_ed10_ed20_history_file
    real                 , dimension(huge_patch)           :: stsc
    real                 , dimension(huge_patch)           :: stsl
    real                 , dimension(huge_patch)           :: ssc
-   real                 , dimension(huge_patch)           :: msc
    real                 , dimension(huge_patch)           :: msn
    real                 , dimension(huge_patch)           :: fsn
    real                 , dimension(max_water,huge_patch) :: water
@@ -156,16 +158,12 @@ subroutine read_ed10_ed20_history_file
    real(kind=8)                                           :: dstsl
    real(kind=8)                                           :: dssc
    real(kind=8)                                           :: dpsc
-   real(kind=8)                                           :: dmsc
    real(kind=8)                                           :: dmsn
    real(kind=8)                                           :: dfsn
    !----- External function. --------------------------------------------------------------!
    real                 , external                        :: sngloff
    real                 , external                        :: dist_gc
    !---------------------------------------------------------------------------------------!
-
-
-
 
 
 
@@ -301,8 +299,12 @@ subroutine read_ed10_ed20_history_file
                   fsc   (ip) = sngloff(dfsc       ,min_ok  )
                   stsc  (ip) = sngloff(dstsc      ,min_ok  )
                   stsl  (ip) = sngloff(dstsl      ,min_ok  )
-                  ssc   (ip) = sngloff(dssc       ,min_ok  )
-                  msc   (ip) = 0.0
+                  select case (decomp_scheme)
+                  case (2)
+                     ssc(ip) = sngloff(dssc+dpsc  ,min_ok  )
+                  case default
+                     ssc(ip) = sngloff(dssc       ,min_ok  )
+                  end select
                   msn   (ip) = sngloff(dmsn       ,min_ok  )
                   fsn   (ip) = sngloff(dfsn       ,min_ok  )
                   do nw=1,nwater
@@ -313,7 +315,7 @@ subroutine read_ed10_ed20_history_file
                   !----- Standard ED-2.0 file. --------------------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) time(ip),pname(ip),trk(ip),dage,darea    &
                                                  ,dwater(1),dfsc,dstsc,dstsl,dssc,dummy    &
-                                                 ,dmsn,dfsn,dmsc
+                                                 ,dmsn,dfsn
 
                   !------------------------------------------------------------------------!
                   !     Check whether the file has hit the end, and if so, leave the loop. !
@@ -329,7 +331,6 @@ subroutine read_ed10_ed20_history_file
                   ssc    (ip) = sngloff(dssc     ,min_ok  )
                   msn    (ip) = sngloff(dmsn     ,min_ok  )
                   fsn    (ip) = sngloff(dfsn     ,min_ok  )
-                  msc    (ip) = sngloff(dmsc     ,min_ok  )
                   water(1,ip) = sngloff(dwater(1),min_ok  )
 
                case (3)
@@ -493,7 +494,6 @@ subroutine read_ed10_ed20_history_file
                      csite%area              (ip2) = area(ip)
                      csite%fast_grnd_C       (ip2) =        agf_fsc  * fsc (ip)
                      csite%fast_soil_C       (ip2) = (1.0 - agf_fsc) * fsc (ip)
-                     csite%slow_soil_C       (ip2) = ssc (ip)
                      csite%structural_grnd_C (ip2) =        agf_stsc  * stsc(ip)
                      csite%structural_soil_C (ip2) = (1.0 - agf_stsc) * stsc(ip)
                      csite%structural_grnd_L (ip2) =        agf_stsc  * stsl(ip)
@@ -517,9 +517,13 @@ subroutine read_ed10_ed20_history_file
                      !---------------------------------------------------------------------!
                      select case (decomp_scheme)
                      case (2)
-                        csite%microbial_soil_C(ip2) = msc(ip)
+                        csite%microbial_soil_C(ip2) = f0_msc * ssc(ip)
+                        csite%slow_soil_C     (ip2) = f0_ssc * ssc(ip)
+                        csite%passive_soil_C  (ip2) = f0_psc * ssc(ip)
                      case default
                         csite%microbial_soil_C(ip2) = 0.0
+                        csite%slow_soil_C     (ip2) = ssc(ip)
+                        csite%passive_soil_C  (ip2) = 0.0
                      end select
                      !---------------------------------------------------------------------!
                   end if
@@ -616,9 +620,13 @@ subroutine read_ed10_ed20_history_file
                   !------------------------------------------------------------------------!
                   select case (decomp_scheme)
                   case (2)
-                     csite%microbial_soil_C(ip) = msc(ip)
+                     csite%microbial_soil_C(ip) = f0_msc * ssc(ip)
+                     csite%slow_soil_C     (ip) = f0_ssc * ssc(ip)
+                     csite%passive_soil_C  (ip) = f0_psc * ssc(ip)
                   case default
                      csite%microbial_soil_C(ip) = 0.0
+                     csite%slow_soil_C     (ip) = ssc(ip)
+                     csite%passive_soil_C  (ip) = 0.0
                   end select
                   !------------------------------------------------------------------------!
                end do

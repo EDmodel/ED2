@@ -1344,7 +1344,7 @@ pft$tpm0           = ifelse( test = pft$pathway == 4
 #     Define minimum and maximum height based on life form and allometry.                  #
 #------------------------------------------------------------------------------------------#
 pft$hgt.min = ifelse( test = pft$tropical
-                    , yes  = 0.5
+                    , yes  = ifelse(test=pft$grass,yes=0.50,no=1.30           )
                     , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
                     )#end ifelse
 pft$hgt.max = ifelse( test = pft$tropical

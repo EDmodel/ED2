@@ -38,6 +38,8 @@ shefhead='SHEF_NCEP_DRIVER_DS314'
 metmain="${d_scratch}/ed2_data"
 #----- Path with land use scenarios. ------------------------------------------------------#
 lumain="${d_scratch}/lu_scenarios"
+#----- Path with other input data bases (soil texture, DGD, land mask, etc). --------------#
+inpmain="${d_scratch}/ed2_data"
 #----- Memory per simulation. -------------------------------------------------------------#
 sim_memory=8000
 #------------------------------------------------------------------------------------------#
@@ -1701,6 +1703,7 @@ do
    #---------------------------------------------------------------------------------------#
    ED2IN="${here}/${polyname}/ED2IN"
    sed -i~ s@paththere@${here}@g                 ${ED2IN}
+   sed -i~ s@myinpmain@${inpmain}@g              ${ED2IN}
    sed -i~ s@myyeara@${thisyeara}@g              ${ED2IN}
    sed -i~ s@mymontha@${montha}@g                ${ED2IN}
    sed -i~ s@mydatea@${datea}@g                  ${ED2IN}

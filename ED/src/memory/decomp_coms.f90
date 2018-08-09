@@ -24,14 +24,18 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! DECOMP_SCHEME -- This specifies the dependence of soil decomposition on temperature.  !
-   !                  0.  ED-2.1 default, the original exponential (low temperature        !
-   !                      limitation only).                                                !
-   !                  1.  Lloyd and Taylor (1994) model                                    !
+   ! DECOMP_SCHEME -- This specifies the soil Carbon (decomposition) model.                !
+   !                  0.  ED-2.1 default, with three soil carbon pools.  Temperature the   !
+   !                      original exponential (low temperature limitation only).          !
+   !                  1.  Similar to option 0, except that temperature is solved using     !
+   !                      the Lloyd and Taylor (1994) model.                               !
    !                      [[option 1 requires parameters to be set in xml]]                !
-   !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
-   !                      reaches a maximum at around 38C (using the default parameters),  !
-   !                      then quickly falls to zero at around 50C.                        !
+   !                  2.  Based on Bolker et al. (1998) CENTURY model.  Five necromass     !
+   !                      pools (litter aka fast, structural, microbial,                   !
+   !                      humified aka slow, and passive).  Temperature and moisture       !
+   !                      functions are similar to Bolker et al. (1998) and ED-1.0, except !
+   !                      that the curves were refitted to make them continuous and        !
+   !                      differentiable.                                                  !
    !---------------------------------------------------------------------------------------!
    integer :: decomp_scheme
    !---------------------------------------------------------------------------------------!
@@ -100,15 +104,19 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: r_stsc
    !---------------------------------------------------------------------------------------!
-   !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
+   !     Fraction of microbial soil decomposition going to heterotrophic respiration.      !
+   ! Two values are provided because the actual value depends on the sand content.         !
    !---------------------------------------------------------------------------------------!
-   real :: r_msc
+   real :: r_msc_int
+   real :: r_msc_slp
    !---------------------------------------------------------------------------------------!
-   !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
-   ! This is disabled because it must be 1.0 for the original ED-2 soil decomposition      !
-   ! schemes, and it is not used by the new scheme based on RothC (Sierra et al. 2012).    !
+   !     Fraction of humified soil decomposition going to heterotrophic respiration.       !
    !---------------------------------------------------------------------------------------!
-   ! real :: r_ssc
+   real :: r_ssc
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of passive soil decomposition going to heterotrophic respiration.        !
+   !---------------------------------------------------------------------------------------!
+   real :: r_psc
    !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of structural pool soil carbon (1/days); this is modulated   !
    ! by Lc.                                                                                !
@@ -123,44 +131,58 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_msc
    !---------------------------------------------------------------------------------------!
-   !     Intrinsic decay rate of slow pool soil carbon (1/days).  This pool has already    !
-   ! decayed from the structural pool.                                                     !
+   !     Intrinsic decay rate of slow (humified) pool soil carbon (1/days).                !
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_ssc
    !---------------------------------------------------------------------------------------!
-
-
+   !     Intrinsic decay rate of passive pool soil carbon (1/days).                        !
    !---------------------------------------------------------------------------------------!
-   !     Fraction of decay that is transferred to microbial carbon pool.  This parameter   !
-   ! is used only when decomp_scheme is set to 2.                                          !
-   !---------------------------------------------------------------------------------------!
-   real :: fx_msc
+   real :: decay_rate_psc
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !     Coefficients to obtain parameter x for the RothC model as implemented by Sierra   !
-   ! et al. (2012).                                                                        !
+   !     Fraction of decay that is transferred between soil pools.  These quantities are   !
+   ! functions of clay content, following CENTURY, and thus both the intercept and the     !
+   ! slope must be provided.  This option is used only when DECOMP_SCHEME is 2.            !
    !---------------------------------------------------------------------------------------!
-   real :: xrothc_a
-   real :: xrothc_b
-   real :: xrothc_c
-   real :: xrothc_d
+   real :: fx_msc_psc_int
+   real :: fx_msc_psc_slp
+   real :: fx_ssc_psc_int
+   real :: fx_ssc_psc_slp
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !     Temporary parameters to indicate above-ground (and flammable) necromass.  In the  !
-   ! future we should split the necromass pools into above- and below-ground.              !
+   !  CENTURY parameter that controls the effect of lignin on structural decomposition.    !
+   !---------------------------------------------------------------------------------------!
+   real :: e_lignin
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to indicate above-ground (and flammable) necromass.  These are used    !
+   ! only during initialisation (NBG or pss/css files).                                    !
    !---------------------------------------------------------------------------------------!
    real :: agf_fsc
    real :: agf_stsc
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to indicate the fraction of soil carbon that should be microbial and   !
+   ! passive.  Humified (slow) will be 1 - f0_msc - f0_psc.  These are used only during    !
+   ! initialisation (NBG or pss/css files), and only when DECOMP_SCHEME = 2.               !
+   !---------------------------------------------------------------------------------------!
+   real :: f0_msc
+   real :: f0_psc
+   real :: f0_ssc
+   !---------------------------------------------------------------------------------------!
 
+
+   !----- Carbon to Nitrogen ratio, fast pool (for initial conditions only). --------------!
+   real :: c2n_fast_0
    !----- Carbon to Nitrogen ratio, structural pool. --------------------------------------!
    real :: c2n_structural
-   !----- Carbon to Nitrogen ratio, slow pool. --------------------------------------------!
+   !----- Carbon to Nitrogen ratio, slow pool (or microbial, slow, and passive). ----------!
    real :: c2n_slow
    !---------------------------------------------------------------------------------------!
 

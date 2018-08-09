@@ -129,9 +129,9 @@ ptcloud.2.patch <<- function( pt.cloud
                             , stsl             = necro$stsl + acd.necro
                             , ssc              = necro$ssc
                             , lai              = sum(cssnow$lai)
-                            , msn              = necro$msn
+                            , isn              = necro$isn
                             , fsn              = necro$fsn
-                            , nep              = 0.
+                            , msc              = necro$msc
                             , gpp              = 0.
                             , rh               = 0.
                             , stringsAsFactors = FALSE
@@ -162,9 +162,9 @@ ptcloud.2.patch <<- function( pt.cloud
                             , stsl             = necro$stsl + acd.necro
                             , ssc              = necro$ssc
                             , lai              = 0.
-                            , msn              = necro$msn
+                            , isn              = necro$isn
                             , fsn              = necro$fsn
-                            , nep              = 0.
+                            , msc              = necro$msc
                             , gpp              = 0.
                             , rh               = 0.
                             , stringsAsFactors = FALSE
@@ -455,9 +455,9 @@ ptcloud.2.patch <<- function( pt.cloud
                                   , stsl             = necro$stsl + acd.necro
                                   , ssc              = necro$ssc
                                   , lai              = sum(cssnow$lai)
-                                  , msn              = necro$msn
+                                  , msn              = necro$isn
                                   , fsn              = necro$fsn
-                                  , nep              = 0.
+                                  , msc              = necro$msc
                                   , gpp              = 0.
                                   , rh               = 0.
                                   , stringsAsFactors = FALSE
@@ -486,9 +486,9 @@ ptcloud.2.patch <<- function( pt.cloud
                                   , stsl             = necro$stsl + acd.necro
                                   , ssc              = necro$ssc
                                   , lai              = 0.
-                                  , msn              = necro$msn
+                                  , isn              = necro$isn
                                   , fsn              = necro$fsn
-                                  , nep              = 0.
+                                  , msc              = necro$msc
                                   , gpp              = 0.
                                   , rh               = 0.
                                   , stringsAsFactors = FALSE

@@ -28,9 +28,15 @@ module ed_nbg_init
                                 , init_ed_patch_vars  & ! subroutine
                                 , init_ed_site_vars   & ! subroutine
                                 , init_ed_poly_vars   ! ! subroutine
-      use decomp_coms    , only : agf_fsc             & ! intent(in)
+      use decomp_coms    , only : decomp_scheme       & ! intent(in)
+                                , agf_fsc             & ! intent(in)
                                 , agf_stsc            & ! intent(in)
-                                , c2n_structural      ! ! intent(in)
+                                , c2n_fast_0          & ! intent(in)
+                                , c2n_structural      & ! intent(in)
+                                , c2n_slow            & ! intent(in)
+                                , f0_msc              & ! intent(in)
+                                , f0_ssc              & ! intent(in)
+                                , f0_psc              ! ! intent(in)
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
@@ -62,7 +68,8 @@ module ed_nbg_init
             !     Someone that uses the nitrogen model should check whether this is neces- !
             ! sary or not.  If nitrogen limitation is off, then we start all carbon and    !
             ! nitrogen pools with zeroes, otherwise we initialise with the former default  !
-            ! values.                                                                      !
+            ! values.  Values have been updated so C and N pools necessarily start         !
+            ! following stoichiometry.                                                     !
             !------------------------------------------------------------------------------!
             select case (n_plant_lim)
             case (0)
@@ -74,25 +81,36 @@ module ed_nbg_init
                csite%structural_soil_L (1) = 0.0
                csite%microbial_soil_C  (1) = 0.0
                csite%slow_soil_C       (1) = 0.0
+               csite%passive_soil_C    (1) = 0.0
                csite%fast_grnd_N       (1) = 0.0
                csite%fast_soil_N       (1) = 0.0
                csite%structural_grnd_N (1) = 0.0
                csite%structural_soil_N (1) = 0.0
                csite%mineralized_soil_N(1) = 0.0
             case (1)
-               csite%fast_grnd_C       (1) = agf_fsc * 0.2
-               csite%fast_soil_C       (1) = (1.0 - agf_fsc) * 0.2
-               csite%structural_grnd_C (1) = agf_stsc * 10.0
-               csite%structural_soil_C (1) = (1.0 - agf_stsc) * 10.0
-               csite%structural_grnd_L (1) = csite%structural_grnd_C(1)
-               csite%structural_soil_L (1) = csite%structural_soil_C(1)
-               csite%microbial_soil_C  (1) = 0.2
-               csite%slow_soil_C       (1) = 0.01
-               csite%fast_grnd_N       (1) = agf_fsc * 1.0
-               csite%fast_soil_N       (1) = (1.0 - agf_fsc) * 1.0
-               csite%structural_grnd_N (1) = csite%structural_grnd_C(1) / c2n_structural
-               csite%structural_soil_N (1) = csite%structural_soil_C(1) / c2n_structural
-               csite%mineralized_soil_N(1) = 1.0
+               csite%fast_grnd_C        (1) =        agf_fsc   * 0.2
+               csite%fast_soil_C        (1) = (1.0 - agf_fsc)  * 0.2
+               csite%structural_grnd_C  (1) =        agf_stsc  * 0.2
+               csite%structural_soil_C  (1) = (1.0 - agf_stsc) * 0.2
+               csite%structural_grnd_L  (1) = csite%structural_grnd_C(1)
+               csite%structural_soil_L  (1) = csite%structural_soil_C(1)
+               select case (decomp_scheme)
+               case (2)
+                  csite%microbial_soil_C(1) = f0_msc * 5.0
+                  csite%slow_soil_C     (1) = f0_ssc * 5.0
+                  csite%passive_soil_C  (1) = f0_psc * 5.0
+               case default
+                  csite%microbial_soil_C(1) = 0.0
+                  csite%slow_soil_C     (1) = 1.0
+                  csite%passive_soil_C  (1) = 0.0
+               end select
+               csite%fast_grnd_N       (1) = csite%fast_grnd_C       (1)   / c2n_fast_0
+               csite%fast_soil_N       (1) = csite%fast_soil_C       (1)   / c2n_fast_0
+               csite%structural_grnd_N (1) = csite%structural_grnd_C (1)   / c2n_structural
+               csite%structural_soil_N (1) = csite%structural_soil_C (1)   / c2n_structural
+               csite%mineralized_soil_N(1) = ( csite%microbial_soil_C(1)                   &
+                                             + csite%slow_soil_C     (1)                   &
+                                             + csite%passive_soil_C  (1) ) / c2n_slow
             end select
             !------------------------------------------------------------------------------!
 
@@ -598,9 +616,15 @@ module ed_nbg_init
                                     , init_ed_patch_vars  & ! subroutine
                                     , init_ed_site_vars   & ! subroutine
                                     , init_ed_poly_vars   ! ! subroutine
-      use decomp_coms        , only : agf_fsc             & ! intent(in)
+      use decomp_coms        , only : decomp_scheme       & ! intent(in)
+                                    , agf_fsc             & ! intent(in)
                                     , agf_stsc            & ! intent(in)
-                                    , c2n_structural      ! ! intent(in)
+                                    , c2n_fast_0          & ! intent(in)
+                                    , c2n_structural      & ! intent(in)
+                                    , c2n_slow            & ! intent(in)
+                                    , f0_msc              & ! intent(in)
+                                    , f0_ssc              & ! intent(in)
+                                    , f0_psc              ! ! intent(in)
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
@@ -647,6 +671,15 @@ module ed_nbg_init
                csite%fbeam              (ipa) = 1.0
                csite%light_type         (ipa) = 1
 
+
+               !---------------------------------------------------------------------------!
+               !     Someone that uses the nitrogen model should check whether this is     !
+               ! necessary or not.  If nitrogen limitation is off, then we start all       !
+               ! carbon and nitrogen pools with zeroes, otherwise we initialise with the   !
+               ! former default values.  Values have been updated so C and N pools         !
+               ! necessarily start following stoichiometry.                                !
+               !---------------------------------------------------------------------------!
+
                select case (n_plant_lim)
                case (0)
                   csite%fast_grnd_C       (ipa) = 0.0
@@ -657,27 +690,41 @@ module ed_nbg_init
                   csite%structural_soil_L (ipa) = 0.0
                   csite%microbial_soil_C  (ipa) = 0.0
                   csite%slow_soil_C       (ipa) = 0.0
+                  csite%passive_soil_C    (ipa) = 0.0
                   csite%fast_grnd_N       (ipa) = 0.0
                   csite%fast_soil_N       (ipa) = 0.0
                   csite%structural_grnd_N (ipa) = 0.0
                   csite%structural_soil_N (ipa) = 0.0
                   csite%mineralized_soil_N(ipa) = 0.0
                case (1)
-                  csite%fast_grnd_C       (ipa) = agf_fsc * 0.2
-                  csite%fast_soil_C       (ipa) = (1.0 - agf_fsc) * 0.2
-                  csite%structural_grnd_C (ipa) = agf_stsc * 10.0
-                  csite%structural_soil_C (ipa) = (1.0 - agf_stsc) * 10.0
-                  csite%structural_grnd_L (ipa) = csite%structural_grnd_C(ipa)
-                  csite%structural_soil_L (ipa) = csite%structural_soil_C(ipa)
-                  csite%microbial_soil_C  (ipa) = 0.2
-                  csite%slow_soil_C       (ipa) = 0.01
-                  csite%fast_grnd_N       (ipa) = agf_fsc * 1.0
-                  csite%fast_soil_N       (ipa) = (1.0 - agf_fsc) * 1.0
-                  csite%structural_grnd_N (ipa) = csite%structural_grnd_C(ipa)             &
+                  csite%fast_grnd_C        (ipa) =        agf_fsc   * 0.2
+                  csite%fast_soil_C        (ipa) = (1.0 - agf_fsc)  * 0.2
+                  csite%structural_grnd_C  (ipa) =        agf_stsc  * 0.2
+                  csite%structural_soil_C  (ipa) = (1.0 - agf_stsc) * 0.2
+                  csite%structural_grnd_L  (ipa) = csite%structural_grnd_C(ipa)
+                  csite%structural_soil_L  (ipa) = csite%structural_soil_C(ipa)
+                  select case (decomp_scheme)
+                  case (2)
+                     csite%microbial_soil_C(ipa) = f0_msc * 5.0
+                     csite%slow_soil_C     (ipa) = f0_ssc * 5.0
+                     csite%passive_soil_C  (ipa) = f0_psc * 5.0
+                  case default
+                     csite%microbial_soil_C(ipa) = 0.0
+                     csite%slow_soil_C     (ipa) = 1.0
+                     csite%passive_soil_C  (ipa) = 0.0
+                  end select
+                  csite%fast_grnd_N       (ipa) = csite%fast_grnd_C       (ipa)            &
+                                                / c2n_fast_0
+                  csite%fast_soil_N       (ipa) = csite%fast_soil_C       (ipa)            &
+                                                / c2n_fast_0
+                  csite%structural_grnd_N (ipa) = csite%structural_grnd_C (ipa)            &
                                                 / c2n_structural
-                  csite%structural_soil_N (ipa) = csite%structural_soil_C(ipa)             &
+                  csite%structural_soil_N (ipa) = csite%structural_soil_C (ipa)            &
                                                 / c2n_structural
-                  csite%mineralized_soil_N(ipa) = 1.0
+                  csite%mineralized_soil_N(ipa) = ( csite%microbial_soil_C(ipa)            &
+                                                + csite%slow_soil_C     (ipa)              &
+                                                + csite%passive_soil_C  (ipa) )            &
+                                                / c2n_slow
                end select
                !---------------------------------------------------------------------------!
 

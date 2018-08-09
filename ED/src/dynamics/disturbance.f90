@@ -1681,6 +1681,7 @@ module disturbance
       csite%structural_grnd_L          (np) = 0.0
       csite%structural_soil_L          (np) = 0.0
       csite%microbial_soil_C           (np) = 0.0
+      csite%passive_soil_C             (np) = 0.0
       csite%slow_soil_C                (np) = 0.0
       csite%fast_grnd_N                (np) = 0.0
       csite%fast_soil_N                (np) = 0.0
@@ -1752,6 +1753,9 @@ module disturbance
                                             * area_fac
       csite%slow_soil_C                (np) = csite%slow_soil_C                (np)        &
                                             + csite%slow_soil_C                (cp)        &
+                                            * area_fac
+      csite%passive_soil_C             (np) = csite%passive_soil_C             (np)        &
+                                            + csite%passive_soil_C             (cp)        &
                                             * area_fac
       csite%fast_grnd_N                (np) = csite%fast_grnd_N                (np)        &
                                             + csite%fast_grnd_N                (cp)        &
@@ -1951,6 +1955,9 @@ module disturbance
                                       * area_fac
       csite%fmean_ssc_rh         (np) = csite%fmean_ssc_rh         (np)                    &
                                       + csite%fmean_ssc_rh         (cp)                    &
+                                      * area_fac
+      csite%fmean_psc_rh         (np) = csite%fmean_psc_rh         (np)                    &
+                                      + csite%fmean_psc_rh         (cp)                    &
                                       * area_fac
       csite%fmean_nep            (np) = csite%fmean_nep            (np)                    &
                                       + csite%fmean_nep            (cp)                    &
@@ -2158,6 +2165,9 @@ module disturbance
          csite%dmean_ssc_rh         (    np) = csite%dmean_ssc_rh         (    np)         &
                                              + csite%dmean_ssc_rh         (    cp)         &
                                              * area_fac
+         csite%dmean_psc_rh         (    np) = csite%dmean_psc_rh         (    np)         &
+                                             + csite%dmean_psc_rh         (    cp)         &
+                                             * area_fac
          csite%dmean_nep            (    np) = csite%dmean_nep            (    np)         &
                                              + csite%dmean_nep            (    cp)         &
                                              * area_fac
@@ -2363,6 +2373,9 @@ module disturbance
          csite%mmean_slow_soil_c    (    np) = csite%mmean_slow_soil_c    (    np)         &
                                              + csite%mmean_slow_soil_c    (    cp)         &
                                              * area_fac
+         csite%mmean_passive_soil_c (    np) = csite%mmean_passive_soil_c (    np)         &
+                                             + csite%mmean_passive_soil_c (    cp)         &
+                                             * area_fac
          csite%mmean_fast_grnd_n    (    np) = csite%mmean_fast_grnd_n    (    np)         &
                                              + csite%mmean_fast_grnd_n    (    cp)         &
                                              * area_fac
@@ -2407,6 +2420,9 @@ module disturbance
                                              * area_fac
          csite%mmean_ssc_rh         (    np) = csite%mmean_ssc_rh         (    np)         &
                                              + csite%mmean_ssc_rh         (    cp)         &
+                                             * area_fac
+         csite%mmean_psc_rh         (    np) = csite%mmean_psc_rh         (    np)         &
+                                             + csite%mmean_psc_rh         (    cp)         &
                                              * area_fac
          csite%mmean_nep            (    np) = csite%mmean_nep            (    np)         &
                                              + csite%mmean_nep            (    cp)         &
@@ -2609,6 +2625,9 @@ module disturbance
          csite%mmsqu_ssc_rh         (    np) = csite%mmsqu_ssc_rh         (    np)         &
                                              + csite%mmsqu_ssc_rh         (    cp)         &
                                              * area_fac
+         csite%mmsqu_psc_rh         (    np) = csite%mmsqu_psc_rh         (    np)         &
+                                             + csite%mmsqu_psc_rh         (    cp)         &
+                                             * area_fac
          csite%mmsqu_nep            (    np) = csite%mmsqu_nep            (    np)         &
                                              + csite%mmsqu_nep            (    cp)         &
                                              * area_fac
@@ -2705,6 +2724,9 @@ module disturbance
                                              * area_fac
          csite%qmean_ssc_rh         (  :,np) = csite%qmean_ssc_rh         (  :,np)         &
                                              + csite%qmean_ssc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmean_psc_rh         (  :,np) = csite%qmean_psc_rh         (  :,np)         &
+                                             + csite%qmean_psc_rh         (  :,cp)         &
                                              * area_fac
          csite%qmean_nep            (  :,np) = csite%qmean_nep            (  :,np)         &
                                              + csite%qmean_nep            (  :,cp)         &
@@ -2897,6 +2919,9 @@ module disturbance
                                              * area_fac
          csite%qmsqu_ssc_rh         (  :,np) = csite%qmsqu_ssc_rh         (  :,np)         &
                                              + csite%qmsqu_ssc_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_psc_rh         (  :,np) = csite%qmsqu_psc_rh         (  :,np)         &
+                                             + csite%qmsqu_psc_rh         (  :,cp)         &
                                              * area_fac
          csite%qmsqu_nep            (  :,np) = csite%qmsqu_nep            (  :,np)         &
                                              + csite%qmsqu_nep            (  :,cp)         &

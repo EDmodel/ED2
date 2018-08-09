@@ -74,6 +74,7 @@ module ed_bigleaf_init
       real             , dimension(n_dist_types)       :: stsl
       real             , dimension(n_dist_types)       :: msc
       real             , dimension(n_dist_types)       :: ssc
+      real             , dimension(n_dist_types)       :: psc
       real             , dimension(n_dist_types)       :: fgn
       real             , dimension(n_dist_types)       :: fsn
       real             , dimension(n_dist_types)       :: stgn
@@ -99,6 +100,7 @@ module ed_bigleaf_init
       real                                             :: site_stgc
       real                                             :: site_stsc
       real                                             :: site_msc
+      real                                             :: site_psc
       real                                             :: poly_lai
       real                                             :: poly_agb
       real                                             :: poly_bsa
@@ -109,6 +111,7 @@ module ed_bigleaf_init
       real                                             :: poly_stsc
       real                                             :: poly_msc
       real                                             :: poly_ssc
+      real                                             :: poly_psc
       !------------------------------------------------------------------------------------!
 
 
@@ -116,15 +119,15 @@ module ed_bigleaf_init
       !------------------------------------------------------------------------------------!
       !       Loop over all sites.                                                         !
       !------------------------------------------------------------------------------------!
-      write(unit=*,fmt='(141a)'    ) ('-',k=1,141)
+      write(unit=*,fmt='(156a)'    ) ('-',k=1,156)
       write(unit=*,fmt='(a,1x,i5)' ) ' Mynum = ',mynum
-      write(unit=*,fmt='(141a)'    ) ('-',k=1,141)
-      write(unit=*,fmt='(14(a,1x))') '         IPY','      NSITES','    NPATCHES'          &
+      write(unit=*,fmt='(156a)'    ) ('-',k=1,156)
+      write(unit=*,fmt='(15(a,1x))') '         IPY','      NSITES','    NPATCHES'          &
                                     ,'    NCOHORTS','      NPLANT','         LAI'          &
                                     ,'         AGB','  BASAL_AREA','     FAST_GC'          &
                                     ,'     FAST_SC','     SLOW_SC','   STRUCT_GC'          &
-                                    ,'   STRUCT_SC','  MICROBE_SC'
-      write(unit=*,fmt='(141a)'   ) ('-',k=1,141)
+                                    ,'   STRUCT_SC','  MICROBE_SC','  PASSIVE_GC'
+      write(unit=*,fmt='(156a)'   ) ('-',k=1,156)
       polyloop: do ipy=1,cgrid%npolygons
 
          cpoly => cgrid%polygon(ipy)
@@ -141,6 +144,7 @@ module ed_bigleaf_init
             stsl      (:) = 0.
             msc       (:) = 0.
             ssc       (:) = 0.
+            psc       (:) = 0.
             fgn       (:) = 0.
             fsn       (:) = 0.
             stgn      (:) = 0.
@@ -169,6 +173,7 @@ module ed_bigleaf_init
                stsl   (ilu) = stsl   (ilu) + csite%structural_soil_L (ipa) * csite%area(ipa)
                msc    (ilu) = msc    (ilu) + csite%microbial_soil_C  (ipa) * csite%area(ipa)
                ssc    (ilu) = ssc    (ilu) + csite%slow_soil_C       (ipa) * csite%area(ipa)
+               psc    (ilu) = psc    (ilu) + csite%passive_soil_C    (ipa) * csite%area(ipa)
                fgn    (ilu) = fgn    (ilu) + csite%fast_grnd_N       (ipa) * csite%area(ipa)
                fsn    (ilu) = fsn    (ilu) + csite%fast_soil_N       (ipa) * csite%area(ipa)
                stgn   (ilu) = stgn   (ilu) + csite%structural_grnd_N (ipa) * csite%area(ipa)
@@ -259,6 +264,7 @@ module ed_bigleaf_init
                   csite%structural_soil_L (ipa) = stsl(ilu) / area(ilu)
                   csite%microbial_soil_C  (ipa) = msc (ilu) / area(ilu)
                   csite%slow_soil_C       (ipa) = ssc (ilu) / area(ilu)
+                  csite%passive_soil_C    (ipa) = psc (ilu) / area(ilu)
                   csite%fast_grnd_N       (ipa) = fgn (ilu) / area(ilu)
                   csite%fast_soil_N       (ipa) = fsn (ilu) / area(ilu)
                   csite%structural_grnd_N (ipa) = stgn(ilu) / area(ilu)
@@ -294,6 +300,7 @@ module ed_bigleaf_init
                         csite%structural_soil_L (ipa) = stsl(ilu) / area(ilu)
                         csite%microbial_soil_C  (ipa) = msc (ilu) / area(ilu)
                         csite%slow_soil_C       (ipa) = ssc (ilu) / area(ilu)
+                        csite%passive_soil_C    (ipa) = psc (ilu) / area(ilu)
                         csite%fast_grnd_N       (ipa) = fgn (ilu) / area(ilu)
                         csite%fast_soil_N       (ipa) = fsn (ilu) / area(ilu)
                         csite%structural_grnd_N (ipa) = stgn(ilu) / area(ilu)
@@ -486,6 +493,7 @@ module ed_bigleaf_init
          poly_stsc = 0.0
          poly_msc  = 0.0
          poly_ssc  = 0.0
+         poly_psc  = 0.0
          ncohorts  = 0
 
          do isi = 1,cpoly%nsites
@@ -502,6 +510,7 @@ module ed_bigleaf_init
             site_stsc = 0.0
             site_msc  = 0.0
             site_ssc  = 0.0
+            site_psc  = 0.0
             do ipa = 1,csite%npatches
                patch_lai  = 0.0
                patch_wai  = 0.0
@@ -530,6 +539,7 @@ module ed_bigleaf_init
                site_stsc = site_stsc + csite%structural_soil_C(ipa) * csite%area(ipa)
                site_msc  = site_msc  + csite%microbial_soil_C (ipa) * csite%area(ipa)
                site_ssc  = site_ssc  + csite%slow_soil_C      (ipa) * csite%area(ipa)
+               site_psc  = site_psc  + csite%passive_soil_C   (ipa) * csite%area(ipa)
 
                csite%cohort_count(ipa) = npatchco
                nsitepat                = nsitepat + 1
@@ -545,14 +555,16 @@ module ed_bigleaf_init
             poly_stsc = poly_stsc + site_stsc * cpoly%area(isi)
             poly_msc  = poly_msc  + site_msc  * cpoly%area(isi)
             poly_ssc  = poly_ssc  + site_ssc  * cpoly%area(isi)
+            poly_psc  = poly_psc  + site_psc  * cpoly%area(isi)
 
             cpoly%patch_count(isi) = nsitepat
 
 
-            write (unit=*,fmt='(4(i12,1x),8(f12.3,1x))')                                   &
+            write (unit=*,fmt='(4(i12,1x),9(f12.3,1x))')                                   &
                                                       ipy,cpoly%nsites,nsitepat,ncohorts   &
                                                      ,poly_pop,poly_lai,poly_agb,poly_bsa  &
-                                                     ,poly_fsc,poly_ssc,poly_stsc,poly_msc
+                                                     ,poly_fsc,poly_ssc,poly_stsc,poly_msc &
+                                                     ,poly_psc
          end do
 
          !----- Initialise the polygon-level variables. -----------------------------------!

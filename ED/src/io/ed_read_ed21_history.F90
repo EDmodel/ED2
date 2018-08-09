@@ -522,6 +522,8 @@ subroutine read_ed21_history_file
                                        ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '       &
                                        ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%passive_soil_C    ,'PASSIVE_SOIL_C '         &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%fast_grnd_N       ,'FAST_GRND_N '            &
                                        ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%structural_grnd_N ,'STRUCTURAL_GRND_N '      &
@@ -540,6 +542,7 @@ subroutine read_ed21_history_file
                      csite%structural_soil_C(:) = (1.-agf_stsc) * csite%structural_soil_C(:)
                      csite%structural_soil_L(:) = (1.-agf_stsc) * csite%structural_soil_L(:)
                      csite%microbial_soil_C (:) = 0.0
+                     csite%passive_soil_C   (:) = 0.0
                      !---------------------------------------------------------------------!
 
                      !----- Assume stoichiometry for other nitrogen pools. ----------------!
@@ -1821,8 +1824,6 @@ subroutine read_ed21_history_unstruct
                                     ,dsetrank,iparallel,.true. ,foundvar)
                   call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
                                     ,dsetrank,iparallel,.true. ,foundvar)
-                  call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '          &
-                                    ,dsetrank,iparallel,.false.,foundvar)
                   call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
                                     ,dsetrank,iparallel,.true. ,foundvar)
                   !----- Try to read the ground carbon. -----------------------------------!
@@ -1835,6 +1836,8 @@ subroutine read_ed21_history_unstruct
                      call hdf_getslab_r(csite%structural_grnd_L ,'STRUCTURAL_GRND_L '      &
                                        ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '       &
+                                       ,dsetrank,iparallel,.true. ,foundvar)
+                     call hdf_getslab_r(csite%passive_soil_C    ,'PASSIVE_SOIL_C '         &
                                        ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%fast_grnd_N       ,'FAST_GRND_N '            &
                                        ,dsetrank,iparallel,.true. ,foundvar)
@@ -1854,6 +1857,7 @@ subroutine read_ed21_history_unstruct
                      csite%structural_soil_C(:) = (1.-agf_stsc) * csite%structural_soil_C(:)
                      csite%structural_soil_L(:) = (1.-agf_stsc) * csite%structural_soil_L(:)
                      csite%microbial_soil_C (:) = 0.0
+                     csite%passive_soil_C   (:) = 0.0
                      !---------------------------------------------------------------------!
 
                      !----- Assume stoichiometry for other nitrogen pools. ----------------!
@@ -3106,8 +3110,6 @@ subroutine read_ed21_polyclone
                           ,dsetrank,iparallel,.true. ,foundvar)
                      call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '      &
                           ,dsetrank,iparallel,.true. ,foundvar)
-                     call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '       &
-                          ,dsetrank,iparallel,.false.,foundvar)
                      call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '     &
                           ,dsetrank,iparallel,.true. ,foundvar)
                      !----- Try to read the ground carbon. --------------------------------!
@@ -3120,6 +3122,8 @@ subroutine read_ed21_polyclone
                         call hdf_getslab_r(csite%structural_grnd_L ,'STRUCTURAL_GRND_L '   &
                                           ,dsetrank,iparallel,.true. ,foundvar)
                         call hdf_getslab_r(csite%microbial_soil_C  ,'MICROBIAL_SOIL_C '    &
+                                          ,dsetrank,iparallel,.true. ,foundvar)
+                        call hdf_getslab_r(csite%passive_soil_C    ,'PASSIVE_SOIL_C '      &
                                           ,dsetrank,iparallel,.true. ,foundvar)
                         call hdf_getslab_r(csite%fast_grnd_N       ,'FAST_GRND_N '         &
                                           ,dsetrank,iparallel,.true. ,foundvar)
@@ -3147,6 +3151,7 @@ subroutine read_ed21_polyclone
                         csite%structural_soil_L(:) = (1.-agf_stsc)                         &
                                                    * csite%structural_soil_L(:)
                         csite%microbial_soil_C (:) = 0.0
+                        csite%passive_soil_C   (:) = 0.0
                         !------------------------------------------------------------------!
 
                         !----- Assume stoichiometry for other nitrogen pools. -------------!

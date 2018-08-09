@@ -1442,6 +1442,15 @@ squeeze[[n]] = list( vnam       = "ssc.resp"
                    , box.plot   = FALSE
                    )#end list
 n            = n + 1
+squeeze[[n]] = list( vnam       = "psc.resp"
+                   , desc       = "Passive soil respiration"
+                   , unit       = untab$kgcom2oyr
+                   , col.scheme = "panoply"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
 squeeze[[n]] = list( vnam       = "nep"
                    , desc       = "Net ecosystem production"
                    , unit       = untab$kgcom2oyr
@@ -2113,16 +2122,16 @@ theme[[n]] = list( vnam      = c(    "plant.resp",  "aerobic.resp",   "growth.re
 n          = n + 1
 theme[[n]] = list( vnam      = c(       "het.resp",       "fgc.resp",       "fsc.resp"
                                 ,      "stgc.resp",      "stsc.resp",       "msc.resp"
-                                ,       "ssc.resp")
+                                ,       "ssc.resp",       "psc.resp")
                  , desc      = c(  "Heterotrophic",      "AG Litter",      "BG Litter"
                                 ,"AG Woody Debris","BG Woody Debris",      "Microbial"
-                                ,  "Humified soil")
+                                ,  "Humified soil",   "Passive soil")
                  , colour    = c(        "#143305",        "#A3CC52",        "#E65C17"
                                 ,        "#990F0F",        "#3B24B3",        "#2996CC"
-                                ,        "#B49ED2")
+                                ,        "#B49ED2",        "#F1BD3B")
                  , lwd       = c(              2.5,              2.5,              2.5
                                 ,              2.5,              2.5,              2.5
-                                ,              2.5)
+                                ,              2.5,              2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "hetresp"
@@ -2161,16 +2170,20 @@ theme[[n]] = list( vnam      = c(  "atm.vels",            "ustar")
 n          = n + 1
 theme[[n]] = list( vnam      = c(    "fast.grnd.c",    "fast.soil.c"
                                 ,  "struct.grnd.c",  "struct.soil.c"
-                                , "microbe.soil.c",    "slow.soil.c")
+                                , "microbe.soil.c",    "slow.soil.c"
+                                , "passive.soil.c")
                  , desc      = c(      "AG Litter",      "BG Litter"
                                 ,"AG Woody Debris","BG Woody Debris"
-                                ,     "Microbial",        "Humified")
+                                ,     "Microbial",        "Humified"
+                                ,       "Passive")
                  , colour    = c(       "#A3CC52",         "#1E4C08"
                                 ,       "#E65C17",         "#990F0F"
-                                ,       "#2996CC",         "#3B24B3")
+                                ,       "#2996CC",         "#3B24B3"
+                                ,       "#F1BD3B")
                  , lwd       = c(             2.5,               2.5
                                 ,             2.5,               2.5
-                                ,             2.5,               2.5)
+                                ,             2.5,               2.5
+                                ,             2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "soil_carbon"
@@ -3352,6 +3365,16 @@ plotpatch[[n]] = list( vnam       = "microbe.soil.c"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "slow.soil.c"
                      , desc       = "Humified soil carbon"
+                     , unit       = untab$kgcom2
+                     , col.scheme = "panoply"
+                     , plog       = TRUE
+                     , emean      = TRUE
+                     , mmean      = TRUE
+                     , ymean      = TRUE
+                     )#end list
+n              = n + 1
+plotpatch[[n]] = list( vnam       = "passive.soil.c"
+                     , desc       = "Passive soil carbon"
                      , unit       = untab$kgcom2
                      , col.scheme = "panoply"
                      , plog       = TRUE

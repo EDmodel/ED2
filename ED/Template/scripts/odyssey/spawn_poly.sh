@@ -11,8 +11,8 @@ moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
 #----- Original and scratch main data paths. ----------------------------------------------#
-#d_path="/n/home00/mlongo/data"
-d_path="/n/moorcroftfs5/mlongo/data"
+d_path="/n/home00/mlongo/data"
+#d_path="/n/moorcroftfs5/mlongo/data"
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit="${d_path}/ed2_data/site_bio_data"
 alsinit="${d_path}/ed2_data/lidar_spline_bio_data"
@@ -35,6 +35,8 @@ metmaindef="${d_path}/ed2_data"
 packdatasrc="${d_path}/to_scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
 lumain="${d_path}/ed2_data/land_use"
+#----- Path with other input data bases (soil texture, DGD, land mask, etc). --------------#
+inpmain="${d_path}/ed2_data"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch=false
 #------------------------------------------------------------------------------------------#
@@ -63,10 +65,10 @@ optsrc="-n"                   # Option for .bashrc (for special submission setti
 #----- Submit job automatically? (It may become false if something prevents submission). --#
 submit=false
 #----- Settings for this group of polygons. -----------------------------------------------#
-global_queue="moorcroft_amd"  # Queue
+global_queue="huce_intel"     # Queue
 sim_memory=0                  # Memory per simulation. Zero uses queue's default
-n_cpt=8                       # Number of cpus per task (it will be limited by maximum)
-partial=true                  # Partial submission (false will ignore polya and npartial
+n_cpt=12                      # Number of cpus per task (it will be limited by maximum)
+partial=false                 # Partial submission (false will ignore polya and npartial
                               #    and send all polygons.
 polya=21                      # First polygon to submit
 npartial=300                  # Maximum number of polygons to include in this bundle
@@ -1836,6 +1838,7 @@ do
    #---------------------------------------------------------------------------------------#
    ED2IN="${here}/${polyname}/ED2IN"
    sed -i~ s@paththere@${here}@g                 ${ED2IN}
+   sed -i~ s@myinpmain@${inpmain}@g              ${ED2IN}
    sed -i~ s@myyeara@${thisyeara}@g              ${ED2IN}
    sed -i~ s@mymontha@${montha}@g                ${ED2IN}
    sed -i~ s@mydatea@${datea}@g                  ${ED2IN}

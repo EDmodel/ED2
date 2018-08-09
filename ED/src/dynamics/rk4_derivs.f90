@@ -1224,10 +1224,10 @@ module rk4_derivs
       ! the coarse woody debris, and remove that from the ground to canopy carbon flux to  !
       ! avoid double counting.                                                             !
       !------------------------------------------------------------------------------------!
-      cflxlc_tot       = 0.d0
-      cflxwc_tot       = 0.d0
-      cflxsc_tot       = initp%fsc_rh + initp%stsc_rh + initp%msc_rh + initp%ssc_rh
-      cflxgc           = initp%fgc_rh + initp%stgc_rh
+      cflxlc_tot = 0.d0
+      cflxwc_tot = 0.d0
+      cflxsc_tot = initp%fsc_rh + initp%stsc_rh + initp%msc_rh + initp%ssc_rh + initp%psc_rh
+      cflxgc     = initp%fgc_rh + initp%stgc_rh
       !------------------------------------------------------------------------------------!
 
       cohortloop: do ico = 1,cpatch%ncohorts

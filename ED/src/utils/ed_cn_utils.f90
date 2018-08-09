@@ -136,7 +136,8 @@ module ed_cn_utils
                           + dble(csite%structural_grnd_C (ipa))                            &
                           + dble(csite%structural_soil_C (ipa))                            &
                           + dble(csite%microbial_soil_C  (ipa))                            &
-                          + dble(csite%slow_soil_C       (ipa))
+                          + dble(csite%slow_soil_C       (ipa))                            &
+                          + dble(csite%passive_soil_C    (ipa))
             this_nitrogen = dble(csite%fast_grnd_N       (ipa))                            &
                           + dble(csite%fast_soil_N       (ipa))                            &
                           + dble(csite%structural_grnd_N (ipa))                            &

@@ -19,6 +19,7 @@ module photosyn_driv
                                 , include_pft        & ! intent(in)
                                 , vm0                & ! intent(in)
                                 , D0                 & ! intent(in)
+                                , cuticular_cond     & ! intent(in)
                                 , leaf_turnover_rate ! ! intent(in)
       use soil_coms      , only : soil               & ! intent(in)
                                 , slzt               & ! intent(in)
@@ -30,7 +31,9 @@ module photosyn_driv
                                 , umols_2_kgCyr      & ! intent(in)
                                 , yr_day             & ! intent(in)
                                 , lnexp_min          & ! intent(in)
-                                , tiny_num           ! ! intent(in)
+                                , tiny_num           & ! intent(in)
+                                , umol_2_mol         & ! intent(in)
+                                , mmdry              ! ! intent(in)
       use ed_misc_coms   , only : dtlsm_o_frqsum     ! ! intent(in)
       use met_driver_coms, only : met_driv_state     ! ! structure
       use physiology_coms, only : print_photo_debug  & ! intent(in)
@@ -39,6 +42,8 @@ module photosyn_driv
       use farq_leuning   , only : lphysiol_full      ! ! sub-routine
       use allometry      , only : h2crownbh          ! ! function
       use therm_lib      , only : qslif              ! ! function
+      use rk4_coms       , only : effarea_transp     & ! intent(in)
+                                , tiny_offset        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)            , target      :: csite             ! Current site
@@ -92,6 +97,8 @@ module photosyn_driv
       real                                    :: vm0_tuco
       real                                    :: llspan_tuco
       integer, dimension(n_pft)               :: tuco_pft
+      !----- External function. -----------------------------------------------------------!
+      real(kind=4)             , external     :: sngloff ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
 
 
@@ -361,15 +368,16 @@ module photosyn_driv
       !------------------------------------------------------------------------------------!
       cohortloop: do ico = 1,cpatch%ncohorts
 
+         !----- Alias for PFT and root layer. ---------------------------------------------!
+         ipft  = cpatch%pft(ico)
+         kroot = cpatch%krdepth(ico)
+         !---------------------------------------------------------------------------------!
+
          !---------------------------------------------------------------------------------!
          !     Only need to worry about photosyn if radiative transfer has been  done for  !
          ! this cohort.                                                                    !
          !---------------------------------------------------------------------------------!
          if (cpatch%leaf_resolvable(ico)) then
-
-               !----- Alias for PFT and root layer. ---------------------------------------!
-               ipft  = cpatch%pft(ico)
-               kroot = cpatch%krdepth(ico)
 
                !---------------------------------------------------------------------------!
                !    Scale photosynthetically active radiation per unit of leaf.            !
@@ -571,7 +579,6 @@ module photosyn_driv
             cpatch%psi_open(ico)             = 0.0
             cpatch%psi_closed(ico)           = 0.0
             cpatch%water_supply(ico)         = 0.0
-            cpatch%gsw_open(ico)             = 0.0
             cpatch%gsw_closed(ico)           = 0.0
             cpatch%leaf_gbh(ico)             = 0.0
             cpatch%leaf_gbw(ico)             = 0.0
@@ -583,6 +590,13 @@ module photosyn_driv
             tpm                              = 0.0
             jact                             = 0.0
             limit_flag                       = 0
+
+
+            !----- Stomatal conductance cannot be zero. Set to cuticular conductance. -----!
+            cpatch%leaf_gsw(ico) = cuticular_cond(ipft) * umol_2_mol *mmdry                &
+                                 / sngloff(effarea_transp(ipft),tiny_offset)
+            !------------------------------------------------------------------------------!
+
          end if
 
          !---------------------------------------------------------------------------------!

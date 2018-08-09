@@ -938,20 +938,18 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! DECOMP_SCHEME -- This specifies the dependence of soil decomposition on temperature.  !
-   !                  0.  ED-2.1 default, the original exponential (low temperature        !
-   !                      limitation only).                                                !
-   !                  1.  Lloyd and Taylor (1994) model                                    !
+   ! DECOMP_SCHEME -- This specifies the soil Carbon (decomposition) model.                !
+   !                  0.  ED-2.1 default, with three soil carbon pools.  Temperature the   !
+   !                      original exponential (low temperature limitation only).          !
+   !                  1.  Similar to option 0, except that temperature is solved using     !
+   !                      the Lloyd and Taylor (1994) model.                               !
    !                      [[option 1 requires parameters to be set in xml]]                !
-   !                  2.  RothC model, which contains one extra pools (microbial SOM),     !
-   !                      based on Sierra et al. (2012, GMD).  The inertial/passive pool   !
-   !                      was  not included because RothC assumes it to be completely      !
-   !                      detached from the other ground/soil carbon pools.  Thee temper-  !
-   !                      ature and moisture dependencies are similar to ED-1.0 and the    !
-   !                      CENTURY models, although the functional forms were rewritten so  !
-   !                      the functions were continuous AND differentiable (moisture) and  !
-   !                      without the risk of FPE due to the square root of negative       !
-   !                      numbers (temperature).                                           !
+   !                  2.  Based on Bolker et al. (1998) CENTURY model.  Five necromass     !
+   !                      pools (litter aka fast, structural, microbial,                   !
+   !                      humified aka slow, and passive).  Temperature and moisture       !
+   !                      functions are similar to Bolker et al. (1998) and ED-1.0, except !
+   !                      that the curves were refitted to make them continuous and        !
+   !                      differentiable.                                                  !
    !---------------------------------------------------------------------------------------!
    NL%DECOMP_SCHEME   = 2
    !---------------------------------------------------------------------------------------!
@@ -975,6 +973,12 @@ $ED_NL
    !                      where psi is the matric potentital at layer k, z is the layer    !
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
    !                      matric potentials at wilting point and field capacity.           !
+   !                  3.  Similar to 2, but the water supply directly affects gsw, as      !
+   !                      opposed to fsw.  This is done by making D0 a function of soil    !
+   !                      moisture, as means to avoid double counting the effect of VPD on !
+   !                      stomatal conductance.  Note that this still uses Kw but Kw must  !
+   !                      be significantly lower, at least for tropical trees (1/15 - 1/10 !
+   !                      of the original).                                                !
    !---------------------------------------------------------------------------------------!
    NL%H2O_PLANT_LIM   = 2
    !---------------------------------------------------------------------------------------!

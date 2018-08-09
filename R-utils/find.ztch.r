@@ -3,7 +3,7 @@
 #    This function finds the top canopy height and flags which trees are at the canopy     #
 # layer.                                                                                   #
 #------------------------------------------------------------------------------------------#
-find.ztch <<- function(x0,y0,dbh,height,carea,cdepth,ipft,nx,ny,xyres,nretn=30){
+find.ztch <<- function(x0,y0,dbh,height,carea,cdepth,ipft,xsw=0,ysw=0,nx,ny,xyres,nretn=30){
 
 
    #---------------------------------------------------------------------------------------#
@@ -59,8 +59,15 @@ find.ztch <<- function(x0,y0,dbh,height,carea,cdepth,ipft,nx,ny,xyres,nretn=30){
 
 
    #----- Find dimensions. ----------------------------------------------------------------#
-   nseed = 24
+   nseed = 64
    seed  = sample.int(n=.Machine$integer.max,size=nseed,replace=TRUE)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Remove offset so minimum x and y coordinates are always zero. -------------------#
+   xrel  = x0 - xsw
+   yrel  = y0 - ysw
    #---------------------------------------------------------------------------------------#
 
 
@@ -79,8 +86,8 @@ find.ztch <<- function(x0,y0,dbh,height,carea,cdepth,ipft,nx,ny,xyres,nretn=30){
                      , height = as.double (height)
                      , rh     = as.double (rhoriz)
                      , rv     = as.double (rvert )
-                     , x0     = as.double (x0    )
-                     , y0     = as.double (y0    )
+                     , x0     = as.double (xrel  )
+                     , y0     = as.double (yrel  )
                      , ztch   = as.double (ztch  )
                      , canopy = as.integer(canopy)
                      )#end .Fortran

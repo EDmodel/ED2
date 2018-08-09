@@ -728,6 +728,8 @@ module ed_type_init
       csite%A_decomp                        (ipaa:ipaz) = 0.0
       csite%B_decomp                        (ipaa:ipaz) = 0.0
       csite%f_decomp                        (ipaa:ipaz) = 0.0
+      csite%Lg_decomp                       (ipaa:ipaz) = 0.0
+      csite%Ls_decomp                       (ipaa:ipaz) = 0.0
       csite%rh                              (ipaa:ipaz) = 0.0
       csite%fgc_rh                          (ipaa:ipaz) = 0.0
       csite%fsc_rh                          (ipaa:ipaz) = 0.0
@@ -735,6 +737,7 @@ module ed_type_init
       csite%stsc_rh                         (ipaa:ipaz) = 0.0
       csite%msc_rh                          (ipaa:ipaz) = 0.0
       csite%ssc_rh                          (ipaa:ipaz) = 0.0
+      csite%psc_rh                          (ipaa:ipaz) = 0.0
       csite%today_A_decomp                  (ipaa:ipaz) = 0.0
       csite%today_B_decomp                  (ipaa:ipaz) = 0.0
       csite%today_Af_decomp                 (ipaa:ipaz) = 0.0
@@ -863,6 +866,7 @@ module ed_type_init
       csite%fmean_stsc_rh                   (ipaa:ipaz) = 0.0
       csite%fmean_msc_rh                    (ipaa:ipaz) = 0.0
       csite%fmean_ssc_rh                    (ipaa:ipaz) = 0.0
+      csite%fmean_psc_rh                    (ipaa:ipaz) = 0.0
       csite%fmean_nep                       (ipaa:ipaz) = 0.0
       csite%fmean_rk4step                   (ipaa:ipaz) = 0.0
       csite%fmean_available_water           (ipaa:ipaz) = 0.0
@@ -943,6 +947,7 @@ module ed_type_init
          csite%dmean_stsc_rh                (ipaa:ipaz) = 0.0
          csite%dmean_msc_rh                 (ipaa:ipaz) = 0.0
          csite%dmean_ssc_rh                 (ipaa:ipaz) = 0.0
+         csite%dmean_psc_rh                 (ipaa:ipaz) = 0.0
          csite%dmean_nep                    (ipaa:ipaz) = 0.0
          csite%dmean_rk4step                (ipaa:ipaz) = 0.0
          csite%dmean_available_water        (ipaa:ipaz) = 0.0
@@ -1017,6 +1022,7 @@ module ed_type_init
          csite%mmean_stsc_rh                (ipaa:ipaz) = 0.0
          csite%mmean_msc_rh                 (ipaa:ipaz) = 0.0
          csite%mmean_ssc_rh                 (ipaa:ipaz) = 0.0
+         csite%mmean_psc_rh                 (ipaa:ipaz) = 0.0
          csite%mmean_nep                    (ipaa:ipaz) = 0.0
          csite%mmean_rk4step                (ipaa:ipaz) = 0.0
          csite%mmean_available_water        (ipaa:ipaz) = 0.0
@@ -1074,6 +1080,7 @@ module ed_type_init
          csite%mmean_struct_soil_l          (ipaa:ipaz) = 0.0
          csite%mmean_microbe_soil_c         (ipaa:ipaz) = 0.0
          csite%mmean_slow_soil_c            (ipaa:ipaz) = 0.0
+         csite%mmean_passive_soil_c         (ipaa:ipaz) = 0.0
          csite%mmean_fast_grnd_n            (ipaa:ipaz) = 0.0
          csite%mmean_fast_soil_n            (ipaa:ipaz) = 0.0
          csite%mmean_struct_grnd_n          (ipaa:ipaz) = 0.0
@@ -1101,6 +1108,7 @@ module ed_type_init
          csite%mmsqu_stsc_rh                (ipaa:ipaz) = 0.0
          csite%mmsqu_msc_rh                 (ipaa:ipaz) = 0.0
          csite%mmsqu_ssc_rh                 (ipaa:ipaz) = 0.0
+         csite%mmsqu_psc_rh                 (ipaa:ipaz) = 0.0
          csite%mmsqu_nep                    (ipaa:ipaz) = 0.0
          csite%mmsqu_rlongup                (ipaa:ipaz) = 0.0
          csite%mmsqu_parup                  (ipaa:ipaz) = 0.0
@@ -1132,6 +1140,7 @@ module ed_type_init
          csite%qmean_stsc_rh              (:,ipaa:ipaz) = 0.0
          csite%qmean_msc_rh               (:,ipaa:ipaz) = 0.0
          csite%qmean_ssc_rh               (:,ipaa:ipaz) = 0.0
+         csite%qmean_psc_rh               (:,ipaa:ipaz) = 0.0
          csite%qmean_nep                  (:,ipaa:ipaz) = 0.0
          csite%qmean_rk4step              (:,ipaa:ipaz) = 0.0
          csite%qmean_available_water      (:,ipaa:ipaz) = 0.0
@@ -1188,6 +1197,7 @@ module ed_type_init
          csite%qmsqu_stsc_rh              (:,ipaa:ipaz) = 0.0
          csite%qmsqu_msc_rh               (:,ipaa:ipaz) = 0.0
          csite%qmsqu_ssc_rh               (:,ipaa:ipaz) = 0.0
+         csite%qmsqu_psc_rh               (:,ipaa:ipaz) = 0.0
          csite%qmsqu_nep                  (:,ipaa:ipaz) = 0.0
          csite%qmsqu_rlongup              (:,ipaa:ipaz) = 0.0
          csite%qmsqu_parup                (:,ipaa:ipaz) = 0.0
@@ -1602,6 +1612,7 @@ module ed_type_init
          cgrid%struct_soil_l               (ipy) = 0.0
          cgrid%microbe_soil_c              (ipy) = 0.0
          cgrid%slow_soil_c                 (ipy) = 0.0
+         cgrid%passive_soil_c              (ipy) = 0.0
          cgrid%fast_grnd_n                 (ipy) = 0.0
          cgrid%fast_soil_n                 (ipy) = 0.0
          cgrid%struct_grnd_n               (ipy) = 0.0
@@ -1695,6 +1706,7 @@ module ed_type_init
          cgrid%fmean_stsc_rh              (ipy) = 0.0
          cgrid%fmean_msc_rh               (ipy) = 0.0
          cgrid%fmean_ssc_rh               (ipy) = 0.0
+         cgrid%fmean_psc_rh               (ipy) = 0.0
          cgrid%fmean_nep                  (ipy) = 0.0
          cgrid%fmean_rk4step              (ipy) = 0.0
          cgrid%fmean_available_water      (ipy) = 0.0
@@ -1861,6 +1873,7 @@ module ed_type_init
             cgrid%dmean_stsc_rh              (ipy) = 0.0
             cgrid%dmean_msc_rh               (ipy) = 0.0
             cgrid%dmean_ssc_rh               (ipy) = 0.0
+            cgrid%dmean_psc_rh               (ipy) = 0.0
             cgrid%dmean_nep                  (ipy) = 0.0
             cgrid%dmean_rk4step              (ipy) = 0.0
             cgrid%dmean_available_water      (ipy) = 0.0
@@ -2011,6 +2024,7 @@ module ed_type_init
             cgrid%mmean_stsc_rh              (ipy) = 0.0
             cgrid%mmean_msc_rh               (ipy) = 0.0
             cgrid%mmean_ssc_rh               (ipy) = 0.0
+            cgrid%mmean_psc_rh               (ipy) = 0.0
             cgrid%mmean_nep                  (ipy) = 0.0
             cgrid%mmean_rk4step              (ipy) = 0.0
             cgrid%mmean_available_water      (ipy) = 0.0
@@ -2095,6 +2109,7 @@ module ed_type_init
             cgrid%mmean_struct_soil_l        (ipy) = 0.0
             cgrid%mmean_microbe_soil_c       (ipy) = 0.0
             cgrid%mmean_slow_soil_c          (ipy) = 0.0
+            cgrid%mmean_passive_soil_c       (ipy) = 0.0
             cgrid%mmean_fast_grnd_n          (ipy) = 0.0
             cgrid%mmean_fast_soil_n          (ipy) = 0.0
             cgrid%mmean_struct_grnd_n        (ipy) = 0.0
@@ -2147,6 +2162,7 @@ module ed_type_init
             cgrid%mmsqu_stsc_rh              (ipy) = 0.0
             cgrid%mmsqu_msc_rh               (ipy) = 0.0
             cgrid%mmsqu_ssc_rh               (ipy) = 0.0
+            cgrid%mmsqu_psc_rh               (ipy) = 0.0
             cgrid%mmsqu_nep                  (ipy) = 0.0
             cgrid%mmsqu_rlongup              (ipy) = 0.0
             cgrid%mmsqu_parup                (ipy) = 0.0
@@ -2237,6 +2253,7 @@ module ed_type_init
             cgrid%qmean_stsc_rh            (:,ipy) = 0.0
             cgrid%qmean_msc_rh             (:,ipy) = 0.0
             cgrid%qmean_ssc_rh             (:,ipy) = 0.0
+            cgrid%qmean_psc_rh             (:,ipy) = 0.0
             cgrid%qmean_nep                (:,ipy) = 0.0
             cgrid%qmean_rk4step            (:,ipy) = 0.0
             cgrid%qmean_available_water    (:,ipy) = 0.0
@@ -2326,6 +2343,7 @@ module ed_type_init
             cgrid%qmsqu_stsc_rh            (:,ipy) = 0.0
             cgrid%qmsqu_msc_rh             (:,ipy) = 0.0
             cgrid%qmsqu_ssc_rh             (:,ipy) = 0.0
+            cgrid%qmsqu_psc_rh             (:,ipy) = 0.0
             cgrid%qmsqu_nep                (:,ipy) = 0.0
             cgrid%qmsqu_rlongup            (:,ipy) = 0.0
             cgrid%qmsqu_parup              (:,ipy) = 0.0

@@ -286,18 +286,22 @@ subroutine init_decomp_params()
                           , resp_water_above_opt        & ! intent(out)
                           , resp_temperature_increase   & ! intent(out)
                           , N_immobil_supply_scale      & ! intent(out)
+                          , e_lignin                    & ! intent(out)
                           , r_fsc                       & ! intent(out)
                           , r_stsc                      & ! intent(out)
-                          , r_msc                       & ! intent(out)
+                          , r_msc_int                   & ! intent(out)
+                          , r_msc_slp                   & ! intent(out)
+                          , r_ssc                       & ! intent(out)
+                          , r_psc                       & ! intent(out)
                           , decay_rate_stsc             & ! intent(out)
                           , decay_rate_fsc              & ! intent(out)
                           , decay_rate_msc              & ! intent(out)
                           , decay_rate_ssc              & ! intent(out)
-                          , fx_msc                      & ! intent(out)
-                          , xrothc_a                    & ! intent(out)
-                          , xrothc_b                    & ! intent(out)
-                          , xrothc_c                    & ! intent(out)
-                          , xrothc_d                    & ! intent(out)
+                          , decay_rate_psc              & ! intent(out)
+                          , fx_msc_psc_int              & ! intent(out)
+                          , fx_msc_psc_slp              & ! intent(out)
+                          , fx_ssc_psc_int              & ! intent(out)
+                          , fx_ssc_psc_slp              & ! intent(out)
                           , rh_lloyd_1                  & ! intent(out)
                           , rh_lloyd_2                  & ! intent(out)
                           , rh_lloyd_3                  & ! intent(out)
@@ -312,7 +316,9 @@ subroutine init_decomp_params()
                           , rh_active_depth             & ! intent(out)
                           , k_rh_active                 & ! intent(out)
                           , agf_fsc                     & ! intent(out)
-                          , agf_stsc                    ! ! intent(out)
+                          , agf_stsc                    & ! intent(out)
+                          , f0_msc                      & ! intent(out)
+                          , f0_psc                      ! ! intent(out)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -323,44 +329,82 @@ subroutine init_decomp_params()
    resp_temperature_increase = 0.0757
    N_immobil_supply_scale    = 40.0 / yr_day
 
-   !---------------------------------------------------------------------------------------!
-   !      Fraction of decay that is lost as CO2 (used only when decomposition scheme is 0  !
-   ! or 1).                                                                                !
-   !---------------------------------------------------------------------------------------!
-   r_fsc           = 1.0
-   r_stsc          = 0.3
-   r_msc           = 0.0
-   !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
-   ! MLO.  After talking to Paul, it seems the decay rate for the slow carbon pool is      !
-   !       artificially high for when nitrogen limitation is turned on.  If it is turned   !
-   !       off, however, then the slow carbon will disappear very quickly.  I don't want   !
-   !       to mess other people's results, so I will change the rate only when             !
-   !       decomp_scheme is 2.  I think this should be applied to all schemes, but I will  !
-   !       let the users of these schemes to decide.                                       !
+   !  CENTURY parameter that controls the effect of lignin on structural decomposition.    !
+   !---------------------------------------------------------------------------------------!
+   e_lignin = 3.0
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Fraction of decay that is lost as CO2.                                            !
    !---------------------------------------------------------------------------------------!
    select case (decomp_scheme)
    case (0,1)
+      r_fsc           = 1.0
+      r_stsc          = 0.3
+      r_msc_int       = 0.0
+      r_msc_slp       = 0.0
+      r_ssc           = 1.0
+      r_psc           = 1.0
+   case (2)
+      r_fsc           = 0.55
+      r_stsc          = 0.50
+      r_msc_int       = 0.60
+      r_msc_slp       = 0.17
+      r_ssc           = 0.55
+      r_psc           = 0.55
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Decay rates for necromass and soil carbon pools.                                     !
+   !---------------------------------------------------------------------------------------!
+   select case (decomp_scheme)
+   case (0,1)
+      !------------------------------------------------------------------------------------!
+      ! MLO.  After talking to Paul, it seems the decay rate for the slow carbon pool is   !
+      !       artificially high for when nitrogen limitation is turned on.  If it is       !
+      !       turned off, however, then the slow carbon will disappear very quickly.  I    !
+      !       don't want to mess other people's results, so I will change the rate only    !
+      !       when DECOMP_SCHEME is 2 (see below).  I think this should be applied to all  !
+      !       schemes, but I will let the users of these schemes to decide.                !
+      !------------------------------------------------------------------------------------!
       decay_rate_fsc  =  11.0 / yr_day    ! former K2
       decay_rate_stsc =   4.5 / yr_day    ! former K1
       decay_rate_msc  =   0.0 / yr_day    ! Inexistent.  Microbes are not solved here.
       decay_rate_ssc  = 100.2 / yr_day    ! former K3
+      decay_rate_psc  =   0.0 / yr_day    ! Inexistent.  Passive is not solved here.
+      !------------------------------------------------------------------------------------!
    case (2)
       !------------------------------------------------------------------------------------!
-      !    Redefine decay rates and pools to match the Rothamsted carbon (RothC) model,    !
-      ! following S12, with some important changes.                                        !
+      !    CENTURY model, closer to the implementation by B98.  Note that the original ED2 !
+      ! has fewer carbon pools, and the names do not exactly match B98 to be consistent    !
+      ! with the original ED-2.0 implementation. The table below has the current           !
+      ! translation.                                                                       !
       !                                                                                    !
-      ! 1.  The passive soil carbon is completely skipped;                                 !
-      ! 2.  The typical decay rates are closer to CENTURY (B98) because the values are     !
-      !     based on observations (Fig. 3 of B98, note the typo in their definition of     !
-      !     half-life, it should be ln(2), not log2(e).  The rates are approximate, and    !
-      !     intentionally shifted low to avoid excessive respiration.  These values could  !
-      !     be optimised in the future.                                                    !
-      ! 3.  The actual decay rates are modulated by temperature and soil moisture, using   !
-      !     functions adapted from the CENTURY model.                                      !
+      !      |----------------------+---------------------------+--------------------|     !
+      !      |  B98                 |    DECOMP_SCHEME = 0      | DECOMP_SCHEME = 2  |     !
+      !      |----------------------+---------------------------+--------------------|     !
+      !      | Metabolic Litter     | Fast                      | Fast               |     !
+      !      | Structural Litter    | Structural                | Structural         |     !
+      !      | Microbes (fast SOM)  | ------ (lumped with Fast) | Microbial          |     !
+      !      | Slow SOM             | Slow                      | Slow (Humified)    |     !
+      !      | Passive SOM          | ------ (lumped with Slow) | Passive            |     !
+      !      |----------------------+---------------------------+--------------------|     !
+      !                                                                                    !
+      ! Note that ED-1.0 did have Passive SOM but it was literally passive (i.e. no flux   !
+      ! in or out).  Also note that we do not split the microbial (fast SOM) between       !
+      ! above- and below-ground, but we do distinguish the metabolic and structural litter !
+      ! because of fires (which only burn the above-ground fraction).  The current         !
+      ! parameters are similar to CENTURY and are related to the half-life time shown in   !
+      ! B98's Fig. 3.  Note, however, the typo in their definition in their caption, it    !
+      ! should be ln(2), not log2(e).  The actual numbers were obtained from M96.  Because !
+      ! most studies report soil carbon for the top 30 cm (as opposed to 20cm), we         !
+      ! decreased the default decay rates for microbial, humified and passive pools by     !
+      ! 15%, following the suggestion by M96.                                              !
       !                                                                                    !
       ! References:                                                                        !
       !                                                                                    !
@@ -368,14 +412,18 @@ subroutine init_decomp_params()
       !    insights from the CENTURY model. Ecol. Appl., 8(2):425-439.                     !
       !    doi:10.1890/1051- 0761(1998)008[0425:LAOSDI]2.0.CO;2 (B98).                     !
       !                                                                                    !
-      ! Sierra CA, Mueller M, and Trumbore SE. 2012. Models of soil organic matter         !!
-      !    decomposition: the SoilR package, version 1.0. Geosci. Model Dev. 5(4),         !
-      !    1045-1060. doi:10.5194/gmd-5-1045-2012 (S12).                                   !
+      ! Metherell AK, Harding LA, Cole CV, Parton WJ. 1996. CENTURY Soil Organic Matter    !
+      !    model environment.  Agroecosystem Version 4.0. Great Plains System Research     !
+      !    Unit. Techinical Report No 4. USDA-ARS, Fort Collins CO.                        !
+      !    https://www2.nrel.colostate.edu/projects/century/MANUAL/html_manual/man96.html. !
+      !    Accessed on 9 Aug 2018 (M96).                                                   !
+      !                                                                                    !!
       !------------------------------------------------------------------------------------!
-      decay_rate_fsc  =  10.0 / yr_day
-      decay_rate_stsc =  0.50 / yr_day
-      decay_rate_msc  =  2.00 / yr_day
-      decay_rate_ssc  =  0.05 / yr_day
+      decay_rate_fsc  =         16.7    / yr_day
+      decay_rate_stsc =         4.4     / yr_day
+      decay_rate_msc  =  0.85 * 6.65    / yr_day
+      decay_rate_ssc  =  0.85 * 0.2     / yr_day
+      decay_rate_psc  =  0.85 * 0.00667 / yr_day
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -383,27 +431,14 @@ subroutine init_decomp_params()
 
    !---------------------------------------------------------------------------------------!
    !      When soil decays, a fraction is lost as CO2 (heterotrophic respiration).  The    !
-   ! remaining decayed carbon is partitioned between microbial carbon (fx_msc) and         !
-   ! humified ("slow") carbon (1 - fx_msc).                                                !
+   ! remaining decayed carbon is partitioned between pools.  Parameters define the         !
+   ! fraction that goes to passive carbon.  Other fractions are internally defined to      !
+   ! ensure that all fluxes are conserved.                                                 !
    !---------------------------------------------------------------------------------------!
-   fx_msc          = 0.46
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Coefficients that relate clay fraction to fraction of soil C lost as CO2.  This  !
-   ! is used only when decomp_scheme is set to 2.  Values came from S12, equation 23.      !
-   !                                                                                       !
-   ! References:                                                                           !
-   !                                                                                       !
-   ! Sierra CA, Mueller M, and Trumbore SE. 2012. Models of soil organic matter            !
-   !    decomposition: the SoilR package, version 1.0. Geosci. Model Dev. 5(4),            !
-   !    1045-1060. doi:10.5194/gmd-5-1045-2012 (S12).                                      !
-   !---------------------------------------------------------------------------------------!
-   xrothc_a =  1.67
-   xrothc_b =  1.85
-   xrothc_c =  1.60
-   xrothc_d = -7.86 ! 100x original because we use fraction of clay instead of percentage.
+   fx_msc_psc_int = 0.003
+   fx_msc_psc_slp = 0.032
+   fx_ssc_psc_int = 0.003
+   fx_ssc_psc_slp = 0.009
    !---------------------------------------------------------------------------------------!
 
 
@@ -438,11 +473,18 @@ subroutine init_decomp_params()
          rh_active_depth = slz(nzg)
          k_rh_active     = nzg
       case (2)
-         rh_active_depth = -0.10
+         !---------------------------------------------------------------------------------!
+         !     To be consistent with most measurements, we set the active soil layer to    !
+         ! the top 30 cm.  This is somewhat deeper than the implicit depth in the CENTURY  !
+         ! model (20 cm), but the decay rates have been adjusted to account for deeper     !
+         ! soil.                                                                           !
+         !---------------------------------------------------------------------------------!
+         rh_active_depth = -0.30
          k_rh_loop: do k_rh_active=nzg-1,1,-1
             if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
          end do k_rh_loop
          k_rh_active = k_rh_active + 1
+         !---------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -455,6 +497,23 @@ subroutine init_decomp_params()
    !---------------------------------------------------------------------------------------!
    agf_fsc            = 0.5
    agf_stsc           = 0.7
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables define the partition of SOM into microbial, passive, and          !
+   ! humified.  These fractions are used only during initialisation (NBG or PSS/CSS files) !
+   ! and only when DECOMP_SCHEME is 2.  In this case, the fraction of soil C that is       !
+   ! humified ("slow") will be 1.0 - f_msc - f_psc.   The default fractions are based on   !
+   ! the CENTURY manual, but can be changed through XML.                                   !
+   !                                                                                       !
+   ! https://www2.nrel.colostate.edu/projects/century/MANUAL/html_manual/man96.html        !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   f0_msc   = 0.03
+   f0_psc   = 0.35
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2962,10 +3021,12 @@ subroutine init_pft_alloc_params()
    case default
       hgt_max_trop = 35.0
    end select
-   hgt_min(:) = merge(0.50,merge(0.15,hgt_ref+0.2,is_grass(:)),is_tropical(:))
-   hgt_max(:) = merge( merge(1.5         ,hgt_max_trop ,is_grass(:))                       &
+   hgt_min(:) = merge( merge(0.50        ,1.30         ,is_grass(:))                       &
+                     , merge(0.15        ,hgt_ref+0.2  ,is_grass(:))                       &
+                     , is_tropical(:)                                )
+   hgt_max(:) = merge( merge(1.30        ,hgt_max_trop ,is_grass(:))                       &
                      , merge(0.95*b1Ht(:),0.999*b1Ht(:),is_grass(:))                       &
-                     , is_tropical(:) )
+                     , is_tropical(:)                                )
    !---------------------------------------------------------------------------------------!
 
 
@@ -4799,6 +4860,7 @@ subroutine init_pft_nitro_params()
                           , l2n_stem             & ! intent(out)
                           , plant_N_supply_scale ! ! intent(out)
    use decomp_coms , only : c2n_slow             & ! intent(out)
+                          , c2n_fast_0           & ! intent(out)
                           , c2n_structural       ! ! intent(out)
    use ed_max_dims , only : n_pft                ! ! intent(in)
    use ed_misc_coms, only : iallom               ! ! intent(in)
@@ -4882,6 +4944,7 @@ subroutine init_pft_nitro_params()
    plant_N_supply_scale = 0.5 
 
 
+   c2n_fast_0           = 30.0  ! Carbon to Nitrogen ratio, slow pool.
    c2n_slow             = 10.0  ! Carbon to Nitrogen ratio, slow pool.
    c2n_structural       = 150.0 ! Carbon to Nitrogen ratio, structural pool.
 
@@ -6655,6 +6718,9 @@ subroutine init_derived_params_after_xml()
    use rk4_coms             , only : effarea_heat              & ! intent(in)
                                    , effarea_evap              & ! intent(in)
                                    , effarea_transp            ! ! intent(in)
+   use decomp_coms          , only : f0_msc                    & ! intent(in)
+                                   , f0_psc                    & ! intent(in)
+                                   , f0_ssc                    ! ! intent(out)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=2)                  :: char_pathway
@@ -6715,6 +6781,25 @@ subroutine init_derived_params_after_xml()
    !     Decide whether to write the table with the sizes.                                 !
    !---------------------------------------------------------------------------------------!
    print_zero_table = btest(idetailed,5)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !------ Make sure the soil carbon fractions add up to one. -----------------------------!
+   if (f0_msc < 0. .or. f0_psc < 0.0 .or. (f0_msc + f0_psc) > 1.0) then
+      write (unit=*,fmt='(a)')          '-------------------------------------------------'
+      write (unit=*,fmt='(a)')          ' F0_MSC and F0_SSC must be fractions (0-1)'
+      write (unit=*,fmt='(a)')          '    and their sum cannot exceed 1.0'
+      write (unit=*,fmt='(a)')          ''
+      write (unit=*,fmt='(a)')          ' Current values: '
+      write (unit=*,fmt='(a,1x,f12.5)') ' F0_MSC = ',f0_msc
+      write (unit=*,fmt='(a,1x,f12.5)') ' F0_PSC = ',f0_psc
+      write (unit=*,fmt='(a)')          '-------------------------------------------------'
+      write (unit=*,fmt='(a)')          ''
+      call fatal_error('Invalid partition of soil C pools. Fix ed_params.f90 or XML.'      &
+                      ,'init_derived_params_after_xml','ed_params.f90')
+   end if
+   f0_ssc = 1.0 - f0_msc - f0_psc
    !---------------------------------------------------------------------------------------!
 
 

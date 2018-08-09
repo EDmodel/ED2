@@ -99,9 +99,12 @@ module physiology_coms
    !                      where psi is the matric potentital at layer k, z is the layer    !
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
    !                      matric potentials at wilting point and field capacity.           !
-   !                  3.  Similar to 2, however available water modifies the D0 parameter  !
-   !                      used to find gsw.  This is intended to avoid penalising stomatal !
-   !                      conductance twice (in both gsw and fsw).                         !
+   !                  3.  Similar to 2, but the water supply directly affects gsw, as      !
+   !                      opposed to fsw.  This is done by making D0 a function of soil    !
+   !                      moisture, as means to avoid double counting the effect of VPD on !
+   !                      stomatal conductance.  Note that this still uses Kw but Kw must  !
+   !                      be significantly lower, at least for tropical trees (1/15 - 1/10 !
+   !                      of the original).                                                !
    !---------------------------------------------------------------------------------------!
    integer               :: h2o_plant_lim 
    !---------------------------------------------------------------------------------------!

@@ -159,6 +159,7 @@ module rk4_coms
       real(kind=8)                        :: stsc_rh
       real(kind=8)                        :: msc_rh
       real(kind=8)                        :: ssc_rh
+      real(kind=8)                        :: psc_rh
       !------------------------------------------------------------------------------------!
 
 
@@ -1048,6 +1049,7 @@ module rk4_coms
       y%stsc_rh                        = 0.d0
       y%msc_rh                         = 0.d0
       y%ssc_rh                         = 0.d0
+      y%psc_rh                         = 0.d0
 
       y%upwp                           = 0.d0
       y%wpwp                           = 0.d0

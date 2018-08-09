@@ -813,6 +813,7 @@ module update_derived_utils
          cgrid%fast_soil_c             (ipy) = 0.0
          cgrid%microbe_soil_c          (ipy) = 0.0
          cgrid%slow_soil_c             (ipy) = 0.0
+         cgrid%passive_soil_c          (ipy) = 0.0
          cgrid%struct_grnd_c           (ipy) = 0.0
          cgrid%struct_grnd_l           (ipy) = 0.0
          cgrid%struct_soil_c           (ipy) = 0.0
@@ -878,12 +879,6 @@ module update_derived_utils
                cgrid%fast_soil_c   (ipy) = cgrid%fast_soil_c        (ipy)                  &
                                          + csite%fast_soil_c        (ipa)                  &
                                          * patch_wgt
-               cgrid%microbe_soil_c(ipy) = cgrid%microbe_soil_c     (ipy)                  &
-                                         + csite%microbial_soil_c   (ipa)                  &
-                                         * patch_wgt
-               cgrid%slow_soil_c   (ipy) = cgrid%slow_soil_c        (ipy)                  &
-                                         + csite%slow_soil_c        (ipa)                  &
-                                         * patch_wgt
                cgrid%struct_grnd_c (ipy) = cgrid%struct_grnd_c      (ipy)                  &
                                          + csite%structural_grnd_c  (ipa)                  &
                                          * patch_wgt
@@ -895,6 +890,15 @@ module update_derived_utils
                                          * patch_wgt
                cgrid%struct_soil_l (ipy) = cgrid%struct_soil_l      (ipy)                  &
                                          + csite%structural_soil_l  (ipa)                  &
+                                         * patch_wgt
+               cgrid%microbe_soil_c(ipy) = cgrid%microbe_soil_c     (ipy)                  &
+                                         + csite%microbial_soil_c   (ipa)                  &
+                                         * patch_wgt
+               cgrid%slow_soil_c   (ipy) = cgrid%slow_soil_c        (ipy)                  &
+                                         + csite%slow_soil_c        (ipa)                  &
+                                         * patch_wgt
+               cgrid%passive_soil_c(ipy) = cgrid%passive_soil_c     (ipy)                  &
+                                         + csite%passive_soil_c     (ipa)                  &
                                          * patch_wgt
                cgrid%fast_grnd_n   (ipy) = cgrid%fast_grnd_n        (ipy)                  &
                                          + csite%fast_grnd_n        (ipa)                  &
@@ -1718,6 +1722,12 @@ module update_derived_utils
    end subroutine update_cohort_extensive_props
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    subroutine patch_pft_size_profile(csite,ipa)

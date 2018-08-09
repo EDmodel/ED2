@@ -274,6 +274,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.STRUCT.GRND.L.PA  =       agf.struct  * mymont$MMEAN.STRUCT.GRND.L.PA
          mymont$MMEAN.STRUCT.SOIL.L.PA  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PA
          mymont$MMEAN.MICROBE.SOIL.C.PA = 0. * mymont$MMEAN.FAST.SOIL.C.PA 
+         mymont$MMEAN.PASSIVE.SOIL.C.PA = 0. * mymont$MMEAN.FAST.SOIL.C.PA 
       }#end if (! "MMEAN.FAST.SOIL.C.PA" %in% names(mymont))
       #------------------------------------------------------------------------------------#
       #    Ground pools and microbial soil were added at the same time the above- and      #
@@ -291,6 +292,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.STRUCT.GRND.L.PY  =       agf.struct  * mymont$MMEAN.STRUCT.GRND.L.PY
          mymont$MMEAN.STRUCT.SOIL.L.PY  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PY
          mymont$MMEAN.MICROBE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
+         mymont$MMEAN.PASSIVE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
       }#end if (! "COMBUSTED.FUEL.PY" %in% names(mymont))
       #------------------------------------------------------------------------------------#
 
@@ -333,6 +335,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$struct.grnd.c   [m] =   mymont$MMEAN.STRUCT.GRND.C.PY
       emean$struct.soil.c   [m] =   mymont$MMEAN.STRUCT.SOIL.C.PY
       emean$microbe.soil.c  [m] =   mymont$MMEAN.MICROBE.SOIL.C.PY
+      emean$passive.soil.c  [m] =   mymont$MMEAN.PASSIVE.SOIL.C.PY
       emean$slow.soil.c     [m] =   mymont$MMEAN.SLOW.SOIL.C.PY
       emean$crop.yield      [m] =   mymont$CROP.YIELD.PY[thismonth]
       emean$crop.harvest    [m] =   mymont$CROP.HARVEST.PY
@@ -345,6 +348,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$stsc.resp       [m] =   mymont$MMEAN.STSC.RH.PY
       emean$msc.resp        [m] =   mymont$MMEAN.MSC.RH.PY
       emean$ssc.resp        [m] =   mymont$MMEAN.SSC.RH.PY
+      emean$psc.resp        [m] =   mymont$MMEAN.PSC.RH.PY
       emean$gpp             [m] =   mymont$MMEAN.GPP.PY
       emean$npp             [m] =   mymont$MMEAN.NPP.PY
       emean$nep             [m] =   mymont$MMEAN.NEP.PY
@@ -505,6 +509,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emsqu$stsc.resp [m] =   mymont$MMSQU.STSC.RH.PY
       emsqu$msc.resp  [m] =   mymont$MMSQU.MSC.RH.PY
       emsqu$ssc.resp  [m] =   mymont$MMSQU.SSC.RH.PY
+      emsqu$psc.resp  [m] =   mymont$MMSQU.PSC.RH.PY
       emsqu$cflxca    [m] =   mymont$MMSQU.CARBON.AC.PY
       emsqu$cflxst    [m] =   mymont$MMSQU.CARBON.ST.PY
       emsqu$hflxca    [m] =   mymont$MMSQU.SENSIBLE.AC.PY
@@ -538,6 +543,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$stsc.resp    [m,] =   mymont$QMEAN.STSC.RH.PY
       qmean$msc.resp     [m,] =   mymont$QMEAN.MSC.RH.PY
       qmean$ssc.resp     [m,] =   mymont$QMEAN.SSC.RH.PY
+      qmean$psc.resp     [m,] =   mymont$QMEAN.PSC.RH.PY
       qmean$assim.light  [m,] =   mymont$QMEAN.A.LIGHT.PY
       qmean$assim.rubp   [m,] =   mymont$QMEAN.A.RUBP.PY
       qmean$assim.co2    [m,] =   mymont$QMEAN.A.CO2.PY
@@ -641,6 +647,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmsqu$stsc.resp   [m,] =   mymont$QMSQU.STSC.RH.PY
       qmsqu$msc.resp    [m,] =   mymont$QMSQU.MSC.RH.PY
       qmsqu$ssc.resp    [m,] =   mymont$QMSQU.SSC.RH.PY
+      qmsqu$psc.resp    [m,] =   mymont$QMSQU.PSC.RH.PY
       qmsqu$nep         [m,] =   mymont$QMSQU.NEP.PY
       qmsqu$cflxca      [m,] =   mymont$QMSQU.CARBON.AC.PY
       qmsqu$cflxst      [m,] =   mymont$QMSQU.CARBON.ST.PY
@@ -1584,6 +1591,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$rk4step      [[plab]] =   mymont$MMEAN.RK4STEP.PA
       patch$nep          [[plab]] =   mymont$MMEAN.NEP.PA
       patch$het.resp     [[plab]] =   mymont$MMEAN.RH.PA
+      patch$fgc.resp     [[plab]] =   mymont$MMEAN.FGC.RESP.PA
+      patch$fsc.resp     [[plab]] =   mymont$MMEAN.FSC.RESP.PA
+      patch$stgc.resp    [[plab]] =   mymont$MMEAN.STGC.RESP.PA
+      patch$stsc.resp    [[plab]] =   mymont$MMEAN.STSC.RESP.PA
+      patch$msc.resp     [[plab]] =   mymont$MMEAN.MSC.RESP.PA
+      patch$ssc.resp     [[plab]] =   mymont$MMEAN.SSC.RESP.PA
+      patch$psc.resp     [[plab]] =   mymont$MMEAN.PSC.RESP.PA
       patch$can.temp     [[plab]] =   mymont$MMEAN.CAN.TEMP.PA    - t00
       patch$gnd.temp     [[plab]] =   mymont$MMEAN.GND.TEMP.PA    - t00
       patch$can.shv      [[plab]] =   mymont$MMEAN.CAN.SHV.PA     * 1000.
@@ -1612,6 +1626,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qpatch$rk4step      [[plab]] =   mymont$QMEAN.RK4STEP.PA
       qpatch$nep          [[plab]] =   mymont$QMEAN.NEP.PA
       qpatch$het.resp     [[plab]] =   mymont$QMEAN.RH.PA
+      qpatch$fgc.resp     [[plab]] =   mymont$QMEAN.FGC.RESP.PA
+      qpatch$fsc.resp     [[plab]] =   mymont$QMEAN.FSC.RESP.PA
+      qpatch$stgc.resp    [[plab]] =   mymont$QMEAN.STGC.RESP.PA
+      qpatch$stsc.resp    [[plab]] =   mymont$QMEAN.STSC.RESP.PA
+      qpatch$msc.resp     [[plab]] =   mymont$QMEAN.MSC.RESP.PA
+      qpatch$ssc.resp     [[plab]] =   mymont$QMEAN.SSC.RESP.PA
+      qpatch$psc.resp     [[plab]] =   mymont$QMEAN.PSC.RESP.PA
       qpatch$can.temp     [[plab]] =   mymont$QMEAN.CAN.TEMP.PA    - t00
       qpatch$gnd.temp     [[plab]] =   mymont$QMEAN.GND.TEMP.PA    - t00
       qpatch$can.shv      [[plab]] =   mymont$QMEAN.CAN.SHV.PA     * 1000.
@@ -1688,6 +1709,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$struct.grnd.c [[plab]] = mymont$MMEAN.STRUCT.GRND.C.PA
       patch$struct.soil.c [[plab]] = mymont$MMEAN.STRUCT.SOIL.C.PA
       patch$microbe.soil.c[[plab]] = mymont$MMEAN.MICROBE.SOIL.C.PA
+      patch$passive.soil.c[[plab]] = mymont$MMEAN.PASSIVE.SOIL.C.PA
       patch$slow.soil.c   [[plab]] = mymont$MMEAN.SLOW.SOIL.C.PA
       #------ Mean diurnal cycle. ---------------------------------------------------------#
       zero.qpatch = matrix(data=0., nrow=mymont$NPATCHES.GLOBAL,ncol=mymont$NDCYC)

@@ -29,6 +29,8 @@ metmaindef="/prj/prjidfca/marcosl/Data/ed2_data"
 packdatasrc="/prj/prjidfca/marcosl/Data/2scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
 lumain="/prj/prjidfca/marcosl/Data/lu_scenarios"
+#----- Path with other input data bases (soil texture, DGD, land mask, etc). --------------#
+inpmain="/prj/prjidfca/marcosl/Data/ed2_data"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch="n"
 #----- If submit is "n", we create paths but skip submission. -----------------------------#
@@ -1584,6 +1586,7 @@ do
    #---------------------------------------------------------------------------------------#
    ED2IN="${here}/${polyname}/ED2IN"
    sed -i s@paththere@${there}@g                ${ED2IN}
+   sed -i s@myinpmain@${inpmain}@g              ${ED2IN}
    sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
    sed -i s@mymontha@${montha}@g                ${ED2IN}
    sed -i s@mydatea@${datea}@g                  ${ED2IN}

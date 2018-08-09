@@ -3697,6 +3697,27 @@ poitmp[[u]] = list( short           = "neuquen"
                   , iphen           = 2
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "nouragues"
+                  , longname        = "Nouragues, GUF"
+                  , iata            = "nrf"
+                  , lon             = -52.683
+                  , lat             =   4.033
+                  , alt             = 77
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.562
+                  , clay            = 0.345
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Nouragues"
+                  , yeara           = 2012
+                  , yearz           = 2018
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "oeiras"            
                   , longname        = "Oeiras, PI"                  
                   , iata            = "oei"
@@ -3865,8 +3886,8 @@ poitmp[[u]] = list( short           = "pedegigante"
                   , iphen           = 2
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "petrolina"         
-                  , longname        = "Petrolina, PE"               
+poitmp[[u]] = list( short           = "petrolina"
+                  , longname        = "Petrolina, PE"
                   , iata            = "pnz"
                   , lon             = -40.370
                   , lat             =  -9.165

@@ -139,9 +139,12 @@ program main
    ! execution, machnum returns process rank and machsize process size.                    !
    !---------------------------------------------------------------------------------------!
    do n = 1, numarg
-       if (cargs(n)(1:2) == '-s') then
-          isingle=1
-       end if
+       select case (cargs(n)(1:2))
+       case ('-s')
+          isingle = 1
+       case default
+          continue
+       end select
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -220,19 +223,29 @@ program main
    !    If this is MPI run, define master or slave process, otherwise, keep default        !
    ! (single process does full model).                                                     !
    !---------------------------------------------------------------------------------------!
-   if (machsize > 1) then
+   select case (machsize)
+   case (2:)
       ipara = 1
-      if (machnum /= 0) then
-         icall=1
-      end if
-   end if
+      select case (machnum)
+      case (0)
+         icall = 0
+      case default
+         icall = 1
+      end select
+   case default
+      ipara = 0
+      icall = 0
+   end select
    !---------------------------------------------------------------------------------------!
 
 
    !----- Master process gets number of slaves and sets process ID. -----------------------!
-   if (icall == 0) then
+   select case (icall)
+   case (0)
       nslaves=machsize-1
-   end if
+   case default
+      continue
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -240,23 +253,28 @@ program main
    !---------------------------------------------------------------------------------------!
    !     Master process parse command line arguments looking for "-f <namelist filename>". !
    !---------------------------------------------------------------------------------------!
-   if (icall == 0) then
+   select case (icall)
+   case (0)
       do n = 1, numarg
-         if (cargs(n)(1:2) == '-f') then
+         select case (cargs(n)(1:2))
+         case ('-f')
             name_name = cargs(n+1)(1:len_trim(cargs(n+1))-1)
-         end if
+         end select
       end do
-   end if
+   case default
+      continue
+   end select
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Read the namelist and initialize the variables in the nodes if needed. ----------!
-   if (icall == 0) then
+   select case (icall)
+   case (0)
       call ed_1st_master(ipara,machsize,nslaves,machnum,max_threads,name_name)
-   else
+   case default
       call ed_1st_node()
-   endif
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -276,13 +294,19 @@ program main
 
    !----- Finishes execution. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
-   if (ipara == 1) then
+   select case (isingle)
+   case (0)
       call MPI_Finalize(ierr)
-   end if
+   case default
+      continue
+   end select
 #endif
-   if (icall == 0) then
+   select case (icall)
+   case (0)
       write(unit=*,fmt='(a)') ' ------ ED-2.2 execution ends ------'
-   end if
+   case default
+      continue
+   end select
    !---------------------------------------------------------------------------------------!
 
    stop

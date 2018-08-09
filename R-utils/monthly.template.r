@@ -142,6 +142,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$struct.grnd.c           = rep(NA,times=ntimes)
    emean$struct.soil.c           = rep(NA,times=ntimes)
    emean$microbe.soil.c          = rep(NA,times=ntimes)
+   emean$passive.soil.c          = rep(NA,times=ntimes)
    emean$slow.soil.c             = rep(NA,times=ntimes)
    emean$crop.yield              = rep(NA,times=ntimes)
    emean$crop.harvest            = rep(NA,times=ntimes)
@@ -154,6 +155,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$stsc.resp               = rep(NA,times=ntimes)
    emean$msc.resp                = rep(NA,times=ntimes)
    emean$ssc.resp                = rep(NA,times=ntimes)
+   emean$psc.resp                = rep(NA,times=ntimes)
    emean$soil.resp               = rep(NA,times=ntimes)
    emean$gpp                     = rep(NA,times=ntimes)
    emean$last.1yr.gpp            = rep(NA,times=ntimes)
@@ -432,6 +434,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emsqu$stsc.resp         = rep(NA,times=ntimes)
    emsqu$msc.resp          = rep(NA,times=ntimes)
    emsqu$ssc.resp          = rep(NA,times=ntimes)
+   emsqu$psc.resp          = rep(NA,times=ntimes)
    emsqu$reco              = rep(NA,times=ntimes)
    emsqu$cflxca            = rep(NA,times=ntimes)
    emsqu$cflxst            = rep(NA,times=ntimes)
@@ -668,6 +671,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$stsc.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$msc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$ssc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$psc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$soil.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$assim.light    = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$assim.rubp     = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
@@ -765,6 +769,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmsqu$stsc.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$msc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$ssc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmsqu$psc.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$nep            = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$reco           = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmsqu$cflxca         = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
@@ -800,6 +805,13 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$lu             = list()
    patch$nep            = list()
    patch$het.resp       = list()
+   patch$fgc.resp       = list()
+   patch$fsc.resp       = list()
+   patch$stgc.resp      = list()
+   patch$stsc.resp      = list()
+   patch$msc.resp       = list()
+   patch$ssc.resp       = list()
+   patch$psc.resp       = list()
    patch$soil.resp      = list()
    patch$can.temp       = list()
    patch$gnd.temp       = list()
@@ -874,6 +886,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$struct.grnd.c  = list()
    patch$struct.soil.c  = list()
    patch$microbe.soil.c = list()
+   patch$passive.soil.c = list()
    patch$slow.soil.c    = list()
    patch$rk4step        = list()
    #---------------------------------------------------------------------------------------#
@@ -887,6 +900,13 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qpatch               = list()
    qpatch$nep           = list()
    qpatch$het.resp      = list()
+   qpatch$fgc.resp      = list()
+   qpatch$fsc.resp      = list()
+   qpatch$stgc.resp     = list()
+   qpatch$stsc.resp     = list()
+   qpatch$msc.resp      = list()
+   qpatch$ssc.resp      = list()
+   qpatch$psc.resp      = list()
    qpatch$can.temp      = list()
    qpatch$gnd.temp      = list()
    qpatch$can.shv       = list()
@@ -1101,6 +1121,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$struct.grnd.c     [idx ] = old.datum$emean$struct.grnd.c       [sel ]
    new.datum$emean$struct.soil.c     [idx ] = old.datum$emean$struct.soil.c       [sel ]
    new.datum$emean$microbe.soil.c    [idx ] = old.datum$emean$microbe.soil.c      [sel ]
+   new.datum$emean$passive.soil.c    [idx ] = old.datum$emean$passive.soil.c      [sel ]
    new.datum$emean$slow.soil.c       [idx ] = old.datum$emean$slow.soil.c         [sel ]
    new.datum$emean$crop.yield        [idx ] = old.datum$emean$crop.yield          [sel ]
    new.datum$emean$crop.harvest      [idx ] = old.datum$emean$crop.harvest        [sel ]
@@ -1113,6 +1134,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$stsc.resp         [idx ] = old.datum$emean$stsc.resp           [sel ]
    new.datum$emean$msc.resp          [idx ] = old.datum$emean$msc.resp            [sel ]
    new.datum$emean$ssc.resp          [idx ] = old.datum$emean$ssc.resp            [sel ]
+   new.datum$emean$psc.resp          [idx ] = old.datum$emean$psc.resp            [sel ]
    new.datum$emean$soil.resp         [idx ] = old.datum$emean$soil.resp           [sel ]
    new.datum$emean$gpp               [idx ] = old.datum$emean$gpp                 [sel ]
    new.datum$emean$last.1yr.gpp      [idx ] = old.datum$emean$last.1yr.gpp        [sel ]
@@ -1385,6 +1407,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emsqu$stsc.resp      [idx] = old.datum$emsqu$stsc.resp      [sel]
    new.datum$emsqu$msc.resp       [idx] = old.datum$emsqu$msc.resp       [sel]
    new.datum$emsqu$ssc.resp       [idx] = old.datum$emsqu$ssc.resp       [sel]
+   new.datum$emsqu$psc.resp       [idx] = old.datum$emsqu$psc.resp       [sel]
    new.datum$emsqu$soil.resp      [idx] = old.datum$emsqu$soil.resp      [sel]
    new.datum$emsqu$cflxca         [idx] = old.datum$emsqu$cflxca         [sel]
    new.datum$emsqu$cflxst         [idx] = old.datum$emsqu$cflxst         [sel]
@@ -1596,6 +1619,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$stsc.resp     [idx,] = old.datum$qmean$stsc.resp      [sel,]
    new.datum$qmean$msc.resp      [idx,] = old.datum$qmean$msc.resp       [sel,]
    new.datum$qmean$ssc.resp      [idx,] = old.datum$qmean$ssc.resp       [sel,]
+   new.datum$qmean$psc.resp      [idx,] = old.datum$qmean$psc.resp       [sel,]
    new.datum$qmean$soil.resp     [idx,] = old.datum$qmean$soil.resp      [sel,]
    new.datum$qmean$assim.light   [idx,] = old.datum$qmean$assim.light    [sel,]
    new.datum$qmean$assim.rubp    [idx,] = old.datum$qmean$assim.rubp     [sel,]
@@ -1692,6 +1716,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmsqu$stsc.resp     [idx,] = old.datum$qmsqu$stsc.resp     [sel,]
    new.datum$qmsqu$msc.resp      [idx,] = old.datum$qmsqu$msc.resp      [sel,]
    new.datum$qmsqu$ssc.resp      [idx,] = old.datum$qmsqu$ssc.resp      [sel,]
+   new.datum$qmsqu$psc.resp      [idx,] = old.datum$qmsqu$psc.resp      [sel,]
    new.datum$qmsqu$soil.resp     [idx,] = old.datum$qmsqu$soil.resp     [sel,]
    new.datum$qmsqu$nep           [idx,] = old.datum$qmsqu$nep           [sel,]
    new.datum$qmsqu$cflxca        [idx,] = old.datum$qmsqu$cflxca        [sel,]
@@ -1726,6 +1751,13 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$lu             = old.datum$patch$lu
    new.datum$patch$nep            = old.datum$patch$nep
    new.datum$patch$het.resp       = old.datum$patch$het.resp
+   new.datum$patch$fgc.resp       = new.datum$patch$fgc.resp
+   new.datum$patch$fsc.resp       = new.datum$patch$fsc.resp
+   new.datum$patch$stgc.resp      = new.datum$patch$stgc.resp
+   new.datum$patch$stsc.resp      = new.datum$patch$stsc.resp
+   new.datum$patch$msc.resp       = new.datum$patch$msc.resp
+   new.datum$patch$ssc.resp       = new.datum$patch$ssc.resp
+   new.datum$patch$psc.resp       = new.datum$patch$psc.resp
    new.datum$patch$soil.resp      = old.datum$patch$soil.resp
    new.datum$patch$can.temp       = old.datum$patch$can.temp
    new.datum$patch$gnd.temp       = old.datum$patch$gnd.temp
@@ -1800,6 +1832,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$struct.grnd.c  = old.datum$patch$struct.grnd.c
    new.datum$patch$struct.soil.c  = old.datum$patch$struct.soil.c
    new.datum$patch$microbe.soil.c = old.datum$patch$microbe.soil.c
+   new.datum$patch$passive.soil.c = old.datum$patch$passive.soil.c
    new.datum$patch$slow.soil.c    = old.datum$patch$slow.soil.c
    new.datum$patch$rk4step        = old.datum$patch$rk4step
    #---------------------------------------------------------------------------------------#
@@ -1812,6 +1845,13 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    #---------------------------------------------------------------------------------------#
    new.datum$qpatch$nep           = old.datum$qpatch$nep
    new.datum$qpatch$het.resp      = old.datum$qpatch$het.resp
+   new.datum$qpatch$fgc.resp      = new.datum$qpatch$fgc.resp
+   new.datum$qpatch$fsc.resp      = new.datum$qpatch$fsc.resp
+   new.datum$qpatch$stgc.resp     = new.datum$qpatch$stgc.resp
+   new.datum$qpatch$stsc.resp     = new.datum$qpatch$stsc.resp
+   new.datum$qpatch$msc.resp      = new.datum$qpatch$msc.resp
+   new.datum$qpatch$ssc.resp      = new.datum$qpatch$ssc.resp
+   new.datum$qpatch$psc.resp      = new.datum$qpatch$psc.resp
    new.datum$qpatch$can.temp      = old.datum$qpatch$can.temp
    new.datum$qpatch$gnd.temp      = old.datum$qpatch$gnd.temp
    new.datum$qpatch$can.shv       = old.datum$qpatch$can.shv

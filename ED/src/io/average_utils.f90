@@ -408,6 +408,9 @@ module average_utils
                cgrid%fmean_ssc_rh         (ipy) = cgrid%fmean_ssc_rh         (ipy)         &
                                                 + csite%fmean_ssc_rh         (ipa)         &
                                                 * patch_wgt
+               cgrid%fmean_psc_rh         (ipy) = cgrid%fmean_psc_rh         (ipy)         &
+                                                + csite%fmean_psc_rh         (ipa)         &
+                                                * patch_wgt
                cgrid%fmean_nep            (ipy) = cgrid%fmean_nep            (ipy)         &
                                                 + csite%fmean_nep            (ipa)         &
                                                 * patch_wgt
@@ -1331,6 +1334,7 @@ module average_utils
          cgrid%fmean_stsc_rh           (  ipy) = 0.0
          cgrid%fmean_msc_rh            (  ipy) = 0.0
          cgrid%fmean_ssc_rh            (  ipy) = 0.0
+         cgrid%fmean_psc_rh            (  ipy) = 0.0
          cgrid%fmean_nep               (  ipy) = 0.0
          cgrid%fmean_rk4step           (  ipy) = 0.0
          cgrid%fmean_available_water   (  ipy) = 0.0
@@ -1466,6 +1470,7 @@ module average_utils
                csite%fmean_stsc_rh        (  ipa) = 0.0
                csite%fmean_msc_rh         (  ipa) = 0.0
                csite%fmean_ssc_rh         (  ipa) = 0.0
+               csite%fmean_psc_rh         (  ipa) = 0.0
                csite%fmean_nep            (  ipa) = 0.0
                csite%fmean_rk4step        (  ipa) = 0.0
                csite%fmean_available_water(  ipa) = 0.0
@@ -1880,6 +1885,9 @@ module average_utils
          cgrid%dmean_ssc_rh         (ipy) = cgrid%dmean_ssc_rh         (ipy)               &
                                           + cgrid%fmean_ssc_rh         (ipy)               &
                                           * frqsum_o_daysec
+         cgrid%dmean_psc_rh         (ipy) = cgrid%dmean_psc_rh         (ipy)               &
+                                          + cgrid%fmean_psc_rh         (ipy)               &
+                                          * frqsum_o_daysec
          cgrid%dmean_nep            (ipy) = cgrid%dmean_nep            (ipy)               &
                                           + cgrid%fmean_nep            (ipy)               &
                                           * frqsum_o_daysec
@@ -2186,6 +2194,9 @@ module average_utils
                                                    * frqsum_o_daysec
                csite%dmean_ssc_rh            (ipa) = csite%dmean_ssc_rh            (ipa)   &
                                                    + csite%fmean_ssc_rh            (ipa)   &
+                                                   * frqsum_o_daysec
+               csite%dmean_psc_rh            (ipa) = csite%dmean_psc_rh            (ipa)   &
+                                                   + csite%fmean_psc_rh            (ipa)   &
                                                    * frqsum_o_daysec
                csite%dmean_nep               (ipa) = csite%dmean_nep               (ipa)   &
                                                    + csite%fmean_nep               (ipa)   &
@@ -3403,6 +3414,7 @@ module average_utils
          cgrid%dmean_stsc_rh            (ipy) = 0.0
          cgrid%dmean_msc_rh             (ipy) = 0.0
          cgrid%dmean_ssc_rh             (ipy) = 0.0
+         cgrid%dmean_psc_rh             (ipy) = 0.0
          cgrid%dmean_nep                (ipy) = 0.0
          cgrid%dmean_rk4step            (ipy) = 0.0
          cgrid%dmean_available_water    (ipy) = 0.0
@@ -3523,6 +3535,7 @@ module average_utils
                csite%dmean_stsc_rh          (ipa) = 0.0
                csite%dmean_msc_rh           (ipa) = 0.0
                csite%dmean_ssc_rh           (ipa) = 0.0
+               csite%dmean_psc_rh           (ipa) = 0.0
                csite%dmean_nep              (ipa) = 0.0
                csite%dmean_rk4step          (ipa) = 0.0
                csite%dmean_available_water  (ipa) = 0.0
@@ -3847,6 +3860,9 @@ module average_utils
          cgrid%mmean_slow_soil_c          (ipy) = cgrid%mmean_slow_soil_c          (ipy)   &
                                                 + cgrid%slow_soil_c                (ipy)   &
                                                 * ndaysi
+         cgrid%mmean_passive_soil_c       (ipy) = cgrid%mmean_passive_soil_c       (ipy)   &
+                                                + cgrid%passive_soil_c             (ipy)   &
+                                                * ndaysi
          cgrid%mmean_fast_grnd_n          (ipy) = cgrid%mmean_fast_grnd_n          (ipy)   &
                                                 + cgrid%fast_grnd_n                (ipy)   &
                                                 * ndaysi
@@ -4077,6 +4093,9 @@ module average_utils
                                              * ndaysi
          cgrid%mmean_ssc_rh            (ipy) = cgrid%mmean_ssc_rh            (ipy)         &
                                              + cgrid%dmean_ssc_rh            (ipy)         &
+                                             * ndaysi
+         cgrid%mmean_psc_rh            (ipy) = cgrid%mmean_psc_rh            (ipy)         &
+                                             + cgrid%dmean_psc_rh            (ipy)         &
                                              * ndaysi
          cgrid%mmean_nep               (ipy) = cgrid%mmean_nep               (ipy)         &
                                              + cgrid%dmean_nep               (ipy)         &
@@ -4373,6 +4392,9 @@ module average_utils
          cgrid%mmsqu_ssc_rh           (ipy) = cgrid%mmsqu_ssc_rh              (ipy)        &
                                             + isqu_ftz(cgrid%dmean_ssc_rh     (ipy))       &
                                             * ndaysi
+         cgrid%mmsqu_psc_rh           (ipy) = cgrid%mmsqu_psc_rh              (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_psc_rh     (ipy))       &
+                                            * ndaysi
          cgrid%mmsqu_nep              (ipy) = cgrid%mmsqu_nep                 (ipy)        &
                                             + isqu_ftz(cgrid%dmean_nep        (ipy))       &
                                             * ndaysi
@@ -4511,6 +4533,9 @@ module average_utils
                csite%mmean_slow_soil_c      (ipa) = csite%mmean_slow_soil_c      (ipa)     &
                                                   + csite%slow_soil_c            (ipa)     &
                                                   * ndaysi
+               csite%mmean_passive_soil_c   (ipa) = csite%mmean_passive_soil_c   (ipa)     &
+                                                  + csite%passive_soil_c         (ipa)     &
+                                                  * ndaysi
                csite%mmean_fast_grnd_n      (ipa) = csite%mmean_fast_grnd_n      (ipa)     &
                                                   + csite%fast_grnd_n            (ipa)     &
                                                   * ndaysi
@@ -4563,6 +4588,9 @@ module average_utils
                                                   * ndaysi
                csite%mmean_ssc_rh           (ipa) = csite%mmean_ssc_rh           (ipa)     &
                                                   + csite%dmean_ssc_rh           (ipa)     &
+                                                  * ndaysi
+               csite%mmean_psc_rh           (ipa) = csite%mmean_psc_rh           (ipa)     &
+                                                  + csite%dmean_psc_rh           (ipa)     &
                                                   * ndaysi
                csite%mmean_nep              (ipa) = csite%mmean_nep              (ipa)     &
                                                   + csite%dmean_nep              (ipa)     &
@@ -4775,6 +4803,9 @@ module average_utils
                                                   * ndaysi
                csite%mmsqu_ssc_rh           (ipa) = csite%mmsqu_ssc_rh              (ipa)  &
                                                   + isqu_ftz(csite%dmean_ssc_rh     (ipa)) &
+                                                  * ndaysi
+               csite%mmsqu_psc_rh           (ipa) = csite%mmsqu_psc_rh              (ipa)  &
+                                                  + isqu_ftz(csite%dmean_psc_rh     (ipa)) &
                                                   * ndaysi
                csite%mmsqu_nep              (ipa) = csite%mmsqu_nep                 (ipa)  &
                                                   + isqu_ftz(csite%dmean_nep        (ipa)) &
@@ -5555,6 +5586,7 @@ module average_utils
          cgrid%mmean_struct_soil_l        (ipy) = 0.0
          cgrid%mmean_microbe_soil_c       (ipy) = 0.0
          cgrid%mmean_slow_soil_c          (ipy) = 0.0
+         cgrid%mmean_passive_soil_c       (ipy) = 0.0
          cgrid%mmean_fast_grnd_n          (ipy) = 0.0
          cgrid%mmean_fast_soil_n          (ipy) = 0.0
          cgrid%mmean_struct_grnd_n        (ipy) = 0.0
@@ -5634,6 +5666,7 @@ module average_utils
          cgrid%mmean_stsc_rh              (ipy) = 0.0
          cgrid%mmean_msc_rh               (ipy) = 0.0
          cgrid%mmean_ssc_rh               (ipy) = 0.0
+         cgrid%mmean_psc_rh               (ipy) = 0.0
          cgrid%mmean_nep                  (ipy) = 0.0
          cgrid%mmean_rk4step              (ipy) = 0.0
          cgrid%mmean_available_water      (ipy) = 0.0
@@ -5738,6 +5771,7 @@ module average_utils
          cgrid%mmsqu_stsc_rh              (ipy) = 0.0
          cgrid%mmsqu_msc_rh               (ipy) = 0.0
          cgrid%mmsqu_ssc_rh               (ipy) = 0.0
+         cgrid%mmsqu_psc_rh               (ipy) = 0.0
          cgrid%mmsqu_nep                  (ipy) = 0.0
          cgrid%mmsqu_rlongup              (ipy) = 0.0
          cgrid%mmsqu_parup                (ipy) = 0.0
@@ -5793,6 +5827,7 @@ module average_utils
                csite%mmean_struct_soil_l    (ipa) = 0.0
                csite%mmean_microbe_soil_c   (ipa) = 0.0
                csite%mmean_slow_soil_c      (ipa) = 0.0
+               csite%mmean_passive_soil_c   (ipa) = 0.0
                csite%mmean_fast_grnd_n      (ipa) = 0.0
                csite%mmean_fast_soil_n      (ipa) = 0.0
                csite%mmean_struct_grnd_n    (ipa) = 0.0
@@ -5808,6 +5843,7 @@ module average_utils
                csite%mmean_stsc_rh          (ipa) = 0.0
                csite%mmean_msc_rh           (ipa) = 0.0
                csite%mmean_ssc_rh           (ipa) = 0.0
+               csite%mmean_psc_rh           (ipa) = 0.0
                csite%mmean_nep              (ipa) = 0.0
                csite%mmean_A_decomp         (ipa) = 0.0
                csite%mmean_B_decomp         (ipa) = 0.0
@@ -5883,6 +5919,7 @@ module average_utils
                csite%mmsqu_stsc_rh          (ipa) = 0.0
                csite%mmsqu_msc_rh           (ipa) = 0.0
                csite%mmsqu_ssc_rh           (ipa) = 0.0
+               csite%mmsqu_psc_rh           (ipa) = 0.0
                csite%mmsqu_nep              (ipa) = 0.0
                csite%mmsqu_rlongup          (ipa) = 0.0
                csite%mmsqu_parup            (ipa) = 0.0
@@ -6303,6 +6340,9 @@ module average_utils
          cgrid%qmean_ssc_rh            (t,ipy) = cgrid%qmean_ssc_rh            (t,ipy)     &
                                                + cgrid%fmean_ssc_rh              (ipy)     &
                                                * ndaysi
+         cgrid%qmean_psc_rh            (t,ipy) = cgrid%qmean_psc_rh            (t,ipy)     &
+                                               + cgrid%fmean_psc_rh              (ipy)     &
+                                               * ndaysi
          cgrid%qmean_nep               (t,ipy) = cgrid%qmean_nep               (t,ipy)     &
                                                + cgrid%fmean_nep                 (ipy)     &
                                                * ndaysi
@@ -6549,6 +6589,9 @@ module average_utils
          cgrid%qmsqu_ssc_rh           (t,ipy) = cgrid%qmsqu_ssc_rh              (t,ipy)    &
                                               + isqu_ftz(cgrid%fmean_ssc_rh       (ipy))   &
                                               * ndaysi
+         cgrid%qmsqu_psc_rh           (t,ipy) = cgrid%qmsqu_psc_rh              (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_psc_rh       (ipy))   &
+                                              * ndaysi
          cgrid%qmsqu_nep              (t,ipy) = cgrid%qmsqu_nep                 (t,ipy)    &
                                               + isqu_ftz(cgrid%fmean_nep          (ipy))   &
                                               * ndaysi
@@ -6682,6 +6725,9 @@ module average_utils
                                                     * ndaysi
                csite%qmean_ssc_rh           (t,ipa) = csite%qmean_ssc_rh           (t,ipa) &
                                                     + csite%fmean_ssc_rh             (ipa) &
+                                                    * ndaysi
+               csite%qmean_psc_rh           (t,ipa) = csite%qmean_psc_rh           (t,ipa) &
+                                                    + csite%fmean_psc_rh             (ipa) &
                                                     * ndaysi
                csite%qmean_nep              (t,ipa) = csite%qmean_nep              (t,ipa) &
                                                     + csite%fmean_nep                (ipa) &
@@ -6859,6 +6905,9 @@ module average_utils
                                                 * ndaysi
                csite%qmsqu_ssc_rh       (t,ipa) = csite%qmsqu_ssc_rh              (t,ipa)  &
                                                 + isqu_ftz(csite%fmean_ssc_rh       (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_psc_rh       (t,ipa) = csite%qmsqu_psc_rh              (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_psc_rh       (ipa)) &
                                                 * ndaysi
                csite%qmsqu_nep          (t,ipa) = csite%qmsqu_nep                 (t,ipa)  &
                                                 + isqu_ftz(csite%fmean_nep          (ipa)) &
@@ -7588,6 +7637,7 @@ module average_utils
          cgrid%qmean_stsc_rh            (:,ipy) = 0.0
          cgrid%qmean_msc_rh             (:,ipy) = 0.0
          cgrid%qmean_ssc_rh             (:,ipy) = 0.0
+         cgrid%qmean_psc_rh             (:,ipy) = 0.0
          cgrid%qmean_nep                (:,ipy) = 0.0
          cgrid%qmean_rk4step            (:,ipy) = 0.0
          cgrid%qmean_available_water    (:,ipy) = 0.0
@@ -7677,6 +7727,7 @@ module average_utils
          cgrid%qmsqu_stsc_rh            (:,ipy) = 0.0
          cgrid%qmsqu_msc_rh             (:,ipy) = 0.0
          cgrid%qmsqu_ssc_rh             (:,ipy) = 0.0
+         cgrid%qmsqu_psc_rh             (:,ipy) = 0.0
          cgrid%qmsqu_nep                (:,ipy) = 0.0
          cgrid%qmsqu_rlongup            (:,ipy) = 0.0
          cgrid%qmsqu_parup              (:,ipy) = 0.0
@@ -7729,6 +7780,7 @@ module average_utils
                csite%qmean_stsc_rh                (:,ipa) = 0.0
                csite%qmean_msc_rh                 (:,ipa) = 0.0
                csite%qmean_ssc_rh                 (:,ipa) = 0.0
+               csite%qmean_psc_rh                 (:,ipa) = 0.0
                csite%qmean_nep                    (:,ipa) = 0.0
                csite%qmean_rk4step                (:,ipa) = 0.0
                csite%qmean_available_water        (:,ipa) = 0.0
@@ -7793,6 +7845,7 @@ module average_utils
                csite%qmsqu_stsc_rh                (:,ipa) = 0.0
                csite%qmsqu_msc_rh                 (:,ipa) = 0.0
                csite%qmsqu_ssc_rh                 (:,ipa) = 0.0
+               csite%qmsqu_psc_rh                 (:,ipa) = 0.0
                csite%qmsqu_nep                    (:,ipa) = 0.0
                csite%qmsqu_rlongup                (:,ipa) = 0.0
                csite%qmsqu_parup                  (:,ipa) = 0.0
