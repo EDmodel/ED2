@@ -285,12 +285,13 @@ program main
 
    !----- Finishes execution. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
-   if (ipara == 1) then
+   select case (isingle)
+   case (0)
       call MPI_Finalize(ierr)
-   end if
+   end select
 #endif
    if (icall == 0) then
-      write(unit=*,fmt='(a)') ' ------ ED-2.2 execution ends ------'
+       write(unit=*,fmt='(a)') ' ------ ED-2.2 execution ends ------'
    end if
    !---------------------------------------------------------------------------------------!
 
