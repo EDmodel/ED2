@@ -273,7 +273,7 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !      Read obsevation time list if IOOUTPUT is set as none zero                        !
+   !      Read obsevation time list if IOOUTPUT is set as non-zero                        !
    !---------------------------------------------------------------------------------------!
    if (iooutput /= 0) then
         if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Loading obstime_list'
