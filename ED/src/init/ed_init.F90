@@ -1148,6 +1148,7 @@ subroutine read_obstime()
                              , hr_sec            & ! intent(in)
                              , min_sec           ! ! intent(in)
    implicit none
+
    !----- Local variables. ----------------------------------------------------------------!
    logical  :: l1
    logical  :: remove_entry
@@ -1155,8 +1156,11 @@ subroutine read_obstime()
    integer  :: time_idx
    integer  :: time_hms
    real     :: sec_2_start, sec_2_end
+
    !---------------------------------------------------------------------------------------!
    !----- First thing, let's check whether observation time list file exists.  ------------!
+   !---------------------------------------------------------------------------------------!
+
    inquire(file=trim(obstime_db),exist=l1)
    if (.not. l1) then
       write (unit=*,fmt='(a)') 'File '//trim(obstime_db)//' not found!'
@@ -1164,22 +1168,28 @@ subroutine read_obstime()
       call fatal_error('OBSTIME_DB not found!','read_obstime'                       &
                       ,'ed_init.F90')
    end if
+
    !---------------------------------------------------------------------------------------!
-   ! Need to do some quality control
+   !----- Quality control: UNITFAST must be 0.  -------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+ 
    if (unitfast /= 0) then
       write (unit=*,fmt='(a)') 'UNITFAST must be set to 0 for observation time output'
       call fatal_error('UNITFAST should be zero','read_obstime'                 &
                       ,'ed_init.F90')
    end if
+
+   !---------------------------------------------------------------------------------------!
    !----- Loading the observation time list -----------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
    open(unit=12,file=trim(obstime_db),form='formatted',status='old')
    read(unit=12,fmt=*)  ! skip header
-   ! initialize the length of obstime_list
-   obstime_list_len = 0
+   obstime_list_len = 0 ! initialize the length of obstime_list
    ferr = 0
-   ! loop over the whole list 
-   ! jump out of loop at the end of file (ferr /=0) or obstime_list is over the
-   ! maximum length
+
+   ! Loop over the whole list 
+   ! Leave loop at the end of file (ferr /=0) or obstime_list is over the maximum length
    do while ((ferr .eq. 0) .and. (obstime_list_len .lt. max_obstime))
         time_idx = obstime_list_len + 1
         read(unit=12,fmt=*,iostat=ferr) obstime_list(time_idx)%year     &
@@ -1190,43 +1200,58 @@ subroutine read_obstime()
                                        ,obstime_list(time_idx)%sec
         obstime_list_len = time_idx
    enddo
+
    ! Close the file
    close(unit=12)
+
    if (ferr .eq. 0) then
        ! in this case, it means we have reached maximum number for observation
        ! time output, inform the user that part of the time list is ignored
        write (unit=*,fmt='(a,i4,a)') &
         'Too many entries in input OBSTIME_DB. Using only the first ', max_obstime, '...'
    end if
-   ! Now loop over the obstime_list to (1) calculate the neareast time of day
-   ! that has analysis time output for each obstime (saved in time), (2) do
-   ! quality control
+
+   !---------------------------------------------------------------------------------------!
+   !----- Find the analysis time output closest (after) each obstime ----------------------!
+   !----- And quality control each entry --------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
    time_idx = 1
    do while (time_idx <= obstime_list_len)
-        ! time records the second of day of the closest analysis time
+
+        ! FIND ANALYSIS TIME: record the second of day of the closest analysis time
         ! note that we always round upward because the analysis file would
         ! include the average state/flux over the previous analysis period.
-        obstime_list(time_idx)%time  = real(ceiling((                           &
+        
+	obstime_list(time_idx)%time  = real(ceiling((                           &
                     real(obstime_list(time_idx)%hour) * hr_sec                  &
                   + real(obstime_list(time_idx)%min)  * min_sec                 &
                   + real(obstime_list(time_idx)%sec)) / frqfast)) * frqfast
-        ! remove the entry if 
-        ! (1) it is the same as the last entry
-        ! (2) it is outside the range of simulation periods
+
+        ! QUALITY CONTROL: Remove the entry if 
+        ! (1) it is outside the range of the simulation
+	! (2) it is the same as the last entry
+       
         ! auxiliary variables to determine whether the observation time is
         ! within the range of simulation periods
         time_hms = obstime_list(time_idx)%hour * 10000      &
                  + obstime_list(time_idx)%min * 100         &
                  + obstime_list(time_idx)%sec
-        call date_2_seconds(obstime_list(time_idx)%year,obstime_list(time_idx)%month        &
+        
+	! Obstime - start time should be positive
+	call date_2_seconds(obstime_list(time_idx)%year,obstime_list(time_idx)%month        &
                            ,obstime_list(time_idx)%date,time_hms                            &
                            ,iyeara,imontha,idatea,itimea*100                                &
                            ,sec_2_start)
+
+	! Obstime - end time should be negative
         call date_2_seconds(obstime_list(time_idx)%year,obstime_list(time_idx)%month        &
                            ,obstime_list(time_idx)%date,time_hms                            &
                            ,iyearz,imonthz,idatez,itimez*100                                &
                            ,sec_2_end)
-        remove_entry = (sec_2_start < 0 .or. sec_2_end > 0)
+       
+	remove_entry = (sec_2_start < 0 .or. sec_2_end > 0) 
+
         if (time_idx > 1) then
             remove_entry = remove_entry .or.                                                &
                          ( obstime_list(time_idx)%year == obstime_list(time_idx-1)%year     &
@@ -1235,19 +1260,23 @@ subroutine read_obstime()
                      .and. obstime_list(time_idx)%time == obstime_list(time_idx-1)%time     &
                          )
         end if
-        ! remove the current entry if remove_entry is true
+       
+	! remove the current entry if remove_entry is true
         if (remove_entry) then
             call remove_obstime(time_idx)
             ! also roll back time_idx
             time_idx = time_idx - 1
         end if
-        ! increase time_idx
+        
+	! increase time_idx
         time_idx = time_idx + 1
    enddo
    return
 end subroutine read_obstime
 !==========================================================================================!
 !==========================================================================================!
+
+
 !==========================================================================================!
 !==========================================================================================!
 !  SUBROUTINE: REMOVE_OBSTIME
@@ -1257,6 +1286,7 @@ end subroutine read_obstime
 !> \date    2018.04
 !---------------------------------------------------------------------------------------!
 ! Maybe put this to utils/date_utils???
+
 subroutine remove_obstime(time_idx)
    use ed_misc_coms   , only : obstime_list      & ! intent(inout)
                              , obstime_list_len  ! ! intent(inout)
@@ -1266,10 +1296,12 @@ subroutine remove_obstime(time_idx)
    !----- Local variables. ----------------------------------------------------------------!
    integer  :: idx
    !---------------------------------------------------------------------------------------!
-   ! only remove the entry if it actually exists
+   
+   ! Only remove the entry if it actually exists
    if (time_idx < obstime_list_len) then
-       ! move all the entries after time_idx forward
-       do idx = time_idx + 1, obstime_list_len
+       
+	! move all the entries after time_idx forward
+       	do idx = time_idx + 1, obstime_list_len
             obstime_list(idx-1)%year    = obstime_list(idx)%year
             obstime_list(idx-1)%month   = obstime_list(idx)%month
             obstime_list(idx-1)%date    = obstime_list(idx)%date 
@@ -1277,19 +1309,25 @@ subroutine remove_obstime(time_idx)
             obstime_list(idx-1)%min     = obstime_list(idx)%min  
             obstime_list(idx-1)%sec     = obstime_list(idx)%sec  
             obstime_list(idx-1)%time    = obstime_list(idx)%time 
-       enddo
-       ! decrease obstime_list_len
+        enddo
+       
+	! decrease obstime_list_len
        obstime_list_len = obstime_list_len - 1
+
    else if (time_idx == obstime_list_len) then
        ! the last entry
        ! just decrease obstime_list_len
+
        obstime_list_len = obstime_list_len - 1
+
    else
        ! print error message
-       write (unit=*,fmt='(i4,a,i4)') time_idx, 'is out of the dimension of  obstime_list, ', obstime_list_len
+       write (unit=*,fmt='(i4,a,i4)') time_idx, 'is out of the dimension of obstime_list, ', obstime_list_len
        call fatal_error('Out of obstime_list','remove_obstime'                 &
                        ,'ed_init.F90')
+
    endif
+
    ! now we also need to reset the former last entry of obstime_list
    obstime_list(obstime_list_len+1)%year    = 0
    obstime_list(obstime_list_len+1)%month   = 0
@@ -1302,15 +1340,17 @@ subroutine remove_obstime(time_idx)
 end subroutine remove_obstime
 !==========================================================================================!
 !==========================================================================================!
+
 !==========================================================================================!
 !==========================================================================================!
 !  SUBROUTINE: IS_OBSTIME
 !
-!> \brief   determine whether it is observation_time
+!> \brief   Determine whether it is observation_time
 !> \author  Miriam Johnston, Xiangtao Xu
 !> \date    2018.04
 !---------------------------------------------------------------------------------------!
 ! Maybe put this to utils/date_utils???
+
 subroutine is_obstime(year,month,date,time,observation_time,time_idx)
    use ed_misc_coms   , only : obstime_list      & ! intent(inout)
                              , obstime_list_len  ! ! intent(inout)
@@ -1325,8 +1365,10 @@ subroutine is_obstime(year,month,date,time,observation_time,time_idx)
    !----- Local variables. ----------------------------------------------------------------!
    integer  :: idx
    !---------------------------------------------------------------------------------------!
+
    ! default value for observation_time
    observation_time = .false.
+
    ! loop over obstime_list_len
    time_idx = 0
    do while ((.not. observation_time) .and. (time_idx <= obstime_list_len))
