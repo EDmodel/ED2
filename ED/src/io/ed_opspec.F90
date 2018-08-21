@@ -1139,6 +1139,7 @@ subroutine ed_opspec_misc
                                     , imoutput                     & ! intent(in)
                                     , iyoutput                     & ! intent(in)
                                     , itoutput                     & ! intent(in)
+				    , iooutput			   & ! intent(in)
                                     , isoutput                     & ! intent(in)
                                     , iadd_site_means              & ! intent(in)
                                     , iadd_patch_means             & ! intent(in)
@@ -1331,6 +1332,12 @@ subroutine ed_opspec_misc
    if (itoutput /= 0 .and. itoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid ITOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',itoutput,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    if (iooutput /= 0 .and. iooutput /= 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IOOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iooutput,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
