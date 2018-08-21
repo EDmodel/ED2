@@ -24,7 +24,7 @@ Module ed_misc_coms
        integer :: hour
        integer :: min
        integer :: sec
-       integer :: time
+       real    :: time
    end type obstime
    type(obstime), dimension(max_obstime) :: obstime_list
    integer :: obstime_list_len ! total length of the used obstime list
