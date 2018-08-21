@@ -2,7 +2,7 @@
 !==========================================================================================!
 !     This is the main driver for file output in ED.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine ed_output(observation_time,analysis_time,new_day,         &
+subroutine ed_output(observation_time,analysis_time,new_day         &
                     ,dail_analy_time,mont_analy_time,dcyc_analy_time &
                     ,annual_time,history_time,dcycle_time)
 
