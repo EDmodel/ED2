@@ -2,7 +2,8 @@
 !==========================================================================================!
 !     This is the main driver for file output in ED.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
+subroutine ed_output(observation_time,analysis_time,new_day,         &
+                    ,dail_analy_time,mont_analy_time,dcyc_analy_time &
                     ,annual_time,history_time,dcycle_time)
 
    use ed_state_vars, only : edgrid_g                & ! structure
@@ -32,6 +33,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
                            , zero_ed_yearly_vars     ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
+   logical, intent(in)  :: observation_time
    logical, intent(in)  :: analysis_time
    logical, intent(in)  :: dail_analy_time
    logical, intent(in)  :: mont_analy_time
@@ -103,7 +105,10 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
    end if
    !---------------------------------------------------------------------------------------!
 
-
+   !----- Observation time   --------------------------------------------------------------!
+   if (observation_time) then
+       call h5_output('INST')
+   endif
 
    !----- Daily analysis output and monthly integration. ----------------------------------!
    if (new_day .and. (writing_dail .or. writing_mont .or. writing_dcyc)) then
