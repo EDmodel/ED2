@@ -676,7 +676,7 @@ subroutine copy_nl(copy_type)
                         ( unitstate == 1 .and. frqstate == 1.      )      )
    history_dail     = unitstate == 0 .and. frqstate < day_sec
    history_eorq     = unitstate <= 1
-   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or.                                &
+   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. iooutput /= 0 .or.             &
                       imoutput /= 0 .or. iqoutput /= 0 .or. itoutput /= 0
    !---------------------------------------------------------------------------------------!
 
