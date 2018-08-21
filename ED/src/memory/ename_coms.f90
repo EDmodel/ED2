@@ -52,6 +52,7 @@ module ename_coms
       integer                                           :: iqoutput
       integer                                           :: iyoutput
       integer                                           :: itoutput
+      integer						:: iooutput
       integer                                           :: isoutput
       integer                                           :: iadd_site_means
       integer                                           :: iadd_patch_means
@@ -118,6 +119,7 @@ module ename_coms
       character(len=str_len)                            :: soilstate_db
       character(len=str_len)                            :: soildepth_db
       character(len=str_len)                            :: ed_met_driver_db
+      character(len=str_len)				:: obstime_db
 
       !----- ED polygon specification. ----------------------------------------------------!
       integer                                           :: n_poi
@@ -322,6 +324,7 @@ module ename_coms
       enl%iqoutput                  = undef_integer
       enl%iyoutput                  = undef_integer
       enl%itoutput                  = undef_integer
+      enl%iooutput	            = undef_integer
       enl%isoutput                  = undef_integer
 
       enl%iadd_site_means           = undef_integer
@@ -390,6 +393,7 @@ module ename_coms
       enl%soilstate_db              =     undef_path
       enl%soildepth_db              =     undef_path
       enl%ed_met_driver_db          =     undef_path
+      enl%obstime_db		    = 	  undef_path
 
       enl%n_poi                     = undef_integer
       enl%n_ed_region               = undef_integer
