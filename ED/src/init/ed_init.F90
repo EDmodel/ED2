@@ -1168,7 +1168,7 @@ subroutine read_obstime()
    ! Need to do some quality control
    if (unitfast /= 0) then
       write (unit=*,fmt='(a)') 'UNITFAST must be set to 0 for observation time output'
-      call fatal_error('UNITFAST should not be zero','read_obstime'                 &
+      call fatal_error('UNITFAST should be zero','read_obstime'                 &
                       ,'ed_init.F90')
    end if
    !----- Loading the observation time list -----------------------------------------------!
