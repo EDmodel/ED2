@@ -1299,9 +1299,9 @@ subroutine ed_opspec_misc
         ,'Yours is set to ',min_patch_area,'...'
    end if
 
-   if (ifoutput == 0 .and. iooutput == 0) then
+   if (ifoutput == 3 .and. iooutput == 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Warning: IFOUTPUT and IOOUTPUT are both 0. Outputs may be confusing.'
+        'Warning: IFOUTPUT and IOOUTPUT are both on. Outputs may be confusing.'
    end if
 
    if (ifoutput /= 0 .and. ifoutput /= 3) then
