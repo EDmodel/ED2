@@ -1299,6 +1299,11 @@ subroutine ed_opspec_misc
         ,'Yours is set to ',min_patch_area,'...'
    end if
 
+   if (ifoutput == 0 .and. iooutput == 0) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Warning: IFOUTPUT and IOOUTPUT are both 0. Outputs may be confusing.'
+   end if
+
    if (ifoutput /= 0 .and. ifoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IFOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',ifoutput,'...'
