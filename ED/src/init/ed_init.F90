@@ -1134,7 +1134,7 @@ subroutine read_obstime()
                              , obstime_db        & ! intent(in)
                              , unitfast          & ! intent(in)
                              , frqfast           & ! intent(in)
-			     , outfast		 & ! intent(in)
+                             , outfast           & ! intent(in)
                              , current_time      & ! intent(in)
                              , iyeara            & ! intent(in)
                              , imontha           & ! intent(in)
@@ -1181,8 +1181,8 @@ subroutine read_obstime()
    end if
 
    if (outfast .ne. frqfast) then
-      write (unit=*,fmt='(a,f,a)') &
-	'OUTFAST must be 0 or equat to FRQFAST for observation time output. (Yours is ',outfast,').'
+      write (unit=*,fmt='(a,1x,f7.0,1x,a)') &
+         'OUTFAST must be 0 or equal to FRQFAST for observation time output. (Yours is ',outfast,').'
       call fatal_error('OUTFAST should be = FRQFAST or zero','read_obstime'                 &
                       ,'ed_init.F90')
    end if
@@ -1231,14 +1231,14 @@ subroutine read_obstime()
         ! note that we always round upward because the analysis file would
         ! include the average state/flux over the previous analysis period.
         
-	obstime_list(time_idx)%time  = real(ceiling((                           &
+        obstime_list(time_idx)%time  = real(ceiling((                           &
                     real(obstime_list(time_idx)%hour) * hr_sec                  &
                   + real(obstime_list(time_idx)%min)  * min_sec                 &
                   + real(obstime_list(time_idx)%sec)) / frqfast)) * frqfast
 
         ! QUALITY CONTROL: Remove the entry if 
         ! (1) it is outside the range of the simulation
-	! (2) it is the same as the last entry
+        ! (2) it is the same as the last entry
        
         ! auxiliary variables to determine whether the observation time is
         ! within the range of simulation periods
@@ -1246,19 +1246,19 @@ subroutine read_obstime()
                  + obstime_list(time_idx)%min * 100         &
                  + obstime_list(time_idx)%sec
         
-	! Obstime - start time should be positive
-	call date_2_seconds(obstime_list(time_idx)%year,obstime_list(time_idx)%month        &
+        ! Obstime - start time should be positive
+        call date_2_seconds(obstime_list(time_idx)%year,obstime_list(time_idx)%month        &
                            ,obstime_list(time_idx)%date,time_hms                            &
                            ,iyeara,imontha,idatea,itimea*100                                &
                            ,sec_2_start)
 
-	! Obstime - end time should be negative
+        ! Obstime - end time should be negative
         call date_2_seconds(obstime_list(time_idx)%year,obstime_list(time_idx)%month        &
                            ,obstime_list(time_idx)%date,time_hms                            &
                            ,iyearz,imonthz,idatez,itimez*100                                &
                            ,sec_2_end)
        
-	remove_entry = (sec_2_start < 0 .or. sec_2_end > 0) 
+        remove_entry = (sec_2_start < 0 .or. sec_2_end > 0) 
 
         if (time_idx > 1) then
             remove_entry = remove_entry .or.                                                &
@@ -1269,14 +1269,14 @@ subroutine read_obstime()
                          )
         end if
        
-	! remove the current entry if remove_entry is true
+        ! remove the current entry if remove_entry is true
         if (remove_entry) then
             call remove_obstime(time_idx)
             ! also roll back time_idx
             time_idx = time_idx - 1
         end if
         
-	! increase time_idx
+        ! increase time_idx
         time_idx = time_idx + 1
    enddo
    return
@@ -1308,8 +1308,8 @@ subroutine remove_obstime(time_idx)
    ! Only remove the entry if it actually exists
    if (time_idx < obstime_list_len) then
        
-	! move all the entries after time_idx forward
-       	do idx = time_idx + 1, obstime_list_len
+        ! move all the entries after time_idx forward
+        do idx = time_idx + 1, obstime_list_len
             obstime_list(idx-1)%year    = obstime_list(idx)%year
             obstime_list(idx-1)%month   = obstime_list(idx)%month
             obstime_list(idx-1)%date    = obstime_list(idx)%date 
@@ -1319,7 +1319,7 @@ subroutine remove_obstime(time_idx)
             obstime_list(idx-1)%time    = obstime_list(idx)%time 
         enddo
        
-	! decrease obstime_list_len
+        ! decrease obstime_list_len
        obstime_list_len = obstime_list_len - 1
 
    else if (time_idx == obstime_list_len) then

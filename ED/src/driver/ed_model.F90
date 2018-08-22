@@ -97,7 +97,7 @@ subroutine ed_model()
    integer            :: ndays
    integer            :: obstime_idx 
    logical            :: analysis_time
-   logical 	      :: observation_time
+   logical            :: observation_time
    logical            :: new_day
    logical            :: new_month
    logical            :: new_year

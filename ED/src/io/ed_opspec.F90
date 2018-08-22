@@ -1139,7 +1139,7 @@ subroutine ed_opspec_misc
                                     , imoutput                     & ! intent(in)
                                     , iyoutput                     & ! intent(in)
                                     , itoutput                     & ! intent(in)
-				    , iooutput			   & ! intent(in)
+                                    , iooutput                     & ! intent(in)
                                     , isoutput                     & ! intent(in)
                                     , iadd_site_means              & ! intent(in)
                                     , iadd_patch_means             & ! intent(in)
@@ -1301,8 +1301,8 @@ subroutine ed_opspec_misc
 
    if (ifoutput == 3 .and. iooutput == 3) then
       write (unit=*,fmt='(a,a)') &
-	'***** WARNING WARNING WARNING ***** ', &
-	'IFOUTPUT and IOOUTPUT are both on. Outputs from both are labeled -I- .'
+        '***** WARNING WARNING WARNING ***** ', &
+        'IFOUTPUT and IOOUTPUT are both on. Outputs from both are labeled -I- .'
    end if
 
    if (ifoutput /= 0 .and. ifoutput /= 3) then

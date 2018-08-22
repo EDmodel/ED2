@@ -184,9 +184,9 @@ subroutine copy_nl(copy_type)
                                    , iyoutput                  & ! intent(out)
                                    , iqoutput                  & ! intent(out)
                                    , itoutput                  & ! intent(out)
-             			   , iooutput                  & ! intent(out)
+                                   , iooutput                  & ! intent(out)
                                    , obstime_db                & ! intent(out)                                  
- 				   , dtlsm                     & ! intent(out)
+                                   , dtlsm                     & ! intent(out)
                                    , frqstate                  & ! intent(out)
                                    , sfilout                   & ! intent(out)
                                    , isoutput                  & ! intent(out)
@@ -307,7 +307,7 @@ subroutine copy_nl(copy_type)
       iqoutput                  = nl%iqoutput
       iyoutput                  = nl%iyoutput
       itoutput                  = nl%itoutput
-      iooutput			= nl%iooutput
+      iooutput                  = nl%iooutput
       isoutput                  = nl%isoutput
 
       iadd_site_means           = nl%iadd_site_means
@@ -351,7 +351,7 @@ subroutine copy_nl(copy_type)
       thsums_database           = nl%thsums_database
 
       ed_met_driver_db          = nl%ed_met_driver_db
-      obstime_db		= nl%obstime_db
+      obstime_db                = nl%obstime_db
       soilstate_db              = nl%soilstate_db
       soildepth_db              = nl%soildepth_db
       isoilstateinit            = nl%isoilstateinit
