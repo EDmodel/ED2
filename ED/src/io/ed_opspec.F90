@@ -1300,8 +1300,9 @@ subroutine ed_opspec_misc
    end if
 
    if (ifoutput == 3 .and. iooutput == 3) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Warning: IFOUTPUT and IOOUTPUT are both on. Outputs may be confusing.'
+      write (unit=*,fmt='(a,a)') &
+	'***** WARNING WARNING WARNING ***** ', &
+	'IFOUTPUT and IOOUTPUT are both on. Outputs from both are labeled -I- .'
    end if
 
    if (ifoutput /= 0 .and. ifoutput /= 3) then
