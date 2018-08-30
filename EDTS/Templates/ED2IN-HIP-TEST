@@ -192,6 +192,8 @@ $ED_NL
    !             of points for the diurnal cycle is 86400 / FRQANL                         !
    ! IYOUTPUT -- Annual output.                                                            !
    ! ITOUTPUT -- Instantaneous fluxes, mostly polygon-level variables, one file per year.  !
+   ! IOOUTPUT -- Observation time output. Equivalent to IFOUTPUT, except only at the       !
+   !             times specified in OBSTIME_DB.                                            !
    ! ISOUTPUT -- restart file, for HISTORY runs.  The time interval between files is       !
    !             determined by FRQHIS                                                      !
    !---------------------------------------------------------------------------------------!
@@ -201,6 +203,7 @@ $ED_NL
    NL%IQOUTPUT  =  3
    NL%IYOUTPUT  =  0
    NL%ITOUTPUT  =  0
+   NL%IOOUTPUT  =  0
    NL%ISOUTPUT  =  3
    !---------------------------------------------------------------------------------------!
 
@@ -576,6 +579,7 @@ $ED_NL
    !                      not cold deciduous).                                             !
    !  ED_MET_DRIVER_DB -- File containing information for meteorological driver            !
    !                      instructions (the "header" file).                                !
+   !  OBSTIME_DB       -- File containing times of desired IOOUTPUT                        !
    !  SOILSTATE_DB     -- Dataset in case you want to provide the initial conditions of    !
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
@@ -586,6 +590,7 @@ $ED_NL
    NL%PLANTATION_FILE  = ''
    NL%THSUMS_DATABASE  = 'edts_datasets/ed_inputs/'
    NL%ED_MET_DRIVER_DB = 'edts_datasets/met/pet/Petrolina_HEADER'
+   NL%OBSTIME_DB       = '' !Reference file: /ED/run/obstime_template.time
    NL%SOILSTATE_DB     = ''
    NL%SOILDEPTH_DB     = ''
    !---------------------------------------------------------------------------------------!

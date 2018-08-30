@@ -203,6 +203,7 @@ $ED_NL
    NL%IQOUTPUT  =  0
    NL%IYOUTPUT  =  0
    NL%ITOUTPUT  =  3
+   NL%IOOUTPUT  =  0
    NL%ISOUTPUT  =  3
    !---------------------------------------------------------------------------------------!
 
@@ -556,6 +557,7 @@ $ED_NL
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/'
    NL%ED_MET_DRIVER_DB  = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/met_driver/wmo+eft/eft/Santarem_Km67/Santarem_Km67_HEADER'
+   NL%OBSTIME_DB        = '' !Reference file: /ED/run/obstime_template.time
    NL%SOILSTATE_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat'
    NL%SOILDEPTH_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat'
    !---------------------------------------------------------------------------------------!

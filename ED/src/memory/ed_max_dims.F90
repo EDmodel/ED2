@@ -260,7 +260,9 @@ module ed_max_dims
 #endif
    !---------------------------------------------------------------------------------------!
 
-
+   !----- Maximum observation times that can be stored by the obs_timelist ----------------!
+   integer, parameter :: max_obstime = 99999
+   !---------------------------------------------------------------------------------------!
 
    !----- Maximum number of files (site+patch+cohort). ------------------------------------!
    integer, parameter :: maxlist = 3 * maxfiles
