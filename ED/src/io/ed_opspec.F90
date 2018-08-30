@@ -1300,16 +1300,10 @@ subroutine ed_opspec_misc
    end if
 
    if (ifoutput == 3 .and. iooutput == 3) then
-      call warning('IFOUTPUT and IOOUTPUT are both on.'// &
+      call warning('IFOUTPUT and IOOUTPUT are both on. '// &
                    'Outputs from both are labeled -I-.'   &
-                   ,'ed_opspec_misc',ed_opspec.f90')
+                   ,'ed_opspec_misc','ed_opspec.F90')
    end if
-
-!      write (unit=*,fmt='(a,a)') &
-!        '***** WARNING WARNING WARNING ***** ', &
-!        'IFOUTPUT and IOOUTPUT are both on. Outputs from both are labeled -I- .'
-!   end if
-
    if (ifoutput /= 0 .and. ifoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IFOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',ifoutput,'...'
