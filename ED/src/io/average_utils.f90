@@ -53,6 +53,7 @@ module average_utils
       integer                        :: isi
       integer                        :: ipa
       integer                        :: ico
+      integer                        :: lsl
       integer                        :: k
       integer                        :: nsoil
       real                           :: site_area_i
@@ -121,6 +122,7 @@ module average_utils
          !---------------------------------------------------------------------------------!
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
+            lsl   =  cpoly%lsl(isi)
 
             !----- Inverse of this site area (it should be always 1.) ---------------------!
             site_area_i=1./sum(csite%area)
@@ -551,7 +553,7 @@ module average_utils
                                                 * patch_wgt
 
                !----- Soil (extensive) properties. ----------------------------------------!
-               do k=1,nzg
+               do k=lsl,nzg
                   nsoil = cpoly%ntext_soil(k,isi)
                   cgrid%fmean_soil_energy (k,ipy) = cgrid%fmean_soil_energy (k,ipy)        &
                                                   + csite%fmean_soil_energy (k,ipa)        &
@@ -702,7 +704,7 @@ module average_utils
          !---------------------------------------------------------------------------------!
          !     Find the temperature and the fraction of liquid water.                      !
          !---------------------------------------------------------------------------------!
-         do k=1,nzg
+         do k=lsl,nzg
             call uextcm2tl( cgrid%fmean_soil_energy(k,ipy)                                 &
                           , cgrid%fmean_soil_water (k,ipy) * wdns                          &
                           , cgrid_fmean_soil_hcap  (k)                                     & 
@@ -929,6 +931,7 @@ module average_utils
       integer                        :: isi
       integer                        :: ipa
       integer                        :: ico
+      integer                        :: lsl
       integer                        :: nsoil
       real                           :: pss_npp
       real                           :: pss_lai
@@ -945,6 +948,7 @@ module average_utils
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
+            lsl   = cpoly%lsl(isi)
 
             !------------------------------------------------------------------------------!
             !      Now we find the derived properties for the air above canopy.            !
@@ -1017,7 +1021,7 @@ module average_utils
                !---------------------------------------------------------------------------!
                !     Soil matric potential, temperature, and liquid water.                 !
                !---------------------------------------------------------------------------!
-               do k=1,nzg
+               do k=lsl,nzg
                   nsoil = cpoly%ntext_soil(k,isi)
                   call uextcm2tl( csite%fmean_soil_energy(k,ipa)                           &
                                 , csite%fmean_soil_water (k,ipa) * wdns                    &
@@ -2759,6 +2763,7 @@ module average_utils
       integer                                         :: isi
       integer                                         :: ipa
       integer                                         :: ico
+      integer                                         :: lsl
       integer                                         :: k
       integer                                         :: nsoil
       real                                            :: poly_lai
@@ -2800,6 +2805,7 @@ module average_utils
          !---------------------------------------------------------------------------------!
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
+            lsl   =  cpoly%lsl(isi)
 
             !----- Inverse of this site area (it should be always 1.) ---------------------!
             site_area_i = 1./sum(csite%area)
@@ -2918,7 +2924,7 @@ module average_utils
                !---------------------------------------------------------------------------!
                !     Soil matric potential, temperature, and liquid water.                 !
                !---------------------------------------------------------------------------!
-               do k=1,nzg
+               do k=lsl,nzg
                   nsoil = cpoly%ntext_soil(k,isi)
                   call uextcm2tl( csite%dmean_soil_energy(k,ipa)                           &
                                 , csite%dmean_soil_water (k,ipa) * wdns                    &
@@ -3149,7 +3155,7 @@ module average_utils
          !---------------------------------------------------------------------------------!
          !     Find the temperature and the fraction of liquid water.                      !
          !---------------------------------------------------------------------------------!
-         do k=1,nzg
+         do k=lsl,nzg
             call uextcm2tl( cgrid%dmean_soil_energy(k,ipy)                                 &
                           , cgrid%dmean_soil_water (k,ipy) * wdns                          &
                           , cgrid_dmean_soil_hcap  (k)                                     &
@@ -5232,6 +5238,7 @@ module average_utils
       integer                                         :: isi
       integer                                         :: ipa
       integer                                         :: ico
+      integer                                         :: lsl
       integer                                         :: k
       integer                                         :: nsoil
       real                                            :: can_exner
@@ -5266,6 +5273,7 @@ module average_utils
          !---------------------------------------------------------------------------------!
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
+            lsl   =  cpoly%lsl(isi)
 
             !----- Inverse of this site area (it should be always 1.) ---------------------!
             site_area_i = 1./sum(csite%area)
@@ -5320,7 +5328,7 @@ module average_utils
                !---------------------------------------------------------------------------!
                !     Soil matric potential, temperature, and liquid water.                 !
                !---------------------------------------------------------------------------!
-               do k=1,nzg
+               do k=lsl,nzg
                   nsoil = cpoly%ntext_soil(k,isi)
                   call uextcm2tl( csite%mmean_soil_energy(k,ipa)                           &
                                 , csite%mmean_soil_water (k,ipa) * wdns                    &
@@ -5468,7 +5476,7 @@ module average_utils
          !---------------------------------------------------------------------------------!
          !     Find the temperature and the fraction of liquid water.                      !
          !---------------------------------------------------------------------------------!
-         do k=1,nzg
+         do k=lsl,nzg
             call uextcm2tl( cgrid%mmean_soil_energy(k,ipy)                                 &
                           , cgrid%mmean_soil_water (k,ipy) * wdns                          &
                           , cgrid_mmean_soil_hcap  (k)                                     &
@@ -7230,6 +7238,7 @@ module average_utils
       integer                                    :: isi
       integer                                    :: ipa
       integer                                    :: ico
+      integer                                    :: lsl
       integer                                    :: nsoil
       integer                                    :: k
       integer                                    :: t
@@ -7265,6 +7274,7 @@ module average_utils
          !---------------------------------------------------------------------------------!
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
+            lsl   =  cpoly%lsl(isi)
 
             !----- Inverse of this site area (it should be always 1.) ---------------------!
             site_area_i = 1./sum(csite%area)
@@ -7309,7 +7319,7 @@ module average_utils
                !---------------------------------------------------------------------------!
                !     Soil matric potential, temperature, and liquid water.                 !
                !---------------------------------------------------------------------------!
-               do k=1,nzg
+               do k=lsl,nzg
                   nsoil = cpoly%ntext_soil(k,isi)
 
                   !----- Heat capacity stays outside the time loop. -----------------------!
@@ -7480,7 +7490,7 @@ module average_utils
             !------------------------------------------------------------------------------!
             !     Find the temperature and the fraction of liquid water.                   !
             !------------------------------------------------------------------------------!
-            do k=1,nzg
+            do k=lsl,nzg
                call uextcm2tl( cgrid%qmean_soil_energy(k,t,ipy)                            &
                              , cgrid%qmean_soil_water (k,t,ipy) * wdns                     &
                              , cgrid_qmean_soil_hcap  (k)                                  &

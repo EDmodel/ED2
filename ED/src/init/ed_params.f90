@@ -419,11 +419,11 @@ subroutine init_decomp_params()
       !    Accessed on 9 Aug 2018 (M96).                                                   !
       !                                                                                    !!
       !------------------------------------------------------------------------------------!
-      decay_rate_fsc  =         16.7    / yr_day
-      decay_rate_stsc =         4.4     / yr_day
-      decay_rate_msc  =  0.85 * 6.65    / yr_day
-      decay_rate_ssc  =  0.85 * 0.2     / yr_day
-      decay_rate_psc  =  0.85 * 0.00667 / yr_day
+      decay_rate_fsc  =  16.7    / yr_day
+      decay_rate_stsc =  4.4     / yr_day
+      decay_rate_msc  =  6.65    / yr_day
+      decay_rate_ssc  =  0.2     / yr_day
+      decay_rate_psc  =  0.00667 / yr_day
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!

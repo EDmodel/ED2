@@ -1585,9 +1585,9 @@ end do
 #endif
 
 
-   if (isoildepthflg < 0 .or. isoildepthflg > 1) then
+   if (isoildepthflg < 0 .or. isoildepthflg > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-              'Invalid ISOILDEPTHFLG, it must be between 0 and 1. Yours is set to'         &
+              'Invalid ISOILDEPTHFLG, it must be between 0 and 2. Yours is set to'         &
               ,isoildepthflg,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

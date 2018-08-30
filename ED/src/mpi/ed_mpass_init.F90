@@ -1149,6 +1149,10 @@ subroutine ed_masterput_worklist_info(par_run)
             call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
             mpiid = mpiid + 1
 
+            iscratch(1:npoly) = work_v(ifm)%lsl(ipya:ipyz)
+            call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+            mpiid = mpiid + 1
+
             iscratch(1:npoly) = work_v(ifm)%nscol(ipya:ipyz)
             call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
             mpiid = mpiid + 1
@@ -1198,6 +1202,7 @@ subroutine ed_masterput_worklist_info(par_run)
       sc_work(ifm)%landfrac          (1:npoly) = work_v(ifm)%landfrac          (ipya:ipyz)
       sc_work(ifm)%soilfrac(1:maxsite,1:npoly) = work_v(ifm)%soilfrac(1:maxsite,ipya:ipyz)
       sc_work(ifm)%ntext   (1:maxsite,1:npoly) = work_v(ifm)%ntext   (1:maxsite,ipya:ipyz)
+      sc_work(ifm)%lsl               (1:npoly) = work_v(ifm)%lsl               (ipya:ipyz)
       sc_work(ifm)%nscol             (1:npoly) = work_v(ifm)%nscol             (ipya:ipyz)
       sc_work(ifm)%xid               (1:npoly) = work_v(ifm)%xid               (ipya:ipyz)
       sc_work(ifm)%yid               (1:npoly) = work_v(ifm)%yid               (ipya:ipyz)
@@ -1228,6 +1233,7 @@ subroutine ed_masterput_worklist_info(par_run)
       work_v(ifm)%landfrac          (1:npoly) = sc_work(ifm)%landfrac          (1:npoly)
       work_v(ifm)%soilfrac(1:maxsite,1:npoly) = sc_work(ifm)%soilfrac(1:maxsite,1:npoly)
       work_v(ifm)%ntext   (1:maxsite,1:npoly) = sc_work(ifm)%ntext   (1:maxsite,1:npoly)
+      work_v(ifm)%lsl               (1:npoly) = sc_work(ifm)%lsl               (1:npoly)
       work_v(ifm)%nscol             (1:npoly) = sc_work(ifm)%nscol             (1:npoly)
       work_v(ifm)%xid               (1:npoly) = sc_work(ifm)%xid               (1:npoly)
       work_v(ifm)%yid               (1:npoly) = sc_work(ifm)%yid               (1:npoly)
@@ -2105,6 +2111,10 @@ subroutine ed_nodeget_worklist_info
 
       call MPI_Recv(work_v(ifm)%yid,npolygons,MPI_INTEGER,master_num,mpiid,MPI_COMM_WORLD  &
                    ,status,ierr)
+      mpiid = mpiid + 1
+
+      call MPI_Recv(work_v(ifm)%lsl,npolygons,MPI_INTEGER,master_num,mpiid                 &
+                   ,MPI_COMM_WORLD,status,ierr)
       mpiid = mpiid + 1
 
       call MPI_Recv(work_v(ifm)%nscol,npolygons,MPI_INTEGER,master_num,mpiid               &

@@ -2118,7 +2118,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    ! SOILSTATE_DB - Soil state (temperature and moisture) database, used only when         !
    !                ISOILSTATEINIT is set to 1.                                            !
-   ! SOILDEPTH_DB -  Soil depth database, used only when ISOILDEPTHFLG is set to 1.        !
+   ! SOILDEPTH_DB -  Soil depth database, used only when ISOILDEPTHFLG is set to 1 or 2.   !
    !---------------------------------------------------------------------------------------!
    SOILSTATE_DB = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat',
    SOILDEPTH_DB = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat',
@@ -2136,8 +2136,9 @@ $ED2_INFO
    !                       model will handle this inconsistency, but you may have some     !
    !                       soils that are too dry or too wet).                             !
    ! ISOILDEPTHFLG  -- How to initialise the soil depth:                                   !
-   !                   0.  Use NZG and all SLZ layer for every grid cell.                  !
-   !                   1.  Read in the soil depth from SOILDEPTH_DB.                       !
+   !                   0.  Constant, always defined by the first (deepest) SLZ layer.      !
+   !                   1.  Read from SOILDEPTH_DB (ED-1.0 style, ascii file).              !
+   !                   2.  Read from SOILDEPTH_DB (ED-2.2 style, hdf5 files + header).     !
    !---------------------------------------------------------------------------------------!
    ISOILSTATEINIT = 2,
    ISOILDEPTHFLG  = 0,

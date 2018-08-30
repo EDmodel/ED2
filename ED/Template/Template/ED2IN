@@ -563,13 +563,13 @@ $ED_NL
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = 'myinpmain/veget_data/OGE2/OGE2_'
-   NL%SOIL_DATABASE     = 'myinpmain/soil_data/texture/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
+   NL%SOIL_DATABASE     = 'myinpmain/soil_data/texture/Hengl/Hengl_'
    NL%LU_DATABASE       = 'myludatabase'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = 'myinpmain/thermal_sums/'
    NL%ED_MET_DRIVER_DB  = 'mymetdriverdb'
    NL%SOILSTATE_DB      = 'myinpmain/soil_data/temp+moist/STW1996OCT.dat'
-   NL%SOILDEPTH_DB      = 'myinpmain/soil_data/depth/soil_depths.dat'
+   NL%SOILDEPTH_DB      = 'myinpmain/soil_data/depth/H250mBRD/H250mBRD_'
    !---------------------------------------------------------------------------------------!
 
 
@@ -581,8 +581,9 @@ $ED_NL
    !                   0.  Use SLMSTR and STGOFF.                                          !
    !                   1.  Read from SOILSTATE_DB.                                         !
    ! ISOILDEPTHFLG  -- Variable controlling how to initialise soil depth                   !
-   !                   0.  Constant, always defined by the first SLZ layer.                !
-   !                   1.  Read from SOILDEPTH_DB.                                         !
+   !                   0.  Constant, always defined by the first (deepest) SLZ layer.      !
+   !                   1.  Read from SOILDEPTH_DB (ED-1.0 style, ascii file).              !
+   !                   2.  Read from SOILDEPTH_DB (ED-2.2 style, hdf5 files + header).     !
    !---------------------------------------------------------------------------------------!
    NL%ISOILSTATEINIT = 0
    NL%ISOILDEPTHFLG  = 0

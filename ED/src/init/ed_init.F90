@@ -238,7 +238,6 @@ module ed_init
    !---------------------------------------------------------------------------------------!
    subroutine soil_default_fill(cgrid,ifm,ipy)
       
-      use soil_coms     , only : layer_index ! ! intent(in)
       use ed_state_vars , only : edtype      & ! structure
                                , polygontype ! ! structure
       use ed_work_vars  , only : work_v      ! ! structure
@@ -250,15 +249,11 @@ module ed_init
       integer      , intent(in)   :: ipy
       !----- Local variables --------------------------------------------------------------!
       type(polygontype) , pointer :: cpoly
-      integer                     :: ilat_bin
-      integer                     :: ilon_bin
       integer                     :: isi
       integer                     :: k
       !------------------------------------------------------------------------------------!
 
 
-      ilat_bin = min(180,int(90.0 - cgrid%lat(ipy)) + 1)
-      ilon_bin = int(180.0 + cgrid%lon(ipy)) + 1
 
       cpoly => cgrid%polygon(ipy)
       do isi=1,cpoly%nsites
@@ -266,7 +261,7 @@ module ed_init
          !    Require at least 2 layers.  This requirement was taken in consideration when !
          ! layer_index was filled at the first initialization, so it is safe to just copy. !
          !---------------------------------------------------------------------------------!
-         cpoly%lsl(isi) =layer_index(ilat_bin,ilon_bin) 
+         cpoly%lsl(isi) = work_v(ifm)%lsl(ipy)
          !---------------------------------------------------------------------------------!
 
 

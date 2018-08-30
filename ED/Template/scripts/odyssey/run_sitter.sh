@@ -32,7 +32,7 @@ situtils="${here}/sit_utils"
 #   runtitle -- Full name of this simulation, this is used only in the e-mail subject.     #
 #------------------------------------------------------------------------------------------#
 desc=$(basename ${here})
-runtitle="ED-2 last PVE cycle"
+runtitle="Simulation group: ${desc}"
 #------------------------------------------------------------------------------------------#
 
 
@@ -87,7 +87,7 @@ ststcrit=0.01         #   Maximum change allowed between two cycles
 #------------------------------------------------------------------------------------------#
 email1day=1
 recipient=""
-mailprog="${HOME}/util/mutt"
+mailprog=$(which mutt)
 frqemail=43200
 plotstatus=true
 Rscript_plot="${situtils}/plot.region.r"
