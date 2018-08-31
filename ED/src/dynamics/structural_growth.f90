@@ -782,16 +782,19 @@ module structural_growth
                                          ,bdeadb,bstorage,maxh,f_bseeds,f_growth,f_bstorage)
       use pft_coms      , only : phenology    & ! intent(in)
                                , repro_min_h  & ! intent(in)
+                               , hgt_max      & ! intent(in)
+                               , r_bang       & ! intent(in)
                                , r_fract      & ! intent(in)
+                               , r_cv50       & ! intent(in)
                                , st_fract     & ! intent(in)
                                , dbh_crit     & ! intent(in)
-                               , hgt_max      & ! intent(in)
                                , is_grass     & ! intent(in)
                                , is_liana     ! ! intent(in)
       use ed_misc_coms  , only : current_time & ! intent(in)
                                , igrass       & ! intent(in)
                                , ibigleaf     ! ! intent(in)
-      use consts_coms   , only : r_tol_trunc  ! ! intent(in)
+      use consts_coms   , only : r_tol_trunc  & ! intent(in)
+                               , tiny_num     ! ! intent(in)
       use allometry     , only : size2bd      & ! intent(in)
                                , h2dbh        ! ! intent(in)
       implicit none
@@ -810,8 +813,10 @@ module structural_growth
       real   , intent(out) :: f_growth   !> Fraction to use for growth
       real   , intent(out) :: f_bstorage !> Fraction to keep as storage
       !----- Local variables --------------------------------------------------------------!
-      real                         :: bd_target  !> Target Bd to reach maxh height
-      real                         :: delta_bd   !> Target Bd - actual Bd
+      real                         :: bd_target   !> Target Bd to reach maxh height
+      real                         :: delta_bd    !> Target Bd - actual Bd
+      real                         :: hnorm       !> Normalised height
+      real                         :: r_fract_act !> Hgt-dependent reproduction allocation
       logical                      :: late_spring
       logical                      :: use_storage
       logical                      :: zero_growth
@@ -852,6 +857,42 @@ module structural_growth
                     phen_status == 0  .and. bstorage > 0.0
       !------------------------------------------------------------------------------------!
 
+      !----- Find the current target for allocation to reproduction. ----------------------!
+      if (r_bang(ipft)) then
+         !----- "Bang" reproduction once plant reaches reproductive maturity. -------------!
+         if ( hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) ) ) then
+            r_fract_act = 0.0
+         else
+            r_fract_act = min(r_fract(ipft), 1.0 - st_fract(ipft))
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Find normalised height to calculate asymptote. ----------------------------!
+         if ( repro_min_h(ipft) < ( (1.0 -r_tol_trunc) * hgt_max(ipft) ) ) then
+            hnorm = (hite - repro_min_h(ipft)) / (hgt_max(ipft) - repro_min_h(ipft))
+            hnorm = max(0.,min(1.,hnorm))
+         elseif (hite < repro_min_h(ipft)) then
+            hnorm = 0.
+         else
+            hnorm = 1.
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Find allocation to reproduction.  In case the denominator is zero, assume   !
+         ! partial bang (sensu Wenk and Falster 2015).                                     !
+         !---------------------------------------------------------------------------------!
+         if ( (hnorm + r_cv50(ipft)) >= tiny_num ) then
+            r_fract_act = (1.0 - st_fract(ipft)) * hnorm / (hnorm + r_cv50(ipft))
+         elseif (hnorm >= tiny_num) then
+            r_fract_act = (1.0 - st_fract(ipft))
+         else
+            r_fract_act = 0.0
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
       select case (ibigleaf)
       case (0)
          !---------------------------------------------------------------------------------!
@@ -874,7 +915,7 @@ module structural_growth
                ! community.                                                                !
                !---------------------------------------------------------------------------!
                if (zero_growth) then
-                  f_bseeds = merge(0.0, r_fract(ipft), zero_repro)
+                  f_bseeds = merge(0.0, r_fract_act, zero_repro)
                   f_growth = 0.0
                else
                   bd_target = size2bd(h2dbh(maxh,ipft),maxh,ipft)
@@ -884,16 +925,16 @@ module structural_growth
                   ! don't grow otherwise invest what is needed (or everything in case it's !
                   ! not enough) to reach bd_target.                                        !
                   !    For seeds first check if the cohort has reached repro_min_h. In     !
-                  ! case so, then check that it has enough left to invest r_fract in       !
-                  ! reproduction.  In case so, invest r_fract in reproduction and the rest !
-                  ! will stay in storage.  Otherwise, invest everything in reproduction.   !
-                  ! Finally in case the liana hasn't reached repro_min_h, leave everything !
-                  ! in storage.    !                                                       !
+                  ! case so, then check that it has enough left to invest r_fract_act in   !
+                  ! reproduction.  In case so, invest r_fract_act in reproduction and the  !
+                  ! rest will stay in storage.  Otherwise, invest everything in            !
+                  ! reproduction.  Finally in case the liana hasn't reached repro_min_h,   !
+                  ! leave everything in storage.                                           !
                   !------------------------------------------------------------------------!
                   f_growth  = merge(0.0                                                    &
                                    ,min(delta_bd / bstorage, 1.0)                          &
                                    ,bstorage * delta_bd <= 0.0)
-                  f_bseeds  = merge( 0.0, min(r_fract(ipft),1.0-f_growth),zero_repro)
+                  f_bseeds  = merge( 0.0, min(r_fract_act,1.0-f_growth),zero_repro)
                end if
                !---------------------------------------------------------------------------!
             else if (is_grass(ipft) .and. igrass == 1) then
@@ -915,7 +956,6 @@ module structural_growth
                ! stop growing once they reach maximum height (as they don't have an actual !
                ! DBH).                                                                     !
                !---------------------------------------------------------------------------!
-               zero_repro  = hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
                zero_growth = is_grass(ipft) .and.                                          &
                              hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)     )
                !---------------------------------------------------------------------------!
@@ -925,12 +965,9 @@ module structural_growth
                if (zero_growth) then
                   f_bseeds = 1.0 - st_fract(ipft)
                   f_growth = 0.0
-               elseif (zero_repro) then
-                  f_bseeds = 0.0
-                  f_growth = 1.0 - st_fract(ipft)
                else
-                  f_bseeds = r_fract(ipft)
-                  f_growth = max(0.0,1.0 - st_fract(ipft) - r_fract(ipft))
+                  f_bseeds = r_fract_act
+                  f_growth = max(0.0,1.0 - st_fract(ipft) - r_fract_act)
                end if
                !---------------------------------------------------------------------------!
             end if

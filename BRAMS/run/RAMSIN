@@ -2371,6 +2371,8 @@ $ED2_INFO
    !                 3.  Similar to 2, but allocation to reproduction is size-dependent.   !
    !                     The relationship is currently a simple linear scaling between     !
    !                     minimum maturity height and maximum height.                       !
+   !                 3.  Similar to 2, but allocation to reproduction may be set as        !
+   !                     a function of height using an asymptotic curve.                   !
    !---------------------------------------------------------------------------------------!
    REPRO_SCHEME    = 2,
    !---------------------------------------------------------------------------------------!

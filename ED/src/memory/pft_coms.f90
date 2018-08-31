@@ -679,10 +679,12 @@ module pft_coms
    ! anything other than zero unless storage turnover rate is adjusted accordingly).       !
    !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft) :: st_fract
-   !----- Fraction of (positive) carbon balance devoted to reproduction. ------------------!
+   !----- Reproduction allocation function (true = bang; false = asymptote). --------------!
+   logical, dimension(n_pft) :: r_bang
+   !----- Fraction of (positive) carbon balance devoted to reproduction (bang). -----------!
    real   , dimension(n_pft) :: r_fract
-   !----- Increase rate for carbon going to reproduction. ---------------------------------!
-   real   , dimension(n_pft) :: r_slope
+   !----- Curvature term for asymptote. ---------------------------------------------------!
+   real   , dimension(n_pft) :: r_cv50
    !----- External input of seeds [kgC/m2/year]. ------------------------------------------!
    real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!

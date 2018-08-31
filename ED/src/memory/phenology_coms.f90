@@ -65,6 +65,10 @@ module phenology_coms
    !                     to the same polygon, even if they are in different sites.  They   !
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
+   !                 3.  Similar to 2, but reproduction allocation for tropical trees is   !
+   !                     assumed to be an asymptote as a function of height, following one !
+   !                     of the functional forms proposed by Wenk and Falster (2015). This !
+   !                     is experimental, use it at your own risk.                         !
    !---------------------------------------------------------------------------------------!
    integer                 :: repro_scheme
    !---------------------------------------------------------------------------------------!

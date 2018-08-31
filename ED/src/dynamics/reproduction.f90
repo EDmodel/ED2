@@ -1047,7 +1047,7 @@ module reproduction
          end do siteloop1
          !---------------------------------------------------------------------------------!
 
-      case (2)
+      case (2,3)
 
          !---------------------------------------------------------------------------------!
          !     Seeds are dispersed amongst patches that belong to the same polygon.  They  !

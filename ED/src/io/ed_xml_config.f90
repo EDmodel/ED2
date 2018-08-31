@@ -717,6 +717,10 @@ recursive subroutine read_ed_xml_config(filename)
 ! reproduction
            call getConfigREAL  ('r_fract','pft',i,rval,texist)
            if(texist) r_fract(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('r_cv50','pft',i,rval,texist)
+           if(texist) r_cv50(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigINT   ('r_bang','pft',i,ival,texist)
+           if(texist) r_bang(myPFT) = ival == 1
 !!$           call getConfigREAL  ('c_fract','pft',i,rval,texist)
 !!$           if(texist) c_fract(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('st_fract','pft',i,rval,texist)
@@ -1850,6 +1854,13 @@ subroutine write_ed_xml_config
 
      !! REPRODUCTION
         call putConfigREAL("r_fract", r_fract(i))
+        call putConfigREAL("r_cv50" , r_cv50 (i))
+        if (r_bang(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("r_bang",ival)
         call putConfigREAL("st_fract",st_fract(i))
         call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
         call putConfigREAL("repro_min_h",repro_min_h(i))

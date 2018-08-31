@@ -5177,7 +5177,9 @@ subroutine init_pft_repro_params()
                             , is_liana           & ! intent(in)
                             , is_grass           & ! intent(in)
                             , seed_rain          & ! intent(out)
+                            , r_bang             & ! intent(out)
                             , r_fract            & ! intent(out)
+                            , r_cv50             & ! intent(out)
                             , st_fract           & ! intent(out)
                             , nonlocal_dispersal & ! intent(out)
                             , repro_min_h        ! ! intent(out)
@@ -5185,6 +5187,7 @@ subroutine init_pft_repro_params()
                             , undef_real         ! ! intent(in)
    use ed_misc_coms  , only : iallom             ! ! intent(in)
    use consts_coms   , only : onesixth           ! ! intent(in)
+   use phenology_coms, only : repro_scheme       ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                 :: ipft
@@ -5213,27 +5216,42 @@ subroutine init_pft_repro_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Reproduction parameters.                                                         ! 
-   !                                                                                       ! 
-   ! repro_min_h - Minimum height for a PFT to be considered mature for reproduction.      ! 
-   ! r_fract     - Fraction of carbon balance (bstorage) that is allocated to reproduction ! 
-   !               given that the plant height is greater than repro_min_h.                ! 
-   !                                                                                       ! 
-   !    For trees, we take repro_min_h as the average value reported in W05 (mind that the ! 
-   ! study is for tropical trees).  The grass strategy depends on iallom.  The original    ! 
-   ! scheme assumes that they always allocate 30% to growth, whereas when IALLOM=3 the     ! 
-   ! plants will allocate 100% to reproduction once they reach the maximum height, but     ! 
-   ! nothing when they are shorter (W15's "big bang").  The fraction allocated to          ! 
-   ! reproduction for tropical trees was updated to match F10's number.                    ! 
-   !                                                                                       ! 
+   !      Reproduction parameters.                                                         !
+   !                                                                                       !
+   ! repro_min_h - Minimum height for a PFT to be considered mature for reproduction.      !
+   ! r_bang      - Logical variable that decides whether reproduction should follow a      !
+   !               "partial/big bang" (same notation as W15) or asymptote.                 !
+   ! r_fract     - This is only used when r_bang is .true..  Fraction of carbon balance    !
+   !               (bstorage) that is allocated to reproduction given that the plant       !
+   !               height is greater than repro_min_h.                                     !
+   !                                                                                       !
+   !               Details on the default values: for trees, we take repro_min_h as the    !
+   !               average value reported in W05 (mind that the study is for tropical      !
+   !               trees).  The grass strategy depends on iallom.  The original  scheme    !
+   !               assumes that they always allocate 30% to growth ("partial bang"),       !
+   !               whereas when IALLOM=3 the plants will allocate 100% to reproduction     !
+   !               once they reach the maximum height (W15's "big bang").  The fraction    !
+   !               allocated to reproduction for tropical trees was updated to match F10's !
+   !               number, or the default ED-1.0 numbers (0.30, following M01).            !
+   ! r_cv50      - This is only used when r_bang is .false..  For plants with asymptote    !
+   !               reproduction (r_bang = .false.), this is the dimensionless curvature    !
+   !               parameter.  The reproduction allocation converges to "big bang" when    !
+   !               r_cv50 approaches 0, and it shuts down reproduction when r_cv50         !
+   !               approaches infinity.                                                    !
+   !                                                                                       !
    ! References:                                                                           !
+   !                                                                                       !
+   !                                                                                       !
+   !  Moorcroft, P. R., G. C. Hurtt, and S. W. Pacala. A method for scaling vegetation     !
+   !     dynamics: The Ecosystem Demography model (ED). Ecol. Monogr., 71(4):557-586,      !
+   !     Nov 2001. doi:10.1890/0012- 9615(2001)071[0557:AMFSVD]2.0.CO;2.                   !
    !                                                                                       !
    !  Wright, S. J., M. A. Jaramillo, J. Pavon, R. Condit, S. P. Hubbell, and              !
    !     R. B. Foster. Reproductive size thresholds in tropical trees: variation among     !
    !     individuals, species and forests. J. Trop. Ecol., 21(3):307-315, May 2005.        !
    !     doi:10.1017/S0266467405002294. (W05).                                             !
    !                                                                                       !
-   ! Fisher, R., N. McDowell, D. Purves, P. Moorcroft, S. Sitch, P. Cox, C. Huntingford,   !
+   !  Fisher, R., N. McDowell, D. Purves, P. Moorcroft, S. Sitch, P. Cox, C. Huntingford,  !
    !    P. Meir, and F. Ian Woodward. Assessing uncertainties in a second-generation       !
    !    dynamic vegetation model caused by ecological scale limitations. New Phytol.,      !
    !    187(3):666--681, Aug 2010. doi:10.1111/j.1469-8137.2010.03340.x.  (F10)            !
@@ -5255,7 +5273,12 @@ subroutine init_pft_repro_params()
       r_fract    (:) = 0.30
       !------------------------------------------------------------------------------------!
    end select
+   !------ Asymptote parameters. ----------------------------------------------------------!
+   r_cv50(:) = 0.25
+   r_bang(:) = (repro_scheme == 3) .and. is_tropical(:) .and. (.not. is_grass(:)) .and.    &
+               (.not. is_liana(:))
    !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -6629,6 +6652,8 @@ subroutine init_derived_params_after_xml()
                                    , fire_s_slope              & ! intent(in)
                                    , st_fract                  & ! intent(in)
                                    , r_fract                   & ! intent(in)
+                                   , r_bang                    & ! intent(in)
+                                   , r_cv50                    & ! intent(in)
                                    , nonlocal_dispersal        & ! intent(in)
                                    , seed_rain                 & ! intent(in)
                                    , f_labile_leaf             & ! intent(in)
@@ -7518,34 +7543,35 @@ subroutine init_derived_params_after_xml()
    !----- Print trait coefficients. -------------------------------------------------------!
    if (print_zero_table) then
       open (unit=19,file=trim(strat_file),status='replace',action='write')
-      write(unit=19,fmt='(69(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
+      write(unit=19,fmt='(71(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
                                      ,'     CONIFER','    SAVANNAH','       LIANA'         &
-                                     ,'         RHO','         SLA','         VM0'         &
-                                     ,'  F_DARKRESP',' F_GROW_RESP','    LEAF_TOR'         &
-                                     ,'    ROOT_TOR','    BARK_TOR',' STORAGE_TOR'         &
-                                     ,'FLABILE_LEAF','FLABILE_STEM','       MORT0'         &
-                                     ,'       MORT1','       MORT2','       MORT3'         &
-                                     ,'   SEED_MORT','TFALL_S_GTHT',' FELL_S_GTHV'         &
-                                     ,' FELL_S_LTHV',' SKID_S_GTHV',' SKID_S_LTHV'         &
-                                     ,'  FIRE_S_MIN','  FIRE_S_MAX','FIRE_S_INTER'         &
-                                     ,'FIRE_S_SLOPE','    ST_FRACT','     R_FRACT'         &
-                                     ,' NONLOC_DISP','   SEED_RAIN','    EFF_HEAT'         &
-                                     ,'    EFF_EVAP','  EFF_TRANSP','  LTRANS_VIS'         &
-                                     ,'LREFLECT_VIS','  WTRANS_VIS','WREFLECT_VIS'         &
-                                     ,'  LTRANS_NIR','LREFLECT_NIR','  WTRANS_NIR'         &
-                                     ,'WREFLECT_NIR','  LEMISS_TIR','  WEMISS_TIR'         &
-                                     ,' ORIENT_FACT','   LSCAT_VIS','  LBSCAT_VIS'         &
-                                     ,'   WSCAT_VIS','  WBSCAT_VIS','   LSCAT_NIR'         &
-                                     ,'  LBSCAT_NIR','   WSCAT_NIR','  WBSCAT_NIR'         &
-                                     ,'  LBSCAT_TIR','  WBSCAT_TIR','        PHI1'         &
-                                     ,'        PHI2','      MU_BAR','       CLEAF'         &
-                                     ,'       CWOOD','       CBARK','    C2N_LEAF'         &
-                                     ,'    C2N_STEM',' C2N_STORAGE',' C2N_RECRUIT'
+                                     ,'      R_BANG','         RHO','         SLA'         &
+                                     ,'         VM0','  F_DARKRESP',' F_GROW_RESP'         &
+                                     ,'    LEAF_TOR','    ROOT_TOR','    BARK_TOR'         &
+                                     ,' STORAGE_TOR','FLABILE_LEAF','FLABILE_STEM'         &
+                                     ,'       MORT0','       MORT1','       MORT2'         &
+                                     ,'       MORT3','   SEED_MORT','TFALL_S_GTHT'         &
+                                     ,' FELL_S_GTHV',' FELL_S_LTHV',' SKID_S_GTHV'         &
+                                     ,' SKID_S_LTHV','  FIRE_S_MIN','  FIRE_S_MAX'         &
+                                     ,'FIRE_S_INTER','FIRE_S_SLOPE','    ST_FRACT'         &
+                                     ,'     R_FRACT','      R_CV50',' NONLOC_DISP'         &
+                                     ,'   SEED_RAIN','    EFF_HEAT','    EFF_EVAP'         &
+                                     ,'  EFF_TRANSP','  LTRANS_VIS','LREFLECT_VIS'         &
+                                     ,'  WTRANS_VIS','WREFLECT_VIS','  LTRANS_NIR'         &
+                                     ,'LREFLECT_NIR','  WTRANS_NIR','WREFLECT_NIR'         &
+                                     ,'  LEMISS_TIR','  WEMISS_TIR',' ORIENT_FACT'         &
+                                     ,'   LSCAT_VIS','  LBSCAT_VIS','   WSCAT_VIS'         &
+                                     ,'  WBSCAT_VIS','   LSCAT_NIR','  LBSCAT_NIR'         &
+                                     ,'   WSCAT_NIR','  WBSCAT_NIR','  LBSCAT_TIR'         &
+                                     ,'  WBSCAT_TIR','        PHI1','        PHI2'         &
+                                     ,'      MU_BAR','       CLEAF','       CWOOD'         &
+                                     ,'       CBARK','    C2N_LEAF','    C2N_STEM'         &
+                                     ,' C2N_STORAGE',' C2N_RECRUIT'
       do ipft=1,n_pft
-         write (unit=19,fmt='(8x,i5,5(12x,l1),63(1x,f12.6))')                              &
+         write (unit=19,fmt='(8x,i5,6(12x,l1),64(1x,f12.6))')                              &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
-                       ,is_savannah(ipft),is_liana(ipft),rho(ipft),SLA(ipft),Vm0(ipft)     &
-                       ,dark_respiration_factor(ipft),growth_resp_factor(ipft)             &
+                       ,is_savannah(ipft),is_liana(ipft),r_bang(ipft),rho(ipft),SLA(ipft)  &
+                       ,Vm0(ipft),dark_respiration_factor(ipft),growth_resp_factor(ipft)   &
                        ,leaf_turnover_rate(ipft),root_turnover_rate(ipft)                  &
                        ,bark_turnover_rate(ipft),storage_turnover_rate(ipft)               &
                        ,f_labile_leaf(ipft),f_labile_stem(ipft),mort0(ipft),mort1(ipft)    &
@@ -7553,7 +7579,7 @@ subroutine init_derived_params_after_xml()
                        ,treefall_s_ltht(ipft),felling_s_gtharv(ipft)                       &
                        ,felling_s_ltharv(ipft),skid_s_gtharv(ipft),skid_s_ltharv(ipft)     &
                        ,fire_s_min(ipft),fire_s_max(ipft),fire_s_inter(ipft)               &
-                       ,fire_s_slope(ipft),st_fract(ipft),r_fract(ipft)                    &
+                       ,fire_s_slope(ipft),st_fract(ipft),r_fract(ipft),r_cv50(ipft)       &
                        ,nonlocal_dispersal(ipft),seed_rain(ipft)                           &
                        ,effarea_heat,effarea_evap,effarea_transp(ipft)                     &
                        ,leaf_trans_vis(ipft),leaf_reflect_vis(ipft),wood_trans_vis(ipft)   &

@@ -827,6 +827,8 @@ $ED_NL
    !                     to the same polygon, even if they are in different sites.  They   !
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
+   !                 3.  Similar to 2, but allocation to reproduction may be set as        !
+   !                     a function of height using an asymptotic curve.                   !
    !---------------------------------------------------------------------------------------!
    NL%REPRO_SCHEME    = 2
    !---------------------------------------------------------------------------------------!
