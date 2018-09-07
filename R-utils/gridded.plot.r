@@ -271,7 +271,7 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
 
    #----- Plot the field. -----------------------------------------------------------------#
    xyz = list(x=x,y=y,z=z)
-   image(xyz,breaks=levels,col=col,add=TRUE,useRaster=TRUE)
+   image(xyz,breaks=levels,col=col,add=TRUE,useRaster=useRaster)
    #---------------------------------------------------------------------------------------#
 
 

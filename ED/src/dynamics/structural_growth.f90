@@ -780,23 +780,24 @@ module structural_growth
    !---------------------------------------------------------------------------------------!
    subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,elongf,bdeada      &
                                          ,bdeadb,bstorage,maxh,f_bseeds,f_growth,f_bstorage)
-      use pft_coms      , only : phenology    & ! intent(in)
-                               , repro_min_h  & ! intent(in)
-                               , hgt_max      & ! intent(in)
-                               , r_bang       & ! intent(in)
-                               , r_fract      & ! intent(in)
-                               , r_cv50       & ! intent(in)
-                               , st_fract     & ! intent(in)
-                               , dbh_crit     & ! intent(in)
-                               , is_grass     & ! intent(in)
-                               , is_liana     ! ! intent(in)
-      use ed_misc_coms  , only : current_time & ! intent(in)
-                               , igrass       & ! intent(in)
-                               , ibigleaf     ! ! intent(in)
-      use consts_coms   , only : r_tol_trunc  & ! intent(in)
-                               , tiny_num     ! ! intent(in)
-      use allometry     , only : size2bd      & ! intent(in)
-                               , h2dbh        ! ! intent(in)
+      use pft_coms      , only : phenology      & ! intent(in)
+                               , repro_min_h    & ! intent(in)
+                               , repro_min_dbh  & ! intent(in)
+                               , hgt_max        & ! intent(in)
+                               , r_bang         & ! intent(in)
+                               , r_fract        & ! intent(in)
+                               , r_cv50         & ! intent(in)
+                               , st_fract       & ! intent(in)
+                               , dbh_crit       & ! intent(in)
+                               , is_grass       & ! intent(in)
+                               , is_liana       ! ! intent(in)
+      use ed_misc_coms  , only : current_time   & ! intent(in)
+                               , igrass         & ! intent(in)
+                               , ibigleaf       ! ! intent(in)
+      use consts_coms   , only : r_tol_trunc    & ! intent(in)
+                               , tiny_num       ! ! intent(in)
+      use allometry     , only : size2bd        & ! intent(in)
+                               , h2dbh          ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in)  :: ipft
@@ -815,7 +816,7 @@ module structural_growth
       !----- Local variables --------------------------------------------------------------!
       real                         :: bd_target   !> Target Bd to reach maxh height
       real                         :: delta_bd    !> Target Bd - actual Bd
-      real                         :: hnorm       !> Normalised height
+      real                         :: dnorm       !> Normalised DBH
       real                         :: r_fract_act !> Hgt-dependent reproduction allocation
       logical                      :: late_spring
       logical                      :: use_storage
@@ -857,6 +858,8 @@ module structural_growth
                     phen_status == 0  .and. bstorage > 0.0
       !------------------------------------------------------------------------------------!
 
+
+
       !----- Find the current target for allocation to reproduction. ----------------------!
       if (r_bang(ipft)) then
          !----- "Bang" reproduction once plant reaches reproductive maturity. -------------!
@@ -868,13 +871,13 @@ module structural_growth
          !---------------------------------------------------------------------------------!
       else
          !----- Find normalised height to calculate asymptote. ----------------------------!
-         if ( repro_min_h(ipft) < ( (1.0 -r_tol_trunc) * hgt_max(ipft) ) ) then
-            hnorm = (hite - repro_min_h(ipft)) / (hgt_max(ipft) - repro_min_h(ipft))
-            hnorm = max(0.,min(1.,hnorm))
-         elseif (hite < repro_min_h(ipft)) then
-            hnorm = 0.
+         if ( repro_min_dbh(ipft) < ( (1.0 -r_tol_trunc) * dbh_crit(ipft) ) ) then
+            dnorm = (dbh - repro_min_dbh(ipft)) / (dbh_crit(ipft) - repro_min_dbh(ipft))
+            dnorm = max(0.,dnorm)
+         elseif ( dbh < ( (1.0 -r_tol_trunc) * repro_min_dbh(ipft) ) ) then
+            dnorm = 0.
          else
-            hnorm = 1.
+            dnorm = 1.
          end if
          !---------------------------------------------------------------------------------!
 
@@ -882,9 +885,9 @@ module structural_growth
          !     Find allocation to reproduction.  In case the denominator is zero, assume   !
          ! partial bang (sensu Wenk and Falster 2015).                                     !
          !---------------------------------------------------------------------------------!
-         if ( (hnorm + r_cv50(ipft)) >= tiny_num ) then
-            r_fract_act = (1.0 - st_fract(ipft)) * hnorm / (hnorm + r_cv50(ipft))
-         elseif (hnorm >= tiny_num) then
+         if ( (dnorm + r_cv50(ipft)) >= tiny_num ) then
+            r_fract_act = (1.0 - st_fract(ipft)) * dnorm / (dnorm + r_cv50(ipft))
+         elseif (dnorm >= tiny_num) then
             r_fract_act = (1.0 - st_fract(ipft))
          else
             r_fract_act = 0.0

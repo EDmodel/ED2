@@ -569,9 +569,9 @@ module soil_respiration
                !---------------------------------------------------------------------------!
                !     Find transfer rates between soil pools.                               !
                !---------------------------------------------------------------------------!
-               ex_msc_psc = max( 1.0 - er_msc                                              &
+               ex_msc_psc = min( 1.0 - er_msc                                              &
                                , fx_msc_psc_int + fx_msc_psc_slp * soil(nsoil)%xclay )
-               ex_ssc_psc = max( 1.0 - er_ssc                                              &
+               ex_ssc_psc = min( 1.0 - er_ssc                                              &
                                , fx_ssc_psc_int + fx_ssc_psc_slp * soil(nsoil)%xclay )
                ex_msc_ssc = 1.0 - er_msc - ex_msc_psc
                ex_ssc_msc = 1.0 - er_ssc - ex_ssc_psc

@@ -404,7 +404,9 @@ subroutine init_decomp_params()
       ! should be ln(2), not log2(e).  The actual numbers were obtained from M96.  Because !
       ! most studies report soil carbon for the top 30 cm (as opposed to 20cm), we         !
       ! decreased the default decay rates for microbial, humified and passive pools by     !
-      ! 15%, following the suggestion by M96.                                              !
+      ! 15%, following the suggestion by M96, except for the passive pool, because the     !
+      ! typical rate seems to be higher than M96 (e.g. see B98's Fig. 3).  For the passive !
+      ! pool, we assumed a half-life of about 100 years.                                   !
       !                                                                                    !
       ! References:                                                                        !
       !                                                                                    !
@@ -417,13 +419,13 @@ subroutine init_decomp_params()
       !    Unit. Techinical Report No 4. USDA-ARS, Fort Collins CO.                        !
       !    https://www2.nrel.colostate.edu/projects/century/MANUAL/html_manual/man96.html. !
       !    Accessed on 9 Aug 2018 (M96).                                                   !
-      !                                                                                    !!
+      !                                                                                    !
       !------------------------------------------------------------------------------------!
-      decay_rate_fsc  =  16.7    / yr_day
-      decay_rate_stsc =  4.4     / yr_day
-      decay_rate_msc  =  6.65    / yr_day
-      decay_rate_ssc  =  0.2     / yr_day
-      decay_rate_psc  =  0.00667 / yr_day
+      decay_rate_fsc  =  16.7  / yr_day
+      decay_rate_stsc =  4.4   / yr_day
+      decay_rate_msc  =  0.85 * 6.65  / yr_day
+      decay_rate_ssc  =  0.85 * 0.2   / yr_day
+      decay_rate_psc  =  0.014 / yr_day 
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -5186,7 +5188,8 @@ subroutine init_pft_repro_params()
    use ed_max_dims   , only : n_pft              & ! intent(in)
                             , undef_real         ! ! intent(in)
    use ed_misc_coms  , only : iallom             ! ! intent(in)
-   use consts_coms   , only : onesixth           ! ! intent(in)
+   use consts_coms   , only : onesixth           & ! intent(in)
+                            , onethird           ! ! intent(in)
    use phenology_coms, only : repro_scheme       ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -5274,9 +5277,9 @@ subroutine init_pft_repro_params()
       !------------------------------------------------------------------------------------!
    end select
    !------ Asymptote parameters. ----------------------------------------------------------!
-   r_cv50(:) = 0.25
-   r_bang(:) = (repro_scheme == 3) .and. is_tropical(:) .and. (.not. is_grass(:)) .and.    &
-               (.not. is_liana(:))
+   r_cv50(:) = onethird
+   r_bang(:) = (repro_scheme /= 3) .or. is_grass(:) .or. is_liana(:) .or.                  &
+               (.not. is_tropical(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -6693,6 +6696,7 @@ subroutine init_derived_params_after_xml()
                                    , min_recruit_size          & ! intent(out)
                                    , min_cohort_size           & ! intent(out)
                                    , negligible_nplant         & ! intent(out)
+                                   , repro_min_dbh             & ! intent(out)
                                    , c2n_recruit               & ! intent(out)
                                    , veg_hcap_min              & ! intent(out)
                                    , cleaf                     & ! intent(out)
@@ -6859,6 +6863,12 @@ subroutine init_derived_params_after_xml()
    repro_min_h(:) = merge(repro_min_h(:),hgt_min(:),repro_min_h(:) >= hgt_min(:))
    !---------------------------------------------------------------------------------------!
 
+   !------ Find corresponding DBH. --------------------------------------------------------!
+   do ipft=1,n_pft
+      repro_min_dbh(ipft) = h2dbh(repro_min_h(ipft),ipft)
+   end do
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     The minimum recruitment size and the recruit carbon to nitrogen ratio.  Both      !
@@ -6867,7 +6877,7 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(39(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(40(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'  RDEPTH_MIN','   BLEAF_MIN'               &
                                               ,'   BROOT_MIN','BSAPWOOD_MIN'               &
@@ -6884,10 +6894,10 @@ subroutine init_derived_params_after_xml()
                                               ,'MIN_REC_SIZE','MIN_COH_SIZE'               &
                                               ,'         SLA','VEG_HCAP_MIN'               &
                                               ,'     LAI_MIN',' REPRO_MIN_H'               &
-                                              ,'     HGT_MAX','    DBH_CRIT'               &
-                                              , ' RDEPTH_MAX',' ONE_PLANT_C'               &
-                                              ,' NEGL_NPLANT'
-                                              
+                                              ,'     HGT_MAX','REPR_MIN_DBH'               &
+                                              ,'    DBH_CRIT', ' RDEPTH_MAX'               &
+                                              ,' ONE_PLANT_C',' NEGL_NPLANT'
+
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -7105,7 +7115,7 @@ subroutine init_derived_params_after_xml()
       !     Add PFT parameters to the reference table.                                     !
       !------------------------------------------------------------------------------------! 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,9(f12.8,1x),27(f12.5,1x),1(es12.5,1x))')        &
+         write (unit=61,fmt='(i5,1x,a16,1x,9(f12.8,1x),28(f12.5,1x),1(es12.5,1x))')        &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,rdepth_min,bleaf_min,broot_min    &
                                                     ,bsapwood_min,bbark_min,balive_min     &
@@ -7120,8 +7130,9 @@ subroutine init_derived_params_after_xml()
                                                     ,min_cohort_size(ipft)                 &
                                                     ,sla(ipft),veg_hcap_min(ipft)          &
                                                     ,lai_min,repro_min_h(ipft)             &
-                                                    ,hgt_max(ipft),dbh_crit(ipft)          &
-                                                    ,rdepth_max,one_plant_c(ipft)          &
+                                                    ,hgt_max(ipft),repro_min_dbh(ipft)     &
+                                                    ,dbh_crit(ipft),rdepth_max             &
+                                                    ,one_plant_c(ipft)                     &
                                                     ,negligible_nplant(ipft)
       end if
       !------------------------------------------------------------------------------------!
