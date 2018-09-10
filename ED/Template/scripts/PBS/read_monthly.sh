@@ -78,10 +78,11 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "marcosl" ]
-then
-   rscpath="/prj/prjidfca/marcosl/Util/Rsc"
-fi
+case ${myself} in
+marcosl|marcos.longo|mlongo) 
+   rscpath="${HOME}/Util/Rsc"
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 

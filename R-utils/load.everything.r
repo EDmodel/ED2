@@ -229,6 +229,7 @@ loaded.package[["caTools"     ]] = discreet.require(caTools     )
 loaded.package[["chron"       ]] = discreet.require(chron       )
 loaded.package[["cluster"     ]] = discreet.require(cluster     )
 loaded.package[["compiler"    ]] = discreet.require(compiler    )
+loaded.package[["devtools"    ]] = discreet.require(devtools    )
 loaded.package[["fields"      ]] = discreet.require(fields      )
 loaded.package[["gbm"         ]] = discreet.require(gbm         )
 loaded.package[["gdalUtils"   ]] = discreet.require(gdalUtils   )
@@ -394,9 +395,11 @@ all.f90  = sort( c( list.files(path=srcdir,pattern="\\.[Ff]90$")
                   )#end c
                )#end sort
 nall.f90 = length(all.f90)
-nmiss    = 0
 for (if90 in sequence(nall.f90)){
    fnow    = file.path(srcdir,all.f90[if90])
+   flib.o  = fnow
+   flib.o  = gsub(pattern = "\\.[Ff]90$",replacement=".o",x=flib.o)
+   flib.o  = gsub(pattern = "\\.[Ff]$"  ,replacement=".o",x=flib.o)
    flib.so = fnow
    flib.so = gsub(pattern = "\\.[Ff]90$",replacement=".so",x=flib.so)
    flib.so = gsub(pattern = "\\.[Ff]$"  ,replacement=".so",x=flib.so)
@@ -404,25 +407,30 @@ for (if90 in sequence(nall.f90)){
    flib.sl = gsub(pattern = "\\.[Ff]90$",replacement=".sl",x=flib.sl)
    flib.sl = gsub(pattern = "\\.[Ff]$"  ,replacement=".sl",x=flib.sl)
 
-   #----- Check whether dynamic library can be loaded. ------------------------------------#
+   #----- Select library. -----------------------------------------------------------------#
    if (file.exists(flib.so)){
-      dummy = try(dyn.load(flib.so))
-      if ("try-error" %in% is(dummy)){
-         cat("   - Fortran library ",basename(flib.so)," must be recompiled here!","\n"
-            ,sep="")
-      }#end if
+      flib.sx = flib.so
    }else if (file.exists(flib.sl)){
-      dyn.load(flib.sl)
-      if ("try-error" %in% is(dummy)){
-         cat("   - Fortran library ",basename(flib.sl)," must be recompiled here!","\n"
-            ,sep="")
-      }#end if
+      flib.sx = flib.sl
    }else{
-      cat("   - Fortran file ",basename(fnow)," must be compiled here!","\n",sep="")
-      nmiss = nmiss + 1
-   }#end if (! file.exists(flib))
-}#end for
-if (nmiss > 0) stop(" Fix problems with your fortran files.")
+      #----- This is guaranteed to fail, so it will force recompilation. ------------------#
+      flib.sx = flib.o
+      #------------------------------------------------------------------------------------#
+   }#end if (file.exists(flib.so))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Check whether dynamic library can be loaded.  In case not, recompile. -----------#
+   dummy = try(dyn.load(flib.sx),silent=TRUE)
+   if ("try-error" %in% is(dummy)){
+      dummy = file.remove(flib.so)
+      dummy = file.remove(flib.sl)
+      dummy = file.remove(flib.o )
+      dummy = RCMD(cmd="SHLIB",options=fnow,path=srcdir)
+   }#end if ("try-error" %in% is(dummy))
+   #---------------------------------------------------------------------------------------#
+}#end for (if90 in sequence(nall.f90))
 #------------------------------------------------------------------------------------------#
 
 

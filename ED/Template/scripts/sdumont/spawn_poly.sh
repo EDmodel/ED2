@@ -856,6 +856,26 @@ do
          scentype="WFDEI"
          iscenario="WFDEI_SOUTHAM_GPCC"
          ;;
+      ERAINT_NATIVE)
+         #----- ERA-Interim (native precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_NATIVE"
+         ;;
+      ERAINT_CHIRPS)
+         #----- ERA-Interim (as is). ------------------------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_CHIRPS"
+         ;;
+      MERRA2_NATIVE)
+         #----- MERRA-2 (native precipitation). -------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_NATIVE"
+         ;;
+      MERRA2_CHIRPS)
+         #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_CHIRPS"
+         ;;
       *)
          #----- Tower data. ---------------------------------------------------------------#
          scentype="wmo+eft"
@@ -924,6 +944,18 @@ do
       metcycf=2003
       imetavg=1
       ;;
+   ERAINT_NATIVE)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1979
+      metcycf=2017
+      imetavg=2
+      ;;
+   ERAINT_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2017
+      imetavg=2
+      ;;
    Fazenda_Nossa_Senhora)
       metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
       metcyc1=1999
@@ -941,6 +973,18 @@ do
       metcyc1=1999
       metcycf=2006
       imetavg=1
+      ;;
+   MERRA2_NATIVE)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1980
+      metcycf=2017
+      imetavg=3
+      ;;
+   MERRA2_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2017
+      imetavg=3
       ;;
    Natal)
       metdriverdb="${fullscen}/Natal/Natal_HEADER"
@@ -1861,6 +1905,36 @@ do
    sed -i~ s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
    #---------------------------------------------------------------------------------------#
 
+
+
+   #---------------------------------------------------------------------------------------#
+   #   In case this is a multithreaded run, copy executables to each directory.            #
+   #---------------------------------------------------------------------------------------#
+   case ${n_cpt} in
+   1)
+      exec_sub="${here}/${polyname}/${execname}"
+      cp ${exec_full} ${exec_sub}
+      ;;
+   *)
+      exec_sub=${exec_full}
+      ;;
+   esac
+
+   #----- Change the callserial.sh file. --------------------------------------------------#
+   callserial="${here}/${polyname}/callserial.sh"
+   rm -f ${callserial}
+   cp -f ${here}/Template/callserial.sh ${callserial}
+   sed -i s@thisroot@${here}@g          ${callserial}
+   sed -i s@thispoly@${polyname}@g      ${callserial}
+   sed -i s@myname@${moi}@g             ${callserial}
+   sed -i s@myexec@${exec_sub}@g        ${callserial}
+   sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+   sed -i s@myscenario@${iscenario}@g   ${callserial}
+   sed -i s@myscenmain@${scentype}@g    ${callserial}
+   sed -i s@mycopy@${copy2scratch}@g    ${callserial}
+   sed -i s@mycpus@${n_cpt}@g           ${callserial}
+   sed -i s@myoptsrc@${optsrc}@g        ${callserial}
+   #---------------------------------------------------------------------------------------#
 
 
 

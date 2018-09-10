@@ -11,8 +11,12 @@ moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
 #----- Original and scratch main data paths. ----------------------------------------------#
-d_path="/n/home00/mlongo/data"
-#d_path="/n/moorcroftfs5/mlongo/data"
+ordinateur=$(hostname -s)
+case ${ordinateur} in
+  sdumont*)                        export d_path="${SCRATCH}/Data"                 ;;
+  rclogin*|holy*|moorcroft*|rcnx*) export d_path="${HOME}/data"                    ;;
+  *)  echo " Invalid computer ${ordinateur}.  Check script header."; exit          ;;
+esac
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit="${d_path}/ed2_data/site_bio_data"
 alsinit="${d_path}/ed2_data/lidar_spline_bio_data"
@@ -47,7 +51,7 @@ copy2scratch=false
 #----- Force history run (0 = no, 1 = yes). -----------------------------------------------#
 forcehisto=0
 #----- Path with the history file to be used. ---------------------------------------------#
-fullygrown="${SCRATCH}/Simulations/Debug/D001_Debug/xyz_settings/histo/xyz_settings"
+fullygrown="${HOME}/Simulations/Debug/D001_Debug/xyz_settings/histo/xyz_settings"
 #----- Time that we shall use. ------------------------------------------------------------#
 yearh="1510"  # Year
 monthh="07"   # Month
@@ -194,7 +198,10 @@ fi
 #------------------------------------------------------------------------------------------#
 #     Configurations depend on the global_queue.                                           #
 #------------------------------------------------------------------------------------------#
-case ${global_queue} in
+case ${ordinateur} in
+rclogin*|holy*|moorcroft*|rcnx*)
+   #----- Odyssey queues. -----------------------------------------------------------------#
+   case ${global_queue} in
    bigmem)
       n_nodes_max=6
       n_cpt_max=16
@@ -255,7 +262,61 @@ case ${global_queue} in
       echo "Global queue ${global_queue} is not recognised!"
       exit
       ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+sdumont*)
+   #----- SantosDumont. -------------------------------------------------------------------#
+   case ${global_queue} in
+   cpu_long|nvidia_long)
+      n_nodes_max=10
+      n_cpt=1
+      n_tpn=24
+      runtime="31-00:00:00"
+      node_memory=64000
+      ;;
+   cpu|nvidia|phi)
+      n_nodes_max=50
+      n_cpt=1
+      n_tpn=24
+      runtime="2-00:00:00"
+      node_memory=64000
+      ;;
+   cpu_dev)
+      n_nodes_max=20
+      n_cpt=1
+      n_tpn=24
+      runtime="02:00:00"
+      node_memory=64000
+      ;;
+   nvidia_dev|phi_dev)
+      n_nodes_max=2
+      n_cpt=1
+      n_tpn=24
+      runtime="02:00:00"
+      node_memory=64000
+      ;;
+   cpu_scal|nvidia_scal)
+      n_nodes_max=128
+      n_cpt=1
+      n_tpn=24
+      runtime="18:00:00"
+      node_memory=64000
+      ;;
+   *)
+      echo "Global queue ${global_queue} is not recognised!"
+      exit
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+   ;;
+*)
+   #----- Computer is not listed.  Crash. -------------------------------------------------#
+   echo " Invalid computer ${ordinateur}.  Check queue settings in the script."
+   exit 31
+   #---------------------------------------------------------------------------------------#
+   ;;
 esac
+#------------------------------------------------------------------------------------------#
 if [ ${n_cpt} -gt ${n_cpt_max} ]
 then
    echo " Too many CPUs per task requested:"
@@ -991,6 +1052,26 @@ do
          scentype="WFDEI"
          iscenario="WFDEI_SOUTHAM_GPCC"
          ;;
+      ERAINT_NATIVE)
+         #----- ERA-Interim (native precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_NATIVE"
+         ;;
+      ERAINT_CHIRPS)
+         #----- ERA-Interim (CHIRPS precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_CHIRPS"
+         ;;
+      MERRA2_NATIVE)
+         #----- MERRA-2 (native precipitation). -------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_NATIVE"
+         ;;
+      MERRA2_CHIRPS)
+         #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_CHIRPS"
+         ;;
       *)
          #----- Tower data. ---------------------------------------------------------------#
          scentype="wmo+eft"
@@ -1059,6 +1140,18 @@ do
       metcycf=2003
       imetavg=1
       ;;
+   ERAINT_NATIVE)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1979
+      metcycf=2017
+      imetavg=2
+      ;;
+   ERAINT_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2017
+      imetavg=2
+      ;;
    Fazenda_Nossa_Senhora)
       metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
       metcyc1=1999
@@ -1076,6 +1169,18 @@ do
       metcyc1=1999
       metcycf=2006
       imetavg=1
+      ;;
+   MERRA2_NATIVE)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1980
+      metcycf=2017
+      imetavg=3
+      ;;
+   MERRA2_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2017
+      imetavg=3
       ;;
    Natal)
       metdriverdb="${fullscen}/Natal/Natal_HEADER"
@@ -1162,7 +1267,7 @@ do
    #     Correct years so it is not tower-based or Sheffield.                              #
    #---------------------------------------------------------------------------------------#
    case ${iscenario} in
-   default|eft|shr|sheffield|WFDEI*)
+   default|eft|shr|sheffield|WFDEI*|ERAINT*|MERRA2*)
       echo "Nothing" > /dev/null
       ;;
    *)

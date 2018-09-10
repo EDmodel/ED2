@@ -85,8 +85,13 @@ rain.downscale <<- function(lon,when.in,prate.in,mu.in.lut,nsub,rain.min=0.2/360
    eps.off   = sqrt(.Machine$double.eps)
    CDF.MAT   = matrix( data = NA_real_, nrow = ndat.in, ncol = nsub)
    for (n in sequence(nsub-1)){
-      cdf.sum = pmax(eps.off,rowSums(CDF.MAT,na.rm=TRUE))
-      CDF.MAT[,n] = runif(n=ndat.in,min=eps.off,max=1-cdf.sum)
+      cdf.sum = pmin(1.-eps.off,pmax(eps.off,rowSums(CDF.MAT,na.rm=TRUE)))
+      cdf.rnd = runif(n=ndat.in,min=eps.off,max=1-cdf.sum)
+      if (! (all(is.finite(cdf.sum)) && all(is.finite(cdf.rnd)))){
+         cat0(" NA values were spotted.")
+         browser()
+      }#End if 
+      CDF.MAT[,n] = cdf.rnd
    }#end for
    CDF.MAT[,nsub] = 1 - rowSums(CDF.MAT,na.rm=TRUE)
    CDF.MAT        = t(apply(X=CDF.MAT,MARGIN=1,FUN=lit.sample,size=nsub,replace=FALSE))

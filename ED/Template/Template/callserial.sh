@@ -13,6 +13,7 @@ scendir="myscenmain"             # Root directory of met driver type
 datasrc="mypackdata"             # Source
 datadest="/scratch/${moi}"       # Destination
 scenario="myscenario"            # Actual scenario
+n_cpt=mycpus                     # Number of CPUs per task (used only if not automatic)
 copy=mycopy                      # Copy to scratch (true / false)
 #----- Initialisation scripts. ------------------------------------------------------------#
 optsrc="myoptsrc"                # Option for .bashrc (for special submission settings)
@@ -68,15 +69,11 @@ fi
 #     Check size based on the met driver.                                                  #
 #------------------------------------------------------------------------------------------#
 case "${scenario}" in
-sheffield)
-   datasize=39000000
-   ;;
-WFDEI*)
-   datasize=27500000
-   ;;
-*)
-   datasize=300000
-   ;;
+sheffield)   datasize=39000000   ;;
+WFDEI*)      datasize=27500000   ;;
+ERAINT*)     datasize=21000000   ;;
+MERRA2*)     datasize=57000000   ;;
+*)           datasize=300000     ;;
 esac
 #------------------------------------------------------------------------------------------#
 
@@ -300,10 +297,11 @@ then
    sleep ${zzz}
 
    #---- Get number of threads. -----------------------------------------------------------#
-   if [ "${SLURM_CPUS_PER_TASK}" == "" ]
+   if [ "${SLURM_CPUS_PER_TASK}" == "" ] && [ "${OMP_NUM_THREADS}" == "" ]
    then
-      export OMP_NUM_THREADS=1
-   else
+      export OMP_NUM_THREADS=${n_cpt}
+   elif [ "${SLURM_CPUS_PER_TASK}" != "" ]
+   then
       export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
    fi
    #---------------------------------------------------------------------------------------#

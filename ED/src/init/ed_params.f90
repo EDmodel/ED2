@@ -4574,9 +4574,9 @@ subroutine init_pft_mort_params()
    ! New parameters are not based on literature, but tuning.  They allow mortality to be   !
    ! essentially 100% when carbon balance is negative.                                     !
    !---------------------------------------------------------------------------------------!
-   mort0(:) = merge(-0.35,  0.0,is_tropical(:))
-   mort1(:) = merge(  2.0,  1.0,is_tropical(:))
-   mort2(:) = merge( 15.0, 20.0,is_tropical(:))
+   mort0(:) = merge(-0.30,  0.0,is_tropical(:))
+   mort1(:) = merge(  1.0,  1.0,is_tropical(:))
+   mort2(:) = merge( 20.0, 20.0,is_tropical(:))
    !---------------------------------------------------------------------------------------!
 
 

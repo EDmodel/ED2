@@ -1,7 +1,7 @@
 #!/bin/sh
 here=$(pwd)
 moi=$(whoami)
-diskthere="/n/moorcroftfs2"
+diskthere=""
 joborder="${here}/joborder.txt"
 
 #----- Find the output path (both local and remote paths will be cleaned). ----------------#

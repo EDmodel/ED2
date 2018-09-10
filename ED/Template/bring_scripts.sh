@@ -11,9 +11,9 @@ then
    #------ No platform provided.  Try to guess, and if failed, then prompts the user. -----#
    host=$(hostname -s)
    case ${host} in
-      rclogin*|holy*|moorcroft*|rcnx*) platform="odyssey" ;;
-      aurora|halo)                     platform="jpl"     ;;
-      sdumont*)                        platform="sdumont" ;;
+      rclogin*|holy*|moorcroft*|rcnx*) platform="SLURM"    ;;
+      au*|ha*)                         platform="PBS"      ;;
+      sdumont*)                        platform="SLURM"    ;;
       sun-master|cmm*)                 platform="sun-lncc" ;;
       *)
          echo -n "Failed guessing platform from node name.  Please type the name:   "

@@ -10,33 +10,42 @@ here=$(pwd)
 moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
+#----- Select main file system path. ------------------------------------------------------#
+ordinateur=$(hostname -s)
+case ${ordinateur} in
+  sun-master|cmm*)  export fs0="/prj/prjidfca/${moi}"                       ;;
+  ha*)              export fs0="/halo_nobackup/jpl-gewc/${moi}"             ;;
+  au*)              export fs0="/aurora_nobackup/jpl-gewc/${moi}"           ;;
+  *)    echo " Invalid computer ${ordinateur}.  Check script header."; exit ;;
+esac
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/prj/prjidfca/marcosl/Data/ed2_data/site_bio_data'
-alsinit='/prj/prjidfca/marcosl/Data/ed2_data/lidar_bio_data'
-biotype=2      # 0 -- "default" setting (isizepft controls default/nounder)
+bioinit="${fs0}/Data/ed2_data/site_bio_data"
+alsinit="${fs0}/Data/ed2_data/lidar_spline_bio_data"
+intinit="${fs0}/Data/ed2_data/lidar_intensity_bio_data"
+lutinit="${fs0}/Data/ed2_data/lidar_lookup_bio_data"
+biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
-               # 2 -- lidar initialisation. isizepft is the disturbance history key.
+               # 2 -- airborne lidar initialisation using return counts ("default"). 
+               # 3 -- airborne lidar initialisation using intensity counts.
+               # 4 -- airborne lidar/inventory hybrid initialisation ("lookup table"). 
+               # For lidar initialisation (2-4), isizepft is the disturbance history key.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
-restart='/prj/prjidfca/marcosl/Data/ed2_data/restarts_XXX'
+restart="${fs0}/Data/ed2_data/restarts_XXX"
 #----- File containing the list of jobs and their settings: -------------------------------#
 joborder="${here}/joborder.txt"
-#----- Should the output be in a disk other than the one set in "here"? -------------------#
-outthere="n"
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with drivers for each scenario. -----------------------------------------------#
-metmaindef="/prj/prjidfca/marcosl/Data/ed2_data"
-packdatasrc="/prj/prjidfca/marcosl/Data/2scratch"
+metmaindef="${fs0}/Data/ed2_data"
+packdatasrc="${fs0}/Data/2scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
-lumain="/prj/prjidfca/marcosl/Data/lu_scenarios"
+lumain="${fs0}/Data/lu_scenarios"
 #----- Path with other input data bases (soil texture, DGD, land mask, etc). --------------#
-inpmain="/prj/prjidfca/marcosl/Data/ed2_data"
-#----- Should the met driver be copied to local scratch disks? ----------------------------#
-copy2scratch="n"
+inpmain="${fs0}/Data/ed2_data"
 #----- If submit is "n", we create paths but skip submission. -----------------------------#
 submit="n"
-#----- Force submit? Or just submit those that would normally be submitted?. --------------#
-forcesubmit="n"
+#----- Maximum number of attempts before giving up. ---------------------------------------#
+nsubtry_max=5
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -45,7 +54,7 @@ forcesubmit="n"
 #----- Force history run (0 = no, 1 = yes). -----------------------------------------------#
 forcehisto=0
 #----- Path with the history file to be used. ---------------------------------------------#
-fullygrown="/prj/prjidfca/marcosl/Simulations/debug/dbg_033/pdg_crash/histo/pedegigante"
+fullygrown="${fs0}/Simulations/Debug/D001_Debug/xyz_settings/histo/xyz_settings"
 #----- Time that we shall use. ------------------------------------------------------------#
 yearh="1510"  # Year
 monthh="07"   # Month
@@ -57,6 +66,9 @@ toldef="0.01"
 execname="ed_2.1-opt"             # Normal executable, for most queues
 #----- Initialisation scripts. ------------------------------------------------------------#
 initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
+#----- Settings for this group of polygons. -----------------------------------------------#
+global_queue="verylongq"      # Queue
+n_cpt=8                       # Number of cpus per task (it will be limited by maximum)
 #------------------------------------------------------------------------------------------#
 #==========================================================================================#
 #==========================================================================================#
@@ -93,19 +105,9 @@ initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #==========================================================================================#
 
 
-#----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
-if [ "x${copy2scratch}" == "xy" ]  || [ "x${copy2scratch}" == "xY" ]
-then
-   #----- Keep the capability, but turn off for now. --------------------------------------#
-   echo "This is not odyssey, you cannot copy to scratch!"
-   exit 99
-   #---------------------------------------------------------------------------------------#
-
-
-   metmain="/scratch/${moi}"
-else
-   metmain=${metmaindef}
-fi
+#----- Dummy, currently only odyssey needs copying data to scratch. -----------------------#
+metmain=${metmaindef}
+copy2scratch=false
 #------------------------------------------------------------------------------------------#
 
 
@@ -113,6 +115,19 @@ fi
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
+if [ ${npolys} -lt 100 ]
+then
+   ndig=2
+elif [ ${npolys} -lt 1000 ]
+then
+   ndig=3
+elif [ ${npolys} -lt 10000 ]
+then
+   ndig=4
+else
+   ndig=5
+fi
+pfmt="%${ndig}.${ndig}i"
 echo "Number of polygons: ${npolys}..."
 #------------------------------------------------------------------------------------------#
 
@@ -122,11 +137,67 @@ echo "Number of polygons: ${npolys}..."
 #   Check whether the executable is copied.  If not, let the user know and stop the        #
 # script.                                                                                  #
 #------------------------------------------------------------------------------------------#
-if [ ! -s ${here}/executable/${execname} ]
+exec_full="${here}/executable/${execname}"
+if [ ! -s ${exec_full} ]
 then
-   echo "Executable file : ${execname} is not in the executable directory"
+   echo "Executable file : ${exec_full} is not in the executable directory"
    echo "Copy the executable to the file before running this script!"
    exit 99
+fi
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Set general limits.  Currently only the maximum time is restricted.                  #
+#------------------------------------------------------------------------------------------#
+case ${ordinateur} in
+sun-master|cmm*)
+   #----- SunHPC (LNCC). ------------------------------------------------------------------#
+   n_nodes_max=32
+   n_cpn=16
+   n_cpt_max=8
+   node_memory=65536
+   case ${global_queue} in
+      linuxq)    runtime="168:00:00"                              ;;
+      *)         echo " Queue ${global_queue} is invalid!"; exit  ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+   ;;
+au*|ha*)
+   #----- JPL (Aurora and Halo). ----------------------------------------------------------#
+   n_nodes_max=32
+   n_cpn=16
+   n_cpt_max=8
+   node_memory=65536
+   case ${global_queue} in
+      verylongq) runtime="192:00:00"                              ;;
+      longq)     runtime="48:00:00"                               ;;
+      mediumq)   runtime="12:00:00"                               ;;
+      shortq)    runtime="03:00:00"                               ;;
+      debugq)    runtime="01:00:00"                               ;;
+      *)         echo " Queue ${global_queue} is invalid!"; exit  ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+   ;;
+*)
+   #----- Computer is not listed.  Crash. -------------------------------------------------#
+   echo " Invalid computer ${ordinateur}.  Check queue settings in the script."
+   exit 39
+   #---------------------------------------------------------------------------------------#
+   ;;
+esac
+if [ ${n_cpt} -gt ${n_cpt_max} ]
+then
+   echo " Too many CPUs per task requested:"
+   echo " Queue                   = ${global_queue}"
+   echo " Maximum CPUs per task   = ${n_cpt_max}"
+   echo " Requested CPUs per task = ${n_cpt}"
+   exit 99
+else
+   let memory_max=${node_memory}*${n_cpt_max}/${n_cpn}
+   let n_tasks_max=${n_nodes_max}*${n_cpn}
+   let n_tasks_max=${n_tasks_max}/${n_cpt}
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -142,12 +213,33 @@ do
    dirhere=$(dirname ${dirhere})
 done
 diskhere=${dirhere}
-diskthere=${dirhere}
 echo "-------------------------------------------------------------------------------"
-echo " - Simulation control on disk: ${diskhere}"
-echo " - Output on disk:             ${diskthere}"
+echo " - Path for simulation control and output: ${diskhere}"
 echo "-------------------------------------------------------------------------------"
 there=${here}
+#------------------------------------------------------------------------------------------#
+
+
+#----- Save queue status to a temporary file. ---------------------------------------------#
+jobstat="/tmp/spjs.$$"
+qjobs > ${jobstat}
+#------------------------------------------------------------------------------------------#
+
+
+#----- Summary for this submission preparation.  Then give 5 seconds for user to cancel. --#
+echo "------------------------------------------------"
+echo "  Submission summary: "
+echo ""
+echo "  Memory per cpu:      ${sim_memory}"
+echo "  CPUs per node:       ${n_cpn}"
+echo "  CPUs per task:       ${n_cpt}"
+echo "  Queue:               ${global_queue}"
+echo "  Job Name:            ${jobname}"
+echo "  Total polygon count: ${npolys}"
+echo " "
+echo "------------------------------------------------"
+echo ""
+sleep 2
 #------------------------------------------------------------------------------------------#
 
 
@@ -162,45 +254,8 @@ while [ ${ff} -lt ${npolys} ]
 do
    let ff=${ff}+1
    let line=${ff}+3
+   ffout=$(printf ${pfmt} ${ff})
 
-
-   #---------------------------------------------------------------------------------------#
-   #    Format count.                                                                      #
-   #---------------------------------------------------------------------------------------#
-   if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
-   then
-      ffout=$(printf '%2.2i' ${ff})
-   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
-   then
-      ffout=$(printf '%2.2i' ${ff})
-   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
-   then
-      ffout=$(printf '%2.2i' ${ff})
-   else
-      ffout=${ff}
-   fi
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #   Find a unique waiting time for callserial.sh.                                       #
-   #---------------------------------------------------------------------------------------#
-   if [ ${copy2scratch} == "y" -o ${copy2scratch} == "Y" ]
-   then
-      let wtime=${ff}%8
-      let wtime=${wtime}*20
-      nudge=$(date +%S)
-      if [ ${nudge} -lt 10 ]
-      then 
-         nudge=$(echo ${nudge} | awk '{print substr($1,2,1)}')
-      fi
-      let nudge=${nudge}%15
-      let wtime=${wtime}+${nudge}
-      let wtime=${wtime}+2
-   else
-      wtime=999999
-   fi
-   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #      Read the ffth line of the polygon list.  There must be smarter ways of doing     #
@@ -339,6 +394,7 @@ do
    fi
    #---------------------------------------------------------------------------------------#
 
+
    #----- Check whether the directories exist or not, and stop the script if they do. -----#
    if [ -s ${here}/${polyname} ]
    then
@@ -386,30 +442,27 @@ do
    # we simply copy the template, and assume initial run.  Otherwise, we must find out     #
    # where the simulation was when it stopped.                                             #
    #---------------------------------------------------------------------------------------#
-   if [ ! -s ${there}/${polyname} ] && [ ${here} != ${there} ]
-   then
-      cp -r ${here}/Template ${there}/${polyname}
-   elif [ -s  ${there}/${polyname} ]
+   if [ -s  ${here}/${polyname} ]
    then
 
       #------------------------------------------------------------------------------------#
       #      This step is necessary because we may have killed the run while it was        #
       # writing, and as a result, the file may be corrupt.                                 #
       #------------------------------------------------------------------------------------#
-      nhdf5=$(ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l)
+      nhdf5=$(ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l)
       if [ ${nhdf5} -gt 0 ]
       then
          h5fine=0
 
          while [ ${h5fine} -eq 0 ]
          do
-            lasthdf5=$(ls -1 ${there}/${polyname}/histo/* | tail -1)
+            lasthdf5=$(ls -1 ${here}/${polyname}/histo/* | tail -1)
             h5dump -H ${lasthdf5} 1> /dev/null 2> ${here}/badfile.txt
 
             if [ -s ${here}/badfile.txt ]
             then
                /bin/rm -fv ${lasthdf5}
-               nhdf5=$(ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l)
+               nhdf5=$(ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l)
                if [ ${nhdf5} -eq 0 ]
                then
                   h5fine=1
@@ -439,7 +492,7 @@ do
    sed -i s@thispoly@${polyname}@g           ${whichrun}
    sed -i s@thisqueue@${queue}@g             ${whichrun}
    sed -i s@pathhere@${here}@g               ${whichrun}
-   sed -i s@paththere@${there}@g             ${whichrun}
+   sed -i s@paththere@${here}@g              ${whichrun}
    sed -i s@thisyeara@${yeara}@g             ${whichrun}
    sed -i s@thismontha@${montha}@g           ${whichrun}
    sed -i s@thisdatea@${datea}@g             ${whichrun}
@@ -741,6 +794,26 @@ do
          scentype="WFDEI"
          iscenario="WFDEI_SOUTHAM_GPCC"
          ;;
+      ERAINT_NATIVE)
+         #----- ERA-Interim (native precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_NATIVE"
+         ;;
+      ERAINT_CHIRPS)
+         #----- ERA-Interim (as is). ------------------------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_CHIRPS"
+         ;;
+      MERRA2_NATIVE)
+         #----- MERRA-2 (native precipitation). -------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_NATIVE"
+         ;;
+      MERRA2_CHIRPS)
+         #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_CHIRPS"
+         ;;
       *)
          #----- Tower data. ---------------------------------------------------------------#
          scentype="wmo+eft"
@@ -809,6 +882,18 @@ do
       metcycf=2003
       imetavg=1
       ;;
+   ERAINT_NATIVE)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1979
+      metcycf=2017
+      imetavg=2
+      ;;
+   ERAINT_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2017
+      imetavg=2
+      ;;
    Fazenda_Nossa_Senhora)
       metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
       metcyc1=1999
@@ -826,6 +911,18 @@ do
       metcyc1=1999
       metcycf=2006
       imetavg=1
+      ;;
+   MERRA2_NATIVE)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1980
+      metcycf=2017
+      imetavg=3
+      ;;
+   MERRA2_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2017
+      imetavg=3
       ;;
    Natal)
       metdriverdb="${fullscen}/Natal/Natal_HEADER"
@@ -912,7 +1009,7 @@ do
    #     Correct years so it is not tower-based or Sheffield.                              #
    #---------------------------------------------------------------------------------------#
    case ${iscenario} in
-   default|eft|shr|sheffield|WFDEI*)
+   default|eft|shr|sheffield|WFDEI*|ERAINT*|MERRA2*)
       echo "Nothing" > /dev/null
       ;;
    *)
@@ -997,6 +1094,26 @@ do
       #------------------------------------------------------------------------------------#
       ;;
    esac
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Define whether we use the met cycle to define the first and last year, or the     #
+   # default year.                                                                         #
+   #---------------------------------------------------------------------------------------#
+   if [ ${yeara} -eq 0 ]
+   then
+      thisyeara=${metcyc1}
+   else
+      thisyeara=${yeara}
+   fi
+   if [ ${yearz} -eq 0 ]
+   then
+      thisyearz=${metcycf}
+   else
+      thisyearz=${yearz}
+   fi
    #---------------------------------------------------------------------------------------#
 
 
@@ -1402,41 +1519,6 @@ do
 
 
 
-   #---------------------------------------------------------------------------------------#
-   #     Define whether we use the met cycle to define the first and last year, or the     #
-   # default year.                                                                         #
-   #---------------------------------------------------------------------------------------#
-   if [ ${yeara} -eq 0 ]
-   then
-      thisyeara=${metcyc1}
-   else
-      thisyeara=${yeara}
-   fi
-   if [ ${yearz} -eq 0 ]
-   then
-      thisyearz=${metcycf}
-   else
-      thisyearz=${yearz}
-   fi
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Change the ED2IN file.                                                            #
-   #---------------------------------------------------------------------------------------#
-   if [ ${runt}  == "CRASHED" ]
-   then
-      sed -i s@CRASHED@HISTORY@g ${here}/${polyname}/statusrun.txt
-      runt="HISTORY"
-      toler=$(calc.sh ${toler}/10)
-   elif [ "x${forcesubmit}" == "xy" -o "x${forcesubmit}" == "xY" ] &&
-        [ ${runt} != "INITIAL" -a ${runt} != "THE_END" ]
-   then
-      sed -i s@${runt}@HISTORY@g ${here}/${polyname}/statusrun.txt
-      runt="HISTORY"
-   fi
-   #---------------------------------------------------------------------------------------#
-
    #----- Check whether to use SFILIN as restart or history. ------------------------------#
    if [ ${runt} == "INITIAL" ] && [ ${forcehisto} -eq 1 ]
    then
@@ -1448,9 +1530,9 @@ do
       thissfilin=${fullygrown}
    elif [ ${runt} == "INITIAL" ] && [ ${initmode} -eq 5 ]
    then
-      if [ ${restart} == "/x/xxxxxx/xxxxxx/xxxxxxxxx/xxxx/ed2_data/restarts_XXX" ]
+      if [ ! -s ${restart} ]
       then
-         echo " Directory restart has not been set!"
+         echo " Directory restart does not exist!"
          echo " Change the variable restart at the beginning of the script"
          exit 44
       else
@@ -1557,7 +1639,7 @@ do
       esac
       #------------------------------------------------------------------------------------#
    else
-      thissfilin=${there}/${polyname}/histo/${polyname}
+      thissfilin=${here}/${polyname}/histo/${polyname}
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -1585,163 +1667,193 @@ do
    #     Replace the flags in ED2IN.                                                       #
    #---------------------------------------------------------------------------------------#
    ED2IN="${here}/${polyname}/ED2IN"
-   sed -i s@paththere@${there}@g                ${ED2IN}
-   sed -i s@myinpmain@${inpmain}@g              ${ED2IN}
-   sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
-   sed -i s@mymontha@${montha}@g                ${ED2IN}
-   sed -i s@mydatea@${datea}@g                  ${ED2IN}
-   sed -i s@mytimea@${timea}@g                  ${ED2IN}
-   sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
-   sed -i s@mymonthz@${monthz}@g                ${ED2IN}
-   sed -i s@mydatez@${datez}@g                  ${ED2IN}
-   sed -i s@mytimez@${timez}@g                  ${ED2IN}
-   sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
-   sed -i s@mymonyrstep@${monyrstep}@g          ${ED2IN}
-   sed -i s@thispoly@${polyname}@g              ${ED2IN}
-   sed -i s@plonflag@${polylon}@g               ${ED2IN}
-   sed -i s@platflag@${polylat}@g               ${ED2IN}
-   sed -i s@timehhhh@${time}@g                  ${ED2IN}
-   sed -i s@datehhhh@${date}@g                  ${ED2IN}
-   sed -i s@monthhhh@${month}@g                 ${ED2IN}
-   sed -i s@yearhhhh@${year}@g                  ${ED2IN}
-   sed -i s@myunitstate@${iunitstate}@g         ${ED2IN}
-   sed -i s@myinitmode@${initmode}@g            ${ED2IN}
-   sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
-   sed -i s@mytrees@${pfts}@g                   ${ED2IN}
-   sed -i s@mycrop@${crop}@g                    ${ED2IN}
-   sed -i s@mypasture@${pasture}@g              ${ED2IN}
-   sed -i s@myplantation@${plantation}@g        ${ED2IN}
-   sed -i s@myiphen@${iphen}@g                  ${ED2IN}
-   sed -i s@myallom@${iallom}@g                 ${ED2IN}
-   sed -i s@mygrass@${igrass}@g                 ${ED2IN}
-   sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
-   sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
-   sed -i s@myslxsand@${polysand}@g             ${ED2IN}
-   sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
-   sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
-   sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
-   sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
-   sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
-   sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
-   sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
-   sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
-   sed -i s@mytoler@${toler}@g                  ${ED2IN}
-   sed -i s@RUNFLAG@${runt}@g                   ${ED2IN}
-   sed -i s@myiphysiol@${iphysiol}@g            ${ED2IN}
-   sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
-   sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
-   sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
-   sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
-   sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
-   sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
-   sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
-   sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
-   sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
-   sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
-   sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
-   sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
-   sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
-   sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
-   sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
-   sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
-   sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
-   sed -i s@mydecomp@${decomp}@g                ${ED2IN}
-   sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
-   sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
-   sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
-   sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
-   sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
-   sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
-   sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
-   sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
-   sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
-   sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
-   sed -i s@mycbrscheme@${cbrscheme}@g          ${ED2IN}
-   sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
-   sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
-   sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
-   sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
-   sed -i s@mysmfire@${smfire}@g                ${ED2IN}
-   sed -i s@myfire@${ifire}@g                   ${ED2IN}
-   sed -i s@myfuel@${fireparm}@g                ${ED2IN}
-   sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
-   sed -i s@mypercol@${ipercol}@g               ${ED2IN}
-   sed -i s@myrunoff@${runoff}@g                ${ED2IN}
-   sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
-   sed -i s@mybranch@${ibranch}@g               ${ED2IN}
-   sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
-   sed -i s@myhrzrad@${ihrzrad}@g               ${ED2IN}
-   sed -i s@mycrown@${crown}@g                  ${ED2IN}
-   sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
-   sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
-   sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
-   sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
-   sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
-   sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
-   sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
-   sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
-   sed -i s@myigoutput@${igoutput}@g            ${ED2IN}
-   sed -i s@mygpref@${gpref}@g                  ${ED2IN}
-   sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
-   sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
-   sed -i s@myintegscheme@${integscheme}@g      ${ED2IN}
-   sed -i s@mynsubeuler@${nsubeuler}@g          ${ED2IN}
-   sed -i s@myrepro@${irepro}@g                 ${ED2IN}
-   sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
-   sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
-   sed -i s@myustmin@${ustmin}@g                ${ED2IN}
-   sed -i s@mygamm@${gamm}@g                    ${ED2IN}
-   sed -i s@mygamh@${gamh}@g                    ${ED2IN}
-   sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
-   sed -i s@myribmax@${ribmax}@g                ${ED2IN}
-   sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
-   sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
-   sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
-   sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
-   sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
-   sed -i s@mytreefall@${treefall}@g            ${ED2IN}
-   sed -i s@mymaxpatch@${iage}@g                ${ED2IN}
-   sed -i s@mymaxcohort@${imaxcohort}@g         ${ED2IN}
-   sed -i s@myanthdisturb@${ianthdisturb}@g     ${ED2IN}
-   sed -i s@myludatabase@${ludatabase}@g        ${ED2IN}
-   sed -i s@myslscale@${slscale}@g              ${ED2IN}
-   sed -i s@myslyrfirst@${slyrfirst}@g          ${ED2IN}
-   sed -i s@myslnyrs@${slnyrs}@g                ${ED2IN}
-   sed -i s@mylogging@${logging}@g              ${ED2IN}
-   sed -i s@myprobharv@${probharv}@g            ${ED2IN}
-   sed -i s@mydbhharv@${dbhharv}@g              ${ED2IN}
-   sed -i s@mybioharv@${bioharv}@g              ${ED2IN}
-   sed -i s@myskidarea@${skidarea}@g            ${ED2IN}
-   sed -i s@myskidsmall@${skidsmall}@g          ${ED2IN}
-   sed -i s@myskidlarge@${skidlarge}@g          ${ED2IN}
-   sed -i s@myfellingsmall@${fellingsmall}@g    ${ED2IN}
-   sed -i s@myseedharv@${seedharv}@g            ${ED2IN}
-   sed -i s@mystorharv@${storharv}@g            ${ED2IN}
-   sed -i s@myleafharv@${leafharv}@g            ${ED2IN}
+   sed -i~ s@paththere@${here}@g                 ${ED2IN}
+   sed -i~ s@myinpmain@${inpmain}@g              ${ED2IN}
+   sed -i~ s@myyeara@${thisyeara}@g              ${ED2IN}
+   sed -i~ s@mymontha@${montha}@g                ${ED2IN}
+   sed -i~ s@mydatea@${datea}@g                  ${ED2IN}
+   sed -i~ s@mytimea@${timea}@g                  ${ED2IN}
+   sed -i~ s@myyearz@${thisyearz}@g              ${ED2IN}
+   sed -i~ s@mymonthz@${monthz}@g                ${ED2IN}
+   sed -i~ s@mydatez@${datez}@g                  ${ED2IN}
+   sed -i~ s@mytimez@${timez}@g                  ${ED2IN}
+   sed -i~ s@mydtlsm@${dtlsm}@g                  ${ED2IN}
+   sed -i~ s@mymonyrstep@${monyrstep}@g          ${ED2IN}
+   sed -i~ s@thispoly@${polyname}@g              ${ED2IN}
+   sed -i~ s@plonflag@${polylon}@g               ${ED2IN}
+   sed -i~ s@platflag@${polylat}@g               ${ED2IN}
+   sed -i~ s@timehhhh@${time}@g                  ${ED2IN}
+   sed -i~ s@datehhhh@${date}@g                  ${ED2IN}
+   sed -i~ s@monthhhh@${month}@g                 ${ED2IN}
+   sed -i~ s@yearhhhh@${year}@g                  ${ED2IN}
+   sed -i~ s@myunitstate@${iunitstate}@g         ${ED2IN}
+   sed -i~ s@myinitmode@${initmode}@g            ${ED2IN}
+   sed -i~ s@mysfilin@${thissfilin}@g            ${ED2IN}
+   sed -i~ s@mytrees@${pfts}@g                   ${ED2IN}
+   sed -i~ s@mycrop@${crop}@g                    ${ED2IN}
+   sed -i~ s@mypasture@${pasture}@g              ${ED2IN}
+   sed -i~ s@myplantation@${plantation}@g        ${ED2IN}
+   sed -i~ s@myiphen@${iphen}@g                  ${ED2IN}
+   sed -i~ s@myallom@${iallom}@g                 ${ED2IN}
+   sed -i~ s@mygrass@${igrass}@g                 ${ED2IN}
+   sed -i~ s@myisoilflg@${polyisoil}@g           ${ED2IN}
+   sed -i~ s@mynslcon@${polyntext}@g             ${ED2IN}
+   sed -i~ s@myslxsand@${polysand}@g             ${ED2IN}
+   sed -i~ s@myslxclay@${polyclay}@g             ${ED2IN}
+   sed -i~ s@mysoilbc@${polysoilbc}@g            ${ED2IN}
+   sed -i~ s@mysldrain@${polysldrain}@g          ${ED2IN}
+   sed -i~ s@mysoilcol@${polycol}@g              ${ED2IN}
+   sed -i~ s@mynzg@${polynzg}@g                  ${ED2IN}
+   sed -i~ s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
+   sed -i~ s@mymetcyc1@${metcyc1}@g              ${ED2IN}
+   sed -i~ s@mymetcycf@${metcycf}@g              ${ED2IN}
+   sed -i~ s@mytoler@${toler}@g                  ${ED2IN}
+   sed -i~ s@RUNFLAG@${runt}@g                   ${ED2IN}
+   sed -i~ s@myiphysiol@${iphysiol}@g            ${ED2IN}
+   sed -i~ s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
+   sed -i~ s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
+   sed -i~ s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
+   sed -i~ s@mymphototec3@${mphototec3}@g        ${ED2IN}
+   sed -i~ s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
+   sed -i~ s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
+   sed -i~ s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
+   sed -i~ s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
+   sed -i~ s@mykwgrass@${kwgrass}@g              ${ED2IN}
+   sed -i~ s@mykwtree@${kwtree}@g                ${ED2IN}
+   sed -i~ s@mygammac3@${gammac3}@g              ${ED2IN}
+   sed -i~ s@mygammac4@${gammac4}@g              ${ED2IN}
+   sed -i~ s@myd0grass@${d0grass}@g              ${ED2IN}
+   sed -i~ s@myd0tree@${d0tree}@g                ${ED2IN}
+   sed -i~ s@myalphac3@${alphac3}@g              ${ED2IN}
+   sed -i~ s@myalphac4@${alphac4}@g              ${ED2IN}
+   sed -i~ s@myklowco2@${klowco2}@g              ${ED2IN}
+   sed -i~ s@mydecomp@${decomp}@g                ${ED2IN}
+   sed -i~ s@myrrffact@${rrffact}@g              ${ED2IN}
+   sed -i~ s@mygrowthresp@${growthresp}@g        ${ED2IN}
+   sed -i~ s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
+   sed -i~ s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
+   sed -i~ s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
+   sed -i~ s@myq10c3@${q10c3}@g                  ${ED2IN}
+   sed -i~ s@myq10c4@${q10c4}@g                  ${ED2IN}
+   sed -i~ s@myh2olimit@${h2olimit}@g            ${ED2IN}
+   sed -i~ s@mymortscheme@${imortscheme}@g       ${ED2IN}
+   sed -i~ s@myddmortconst@${ddmortconst}@g      ${ED2IN}
+   sed -i~ s@mycbrscheme@${cbrscheme}@g          ${ED2IN}
+   sed -i~ s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
+   sed -i~ s@myicanturb@${icanturb}@g            ${ED2IN}
+   sed -i~ s@myatmco2@${atmco2}@g                ${ED2IN}
+   sed -i~ s@mythcrit@${thcrit}@g                ${ED2IN}
+   sed -i~ s@mysmfire@${smfire}@g                ${ED2IN}
+   sed -i~ s@myfire@${ifire}@g                   ${ED2IN}
+   sed -i~ s@myfuel@${fireparm}@g                ${ED2IN}
+   sed -i~ s@mymetavg@${imetavg}@g               ${ED2IN}
+   sed -i~ s@mypercol@${ipercol}@g               ${ED2IN}
+   sed -i~ s@myrunoff@${runoff}@g                ${ED2IN}
+   sed -i~ s@mymetrad@${imetrad}@g               ${ED2IN}
+   sed -i~ s@mybranch@${ibranch}@g               ${ED2IN}
+   sed -i~ s@mycanrad@${icanrad}@g               ${ED2IN}
+   sed -i~ s@myhrzrad@${ihrzrad}@g               ${ED2IN}
+   sed -i~ s@mycrown@${crown}@g                  ${ED2IN}
+   sed -i~ s@myltransvis@${ltransvis}@g          ${ED2IN}
+   sed -i~ s@myltransnir@${ltransnir}@g          ${ED2IN}
+   sed -i~ s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
+   sed -i~ s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
+   sed -i~ s@myorienttree@${orienttree}@g        ${ED2IN}
+   sed -i~ s@myorientgrass@${orientgrass}@g      ${ED2IN}
+   sed -i~ s@myclumptree@${clumptree}@g          ${ED2IN}
+   sed -i~ s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+   sed -i~ s@myigoutput@${igoutput}@g            ${ED2IN}
+   sed -i~ s@mygpref@${gpref}@g                  ${ED2IN}
+   sed -i~ s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
+   sed -i~ s@mybigleaf@${ibigleaf}@g             ${ED2IN}
+   sed -i~ s@myintegscheme@${integscheme}@g      ${ED2IN}
+   sed -i~ s@mynsubeuler@${nsubeuler}@g          ${ED2IN}
+   sed -i~ s@myrepro@${irepro}@g                 ${ED2IN}
+   sed -i~ s@myubmin@${ubmin}@g                  ${ED2IN}
+   sed -i~ s@myugbmin@${ugbmin}@g                ${ED2IN}
+   sed -i~ s@myustmin@${ustmin}@g                ${ED2IN}
+   sed -i~ s@mygamm@${gamm}@g                    ${ED2IN}
+   sed -i~ s@mygamh@${gamh}@g                    ${ED2IN}
+   sed -i~ s@mytprandtl@${tprandtl}@g            ${ED2IN}
+   sed -i~ s@myribmax@${ribmax}@g                ${ED2IN}
+   sed -i~ s@mygndvap@${igndvap}@g               ${ED2IN}
+   sed -i~ s@mydtcensus@${dtcensus}@g            ${ED2IN}
+   sed -i~ s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
+   sed -i~ s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
+   sed -i~ s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
+   sed -i~ s@mytreefall@${treefall}@g            ${ED2IN}
+   sed -i~ s@mymaxpatch@${iage}@g                ${ED2IN}
+   sed -i~ s@mymaxcohort@${imaxcohort}@g         ${ED2IN}
+   sed -i~ s@myanthdisturb@${ianthdisturb}@g     ${ED2IN}
+   sed -i~ s@myludatabase@${ludatabase}@g        ${ED2IN}
+   sed -i~ s@myslscale@${slscale}@g              ${ED2IN}
+   sed -i~ s@myslyrfirst@${slyrfirst}@g          ${ED2IN}
+   sed -i~ s@myslnyrs@${slnyrs}@g                ${ED2IN}
+   sed -i~ s@mylogging@${logging}@g              ${ED2IN}
+   sed -i~ s@myprobharv@${probharv}@g            ${ED2IN}
+   sed -i~ s@mydbhharv@${dbhharv}@g              ${ED2IN}
+   sed -i~ s@mybioharv@${bioharv}@g              ${ED2IN}
+   sed -i~ s@myskidarea@${skidarea}@g            ${ED2IN}
+   sed -i~ s@myskidsmall@${skidsmall}@g          ${ED2IN}
+   sed -i~ s@myskidlarge@${skidlarge}@g          ${ED2IN}
+   sed -i~ s@myfellingsmall@${fellingsmall}@g    ${ED2IN}
+   sed -i~ s@myseedharv@${seedharv}@g            ${ED2IN}
+   sed -i~ s@mystorharv@${storharv}@g            ${ED2IN}
+   sed -i~ s@myleafharv@${leafharv}@g            ${ED2IN}
    #---------------------------------------------------------------------------------------#
 
    #------ Soil variables. ----------------------------------------------------------------#
-   sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
-   sed -i s@myslz2@"${polyslz2}"@g           ${ED2IN}
-   sed -i s@myslz3@"${polyslz3}"@g           ${ED2IN}
-   sed -i s@myslz4@"${polyslz4}"@g           ${ED2IN}
-   sed -i s@myslz5@"${polyslz5}"@g           ${ED2IN}
-   sed -i s@myslz6@"${polyslz6}"@g           ${ED2IN}
-   sed -i s@myslz7@"${polyslz7}"@g           ${ED2IN}
-   sed -i s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
-   sed -i s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
-   sed -i s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
-   sed -i s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
-   sed -i s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
-   sed -i s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
-   sed -i s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
-   sed -i s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
-   sed -i s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
-   sed -i s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
-   sed -i s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
-   sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
-   sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
-   sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
+   sed -i~ s@myslz1@"${polyslz1}"@g           ${ED2IN}
+   sed -i~ s@myslz2@"${polyslz2}"@g           ${ED2IN}
+   sed -i~ s@myslz3@"${polyslz3}"@g           ${ED2IN}
+   sed -i~ s@myslz4@"${polyslz4}"@g           ${ED2IN}
+   sed -i~ s@myslz5@"${polyslz5}"@g           ${ED2IN}
+   sed -i~ s@myslz6@"${polyslz6}"@g           ${ED2IN}
+   sed -i~ s@myslz7@"${polyslz7}"@g           ${ED2IN}
+   sed -i~ s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
+   sed -i~ s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
+   sed -i~ s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
+   sed -i~ s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
+   sed -i~ s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
+   sed -i~ s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
+   sed -i~ s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
+   sed -i~ s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
+   sed -i~ s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
+   sed -i~ s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
+   sed -i~ s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
+   sed -i~ s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
+   sed -i~ s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
+   sed -i~ s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #   In case this is a multithreaded run, copy executables to each directory.            #
+   #---------------------------------------------------------------------------------------#
+   case ${n_cpt} in
+   1)
+      exec_sub="${here}/${polyname}/${execname}"
+      cp ${exec_full} ${exec_sub}
+      ;;
+   *)
+      exec_sub=${exec_full}
+      ;;
+   esac
+
+   #----- Change the callserial.sh file. --------------------------------------------------#
+   callserial="${here}/${polyname}/callserial.sh"
+   rm -f ${callserial}
+   cp -f ${here}/Template/callserial.sh ${callserial}
+   sed -i~ s@thisroot@${here}@g          ${callserial}
+   sed -i~ s@thispoly@${polyname}@g      ${callserial}
+   sed -i~ s@myname@${moi}@g             ${callserial}
+   sed -i~ s@myexec@${exec_sub}@g        ${callserial}
+   sed -i~ s@mypackdata@${packdatasrc}@g ${callserial}
+   sed -i~ s@myscenario@${iscenario}@g   ${callserial}
+   sed -i~ s@myscenmain@${scentype}@g    ${callserial}
+   sed -i~ s@mycopy@${copy2scratch}@g    ${callserial}
+   sed -i~ s@mycpus@${n_cpt}@g           ${callserial}
+   sed -i~ s@myoptsrc@${optsrc}@g        ${callserial}
    #---------------------------------------------------------------------------------------#
 
 
@@ -1750,112 +1862,106 @@ do
    #---------------------------------------------------------------------------------------#
    #     We will not even consider the files that have gone extinct.                       #
    #---------------------------------------------------------------------------------------#
-   if [ ${runt} == "INITIAL" ] || [ ${runt} == "HISTORY" ]
-   then
+   jobname="${desc}-${polyname}"
+   running=$(cat ${jobstat} | grep ${jobname} 2> /dev/null | wc -l)
+   case ${runt} in
+   "THE_END")
+      echo "Polygon has reached the end.  No need to re-submit it."
+      submit_now=false
+      ;;
+   "STSTATE")
+      echo "Polygon has reached steady state.  No need to re-submit it."
+      submit_now=false
+      ;;
+   "EXTINCT")
+      echo "Polygon population has gone extinct.  No need to re-submit it."
+      submit_now=false
+      ;;
+   "CRASHED"|"METMISS"|"SIGSEGV"|"BAD_MET"|"STOPPED")
+      echo "Polygon has serious errors.  Script will not submit the job this time."
+      submit_now=false
+      ;;
+   "INITIAL"|"HISTORY")
       #------------------------------------------------------------------------------------#
       #     Check whether the job is still running
       #------------------------------------------------------------------------------------#
-      jobname="${desc}-${polyname}"
-      running=$(qcheck -n | grep ${jobname} 2> /dev/null | wc -l)
+      case "${running}" in
+      ""|"0")
+         case "${submit}" in
+         n|N)
+            echo "Polygon will be prepared and ready to be submitted."
+            submit_now=false
+            ;;
+         *)
+            echo "Submit polygon:"
+            submit_now=true
+            ;;
+         esac
+         ;;
+      *)
+         echo "Polygon is running.  Do not submit this time."
+         submit_now=false
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Submit the job using the specific comments.                                       #
+   #---------------------------------------------------------------------------------------#
+   if ${submit_now}
+   then
+      #----- Job options. -----------------------------------------------------------------#
+      options="walltime=${runtime},mem=${memory_max}mb,ncpus=${n_cpt}"
+      pbsout="${here}/${polyname}/serial_pbs.out"
       #------------------------------------------------------------------------------------#
 
 
-      if [ ${running} -eq 0 ]
-      then
+      #------------------------------------------------------------------------------------#
+      #     Submit, then check whether it went through.  If not, keep trying until         #
+      # it works (or give up after nsubtry_max attempts).                                  #
+      #------------------------------------------------------------------------------------#
+      nfail=1
+      attempt=0
+      while [[ ${nfail} -gt 0 ]] && [[ ${attempt} -lt ${nsubtry_max} ]]
+      do
+         let attempt=${attempt}+1
 
-         #---------------------------------------------------------------------------------#
-         #      Reset callserial.sh.                                                       #
-         #---------------------------------------------------------------------------------#
-         callserial="${here}/${polyname}/callserial.sh"
-         rm -f ${callserial}
-         cp -f ${here}/Template/callserial.sh ${callserial}
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Change the callserial.sh file. --------------------------------------------#
-         /bin/rm -f 
-         callserial="${here}/${polyname}/callserial.sh"
-         sed -i s@pathhere@${here}@g          ${callserial}
-         sed -i s@thisdesc@${desc}@g          ${callserial}
-         sed -i s@thisroot@${here}@g          ${callserial}
-         sed -i s@thispoly@${polyname}@g      ${callserial}
-         sed -i s@thisqueue@${queue}@g        ${callserial}
-         sed -i s@myexec@${execname}@g        ${callserial}
-         sed -i s@myinitrc@${initrc}@g        ${callserial}
-         sed -i s@myname@${moi}@g             ${callserial}
-         sed -i s@mypackdata@${packdatasrc}@g ${callserial}
-         sed -i s@myscenario@${iscenario}@g   ${callserial}
-         sed -i s@myscenmain@${scentype}@g    ${callserial}
-         sed -i s@zzzzzzzz@${wtime}@g         ${callserial}
+         #----- Submit job. ---------------------------------------------------------------#
+         echo -n "  + Attempt number: ${attempt}..."
+         qsub -q ${global_queue} -o ${pbsout} -j oe -N ${jobname} -l ${options}            \
+                 ${callserial} 1> /dev/null 2> /dev/null
          #---------------------------------------------------------------------------------#
 
+
+         #----- Wait a bit, then check whether the submission went through. ---------------#
+         sleep 3
+         nfail=$(qclean | wc -l)
          #---------------------------------------------------------------------------------#
-         #    Check whether to submit or just copy.                                        #
-         #---------------------------------------------------------------------------------#
-         if [ "x${submit}" != "xn" ] && [ "x${submit}" != "xN" ]
+
+
+
+         #------ Check result. ------------------------------------------------------------#
+         if [[ ${nfail} -gt 0 ]] && [[ ${attempt} -eq ${nsubtry_max} ]]
          then
-
-
-            #----- Submit job. ------------------------------------------------------------#
-            qsub ${callserial} 1> /dev/null 2> /dev/null
-            #------------------------------------------------------------------------------#
-
-
-            #------------------------------------------------------------------------------#
-            #     Submit, then check whether it went through.  If not, keep trying until   #
-            # it works (or give up after 10 attempts).                                     #
-            #------------------------------------------------------------------------------#
-            sleep 3
-            nfail=$(qclean | wc -l)
-            if [ ${nfail} -eq 0 ]
-            then
-               echo "  Polygon job submitted."
-            else
-               echo "  Failed submission... Trying again:"
-               attempt=0
-               while [ ${nfail} -gt 0 ] && [ ${attempt} -lt 10 ]
-               do
-                   let attempt=${attempt}+1
-                   echo -n "  + Attempt number: ${attempt}..."
-                   qsub ${callserial} 1> /dev/null 2> /dev/null
-                   sleep 3
-                   nfail=$(qclean | wc -l)
-                   if [ ${nfail} -gt 0 ] && [ ${attempt} -eq 10 ]
-                   then
-                      echo "  Failed.  Giving up, looks like a more serious problem..."
-                   elif [ ${nfail} -eq 0 ]
-                   then
-                      echo "          - Success!!!"
-                   else
-                      echo "  Failed."
-                   fi
-               done
-            fi
-            #------------------------------------------------------------------------------#
+            echo "  Failed.  Giving up, check for errors in your script."
+         elif [ ${nfail} -eq 0 ]
+         then
+            echo "  Success."
          else
-               echo "  Polygon prepared and ready to be submitted."
+            echo "  Failed."
          fi
          #---------------------------------------------------------------------------------#
-
-      else
-         #----- Check whether I should submit from this path or not. ----------------------#
-         echo "  Polygon is running.  Do not submit this time."
-         #---------------------------------------------------------------------------------#
-      fi
-   elif [ ${runt} == "THE_END" ]
-   then
-      echo "  Polygon has already finished."
-   elif [ ${runt} == "STSTATE" ]
-   then
-      echo "  Polygon has already reached steady state."
-   elif [ ${runt} == "EXTINCT" ]
-   then
-      echo "  Polygon has gone extinct."
-   else
-      echo "  Polygon is seriously messed up."
+      done
+      #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#
-
 done
+#------------------------------------------------------------------------------------------#
+
+#----- Delete temporary job status. -------------------------------------------------------#
+/bin/rm -f ${jobstat}
 #------------------------------------------------------------------------------------------#

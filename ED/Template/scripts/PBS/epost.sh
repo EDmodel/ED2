@@ -1,17 +1,15 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-#----- Main path, usually set by $(pwd) so you don't need to change it. -------------------#
-here=""
-#----- User name, usually set by $(whoami) so you don't need to change it. ----------------#
-myself=$(whoami)
-#----- Description of this simulation, used to create unique job names. -------------------#
-desc=$(basename ${here})
-#----- File containing the list of jobs and their settings: -------------------------------#
-joborder="${here}/joborder.txt"         # ! File with the job instructions
-#----- How should the post-processing be handled? -----------------------------------------#
-submit=false     # true -- Try to submit the script to the queue
-                 # false -- Prepare script for batch, but don't dispatch job.
-#----- Time frame for post-processing. ----------------------------------------------------#
+here=$(pwd)                           # ! Main path
+myself=$(whoami)                      # ! You
+joborder="${here}/joborder.txt"       # ! File with the job instructions
+#----- Outroot is the main output directory. ----------------------------------------------#
+submit="y"       # y -- Submit the script to the queue
+                 # l -- Run the script locally
+                 # n -- Copy the script
+#----- Maximum number of attempts before giving up. ---------------------------------------#
+nsubtry_max=5
+#----- Plot only one meteorological cycle. ------------------------------------------------#
 useperiod="a"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # "a" -- All period
                  # "t" -- One eddy flux tower met cycle
@@ -32,7 +30,6 @@ usedistrib="edf" # Which distribution to plot on top of histograms:
 #----- Output format. ---------------------------------------------------------------------#
 outform="c(\"pdf\")"           # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
-                               # tif - 
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
 #----- DBH classes. -----------------------------------------------------------------------#
@@ -56,21 +53,10 @@ correct_gs=1.0                 # Correction factor for growth and storage respir
 oldgrowth="FALSE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
 rscpath="${HOME}/EDBRAMS/R-utils"
-rlibs="${HOME}/R"
 #----- bashrc (usually ${HOME}/.bashrc). --------------------------------------------------#
 initrc="${HOME}/.bashrc"
-#----- Initialisation scripts. ------------------------------------------------------------#
-optsrc="-n"                   # Option for .bashrc (for special submission settings)
-                              #   In case none is needed, leave it blank ("").
 #----- Settings for this group of polygons. -----------------------------------------------#
 global_queue=""               # Queue
-partial=false                 # Partial submission (false will ignore polya and npartial
-                              #    and send all polygons.
-polya=501                     # First polygon to submit
-npartial=100                  # Maximum number of polygons to include in this bundle
-                              #    (actual number will be adjusted for total number of 
-                              #     polygons if needed be).
-dttask=2                      # Time to wait between task submission
 sim_memory=0                  # Memory per simulation.  If zero, then it will be 
                               #    automatically determined by the maximum number of tasks
                               #    per node.
@@ -78,7 +64,7 @@ sim_memory=0                  # Memory per simulation.  If zero, then it will be
 
 
 #------------------------------------------------------------------------------------------#
-#     Which script to run (multiple scripts are not allowed).                              #
+#     Which scripts to run.                                                                #
 #                                                                                          #
 #   - read_monthly.r - This reads the monthly mean files (results can then be used for     #
 #                      plot_monthly.r, plot_yearly.r, and others, but it doesn't plot any- #
@@ -108,12 +94,12 @@ sim_memory=0                  # Memory per simulation.  If zero, then it will be
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-rscript=""
-#rscript="yearly_ascii.r"
-#rscript="plot_monthly.r"
-#rscript="plot_census.r" 
-#rscript="plot_ycomp.r"
-#rscript="plot_eval_ed.r"
+rscripts="plot_yearly.r"
+#rscripts="yearly_ascii.r"
+#rscripts="plot_monthly.r"
+#rscripts="plot_census.r" 
+#rscripts="plot_ycomp.r"
+#rscripts="plot_eval_ed.r"
 #------------------------------------------------------------------------------------------#
 
 
@@ -188,83 +174,93 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
+
+
 #------------------------------------------------------------------------------------------#
-#     Configurations depend on the global_queue.                                           #
+#    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-case ${global_queue} in
-   bigmem)
-      n_nodes_max=6
-      n_cpt=1
-      n_tpn=64
-      runtime="31-00:00:00"
-      node_memory=514842
-      ;;
-   general)
-      n_nodes_max=166
-      n_cpt=1
-      n_tpn=32
-      runtime="7-00:00:00"
-      node_memory=262499
-      ;;
-   shared)
-      n_nodes_max=456
-      n_cpt=1
-      n_tpn=32
-      runtime="7-00:00:00"
-      node_memory=129072
-      ;;
-   huce_intel)
-      n_nodes_max=276
-      n_cpt=1
-      n_tpn=24
-      runtime="14-00:00:00"
-      node_memory=126820
-      ;;
-   moorcroft_amd)
-      n_nodes_max=8
-      n_cpt=1
-      n_tpn=64
-      runtime="infinite"
-      node_memory=256302
-      ;;
-   moorcroft_6100)
-      n_nodes_max=35
-      n_cpt=1
-      n_tpn=12
-      runtime="infinite"
-      node_memory=22150
-      ;;
-   unrestricted)
-      n_nodes_max=8
-      n_cpt=1
-      n_tpn=64
-      runtime="31-00:00:00"
-      node_memory=262499
-      ;;
-   wofsy)
-      n_nodes_max=2
-      n_cpt=1
-      n_tpn=32
-      runtime="infinite"
-      node_memory=262499
-      ;;
-   *)
-      echo "Global queue ${global_queue} is not recognised!"
-      exit
-      ;;
+case ${myself} in
+mlongo)
+   rscpath="${HOME}/util/Rsc"
+   ;;
+marcos.longo)
+   rscpath="${SCRATCH}/Util/Rsc"
+   rlibs="${SCRATCH}/Util/Rlibs"
+   rsync -Prutv ${R_SCRP}/* ${rscpath}
+   ;;
+marcosl)
+   rscpath="${HOME}/Util/Rsc"
+   ;;
 esac
-let n_tasks_max=${n_nodes_max}*${n_tpn}
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Set general limits.  Currently only the maximum time is restricted.                  #
+#------------------------------------------------------------------------------------------#
+case ${ordinateur} in
+sun-master|cmm*)
+   #----- SunHPC (LNCC). ------------------------------------------------------------------#
+   n_nodes_max=32
+   n_cpt=1
+   n_tpn=16
+   node_memory=65536
+   case ${global_queue} in
+      linuxq)    runtime="168:00:00"                              ;;
+      *)         echo " Queue ${global_queue} is invalid!"; exit  ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+   ;;
+au*|ha*)
+   #----- JPL (Aurora and Halo). ----------------------------------------------------------#
+   n_nodes_max=32
+   n_cpt=1
+   n_tpn=16
+   node_memory=65536
+   case ${global_queue} in
+      verylongq) runtime="192:00:00"                              ;;
+      longq)     runtime="48:00:00"                               ;;
+      mediumq)   runtime="12:00:00"                               ;;
+      shortq)    runtime="03:00:00"                               ;;
+      debugq)    runtime="01:00:00"                               ;;
+      *)         echo " Queue ${global_queue} is invalid!"; exit  ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+   ;;
+*)
+   #----- Computer is not listed.  Crash. -------------------------------------------------#
+   echo " Invalid computer ${ordinateur}.  Check queue settings in the script."
+   exit 39
+   #---------------------------------------------------------------------------------------#
+   ;;
+esac
+if [ ${n_cpt} -gt ${n_cpt_max} ]
+then
+   echo " Too many CPUs per task requested:"
+   echo " Queue                   = ${global_queue}"
+   echo " Maximum CPUs per task   = ${n_cpt_max}"
+   echo " Requested CPUs per task = ${n_cpt}"
+   exit 99
+else
+   let n_tasks_max=${n_nodes_max}*${n_tpn}
+fi
+;;
 #------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "mlongo" ]
-then
+case ${myself} in
+mlongo|marcosl)
    rscpath="${HOME}/Util/Rsc"
-   rlibs="${SCRATCH}/Util/R-3.4.2/lib"
-fi
+   ;;
+marcos.longo)
+   rscpath="${SCRATCH}/Util/Rsc"
+   rsync -Prutv ${R_SCRP}/* ${rscpath}
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 
@@ -341,17 +337,6 @@ esac
 
 
 
-#----- Set script information. ------------------------------------------------------------#
-epoststo="${epostkey}_epost.sto"
-epostste="${epostkey}_epost.ste"
-epostout="${epostkey}_epost.out"
-epostjob="${epostkey}-${desc}"
-epostexe="R CMD BATCH --no-save --no-restore ${rscript} ${epostout}"
-#------------------------------------------------------------------------------------------#
-
-
-
-
 #------------------------------------------------------------------------------------------#
 #   Make sure memory does not exceed maximum amount that can be requested.                 #
 #------------------------------------------------------------------------------------------#
@@ -378,8 +363,6 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
-
-
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
 if [ ${npolys} -lt 100 ]
@@ -394,108 +377,8 @@ then
 else
    ndig=5
 fi
-#------------------------------------------------------------------------------------------#
-
-
-
-#---- Partial or complete. ----------------------------------------------------------------#
-rprefix=$(basename ${rscript} .r)
-if ${partial}
-then
-   let ff=${polya}-1
-   let polyz=${ff}+${npartial}
-   if [ ${polyz} -gt ${npolys} ]
-   then
-      polyz=${npolys}
-   fi
-   partlabel="$(printf '%3.3i' ${polya})-$(printf '%3.3i' ${polyz})"
-   sbatch="${here}/sub_${rprefix}_${partlabel}.sh"
-   obatch="${here}/out_${rprefix}_${partlabel}.log"
-   ebatch="${here}/err_${rprefix}_${partlabel}.log"
-else
-   ff=0
-   polya=1
-   polyz=${npolys}
-   sbatch="${here}/sub_${rprefix}.sh"
-   obatch="${here}/out_${rprefix}.log"
-   ebatch="${here}/err_${rprefix}.log"
-fi
-let ntasks=1+${polyz}-${polya}
-#------------------------------------------------------------------------------------------#
-
-
-#----- Summary for this submission preparation.  Then give 5 seconds for user to cancel. --#
-echo "------------------------------------------------"
-echo "  Submission summary: "
-echo ""
-echo "  Memory per cpu:      ${sim_memory}"
-echo "  Tasks per node:      ${n_tpn}"
-echo "  Queue:               ${global_queue}"
-echo "  First polygon:       ${polya}"
-echo "  Last polygon:        ${polyz}"
-echo "  Job Name:            ${jobname}"
-echo "  Total polygon count: ${npolys}"
-echo " "
-echo " Partial submission:   ${partial}"
-echo " Automatic submission: ${submit}"
-echo " "
-echo " R script:             ${rscript}"
-echo "------------------------------------------------"
-echo ""
-sleep 5
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#    Initialise executable.                                                                #
-#------------------------------------------------------------------------------------------#
-rm -fr ${sbatch}
-touch ${sbatch}
-chmod u+x ${sbatch}
-echo "#!/bin/bash" >> ${sbatch}
-echo "#SBATCH --ntasks=${ntasks}              # Number of tasks"               >> ${sbatch}
-echo "#SBATCH --cpus-per-task=1               # Number of CPUs per task"       >> ${sbatch}
-echo "#SBATCH --partition=${global_queue}     # Queue that will run job"       >> ${sbatch}
-echo "#SBATCH --job-name=${epostjob}          # Job name"                      >> ${sbatch}
-echo "#SBATCH --mem-per-cpu=${sim_memory}     # Memory per CPU"                >> ${sbatch}
-echo "#SBATCH --time=${runtime}               # Time for job"                  >> ${sbatch}
-echo "#SBATCH --output=${here}/out_epost.out  # Standard output path"          >> ${sbatch}
-echo "#SBATCH --error=${here}/out_epost.err   # Standard error path"           >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Get plenty of memory."                                              >> ${sbatch}
-echo "ulimit -s unlimited"                                                     >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Initial settings."                                                  >> ${sbatch}
-echo "here=\"${here}\"                            # Main path"                 >> ${sbatch}
-echo "rscript=\"${rscript}\"                      # R Script"                  >> ${sbatch}
-echo "rstdout=\"${epostout}\"                     # Standard output"           >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Print information about this job."                                  >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"----- Summary of current job ---------------------------------\"" >> ${sbatch}
-echo "echo \" CPUs per task:   \${SLURM_CPUS_PER_TASK}\""                      >> ${sbatch}
-echo "echo \" Job:             \${SLURM_JOB_NAME} (\${SLURM_JOB_ID})\""        >> ${sbatch}
-echo "echo \" Queue:           \${SLURM_JOB_PARTITION}\""                      >> ${sbatch}
-echo "echo \" Number of nodes: \${SLURM_NNODES}\""                             >> ${sbatch}
-echo "echo \" Number of tasks: \${SLURM_NTASKS}\""                             >> ${sbatch}
-echo "echo \" Memory per CPU:  \${SLURM_MEM_PER_CPU}\""                        >> ${sbatch}
-echo "echo \" Memory per node: \${SLURM_MEM_PER_NODE}\""                       >> ${sbatch}
-echo "echo \" Node list:       \${SLURM_JOB_NODELIST}\""                       >> ${sbatch}
-echo "echo \" Time limit:      \${SLURM_TIMELIMIT}\""                          >> ${sbatch}
-echo "echo \" Std. Output:     \${SLURM_STDOUTMODE}\""                         >> ${sbatch}
-echo "echo \" Std. Error:      \${SLURM_STDERRMODE}\""                         >> ${sbatch}
-echo "echo \"--------------------------------------------------------------\"" >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Load modules and settings."                                         >> ${sbatch}
-echo ". \${HOME}/.bashrc ${optsrc}"                                            >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#----- Task list."                                                       >> ${sbatch}
+pfmt="%${ndig}.${ndig}i"
+echo "Number of polygons: ${npolys}..."
 #------------------------------------------------------------------------------------------#
 
 
@@ -504,29 +387,17 @@ echo "#----- Task list."                                                       >
 #------------------------------------------------------------------------------------------#
 #      Loop over all polygons.                                                             #
 #------------------------------------------------------------------------------------------#
-n_submit=0
-while [ ${ff} -lt ${polyz} ]
+ff=0
+while [ ${ff} -lt ${npolys} ]
 do
-   let ff=${ff}+1
-   let line=${ff}+3
-
 
    #---------------------------------------------------------------------------------------#
    #    Format count.                                                                      #
    #---------------------------------------------------------------------------------------#
-   if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
-   then
-      ffout=$(printf '%2.2i' ${ff})
-   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
-   then
-      ffout=$(printf '%3.3i' ${ff})
-   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
-   then
-      ffout=$(printf '%4.4i' ${ff})
-   else
-      ffout=${ff}
-   fi
-   #---------------------------------------------------------------------------------------#
+   let ff=${ff}+1
+   let line=${ff}+3
+   ffout=$(printf ${pfmt} ${ff})
+  #---------------------------------------------------------------------------------------#
 
 
 
@@ -756,7 +627,7 @@ do
    case ${polyiata} in
    gyf)
       bioyeara=2004
-      bioyearz=2013
+      bioyearz=2010
       ;;
    s67)
       bioyeara=1999
@@ -1085,65 +956,100 @@ do
    #----- Make sure this is not the census script for a site we don't have census. --------#
    if [ ${rscript} != "plot_census.r" ] || [ ${subcens} -ne 0 ]
    then
-      #----- Update the list of scripts to be included in the batch. ----------------------#
-      let n_submit=${n_submit}+1
-      rexec="R CMD BATCH --no-save --no-restore ${rscript} ${epostout}"
+      #----- Set script- and site-specific variables. -------------------------------------#
+      epostjob="${epostkey}-${desc}-${polyname}"
+      epostnow="${here}/${polyname}/${epostkey}_epost.sh"
+      epostout="${here}/${polyname}/${epostkey}_epost.out"
+      epostrsc="${here}/${polyname}/${rscript}"
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
+      # Run it several times until it is complete.                                         #
+      #------------------------------------------------------------------------------------#
+      epostexe="R CMD BATCH --no-save --no-restore ${epostrsc} ${epostout}"
+      complete="${here}/${polyname}/eval_load_complete.txt"
+      options="walltime=${runtime},mem=${sim_memory}mb,ncpus=${n_cpt}"
+      rm -f ${epostnow}
+      echo "#!/bin/bash"                    > ${epostnow}
+      echo "#PBS -S /bin/bash"             >> ${epostnow}
+      echo "#PBS -q ${global_queue}"       >> ${epostnow}
+      echo "#PBS -o ${epostout}"           >> ${epostnow}
+      echo "#PBS -N ${epostjob}"           >> ${epostnow}
+      echo "#PBS -j oe"                    >> ${epostnow}
+      echo "#PBS -r n"                     >> ${epostnow}
+      echo "#PBS -l ${options}"            >> ${epostnow}
+      echo " "                             >> ${epostnow}
+      echo ". ${initrc}"                   >> ${epostnow}
+
+
+      case ${rscript} in
+      plot_eval_ed.r)
+         echo "/bin/rm -fr ${complete}"    >> ${epostnow}
+         echo "while [ ! -s ${complete} ]" >> ${epostnow}
+         echo "do"                         >> ${epostnow}
+         echo "   sleep 3"                 >> ${epostnow}
+         echo "   ${epostexe}"             >> ${epostnow}
+         echo "done"                       >> ${epostnow}
+         ;;
+      *)
+         echo ${epostexe}                  >> ${epostnow}
+         ;;
+      esac
+      chmod +x ${epostnow}
       #------------------------------------------------------------------------------------#
 
 
 
+      #----- Decide whether to submit job or not. -----------------------------------------#
+      case "${submit}" in
+      n|N) 
+         echo " + Files are ready for submission"
+         ;;
+      *)
+         #---------------------------------------------------------------------------------#
+         #     Submit, then check whether it went through.  If not, keep trying until      #
+         # it works (or give up after nsubtry_max attempts).                               #
+         #---------------------------------------------------------------------------------#
+         nfail=1
+         attempt=0
+         while [[ ${nfail} -gt 0 ]] && [[ ${attempt} -lt ${nsubtry_max} ]]
+         do
+            let attempt=${attempt}+1
 
-      #----- Append job to submission list. -----------------------------------------------#
-      srun="srun --nodes=1 --ntasks=1"
-      srun="${srun} --cpus-per-task=\${SLURM_CPUS_PER_TASK}"
-      srun="${srun} --mem-per-cpu=\${SLURM_MEM_PER_CPU}"
-      srun="${srun} --job-name=${polyname}"
-      srun="${srun} --chdir=\${here}/${polyname}"
-      srun="${srun} --output=\${here}/${polyname}/${epoststo}"
-      srun="${srun} --error=\${here}/${polyname}/${epostste}"
-      echo "${srun} ${epostexe} &" >> ${sbatch}
+            #----- Submit job. ------------------------------------------------------------#
+            echo -n "  + Attempt number: ${attempt}..."
+            qsub -q ${global_queue} -l ${options} ${callserial} 1> /dev/null 2> /dev/null
+            #------------------------------------------------------------------------------#
+
+
+            #----- Wait a bit, then check whether the submission went through. ------------#
+            sleep 3
+            nfail=$(qclean | wc -l)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Check result. ---------------------------------------------------------#
+            if [[ ${nfail} -gt 0 ]] && [[ ${attempt} -eq ${nsubtry_max} ]]
+            then
+               echo "  Failed.  Giving up, check for errors in your script."
+            elif [ ${nfail} -eq 0 ]
+            then
+               echo "  Success."
+            else
+               echo "  Failed."
+            fi
+            #------------------------------------------------------------------------------#
+         done
+         #---------------------------------------------------------------------------------#
+
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#
+
 done
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#      Make sure job list doesn't request too many nodes.                                  #
-#------------------------------------------------------------------------------------------#
-if [ ${n_submit} -gt ${n_tasks_max} ]
-then
-   echo " Number of jobs to submit: ${n_submit}"
-   echo " Maximum number of tasks in queue ${global_queue}: ${n_tasks_max}"
-   echo " Reduce the number of simulations or try another queue..."
-   exit 99
-else
-   #----- Find the right number of nodes to submit. ---------------------------------------#
-   let n_nodes=(${n_submit}+${n_tpn}-1)/${n_tpn}
-   let n_tasks=(${n_submit}+${n_nodes}-1)/${n_nodes}
-   sed -i~ s@mynnodes@${n_nodes}@g ${sbatch}
-   sed -i~ s@myntasks@${n_tasks}@g ${sbatch}
-   #---------------------------------------------------------------------------------------#
-fi
-#------------------------------------------------------------------------------------------#
-
-
-#----- Make sure the script waits until all tasks are completed... ------------------------#
-echo ""                                                                        >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#----- Make sure that jobs complete before terminating script"           >> ${sbatch}
-echo "wait"                                                                    >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#    In case all looks good, go for it!                                                    #
-#------------------------------------------------------------------------------------------#
-if ${submit}
-then
-   sbatch ${sbatch} 
-fi
 #------------------------------------------------------------------------------------------#
