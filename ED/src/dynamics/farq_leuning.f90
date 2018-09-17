@@ -117,7 +117,6 @@ module farq_leuning
                                 , rd_decay_elow            & ! intent(in)
                                 , rd_decay_ehigh           & ! intent(in)
                                 , cuticular_cond           & ! intent(in)
-                                , dark_respiration_factor  & ! intent(in)
                                 , stomatal_slope           & ! intent(in)
                                 , quantum_efficiency       & ! intent(in)
                                 , curvpar_electron         & ! intent(in)
@@ -127,7 +126,8 @@ module farq_leuning
                                 , vm0_amp                  & ! intent(in)
                                 , vm0_min                  ! ! intent(in)
       use physiology_coms, only : gbw_2_gbc8               & ! intent(in)
-                                , o2_ref8                  ! ! intent(in)
+                                , o2_ref8                  & ! intent(in)
+                                , trait_plasticity_scheme  ! ! intent(in)
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
                                 , mmdryi8                  & ! intent(in)
@@ -175,6 +175,8 @@ module farq_leuning
       real(kind=4), intent(out)   :: jactout           ! Act. electron transp.  [umol/m2/s]
       real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ umol/mol]
       integer     , intent(out)   :: limit_flag        ! Photosyn. limit. flag  [      ---]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                :: f_plastic8        ! Plasticity factor
       !----- External function. -----------------------------------------------------------!
       real(kind=4)    , external  :: sngloff           ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
@@ -247,8 +249,6 @@ module farq_leuning
       thispft(ib)%rd_decay_elow    = dble(rd_decay_elow(ipft))
       thispft(ib)%rd_decay_ehigh   = dble(rd_decay_ehigh(ipft))
       thispft(ib)%alpha0           = dble(quantum_efficiency(ipft))
-      thispft(ib)%jm0              = dble(jm0 (ipft)) * umol_2_mol8
-      thispft(ib)%TPm0             = dble(TPm0(ipft)) * umol_2_mol8
       thispft(ib)%curvpar          = dble(curvpar_electron(ipft))
       thispft(ib)%phi_psII         = dble(qyield_psII     (ipft))
       !------------------------------------------------------------------------------------!
@@ -263,13 +263,37 @@ module farq_leuning
       select case(phenology(ipft))
       case (3)
          !------ Light-controlled phenology. ----------------------------------------------!
-         thispft(ib)%vm0 = dble(vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min)  &
-                         * umol_2_mol8
-         thispft(ib)%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
+         thispft(ib)%vm0  = dble(vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min) &
+                          * umol_2_mol8
+         f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
+         thispft(ib)%rd0  = f_plastic8 * dble(rd0 (ipft)) * umol_2_mol8
+         thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
+         thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
       case default
-         !------ Other phenologies, no distinction on Vm0. --------------------------------!
-         thispft(ib)%vm0 = dble(vm0(ipft)) * umol_2_mol8
-         thispft(ib)%rd0 = dble(rd0(ipft)) * umol_2_mol8
+         !---------------------------------------------------------------------------------!
+         !     Consider trait plasticity                                                   !
+         !---------------------------------------------------------------------------------!
+         select case (trait_plasticity_scheme)
+         case (-2,-1,1,2)
+            !------------------------------------------------------------------------------!
+            !      Within-canopy trait plasticity.  In this case, the input vm_bar is the  !
+            ! realized Vm0.  Rd0, Jm0, and TPm0 are all scaled with the vm_bar:Vm0 ratio.  !
+            !------------------------------------------------------------------------------!
+            thispft(ib)%vm0  = dble(vm_bar) * umol_2_mol8
+            f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
+            thispft(ib)%rd0  = f_plastic8 * dble(rd0 (ipft)) * umol_2_mol8
+            thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
+            thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
+            !------------------------------------------------------------------------------!
+         case default
+            !------ Other phenologies, no plasticity: use default Vm0. --------------------!
+            thispft(ib)%vm0  = dble(vm0 (ipft)) * umol_2_mol8
+            thispft(ib)%rd0  = dble(rd0 (ipft)) * umol_2_mol8
+            thispft(ib)%jm0  = dble(jm0 (ipft)) * umol_2_mol8
+            thispft(ib)%TPm0 = dble(TPm0(ipft)) * umol_2_mol8
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 

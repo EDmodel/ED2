@@ -202,15 +202,8 @@ case ${ordinateur} in
 rclogin*|holy*|moorcroft*|rcnx*)
    #----- Odyssey queues. -----------------------------------------------------------------#
    case ${global_queue} in
-   bigmem)
-      n_nodes_max=6
-      n_cpt_max=16
-      n_cpn=64
-      runtime="31-00:00:00"
-      node_memory=514842
-      ;;
    general)
-      n_nodes_max=141
+      n_nodes_max=118
       n_cpt_max=16
       n_cpn=32
       runtime="7-00:00:00"
@@ -244,17 +237,17 @@ rclogin*|holy*|moorcroft*|rcnx*)
       runtime="14-00:00:00"
       node_memory=126820
       ;;
+   huce_amd)
+      n_nodes_max=65
+      n_cpt_max=32
+      n_cpn=8
+      runtime="14-00:00:00"
+      node_memory=262499
+      ;;
    unrestricted)
       n_nodes_max=8
       n_cpt_max=16
       n_cpn=64
-      runtime="Infinite"
-      node_memory=262499
-      ;;
-   wofsy)
-      n_nodes_max=2
-      n_cpt_max=8
-      n_cpn=32
       runtime="Infinite"
       node_memory=262499
       ;;
@@ -264,41 +257,42 @@ rclogin*|holy*|moorcroft*|rcnx*)
       ;;
    esac
    #---------------------------------------------------------------------------------------#
+   ;;
 sdumont*)
    #----- SantosDumont. -------------------------------------------------------------------#
    case ${global_queue} in
    cpu_long|nvidia_long)
       n_nodes_max=10
-      n_cpt=1
-      n_tpn=24
+      n_cpt_max=12
+      n_cpn=24
       runtime="31-00:00:00"
       node_memory=64000
       ;;
    cpu|nvidia|phi)
       n_nodes_max=50
-      n_cpt=1
-      n_tpn=24
+      n_cpt_max=12
+      n_cpn=24
       runtime="2-00:00:00"
       node_memory=64000
       ;;
    cpu_dev)
       n_nodes_max=20
-      n_cpt=1
-      n_tpn=24
+      n_cpt_max=12
+      n_cpn=24
       runtime="02:00:00"
       node_memory=64000
       ;;
    nvidia_dev|phi_dev)
       n_nodes_max=2
-      n_cpt=1
-      n_tpn=24
+      n_cpt_max=12
+      n_cpn=24
       runtime="02:00:00"
       node_memory=64000
       ;;
    cpu_scal|nvidia_scal)
       n_nodes_max=128
-      n_cpt=1
-      n_tpn=24
+      n_cpt_max=12
+      n_cpn=24
       runtime="18:00:00"
       node_memory=64000
       ;;
@@ -325,6 +319,10 @@ then
    echo " Requested CPUs per task = ${n_cpt}"
    exit 99
 else
+   if [[ ${n_cpt} -eq 0 ]]
+   then
+      n_cpt=${n_cpt_max}
+   fi
    let n_tasks_max=${n_nodes_max}*${n_cpn}
    let n_tasks_max=${n_tasks_max}/${n_cpt}
 fi
@@ -616,25 +614,26 @@ do
    clumpgrass=$(echo ${oi}   | awk '{print $89 }')
    igoutput=$(echo ${oi}     | awk '{print $90 }')
    ivegtdyn=$(echo ${oi}     | awk '{print $91 }')
-   igndvap=$(echo ${oi}      | awk '{print $92 }')
-   iphen=$(echo ${oi}        | awk '{print $93 }')
-   iallom=$(echo ${oi}       | awk '{print $94 }')
-   igrass=$(echo ${oi}       | awk '{print $95 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $96 }')
-   integscheme=$(echo ${oi}  | awk '{print $97 }')
-   nsubeuler=$(echo ${oi}    | awk '{print $98 }')
-   irepro=$(echo ${oi}       | awk '{print $99 }')
-   treefall=$(echo ${oi}     | awk '{print $100}')
-   ianthdisturb=$(echo ${oi} | awk '{print $101}')
-   ianthdataset=$(echo ${oi} | awk '{print $102}')
-   slscale=$(echo ${oi}      | awk '{print $103}')
-   slyrfirst=$(echo ${oi}    | awk '{print $104}')
-   slnyrs=$(echo ${oi}       | awk '{print $105}')
-   bioharv=$(echo ${oi}      | awk '{print $106}')
-   skidarea=$(echo ${oi}     | awk '{print $107}')
-   skidsmall=$(echo ${oi}    | awk '{print $108}')
-   skidlarge=$(echo ${oi}    | awk '{print $109}')
-   fellingsmall=$(echo ${oi} | awk '{print $110}')
+   iplastic=$(echo ${oi}     | awk '{print $92 }')
+   igndvap=$(echo ${oi}      | awk '{print $93 }')
+   iphen=$(echo ${oi}        | awk '{print $94 }')
+   iallom=$(echo ${oi}       | awk '{print $95 }')
+   igrass=$(echo ${oi}       | awk '{print $96 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $97 }')
+   integscheme=$(echo ${oi}  | awk '{print $98 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $99 }')
+   irepro=$(echo ${oi}       | awk '{print $100}')
+   treefall=$(echo ${oi}     | awk '{print $101}')
+   ianthdisturb=$(echo ${oi} | awk '{print $102}')
+   ianthdataset=$(echo ${oi} | awk '{print $103}')
+   slscale=$(echo ${oi}      | awk '{print $104}')
+   slyrfirst=$(echo ${oi}    | awk '{print $105}')
+   slnyrs=$(echo ${oi}       | awk '{print $106}')
+   bioharv=$(echo ${oi}      | awk '{print $107}')
+   skidarea=$(echo ${oi}     | awk '{print $108}')
+   skidsmall=$(echo ${oi}    | awk '{print $109}')
+   skidlarge=$(echo ${oi}    | awk '{print $110}')
+   fellingsmall=$(echo ${oi} | awk '{print $111}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1052,6 +1051,11 @@ do
          scentype="WFDEI"
          iscenario="WFDEI_SOUTHAM_GPCC"
          ;;
+      WFDEI_CHIRPS)
+         #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
+         scentype="WFDEI"
+         iscenario="WFDEI_SOUTHAM_CHIRPS"
+         ;;
       ERAINT_NATIVE)
          #----- ERA-Interim (native precipitation). ---------------------------------------#
          scentype="ERA_Interim"
@@ -1071,6 +1075,16 @@ do
          #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
          scentype="MERRA2"
          iscenario="MERRA2_SOUTHAM_CHIRPS"
+         ;;
+      PGMF3_NATIVE)
+         #----- PGMF-3 (native precipitation). --------------------------------------------#
+         scentype="PGMF3"
+         iscenario="PGMF3_SOUTHAM_NATIVE"
+         ;;
+      PGMF3_CHIRPS)
+         #----- PGMF-3 (CHIRPS precipitation). --------------------------------------------#
+         scentype="PGMF3"
+         iscenario="PGMF3_SOUTHAM_CHIRPS"
          ;;
       *)
          #----- Tower data. ---------------------------------------------------------------#
@@ -1206,6 +1220,18 @@ do
       metcycf=2012
       imetavg=1
       ;;
+   PGMF3_CRUP)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1979
+      metcycf=2016
+      imetavg=3
+      ;;
+   PGMF3_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2016
+      imetavg=3
+      ;;
    Rebio_Jaru)
       metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
       metcyc1=1999
@@ -1254,6 +1280,12 @@ do
       metcycf=2013
       imetavg=1
       ;;
+   WFDEI_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2016
+      imetavg=1
+      ;;
    *)
       echo "Met driver: ${metdriver}"
       echo "Sorry, this met driver is not valid for regular runs"
@@ -1267,7 +1299,7 @@ do
    #     Correct years so it is not tower-based or Sheffield.                              #
    #---------------------------------------------------------------------------------------#
    case ${iscenario} in
-   default|eft|shr|sheffield|WFDEI*|ERAINT*|MERRA2*)
+   default|eft|shr|sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
       echo "Nothing" > /dev/null
       ;;
    *)
@@ -2040,6 +2072,7 @@ do
    sed -i~ s@myigoutput@${igoutput}@g            ${ED2IN}
    sed -i~ s@mygpref@${gpref}@g                  ${ED2IN}
    sed -i~ s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
+   sed -i~ s@myplastic@${iplastic}@g             ${ED2IN}
    sed -i~ s@mybigleaf@${ibigleaf}@g             ${ED2IN}
    sed -i~ s@myintegscheme@${integscheme}@g      ${ED2IN}
    sed -i~ s@mynsubeuler@${nsubeuler}@g          ${ED2IN}

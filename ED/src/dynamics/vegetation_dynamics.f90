@@ -109,7 +109,7 @@ module vegetation_dynamics
             call update_workload(cgrid)
 
             !----- Update the growth of the structural biomass. ---------------------------!
-            call dbstruct_dt(cgrid,veget_dyn_on)
+            call dbstruct_dt(cgrid,veget_dyn_on,new_year)
 
             !----- Solve the reproduction rates. ------------------------------------------!
             call reproduction_driver(cgrid,current_time%month,veget_dyn_on)

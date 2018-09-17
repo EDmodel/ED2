@@ -66,8 +66,8 @@ module phenology_driv
                call update_phenology(doy,cpoly,isi,cgrid%lat(ipy),veget_dyn_on)
 
 
-            case (3)
-               !----- KIM light-controlled predictive phenology scheme. -------------------!
+            case (3,4)
+               !----- Light-controlled predictive phenology scheme. -----------------------!
                call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
                call update_turnover(cpoly,isi)
                call update_phenology(doy,cpoly,isi,cgrid%lat(ipy),veget_dyn_on)

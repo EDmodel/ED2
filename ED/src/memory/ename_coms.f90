@@ -139,6 +139,7 @@ module ename_coms
       integer                                           :: ibigleaf
       integer                                           :: integration_scheme
       integer                                           :: nsub_euler
+      integer                                           :: trait_plasticity_scheme
       integer                                           :: growth_resp_scheme
       integer                                           :: storage_resp_scheme
       real                                              :: rk4_tolerance
@@ -426,6 +427,7 @@ module ename_coms
       enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
       enl%nsub_euler                = undef_integer
+      enl%trait_plasticity_scheme   = undef_integer
       enl%growth_resp_scheme        = undef_integer
       enl%storage_resp_scheme       = undef_integer
       enl%rk4_tolerance             = undef_real

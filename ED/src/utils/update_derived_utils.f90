@@ -51,39 +51,43 @@ module update_derived_utils
    !     This subroutine will assign values derived from the basic properties of a given   !
    ! cohort.                                                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine update_cohort_derived_props(cpatch,ico,lsl)
+   subroutine update_cohort_derived_props(cpatch,ico,lsl,new_year)
 
-      use ed_state_vars , only : patchtype           ! ! structure
-      use pft_coms      , only : is_grass            ! ! function
-      use allometry     , only : bd2dbh              & ! function
-                               , dbh2h               & ! function
-                               , size2krdepth        & ! function
-                               , bl2dbh              & ! function
-                               , bl2h                & ! function
-                               , size2bl             & ! function
-                               , size2bt             & ! function
-                               , size2xb             & ! function
-                               , ed_balive           & ! function
-                               , ed_biomass          & ! function
-                               , area_indices        ! ! subroutine
-      use consts_coms   , only : pio4                ! ! intent(in)
-      use ed_misc_coms  , only : igrass              & ! intent(in)
-                               , current_time        ! ! intent(in)
-      use detailed_coms , only : dt_census           & ! intent(in)
-                               , yr1st_census        & ! intent(in)
-                               , mon1st_census       & ! intent(in)
-                               , min_recruit_dbh     ! ! intent(in)
+      use ed_state_vars  , only : patchtype               ! ! structure
+      use pft_coms       , only : is_grass                ! ! function
+      use allometry      , only : bd2dbh                  & ! function
+                                , dbh2h                   & ! function
+                                , size2krdepth            & ! function
+                                , bl2dbh                  & ! function
+                                , bl2h                    & ! function
+                                , size2bl                 & ! function
+                                , size2bt                 & ! function
+                                , size2xb                 & ! function
+                                , ed_balive               & ! function
+                                , ed_biomass              & ! function
+                                , area_indices            ! ! subroutine
+      use physiology_coms, only : trait_plasticity_scheme ! ! intent(in)
+      use consts_coms    , only : pio4                    ! ! intent(in)
+      use ed_misc_coms   , only : igrass                  & ! intent(in)
+                                , current_time            ! ! intent(in)
+      use detailed_coms  , only : dt_census               & ! intent(in)
+                                , yr1st_census            & ! intent(in)
+                                , mon1st_census           & ! intent(in)
+                                , min_recruit_dbh         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target     :: cpatch
       integer        , intent(in) :: ico
       integer        , intent(in) :: lsl
+      logical        , intent(in) :: new_year
       !----- Local variables --------------------------------------------------------------!
       real                        :: bleaf_max
       integer                     :: ipft
       integer                     :: elapsed_months
       logical                     :: census_time
       !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !    Find the number of elapsed months since the first census, and decide whether    !
@@ -146,6 +150,21 @@ module update_derived_utils
       end if
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Update plastic traits (SLA, Vm0).  This must be done before calculating LAI.   !
+      !------------------------------------------------------------------------------------!
+      select case (trait_plasticity_scheme)
+      case (-1,1) ! Update trait every year
+         if (new_year) call update_cohort_plastic_trait(cpatch,ico)
+      case (-2,2) ! Update trait every month
+         call update_cohort_plastic_trait(cpatch,ico)
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Update LAI, WAI, and CAI. ----------------------------------------------------!
       call area_indices(cpatch, ico)
       !------------------------------------------------------------------------------------!
@@ -170,6 +189,126 @@ module update_derived_utils
    end subroutine update_cohort_derived_props
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! SUBROUTINE UPDATE_COHORT_PLASTIC_TRAIT 
+   !< \brief This subroutine will assign values for plastic functional traits driven by
+   !< local light environment and thus depending on vertical structure of the canopy.
+   !< \warning This function should be called after update_derived_cohort_props
+   !< \details Refs: \n
+   !<      Lloyd J, et al. 2010. Optimisation of photosynthetic carbon gain and
+   !< within-canopy gradients of associated foliar traits for Amazon forest
+   !< trees. Biogesciences, 7(6):1833-1859. doi:10.5194/bg-7-1833-2010.\n
+   !=======================================================================================!
+   !---------------------------------------------------------------------------------------!
+   subroutine update_cohort_plastic_trait(cpatch,ico)
+      use ed_state_vars  , only : patchtype               ! ! structure
+      use pft_coms       , only : SLA                     & ! intent(in)
+                                , kplastic_vm0            & ! intent(in)
+                                , kplastic_sla            & ! intent(in)
+                                , fexp_sla_max            & ! intent(in)
+                                , lma_slope               & ! intent(in)
+                                , Vm0                     & ! intent(in)
+                                , is_tropical             & ! intent(in)
+                                , is_grass                ! ! intent(in)
+      use consts_coms    , only : lnexp_min               & ! intent(in)
+                                , lnexp_max               ! ! intent(in)
+      use allometry      , only : size2bl                 ! ! function
+      use physiology_coms, only : trait_plasticity_scheme ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(patchtype), target     :: cpatch       ! Current patch
+      integer        , intent(in) :: ico          ! Cohort index
+      !----- Local variables --------------------------------------------------------------!
+      integer                     :: ipft         ! Alias for current PFT
+      integer                     :: jco          ! Cohort count
+      real                        :: max_cum_lai  ! Potential cumulative LAI
+      real                        :: bl_max       ! Maximum attainable leaf biomass
+      real                        :: lnexp        ! FPE-safe exponential test
+      real                        :: new_sla      ! Updated SLA
+      real                        :: sla_scaler   ! Scaling factor for SLA
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !  for now, only update the trait for tropical trees. However, It can be applied to  !
+      !  temperate forests as well because the parameters come from a meta-analysis        !
+      !  by Lloyd et al. 2010                                                              !
+      !------------------------------------------------------------------------------------!
+      ipft    = cpatch%pft(ico)
+      if (is_grass(ipft) .or. (.not. is_tropical(ipft))) return
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 1. Find the maximum cumulative lai above the current cohort using the current SLA. !
+      !------------------------------------------------------------------------------------!
+      max_cum_lai = 0.  ! Set cumulative LAI as zero, and update only when # cohorts > 1.
+      if (ico > 1) then
+         !----- Accumulate LAI from the top cohort to current cohort. ---------------------!
+         do jco = 1,ico-1
+            bl_max      = size2bl(cpatch%dbh(jco),cpatch%hite(jco),cpatch%pft(jco))
+            max_cum_lai = max_cum_lai + bl_max * cpatch%sla(jco) * cpatch%nplant(jco)
+         end do
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 2.  Update Vm0.  This should be defined at the top of canopy [sun-lit leaves].     !
+      !------------------------------------------------------------------------------------!
+      lnexp              = max(lnexp_min,- kplastic_vm0(ipft) * max_cum_lai)
+      cpatch%vm_bar(ico) = Vm0(ipft) * exp(lnexp)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 3.  Update SLA.  Decide whether to use the bottom or top of the canopy as the      !
+      !     reference.                                                                     !
+      !------------------------------------------------------------------------------------!
+      select case (trait_plasticity_scheme)
+      case (1,2)
+         !------ SLA is defined at the top of canopy, use LAI to change SLA. --------------!
+         lnexp   = min(lnexp_max,kplastic_sla(ipft) * max_cum_lai)
+         new_sla = SLA(ipft) * min(fexp_sla_max(ipft),exp(lnexp))
+         !---------------------------------------------------------------------------------!
+      case (-1,-2)
+         !------ SLA is defined at the bottom of canopy, use height to change SLA. --------!
+         new_sla = SLA(ipft) / (1. + lma_slope(ipft) * cpatch%hite(ico))
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 4.  Here we also need to retrospectively change leaf level state variables because !
+      !     the leaf area has changed while we want to keep the flux the same. This is     !
+      !     necessary for plant hydraulic calculations, which uses the water fluxes from   !
+      !     'Last Timestep'.  For now we only update psi_open and psi_closed, which will   !
+      !     be used in plant_hydro_driver. We will leave A_open and A_closed unchanged     !
+      !     because growth of the day has already happen at this time point in the model.  !
+      !------------------------------------------------------------------------------------!
+      sla_scaler             = cpatch%sla(ico) / new_sla
+      cpatch%sla       (ico) = new_sla
+      cpatch%psi_open  (ico) = cpatch%psi_open  (ico) * sla_scaler
+      cpatch%psi_closed(ico) = cpatch%psi_closed(ico) * sla_scaler
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine update_cohort_plastic_trait
+   !==========================================================================================!
+   !==========================================================================================!
 
 
 

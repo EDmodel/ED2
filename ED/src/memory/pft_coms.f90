@@ -79,9 +79,6 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    real :: C2B
-   !----- Parameters used by the model that predicts SLA based on leaf life span. ---------!
-   real, dimension(n_pft) :: sla_s0
-   real, dimension(n_pft) :: sla_s1
    !=======================================================================================!
    !=======================================================================================!
 
@@ -179,6 +176,12 @@ module pft_coms
 
    !----- Maximum carboxylation rate at the reference temperature [umol/m2/s]. ------------!
    real, dimension(n_pft) :: Vm0 
+   !----- Parameters used by the model that predicts Vm0 based on SLA. --------------------!
+   real, dimension(n_pft) :: Vm0_v0
+   real, dimension(n_pft) :: Vm0_v1
+   !----- Parameters currently used only by trait plasticity. -----------------------------!
+   real, dimension(n_pft) :: Vcmax25      ! Vm0 at 25degC
+   real, dimension(n_pft) :: kplastic_vm0 ! Extinction factor for Vm0
 
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Vm_hor 
@@ -488,6 +491,13 @@ module pft_coms
    real   , dimension(n_pft)    :: rho
    !----- Specific Leaf Area (m2leaf/kg_C]. -----------------------------------------------!
    real   , dimension(n_pft)    :: SLA
+   !----- Parameters used by the model that predicts SLA based on leaf life span. ---------!
+   real   , dimension(n_pft)    :: sla_s0
+   real   , dimension(n_pft)    :: sla_s1
+   !----- Parameters that control the SLA plasticity. -------------------------------------!
+   real   , dimension(n_pft)    :: kplastic_SLA ! Extinction factor for SLA
+   real   , dimension(n_pft)    :: fexp_SLA_max ! Maximum expansion factor for SLA
+   real   , dimension(n_pft)    :: LMA_slope    ! Slope for LMA:Height relationship
    !----- The initialization parameters for SLA:  SLA = sla_pft_init for non-trop PFTs
    real   , dimension(n_pft)    :: sla_pft_init
    !----- Mass ratio between fine root and leaves [kg_fine_roots]/[kg_leaves]. ------------!

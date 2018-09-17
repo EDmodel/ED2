@@ -94,6 +94,7 @@ subroutine copy_nl(copy_type)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
+                                   , trait_plasticity_scheme   & ! intent(out)
                                    , iddmort_scheme            & ! intent(out)
                                    , cbr_scheme                & ! intent(out)
                                    , ddmort_const              & ! intent(out)
@@ -413,6 +414,7 @@ subroutine copy_nl(copy_type)
       igoutput                  = nl%igoutput
       gfilout                   = nl%gfilout
       h2o_plant_lim             = nl%h2o_plant_lim
+      trait_plasticity_scheme   = nl%trait_plasticity_scheme
       iddmort_scheme            = nl%iddmort_scheme
       cbr_scheme                = nl%cbr_scheme
       ddmort_const              = nl%ddmort_const

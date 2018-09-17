@@ -800,21 +800,27 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Read the cohort level variables. ------------------------------------------#
-         nplantconow       = mymont$NPLANT
+         showconow         = mymont$HITE > pft$hgt.show[pftconow]
+         nplantconow       = mymont$NPLANT       * as.numeric(showconow)
+         laiconow          = mymont$MMEAN.LAI.CO * as.numeric(showconow)
+         waiconow          = mymont$WAI.CO       * as.numeric(showconow)
          heightconow       = mymont$HITE
          thbarkconow       = mymont$MMEAN.THBARK.CO
          wood.densconow    = pft$rho[pftconow]
          agf.bsconow       = pft$agf.bs[pftconow]
          baconow           = mymont$BA.CO
          agbconow          = mymont$AGB.CO
-         laiconow          = mymont$MMEAN.LAI.CO
-         waiconow          = mymont$WAI.CO
          caiconow          = pmin(1., nplantconow
                                     * size2ca(dbh=dbhconow,hgt=heightconow,ipft=pftconow)
                                  )#end pmin
          taiconow          = laiconow + waiconow
          #------ Auxiliary variables for mean diurnal cycle. ------------------------------#
          q.pftconow        = matrix( data  = pftconow
+                                   , nrow  = mymont$NCOHORTS.GLOBAL
+                                   , ncol  = mymont$NDCYC
+                                   , byrow = FALSE
+                                   )#end matrix
+         q.showconow       = matrix( data  = showconow
                                    , nrow  = mymont$NCOHORTS.GLOBAL
                                    , ncol  = mymont$NDCYC
                                    , byrow = FALSE
@@ -1070,18 +1076,27 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Energy and water fluxes: convert them to plant area. ----------------------#
-         hflxlcconow       = mymont$MMEAN.SENSIBLE.LC.CO           / nplantconow
-         wflxlcconow       = mymont$MMEAN.VAPOR.LC.CO    * day.sec / nplantconow
-         transpconow       = mymont$MMEAN.TRANSP.CO      * day.sec / nplantconow
-         i.hflxlcconow     = ifelse( leaf.okconow
+         hflxlcconow       = ifelse( showconow
+                                   , mymont$MMEAN.SENSIBLE.LC.CO           / nplantconow
+                                   , NA
+                                   )#end ifelse
+         wflxlcconow       = ifelse( showconow
+                                   , mymont$MMEAN.VAPOR.LC.CO    * day.sec / nplantconow
+                                   , NA
+                                   )#end ifelse
+         transpconow       = ifelse( showconow
+                                   , mymont$MMEAN.TRANSP.CO      * day.sec / nplantconow
+                                   , NA
+                                   )#end ifelse
+         i.hflxlcconow     = ifelse( leaf.okconow & showconow
                                    , mymont$MMEAN.SENSIBLE.LC.CO           / laiconow
                                    , NA
                                    )#end ifelse
-         i.wflxlcconow     = ifelse( leaf.okconow
+         i.wflxlcconow     = ifelse( leaf.okconow & showconow
                                    , mymont$MMEAN.VAPOR.LC.CO    * day.sec / laiconow
                                    , NA
                                    )#end ifelse
-         i.transpconow     = ifelse( leaf.okconow
+         i.transpconow     = ifelse( leaf.okconow & showconow
                                    , mymont$MMEAN.TRANSP.CO      * day.sec / laiconow
                                    , NA
                                    )#end ifelse
@@ -1175,52 +1190,52 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
          #----- Find the net radiation for leaves (in m2/leaf!). --------------------------#
          par.mult           = Watts.2.Ein * 1.e6
-         leaf.parconow      = ifelse( leaf.okconow
+         leaf.parconow      = ifelse( leaf.okconow & showconow
                                     , mymont$MMEAN.PAR.L.CO / laiconow *  par.mult
                                     , NA
                                     )#end ifelse
-         leaf.par.beamconow = ifelse( leaf.okconow
+         leaf.par.beamconow = ifelse( leaf.okconow & showconow
                                     , mymont$MMEAN.PAR.L.BEAM.CO / laiconow *  par.mult
                                     , NA
                                     )#end ifelse
-         leaf.par.diffconow = ifelse( leaf.okconow
+         leaf.par.diffconow = ifelse( leaf.okconow & showconow
                                     , mymont$MMEAN.PAR.L.DIFF.CO / laiconow *  par.mult
                                     , NA
                                     )#end ifelse
-         leaf.rshortconow   = ifelse( leaf.okconow
+         leaf.rshortconow   = ifelse( leaf.okconow & showconow
                                     , mymont$MMEAN.RSHORT.L.CO / laiconow
                                     , NA
                                     )#end ifelse
-         leaf.rlongconow    = ifelse( leaf.okconow
+         leaf.rlongconow    = ifelse( leaf.okconow & showconow
                                     , mymont$MMEAN.RLONG.L.CO  / laiconow
                                     , NA
                                     )#end ifelse
-         leaf.gppconow      = ifelse( leaf.okconow
+         leaf.gppconow      = ifelse( leaf.okconow & showconow
                                     , mymont$MMEAN.GPP.CO * nplantconow / laiconow
                                     , NA
                                     )#end ifelse
          #----- Mean diurnal cycle. -------------------------------------------------------#
-         q.leaf.parconow      = ifelse( q.leaf.okconow
+         q.leaf.parconow      = ifelse( q.leaf.okconow & q.showconow
                                       , mymont$QMEAN.PAR.L.CO / q.laiconow *  par.mult
                                       , NA
                                       )#end ifelse
-         q.leaf.par.beamconow = ifelse( q.leaf.okconow
+         q.leaf.par.beamconow = ifelse( q.leaf.okconow & q.showconow
                                       , mymont$QMEAN.PAR.L.BEAM.CO / q.laiconow *  par.mult
                                       , NA
                                       )#end ifelse
-         q.leaf.par.diffconow = ifelse( q.leaf.okconow
+         q.leaf.par.diffconow = ifelse( q.leaf.okconow & q.showconow
                                       , mymont$QMEAN.PAR.L.DIFF.CO / q.laiconow *  par.mult
                                       , NA
                                       )#end ifelse
-         q.leaf.rshortconow   = ifelse( q.leaf.okconow
+         q.leaf.rshortconow   = ifelse( q.leaf.okconow & q.showconow
                                       , mymont$QMEAN.RSHORT.L.CO / q.laiconow
                                       , NA
                                       )#end ifelse
-         q.leaf.rlongconow    = ifelse( q.leaf.okconow
+         q.leaf.rlongconow    = ifelse( q.leaf.okconow & q.showconow
                                       , mymont$QMEAN.RLONG.L.CO  / q.laiconow
                                       , NA
                                       )#end ifelse
-         q.leaf.gppconow      = ifelse( q.leaf.okconow
+         q.leaf.gppconow      = ifelse( q.leaf.okconow & q.showconow
                                       , mymont$QMEAN.GPP.CO * q.nplantconow / q.laiconow
                                       , NA
                                       )#end ifelse
@@ -1231,36 +1246,36 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
          #     Leaf/wood thermal properties.                                               #
          #---------------------------------------------------------------------------------#
-         leaf.waterconow   = ifelse( test = leaf.okconow
+         leaf.waterconow   = ifelse( test = leaf.okconow & showconow
                                    , yes  = mymont$MMEAN.LEAF.WATER.CO / laiconow
                                    , no   = NA
                                    )#end ifelse
-         leaf.tempconow    = ifelse( test = leaf.okconow
+         leaf.tempconow    = ifelse( test = leaf.okconow & showconow
                                    , yes  = mymont$MMEAN.LEAF.TEMP.CO  - t00
                                    , no   = NA
                                    )#end ifelse
-         wood.tempconow    = ifelse( test = wood.okconow
+         wood.tempconow    = ifelse( test = wood.okconow & showconow
                                    , yes  = mymont$MMEAN.WOOD.TEMP.CO  - t00
                                    , no   = NA
                                    )#end ifelse
-         leaf.vpdconow     = ifelse( test = leaf.okconow
+         leaf.vpdconow     = ifelse( test = leaf.okconow & showconow
                                    , yes  = mymont$MMEAN.LEAF.VPDEF.CO  * 0.01
                                    , no   = NA
                                    )#end ifelse
          #----- Mean diurnal cycle. -------------------------------------------------------#
-         q.leaf.waterconow   = ifelse( test = q.leaf.okconow
+         q.leaf.waterconow   = ifelse( test = q.leaf.okconow & q.showconow
                                      , yes  = mymont$QMEAN.LEAF.WATER.CO / q.laiconow
                                      , no   = NA
                                      )#end ifelse
-         q.leaf.tempconow    = ifelse( test = q.leaf.okconow
+         q.leaf.tempconow    = ifelse( test = q.leaf.okconow & q.showconow
                                      , yes  = mymont$QMEAN.LEAF.TEMP.CO  - t00
                                      , no   = NA
                                      )#end ifelse
-         q.wood.tempconow    = ifelse( test = q.wood.okconow
+         q.wood.tempconow    = ifelse( test = q.wood.okconow & q.showconow
                                      , yes  = mymont$QMEAN.WOOD.TEMP.CO  - t00
                                      , no   = NA
                                      )#end ifelse
-         q.leaf.vpdconow     = ifelse( test = q.leaf.okconow
+         q.leaf.vpdconow     = ifelse( test = q.leaf.okconow & q.showconow
                                      , yes  = mymont$QMEAN.LEAF.VPDEF.CO  * 0.01
                                      , no   = NA
                                      )#end ifelse
@@ -1748,47 +1763,47 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
 
          #----- Find some auxiliary patch-level properties. -------------------------------#
-         lai.pa           = tapply( X     = mymont$MMEAN.LAI.CO
+         lai.pa           = tapply( X     = mymont$MMEAN.LAI.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         wai.pa           = tapply( X     = mymont$WAI.CO
+         wai.pa           = tapply( X     = mymont$WAI.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         leaf.energy.pa   = tapply( X     = mymont$MMEAN.LEAF.ENERGY.CO
+         leaf.energy.pa   = tapply( X     = mymont$MMEAN.LEAF.ENERGY.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         leaf.water.pa    = tapply( X     = mymont$MMEAN.LEAF.WATER.CO
+         leaf.water.pa    = tapply( X     = mymont$MMEAN.LEAF.WATER.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         leaf.hcap.pa     = tapply( X     = mymont$MMEAN.LEAF.HCAP.CO
+         leaf.hcap.pa     = tapply( X     = mymont$MMEAN.LEAF.HCAP.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         par.leaf.pa      = tapply( X     = mymont$MMEAN.PAR.L.CO
+         par.leaf.pa      = tapply( X     = mymont$MMEAN.PAR.L.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         par.leaf.beam.pa = tapply( X     = mymont$MMEAN.PAR.L.BEAM.CO
+         par.leaf.beam.pa = tapply( X     = mymont$MMEAN.PAR.L.BEAM.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         par.leaf.diff.pa = tapply( X     = mymont$MMEAN.PAR.L.DIFF.CO
+         par.leaf.diff.pa = tapply( X     = mymont$MMEAN.PAR.L.DIFF.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         wood.energy.pa   = tapply( X     = mymont$MMEAN.WOOD.ENERGY.CO
+         wood.energy.pa   = tapply( X     = mymont$MMEAN.WOOD.ENERGY.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         wood.water.pa    = tapply( X     = mymont$MMEAN.WOOD.WATER.CO
+         wood.water.pa    = tapply( X     = mymont$MMEAN.WOOD.WATER.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
-         wood.hcap.pa     = tapply( X     = mymont$MMEAN.WOOD.HCAP.CO
+         wood.hcap.pa     = tapply( X     = mymont$MMEAN.WOOD.HCAP.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
                                   )#end tapply
@@ -1847,12 +1862,16 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Find the variables that must be rendered extensive. -----------------------#
-         agb.pa        = tapply(X=agbconow       *nplantconow,INDEX=ipaconow,FUN=sum)
-         ba.pa         = tapply(X=baconow        *nplantconow,INDEX=ipaconow,FUN=sum)
-         gpp.pa        = tapply(X=gppconow       *nplantconow,INDEX=ipaconow,FUN=sum)
-         npp.pa        = tapply(X=nppconow       *nplantconow,INDEX=ipaconow,FUN=sum)
-         cba.pa        = tapply(X=cbaconow       *nplantconow,INDEX=ipaconow,FUN=sum)
-         plant.resp.pa = tapply(X=plant.respconow*nplantconow,INDEX=ipaconow,FUN=sum)
+         agb.pa        = tapply(X=agbconow*nplantconow,INDEX=ipaconow,FUN=sum,na.rm=TRUE)
+         ba.pa         = tapply(X=baconow *nplantconow,INDEX=ipaconow,FUN=sum,na.rm=TRUE)
+         gpp.pa        = tapply(X=gppconow*nplantconow,INDEX=ipaconow,FUN=sum,na.rm=TRUE)
+         npp.pa        = tapply(X=nppconow*nplantconow,INDEX=ipaconow,FUN=sum,na.rm=TRUE)
+         cba.pa        = tapply(X=cbaconow*nplantconow,INDEX=ipaconow,FUN=sum,na.rm=TRUE)
+         plant.resp.pa = tapply( X     = plant.respconow*nplantconow
+                               , INDEX = ipaconow
+                               , FUN   = sum
+                               , na.rm = TRUE
+                               )#end tapply
          #---------------------------------------------------------------------------------#
 
 
@@ -1860,23 +1879,23 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Add the variables that are already extensive. -----------------------------#
-         hflxlc.pa = tapply( X     = mymont$MMEAN.SENSIBLE.LC.CO
+         hflxlc.pa = tapply( X     = mymont$MMEAN.SENSIBLE.LC.CO * showconow
                            , INDEX = ipaconow
                            , FUN   = sum
                            )#end tapply
-         hflxwc.pa = tapply( X     = mymont$MMEAN.SENSIBLE.WC.CO
+         hflxwc.pa = tapply( X     = mymont$MMEAN.SENSIBLE.WC.CO * showconow
                            , INDEX = ipaconow
                            , FUN   = sum
                            )#end tapply
-         wflxlc.pa = tapply( X     = mymont$MMEAN.VAPOR.LC.CO  * day.sec
+         wflxlc.pa = tapply( X     = mymont$MMEAN.VAPOR.LC.CO  * day.sec * showconow
                            , INDEX = ipaconow
                            , FUN   = sum
                            )#end tapply
-         wflxwc.pa = tapply( X     = mymont$MMEAN.VAPOR.WC.CO  * day.sec
+         wflxwc.pa = tapply( X     = mymont$MMEAN.VAPOR.WC.CO  * day.sec * showconow
                            , INDEX = ipaconow
                            , FUN   = sum
                            )#end tapply
-         transp.pa = tapply( X     = mymont$MMEAN.TRANSP.CO    * day.sec
+         transp.pa = tapply( X     = mymont$MMEAN.TRANSP.CO    * day.sec * showconow
                            , INDEX = ipaconow
                            , FUN   = sum
                            )#end tapply
@@ -2099,62 +2118,74 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
          q.wai.pa           = qapply( X     = q.waiconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.leaf.energy.pa   = qapply( X     = mymont$QMEAN.LEAF.ENERGY.CO
+         q.leaf.energy.pa   = qapply( X     = mymont$QMEAN.LEAF.ENERGY.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.leaf.water.pa    = qapply( X     = mymont$QMEAN.LEAF.WATER.CO
+         q.leaf.water.pa    = qapply( X     = mymont$QMEAN.LEAF.WATER.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.leaf.hcap.pa     = qapply( X     = mymont$QMEAN.LEAF.HCAP.CO
+         q.leaf.hcap.pa     = qapply( X     = mymont$QMEAN.LEAF.HCAP.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.par.leaf.pa      = qapply( X     = mymont$QMEAN.PAR.L.CO
+         q.par.leaf.pa      = qapply( X     = mymont$QMEAN.PAR.L.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.par.leaf.beam.pa = qapply( X     = mymont$QMEAN.PAR.L.BEAM.CO
+         q.par.leaf.beam.pa = qapply( X     = mymont$QMEAN.PAR.L.BEAM.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.par.leaf.diff.pa = qapply( X     = mymont$QMEAN.PAR.L.DIFF.CO
+         q.par.leaf.diff.pa = qapply( X     = mymont$QMEAN.PAR.L.DIFF.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.wood.energy.pa   = qapply( X     = mymont$QMEAN.WOOD.ENERGY.CO
+         q.wood.energy.pa   = qapply( X     = mymont$QMEAN.WOOD.ENERGY.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.wood.water.pa    = qapply( X     = mymont$QMEAN.WOOD.WATER.CO
+         q.wood.water.pa    = qapply( X     = mymont$QMEAN.WOOD.WATER.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
-         q.wood.hcap.pa     = qapply( X     = mymont$QMEAN.WOOD.HCAP.CO
+         q.wood.hcap.pa     = qapply( X     = mymont$QMEAN.WOOD.HCAP.CO * q.showconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
          #----- Make root respiration extensive. ------------------------------------------#
          q.root.resp.pa     = qapply( X     = q.root.respconow * q.nplantconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
                                     , FUN   = sum
+                                    , na.rm = TRUE
                                     )#end tapply
          #---------------------------------------------------------------------------------#
 

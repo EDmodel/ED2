@@ -12,38 +12,39 @@ module photosyn_driv
    !---------------------------------------------------------------------------------------!
    subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ibuff,ntext_soil,leaf_aging_factor  &
                                    ,green_leaf_factor)
-      use ed_state_vars  , only : sitetype           & ! structure
-                                , patchtype          ! ! structure
-      use ed_max_dims    , only : n_pft              ! ! intent(in)
-      use pft_coms       , only : water_conductance  & ! intent(in)
-                                , include_pft        & ! intent(in)
-                                , vm0                & ! intent(in)
-                                , D0                 & ! intent(in)
-                                , cuticular_cond     & ! intent(in)
-                                , leaf_turnover_rate ! ! intent(in)
-      use soil_coms      , only : soil               & ! intent(in)
-                                , slzt               & ! intent(in)
-                                , dslz               ! ! intent(in)
-      use consts_coms    , only : t00                & ! intent(in)
-                                , epi                & ! intent(in)
-                                , wdnsi              & ! intent(in)
-                                , wdns               & ! intent(in)
-                                , umols_2_kgCyr      & ! intent(in)
-                                , yr_day             & ! intent(in)
-                                , lnexp_min          & ! intent(in)
-                                , tiny_num           & ! intent(in)
-                                , umol_2_mol         & ! intent(in)
-                                , mmdry              ! ! intent(in)
-      use ed_misc_coms   , only : dtlsm_o_frqsum     ! ! intent(in)
-      use met_driver_coms, only : met_driv_state     ! ! structure
-      use physiology_coms, only : print_photo_debug  & ! intent(in)
-                                , h2o_plant_lim      ! ! intent(in)
-      use phenology_coms , only : llspan_inf         ! ! intent(in)
-      use farq_leuning   , only : lphysiol_full      ! ! sub-routine
-      use allometry      , only : h2crownbh          ! ! function
-      use therm_lib      , only : qslif              ! ! function
-      use rk4_coms       , only : effarea_transp     & ! intent(in)
-                                , tiny_offset        ! ! intent(in)
+      use ed_state_vars  , only : sitetype                & ! structure
+                                , patchtype               ! ! structure
+      use ed_max_dims    , only : n_pft                   ! ! intent(in)
+      use pft_coms       , only : water_conductance       & ! intent(in)
+                                , include_pft             & ! intent(in)
+                                , vm0                     & ! intent(in)
+                                , D0                      & ! intent(in)
+                                , cuticular_cond          & ! intent(in)
+                                , leaf_turnover_rate      & ! intent(in)
+                                , phenology               ! ! intent(in)
+      use soil_coms      , only : soil                    & ! intent(in)
+                                , slzt                    & ! intent(in)
+                                , dslz                    ! ! intent(in)
+      use consts_coms    , only : t00                     & ! intent(in)
+                                , epi                     & ! intent(in)
+                                , wdnsi                   & ! intent(in)
+                                , wdns                    & ! intent(in)
+                                , umols_2_kgCyr           & ! intent(in)
+                                , yr_day                  & ! intent(in)
+                                , lnexp_min               & ! intent(in)
+                                , tiny_num                & ! intent(in)
+                                , umol_2_mol              & ! intent(in)
+                                , mmdry                   ! ! intent(in)
+      use ed_misc_coms   , only : dtlsm_o_frqsum          ! ! intent(in)
+      use met_driver_coms, only : met_driv_state          ! ! structure
+      use physiology_coms, only : print_photo_debug       & ! intent(in)
+                                , h2o_plant_lim           ! ! intent(in)
+      use phenology_coms , only : llspan_inf              ! ! intent(in)
+      use farq_leuning   , only : lphysiol_full           ! ! sub-routine
+      use allometry      , only : h2crownbh               ! ! function
+      use therm_lib      , only : qslif                   ! ! function
+      use rk4_coms       , only : effarea_transp          & ! intent(in)
+                                , tiny_offset             ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)            , target      :: csite             ! Current site
@@ -274,10 +275,12 @@ module photosyn_driv
                ! matters for light-controlled phenology, not the standard cases.           !
                !---------------------------------------------------------------------------!
                tpft = tuco_pft(ipft)
-               if (tpft == 0) then
+               if (tpft == 0 .or. phenology(ipft) /= 3) then
                   !------------------------------------------------------------------------!
-                  !    This patch doesn't have any cohort of this PFT left, use default    !
-                  ! values.                                                                !
+                  !    For most cases, we use the default leaf life spand and              !
+                  ! carboxylation capacity.  This includes the case in which trait         !
+                  ! plasticity is activated, as the default parameters correspond to the   !
+                  ! top canopy.                                                            !
                   !------------------------------------------------------------------------!
                   vm0_tuco    = Vm0(ipft)
                   if (leaf_turnover_rate(ipft) == 0.) then
@@ -285,6 +288,7 @@ module photosyn_driv
                   else
                      llspan_tuco = 12. / leaf_turnover_rate(ipft)
                   end if
+                  !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
                   !    Use Vm0 and leaf life span of the tallest cohort of this PFT, so we !
@@ -293,6 +297,7 @@ module photosyn_driv
                   !------------------------------------------------------------------------!
                   vm0_tuco    = cpatch%vm_bar(tpft)
                   llspan_tuco = cpatch%llspan(tpft)
+                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
 

@@ -1205,6 +1205,7 @@ subroutine ed_opspec_misc
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
+                                    , trait_plasticity_scheme      & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
                                     , cbr_scheme                   & ! intent(in)
                                     , ddmort_const                 & ! intent(in)
@@ -1696,6 +1697,20 @@ end do
       ifaterr = ifaterr +1
    end select
    !---------------------------------------------------------------------------------------!
+
+   if (trait_plasticity_scheme < -2 .or. trait_plasticity_scheme > 2) then
+      write (reason,fmt='(2a,1x,i4,a)')                                                    &
+                    'Invalid TRAIT_PLASTICITY_SCHEME, it must be between -2 and 2.'        &
+                   ,' Yours is set to',trait_plasticity_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   elseif (trait_plasticity_scheme /= 0 .and. iphen_scheme == 3) then
+      write (reason,fmt='(2a)')                                                            &
+                    'TRAIT_PLASTICITY_SCHEME must be 0 when light-phenology is '           &
+                   ,' activated (IPHEN_SCHEME=3)...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
 
    if (iphysiol < 0 .or. iphysiol > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &

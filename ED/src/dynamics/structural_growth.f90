@@ -13,7 +13,7 @@ module structural_growth
    ! IMPORTANT: Do not change the order of operations below unless you know what you are   !
    !            doing.  Changing the order can affect the C/N budgets.                     !
    !---------------------------------------------------------------------------------------!
-   subroutine dbstruct_dt(cgrid,veget_dyn_on)
+   subroutine dbstruct_dt(cgrid,veget_dyn_on,new_year)
       use ed_state_vars       , only : edtype                      & ! structure
                                      , polygontype                 & ! structure
                                      , sitetype                    & ! structure
@@ -56,6 +56,7 @@ module structural_growth
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
       logical          , intent(in) :: veget_dyn_on
+      logical          , intent(in) :: new_year
       !----- Local variables --------------------------------------------------------------!
       type(polygontype), pointer    :: cpoly
       type(sitetype)   , pointer    :: csite
@@ -93,6 +94,10 @@ module structural_growth
       real                          :: ba_in
       real                          :: bag_in
       real                          :: bam_in
+      real                          :: vm_bar_in
+      real                          :: sla_in
+      real                          :: psi_open_in
+      real                          :: psi_closed_in
       real                          :: cb_act
       real                          :: cb_lightmax
       real                          :: cb_moistmax
@@ -255,6 +260,10 @@ module structural_growth
                                 + bbarka_in + bbarkb_in + bdeada_in    + bdeadb_in
                   bag_in        = sum(cpoly%basal_area_growth(ipft,:,isi))
                   bam_in        = sum(cpoly%basal_area_mort(ipft,:,isi))
+                  vm_bar_in     = cpatch%vm_bar          (ico)
+                  sla_in        = cpatch%sla             (ico)
+                  psi_open_in   = cpatch%psi_open        (ico)
+                  psi_closed_in = cpatch%psi_closed      (ico)
                   !------------------------------------------------------------------------!
 
                   !------------------------------------------------------------------------!
@@ -519,7 +528,7 @@ module structural_growth
                   ! - AGB                                                                  !
                   ! - Rooting depth                                                        !
                   !------------------------------------------------------------------------!
-                  call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi))
+                  call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi),new_year)
                   !------------------------------------------------------------------------!
 
 
@@ -700,6 +709,10 @@ module structural_growth
                      cpatch%wai             (ico) = wai_in
                      cpatch%crown_area      (ico) = cai_in
                      cpatch%krdepth         (ico) = krdepth_in
+                     cpatch%vm_bar          (ico) = vm_bar_in    
+                     cpatch%sla             (ico) = sla_in       
+                     cpatch%psi_open        (ico) = psi_open_in  
+                     cpatch%psi_closed      (ico) = psi_closed_in
                   end if
                   !------------------------------------------------------------------------!
 

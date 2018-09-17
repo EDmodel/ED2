@@ -20,7 +20,7 @@ srcdir     = c("/prj/prjidfca/marcosl/Util/Rsc"       # Possible paths with libr
               ,"/prj/bramsolam/marcos.longo/Util/Rsc" #    R will select the first one that
               ,"/n/home00/mlongo/Util/Rsc"            #    is found, or issue an error
               ,"/Users/mlongo/Util/Rsc"               #    message in case none of them
-              ,"/home/b14275/Util/Rsc"                #    exist.
+              ,"/home/mlongo/Util/Rsc"                #    exist.
               )#end c                                 #
 outfile    = file.path(here,"joborder.txt")           # Job order
 defjob     = FALSE                                    # Generate the default job order?
@@ -223,6 +223,7 @@ default = list( run           = "unnamed"
               , clump.grass   = 0.75
               , igoutput      = 0
               , ivegtdyn      = 1
+              , iplastic      = 2
               , igndvap       = 0
               , iphen         = -1
               , iallom        = 3

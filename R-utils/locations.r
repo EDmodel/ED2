@@ -472,7 +472,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                   ,"Matric potl. on fsw"
                                                   ,"Matric potl. on gsw")
                                       )#end list
-   #----- h2o.plant.limit is the water limitation method. ---------------------------------#
+   #----- dd.mort.control is the method to represent resource limitation in DD mortality. -#
    flagvar[["dd.mort.control"]] = list( descr   = "Dens.-dep. mortality"
                                       , numeric = TRUE
                                       , values  = seq(from=2,to=4,by=1)
@@ -497,6 +497,17 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                   ,"Oncley and Dudhia (1995)"
                                                   ,"Beljaars and Holtslag (1991)"
                                                   ,"CLM (2004)")
+                                      )#end list
+   #----- isfclyrm is the Surface layer model. --------------------------------------------#
+   flagvar[["iplastic"]]        = list( descr   = "Trait plasticity"
+                                      , numeric = TRUE
+                                      , values  = seq(from=-2,to=2,by=1)
+                                      , names   = c("Annual, height-based"
+                                                   ,"Annual, CLAI-based"
+                                                   ,"Off"
+                                                   ,"Monthly, CLAI-based"
+                                                   ,"Monthly, height-based"
+                                                   )#end c
                                       )#end list
    #----- icanturb is the roughness model. ------------------------------------------------#
    flagvar[["icanturb"]]        = list( descr   = "Roughness Model"
@@ -1301,6 +1312,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("kwfact")
          na     = c(      12)
          nz     = c(      15)
+      }else if (lenici == 15 && grepl(pattern="iplastic",x=ici)){
+         nparms = 1
+         param  = c("iplastic")
+         na     = c(        14)
+         nz     = c(        15)
       }else if (lenici == 15 && grepl(pattern="fclump",x=ici)){
          nparms = 1
          param  = c("fclump")

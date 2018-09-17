@@ -2341,6 +2341,9 @@ subroutine init_pft_alloc_params()
                              , C2B                   & ! intent(out)
                              , sla_s0                & ! intent(out)
                              , sla_s1                & ! intent(out)
+                             , kplastic_SLA          & ! intent(out)
+                             , fexp_SLA_max          & ! intent(out)
+                             , LMA_slope             & ! intent(out)
                              , sapwood_ratio         & ! intent(out)
                              , f_bstorage_init       & ! intent(out)
                              , leaf_width            & ! intent(out)
@@ -3747,6 +3750,24 @@ subroutine init_pft_alloc_params()
    nbt_lut = 10000
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for the trait-plasticity model.  These control SLA, for the controls   !
+   ! on Vm0, check init_pft_photo_params.                                                  !
+   !---------------------------------------------------------------------------------------!
+   !     This controls the expansion factor for SLA when using trait plasticity.  The      !
+   ! default depends upon Vcmax25 and is initialised in init_derived_params_after_xml.     !
+   ! This function is inferred from SLA-Nitrogen relationship in Lloyd et al. (2010) and   !
+   ! Nitrogen-Vcmax25 relationship from Kattge et al. (2009).  Because this relationship   !
+   ! is empirical, we also allow it to be initialised through XML.                         !
+   !---------------------------------------------------------------------------------------!
+   kplastic_SLA(:) = undef_real
+   !----- Maximum expansion factor for SLA. -----------------------------------------------!
+   fexp_SLA_max(:) = 2.0
+   !----- Linearised slope for when TRAIT_PLASTICITY_SCHEME is negative. ------------------!
+   LMA_slope   (:) = 0.015  ! linearized slope (Trait_plasticity_scheme < 0)
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine init_pft_alloc_params
 !==========================================================================================!
@@ -3772,12 +3793,15 @@ subroutine init_pft_photo_params()
                              , C2B                       & ! intent(in)
                              , D0                        & ! intent(out)
                              , Vm0                       & ! intent(out)
+                             , Vm0_v0                    & ! intent(out)
+                             , Vm0_v1                    & ! intent(out)
                              , Vm_low_temp               & ! intent(out)
                              , Vm_high_temp              & ! intent(out)
                              , Vm_decay_elow             & ! intent(out)
                              , Vm_decay_ehigh            & ! intent(out)
                              , Vm_hor                    & ! intent(out)
                              , Vm_q10                    & ! intent(out)
+                             , kplastic_vm0              & ! intent(out)
                              , Jm0                       & ! intent(out)
                              , Jm_low_temp               & ! intent(out)
                              , Jm_high_temp              & ! intent(out)
@@ -3982,29 +4006,33 @@ subroutine init_pft_photo_params()
             !------------------------------------------------------------------------------!
             select case (ipft)
             case (1)     ! C4 grass. Use CLM defaults
-               Vm0(ipft) = 23.348416
+               Vm0_v0(ipft) = 23.348416
+               Vm0_v1(ipft) = 0.0
             case (16)    ! Subtropical C3 grass.  Use CLM defaults
-               Vm0(ipft) = 35.384615
+               Vm0_v0(ipft) = 35.384615
+               Vm0_v1(ipft) = 0.0
             case default ! Tropical trees.  Divide by Q10 to bring it to 15C.
-               Vm0(ipft) = 9.22326 / vm_q10(ipft) * SLA(ipft) ** 0.50175
+               Vm0_v0(ipft) = 9.22326 / vm_q10(ipft)
+               Vm0_v1(ipft) = 0.50175
             end select
             !------------------------------------------------------------------------------!
          case default
             !------ Original parameters. --------------------------------------------------!
             select case (ipft)
             case (1)     ! C4 grass. 
-               Vm0(ipft) = 12.50
+               Vm0_v0(ipft) = 12.50
             case (2,12)  ! Early-successional tropical tree
-               Vm0(ipft) = 18.75
+               Vm0_v0(ipft) = 18.75
             case (3,13)  ! Mid-successional tropical tree
-               Vm0(ipft) = 12.50
+               Vm0_v0(ipft) = 12.50
             case (4,14)  ! Late-successional tropical tree
-               Vm0(ipft) = 6.25
+               Vm0_v0(ipft) = 6.25
             case (16)
-               Vm0(ipft) = 18.75
+               Vm0_v0(ipft) = 18.75
             case default !  Just in case. 
-               Vm0(ipft) = 15.625
+               Vm0_v0(ipft) = 15.625
             end select
+            Vm0_v1(ipft) = 0.0
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -4012,24 +4040,25 @@ subroutine init_pft_photo_params()
          !------ Temperate PFTs. ----------------------------------------------------------!
          select case (ipft)
          case (5)     ! C3 grass. 
-            Vm0(ipft) = 18.300000
+            Vm0_v0(ipft) = 18.300000
          case (6,7)   ! Pines (N/S). 
-            Vm0(ipft) = 11.350000
+            Vm0_v0(ipft) = 11.350000
          case (8)     ! Late conifers. 
-            Vm0(ipft) = 4.540000
+            Vm0_v0(ipft) = 4.540000
          case (9)     ! Early hardwood. 
-            Vm0(ipft) = 20.387075
+            Vm0_v0(ipft) = 20.387075
          case (10)    ! Mid hardwood. 
-            Vm0(ipft) = 17.454687
+            Vm0_v0(ipft) = 17.454687
          case (11)    ! Late hardwood.
-            Vm0(ipft) = 6.981875
+            Vm0_v0(ipft) = 6.981875
          case (15)    ! Araucaria
-            Vm0(ipft) = 10.
+            Vm0_v0(ipft) = 10.
          case (17)    ! Liana
-            Vm0(ipft) = 9.097
+            Vm0_v0(ipft) = 9.097
          case default !  Just in case. 
-            Vm0(ipft) = 15.625
+            Vm0_v0(ipft) = 15.625
          end select
+         Vm0_v1(ipft) = 0.0
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -4037,10 +4066,14 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
 
 
+
    !---------------------------------------------------------------------------------------!
-   !     Correct Vm0 based on input settings or if this is a big-leaf simulation.          !
+   !     Correct Vm0 based on SLA dependence, input settings, and the big leaf correction  !
+   ! factor.  This will work even for plants whose Vm0 is not an explicit function of SLA  !
+   ! (i.e. when vm0_v1 is 0), as long as SLA itself is not 0 (and it shouldn't be).        !
    !---------------------------------------------------------------------------------------!
-   Vm0(:) = Vm0(:) * ssfact * merge(vmfact_c4,vmfact_c3,photosyn_pathway(:) == 4)
+   Vm0(:) = vm0_v0(:) * SLA(:) ** vm0_v1(:)                                                &
+          * ssfact * merge(vmfact_c4,vmfact_c3,photosyn_pathway(:) == 4)
    !---------------------------------------------------------------------------------------!
 
 
@@ -4264,6 +4297,17 @@ subroutine init_pft_photo_params()
    !  m2/s/kg_C_root.                                                                      !
    !---------------------------------------------------------------------------------------!
    water_conductance(:) = merge(kw_grass,kw_tree,is_grass(:)) / yr_sec
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameter for the trait-plasticity model for Vm0 (for the controls on SLA, check  !
+   ! init_pft_alloc_params).  This controls the extinction factor for Vm0.  The default    !
+   ! depends upon Vcmax25 (Lloyd et al. 2010, Biogeosciences) and is initialised in        !
+   ! init_derived_params_after_xml.  However, this relationship is empirical, so we also   !
+   ! allow it to be initialised through XML.                                               !
+   !---------------------------------------------------------------------------------------!
+   kplastic_vm0(:) = undef_real
    !---------------------------------------------------------------------------------------!
 
    return
@@ -5028,7 +5072,7 @@ subroutine init_pft_leaf_params()
             phenology(ipft) = 4
          case (3)
             !------------------------------------------------------------------------------!
-            !     Light phenology scheme.                                                  !
+            !     Environmental Light phenology scheme.                                    !
             !                                                                              !
             ! Kim, Y., R. G. Knox, M. Longo, D. Medvigy, L. R. Hutyra, E. H. Pyle,         !
             !    S. C. Wofsy, R. L. Bras, and P. R. Moorcroft. Seasonal carbon dynamics    !
@@ -6554,9 +6598,12 @@ subroutine init_derived_params_after_xml()
                                    , undef_real                ! ! intent(in)
    use consts_coms          , only : onesixth                  & ! intent(in)
                                    , twothirds                 & ! intent(in)
+                                   , t008                      & ! intent(in)
                                    , cliq                      & ! intent(in)
                                    , yr_sec                    & ! intent(in)
                                    , almost_zero               & ! intent(in)
+                                   , lnexp_min8                & ! intent(in)
+                                   , lnexp_max8                & ! intent(in)
                                    , tiny_num8                 ! ! intent(in)
    use physiology_coms      , only : iphysiol                  ! ! intent(in)
    use pft_coms             , only : include_pft               & ! intent(in)
@@ -6668,6 +6715,8 @@ subroutine init_derived_params_after_xml()
                                    , bdead_crit                & ! intent(inout)
                                    , bevery_crit               & ! intent(inout)
                                    , seed_rain                 & ! intent(inout)
+                                   , kplastic_SLA              & ! intent(inout)
+                                   , kplastic_vm0              & ! intent(inout)
                                    , Jm_low_temp               & ! intent(inout)
                                    , Jm_high_temp              & ! intent(inout)
                                    , Jm_decay_elow             & ! intent(inout)
@@ -6708,7 +6757,8 @@ subroutine init_derived_params_after_xml()
                                    , bdead_lut                 & ! intent(out)
                                    , bevery_lut                & ! intent(out)
                                    , le_mask_lut               & ! intent(out)
-                                   , ge_mask_lut               ! ! intent(out)
+                                   , ge_mask_lut               & ! intent(out)
+                                   , Vcmax25                   ! ! intent(out)
    use fusion_fission_coms  , only : ifusion                   & ! intent(in)
                                    , ff_nhgt                   & ! intent(in)
                                    , hgt_class                 ! ! intent(out)
@@ -6750,6 +6800,8 @@ subroutine init_derived_params_after_xml()
    use decomp_coms          , only : f0_msc                    & ! intent(in)
                                    , f0_psc                    & ! intent(in)
                                    , f0_ssc                    ! ! intent(out)
+   use farq_leuning         , only : arrhenius                 & ! function
+                                   , collatz                   ! ! function
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=2)                  :: char_pathway
@@ -6797,6 +6849,19 @@ subroutine init_derived_params_after_xml()
    real                              :: lai_min
    real                              :: nplant_res_min
    real                              :: max_hgt_max
+   real(kind=8)                      :: temp25C8
+   real(kind=8)                      :: Vcmax258
+   real(kind=8)                      :: refval8
+   real(kind=8)                      :: hor8
+   real(kind=8)                      :: q108
+   real(kind=8)                      :: decay_elow8
+   real(kind=8)                      :: decay_ehigh8
+   real(kind=8)                      :: low_temp8
+   real(kind=8)                      :: high_temp8
+   real(kind=8)                      :: lnexplow8
+   real(kind=8)                      :: tlow_fun8
+   real(kind=8)                      :: lnexphigh8
+   real(kind=8)                      :: thigh_fun8
    !----- Local constants. ----------------------------------------------------------------!
    character(len=str_len), parameter :: zero_table_fn = 'pft_sizes.txt'
    character(len=str_len), parameter :: photo_file    = 'photo_param.txt'
@@ -6810,6 +6875,11 @@ subroutine init_derived_params_after_xml()
    !     Decide whether to write the table with the sizes.                                 !
    !---------------------------------------------------------------------------------------!
    print_zero_table = btest(idetailed,5)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- 25 degC, to find Vcmax25. -------------------------------------------------------!
+   temp25C8 = 2.5d1 + t008
    !---------------------------------------------------------------------------------------!
 
 
@@ -7386,6 +7456,91 @@ subroutine init_derived_params_after_xml()
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Find carboxylation rate at 25 degC.                                               !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      !------ Convert values to double precision to leverage the existing functions. ------!
+      refval8      = dble(Vm0           (ipft))
+      hor8         = dble(vm_hor        (ipft))
+      q108         = dble(vm_q10        (ipft))
+      decay_elow8  = dble(vm_decay_elow (ipft))
+      decay_ehigh8 = dble(vm_decay_ehigh(ipft))
+      low_temp8    = dble(vm_low_temp   (ipft)) + t008
+      high_temp8   = dble(vm_high_temp  (ipft)) + t008
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the physiology-scheme dependent, uncorrected Vcmax at 25degC.  ----------!
+      select case (iphysiol)
+      case (0,1)
+         Vcmax258 = arrhenius(temp25C8,refval8,hor8)
+      case (2,3)
+         Vcmax258 = arrhenius(temp25C8,refval8,hor8)
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the temperature correction factors to shut down Vm at extreme temper-      !
+      ! atures.  This should have minimal effect at 25degC, though.  It is unlikely, but   !
+      ! to avoid floating point exceptions, we also check whether the temperature will     !
+      ! make the exponential too large or too small.                                       !
+      !------------------------------------------------------------------------------------!
+      !----- Low temperature. -------------------------------------------------------------!
+      lnexplow8  = decay_elow8  * (low_temp8 - temp25C8)
+      lnexplow8  = max(lnexp_min8,min(lnexp_max8,lnexplow8))
+      tlow_fun8  = 1.d0 +  exp(lnexplow8)
+      !----- High temperature. ------------------------------------------------------------!
+      lnexphigh8 = decay_ehigh8 * (temp25C8 - high_temp8)
+      lnexphigh8 = max(lnexp_min8,min(lnexp_max8,lnexphigh8))
+      thigh_fun8 = 1.d0 + exp(lnexphigh8)
+      !----- Correct Vcmax. ---------------------------------------------------------------!
+      Vcmax258   = Vcmax258 / (tlow_fun8 * thigh_fun8)
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Convert to single precision. ------------------------------------------------!
+      Vcmax25(ipft) = sngloff(Vcmax258,tiny_num8)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    In case kplastic_vm0 was not initialised through XML, use the function from     !
+      ! Lloyd et al. (2010).                                                               !
+      !------------------------------------------------------------------------------------!
+      if (kplastic_vm0(ipft) == undef_real) then
+         !----- Use the "low" variables as placeholders for double precision. -------------!
+         lnexplow8 = 9.63d-3 * Vcmax258 - 2.43d0
+         lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
+         tlow_fun8 = exp(lnexplow8)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Set kplastic for Vm0. -----------------------------------------------------!
+         kplastic_vm0(ipft) = sngloff(tlow_fun8,tiny_num8)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    In case kplastic_SLA was not initialised through XML, use the function from     !
+      ! Lloyd et al. (2010) and Kattge et al. (2009).                                      !
+      !------------------------------------------------------------------------------------!
+      if (kplastic_SLA(ipft) == undef_real) then
+         kplastic_SLA(ipft) = 2.61e-3 * Vcmax25(ipft)
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !----- Build the look-up table for btotal. ---------------------------------------------!
    if (nbt_lut < 2) then
       write(unit=*,fmt='(a,1x,i5)') ' NBT_LUT = ',nbt_lut
@@ -7442,24 +7597,26 @@ subroutine init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
          !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(35(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(39(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
-                                        ,'         VM0','         JM0','        TPM0'      &
-                                        ,'         RD0','     RD0:VM0','     JM0:VM0'      &
-                                        ,'    TPM0:VM0','    VM_TCOLD','     VM_THOT'      &
-                                        ,'  VM_EXP_LOW',' VM_EXP_HIGH','      VM_HOR'      &
-                                        ,'    JM_TCOLD','     JM_THOT','  JM_EXP_LOW'      &
-                                        ,' JM_EXP_HIGH','      VM_HOR','    RD_TCOLD'      &
-                                        ,'     RD_THOT','  RD_EXP_LOW',' RD_EXP_HIGH'      &
-                                        ,'      RD_HOR','    ST_SLOPE','         GS0'      &
-                                        ,'Q_EFFICIENCY',' CV_ELECTRON',' QYIELD_PSII'      &
-                                        ,'      KWROOT','  LEAF_WIDTH'
+                                        ,'     VCMAX25','         VM0','         JM0'      &
+                                        ,'        TPM0','         RD0','     RD0:VM0'      &
+                                        ,'     JM0:VM0','    TPM0:VM0','    VM_TCOLD'      &
+                                        ,'     VM_THOT','  VM_EXP_LOW',' VM_EXP_HIGH'      &
+                                        ,'      VM_HOR','    JM_TCOLD','     JM_THOT'      &
+                                        ,'  JM_EXP_LOW',' JM_EXP_HIGH','      VM_HOR'      &
+                                        ,'    RD_TCOLD','     RD_THOT','  RD_EXP_LOW'      &
+                                        ,' RD_EXP_HIGH','      RD_HOR','    ST_SLOPE'      &
+                                        ,'         GS0','Q_EFFICIENCY',' CV_ELECTRON'      &
+                                        ,' QYIELD_PSII','      KWROOT','  LEAF_WIDTH'      &
+                                        ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'
+                                        
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,31(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,35(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
-                          ,D0(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft)               &
+                          ,D0(ipft),Vcmax25(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft) &
                           ,dark_respiration_factor(ipft),electron_transport_factor(ipft)   &
                           ,triose_phosphate_factor(ipft),Vm_low_temp(ipft)                 &
                           ,Vm_high_temp(ipft),Vm_decay_elow(ipft),Vm_decay_ehigh(ipft)     &
@@ -7469,31 +7626,34 @@ subroutine init_derived_params_after_xml()
                           ,Rd_decay_ehigh(ipft),Rd_hor(ipft),stomatal_slope(ipft)          &
                           ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
                           ,curvpar_electron(ipft),qyield_psII(ipft)                        &
-                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
+                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)                 &
+                          ,root_respiration_factor(ipft),kplastic_vm0(ipft)                &
+                          ,kplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
       case (2,3)
          !---------------------------------------------------------------------------------!
          !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(36(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(39(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
-                                        ,'         VM0','         JM0','        TPM0'      &
-                                        ,'         RD0','     RD0:VM0','     JM0:VM0'      &
-                                        ,'    TPM0:VM0','    VM_TCOLD','     VM_THOT'      &
-                                        ,'  VM_EXP_LOW',' VM_EXP_HIGH','      VM_Q10'      &
-                                        ,'    JM_TCOLD','     JM_THOT','  JM_EXP_LOW'      &
-                                        ,' JM_EXP_HIGH','      JM_Q10','    RD_TCOLD'      &
-                                        ,'     RD_THOT','  RD_EXP_LOW',' RD_EXP_HIGH'      &
-                                        ,'      RD_Q10','    ST_SLOPE','         GS0'      &
-                                        ,'Q_EFFICIENCY',' CV_ELECTRON',' QYIELD_PSII'      &
-                                        ,'      KWROOT','  LEAF_WIDTH','       RRFF0'
+                                        ,'     VCMAX25','         VM0','         JM0'      &
+                                        ,'        TPM0','         RD0','     RD0:VM0'      &
+                                        ,'     JM0:VM0','    TPM0:VM0','    VM_TCOLD'      &
+                                        ,'     VM_THOT','  VM_EXP_LOW',' VM_EXP_HIGH'      &
+                                        ,'      VM_Q10','    JM_TCOLD','     JM_THOT'      &
+                                        ,'  JM_EXP_LOW',' JM_EXP_HIGH','      JM_Q10'      &
+                                        ,'    RD_TCOLD','     RD_THOT','  RD_EXP_LOW'      &
+                                        ,' RD_EXP_HIGH','      RD_Q10','    ST_SLOPE'      &
+                                        ,'         GS0','Q_EFFICIENCY',' CV_ELECTRON'      &
+                                        ,' QYIELD_PSII','      KWROOT','  LEAF_WIDTH'      &
+                                        ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,32(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,35(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
-                          ,D0(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft)               &
+                          ,D0(ipft),Vcmax25(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft) &
                           ,dark_respiration_factor(ipft),electron_transport_factor(ipft)   &
                           ,triose_phosphate_factor(ipft),Vm_low_temp(ipft)                 &
                           ,Vm_high_temp(ipft),Vm_decay_elow(ipft),Vm_decay_ehigh(ipft)     &
@@ -7504,7 +7664,8 @@ subroutine init_derived_params_after_xml()
                           ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
                           ,curvpar_electron(ipft),qyield_psII(ipft)                        &
                           ,water_conductance(ipft)*yr_sec,leaf_width(ipft)                 &
-                          ,root_respiration_factor(ipft)
+                          ,root_respiration_factor(ipft),kplastic_vm0(ipft)                &
+                          ,kplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
       end select

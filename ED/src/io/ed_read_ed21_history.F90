@@ -9,73 +9,75 @@ subroutine read_ed21_history_file
 #if USE_HDF5
    use hdf5
 #endif
-   use ed_max_dims         , only : n_pft                   & ! intent(in)
-                                  , huge_polygon            & ! intent(in)
-                                  , str_len                 ! ! intent(in)
-   use pft_coms            , only : q                       & ! intent(in)
-                                  , qsw                     & ! intent(in)
-                                  , qbark                   & ! intent(in)
-                                  , SLA                     & ! intent(in)
-                                  , min_dbh                 & ! intent(in)
-                                  , min_bdead               & ! intent(in)
-                                  , is_grass                & ! intent(in)
-                                  , include_pft             & ! intent(in)
-                                  , include_pft_ag          & ! intent(in)
-                                  , pft_1st_check           & ! intent(in)
-                                  , agf_bs                  & ! intent(in)
-                                  , f_bstorage_init         & ! intent(in)
-                                  , include_these_pft       ! ! intent(in)
-   use ed_misc_coms        , only : sfilin                  & ! intent(in)
-                                  , imonthh                 & ! intent(in)
-                                  , iyearh                  & ! intent(in)
-                                  , idateh                  & ! intent(in)
-                                  , igrass                  & ! intent(in)
-                                  , iallom                  & ! intent(in)
-                                  , itimeh                  ! ! intent(in)
-   use ed_state_vars       , only : polygontype             & ! variable type
-                                  , sitetype                & ! variable type
-                                  , patchtype               & ! variable type
-                                  , edtype                  & ! variable type
-                                  , edgrid_g                & ! variable type
-                                  , allocate_polygontype    & ! subroutine
-                                  , allocate_sitetype       & ! subroutine
-                                  , allocate_patchtype      ! ! subroutine
-   use grid_coms           , only : ngrids                  & ! intent(in)
-                                  , nzg                     ! ! intent(in)
-   use consts_coms         , only : pio4                    & ! intent(in)
-                                  , almost_zero             & ! intent(in)
-                                  , tiny_num                ! ! intent(in)
-   use hdf5_coms           , only : file_id                 & ! intent(in)
-                                  , dset_id                 & ! intent(in)
-                                  , dspace_id               & ! intent(in)
-                                  , globdims                & ! intent(in)
-                                  , chnkdims                & ! intent(in)
-                                  , chnkoffs                & ! intent(in)
-                                  , memdims                 & ! intent(in)
-                                  , memoffs                 & ! intent(in)
-                                  , memsize                 ! ! intent(in)
-   use allometry           , only : area_indices            & ! function
-                                  , ed_balive               & ! function
-                                  , ed_biomass              & ! function
-                                  , size2bt                 & ! function
-                                  , size2xb                 & ! function
-                                  , bd2dbh                  & ! function
-                                  , size2bl                 & ! function
-                                  , dbh2h                   & ! function
-                                  , size2bd                 ! ! function
-   use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
-   use disturb_coms        , only : ianth_disturb           ! ! intent(in)
-   use decomp_coms         , only : agf_fsc                 & ! intent(in)
-                                  , agf_stsc                & ! intent(in)
-                                  , c2n_structural          ! ! intent(in)
-   use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
-   use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
-                                  , hdf_getslab_r           ! ! sub-routine
-   use ed_init             , only : soil_default_fill       ! ! sub-routine
-   use ed_type_init        , only : init_ed_cohort_vars     & ! subroutine
-                                  , init_ed_patch_vars      & ! subroutine
-                                  , init_ed_site_vars       & ! subroutine
-                                  , init_ed_poly_vars       ! ! subroutine
+   use ed_max_dims         , only : n_pft                       & ! intent(in)
+                                  , huge_polygon                & ! intent(in)
+                                  , str_len                     ! ! intent(in)
+   use pft_coms            , only : q                           & ! intent(in)
+                                  , qsw                         & ! intent(in)
+                                  , qbark                       & ! intent(in)
+                                  , SLA                         & ! intent(in)
+                                  , min_dbh                     & ! intent(in)
+                                  , min_bdead                   & ! intent(in)
+                                  , is_grass                    & ! intent(in)
+                                  , include_pft                 & ! intent(in)
+                                  , include_pft_ag              & ! intent(in)
+                                  , pft_1st_check               & ! intent(in)
+                                  , agf_bs                      & ! intent(in)
+                                  , f_bstorage_init             & ! intent(in)
+                                  , include_these_pft           ! ! intent(in)
+   use ed_misc_coms        , only : sfilin                      & ! intent(in)
+                                  , imonthh                     & ! intent(in)
+                                  , iyearh                      & ! intent(in)
+                                  , idateh                      & ! intent(in)
+                                  , igrass                      & ! intent(in)
+                                  , iallom                      & ! intent(in)
+                                  , itimeh                      ! ! intent(in)
+   use ed_state_vars       , only : polygontype                 & ! variable type
+                                  , sitetype                    & ! variable type
+                                  , patchtype                   & ! variable type
+                                  , edtype                      & ! variable type
+                                  , edgrid_g                    & ! variable type
+                                  , allocate_polygontype        & ! subroutine
+                                  , allocate_sitetype           & ! subroutine
+                                  , allocate_patchtype          ! ! subroutine
+   use grid_coms           , only : ngrids                      & ! intent(in)
+                                  , nzg                         ! ! intent(in)
+   use consts_coms         , only : pio4                        & ! intent(in)
+                                  , almost_zero                 & ! intent(in)
+                                  , tiny_num                    ! ! intent(in)
+   use hdf5_coms           , only : file_id                     & ! intent(in)
+                                  , dset_id                     & ! intent(in)
+                                  , dspace_id                   & ! intent(in)
+                                  , globdims                    & ! intent(in)
+                                  , chnkdims                    & ! intent(in)
+                                  , chnkoffs                    & ! intent(in)
+                                  , memdims                     & ! intent(in)
+                                  , memoffs                     & ! intent(in)
+                                  , memsize                     ! ! intent(in)
+   use allometry           , only : area_indices                & ! function
+                                  , ed_balive                   & ! function
+                                  , ed_biomass                  & ! function
+                                  , size2bt                     & ! function
+                                  , size2xb                     & ! function
+                                  , bd2dbh                      & ! function
+                                  , size2bl                     & ! function
+                                  , dbh2h                       & ! function
+                                  , size2bd                     ! ! function
+   use fuse_fiss_utils     , only : terminate_cohorts           ! ! subroutine
+   use disturb_coms        , only : ianth_disturb               ! ! intent(in)
+   use decomp_coms         , only : agf_fsc                     & ! intent(in)
+                                  , agf_stsc                    & ! intent(in)
+                                  , c2n_structural              ! ! intent(in)
+   use physiology_coms     , only : iddmort_scheme              & ! intent(in)
+                                  , trait_plasticity_scheme     ! ! intent(in)
+   use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
+   use ed_init_history     , only : hdf_getslab_i               & ! sub-routine
+                                  , hdf_getslab_r               ! ! sub-routine
+   use ed_init             , only : soil_default_fill           ! ! sub-routine
+   use ed_type_init        , only : init_ed_cohort_vars         & ! subroutine
+                                  , init_ed_patch_vars          & ! subroutine
+                                  , init_ed_site_vars           & ! subroutine
+                                  , init_ed_poly_vars           ! ! subroutine
    implicit none
 #if USE_HDF5
 
@@ -898,6 +900,20 @@ subroutine read_ed21_history_file
                                                         , cpatch%pft      (ico) )
 
 
+
+                           !---------------------------------------------------------------!
+                           !     In case we are representing trait plasticity, update      !
+                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
+                           !---------------------------------------------------------------!
+                           select case (trait_plasticity_scheme)
+                           case (0)
+                              continue
+                           case default
+                              call update_cohort_plastic_trait(cpatch,ico)
+                           end select
+                           !---------------------------------------------------------------!
+
+
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch, ico)
 
@@ -1011,78 +1027,80 @@ subroutine read_ed21_history_unstruct
 #if USE_HDF5
    use hdf5
 #endif
-   use ed_max_dims         , only : n_pft                   & ! intent(in)
-                                  , huge_polygon            & ! intent(in)
-                                  , str_len                 & ! intent(in)
-                                  , n_dist_types            & ! intent(in)
-                                  , maxfiles                & ! intent(in)
-                                  , maxlist                 & ! intent(in)
-                                  , undef_real              & ! intent(in)
-                                  , undef_integer           ! ! intent(in)
-   use pft_coms            , only : q                       & ! intent(in)
-                                  , qsw                     & ! intent(in)
-                                  , qbark                   & ! intent(in)
-                                  , SLA                     & ! intent(in)
-                                  , min_dbh                 & ! intent(in)
-                                  , min_bdead               & ! intent(in)
-                                  , is_grass                & ! intent(in)
-                                  , include_pft             & ! intent(in)
-                                  , include_pft_ag          & ! intent(in)
-                                  , pft_1st_check           & ! intent(in)
-                                  , include_these_pft       & ! intent(in)
-                                  , agf_bs                  & ! intent(in)
-                                  , f_bstorage_init         ! ! intent(in)
-   use ed_misc_coms        , only : sfilin                  & ! intent(in)
-                                  , ied_init_mode           & ! intent(in)
-                                  , igrass                  & ! intent(in)
-                                  , iallom                  & ! intent(in)
-                                  , max_poi99_dist          ! ! intent(in)
-   use ed_state_vars       , only : polygontype             & ! variable type
-                                  , sitetype                & ! variable type
-                                  , patchtype               & ! variable type
-                                  , edtype                  & ! variable type
-                                  , edgrid_g                & ! subroutine
-                                  , allocate_sitetype       & ! subroutine
-                                  , allocate_patchtype      ! ! subroutine
-   use grid_coms           , only : ngrids                  & ! intent(in)
-                                  , nzg                     ! ! intent(in)
-   use consts_coms         , only : pio4                    & ! intent(in)
-                                  , almost_zero             & ! intent(in)
-                                  , tiny_num                & ! intent(in)
-                                  , huge_num                ! ! intent(in)
-   use hdf5_coms           , only : file_id                 & ! intent(in)
-                                  , dset_id                 & ! intent(in)
-                                  , dspace_id               & ! intent(in)
-                                  , globdims                & ! intent(in)
-                                  , chnkdims                & ! intent(in)
-                                  , chnkoffs                & ! intent(in)
-                                  , memdims                 & ! intent(in)
-                                  , memoffs                 & ! intent(in)
-                                  , memsize                 ! ! intent(in)
-   use allometry           , only : area_indices            & ! function
-                                  , ed_balive               & ! function
-                                  , ed_biomass              & ! function
-                                  , size2bt                 & ! function
-                                  , size2xb                 & ! function
-                                  , bd2dbh                  & ! function
-                                  , dbh2h                   & ! function
-                                  , size2bd                 & ! function
-                                  , size2bl                 ! ! function
-   use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
-   use disturb_coms        , only : ianth_disturb           & ! intent(in)
-                                  , lu_rescale_file         & ! intent(in)
-                                  , min_patch_area          ! ! intent(in)
-   use soil_coms           , only : soil                    ! ! intent(in)
-   use decomp_coms         , only : agf_fsc                 & ! intent(in)
-                                  , agf_stsc                & ! intent(in)
-                                  , c2n_structural          ! ! intent(in)
-   use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
-   use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
-                                  , hdf_getslab_r           ! ! sub-routine
-   use ed_type_init        , only : init_ed_cohort_vars     & ! subroutine
-                                  , init_ed_patch_vars      & ! subroutine
-                                  , init_ed_site_vars       & ! subroutine
-                                  , init_ed_poly_vars       ! ! subroutine
+   use ed_max_dims         , only : n_pft                       & ! intent(in)
+                                  , huge_polygon                & ! intent(in)
+                                  , str_len                     & ! intent(in)
+                                  , n_dist_types                & ! intent(in)
+                                  , maxfiles                    & ! intent(in)
+                                  , maxlist                     & ! intent(in)
+                                  , undef_real                  & ! intent(in)
+                                  , undef_integer               ! ! intent(in)
+   use pft_coms            , only : q                           & ! intent(in)
+                                  , qsw                         & ! intent(in)
+                                  , qbark                       & ! intent(in)
+                                  , SLA                         & ! intent(in)
+                                  , min_dbh                     & ! intent(in)
+                                  , min_bdead                   & ! intent(in)
+                                  , is_grass                    & ! intent(in)
+                                  , include_pft                 & ! intent(in)
+                                  , include_pft_ag              & ! intent(in)
+                                  , pft_1st_check               & ! intent(in)
+                                  , include_these_pft           & ! intent(in)
+                                  , agf_bs                      & ! intent(in)
+                                  , f_bstorage_init             ! ! intent(in)
+   use ed_misc_coms        , only : sfilin                      & ! intent(in)
+                                  , ied_init_mode               & ! intent(in)
+                                  , igrass                      & ! intent(in)
+                                  , iallom                      & ! intent(in)
+                                  , max_poi99_dist              ! ! intent(in)
+   use ed_state_vars       , only : polygontype                 & ! variable type
+                                  , sitetype                    & ! variable type
+                                  , patchtype                   & ! variable type
+                                  , edtype                      & ! variable type
+                                  , edgrid_g                    & ! subroutine
+                                  , allocate_sitetype           & ! subroutine
+                                  , allocate_patchtype          ! ! subroutine
+   use grid_coms           , only : ngrids                      & ! intent(in)
+                                  , nzg                         ! ! intent(in)
+   use consts_coms         , only : pio4                        & ! intent(in)
+                                  , almost_zero                 & ! intent(in)
+                                  , tiny_num                    & ! intent(in)
+                                  , huge_num                    ! ! intent(in)
+   use hdf5_coms           , only : file_id                     & ! intent(in)
+                                  , dset_id                     & ! intent(in)
+                                  , dspace_id                   & ! intent(in)
+                                  , globdims                    & ! intent(in)
+                                  , chnkdims                    & ! intent(in)
+                                  , chnkoffs                    & ! intent(in)
+                                  , memdims                     & ! intent(in)
+                                  , memoffs                     & ! intent(in)
+                                  , memsize                     ! ! intent(in)
+   use allometry           , only : area_indices                & ! function
+                                  , ed_balive                   & ! function
+                                  , ed_biomass                  & ! function
+                                  , size2bt                     & ! function
+                                  , size2xb                     & ! function
+                                  , bd2dbh                      & ! function
+                                  , dbh2h                       & ! function
+                                  , size2bd                     & ! function
+                                  , size2bl                     ! ! function
+   use fuse_fiss_utils     , only : terminate_cohorts           ! ! subroutine
+   use disturb_coms        , only : ianth_disturb               & ! intent(in)
+                                  , lu_rescale_file             & ! intent(in)
+                                  , min_patch_area              ! ! intent(in)
+   use soil_coms           , only : soil                        ! ! intent(in)
+   use decomp_coms         , only : agf_fsc                     & ! intent(in)
+                                  , agf_stsc                    & ! intent(in)
+                                  , c2n_structural              ! ! intent(in)
+   use physiology_coms     , only : iddmort_scheme              & ! intent(in)
+                                  , trait_plasticity_scheme     ! ! intent(in)
+   use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
+   use ed_init_history     , only : hdf_getslab_i               & ! sub-routine
+                                  , hdf_getslab_r               ! ! sub-routine
+   use ed_type_init        , only : init_ed_cohort_vars         & ! subroutine
+                                  , init_ed_patch_vars          & ! subroutine
+                                  , init_ed_site_vars           & ! subroutine
+                                  , init_ed_poly_vars           ! ! subroutine
 
    implicit none
 
@@ -2254,6 +2272,20 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
 
 
+
+                           !---------------------------------------------------------------!
+                           !     In case we are representing trait plasticity, update      !
+                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
+                           !---------------------------------------------------------------!
+                           select case (trait_plasticity_scheme)
+                           case (0)
+                              continue
+                           case default
+                              call update_cohort_plastic_trait(cpatch,ico)
+                           end select
+                           !---------------------------------------------------------------!
+
+
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch, ico)
 
@@ -2376,78 +2408,80 @@ subroutine read_ed21_polyclone
 #if USE_HDF5
    use hdf5
 #endif
-   use ed_max_dims         , only : n_pft                   & ! intent(in)
-                                  , huge_polygon            & ! intent(in)
-                                  , str_len                 & ! intent(in)
-                                  , n_dist_types            & ! intent(in)
-                                  , maxfiles                & ! intent(in)
-                                  , maxlist                 ! ! intent(in)
-   use pft_coms            , only : q                       & ! intent(in)
-                                  , qsw                     & ! intent(in)
-                                  , qbark                   & ! intent(in)
-                                  , SLA                     & ! intent(in)
-                                  , min_dbh                 & ! intent(in)
-                                  , min_bdead               & ! intent(in)
-                                  , is_grass                & ! intent(in)
-                                  , include_pft             & ! intent(in)
-                                  , include_pft_ag          & ! intent(in)
-                                  , pft_1st_check           & ! intent(in)
-                                  , include_these_pft       & ! intent(in)
-                                  , agf_bs                  & ! intent(in)
-                                  , f_bstorage_init         & ! intent(in)
-                                  , agf_bs                  ! ! intent(in)
-   use ed_misc_coms        , only : sfilin                  & ! intent(in)
-                                  , iallom                  & ! intent(in)
-                                  , igrass                  ! ! intent(in)
-   use ed_state_vars       , only : polygontype             & ! variable type
-                                  , sitetype                & ! variable type
-                                  , patchtype               & ! variable type
-                                  , edtype                  & ! variable type
-                                  , edgrid_g                & ! subroutine
-                                  , allocate_polygontype    & ! subroutine
-                                  , allocate_sitetype       & ! subroutine
-                                  , allocate_patchtype      ! ! subroutine
-   use grid_coms           , only : ngrids                  & ! intent(in)
-                                  , nzg                     ! ! intent(in)
-   use consts_coms         , only : pio4                    & ! intent(in)
-                                  , almost_zero             & ! intent(in)
-                                  , tiny_num                ! ! intent(in)
-   use hdf5_coms           , only : file_id                 & ! intent(in)
-                                  , dset_id                 & ! intent(in)
-                                  , dspace_id               & ! intent(in)
-                                  , globdims                & ! intent(in)
-                                  , chnkdims                & ! intent(in)
-                                  , chnkoffs                & ! intent(in)
-                                  , memdims                 & ! intent(in)
-                                  , memoffs                 & ! intent(in)
-                                  , memsize                 ! ! intent(in)
-   use allometry           , only : area_indices            & ! function
-                                  , ed_balive               & ! function
-                                  , ed_biomass              & ! function
-                                  , size2bt                 & ! function
-                                  , size2xb                 & ! function
-                                  , bd2dbh                  & ! function
-                                  , dbh2h                   & ! function
-                                  , size2bd                 & ! function
-                                  , size2bl                 ! ! function
-   use fuse_fiss_utils     , only : terminate_cohorts       ! ! subroutine
-   use disturb_coms        , only : ianth_disturb           & ! intent(in)
-                                  , lu_rescale_file         & ! intent(in)
-                                  , min_patch_area          ! ! intent(in)
-   use soil_coms           , only : soil                    & ! intent(in)
-                                  , slzt                    & ! intent(in)
-                                  , isoilcol                ! ! intent(in)
-   use decomp_coms         , only : agf_fsc                 & ! intent(in)
-                                  , agf_stsc                & ! intent(in)
-                                  , c2n_structural          ! ! intent(in)
-   use physiology_coms     , only : iddmort_scheme          ! ! intent(in)
-   use ed_init_history     , only : hdf_getslab_i           & ! sub-routine
-                                  , hdf_getslab_r           ! ! sub-routine
-   use ed_init             , only : soil_default_fill       ! ! sub-routine
-   use ed_type_init        , only : init_ed_cohort_vars     & ! subroutine
-                                  , init_ed_patch_vars      & ! subroutine
-                                  , init_ed_site_vars       & ! subroutine
-                                  , init_ed_poly_vars       ! ! subroutine
+   use ed_max_dims         , only : n_pft                       & ! intent(in)
+                                  , huge_polygon                & ! intent(in)
+                                  , str_len                     & ! intent(in)
+                                  , n_dist_types                & ! intent(in)
+                                  , maxfiles                    & ! intent(in)
+                                  , maxlist                     ! ! intent(in)
+   use pft_coms            , only : q                           & ! intent(in)
+                                  , qsw                         & ! intent(in)
+                                  , qbark                       & ! intent(in)
+                                  , SLA                         & ! intent(in)
+                                  , min_dbh                     & ! intent(in)
+                                  , min_bdead                   & ! intent(in)
+                                  , is_grass                    & ! intent(in)
+                                  , include_pft                 & ! intent(in)
+                                  , include_pft_ag              & ! intent(in)
+                                  , pft_1st_check               & ! intent(in)
+                                  , include_these_pft           & ! intent(in)
+                                  , agf_bs                      & ! intent(in)
+                                  , f_bstorage_init             & ! intent(in)
+                                  , agf_bs                      ! ! intent(in)
+   use ed_misc_coms        , only : sfilin                      & ! intent(in)
+                                  , iallom                      & ! intent(in)
+                                  , igrass                      ! ! intent(in)
+   use ed_state_vars       , only : polygontype                 & ! variable type
+                                  , sitetype                    & ! variable type
+                                  , patchtype                   & ! variable type
+                                  , edtype                      & ! variable type
+                                  , edgrid_g                    & ! subroutine
+                                  , allocate_polygontype        & ! subroutine
+                                  , allocate_sitetype           & ! subroutine
+                                  , allocate_patchtype          ! ! subroutine
+   use grid_coms           , only : ngrids                      & ! intent(in)
+                                  , nzg                         ! ! intent(in)
+   use consts_coms         , only : pio4                        & ! intent(in)
+                                  , almost_zero                 & ! intent(in)
+                                  , tiny_num                    ! ! intent(in)
+   use hdf5_coms           , only : file_id                     & ! intent(in)
+                                  , dset_id                     & ! intent(in)
+                                  , dspace_id                   & ! intent(in)
+                                  , globdims                    & ! intent(in)
+                                  , chnkdims                    & ! intent(in)
+                                  , chnkoffs                    & ! intent(in)
+                                  , memdims                     & ! intent(in)
+                                  , memoffs                     & ! intent(in)
+                                  , memsize                     ! ! intent(in)
+   use allometry           , only : area_indices                & ! function
+                                  , ed_balive                   & ! function
+                                  , ed_biomass                  & ! function
+                                  , size2bt                     & ! function
+                                  , size2xb                     & ! function
+                                  , bd2dbh                      & ! function
+                                  , dbh2h                       & ! function
+                                  , size2bd                     & ! function
+                                  , size2bl                     ! ! function
+   use fuse_fiss_utils     , only : terminate_cohorts           ! ! subroutine
+   use disturb_coms        , only : ianth_disturb               & ! intent(in)
+                                  , lu_rescale_file             & ! intent(in)
+                                  , min_patch_area              ! ! intent(in)
+   use soil_coms           , only : soil                        & ! intent(in)
+                                  , slzt                        & ! intent(in)
+                                  , isoilcol                    ! ! intent(in)
+   use decomp_coms         , only : agf_fsc                     & ! intent(in)
+                                  , agf_stsc                    & ! intent(in)
+                                  , c2n_structural              ! ! intent(in)
+   use physiology_coms     , only : iddmort_scheme              & ! intent(in)
+                                  , trait_plasticity_scheme     ! ! intent(in)
+   use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
+   use ed_init_history     , only : hdf_getslab_i               & ! sub-routine
+                                  , hdf_getslab_r               ! ! sub-routine
+   use ed_init             , only : soil_default_fill           ! ! sub-routine
+   use ed_type_init        , only : init_ed_cohort_vars         & ! subroutine
+                                  , init_ed_patch_vars          & ! subroutine
+                                  , init_ed_site_vars           & ! subroutine
+                                  , init_ed_poly_vars           ! ! subroutine
    implicit none
 
 #if (USE_HDF5)
@@ -3588,6 +3622,19 @@ subroutine read_ed21_polyclone
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%bbarkb   (ico)            &
                                                         , cpatch%pft      (ico) )
+
+                           !---------------------------------------------------------------!
+                           !     In case we are representing trait plasticity, update      !
+                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
+                           !---------------------------------------------------------------!
+                           select case (trait_plasticity_scheme)
+                           case (0)
+                              continue
+                           case default
+                              call update_cohort_plastic_trait(cpatch,ico)
+                           end select
+                           !---------------------------------------------------------------!
+
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch, ico)

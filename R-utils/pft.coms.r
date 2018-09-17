@@ -1351,6 +1351,7 @@ pft$hgt.max = ifelse( test = pft$tropical
                     , yes  = ifelse(test=pft$grass,yes=1.5         ,no=hgt.max.trop )
                     , no   = ifelse(test=pft$grass,yes=.95*pft$b1Ht,no=.999*pft$b1Ht)
                     )#end ifelse
+pft$hgt.show = pft$hgt.min + 0.015 * (pft$hgt.max - pft$hgt.min)
 #------------------------------------------------------------------------------------------#
 
 

@@ -7,65 +7,67 @@
 subroutine read_ed10_ed20_history_file
 
 
-   use ed_max_dims    , only : n_pft               & ! intent(in)
-                             , huge_patch          & ! intent(in)
-                             , huge_cohort         & ! intent(in)
-                             , max_water           & ! intent(in)
-                             , str_len             & ! intent(in)
-                             , maxfiles            & ! intent(in)
-                             , maxlist             ! ! intent(in)
-   use pft_coms       , only : q                   & ! intent(in)
-                             , qsw                 & ! intent(in)
-                             , qbark               & ! intent(in)
-                             , SLA                 & ! intent(in)
-                             , min_dbh             & ! intent(in)
-                             , min_bdead           & ! intent(in)
-                             , is_grass            & ! intent(in)
-                             , include_pft         & ! intent(in)
-                             , include_pft_ag      & ! intent(in)
-                             , pft_1st_check       & ! intent(in)
-                             , agf_bs              & ! intent(in)
-                             , f_bstorage_init     & ! intent(in)
-                             , include_these_pft   ! ! intent(in)
-   use ed_misc_coms   , only : sfilin              & ! intent(in)
-                             , ied_init_mode       ! ! intent(in)
-   use consts_coms    , only : pio180              & ! intent(in)
-                             , pio4                & ! intent(in)
-                             , almost_zero         ! ! intent(in)
-   use ed_misc_coms   , only : use_target_year     & ! intent(in)
-                             , restart_target_year ! ! intent(in)
-   use ed_state_vars  , only : polygontype         & ! variable type
-                             , sitetype            & ! variable type
-                             , patchtype           & ! variable type
-                             , edtype              & ! variable type
-                             , edgrid_g            & ! variable type
-                             , allocate_sitetype   & ! subroutine
-                             , allocate_patchtype  ! ! subroutine
-   use grid_coms      , only : ngrids              ! ! intent(in)
-   use allometry      , only : bd2dbh              & ! function
-                             , dbh2h               & ! function
-                             , size2bd             & ! function
-                             , size2bl             & ! function
-                             , size2bt             & ! function
-                             , size2xb             & ! function
-                             , ed_balive           & ! function
-                             , ed_biomass          & ! function
-                             , area_indices        ! ! subroutine
-   use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
-                             , sort_patches        ! ! subroutine
-   use disturb_coms   , only : ianth_disturb       ! ! intent(in)
-   use decomp_coms    , only : decomp_scheme       & ! intent(in)
-                             , agf_fsc             & ! intent(in)
-                             , agf_stsc            & ! intent(in)
-                             , f0_msc              & ! intent(in)
-                             , f0_ssc              & ! intent(in)
-                             , f0_psc              & ! intent(in)
-                             , c2n_structural      ! ! intent(in)
-   use physiology_coms, only : iddmort_scheme      ! ! intent(in)
-   use ed_type_init   , only : init_ed_cohort_vars & ! subroutine
-                             , init_ed_patch_vars  & ! subroutine
-                             , init_ed_site_vars   & ! subroutine
-                             , init_ed_poly_vars   ! ! subroutine
+   use ed_max_dims         , only : n_pft                       & ! intent(in)
+                                  , huge_patch                  & ! intent(in)
+                                  , huge_cohort                 & ! intent(in)
+                                  , max_water                   & ! intent(in)
+                                  , str_len                     & ! intent(in)
+                                  , maxfiles                    & ! intent(in)
+                                  , maxlist                     ! ! intent(in)
+   use pft_coms            , only : q                           & ! intent(in)
+                                  , qsw                         & ! intent(in)
+                                  , qbark                       & ! intent(in)
+                                  , SLA                         & ! intent(in)
+                                  , min_dbh                     & ! intent(in)
+                                  , min_bdead                   & ! intent(in)
+                                  , is_grass                    & ! intent(in)
+                                  , include_pft                 & ! intent(in)
+                                  , include_pft_ag              & ! intent(in)
+                                  , pft_1st_check               & ! intent(in)
+                                  , agf_bs                      & ! intent(in)
+                                  , f_bstorage_init             & ! intent(in)
+                                  , include_these_pft           ! ! intent(in)
+   use ed_misc_coms        , only : sfilin                      & ! intent(in)
+                                  , ied_init_mode               ! ! intent(in)
+   use consts_coms         , only : pio180                      & ! intent(in)
+                                  , pio4                        & ! intent(in)
+                                  , almost_zero                 ! ! intent(in)
+   use ed_misc_coms        , only : use_target_year             & ! intent(in)
+                                  , restart_target_year         ! ! intent(in)
+   use ed_state_vars       , only : polygontype                 & ! variable type
+                                  , sitetype                    & ! variable type
+                                  , patchtype                   & ! variable type
+                                  , edtype                      & ! variable type
+                                  , edgrid_g                    & ! variable type
+                                  , allocate_sitetype           & ! subroutine
+                                  , allocate_patchtype          ! ! subroutine
+   use grid_coms           , only : ngrids                      ! ! intent(in)
+   use allometry           , only : bd2dbh                      & ! function
+                                  , dbh2h                       & ! function
+                                  , size2bd                     & ! function
+                                  , size2bl                     & ! function
+                                  , size2bt                     & ! function
+                                  , size2xb                     & ! function
+                                  , ed_balive                   & ! function
+                                  , ed_biomass                  & ! function
+                                  , area_indices                ! ! subroutine
+   use fuse_fiss_utils     , only : sort_cohorts                & ! subroutine
+                                  , sort_patches                ! ! subroutine
+   use disturb_coms        , only : ianth_disturb               ! ! intent(in)
+   use decomp_coms         , only : decomp_scheme               & ! intent(in)
+                                  , agf_fsc                     & ! intent(in)
+                                  , agf_stsc                    & ! intent(in)
+                                  , f0_msc                      & ! intent(in)
+                                  , f0_ssc                      & ! intent(in)
+                                  , f0_psc                      & ! intent(in)
+                                  , c2n_structural              ! ! intent(in)
+   use physiology_coms     , only : iddmort_scheme              & ! intent(in)
+                                  , trait_plasticity_scheme     ! ! intent(in)
+   use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
+   use ed_type_init        , only : init_ed_cohort_vars         & ! subroutine
+                                  , init_ed_patch_vars          & ! subroutine
+                                  , init_ed_site_vars           & ! subroutine
+                                  , init_ed_poly_vars           ! ! subroutine
    implicit none
 
    !----- Local constants. ----------------------------------------------------------------!
@@ -908,6 +910,20 @@ subroutine read_ed10_ed20_history_file
 
                         !----- Assign biomass of living tissues. --------------------------!
                         cpatch%balive(ic2) = ed_balive(cpatch, ic2)
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        !     In case we are representing trait plasticity, update traits  !
+                        ! (SLA, Vm0).  This must be done before calculating LAI.           !
+                        !------------------------------------------------------------------!
+                        select case (trait_plasticity_scheme)
+                        case (0)
+                           continue
+                        case default
+                           call update_cohort_plastic_trait(cpatch,ic2)
+                        end select
                         !------------------------------------------------------------------!
 
 

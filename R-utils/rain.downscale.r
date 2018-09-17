@@ -119,6 +119,7 @@ rain.downscale <<- function(lon,when.in,prate.in,mu.in.lut,nsub,rain.min=0.2/360
    prate.out  = c(t(PRATE.OUT))
    #---------------------------------------------------------------------------------------#
 
+
    #---------------------------------------------------------------------------------------#
    #      Mask low precipitation events, but only when at least one rainfall event exceeds #
    # the minimum.                                                                          #
@@ -133,6 +134,14 @@ rain.downscale <<- function(lon,when.in,prate.in,mu.in.lut,nsub,rain.min=0.2/360
    }#end if (mask.low)
    #---------------------------------------------------------------------------------------#
 
+
+   #------ Make sure the average output rainfall matches the average input rainfall. ------#
+   prate.out.bar = mean(prate.out,na.rm=TRUE)
+   if (prate.out.bar %>=% rain.min){
+      prate.in.bar = mean(prate.in,na.rm=TRUE)
+      prate.out    = prate.out * prate.in.bar / prate.out.bar
+   }#end if (prate.out.bar %>=% rain.min)
+   #---------------------------------------------------------------------------------------#
 
    return(prate.out)
    #---------------------------------------------------------------------------------------#
