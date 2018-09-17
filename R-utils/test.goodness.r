@@ -141,6 +141,16 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
 
 
       #------------------------------------------------------------------------------------#
+      #     Find relative bias.  Because values may be zero and cause singularity, we      #
+      # check whether x switches signs.                                                    #
+      #------------------------------------------------------------------------------------#
+      x.minok = sqrt(.Machine$double.eps) * mean(abs(x.obs.ok))
+      x.scale = pmax(x.minok,abs(x.obs.ok)) + 0. * x.obs.ok
+      sbias   = mean(x.res.ok/x.scale)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
       #     Run the Shapiro-Wilk test to determine whether the residuals are normally      #
       # distributed or not.                                                                #
       #------------------------------------------------------------------------------------#
@@ -163,23 +173,24 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
       #------------------------------------------------------------------------------------#
       #    Not enough data points.                                                         #
       #------------------------------------------------------------------------------------#
-      obs.moment   = c(mean=NA,variance=NA,skewness=NA,kurtosis=NA)
-      mod.moment   = c(mean=NA,variance=NA,skewness=NA,kurtosis=NA)
-      res.moment   = c(mean=NA,variance=NA,skewness=NA,kurtosis=NA)
-      bias         = NA
-      sigma        = NA
-      lsq.lnlike   = NA
-      mae          = NA
-      mse          = NA
-      rmse         = NA
-      ss.tot       = NA
-      ss.err       = NA
-      r.squared    = NA
-      fvue         = NA
-      sw.statistic = NA
-      sw.p.value   = NA
-      ks.statistic = NA
-      ks.p.value   = NA
+      obs.moment   = c(mean=NA_real_,variance=NA_real_,skewness=NA_real_,kurtosis=NA_real_)
+      mod.moment   = c(mean=NA_real_,variance=NA_real_,skewness=NA_real_,kurtosis=NA_real_)
+      res.moment   = c(mean=NA_real_,variance=NA_real_,skewness=NA_real_,kurtosis=NA_real_)
+      bias         = NA_real_
+      sigma        = NA_real_
+      lsq.lnlike   = NA_real_
+      mae          = NA_real_
+      mse          = NA_real_
+      rmse         = NA_real_
+      ss.tot       = NA_real_
+      ss.err       = NA_real_
+      r.squared    = NA_real_
+      fvue         = NA_real_
+      sbias        = NA_real_
+      sw.statistic = NA_real_
+      sw.p.value   = NA_real_
+      ks.statistic = NA_real_
+      ks.p.value   = NA_real_
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -215,6 +226,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
                       , ss.err       = ss.err
                       , r.squared    = r.squared
                       , fvue         = fvue
+                      , sbias        = sbias
                       , sw.statistic = sw.statistic
                       , sw.p.value   = sw.p.value
                       , ks.statistic = ks.statistic
@@ -238,6 +250,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
                  , ss.err       = ss.err
                  , r.squared    = r.squared
                  , fvue         = fvue
+                 , sbias        = sbias
                  , sw.statistic = sw.statistic
                  , sw.p.value   = sw.p.value
                  , ks.statistic = ks.statistic

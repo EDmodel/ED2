@@ -1025,7 +1025,7 @@ do
    WFDEI_GPCC)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
-      metcycf=2013
+      metcycf=2016
       imetavg=1
       ;;
    WFDEI_CHIRPS)
