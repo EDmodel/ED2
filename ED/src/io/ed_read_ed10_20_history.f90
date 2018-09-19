@@ -7,6 +7,7 @@
 subroutine read_ed10_ed20_history_file
 
 
+   use soil_respiration_module
    use ed_max_dims    , only : n_pft               & ! intent(in)
                              , huge_patch          & ! intent(in)
                              , huge_cohort         & ! intent(in)
@@ -37,7 +38,7 @@ subroutine read_ed10_ed20_history_file
                              , edgrid_g            & ! variable type
                              , allocate_sitetype   & ! subroutine
                              , allocate_patchtype  ! ! subroutine
-   use grid_coms      , only : ngrids              ! ! intent(in)
+   use grid_coms      , only : ngrids,nzl          ! ! intent(in)
    use allometry      , only : bd2dbh              & ! function
                              , dbh2h               & ! function
                              , dbh2bd              & ! function
@@ -471,12 +472,18 @@ subroutine read_ed10_ed20_history_file
 
                      csite%age               (ip2) = age (ip)
                      csite%area              (ip2) = area(ip)
-                     csite%fast_soil_C       (ip2) = fsc (ip)
-                     csite%slow_soil_C       (ip2) = ssc (ip)
-                     csite%structural_soil_C (ip2) = stsc(ip)
-                     csite%structural_soil_L (ip2) = stsl(ip)
-                     csite%mineralized_soil_N(ip2) = msn (ip)
-                     csite%fast_soil_N       (ip2) = fsn (ip)
+!                     csite%fast_soil_C       (:,ip2) = 0.0
+!                     csite%slow_soil_C       (:,ip2) = 0.0
+!                     csite%structural_soil_C (:,ip2) = 0.0
+!                     csite%structural_soil_L (:,ip2) = 0.0
+!                     csite%mineralized_soil_N(:,ip2) = 0.0
+!                     csite%fast_soil_N       (:,ip2) = 0.0
+                     csite%fast_soil_C       (nzl,ip2) = fsc (ip)
+                     csite%slow_soil_C       (nzl,ip2) = ssc (ip)
+                     csite%structural_soil_C (nzl,ip2) = stsc(ip)
+                     csite%structural_soil_L (nzl,ip2) = stsl(ip)
+                     csite%mineralized_soil_N(nzl,ip2) = msn (ip)
+                     csite%fast_soil_N       (nzl,ip2) = fsn (ip)
                      csite%pname             (ip2) = trim(pname(ip))
                      csite%sum_dgd           (ip2) = 0.0
                      csite%sum_chd           (ip2) = 0.0
@@ -548,12 +555,18 @@ subroutine read_ed10_ed20_history_file
 
                   csite%age               (ip) = age (ip)
                   csite%area              (ip) = area(ip)
-                  csite%fast_soil_C       (ip) = fsc (ip)
-                  csite%slow_soil_C       (ip) = ssc (ip)
-                  csite%structural_soil_C (ip) = stsc(ip)
-                  csite%structural_soil_L (ip) = stsl(ip)
-                  csite%mineralized_soil_N(ip) = msn (ip)
-                  csite%fast_soil_N       (ip) = fsn (ip)
+!                  csite%fast_soil_C       (:,ip2) = 0.0
+!                  csite%slow_soil_C       (:,ip2) = 0.0
+!                  csite%structural_soil_C (:,ip2) = 0.0
+!                  csite%structural_soil_L (:,ip2) = 0.0
+!                  csite%mineralized_soil_N(:,ip2) = 0.0
+!                  csite%fast_soil_N       (:,ip2) = 0.0
+                  csite%fast_soil_C       (nzl,ip) = fsc (ip)
+                  csite%slow_soil_C       (nzl,ip) = ssc (ip)
+                  csite%structural_soil_C (nzl,ip) = stsc(ip)
+                  csite%structural_soil_L (nzl,ip) = stsl(ip)
+                  csite%mineralized_soil_N(nzl,ip) = msn (ip)
+                  csite%fast_soil_N       (nzl,ip) = fsn (ip)
                   csite%pname             (ip) = trim(pname(ip))
                   csite%sum_dgd           (ip) = 0.0
                   csite%sum_chd           (ip) = 0.0
@@ -929,6 +942,9 @@ subroutine read_ed10_ed20_history_file
             cpoly%patch_count(isi) = nsitepat
          end do
       end do polyloop
+
+      ! Calling organic soil redistribution routine here.
+      call organic_layer_depth(cgrid)
 
       !----- Initialise the polygon-level variables. --------------------------------------!
       call init_ed_poly_vars(cgrid)

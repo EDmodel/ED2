@@ -27,6 +27,7 @@ subroutine ed_bigleaf_init(cgrid)
    use fuse_fiss_utils, only : sort_cohorts         & ! subroutine
                              , sort_patches         ! ! subroutine
    use consts_coms    , only : pio4                 ! ! intent(in)
+   use grid_coms      , only : nzl                  ! ! intent(in)
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -124,12 +125,14 @@ subroutine ed_bigleaf_init(cgrid)
             !------------------------------------------------------------------------------!
             ilu = csite%dist_type(ipa)
             area   (ilu) = area   (ilu) + csite%area              (ipa)
-            fsc    (ilu) = fsc    (ilu) + csite%fast_soil_C       (ipa) * csite%area(ipa)
-            ssc    (ilu) = ssc    (ilu) + csite%slow_soil_C       (ipa) * csite%area(ipa)
-            stsc   (ilu) = stsc   (ilu) + csite%structural_soil_C (ipa) * csite%area(ipa)
-            stsl   (ilu) = stsl   (ilu) + csite%structural_soil_L (ipa) * csite%area(ipa)
-            msn    (ilu) = msn    (ilu) + csite%mineralized_soil_N(ipa) * csite%area(ipa)
-            fsn    (ilu) = fsn    (ilu) + csite%fast_soil_N       (ipa) * csite%area(ipa)
+!            do k=1,nzl
+            fsc  (ilu) = fsc  (ilu) + csite%fast_soil_C       (nzl,ipa) * csite%area(ipa)
+            ssc  (ilu) = ssc  (ilu) + csite%slow_soil_C       (nzl,ipa) * csite%area(ipa)
+            stsc (ilu) = stsc (ilu) + csite%structural_soil_C (nzl,ipa) * csite%area(ipa)
+            stsl (ilu) = stsl (ilu) + csite%structural_soil_L (nzl,ipa) * csite%area(ipa)
+            msn  (ilu) = msn  (ilu) + csite%mineralized_soil_N(nzl,ipa) * csite%area(ipa)
+            fsn  (ilu) = fsn  (ilu) + csite%fast_soil_N       (nzl,ipa) * csite%area(ipa)
+!            end do
             sum_dgd(ilu) = sum_dgd(ilu) + csite%sum_dgd           (ipa) * csite%area(ipa)
             sum_chd(ilu) = sum_chd(ilu) + csite%sum_chd           (ipa) * csite%area(ipa)
             !------------------------------------------------------------------------------!
@@ -201,18 +204,18 @@ subroutine ed_bigleaf_init(cgrid)
             if (lu_desert(ilu)) then
                !---------------------------------------------------------------------------!
                !    This land use type existed but became a desert.  Create an empty       !
-               ! patch.                                                                    !
+               ! patch. EJL - adding all C and N to thickest layer for now                 !
                !---------------------------------------------------------------------------!
                ipa = ipa + 1
                csite%dist_type         (ipa) = ilu
                csite%area              (ipa) = area(ilu)
                csite%age               (ipa) = 0.0
-               csite%fast_soil_C       (ipa) = fsc (ilu) / area(ilu)
-               csite%slow_soil_C       (ipa) = ssc (ilu) / area(ilu)
-               csite%structural_soil_C (ipa) = stsc(ilu) / area(ilu)
-               csite%structural_soil_L (ipa) = stsl(ilu) / area(ilu)
-               csite%mineralized_soil_N(ipa) = msn (ilu) / area(ilu)
-               csite%fast_soil_N       (ipa) = fsn (ilu) / area(ilu)
+               csite%fast_soil_C       (1,ipa) = fsc (ilu) / area(ilu)
+               csite%slow_soil_C       (1,ipa) = ssc (ilu) / area(ilu)
+               csite%structural_soil_C (1,ipa) = stsc(ilu) / area(ilu)
+               csite%structural_soil_L (1,ipa) = stsl(ilu) / area(ilu)
+               csite%mineralized_soil_N(1,ipa) = msn (ilu) / area(ilu)
+               csite%fast_soil_N       (1,ipa) = fsn (ilu) / area(ilu)
                csite%sum_dgd           (ipa) = 0.0
                csite%sum_chd           (ipa) = 0.0
                csite%cohort_count      (ipa) = 0
@@ -230,15 +233,16 @@ subroutine ed_bigleaf_init(cgrid)
                   if (lai(ipft,ilu) > 0.0) then
                      ipa = ipa + 1
                      !----- Initialise the patch-level properties. ------------------------!
+                     ! EJL - Adding C and N to first layer of pool for now
                      csite%dist_type         (ipa) = ilu
                      csite%area              (ipa) = pft_area(ipft) * area(ilu)
                      csite%age               (ipa) = 0.0
-                     csite%fast_soil_C       (ipa) = fsc (ilu) / area(ilu)
-                     csite%slow_soil_C       (ipa) = ssc (ilu) / area(ilu)
-                     csite%structural_soil_C (ipa) = stsc(ilu) / area(ilu)
-                     csite%structural_soil_L (ipa) = stsl(ilu) / area(ilu)
-                     csite%mineralized_soil_N(ipa) = msn (ilu) / area(ilu)
-                     csite%fast_soil_N       (ipa) = fsn (ilu) / area(ilu)
+                     csite%fast_soil_C       (1,ipa) = fsc (ilu) / area(ilu)
+                     csite%slow_soil_C       (1,ipa) = ssc (ilu) / area(ilu)
+                     csite%structural_soil_C (1,ipa) = stsc(ilu) / area(ilu)
+                     csite%structural_soil_L (1,ipa) = stsl(ilu) / area(ilu)
+                     csite%mineralized_soil_N(1,ipa) = msn (ilu) / area(ilu)
+                     csite%fast_soil_N       (1,ipa) = fsn (ilu) / area(ilu)
                      csite%sum_dgd           (ipa) = sum_dgd(ilu)
                      csite%sum_chd           (ipa) = sum_chd(ilu)
                      csite%cohort_count      (ipa) = 1
@@ -417,10 +421,11 @@ subroutine ed_bigleaf_init(cgrid)
             site_lai  = site_lai  + patch_lai                    * csite%area(ipa)
             site_agb  = site_agb  + patch_agb                    * csite%area(ipa)
             site_bsa  = site_bsa  + patch_bsa                    * csite%area(ipa)
-            site_fsc  = site_fsc  + csite%fast_soil_C      (ipa) * csite%area(ipa)
-            site_ssc  = site_ssc  + csite%slow_soil_C      (ipa) * csite%area(ipa)
-            site_stsc = site_stsc + csite%structural_soil_C(ipa) * csite%area(ipa)
-
+!            do k=1,nzl
+            site_fsc  = site_fsc  + csite%fast_soil_C      (nzl,ipa) * csite%area(ipa)
+            site_ssc  = site_ssc  + csite%slow_soil_C      (nzl,ipa) * csite%area(ipa)
+            site_stsc = site_stsc + csite%structural_soil_C(nzl,ipa) * csite%area(ipa)
+!            end do 
             csite%cohort_count(ipa) = npatchco
             nsitepat                = nsitepat + 1
          end do

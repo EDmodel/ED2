@@ -67,6 +67,7 @@ module budget_utils
                               , budget_pref        & ! intent(in)
                               , checkbudget        ! ! intent(in)
       use therm_lib    , only : tq2enthalpy        ! ! function
+      use grid_coms    , only : nzl                ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)                          , target        :: csite
@@ -143,6 +144,7 @@ module budget_utils
       logical                                                 :: co2_ok
       logical                                                 :: energy_ok
       logical                                                 :: water_ok
+      integer                                                 :: k
       !----- Local constants. -------------------------------------------------------------!
       character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
       character(len=10)     , parameter     :: bhfmt='(31(a,1x))'
@@ -264,7 +266,10 @@ module budget_utils
       co2curr_rootstorageresp = root_storage_resp* dtlsm
       co2curr_sapastorageresp = sapa_storage_resp* dtlsm
       co2curr_sapbstorageresp = sapb_storage_resp* dtlsm
-      co2curr_hetresp         = csite%rh(ipa)    * dtlsm
+      co2curr_hetresp         = 0.
+      do k=1,nzl
+        co2curr_hetresp         = co2curr_hetresp + csite%rh(k,ipa)    * dtlsm
+      end do
       co2curr_leafgrowthresp  = leaf_growth_resp * dtlsm
       co2curr_rootgrowthresp  = root_growth_resp * dtlsm
       co2curr_sapagrowthresp  = sapa_growth_resp * dtlsm
@@ -331,8 +336,10 @@ module budget_utils
                                          + sapb_growth_resp  + leaf_storage_resp           &
                                          + root_storage_resp + sapa_storage_resp           &
                                          + sapb_storage_resp ) * dtlsm
-      csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                           &
-                                       + csite%rh(ipa) * dtlsm
+      do k=1,nzl
+        csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                         &
+                                         + csite%rh(k,ipa) * dtlsm
+      end do
       csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa)                   &
                                        + co2curr_denseffect
       csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)                     &

@@ -42,6 +42,8 @@
 # usage example:                                                                           #
 #                                                                                          #
 # install.sh -k A -p intel                                                                 #
+# install.sh -k A -s 1 -p odyssey
+# install.sh -k E -p odyssey
 #------------------------------------------------------------------------------------------#
 
 #----- Define the number of arguments. ----------------------------------------------------#

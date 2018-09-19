@@ -583,7 +583,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    use ed_state_vars  , only : sitetype             ! ! structure
    use ed_max_dims    , only : n_pft                ! ! intent(in)
    use grid_coms      , only : nzs                  & ! intent(in)
-                             , nzg                  ! ! intent(in)
+                             , nzg                  & ! intent(in)
+                             , nzl                  ! ! inten(in)
    use soil_coms      , only : slz                  ! ! intent(in)
    use ed_misc_coms   , only : writing_long         & ! intent(in)
                              , writing_eorq         & ! intent(in)
@@ -661,14 +662,35 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    !---------------------------------------------------------------------------------------!
 
 
+   !------ Initialize litter state variables. EJL------------------------------------------!
+   csite%litter_mass              (1:nzl,ipaa:ipaz) = 0.0
+   csite%litter_energy            (1:nzl,ipaa:ipaz) = 0.0
+   csite%litter_depth             (1:nzl,ipaa:ipaz) = 0.0
+   csite%litter_tempk             (1:nzl,ipaa:ipaz) = 0.0
+   csite%litter_fracliq           (1:nzl,ipaa:ipaz) = 0.0
+!   csite%total_sfcw_depth                 (ipaa:ipaz) = 0.0
+!   csite%snowfac                          (ipaa:ipaz) = 0.0
+!   csite%runoff                           (ipaa:ipaz) = 0.0
+!   csite%qrunoff                          (ipaa:ipaz) = 0.0
+   csite%rshort_lit                       (:,ipaa:ipaz) = 0.0
+   csite%rshort_lit_beam                  (:,ipaa:ipaz) = 0.0
+   csite%rshort_lit_diffuse               (:,ipaa:ipaz) = 0.0
+   csite%par_lit                          (:,ipaa:ipaz) = 0.0
+   csite%par_lit_beam                     (:,ipaa:ipaz) = 0.0
+   csite%par_lit_diffuse                  (:,ipaa:ipaz) = 0.0
+   csite%rlong_lit                          (ipaa:ipaz) = 0.0
+   !------ Number of litter layers. This is an integer... ---------------------------------!
+   csite%nlev_litter                        (ipaa:ipaz) = 0
+   !---------------------------------------------------------------------------------------!
+
 
    !------ Decomposition rates... ---------------------------------------------------------!
-   csite%A_decomp                        (ipaa:ipaz) = 0.0
-   csite%f_decomp                        (ipaa:ipaz) = 0.0
-   csite%rh                              (ipaa:ipaz) = 0.0
+   csite%A_decomp                  (1:nzl,ipaa:ipaz) = 0.0
+   csite%f_decomp                  (1:nzl,ipaa:ipaz) = 0.0
+   csite%rh                        (1:nzl,ipaa:ipaz) = 0.0
    csite%cwd_rh                          (ipaa:ipaz) = 0.0
-   csite%today_A_decomp                  (ipaa:ipaz) = 0.0
-   csite%today_Af_decomp                 (ipaa:ipaz) = 0.0
+   csite%today_A_decomp            (1:nzl,ipaa:ipaz) = 0.0
+   csite%today_Af_decomp           (1:nzl,ipaa:ipaz) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -726,6 +748,7 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%nir_b_diffuse                   (ipaa:ipaz) = 0.0
    csite%rlong_g                         (ipaa:ipaz) = 0.0
    csite%rlong_s                         (ipaa:ipaz) = 0.0
+   csite%rlong_lit                       (ipaa:ipaz) = 0.0
    csite%albedo                          (ipaa:ipaz) = 0.0
    csite%albedo_par                      (ipaa:ipaz) = 0.0
    csite%albedo_nir                      (ipaa:ipaz) = 0.0
@@ -740,8 +763,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%ssl_in                          (ipaa:ipaz) = 0.0
    csite%fsn_in                          (ipaa:ipaz) = 0.0
    csite%total_plant_nitrogen_uptake     (ipaa:ipaz) = 0.0
-   csite%mineralized_N_loss              (ipaa:ipaz) = 0.0
-   csite%mineralized_N_input             (ipaa:ipaz) = 0.0
+   csite%mineralized_N_loss        (1:nzl,ipaa:ipaz) = 0.0
+   csite%mineralized_N_input       (1:nzl,ipaa:ipaz) = 0.0
    csite%ustar                           (ipaa:ipaz) = 0.0
    csite%tstar                           (ipaa:ipaz) = 0.0
    csite%qstar                           (ipaa:ipaz) = 0.0
@@ -802,6 +825,12 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%fmean_sfcw_mass                 (ipaa:ipaz) = 0.0
    csite%fmean_sfcw_temp                 (ipaa:ipaz) = 0.0
    csite%fmean_sfcw_fliq                 (ipaa:ipaz) = 0.0
+   !EJL - initialize average litter
+   csite%fmean_lit_depth                (ipaa:ipaz) = 0.0
+   csite%fmean_lit_energy               (ipaa:ipaz) = 0.0
+   csite%fmean_lit_mass                 (ipaa:ipaz) = 0.0
+   csite%fmean_lit_temp                 (ipaa:ipaz) = 0.0
+   csite%fmean_lit_fliq                 (ipaa:ipaz) = 0.0
    csite%fmean_rshort_gnd                (ipaa:ipaz) = 0.0
    csite%fmean_par_gnd                   (ipaa:ipaz) = 0.0
    csite%fmean_rlong_gnd                 (ipaa:ipaz) = 0.0

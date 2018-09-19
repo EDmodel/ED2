@@ -223,6 +223,10 @@ Module ed_misc_coms
    real    :: min_site_area
    !---------------------------------------------------------------------------------------!
 
+   !------Namelist option for carbon reshuffling scheme -----------------------------------!
+   integer :: icarbdyn ! 1 - push down and pull up preserving ratio of organic pools
+                       ! 2 - preferentially push down slow carbon and pull up fast carbon
+
 
    !----- Namelist option for allometry scheme. -------------------------------------------!
    integer :: iallom ! 0 -- Original ED-2.1 allometry

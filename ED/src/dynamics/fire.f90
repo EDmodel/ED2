@@ -11,9 +11,11 @@ subroutine fire_frequency(cgrid)
    use ed_misc_coms  , only : simtime                & ! intent(in)
                             , current_time           & ! intent(in)
                             , dtlsm                  ! ! intent(in)
-   use grid_coms     , only : nzg                    ! ! intent(in)
+   use grid_coms     , only : nzg                    & ! intent(in)
+                            , nzl                    ! ! intent(in)
    use soil_coms     , only : soil                   & ! intent(in)
-                            , dslz                   ! ! intent(in)
+                            , dslz                   & ! intent(in)
+                            , dolz                   ! ! intent(in)
    use disturb_coms  , only : include_fire           & ! intent(in)
                             , sm_fire                & ! intent(in)
                             , fire_dryness_threshold & ! intent(in)
@@ -36,6 +38,8 @@ subroutine fire_frequency(cgrid)
    integer                        :: ico
    integer                        :: imon
    integer                        :: k
+   integer                        :: kl
+   integer                        :: klit
    integer                        :: nsoil
    real                           :: ndaysi
    real                           :: normfac
@@ -152,21 +156,46 @@ subroutine fire_frequency(cgrid)
                !---------------------------------------------------------------------------!
                !     We now compute the minimum amount of water in kg/m2 that the soil     !
                ! must have to avoid fires, using the soil properties and the soil moisture !
-               ! fraction threshold.                                                       !
+               ! fraction threshold. !EJL Add litter water to determine fire depth         !
                !---------------------------------------------------------------------------!
-               fire_wmass_threshold = 0.
-               do k = k_fire_first, nzg
-                  nsoil                = cpoly%ntext_soil(k,isi)
-                  fire_wmass_threshold = fire_wmass_threshold                              &
+                 fire_wmass_threshold = 0.
+               klit = csite%nlev_litter(ipa)
+               if (klit == 0) then ! if there are no litter layers 
+                 do k = k_fire_first, nzg
+                    nsoil                = cpoly%ntext_soil(k,isi)
+                    fire_wmass_threshold = fire_wmass_threshold                            &
                                        + soil(nsoil)%soilfr * dslz(k) * wdns
-               end do
-               if (csite%avg_monthly_gndwater(ipa) < fire_wmass_threshold) then
-                  fire_intensity      = fire_parameter
-                  mean_fire_intensity = mean_fire_intensity                                &
-                                      + fire_intensity * csite%area(ipa)
-               else
-                  fire_intensity      = 0.0
-               end if
+                 end do
+                 if (csite%avg_monthly_gndwater(ipa) < fire_wmass_threshold) then
+                    fire_intensity      = fire_parameter
+                    mean_fire_intensity = mean_fire_intensity                              &
+                                        + fire_intensity * csite%area(ipa)
+                 else
+                    fire_intensity      = 0.0
+                 end if
+
+               else  !if there is litter
+
+                 fire_wmass_threshold = 0.
+                 do kl=1, nzl
+                    fire_wmass_threshold = fire_wmass_threshold                           &
+                                       + soil(12)%soilfr * dolz(k) * wdns 
+                 end do
+                 
+                 do k = k_fire_first, nzg
+                    nsoil                = cpoly%ntext_soil(k,isi)
+                    fire_wmass_threshold = fire_wmass_threshold                            &
+                                       + soil(nsoil)%soilfr * dslz(k) * wdns
+                 end do
+                 if (csite%avg_monthly_gndwater(ipa) < fire_wmass_threshold) then
+                    fire_intensity      = fire_parameter
+                    mean_fire_intensity = mean_fire_intensity                              &
+                                        + fire_intensity * csite%area(ipa)
+                 else
+                    fire_intensity      = 0.0
+                 end if
+
+               end if !litter
                !---------------------------------------------------------------------------!
 
             case (3)

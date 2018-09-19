@@ -19,7 +19,8 @@ module ed_state_vars
 
    use grid_coms          , only : nzg               & ! intent(in)
                                  , nzs               & ! intent(in)
-                                 , ngrids            ! ! intent(in)
+                                 , ngrids            & ! intent(in)
+                                 , nzl               !!  intent(in)
    use ed_max_dims        , only : max_site          & ! intent(in)
                                  , n_pft             & ! intent(in)
                                  , n_dbh             & ! intent(in)
@@ -928,22 +929,22 @@ module ed_state_vars
       !!5.  Forest regrowth.\n
       !!6.  Logged forest.\n
 
-      real , pointer,dimension(:) :: fast_soil_C 
+      real , pointer,dimension(:,:) :: fast_soil_C 
       !<Soil carbon concentration, fast pool (kg/m2)
 
-      real , pointer,dimension(:) :: slow_soil_C 
+      real , pointer,dimension(:,:) :: slow_soil_C 
       !<Soil carbon concentration, slow pool (kg/m2)
 
-      real , pointer,dimension(:) :: structural_soil_C
+      real , pointer,dimension(:,:) :: structural_soil_C
       !<Soil carbon concentration, structural pool (kg/m2)
 
-      real , pointer,dimension(:) :: structural_soil_L
+      real , pointer,dimension(:,:) :: structural_soil_L
       !<Soil lignin concentration, structural pool (kg/m2)
 
-      real , pointer,dimension(:) :: mineralized_soil_N  
+      real , pointer,dimension(:,:) :: mineralized_soil_N  
       !<Soil nitrogen concentration, mineralized pool (kg/m2)
 
-      real , pointer,dimension(:) :: fast_soil_N 
+      real , pointer,dimension(:,:) :: fast_soil_N 
       !<Soil nitrogen concentration, fast pool (kg/m2)
 
       real , pointer,dimension(:) :: sum_dgd
@@ -997,7 +998,6 @@ module ed_state_vars
       real , pointer, dimension(:) :: ggsoil
       !<Need edits
 
-      
       integer,pointer,dimension(:) :: nlev_sfcwater
       !<Number of surface water layers
 
@@ -1033,11 +1033,50 @@ module ed_state_vars
       real, pointer,dimension(:,:) :: par_s_beam
       !<PAR absorbed by the surface water, 
       !<beam component (W/m2)
-
-      real, pointer,dimension(:,:) :: par_s_diffuse
-      !<PAR absorbed by the surface water, 
-      !<diffuse component (W/m2)
       
+      real, pointer, dimension(:,:) :: par_s_diffuse
+
+        !EJL added litter variables
+        integer,pointer,dimension(:) :: nlev_litter
+        !<Number of litter layers
+
+        real, pointer,dimension(:,:) :: litter_mass
+        !<Litter mass (kg/m2)
+
+        real, pointer,dimension(:,:) :: litter_energy
+        !<Litter internal energy (J/kg)
+
+        real, pointer,dimension(:,:) :: litter_depth
+        !<Depth of litter (m)
+
+        real, pointer,dimension(:,:) :: litter_tempk
+        !<Temperature of litter (K)
+
+        real, pointer,dimension(:,:) :: litter_fracliq
+        !<Liquid fraction of litter
+
+        real, pointer,dimension(:,:) :: rshort_lit
+        !<Short wave radiation absorbed by the litter (W/m2)
+
+        real, pointer,dimension(:,:) :: rshort_lit_beam
+        !<Short wave radiation absorbed by the litter,
+        !<beam component (W/m2)
+
+        real, pointer,dimension(:,:) :: rshort_lit_diffuse
+        !<Short wave radiation absorbed by the litter,
+        !<diffuse component (W/m2)
+
+        real, pointer,dimension(:,:) :: par_lit
+        !<PAR absorbed by the litter (W/m2)
+
+        real, pointer,dimension(:,:) :: par_lit_beam
+        !<PAR absorbed by the litter,
+        !<beam component (W/m2)
+
+      real, pointer,dimension(:,:) :: par_lit_diffuse
+      !<PAR absorbed by the litter,
+      !<diffuse component (W/m2)
+
       real,    pointer,dimension(:,:) :: soil_energy
       !<Soil internal energy (J/m3)
       
@@ -1121,7 +1160,7 @@ module ed_state_vars
       !<Mean drainage (kg_H2O/m2/s)
 
       real , pointer,dimension(:) :: wbudget_initialstorage
-      !<Total water (soil, sfcwater, can_shv, veg_water) at the beginning
+      !<Total water (soil, sfcwater,litter, can_shv, veg_water) at the beginning
       !<of budget-averaging time. [kg_H2O/m2]
 
       real , pointer,dimension(:) :: wbudget_residual
@@ -1146,13 +1185,13 @@ module ed_state_vars
       !<Energy associated with drainage (J/m2/s)
 
       real , pointer,dimension(:) :: ebudget_netrad
-      !<Net absorbed radiation by soil, sfcwater, vegetation [J/m2/s]
+      !<Net absorbed radiation by soil, litter, sfcwater, vegetation [J/m2/s]
 
       real , pointer,dimension(:) :: ebudget_precipgain
       !<Energy associated with precipitation (J/m2/s)
 
       real , pointer,dimension(:) :: ebudget_initialstorage
-      !<Total energy (soil, sfcwater, can_shv, veg_water) at the beginning
+      !<Total energy (soil, sfcwater, litter, can_shv, veg_water) at the beginning
       !<of budget-averaging time. [J/m2]
 
       real, pointer, dimension(:) :: ebudget_residual
@@ -1180,12 +1219,12 @@ module ed_state_vars
       real , pointer,dimension(:) :: co2budget_rh
       !<Average heterotrophic respiration [&mu;mol_CO2/m2/s]
 
-      real , pointer,dimension(:) :: today_A_decomp
+      real , pointer,dimension(:,:) :: today_A_decomp
       !<Daily average of A_decomp, the temperature and moisture dependence
       !<of heterotrophic respiration.  The "today" variable is used in the
       !<model, whereas dmean and mmean are for output only.
 
-      real , pointer,dimension(:) :: today_Af_decomp
+      real , pointer,dimension(:,:) :: today_Af_decomp
       !<Daily average of the product A_decomp * f_decomp, which incorporates
       !<temperature, moisture, and N dependence of decomposition.  The "today" 
       !<variable is used in the model, whereas dmean and mmean are for output only.
@@ -1219,9 +1258,9 @@ module ed_state_vars
 
       !real, pointer,dimension(:) :: Nnet_min
       !real, pointer,dimension(:) :: Ngross_min
-      real, pointer,dimension(:) :: mineralized_N_input
+      real, pointer,dimension(:,:) :: mineralized_N_input
       !<Input to mineralized soil nitrogen pool [kgN/m2/day]
-      real, pointer,dimension(:) :: mineralized_N_loss
+      real, pointer,dimension(:,:) :: mineralized_N_loss
       !<Loss of mineralized soil nitrogen pool [kgN/m2/day]
 
       real , pointer,dimension(:) :: rshort_g
@@ -1266,6 +1305,9 @@ module ed_state_vars
       real , pointer,dimension(:) :: rlong_s
       !<Long wave radiation absorbed by the surface water (W/m2)
 
+      real , pointer,dimension(:) :: rlong_lit
+      !<Long wave radiation absorbed by the surface litter (W/m2)
+
       real , pointer,dimension(:) :: albedo
       !<Patch albedo
 
@@ -1297,19 +1339,23 @@ module ed_state_vars
       !<Total snow depth as calculated in the radiation scheme.  Used for 
       !<checking if cohorts are buried.  [m]
 
+      real , pointer,dimension(:) :: peat_depth
+      !EJL - Total depth of soil organic layer (m) 
+ 
+      !<Total snow depth as calculated in the radiation scheme.  Used for 
       real , pointer,dimension(:) :: snowfac
       !<Fraction of vegetation covered with snow.  Used for computing 
       !<surface roughness.
 
-      real , pointer,dimension(:) :: A_decomp
+      real , pointer,dimension(:,:) :: A_decomp
       !<limitation of heterotrophic respiration due to physical 
       !<environmental factors (0-1 coefficient)
 
-      real , pointer,dimension(:) :: f_decomp
+      real , pointer,dimension(:,:) :: f_decomp
       !<damping of decomposition due to nitrogen immobilization 
       !<(0-1 coefficient)
 
-      real , pointer,dimension(:) :: rh
+      real , pointer,dimension(:,:) :: rh
       !<total heterotrophic respiration (&mu;mol/m2/s)
 
       real , pointer,dimension(:) :: cwd_rh
@@ -1413,6 +1459,12 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_sfcw_mass       !<TPSL water mass    [    kg/m2]
       real,pointer,dimension(:)   :: fmean_sfcw_temp       !<TPSL temperature   [        K]
       real,pointer,dimension(:)   :: fmean_sfcw_fliq       !<TPSL liquid frac.  [       --]
+      !EJL Litter fmeans
+      real,pointer,dimension(:)   :: fmean_lit_depth      !<TPSL depth         [        m]
+      real,pointer,dimension(:)   :: fmean_lit_energy     !<TPSL int. energy   [     J/kg]
+      real,pointer,dimension(:)   :: fmean_lit_mass       !<TPSL water mass    [    kg/m2]
+      real,pointer,dimension(:)   :: fmean_lit_temp       !<TPSL temperature   [        K]
+      real,pointer,dimension(:)   :: fmean_lit_fliq       !<TPSL liquid frac.  [       --]
       real,pointer,dimension(:,:) :: fmean_soil_energy     !<Soil int. energy   [     J/m3]
       real,pointer,dimension(:,:) :: fmean_soil_mstpot     !<Soil matric potl.  [        m]
       real,pointer,dimension(:,:) :: fmean_soil_water      !<Soil water content [    m3/m3]
@@ -1487,6 +1539,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_sfcw_mass
       real,pointer,dimension(:)     :: dmean_sfcw_temp
       real,pointer,dimension(:)     :: dmean_sfcw_fliq
+      !EJL litter
+      real,pointer,dimension(:)     :: dmean_lit_depth
+      real,pointer,dimension(:)     :: dmean_lit_energy
+      real,pointer,dimension(:)     :: dmean_lit_mass
+      real,pointer,dimension(:)     :: dmean_lit_temp
+      real,pointer,dimension(:)     :: dmean_lit_fliq
       real,pointer,dimension(:,:)   :: dmean_soil_energy
       real,pointer,dimension(:,:)   :: dmean_soil_mstpot
       real,pointer,dimension(:,:)   :: dmean_soil_water
@@ -1545,6 +1603,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_sfcw_mass
       real,pointer,dimension(:)     :: mmean_sfcw_temp
       real,pointer,dimension(:)     :: mmean_sfcw_fliq
+      !EJL litter
+      real,pointer,dimension(:)     :: mmean_lit_depth
+      real,pointer,dimension(:)     :: mmean_lit_energy
+      real,pointer,dimension(:)     :: mmean_lit_mass
+      real,pointer,dimension(:)     :: mmean_lit_temp
+      real,pointer,dimension(:)     :: mmean_lit_fliq
       real,pointer,dimension(:,:)   :: mmean_soil_energy
       real,pointer,dimension(:,:)   :: mmean_soil_mstpot
       real,pointer,dimension(:,:)   :: mmean_soil_water
@@ -1626,6 +1690,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_sfcw_mass
       real,pointer,dimension(:,:)   :: qmean_sfcw_temp
       real,pointer,dimension(:,:)   :: qmean_sfcw_fliq
+      !EJL lit
+      real,pointer,dimension(:,:)   :: qmean_lit_depth
+      real,pointer,dimension(:,:)   :: qmean_lit_energy
+      real,pointer,dimension(:,:)   :: qmean_lit_mass
+      real,pointer,dimension(:,:)   :: qmean_lit_temp
+      real,pointer,dimension(:,:)   :: qmean_lit_fliq
       real,pointer,dimension(:,:,:) :: qmean_soil_energy
       real,pointer,dimension(:,:,:) :: qmean_soil_mstpot
       real,pointer,dimension(:,:,:) :: qmean_soil_water
@@ -2385,7 +2455,13 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_sfcw_energy     !<TPSL int. energy   [      J/kg]
       real,pointer,dimension(:)   :: fmean_sfcw_mass       !<TPSL water mass    [     kg/m2]
       real,pointer,dimension(:)   :: fmean_sfcw_temp       !<TPSL temperature   [         K]
-      real,pointer,dimension(:)   :: fmean_sfcw_fliq       !<TPSL liquid frac.  [        --]
+      real,pointer,dimension(:)   :: fmean_sfcw_fliq       !<TPSL liquid frac.
+      !EJL Litter fmeans
+      real,pointer,dimension(:)   :: fmean_lit_depth      !<TPSL depth         [        m]
+      real,pointer,dimension(:)   :: fmean_lit_energy     !<TPSL int. energy   [     J/kg]
+      real,pointer,dimension(:)   :: fmean_lit_mass       !<TPSL water mass    [    kg/m2]
+      real,pointer,dimension(:)   :: fmean_lit_temp       !<TPSL temperature   [        K]
+      real,pointer,dimension(:)   :: fmean_lit_fliq       !<TPSL liquid frac.  [       --]
       real,pointer,dimension(:,:) :: fmean_soil_energy     !<Soil int. energy   [      J/m3]
       real,pointer,dimension(:,:) :: fmean_soil_mstpot     !<Soil matric potl.  [         m]
       real,pointer,dimension(:,:) :: fmean_soil_water      !<Soil water content [     m3/m3]
@@ -2558,6 +2634,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_sfcw_mass
       real,pointer,dimension(:)     :: dmean_sfcw_temp
       real,pointer,dimension(:)     :: dmean_sfcw_fliq
+      !EJL
+      real,pointer,dimension(:)     :: dmean_lit_depth
+      real,pointer,dimension(:)     :: dmean_lit_energy
+      real,pointer,dimension(:)     :: dmean_lit_mass
+      real,pointer,dimension(:)     :: dmean_lit_temp
+      real,pointer,dimension(:)     :: dmean_lit_fliq
       real,pointer,dimension(:,:)   :: dmean_soil_energy
       real,pointer,dimension(:,:)   :: dmean_soil_mstpot
       real,pointer,dimension(:,:)   :: dmean_soil_water
@@ -2688,6 +2770,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_sfcw_mass
       real,pointer,dimension(:)     :: mmean_sfcw_temp
       real,pointer,dimension(:)     :: mmean_sfcw_fliq
+     !EJL
+      real,pointer,dimension(:)     :: mmean_lit_depth
+      real,pointer,dimension(:)     :: mmean_lit_energy
+      real,pointer,dimension(:)     :: mmean_lit_mass
+      real,pointer,dimension(:)     :: mmean_lit_temp
+      real,pointer,dimension(:)     :: mmean_lit_fliq
       real,pointer,dimension(:,:)   :: mmean_soil_energy
       real,pointer,dimension(:,:)   :: mmean_soil_mstpot
       real,pointer,dimension(:,:)   :: mmean_soil_water
@@ -2855,6 +2943,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_sfcw_mass
       real,pointer,dimension(:,:)   :: qmean_sfcw_temp
       real,pointer,dimension(:,:)   :: qmean_sfcw_fliq
+      !EJL
+      real,pointer,dimension(:,:)   :: qmean_lit_depth
+      real,pointer,dimension(:,:)   :: qmean_lit_energy
+      real,pointer,dimension(:,:)   :: qmean_lit_mass
+      real,pointer,dimension(:,:)   :: qmean_lit_temp
+      real,pointer,dimension(:,:)   :: qmean_lit_fliq
       real,pointer,dimension(:,:,:) :: qmean_soil_energy
       real,pointer,dimension(:,:,:) :: qmean_soil_mstpot
       real,pointer,dimension(:,:,:) :: qmean_soil_water
@@ -3184,6 +3278,7 @@ module ed_state_vars
       allocate(cgrid%leaf_maintenance           (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%root_maintenance           (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%leaf_drop                  (   n_pft,     n_dbh,npolygons))
+
       allocate(cgrid%fast_soil_c                (                    npolygons))
       allocate(cgrid%slow_soil_c                (                    npolygons))
       allocate(cgrid%struct_soil_c              (                    npolygons))
@@ -3287,6 +3382,12 @@ module ed_state_vars
       allocate(cgrid%fmean_sfcw_mass            (                    npolygons))
       allocate(cgrid%fmean_sfcw_temp            (                    npolygons))
       allocate(cgrid%fmean_sfcw_fliq            (                    npolygons))
+      !EJL
+      allocate(cgrid%fmean_lit_depth           (                    npolygons))
+      allocate(cgrid%fmean_lit_energy          (                    npolygons))
+      allocate(cgrid%fmean_lit_mass            (                    npolygons))
+      allocate(cgrid%fmean_lit_temp            (                    npolygons))
+      allocate(cgrid%fmean_lit_fliq            (                    npolygons))
       allocate(cgrid%fmean_soil_energy          (                nzg,npolygons))
       allocate(cgrid%fmean_soil_mstpot          (                nzg,npolygons))
       allocate(cgrid%fmean_soil_water           (                nzg,npolygons))
@@ -3440,6 +3541,12 @@ module ed_state_vars
          allocate(cgrid%dmean_sfcw_mass        (                     npolygons))
          allocate(cgrid%dmean_sfcw_temp        (                     npolygons))
          allocate(cgrid%dmean_sfcw_fliq        (                     npolygons))
+         !EJL
+         allocate(cgrid%dmean_lit_depth       (                     npolygons))
+         allocate(cgrid%dmean_lit_energy      (                     npolygons))
+         allocate(cgrid%dmean_lit_mass        (                     npolygons))
+         allocate(cgrid%dmean_lit_temp        (                     npolygons))
+         allocate(cgrid%dmean_lit_fliq        (                     npolygons))
          allocate(cgrid%dmean_soil_energy      (                 nzg,npolygons))
          allocate(cgrid%dmean_soil_mstpot      (                 nzg,npolygons))
          allocate(cgrid%dmean_soil_water       (                 nzg,npolygons))
@@ -3598,6 +3705,12 @@ module ed_state_vars
          allocate(cgrid%mmean_sfcw_mass        (                     npolygons)) 
          allocate(cgrid%mmean_sfcw_temp        (                     npolygons)) 
          allocate(cgrid%mmean_sfcw_fliq        (                     npolygons)) 
+         !EJL
+         allocate(cgrid%mmean_lit_depth       (                     npolygons)) 
+         allocate(cgrid%mmean_lit_energy      (                     npolygons)) 
+         allocate(cgrid%mmean_lit_mass        (                     npolygons)) 
+         allocate(cgrid%mmean_lit_temp        (                     npolygons)) 
+         allocate(cgrid%mmean_lit_fliq        (                     npolygons)) 
          allocate(cgrid%mmean_soil_energy      (                 nzg,npolygons)) 
          allocate(cgrid%mmean_soil_mstpot      (                 nzg,npolygons)) 
          allocate(cgrid%mmean_soil_water       (                 nzg,npolygons)) 
@@ -3774,6 +3887,12 @@ module ed_state_vars
          allocate(cgrid%qmean_sfcw_mass        (             ndcycle,npolygons))
          allocate(cgrid%qmean_sfcw_temp        (             ndcycle,npolygons))
          allocate(cgrid%qmean_sfcw_fliq        (             ndcycle,npolygons))
+         !EJL
+         allocate(cgrid%qmean_lit_depth       (             ndcycle,npolygons))
+         allocate(cgrid%qmean_lit_energy      (             ndcycle,npolygons))
+         allocate(cgrid%qmean_lit_mass        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_lit_temp        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_lit_fliq        (             ndcycle,npolygons))
          allocate(cgrid%qmean_soil_energy      (     nzg,    ndcycle,npolygons))
          allocate(cgrid%qmean_soil_mstpot      (     nzg,    ndcycle,npolygons))
          allocate(cgrid%qmean_soil_water       (     nzg,    ndcycle,npolygons))
@@ -4108,12 +4227,12 @@ module ed_state_vars
       allocate(csite%area                          (              npatches))
       allocate(csite%age                           (              npatches))
       allocate(csite%dist_type                     (              npatches))
-      allocate(csite%fast_soil_C                   (              npatches))
-      allocate(csite%slow_soil_C                   (              npatches))
-      allocate(csite%structural_soil_C             (              npatches))
-      allocate(csite%structural_soil_L             (              npatches))
-      allocate(csite%mineralized_soil_N            (              npatches))
-      allocate(csite%fast_soil_N                   (              npatches))
+      allocate(csite%fast_soil_C                   (          nzl,npatches))
+      allocate(csite%slow_soil_C                   (          nzl,npatches))
+      allocate(csite%structural_soil_C             (          nzl,npatches))
+      allocate(csite%structural_soil_L             (          nzl,npatches))
+      allocate(csite%mineralized_soil_N            (          nzl,npatches))
+      allocate(csite%fast_soil_N                   (          nzl,npatches))
       allocate(csite%sum_dgd                       (              npatches))
       allocate(csite%sum_chd                       (              npatches))
       allocate(csite%can_theiv                     (              npatches))
@@ -4143,6 +4262,19 @@ module ed_state_vars
       allocate(csite%par_s                         (          nzs,npatches))
       allocate(csite%par_s_beam                    (          nzs,npatches))
       allocate(csite%par_s_diffuse                 (          nzs,npatches))
+      !EJL
+      allocate(csite%nlev_litter                   (              npatches))
+      allocate(csite%litter_mass                   (          nzl,npatches))
+      allocate(csite%litter_energy                 (          nzl,npatches))
+      allocate(csite%litter_depth                  (          nzl,npatches))
+      allocate(csite%litter_tempk                  (          nzl,npatches))
+      allocate(csite%litter_fracliq                (          nzl,npatches))
+      allocate(csite%rshort_lit                    (          nzl,npatches))
+      allocate(csite%rshort_lit_beam               (          nzl,npatches))
+      allocate(csite%rshort_lit_diffuse            (          nzl,npatches))
+      allocate(csite%par_lit                       (          nzl,npatches))
+      allocate(csite%par_lit_beam                  (          nzl,npatches))
+      allocate(csite%par_lit_diffuse               (          nzl,npatches))
       allocate(csite%soil_energy                   (          nzg,npatches))
       allocate(csite%soil_mstpot                   (          nzg,npatches))
       allocate(csite%soil_water                    (          nzg,npatches))
@@ -4185,8 +4317,8 @@ module ed_state_vars
       allocate(csite%co2budget_gpp                 (              npatches))
       allocate(csite%co2budget_plresp              (              npatches))
       allocate(csite%co2budget_rh                  (              npatches))
-      allocate(csite%today_A_decomp                (              npatches))
-      allocate(csite%today_Af_decomp               (              npatches))
+      allocate(csite%today_A_decomp                (          nzl,npatches))
+      allocate(csite%today_Af_decomp               (          nzl,npatches))
       allocate(csite%repro                         (        n_pft,npatches))
       allocate(csite%veg_rough                     (              npatches))
       allocate(csite%veg_height                    (              npatches))
@@ -4196,8 +4328,8 @@ module ed_state_vars
       allocate(csite%ssl_in                        (              npatches))
       allocate(csite%fsn_in                        (              npatches))
       allocate(csite%total_plant_nitrogen_uptake   (              npatches))
-      allocate(csite%mineralized_N_loss            (              npatches))
-      allocate(csite%mineralized_N_input           (              npatches))
+      allocate(csite%mineralized_N_loss            (          nzl,npatches))
+      allocate(csite%mineralized_N_input           (          nzl,npatches))
       allocate(csite%rshort_g                      (              npatches))
       allocate(csite%rshort_g_beam                 (              npatches))
       allocate(csite%rshort_g_diffuse              (              npatches))
@@ -4212,6 +4344,8 @@ module ed_state_vars
       allocate(csite%nir_b_diffuse                 (              npatches))
       allocate(csite%rlong_g                       (              npatches))
       allocate(csite%rlong_s                       (              npatches))
+      allocate(csite%rlong_lit                     (              npatches))
+      allocate(csite%albedo                        (              npatches))
       allocate(csite%albedo                        (              npatches))
       allocate(csite%albedo_par                    (              npatches))
       allocate(csite%albedo_nir                    (              npatches))
@@ -4222,10 +4356,12 @@ module ed_state_vars
       allocate(csite%nirup                         (              npatches))
       allocate(csite%rshortup                      (              npatches))
       allocate(csite%total_sfcw_depth              (              npatches))
+      allocate(csite%peat_depth                    (              npatches))
       allocate(csite%snowfac                       (              npatches))
-      allocate(csite%A_decomp                      (              npatches))
-      allocate(csite%f_decomp                      (              npatches))
-      allocate(csite%rh                            (              npatches))
+      allocate(csite%snowfac                       (              npatches))
+      allocate(csite%A_decomp                      (          nzl,npatches))
+      allocate(csite%f_decomp                      (          nzl,npatches))
+      allocate(csite%rh                            (          nzl,npatches))
       allocate(csite%cwd_rh                        (              npatches))
       allocate(csite%cumlai_profile                (n_pft,ff_nhgt,npatches))
       allocate(csite%plant_ag_biomass              (              npatches))
@@ -4273,6 +4409,12 @@ module ed_state_vars
       allocate(csite%fmean_sfcw_mass               (              npatches))
       allocate(csite%fmean_sfcw_temp               (              npatches))
       allocate(csite%fmean_sfcw_fliq               (              npatches))
+      !EJL lit
+      allocate(csite%fmean_lit_depth              (              npatches))
+      allocate(csite%fmean_lit_energy             (              npatches))
+      allocate(csite%fmean_lit_mass               (              npatches))
+      allocate(csite%fmean_lit_temp               (              npatches))
+      allocate(csite%fmean_lit_fliq               (              npatches))
       allocate(csite%fmean_soil_energy             (          nzg,npatches))
       allocate(csite%fmean_soil_mstpot             (          nzg,npatches))
       allocate(csite%fmean_soil_water              (          nzg,npatches))
@@ -4337,6 +4479,12 @@ module ed_state_vars
          allocate(csite%dmean_sfcw_mass            (              npatches))
          allocate(csite%dmean_sfcw_temp            (              npatches))
          allocate(csite%dmean_sfcw_fliq            (              npatches))
+         !EJL
+         allocate(csite%dmean_lit_depth           (              npatches))
+         allocate(csite%dmean_lit_energy          (              npatches))
+         allocate(csite%dmean_lit_mass            (              npatches))
+         allocate(csite%dmean_lit_temp            (              npatches))
+         allocate(csite%dmean_lit_fliq            (              npatches))
          allocate(csite%dmean_soil_energy          (          nzg,npatches))
          allocate(csite%dmean_soil_mstpot          (          nzg,npatches))
          allocate(csite%dmean_soil_water           (          nzg,npatches))
@@ -4407,6 +4555,12 @@ module ed_state_vars
          allocate(csite%mmean_sfcw_mass            (              npatches))
          allocate(csite%mmean_sfcw_temp            (              npatches))
          allocate(csite%mmean_sfcw_fliq            (              npatches))
+         !EJL
+         allocate(csite%mmean_lit_depth           (              npatches))
+         allocate(csite%mmean_lit_energy          (              npatches))
+         allocate(csite%mmean_lit_mass            (              npatches))
+         allocate(csite%mmean_lit_temp            (              npatches))
+         allocate(csite%mmean_lit_fliq            (              npatches))
          allocate(csite%mmean_soil_energy          (          nzg,npatches))
          allocate(csite%mmean_soil_mstpot          (          nzg,npatches))
          allocate(csite%mmean_soil_water           (          nzg,npatches))
@@ -4487,6 +4641,12 @@ module ed_state_vars
          allocate(csite%qmean_sfcw_mass            (      ndcycle,npatches))
          allocate(csite%qmean_sfcw_temp            (      ndcycle,npatches))
          allocate(csite%qmean_sfcw_fliq            (      ndcycle,npatches))
+         !EJL
+         allocate(csite%qmean_lit_depth           (      ndcycle,npatches))
+         allocate(csite%qmean_lit_energy          (      ndcycle,npatches))
+         allocate(csite%qmean_lit_mass            (      ndcycle,npatches))
+         allocate(csite%qmean_lit_temp            (      ndcycle,npatches))
+         allocate(csite%qmean_lit_fliq            (      ndcycle,npatches))
          allocate(csite%qmean_soil_energy          (  nzg,ndcycle,npatches))
          allocate(csite%qmean_soil_mstpot          (  nzg,ndcycle,npatches))
          allocate(csite%qmean_soil_water           (  nzg,ndcycle,npatches))
@@ -5222,6 +5382,12 @@ module ed_state_vars
       nullify(cgrid%fmean_sfcw_mass         )
       nullify(cgrid%fmean_sfcw_temp         )
       nullify(cgrid%fmean_sfcw_fliq         )
+      !EJL
+      nullify(cgrid%fmean_lit_depth        )
+      nullify(cgrid%fmean_lit_energy       )
+      nullify(cgrid%fmean_lit_mass         )
+      nullify(cgrid%fmean_lit_temp         )
+      nullify(cgrid%fmean_lit_fliq         )
       nullify(cgrid%fmean_soil_energy       )
       nullify(cgrid%fmean_soil_mstpot       )
       nullify(cgrid%fmean_soil_water        )
@@ -5367,6 +5533,12 @@ module ed_state_vars
       nullify(cgrid%dmean_sfcw_mass         )
       nullify(cgrid%dmean_sfcw_temp         )
       nullify(cgrid%dmean_sfcw_fliq         )
+      !EJL
+      nullify(cgrid%dmean_lit_depth        )
+      nullify(cgrid%dmean_lit_energy       )
+      nullify(cgrid%dmean_lit_mass         )
+      nullify(cgrid%dmean_lit_temp         )
+      nullify(cgrid%dmean_lit_fliq         )
       nullify(cgrid%dmean_soil_energy       )
       nullify(cgrid%dmean_soil_mstpot       )
       nullify(cgrid%dmean_soil_water        )
@@ -5514,6 +5686,12 @@ module ed_state_vars
       nullify(cgrid%mmean_sfcw_mass         )
       nullify(cgrid%mmean_sfcw_temp         )
       nullify(cgrid%mmean_sfcw_fliq         )
+      !EJL
+      nullify(cgrid%mmean_lit_depth        )
+      nullify(cgrid%mmean_lit_energy       )
+      nullify(cgrid%mmean_lit_mass         )
+      nullify(cgrid%mmean_lit_temp         )
+      nullify(cgrid%mmean_lit_fliq         )
       nullify(cgrid%mmean_soil_energy       )
       nullify(cgrid%mmean_soil_mstpot       )
       nullify(cgrid%mmean_soil_water        )
@@ -5679,6 +5857,12 @@ module ed_state_vars
       nullify(cgrid%qmean_sfcw_mass         )
       nullify(cgrid%qmean_sfcw_temp         )
       nullify(cgrid%qmean_sfcw_fliq         )
+      !EJL
+      nullify(cgrid%qmean_lit_depth        )
+      nullify(cgrid%qmean_lit_energy       )
+      nullify(cgrid%qmean_lit_mass         )
+      nullify(cgrid%qmean_lit_temp         )
+      nullify(cgrid%qmean_lit_fliq         )
       nullify(cgrid%qmean_soil_energy       )
       nullify(cgrid%qmean_soil_mstpot       )
       nullify(cgrid%qmean_soil_water        )
@@ -5976,6 +6160,19 @@ module ed_state_vars
       nullify(csite%par_s                      )
       nullify(csite%par_s_beam                 )
       nullify(csite%par_s_diffuse              )
+      !EJL
+      nullify(csite%nlev_litter              )
+      nullify(csite%litter_mass              )
+      nullify(csite%litter_energy            )
+      nullify(csite%litter_depth             )
+      nullify(csite%litter_tempk             )
+      nullify(csite%litter_fracliq           )
+      nullify(csite%rshort_lit                   )
+      nullify(csite%rshort_lit_beam              )
+      nullify(csite%rshort_lit_diffuse           )
+      nullify(csite%par_lit                      )
+      nullify(csite%par_lit_beam                 )
+      nullify(csite%par_lit_diffuse              )
       nullify(csite%soil_energy                )
       nullify(csite%soil_mstpot                )
       nullify(csite%soil_water                 )
@@ -6045,6 +6242,8 @@ module ed_state_vars
       nullify(csite%nir_b_diffuse              )
       nullify(csite%rlong_g                    )
       nullify(csite%rlong_s                    )
+      nullify(csite%rlong_lit                  )
+      nullify(csite%albedo                     )
       nullify(csite%albedo                     )
       nullify(csite%albedo_par                 )
       nullify(csite%albedo_nir                 )
@@ -6055,6 +6254,8 @@ module ed_state_vars
       nullify(csite%nirup                      )
       nullify(csite%rshortup                   )
       nullify(csite%total_sfcw_depth           )
+      nullify(csite%peat_depth                 )
+      nullify(csite%snowfac                    )
       nullify(csite%snowfac                    )
       nullify(csite%A_decomp                   )
       nullify(csite%f_decomp                   )
@@ -6106,6 +6307,12 @@ module ed_state_vars
       nullify(csite%fmean_sfcw_mass            )
       nullify(csite%fmean_sfcw_temp            )
       nullify(csite%fmean_sfcw_fliq            )
+      !EJL
+      nullify(csite%fmean_lit_depth           )
+      nullify(csite%fmean_lit_energy          )
+      nullify(csite%fmean_lit_mass            )
+      nullify(csite%fmean_lit_temp            )
+      nullify(csite%fmean_lit_fliq            )
       nullify(csite%fmean_soil_energy          )
       nullify(csite%fmean_soil_mstpot          )
       nullify(csite%fmean_soil_water           )
@@ -6168,6 +6375,12 @@ module ed_state_vars
       nullify(csite%dmean_sfcw_mass            )
       nullify(csite%dmean_sfcw_temp            )
       nullify(csite%dmean_sfcw_fliq            )
+      !EJL
+      nullify(csite%dmean_lit_depth           )
+      nullify(csite%dmean_lit_energy          )
+      nullify(csite%dmean_lit_mass            )
+      nullify(csite%dmean_lit_temp            )
+      nullify(csite%dmean_lit_fliq            )
       nullify(csite%dmean_soil_energy          )
       nullify(csite%dmean_soil_mstpot          )
       nullify(csite%dmean_soil_water           )
@@ -6236,6 +6449,12 @@ module ed_state_vars
       nullify(csite%mmean_sfcw_mass            )
       nullify(csite%mmean_sfcw_temp            )
       nullify(csite%mmean_sfcw_fliq            )
+      !EJL
+      nullify(csite%mmean_lit_depth           )
+      nullify(csite%mmean_lit_energy          )
+      nullify(csite%mmean_lit_mass            )
+      nullify(csite%mmean_lit_temp            )
+      nullify(csite%mmean_lit_fliq            )
       nullify(csite%mmean_soil_energy          )
       nullify(csite%mmean_soil_mstpot          )
       nullify(csite%mmean_soil_water           )
@@ -6314,6 +6533,12 @@ module ed_state_vars
       nullify(csite%qmean_sfcw_mass            )
       nullify(csite%qmean_sfcw_temp            )
       nullify(csite%qmean_sfcw_fliq            )
+      !EJL
+      nullify(csite%qmean_lit_depth           )
+      nullify(csite%qmean_lit_energy          )
+      nullify(csite%qmean_lit_mass            )
+      nullify(csite%qmean_lit_temp            )
+      nullify(csite%qmean_lit_fliq            )
       nullify(csite%qmean_soil_energy          )
       nullify(csite%qmean_soil_mstpot          )
       nullify(csite%qmean_soil_water           )
@@ -6895,6 +7120,19 @@ module ed_state_vars
       if(associated(csite%par_s                 )) deallocate(csite%par_s                 )
       if(associated(csite%par_s_beam            )) deallocate(csite%par_s_beam            )
       if(associated(csite%par_s_diffuse         )) deallocate(csite%par_s_diffuse         )
+    !EJL
+      if(associated(csite%nlev_litter         )) deallocate(csite%nlev_litter         )
+      if(associated(csite%litter_mass         )) deallocate(csite%litter_mass         )
+      if(associated(csite%litter_energy       )) deallocate(csite%litter_energy       )
+      if(associated(csite%litter_depth        )) deallocate(csite%litter_depth        )
+      if(associated(csite%litter_tempk        )) deallocate(csite%litter_tempk        )
+      if(associated(csite%litter_fracliq      )) deallocate(csite%litter_fracliq      )
+      if(associated(csite%rshort_lit              )) deallocate(csite%rshort_lit              )
+      if(associated(csite%rshort_lit_beam         )) deallocate(csite%rshort_lit_beam         )
+      if(associated(csite%rshort_lit_diffuse      )) deallocate(csite%rshort_lit_diffuse      )
+      if(associated(csite%par_lit                 )) deallocate(csite%par_lit                 )
+      if(associated(csite%par_lit_beam            )) deallocate(csite%par_lit_beam            )
+      if(associated(csite%par_lit_diffuse         )) deallocate(csite%par_lit_diffuse         )
       if(associated(csite%soil_energy           )) deallocate(csite%soil_energy           )
       if(associated(csite%soil_mstpot           )) deallocate(csite%soil_mstpot           )
       if(associated(csite%soil_water            )) deallocate(csite%soil_water            )
@@ -6966,6 +7204,8 @@ module ed_state_vars
       if(associated(csite%nir_b_diffuse         )) deallocate(csite%nir_b_diffuse         )
       if(associated(csite%rlong_g               )) deallocate(csite%rlong_g               )
       if(associated(csite%rlong_s               )) deallocate(csite%rlong_s               )
+      if(associated(csite%rlong_lit             )) deallocate(csite%rlong_lit             )
+      if(associated(csite%albedo                )) deallocate(csite%albedo                )
       if(associated(csite%albedo                )) deallocate(csite%albedo                )
       if(associated(csite%albedo_par            )) deallocate(csite%albedo_par            )
       if(associated(csite%albedo_nir            )) deallocate(csite%albedo_nir            )
@@ -6976,6 +7216,8 @@ module ed_state_vars
       if(associated(csite%nirup                 )) deallocate(csite%nirup                 )
       if(associated(csite%rshortup              )) deallocate(csite%rshortup              )
       if(associated(csite%total_sfcw_depth      )) deallocate(csite%total_sfcw_depth      )
+      if(associated(csite%peat_depth            )) deallocate(csite%peat_depth            )
+      if(associated(csite%snowfac               )) deallocate(csite%snowfac               )
       if(associated(csite%snowfac               )) deallocate(csite%snowfac               )
       if(associated(csite%A_decomp              )) deallocate(csite%A_decomp              )
       if(associated(csite%f_decomp              )) deallocate(csite%f_decomp              )
@@ -7027,6 +7269,12 @@ module ed_state_vars
       if(associated(csite%fmean_sfcw_mass       )) deallocate(csite%fmean_sfcw_mass       )
       if(associated(csite%fmean_sfcw_temp       )) deallocate(csite%fmean_sfcw_temp       )
       if(associated(csite%fmean_sfcw_fliq       )) deallocate(csite%fmean_sfcw_fliq       )
+      !EJL
+      if(associated(csite%fmean_lit_depth      )) deallocate(csite%fmean_lit_depth      )
+      if(associated(csite%fmean_lit_energy     )) deallocate(csite%fmean_lit_energy     )
+      if(associated(csite%fmean_lit_mass       )) deallocate(csite%fmean_lit_mass       )
+      if(associated(csite%fmean_lit_temp       )) deallocate(csite%fmean_lit_temp       )
+      if(associated(csite%fmean_lit_fliq       )) deallocate(csite%fmean_lit_fliq       )
       if(associated(csite%fmean_soil_energy     )) deallocate(csite%fmean_soil_energy     )
       if(associated(csite%fmean_soil_mstpot     )) deallocate(csite%fmean_soil_mstpot     )
       if(associated(csite%fmean_soil_water      )) deallocate(csite%fmean_soil_water      )
@@ -7089,6 +7337,12 @@ module ed_state_vars
       if(associated(csite%dmean_sfcw_mass       )) deallocate(csite%dmean_sfcw_mass       )
       if(associated(csite%dmean_sfcw_temp       )) deallocate(csite%dmean_sfcw_temp       )
       if(associated(csite%dmean_sfcw_fliq       )) deallocate(csite%dmean_sfcw_fliq       )
+      !EJL
+      if(associated(csite%dmean_lit_depth      )) deallocate(csite%dmean_lit_depth      )
+      if(associated(csite%dmean_lit_energy     )) deallocate(csite%dmean_lit_energy     )
+      if(associated(csite%dmean_lit_mass       )) deallocate(csite%dmean_lit_mass       )
+      if(associated(csite%dmean_lit_temp       )) deallocate(csite%dmean_lit_temp       )
+      if(associated(csite%dmean_lit_fliq       )) deallocate(csite%dmean_lit_fliq       )
       if(associated(csite%dmean_soil_energy     )) deallocate(csite%dmean_soil_energy     )
       if(associated(csite%dmean_soil_mstpot     )) deallocate(csite%dmean_soil_mstpot     )
       if(associated(csite%dmean_soil_water      )) deallocate(csite%dmean_soil_water      )
@@ -7157,6 +7411,12 @@ module ed_state_vars
       if(associated(csite%mmean_sfcw_mass       )) deallocate(csite%mmean_sfcw_mass       )
       if(associated(csite%mmean_sfcw_temp       )) deallocate(csite%mmean_sfcw_temp       )
       if(associated(csite%mmean_sfcw_fliq       )) deallocate(csite%mmean_sfcw_fliq       )
+      !EJL
+      if(associated(csite%mmean_lit_depth      )) deallocate(csite%mmean_lit_depth      )
+      if(associated(csite%mmean_lit_energy     )) deallocate(csite%mmean_lit_energy     )
+      if(associated(csite%mmean_lit_mass       )) deallocate(csite%mmean_lit_mass       )
+      if(associated(csite%mmean_lit_temp       )) deallocate(csite%mmean_lit_temp       )
+      if(associated(csite%mmean_lit_fliq       )) deallocate(csite%mmean_lit_fliq       )
       if(associated(csite%mmean_soil_energy     )) deallocate(csite%mmean_soil_energy     )
       if(associated(csite%mmean_soil_mstpot     )) deallocate(csite%mmean_soil_mstpot     )
       if(associated(csite%mmean_soil_water      )) deallocate(csite%mmean_soil_water      )
@@ -7235,6 +7495,12 @@ module ed_state_vars
       if(associated(csite%qmean_sfcw_mass       )) deallocate(csite%qmean_sfcw_mass       )
       if(associated(csite%qmean_sfcw_temp       )) deallocate(csite%qmean_sfcw_temp       )
       if(associated(csite%qmean_sfcw_fliq       )) deallocate(csite%qmean_sfcw_fliq       )
+      !EJL
+      if(associated(csite%qmean_lit_depth      )) deallocate(csite%qmean_lit_depth      )
+      if(associated(csite%qmean_lit_energy     )) deallocate(csite%qmean_lit_energy     )
+      if(associated(csite%qmean_lit_mass       )) deallocate(csite%qmean_lit_mass       )
+      if(associated(csite%qmean_lit_temp       )) deallocate(csite%qmean_lit_temp       )
+      if(associated(csite%qmean_lit_fliq       )) deallocate(csite%qmean_lit_fliq       )
       if(associated(csite%qmean_soil_energy     )) deallocate(csite%qmean_soil_energy     )
       if(associated(csite%qmean_soil_mstpot     )) deallocate(csite%qmean_soil_mstpot     )
       if(associated(csite%qmean_soil_water      )) deallocate(csite%qmean_soil_water      )
@@ -7833,12 +8099,21 @@ module ed_state_vars
          osite%area                       (opa) = isite%area                       (ipa)
          osite%age                        (opa) = isite%age                        (ipa)
          osite%dist_type                  (opa) = isite%dist_type                  (ipa)
-         osite%fast_soil_C                (opa) = isite%fast_soil_C                (ipa)
-         osite%slow_soil_C                (opa) = isite%slow_soil_C                (ipa)
-         osite%structural_soil_C          (opa) = isite%structural_soil_C          (ipa)
-         osite%structural_soil_L          (opa) = isite%structural_soil_L          (ipa)
-         osite%mineralized_soil_N         (opa) = isite%mineralized_soil_N         (ipa)
-         osite%fast_soil_N                (opa) = isite%fast_soil_N                (ipa)
+         !EJL
+         do m=1,nzl
+           osite%fast_soil_C              (m,opa) = isite%fast_soil_C              (m,ipa)
+           osite%slow_soil_C              (m,opa) = isite%slow_soil_C              (m,ipa)
+           osite%structural_soil_C        (m,opa) = isite%structural_soil_C        (m,ipa)
+           osite%structural_soil_L        (m,opa) = isite%structural_soil_L        (m,ipa)
+           osite%mineralized_soil_N       (m,opa) = isite%mineralized_soil_N       (m,ipa)
+           osite%fast_soil_N              (m,opa) = isite%fast_soil_N              (m,ipa)
+           osite%today_A_decomp           (m,opa) = isite%today_Af_decomp          (m,ipa)
+           osite%today_Af_decomp          (m,opa) = isite%today_Af_decomp          (m,ipa)
+           osite%A_decomp                 (m,opa) = isite%A_decomp                 (m,ipa)
+           osite%f_decomp                 (m,opa) = isite%f_decomp                 (m,ipa)
+           osite%rh                       (m,opa) = isite%rh                       (m,ipa)
+
+         end do
          osite%sum_dgd                    (opa) = isite%sum_dgd                    (ipa)
          osite%sum_chd                    (opa) = isite%sum_chd                    (ipa)
          osite%can_theiv                  (opa) = isite%can_theiv                  (ipa)
@@ -7856,6 +8131,8 @@ module ed_state_vars
          osite%ggveg                      (opa) = isite%ggveg                      (ipa)
          osite%ggnet                      (opa) = isite%ggnet                      (ipa)
          osite%ggsoil                     (opa) = isite%ggsoil                     (ipa)
+         !EJL
+         osite%nlev_litter                (opa) = isite%nlev_litter                (ipa)
          osite%nlev_sfcwater              (opa) = isite%nlev_sfcwater              (ipa)
          osite%ground_shv                 (opa) = isite%ground_shv                 (ipa)
          osite%ground_ssh                 (opa) = isite%ground_ssh                 (ipa)
@@ -7891,8 +8168,6 @@ module ed_state_vars
          osite%co2budget_gpp              (opa) = isite%co2budget_gpp              (ipa)
          osite%co2budget_plresp           (opa) = isite%co2budget_plresp           (ipa)
          osite%co2budget_rh               (opa) = isite%co2budget_rh               (ipa)
-         osite%today_A_decomp             (opa) = isite%today_A_decomp             (ipa)
-         osite%today_Af_decomp            (opa) = isite%today_Af_decomp            (ipa)
          osite%veg_rough                  (opa) = isite%veg_rough                  (ipa)
          osite%veg_height                 (opa) = isite%veg_height                 (ipa)
          osite%veg_displace               (opa) = isite%veg_displace               (ipa)
@@ -7901,8 +8176,10 @@ module ed_state_vars
          osite%ssl_in                     (opa) = isite%ssl_in                     (ipa)
          osite%fsn_in                     (opa) = isite%fsn_in                     (ipa)
          osite%total_plant_nitrogen_uptake(opa) = isite%total_plant_nitrogen_uptake(ipa)
-         osite%mineralized_N_loss         (opa) = isite%mineralized_N_loss         (ipa)
-         osite%mineralized_N_input        (opa) = isite%mineralized_N_input        (ipa)
+         do m=1,nzl
+         osite%mineralized_N_loss       (m,opa) = isite%mineralized_N_loss       (m,ipa)
+         osite%mineralized_N_input      (m,opa) = isite%mineralized_N_input      (m,ipa)
+         end do
          osite%rshort_g                   (opa) = isite%rshort_g                   (ipa)
          osite%rshort_g_beam              (opa) = isite%rshort_g_beam              (ipa)
          osite%rshort_g_diffuse           (opa) = isite%rshort_g_diffuse           (ipa)
@@ -7917,6 +8194,8 @@ module ed_state_vars
          osite%nir_b_diffuse              (opa) = isite%nir_b_diffuse              (ipa)
          osite%rlong_g                    (opa) = isite%rlong_g                    (ipa)
          osite%rlong_s                    (opa) = isite%rlong_s                    (ipa)
+         osite%rlong_lit                  (opa) = isite%rlong_lit                  (ipa)
+         osite%albedo                     (opa) = isite%albedo                     (ipa)
          osite%albedo                     (opa) = isite%albedo                     (ipa)
          osite%albedo_par                 (opa) = isite%albedo_par                 (ipa)
          osite%albedo_nir                 (opa) = isite%albedo_nir                 (ipa)
@@ -7927,10 +8206,9 @@ module ed_state_vars
          osite%nirup                      (opa) = isite%nirup                      (ipa)
          osite%rshortup                   (opa) = isite%rshortup                   (ipa)
          osite%total_sfcw_depth           (opa) = isite%total_sfcw_depth           (ipa)
+         osite%peat_depth                 (opa) = isite%peat_depth                 (ipa)
          osite%snowfac                    (opa) = isite%snowfac                    (ipa)
-         osite%A_decomp                   (opa) = isite%A_decomp                   (ipa)
-         osite%f_decomp                   (opa) = isite%f_decomp                   (ipa)
-         osite%rh                         (opa) = isite%rh                         (ipa)
+         osite%snowfac                    (opa) = isite%snowfac                    (ipa)
          osite%cwd_rh                     (opa) = isite%cwd_rh                     (ipa)
          osite%plant_ag_biomass           (opa) = isite%plant_ag_biomass           (ipa)
          osite%htry                       (opa) = isite%htry                       (ipa)
@@ -7976,6 +8254,12 @@ module ed_state_vars
          osite%fmean_sfcw_mass            (opa) = isite%fmean_sfcw_mass            (ipa)
          osite%fmean_sfcw_temp            (opa) = isite%fmean_sfcw_temp            (ipa)
          osite%fmean_sfcw_fliq            (opa) = isite%fmean_sfcw_fliq            (ipa)
+         !EJL
+         osite%fmean_lit_depth           (opa) = isite%fmean_lit_depth           (ipa)
+         osite%fmean_lit_energy          (opa) = isite%fmean_lit_energy          (ipa)
+         osite%fmean_lit_mass            (opa) = isite%fmean_lit_mass            (ipa)
+         osite%fmean_lit_temp            (opa) = isite%fmean_lit_temp            (ipa)
+         osite%fmean_lit_fliq            (opa) = isite%fmean_lit_fliq            (ipa)
          osite%fmean_rshort_gnd           (opa) = isite%fmean_rshort_gnd           (ipa)
          osite%fmean_par_gnd              (opa) = isite%fmean_par_gnd              (ipa)
          osite%fmean_rlong_gnd            (opa) = isite%fmean_rlong_gnd            (ipa)
@@ -8019,8 +8303,23 @@ module ed_state_vars
             osite%par_s_beam      (m,opa) = isite%par_s_beam      (m,ipa)
             osite%par_s_diffuse   (m,opa) = isite%par_s_diffuse   (m,ipa)
          end do
+         
+         !-----Litter Variables. EJL----------------------------------------------------------!
+         do m=1,nzl
+            osite%litter_mass       (m,opa) = isite%litter_mass     (m,ipa)
+            osite%litter_energy     (m,opa) = isite%litter_energy   (m,ipa)
+            osite%litter_depth      (m,opa) = isite%litter_depth    (m,ipa)
+            osite%litter_tempk      (m,opa) = isite%litter_tempk    (m,ipa)
+            osite%litter_fracliq    (m,opa) = isite%litter_fracliq  (m,ipa)
+            osite%rshort_lit        (m,opa) = isite%rshort_lit      (m,ipa)
+            osite%rshort_lit_beam   (m,opa) = isite%rshort_lit_beam (m,ipa)
+            osite%rshort_lit_diffuse(m,opa) = isite%rshort_lit_diffuse(m,ipa)
+            osite%par_lit           (m,opa) = isite%par_lit         (m,ipa)
+            osite%par_lit_beam      (m,opa) = isite%par_lit_beam    (m,ipa)
+            osite%par_lit_diffuse   (m,opa) = isite%par_lit_diffuse (m,ipa)
+           
+         end do
          !---------------------------------------------------------------------------------!
-
 
          !----- Soil variables. -----------------------------------------------------------!
          do m=1,nzg
@@ -8093,6 +8392,12 @@ module ed_state_vars
             osite%dmean_sfcw_mass      (opa) = isite%dmean_sfcw_mass      (ipa)
             osite%dmean_sfcw_temp      (opa) = isite%dmean_sfcw_temp      (ipa)
             osite%dmean_sfcw_fliq      (opa) = isite%dmean_sfcw_fliq      (ipa)
+            !EJL
+            osite%dmean_lit_depth     (opa) = isite%dmean_lit_depth     (ipa)
+            osite%dmean_lit_energy    (opa) = isite%dmean_lit_energy    (ipa)
+            osite%dmean_lit_mass      (opa) = isite%dmean_lit_mass      (ipa)
+            osite%dmean_lit_temp      (opa) = isite%dmean_lit_temp      (ipa)
+            osite%dmean_lit_fliq      (opa) = isite%dmean_lit_fliq      (ipa)
             osite%dmean_rshort_gnd     (opa) = isite%dmean_rshort_gnd     (ipa)
             osite%dmean_par_gnd        (opa) = isite%dmean_par_gnd        (ipa)
             osite%dmean_rlong_gnd      (opa) = isite%dmean_rlong_gnd      (ipa)
@@ -8178,6 +8483,12 @@ module ed_state_vars
             osite%mmean_sfcw_mass      (opa) = isite%mmean_sfcw_mass      (ipa)
             osite%mmean_sfcw_temp      (opa) = isite%mmean_sfcw_temp      (ipa)
             osite%mmean_sfcw_fliq      (opa) = isite%mmean_sfcw_fliq      (ipa)
+            !EJL
+            osite%mmean_lit_depth     (opa) = isite%mmean_lit_depth     (ipa)
+            osite%mmean_lit_energy    (opa) = isite%mmean_lit_energy    (ipa)
+            osite%mmean_lit_mass      (opa) = isite%mmean_lit_mass      (ipa)
+            osite%mmean_lit_temp      (opa) = isite%mmean_lit_temp      (ipa)
+            osite%mmean_lit_fliq      (opa) = isite%mmean_lit_fliq      (ipa)
             osite%mmean_rshort_gnd     (opa) = isite%mmean_rshort_gnd     (ipa)
             osite%mmean_par_gnd        (opa) = isite%mmean_par_gnd        (ipa)
             osite%mmean_rlong_gnd      (opa) = isite%mmean_rlong_gnd      (ipa)
@@ -8274,6 +8585,12 @@ module ed_state_vars
                osite%qmean_sfcw_mass      (n,opa) = isite%qmean_sfcw_mass      (n,ipa)
                osite%qmean_sfcw_temp      (n,opa) = isite%qmean_sfcw_temp      (n,ipa)
                osite%qmean_sfcw_fliq      (n,opa) = isite%qmean_sfcw_fliq      (n,ipa)
+               !EJL
+               osite%qmean_lit_depth     (n,opa) = isite%qmean_lit_depth     (n,ipa)
+               osite%qmean_lit_energy    (n,opa) = isite%qmean_lit_energy    (n,ipa)
+               osite%qmean_lit_mass      (n,opa) = isite%qmean_lit_mass      (n,ipa)
+               osite%qmean_lit_temp      (n,opa) = isite%qmean_lit_temp      (n,ipa)
+               osite%qmean_lit_fliq      (n,opa) = isite%qmean_lit_fliq      (n,ipa)
                osite%qmean_rshort_gnd     (n,opa) = isite%qmean_rshort_gnd     (n,ipa)
                osite%qmean_par_gnd        (n,opa) = isite%qmean_par_gnd        (n,ipa)
                osite%qmean_rlong_gnd      (n,opa) = isite%qmean_rlong_gnd      (n,ipa)
@@ -8468,12 +8785,14 @@ module ed_state_vars
       osite%area                      (1:z) = pack(isite%area                      ,lmask)
       osite%age                       (1:z) = pack(isite%age                       ,lmask)
       osite%dist_type                 (1:z) = pack(isite%dist_type                 ,lmask)
-      osite%fast_soil_C               (1:z) = pack(isite%fast_soil_C               ,lmask)
-      osite%slow_soil_C               (1:z) = pack(isite%slow_soil_C               ,lmask)
-      osite%structural_soil_C         (1:z) = pack(isite%structural_soil_C         ,lmask)
-      osite%structural_soil_L         (1:z) = pack(isite%structural_soil_L         ,lmask)
-      osite%mineralized_soil_N        (1:z) = pack(isite%mineralized_soil_N        ,lmask)
-      osite%fast_soil_N               (1:z) = pack(isite%fast_soil_N               ,lmask)
+      do m=1,nzl
+        osite%fast_soil_C             (m,1:z) = pack(isite%fast_soil_C        (m,:),lmask)
+        osite%slow_soil_C             (m,1:z) = pack(isite%slow_soil_C        (m,:),lmask)
+        osite%structural_soil_C       (m,1:z) = pack(isite%structural_soil_C  (m,:),lmask)
+        osite%structural_soil_L       (m,1:z) = pack(isite%structural_soil_L  (m,:),lmask)
+        osite%mineralized_soil_N      (m,1:z) = pack(isite%mineralized_soil_N (m,:),lmask)
+        osite%fast_soil_N             (m,1:z) = pack(isite%fast_soil_N        (m,:),lmask)
+      end do
       osite%sum_dgd                   (1:z) = pack(isite%sum_dgd                   ,lmask)
       osite%sum_chd                   (1:z) = pack(isite%sum_chd                   ,lmask)
       osite%can_theiv                 (1:z) = pack(isite%can_theiv                 ,lmask)
@@ -8492,6 +8811,8 @@ module ed_state_vars
       osite%ggnet                     (1:z) = pack(isite%ggnet                     ,lmask)
       osite%ggsoil                    (1:z) = pack(isite%ggsoil                    ,lmask)
       osite%nlev_sfcwater             (1:z) = pack(isite%nlev_sfcwater             ,lmask)
+      !EJL
+      osite%nlev_litter               (1:z) = pack(isite%nlev_litter               ,lmask)
       osite%ground_shv                (1:z) = pack(isite%ground_shv                ,lmask)
       osite%ground_ssh                (1:z) = pack(isite%ground_ssh                ,lmask)
       osite%ground_temp               (1:z) = pack(isite%ground_temp               ,lmask)
@@ -8526,8 +8847,10 @@ module ed_state_vars
       osite%co2budget_gpp             (1:z) = pack(isite%co2budget_gpp             ,lmask)
       osite%co2budget_plresp          (1:z) = pack(isite%co2budget_plresp          ,lmask)
       osite%co2budget_rh              (1:z) = pack(isite%co2budget_rh              ,lmask)
-      osite%today_A_decomp            (1:z) = pack(isite%today_A_decomp            ,lmask)
-      osite%today_Af_decomp           (1:z) = pack(isite%today_Af_decomp           ,lmask)
+      do m=1,nzl !EJL
+        osite%today_A_decomp          (m,1:z) = pack(isite%today_A_decomp     (m,:),lmask)
+        osite%today_Af_decomp         (m,1:z) = pack(isite%today_Af_decomp    (m,:),lmask)
+      end do
       osite%veg_rough                 (1:z) = pack(isite%veg_rough                 ,lmask)
       osite%veg_height                (1:z) = pack(isite%veg_height                ,lmask)
       osite%veg_displace              (1:z) = pack(isite%veg_displace              ,lmask)
@@ -8537,8 +8860,10 @@ module ed_state_vars
       osite%fsn_in                    (1:z) = pack(isite%fsn_in                    ,lmask)
       osite%total_plant_nitrogen_uptake(1:z) =                                             &
                                              pack(isite%total_plant_nitrogen_uptake,lmask)
-      osite%mineralized_N_loss        (1:z) = pack(isite%mineralized_N_loss        ,lmask)
-      osite%mineralized_N_input       (1:z) = pack(isite%mineralized_N_input       ,lmask)
+      do m=1,nzl
+        osite%mineralized_N_loss    (m,1:z) = pack(isite%mineralized_N_loss   (m,:),lmask)
+        osite%mineralized_N_input   (m,1:z) = pack(isite%mineralized_N_input  (m,:),lmask)
+      end do
       osite%rshort_g                  (1:z) = pack(isite%rshort_g                  ,lmask)
       osite%rshort_g_beam             (1:z) = pack(isite%rshort_g_beam             ,lmask)
       osite%rshort_g_diffuse          (1:z) = pack(isite%rshort_g_diffuse          ,lmask)
@@ -8553,6 +8878,8 @@ module ed_state_vars
       osite%nir_b_diffuse             (1:z) = pack(isite%nir_b_diffuse             ,lmask)
       osite%rlong_g                   (1:z) = pack(isite%rlong_g                   ,lmask)
       osite%rlong_s                   (1:z) = pack(isite%rlong_s                   ,lmask)
+      osite%rlong_lit                 (1:z) = pack(isite%rlong_lit                 ,lmask)
+      osite%albedo                    (1:z) = pack(isite%albedo                    ,lmask)
       osite%albedo                    (1:z) = pack(isite%albedo                    ,lmask)
       osite%albedo_par                (1:z) = pack(isite%albedo_par                ,lmask)
       osite%albedo_nir                (1:z) = pack(isite%albedo_nir                ,lmask)
@@ -8563,10 +8890,14 @@ module ed_state_vars
       osite%nirup                     (1:z) = pack(isite%nirup                     ,lmask)
       osite%rshortup                  (1:z) = pack(isite%rshortup                  ,lmask)
       osite%total_sfcw_depth          (1:z) = pack(isite%total_sfcw_depth          ,lmask)
+      osite%peat_depth                (1:z) = pack(isite%peat_depth                ,lmask)
       osite%snowfac                   (1:z) = pack(isite%snowfac                   ,lmask)
-      osite%A_decomp                  (1:z) = pack(isite%A_decomp                  ,lmask)
-      osite%f_decomp                  (1:z) = pack(isite%f_decomp                  ,lmask)
-      osite%rh                        (1:z) = pack(isite%rh                        ,lmask)
+      osite%snowfac                   (1:z) = pack(isite%snowfac                   ,lmask)
+      do m=1,nzl !EJL
+        osite%A_decomp                (m,1:z) = pack(isite%A_decomp           (m,:),lmask)
+        osite%f_decomp                (m,1:z) = pack(isite%f_decomp           (m,:),lmask)
+        osite%rh                      (m,1:z) = pack(isite%rh                 (m,:),lmask)
+      enddo
       osite%cwd_rh                    (1:z) = pack(isite%cwd_rh                    ,lmask)
       osite%plant_ag_biomass          (1:z) = pack(isite%plant_ag_biomass          ,lmask)
       osite%htry                      (1:z) = pack(isite%htry                      ,lmask)
@@ -8609,6 +8940,21 @@ module ed_state_vars
       end do
       !------------------------------------------------------------------------------------!
 
+      !-----Litter Variables. EJL----------------------------------------------------------!
+      do m=1,nzl
+         osite%litter_mass       (m,1:z) = pack(isite%litter_mass     (m,:),lmask)
+         osite%litter_energy     (m,1:z) = pack(isite%litter_energy   (m,:),lmask)
+         osite%litter_depth      (m,1:z) = pack(isite%litter_depth    (m,:),lmask)
+         osite%litter_tempk      (m,1:z) = pack(isite%litter_tempk    (m,:),lmask)
+         osite%litter_fracliq    (m,1:z) = pack(isite%litter_fracliq  (m,:),lmask)
+         osite%rshort_lit        (m,1:z) = pack(isite%rshort_lit      (m,:),lmask)
+         osite%rshort_lit_beam   (m,1:z) = pack(isite%rshort_lit_beam (m,:),lmask)
+         osite%rshort_lit_diffuse(m,1:z) = pack(isite%rshort_lit_diffuse(m,:),lmask)
+         osite%par_lit           (m,1:z) = pack(isite%par_lit         (m,:),lmask)
+         osite%par_lit_beam      (m,1:z) = pack(isite%par_lit_beam    (m,:),lmask)
+         osite%par_lit_diffuse   (m,1:z) = pack(isite%par_lit_diffuse (m,:),lmask)
+      end do
+      !---------------------------------------------------------------------------------!
 
       !----- Soil variables. --------------------------------------------------------------!
       do m=1,nzg
@@ -8693,6 +9039,12 @@ module ed_state_vars
       osite%fmean_sfcw_mass           (1:z) = pack(isite%fmean_sfcw_mass           ,lmask)
       osite%fmean_sfcw_temp           (1:z) = pack(isite%fmean_sfcw_temp           ,lmask)
       osite%fmean_sfcw_fliq           (1:z) = pack(isite%fmean_sfcw_fliq           ,lmask)
+      !EJL
+      osite%fmean_lit_depth          (1:z) = pack(isite%fmean_lit_depth          ,lmask)
+      osite%fmean_lit_energy         (1:z) = pack(isite%fmean_lit_energy         ,lmask)
+      osite%fmean_lit_mass           (1:z) = pack(isite%fmean_lit_mass           ,lmask)
+      osite%fmean_lit_temp           (1:z) = pack(isite%fmean_lit_temp           ,lmask)
+      osite%fmean_lit_fliq           (1:z) = pack(isite%fmean_lit_fliq           ,lmask)
       osite%fmean_rshort_gnd          (1:z) = pack(isite%fmean_rshort_gnd          ,lmask)
       osite%fmean_par_gnd             (1:z) = pack(isite%fmean_par_gnd             ,lmask)
       osite%fmean_rlong_gnd           (1:z) = pack(isite%fmean_rlong_gnd           ,lmask)
@@ -8797,6 +9149,12 @@ module ed_state_vars
       osite%dmean_sfcw_mass      (1:z) = pack(isite%dmean_sfcw_mass      (:),lmask)
       osite%dmean_sfcw_temp      (1:z) = pack(isite%dmean_sfcw_temp      (:),lmask)
       osite%dmean_sfcw_fliq      (1:z) = pack(isite%dmean_sfcw_fliq      (:),lmask)
+      !EJL
+      osite%dmean_lit_depth     (1:z) = pack(isite%dmean_lit_depth     (:),lmask)
+      osite%dmean_lit_energy    (1:z) = pack(isite%dmean_lit_energy    (:),lmask)
+      osite%dmean_lit_mass      (1:z) = pack(isite%dmean_lit_mass      (:),lmask)
+      osite%dmean_lit_temp      (1:z) = pack(isite%dmean_lit_temp      (:),lmask)
+      osite%dmean_lit_fliq      (1:z) = pack(isite%dmean_lit_fliq      (:),lmask)
       osite%dmean_rshort_gnd     (1:z) = pack(isite%dmean_rshort_gnd     (:),lmask)
       osite%dmean_par_gnd        (1:z) = pack(isite%dmean_par_gnd        (:),lmask)
       osite%dmean_rlong_gnd      (1:z) = pack(isite%dmean_rlong_gnd      (:),lmask)
@@ -8909,6 +9267,12 @@ module ed_state_vars
       osite%mmean_sfcw_mass      (1:z) = pack(isite%mmean_sfcw_mass      (:),lmask)
       osite%mmean_sfcw_temp      (1:z) = pack(isite%mmean_sfcw_temp      (:),lmask)
       osite%mmean_sfcw_fliq      (1:z) = pack(isite%mmean_sfcw_fliq      (:),lmask)
+!EJL
+      osite%mmean_lit_depth     (1:z) = pack(isite%mmean_lit_depth     (:),lmask)
+      osite%mmean_lit_energy    (1:z) = pack(isite%mmean_lit_energy    (:),lmask)
+      osite%mmean_lit_mass      (1:z) = pack(isite%mmean_lit_mass      (:),lmask)
+      osite%mmean_lit_temp      (1:z) = pack(isite%mmean_lit_temp      (:),lmask)
+      osite%mmean_lit_fliq      (1:z) = pack(isite%mmean_lit_fliq      (:),lmask)
       osite%mmean_rshort_gnd     (1:z) = pack(isite%mmean_rshort_gnd     (:),lmask)
       osite%mmean_par_gnd        (1:z) = pack(isite%mmean_par_gnd        (:),lmask)
       osite%mmean_rlong_gnd      (1:z) = pack(isite%mmean_rlong_gnd      (:),lmask)
@@ -9032,6 +9396,12 @@ module ed_state_vars
          osite%qmean_sfcw_mass     (n,1:z)  = pack(isite%qmean_sfcw_mass      (n,:),lmask)
          osite%qmean_sfcw_temp     (n,1:z)  = pack(isite%qmean_sfcw_temp      (n,:),lmask)
          osite%qmean_sfcw_fliq     (n,1:z)  = pack(isite%qmean_sfcw_fliq      (n,:),lmask)
+         !EJL
+         osite%qmean_lit_depth    (n,1:z)  = pack(isite%qmean_lit_depth     (n,:),lmask)
+         osite%qmean_lit_energy   (n,1:z)  = pack(isite%qmean_lit_energy    (n,:),lmask)
+         osite%qmean_lit_mass     (n,1:z)  = pack(isite%qmean_lit_mass      (n,:),lmask)
+         osite%qmean_lit_temp     (n,1:z)  = pack(isite%qmean_lit_temp      (n,:),lmask)
+         osite%qmean_lit_fliq     (n,1:z)  = pack(isite%qmean_lit_fliq      (n,:),lmask)
          osite%qmean_rshort_gnd    (n,1:z)  = pack(isite%qmean_rshort_gnd     (n,:),lmask)
          osite%qmean_par_gnd       (n,1:z)  = pack(isite%qmean_par_gnd        (n,:),lmask)
          osite%qmean_rlong_gnd     (n,1:z)  = pack(isite%qmean_rlong_gnd      (n,:),lmask)
@@ -10428,7 +10798,8 @@ module ed_state_vars
    !    7. FF_DBH class                                                                    !
    !    8. Mortality                                                                       !
    !    9. Month/13 months                                                                 !
-   !                                                                                       !
+   !    55. Litter layer - Dynamic soil carbon EJL
+   !
    ! The negative sign means that the variable has an extra dimension, for the diurnal     !
    !    cycle output.                                                                      !
    !                                                                                       !
@@ -10473,7 +10844,8 @@ module ed_state_vars
    !  31    : rank 1 : patch                                                               !
    ! -31    : rank 2 : patch, diurnal cycle                                                !
    !  32    : rank 2 : patch, s-layer                                                      !
-   !  33    : rank 2 : patch, w-layer                                                      !
+   !  33    : rank 2 : patch, w-layer  
+   !  55    : rank 2 : patch, litter-layer EJL
    !  34    : rank 2 : patch, pft                                                          !
    !  346   : rank 3 : patch, pft, ff_dbh                                                  !
    !  35    : rank 2 : patch, disturbance                                                  !
@@ -10835,8 +11207,8 @@ module ed_state_vars
       use soil_coms    , only : slz                 & ! intent(in)
                               , slxclay             & ! intent(in)
                               , slxsand             & ! intent(in)
-                              , isoilflg            ! ! intent(in)
-
+                              , isoilflg            & ! intent(in)
+                              , olz
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -10909,6 +11281,14 @@ module ed_state_vars
                             ,'NZS :90:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
+      call vtable_edio_i_sca(nzl,nvar,igr,0,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NZL :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i_sca(nzl,nvar,igr,1,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NZL :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
       call vtable_edio_i_sca(ff_nhgt,nvar,igr,0,0                                              &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'FF_NHGT :90:hist:anal:dail:mont:dcyc:year')
@@ -10964,6 +11344,24 @@ module ed_state_vars
       call vtable_edio_r(nzg,slz,nvar,igr,1,0                                              &
                         ,var_len,var_len_global,max_ptrs                                   &
                         ,'SLZ :92:hist:anal:dail:mont:dcyc:year')
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    1-D variables, organic layers. EJL                                              !
+      !------------------------------------------------------------------------------------!
+      var_len        = nzl
+      var_len_global = nzl
+
+
+
+      nvar=nvar+1
+      call vtable_edio_r(nzl,olz,nvar,igr,0,0                                              &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'OLZ :92:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(nzl,olz,nvar,igr,1,0                                              &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'OLZ :92:hist:anal:dail:mont:dcyc:year')
       !------------------------------------------------------------------------------------!
 
 
@@ -12306,6 +12704,52 @@ module ed_state_vars
                            ,'Sub-daily mean - Liquid fraction - temporary water layer'     &
                            ,'[         --]','(ipoly)'            )
       end if
+!EJL
+      if (associated(cgrid%fmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_lit_depth                                    &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_DEPTH_PY        :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Depth - temporary litter layer'              &
+                           ,'[          m]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_lit_energy                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_ENERGY_PY       :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Internal energy - temporary litter layer'    &
+                           ,'[       J/kg]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_lit_mass                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_MASS_PY         :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water mass - temporary litterlayer'          &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_lit_temp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_TEMP_PY         :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Temperature - temporary litterlayer'         &
+                           ,'[          K]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_lit_fliq                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_FLIQ_PY         :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Liquid fraction - temporary litterlayer'     &
+                           ,'[         --]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_rshort_gnd      )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rshort_gnd                                    &
@@ -13595,6 +14039,52 @@ module ed_state_vars
                            ,'Daily mean - Liquid fraction - temporary water layer'         &
                            ,'[         --]','(ipoly)'            )
       end if
+      !EJL
+      if (associated(cgrid%dmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_lit_depth                                    &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_DEPTH_PY        :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Depth - temporary litterlayer'                   &
+                           ,'[          m]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_lit_energy                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_ENERGY_PY       :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Internal energy - temporary litterlayer'         &
+                           ,'[       J/kg]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_lit_mass                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_MASS_PY         :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water mass - temporary litterlayer'              &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_lit_temp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_TEMP_PY         :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Temperature - temporary litterlayer'             &
+                           ,'[          K]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_lit_fliq                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_FLIQ_PY         :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Liquid fraction - temporary litterlayer'         &
+                           ,'[         --]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_rshort_gnd      )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rshort_gnd                                    &
@@ -14739,6 +15229,52 @@ module ed_state_vars
                            ,'MMEAN_SFCW_FLIQ_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction - temporary water layer'       &
+                           ,'[         --]','(ipoly)'            )
+      end if
+     !EJL
+      if (associated(cgrid%mmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_lit_depth                                    &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_DEPTH_PY        :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Depth - temporary litterlayer'                 &
+                           ,'[          m]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_lit_energy                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_ENERGY_PY       :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Internal energy - temporary litterlayer'       &
+                           ,'[       J/kg]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_lit_mass                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_MASS_PY         :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water mass - temporary litterlayer'            &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_lit_temp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_SFCW_LIT_PY         :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Temperature - temporary litterlayer'           &
+                           ,'[          K]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_lit_fliq                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_FLIQ_PY         :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Liquid fraction - temporary litterlayer'       &
                            ,'[         --]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_rshort_gnd      )) then
@@ -16270,6 +16806,52 @@ module ed_state_vars
                            ,'QMEAN_SFCW_FLIQ_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction - temporary water layer'          &
+                           ,'[         --]','(ndcycle,ipoly)'    )
+      end if
+      !EJL
+      if (associated(cgrid%qmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_lit_depth                                    &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_DEPTH_PY       :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Depth - temporary litterlayer'                    &
+                           ,'[          m]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_lit_energy                                   &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_ENERGY_PY      :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Internal energy - temporary lit layer'          &
+                           ,'[       J/kg]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_lit_mass                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_MASS_PY        :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Water mass - temporary litterlayer'               &
+                           ,'[      kg/m2]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_lit_temp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_TEMP_PY        :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Temperature - temporary litterlayer'              &
+                           ,'[          K]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_lit_fliq                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_FLIQ_PY        :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Liquid fraction - temporary litterlayer'          &
                            ,'[         --]','(ndcycle,ipoly)'    )
       end if
       if (associated(cgrid%qmean_rshort_gnd      )) then
@@ -19390,7 +19972,7 @@ module ed_state_vars
    !=======================================================================================!
    !     This sub-routine will fill the variable table with the sitetype variables (patch- !
    ! -level).  Because of the sheer number of variables, we must split the subroutines     !
-   ! into smaller routines.                                                                !
+   ! into smaller routines. EJL - adding p55 here                                          !
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype(igr,ipy,isi,init)
 
@@ -19441,6 +20023,7 @@ module ed_state_vars
       call filltab_sitetype_p33     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p34     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p346    (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p55     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       !------------------------------------------------------------------------------------!
 
       !----- Save the number of patch-level (sitetype) variables that go to the output. ---!
@@ -19517,6 +20100,14 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'NLEV_SFCWATER :30:hist:year') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+      !EJL
+      if (associated(csite%nlev_litter)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,csite%nlev_litter,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'NLEV_LITTER :30:hist:year')
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+      end if
+
       !------------------------------------------------------------------------------------!
 
       return
@@ -19577,47 +20168,47 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%fast_soil_C)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%fast_soil_C,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'FAST_SOIL_C :31:hist:year:anal') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
+!      if (associated(csite%fast_soil_C)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%fast_soil_C,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'FAST_SOIL_C :31:hist:year:anal') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
 
-      if (associated(csite%slow_soil_C)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%slow_soil_C,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:year:anal') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
+!      if (associated(csite%slow_soil_C)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%slow_soil_C,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:year:anal') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
 
-      if (associated(csite%structural_soil_C)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%structural_soil_C,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_C :31:hist:year:anal') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%structural_soil_L)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%structural_soil_L,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_L :31:hist:year:anal') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%mineralized_soil_N)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mineralized_soil_N,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:year:anal') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%fast_soil_N)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%fast_soil_N,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'FAST_SOIL_N :31:hist:year:anal') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
+!      if (associated(csite%structural_soil_C)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%structural_soil_C,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_C :31:hist:year:anal') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
+!
+!      if (associated(csite%structural_soil_L)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%structural_soil_L,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_L :31:hist:year:anal') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
+!
+!      if (associated(csite%mineralized_soil_N)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%mineralized_soil_N,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:year:anal') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
+!
+!      if (associated(csite%fast_soil_N)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%fast_soil_N,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'FAST_SOIL_N :31:hist:year:anal') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
       
       if (associated(csite%sum_dgd)) then
          nvar=nvar+1
@@ -19956,20 +20547,6 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%today_A_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_A_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_A_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
-      end if
-
-      if (associated(csite%today_Af_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_Af_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_AF_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
-      end if
-
       if (associated(csite%veg_rough)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%veg_rough,nvar,igr,init,csite%paglob_id, &
@@ -20026,20 +20603,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%mineralized_N_loss)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mineralized_N_loss,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'NMIN_LOSS :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-
-      if (associated(csite%mineralized_N_input)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mineralized_N_input,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'NMIN_INPUT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
+!      if (associated(csite%mineralized_N_loss)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%mineralized_N_loss,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'NMIN_LOSS :31:hist') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
+!
+!
+!      if (associated(csite%mineralized_N_input)) then
+!         nvar=nvar+1
+!           call vtable_edio_r(npts,csite%mineralized_N_input,nvar,igr,init,csite%paglob_id, &
+!           var_len,var_len_global,max_ptrs,'NMIN_INPUT :31:hist') 
+!         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!      end if
 
       if (associated(csite%rshort_g)) then
          nvar=nvar+1
@@ -20139,6 +20716,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%rlong_lit)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%rlong_lit,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'RLONG_LIT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%albedo)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%albedo,nvar,igr,init,csite%paglob_id, &
@@ -20208,32 +20792,18 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'TOTAL_SFCW_DEPTH :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+      
+      if (associated(csite%peat_depth)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%peat_depth,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PEAT_DEPTH :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
 
       if (associated(csite%snowfac)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%snowfac,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'SNOWFAC :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%A_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%A_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'A_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%f_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%f_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'F_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%rh)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%rh,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'RH :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -20614,6 +21184,52 @@ module ed_state_vars
                            ,'FMEAN_SFCW_FLIQ_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Liquid fraction - temporary water layer'     &
+                           ,'[         --]','(ipatch)'            )
+      end if
+      !EJL
+      if (associated(csite%fmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_lit_depth                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_DEPTH_PA        :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Depth - temporary water layer'               &
+                           ,'[          m]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_lit_energy                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_ENERGY_PA       :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Internal energy - temporary litterlayer'     &
+                           ,'[       J/kg]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_lit_mass                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_MASS_PA         :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water mass - temporary litterlayer'          &
+                           ,'[      kg/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_lit_temp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_TEMP_PA         :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Temperature - temporary litterlayer'         &
+                           ,'[          K]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_lit_fliq                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LIT_FLIQ_PA         :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Liquid fraction - temporary litterlayer'     &
                            ,'[         --]','(ipatch)'            )
       end if
       if (associated(csite%fmean_rshort_gnd      )) then
@@ -21157,6 +21773,52 @@ module ed_state_vars
                            ,'Daily mean - Liquid fraction - temporary water layer'         &
                            ,'[         --]','(ipatch)'            )
       end if
+      !EJL
+      if (associated(csite%dmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_lit_depth                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_DEPTH_PA        :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Depth - temporary litterlayer'                   &
+                           ,'[          m]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_lit_energy                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_ENERGY_PA       :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Internal energy - temporary litterlayer'         &
+                           ,'[       J/kg]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_lit_mass                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_MASS_PA         :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water mass - temporary litterlayer'              &
+                           ,'[      kg/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_lit_temp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_TEMP_PA         :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Temperature - temporary litterlayer'             &
+                           ,'[          K]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_lit_fliq                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LIT_FLIQ_PA         :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Liquid fraction - temporary litterlayer'         &
+                           ,'[         --]','(ipatch)'            )
+      end if
       if (associated(csite%dmean_rshort_gnd      )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rshort_gnd                                    &
@@ -21659,6 +22321,52 @@ module ed_state_vars
                            ,'MMEAN_SFCW_FLIQ_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction - temporary water layer'       &
+                           ,'[         --]','(ipatch)'            )
+      end if
+      !EJL
+      if (associated(csite%mmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_lit_depth                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_DEPTH_PA        :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Depth - temporary litterlayer'                 &
+                           ,'[          m]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_lit_energy                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LITTER_ENERGY_PA       :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Internal energy - temporary litterlayer'       &
+                           ,'[       J/kg]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_lit_mass                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_MASS_PA         :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water mass - temporary litterlayer'            &
+                           ,'[      kg/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_lit_temp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_TEMP_PA         :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Temperature - temporary litterlayer'           &
+                           ,'[          K]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_lit_fliq                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LIT_FLIQ_PA         :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Liquid fraction - temporary litterlayer'       &
                            ,'[         --]','(ipatch)'            )
       end if
       if (associated(csite%mmean_rshort_gnd      )) then
@@ -22411,6 +23119,52 @@ module ed_state_vars
                            ,'QMEAN_SFCW_FLIQ_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction - temporary water layer'          &
+                           ,'[         --]','(ndcycle,ipatch)'    )
+      end if
+     !EJL
+      if (associated(csite%qmean_lit_depth      )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_lit_depth                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_DEPTH_PA       :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Depth - temporary litterlayer'                    &
+                           ,'[          m]','(ndcycle,ipatch)'    )
+      end if
+      if (associated(csite%qmean_lit_energy     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_lit_energy                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_ENERGY_PA      :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Internal energy - temporary litterlayer'          &
+                           ,'[       J/kg]','(ndcycle,ipatch)'    )
+      end if
+      if (associated(csite%qmean_lit_mass       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_lit_mass                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_MASS_PA        :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Water mass - temporary litterlayer'               &
+                           ,'[      kg/m2]','(ndcycle,ipatch)'    )
+      end if
+      if (associated(csite%qmean_lit_temp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_lit_temp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_TEMP_PA        :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Temperature - temporary litterlayer'              &
+                           ,'[          K]','(ndcycle,ipatch)'    )
+      end if
+      if (associated(csite%qmean_lit_fliq       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_lit_fliq                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LIT_FLIQ_PA        :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Liquid fraction - temporary litterlayer'          &
                            ,'[         --]','(ndcycle,ipatch)'    )
       end if
       if (associated(csite%qmean_rshort_gnd      )) then
@@ -23291,7 +24045,216 @@ module ed_state_vars
    !=======================================================================================!
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the patch-level variables           !
+   ! (sitetype) that have two dimensions (nzl,npatches).    EJL                            !
+   !---------------------------------------------------------------------------------------!
+    subroutine filltab_sitetype_p55(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+        use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+        , metadata_edio  ! ! sub-routine
 
+        implicit none
+        !----- Arguments. -------------------------------------------------------------------!
+        type(sitetype), target        :: csite
+        integer       , intent(in)    :: init
+        integer       , intent(in)    :: igr
+        integer       , intent(in)    :: var_len
+        integer       , intent(in)    :: max_ptrs
+        integer       , intent(in)    :: var_len_global
+        integer       , intent(inout) :: nvar
+        !----- Local variables. -------------------------------------------------------------!
+        integer                       :: npts
+        !------------------------------------------------------------------------------------!
+
+
+        !------------------------------------------------------------------------------------!
+        !------------------------------------------------------------------------------------!
+        !       This part should have only 2-D vectors with dimensions npatches and nzl.     !
+        !  Notice that they all use the same npts.  Here you should only add variables of    !
+        ! type 55.                                                                           !
+        !------------------------------------------------------------------------------------!
+        npts = csite%npatches * nzl
+
+
+      if (associated(csite%fast_soil_C)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fast_soil_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FAST_SOIL_C :55:hist:year:mont:dail:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%slow_soil_C)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%slow_soil_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :55:hist:year:mont:dail:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%structural_soil_C)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%structural_soil_C,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_C :55:hist:year:mont:dail:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%structural_soil_L)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%structural_soil_L,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_L :55:hist:year:mont:dail:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%mineralized_soil_N)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%mineralized_soil_N,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :55:hist:year:mont:dail:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%fast_soil_N)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fast_soil_N,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FAST_SOIL_N :55:hist:year:mont:dail:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%rh)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'RH :55:hist:year:mont:dail:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%today_A_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_A_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_A_DECOMP :55:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      if (associated(csite%today_Af_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_Af_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_AF_DECOMP :55:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      if (associated(csite%A_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%A_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'A_DECOMP :55:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%f_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%f_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'F_DECOMP :55:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+!EJL
+        if (associated(csite%litter_mass)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%litter_mass,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'LITTER_MASS :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%litter_energy)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%litter_energy,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'LITTER_ENERGY :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%litter_depth)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%litter_depth,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'LITTER_DEPTH :55:hist:year:mont:dail')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','m')
+        end if
+
+        if (associated(csite%rshort_lit)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%rshort_lit,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'RSHORT_LIT :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%rshort_lit_beam)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%rshort_lit_beam,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'RSHORT_LIT_BEAM :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%rshort_lit_diffuse)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%rshort_lit_diffuse,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'RSHORT_LIT_DIFFUSE :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%par_lit)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%par_lit,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'PAR_LIT :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%par_lit_beam)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%par_lit_beam,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'PAR_LIT_BEAM :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%par_lit_diffuse)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%par_lit_diffuse,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'PAR_LIT_DIFFUSE :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%litter_tempk)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%litter_tempk,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'LITTER_TEMPK :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%litter_fracliq)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,csite%litter_fracliq,nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'LITTER_FRACLIQ :55:hist')
+            call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+        end if
+
+        if (associated(csite%mineralized_N_loss)) then
+           nvar=nvar+1
+             call vtable_edio_r(npts,csite%mineralized_N_loss,nvar,igr,init,csite%paglob_id, &
+             var_len,var_len_global,max_ptrs,'NMIN_LOSS :55:hist') 
+           call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+        end if
+
+
+        if (associated(csite%mineralized_N_input)) then
+           nvar=nvar+1
+             call vtable_edio_r(npts,csite%mineralized_N_input,nvar,igr,init,csite%paglob_id, &
+             var_len,var_len_global,max_ptrs,'NMIN_INPUT :55:hist') 
+           call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+        end if
+
+
+
+        !------------------------------------------------------------------------------------!
+        !------------------------------------------------------------------------------------!
+        return
+    end subroutine filltab_sitetype_p55
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 

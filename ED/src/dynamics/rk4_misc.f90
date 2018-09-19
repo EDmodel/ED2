@@ -481,6 +481,7 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
    use consts_coms          , only : day_sec8              & ! intent(in)
                                    , umol_2_kgC8           ! ! intent(in)
    use rk4_coms             , only : rk4patchtype          ! ! structure
+   use grid_coms            , only : nzl
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -490,6 +491,7 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
    integer                            :: ico
+   integer                            :: k
    !---------------------------------------------------------------------------------------!
 
 
@@ -528,7 +530,10 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
 
    !----- Heterotrophic respiration terms. ------------------------------------------------!
    targetp%cwd_rh = dble(sourcesite%cwd_rh(ipa))
-   targetp%rh     = dble(sourcesite%rh    (ipa))
+!   targetp%rh     = dble(sourcesite%rh    (ipa))
+   do k=1,nzl
+     targetp%rh(k)     = dble(sourcesite%rh    (k,ipa))
+   end do
 
    return
 end subroutine copy_patch_init_carbon
@@ -3396,7 +3401,7 @@ subroutine print_csiteipa(csite, ipa)
    use ed_state_vars         , only : sitetype      & ! structure
                                     , patchtype     ! ! structure
    use ed_misc_coms          , only : current_time  ! ! intent(in)
-   use grid_coms             , only : nzg           ! ! intent(in)
+   use grid_coms             , only : nzg,nzl       ! ! intent(in)
    use ed_max_dims           , only : n_pft         ! ! intent(in)
    use consts_coms           , only : day_sec       & ! intent(in)
                                     , umol_2_kgC    ! ! intent(in)
@@ -3522,10 +3527,10 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
    write (unit=*,fmt='(8(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'          &
-                                    ,'          RH','      CWD_RH','AVGDAILY_TMP'          &
+                                    ,'     RH(nzl)','      CWD_RH','AVGDAILY_TMP'          &
                                     ,'     SUM_CHD','     SUM_DGD'
    write (unit=*,fmt='(i12,1x,7(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)         &
-         ,csite%area(ipa),csite%rh(ipa),csite%cwd_rh(ipa),csite%avg_daily_temp(ipa)        &
+         ,csite%area(ipa),csite%rh(nzl,ipa),csite%cwd_rh(ipa),csite%avg_daily_temp(ipa)    &
          ,csite%sum_chd(ipa),csite%sum_dgd(ipa)
 
    write (unit=*,fmt='(a)'  ) ' '
@@ -3613,7 +3618,7 @@ subroutine print_rk4patch(y,csite,ipa)
                                     , rk4site               ! ! intent(in)
    use ed_state_vars         , only : sitetype              & ! structure
                                     , patchtype             ! ! structure
-   use grid_coms             , only : nzg                   ! ! intent(in)
+   use grid_coms             , only : nzg,nzl               ! ! intent(in)
    use ed_misc_coms          , only : current_time          ! ! intent(in)
    use consts_coms           , only : pio1808               ! ! intent(in)
    use therm_lib8            , only : thetaeiv8             & ! function
@@ -3855,7 +3860,7 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
    write (unit=*,fmt='(2(a12,1x))')  '          RH','      CWD_RH'
-   write (unit=*,fmt='(2(es12.4,1x))') y%rh,y%cwd_rh
+   write (unit=*,fmt='(2(es12.4,1x))') y%rh(nzl),y%cwd_rh
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -3923,7 +3928,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
    use ed_misc_coms , only : current_time  ! ! intent(in)
    use ed_state_vars, only : sitetype      & ! structure
                            , patchtype     ! ! structure
-   use grid_coms    , only : nzg           ! ! intent(in)
+   use grid_coms    , only : nzg           & ! intent(in)
+                           , nzl           ! ! intent(in)  
    use rk4_coms     , only : rk4patchtype  & ! structure
                            , rk4site       & ! intent(in)
                            , detail_pref   ! ! intent(in)
@@ -4002,7 +4008,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
    sum_plresp      = 0.d0
    sum_lai         = 0.d0
    sum_wai         = 0.d0
-   soil_rh         = initp%rh-initp%cwd_rh
+   soil_rh         = initp%rh(nzl)-initp%cwd_rh
    cpatch => csite%patch(ipa)
    do ico=1,cpatch%ncohorts
       if (initp%leaf_resolvable(ico)) then

@@ -279,7 +279,7 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
    do k = 1, ksn
       if (initp%sfcwater_depth(k) > 0.d0 .and. initp%sfcwater_mass(k) > 0.d0) then
-         snden = initp%sfcwater_mass(k) / initp%sfcwater_depth(k)
+         snden = initp%sfcwater_mass(k) / initp%sfcwater_depth(k) *2. !EJL 4/30/18
          rk4aux(ibuff)%th_cond_p(k) = ss(1) * exp(ss(2) * initp%sfcwater_tempk(k))         &
                                 * (ss(3) + snden * (ss(4) + snden * (ss(5) + snden*ss(6))))
       else
@@ -860,6 +860,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use budget_utils          , only : compute_netrad       ! ! function
+   use grid_coms             , only : nzl
    !$ use omp_lib
 
    implicit none
@@ -954,6 +955,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                                                          ! the CO2 ODE
    real(kind=8)                     :: max_dwdt          ! Used for capping leaf evap
    integer                          :: ibuff
+   integer                          :: k
+   real(kind=8)                     :: srep              ! total soil resp
    !----- Functions -----------------------------------------------------------------------!
    real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
    !---------------------------------------------------------------------------------------!
@@ -1246,13 +1249,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    !    Heterotrophic respiration is a patch-level variable, so we initialise the total    !
    ! vegetation to canopy carbon flux with the total heterotrophic respiration due to the  !
    ! coarse woody debris, and remove that from the ground to canopy carbon flux to avoid   !
-   ! double counting.                                                                      !
+   ! double counting. EJL 5/1/18 check rh                                                  !
    !---------------------------------------------------------------------------------------!
    cflxlc_tot       = 0.d0
    cflxwc_tot       = initp%cwd_rh
-   cflxgc           = initp%rh - initp%cwd_rh
+   srep = 0.
+   do k=1,nzl
+     srep = srep + initp%rh(k)
+   end do 
+   cflxgc           = srep - initp%cwd_rh
    !---------------------------------------------------------------------------------------!
-
+   
    cohortloop: do ico = 1,cpatch%ncohorts
 
       cflxgc = cflxgc + initp%root_resp(ico)        + initp%root_growth_resp(ico)          &

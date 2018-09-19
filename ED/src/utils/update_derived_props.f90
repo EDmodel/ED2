@@ -472,7 +472,7 @@ subroutine update_polygon_derived_props(cgrid)
                                     , sitetype           & ! structure
                                     , patchtype          ! ! structure
    use soil_coms             , only : dslz               ! ! intent(in)
-   use grid_coms             , only : nzg                ! ! intent(in)
+   use grid_coms             , only : nzg,nzl            ! ! intent(in)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use ed_misc_coms          , only : ddbhi              ! ! intent(in)
    use pft_coms              , only : c2n_leaf           & ! intent(in)
@@ -620,37 +620,41 @@ subroutine update_polygon_derived_props(cgrid)
 
 
             !----- Integrate soil properties. ---------------------------------------------!
-            cgrid%fast_soil_c   (ipy) = cgrid%fast_soil_c        (ipy)                     &
-                                      + csite%fast_soil_c        (ipa)                     &
+            ! EJL - Adding loop over vertical layers
+            do k=1,nzl
+               cgrid%fast_soil_c   (ipy) = cgrid%fast_soil_c        (ipy)                  &
+                                      + csite%fast_soil_c        (k,ipa)                   &
                                       * patch_wgt
-            cgrid%slow_soil_c   (ipy) = cgrid%slow_soil_c        (ipy)                     &
-                                      + csite%slow_soil_c        (ipa)                     &
+               cgrid%slow_soil_c   (ipy) = cgrid%slow_soil_c        (ipy)                  &
+                                      + csite%slow_soil_c        (k,ipa)                   &
                                       * patch_wgt
-            cgrid%struct_soil_c (ipy) = cgrid%struct_soil_c      (ipy)                     &
-                                      + csite%structural_soil_c  (ipa)                     &
+               cgrid%struct_soil_c (ipy) = cgrid%struct_soil_c      (ipy)                  &
+                                      + csite%structural_soil_c  (k,ipa)                   &
                                       * patch_wgt
-            cgrid%struct_soil_l (ipy) = cgrid%struct_soil_l      (ipy)                     &
-                                      + csite%structural_soil_l  (ipa)                     &
+               cgrid%struct_soil_l (ipy) = cgrid%struct_soil_l      (ipy)                  &
+                                      + csite%structural_soil_l  (k,ipa)                   &
                                       * patch_wgt
-            cgrid%fast_soil_n   (ipy) = cgrid%fast_soil_n        (ipy)                     &
-                                      + csite%fast_soil_n        (ipa)                     &
+               cgrid%fast_soil_n   (ipy) = cgrid%fast_soil_n        (ipy)                  &
+                                      + csite%fast_soil_n        (k,ipa)                   &
                                       * patch_wgt
-            cgrid%mineral_soil_n(ipy) = cgrid%mineral_soil_n     (ipy)                     &
-                                      + csite%mineralized_soil_n (ipa)                     &
+               cgrid%mineral_soil_n(ipy) = cgrid%mineral_soil_n     (ipy)                  &
+                                      + csite%mineralized_soil_n (k,ipa)                   &
                                       * patch_wgt
+            
             !------------------------------------------------------------------------------!
             !     I am definitely not sure about the way I did CWD.  I just used the same  !
             ! fraction used to compute cwd_rh in soil_rh (soil_respiration.f90) to         !
             ! determine the fraction of the pools that are CWD.                            !
             !------------------------------------------------------------------------------!
             cgrid%cwd_c         (ipy) = cgrid%cwd_c              (ipy)                     &
-                                      + ( csite%slow_soil_c      (ipa)                     &
-                                        + csite%structural_soil_c(ipa) )                   &
+                                      + ( csite%slow_soil_c      (k,ipa)                   &
+                                        + csite%structural_soil_c(k,ipa) )                 &
                                       * cwd_frac * patch_wgt
             cgrid%cwd_n         (ipy) = cgrid%cwd_n              (ipy)                     &
-                                      + ( csite%slow_soil_c      (ipa) / c2n_slow          &
-                                        + csite%structural_soil_c(ipa) / c2n_structural )  &
+                                  + ( csite%slow_soil_c      (k,ipa) / c2n_slow            &
+                                    + csite%structural_soil_c(k,ipa) / c2n_structural )    &
                                       * cwd_frac * patch_wgt
+            end do  
             !------------------------------------------------------------------------------!
 
 
@@ -830,11 +834,13 @@ subroutine update_polygon_derived_props(cgrid)
             !------------------------------------------------------------------------------!
             !    Update the patch-related N budget variables.                              !
             !------------------------------------------------------------------------------!
-            cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                             &
-                                       + csite%mineralized_N_input   (ipa)   * patch_wgt
-            cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                             &
-                                       + ( csite%mineralized_N_input (ipa)                 &
-                                         - csite%mineralized_N_loss  (ipa) ) * patch_wgt
+            do k=1,nzl
+              cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                           &
+                                       + csite%mineralized_N_input   (k,ipa)   * patch_wgt
+              cgrid%Nnet_min     (ipy) = cgrid%Ngross_min(ipy)                             &
+                                       + ( csite%mineralized_N_input (k,ipa)               &
+                                         - csite%mineralized_N_loss  (k,ipa) ) * patch_wgt
+            end do
             cgrid%Nbiomass_uptake(ipy) = cgrid%Ngross_min(ipy)                             &
                                        + csite%total_plant_nitrogen_uptake(ipa)* patch_wgt
             !------------------------------------------------------------------------------!

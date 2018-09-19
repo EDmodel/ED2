@@ -2460,6 +2460,7 @@ module average_utils
                                , dtlsm         ! ! intent(in)
       use consts_coms   , only : umols_2_kgCyr & ! intent(in)
                                , day_sec       ! ! intent(in)
+      use grid_coms     , only : nzl
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -2468,6 +2469,7 @@ module average_utils
       type(sitetype)   , pointer    :: csite
       type(patchtype)  , pointer    :: cpatch
       integer                       :: ipy
+      integer                       :: k
       integer                       :: isi
       integer                       :: ipa
       integer                       :: ico
@@ -2487,16 +2489,16 @@ module average_utils
             csite => cpoly%site(isi)
 
             patchloop: do ipa=1,csite%npatches
-
-               csite%today_A_decomp (ipa) = csite%today_A_decomp(ipa)  * dtlsm_o_daysec
-               csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa) * dtlsm_o_daysec
-
+               do k=1,nzl
+                 csite%today_A_decomp (k,ipa) = csite%today_A_decomp(k,ipa)  * dtlsm_o_daysec
+                 csite%today_Af_decomp(k,ipa) = csite%today_Af_decomp(k,ipa) * dtlsm_o_daysec
+               end do
                !----- Copy the decomposition terms to the daily mean if they are sought. --!
                if (writing_long) then
-                  csite%dmean_A_decomp(ipa)  = csite%today_A_decomp(ipa)
-                  csite%dmean_Af_decomp(ipa) = csite%today_Af_decomp(ipa)
+                  csite%dmean_A_decomp(ipa)  = csite%today_A_decomp(nzl,ipa)
+                  csite%dmean_Af_decomp(ipa) = csite%today_Af_decomp(nzl,ipa)
                end if
-
+             
                cpatch => csite%patch(ipa)
                
                !----- Included a loop so it won't crash with empty cohorts... -------------!
@@ -3132,8 +3134,8 @@ module average_utils
                cpatch => csite%patch(ipa)
                
                !----- Reset variables stored in sitetype. ---------------------------------!
-               csite%today_A_decomp(ipa)  = 0.0
-               csite%today_Af_decomp(ipa) = 0.0
+               csite%today_A_decomp(:,ipa)  = 0.0
+               csite%today_Af_decomp(:,ipa) = 0.0
                !---------------------------------------------------------------------------!
 
 
@@ -3582,6 +3584,7 @@ module average_utils
       use consts_coms  , only : yr_day        ! ! intent(in)
       use ed_misc_coms , only : current_time  & ! intent(in)
                               , simtime       ! ! structure
+      use grid_coms    , only : nzl
       implicit none
       !----- Argument. --------------------------------------------------------------------!
       type(edtype)      , target    :: cgrid
@@ -4237,22 +4240,22 @@ module average_utils
                ! time step is one day.                                                     !
                !---------------------------------------------------------------------------!
                csite%mmean_fast_soil_c      (ipa) = csite%mmean_fast_soil_c      (ipa)     &
-                                                  + csite%fast_soil_c            (ipa)     &
+                                                  + csite%fast_soil_c        (nzl,ipa)     &
                                                   * ndaysi
                csite%mmean_slow_soil_c      (ipa) = csite%mmean_slow_soil_c      (ipa)     &
-                                                  + csite%slow_soil_c            (ipa)     &
+                                                  + csite%slow_soil_c        (nzl,ipa)     &
                                                   * ndaysi
                csite%mmean_struct_soil_c    (ipa) = csite%mmean_struct_soil_c    (ipa)     &
-                                                  + csite%structural_soil_c      (ipa)     &
+                                                  + csite%structural_soil_c  (nzl,ipa)     &
                                                   * ndaysi
                csite%mmean_struct_soil_l    (ipa) = csite%mmean_struct_soil_l    (ipa)     &
-                                                  + csite%structural_soil_l      (ipa)     &
+                                                  + csite%structural_soil_l  (nzl,ipa)     &
                                                   * ndaysi
                csite%mmean_fast_soil_n      (ipa) = csite%mmean_fast_soil_n      (ipa)     &
-                                                  + csite%fast_soil_n            (ipa)     &
+                                                  + csite%fast_soil_n        (nzl,ipa)     &
                                                   * ndaysi
                csite%mmean_mineral_soil_n   (ipa) = csite%mmean_mineral_soil_n   (ipa)     &
-                                                  + csite%mineralized_soil_n     (ipa)     &
+                                                  + csite%mineralized_soil_n (nzl,ipa)     &
                                                   * ndaysi
                !---------------------------------------------------------------------------!
 

@@ -12,6 +12,7 @@ subroutine near_bare_ground_init(cgrid)
                              , allocate_sitetype ! ! subroutine
    use ed_misc_coms   , only : ied_init_mode     ! ! intent(in)
    use physiology_coms, only : n_plant_lim       ! ! intent(in)
+   use grid_coms      , only : nzl
 
    implicit none
 
@@ -45,27 +46,27 @@ subroutine near_bare_ground_init(cgrid)
          !---------------------------------------------------------------------------------!
          select case (n_plant_lim)
          case (0)
-            csite%fast_soil_C        (1) = 0.0
-            csite%slow_soil_C        (1) = 0.0
-            csite%structural_soil_C  (1) = 0.0
-            csite%structural_soil_L  (1) = 0.0
-            csite%mineralized_soil_N (1) = 0.0
-            csite%fast_soil_N        (1) = 0.0
+            csite%fast_soil_C        (:,1) = 0.0
+            csite%slow_soil_C        (:,1) = 0.0
+            csite%structural_soil_C  (:,1) = 0.0
+            csite%structural_soil_L  (:,1) = 0.0
+            csite%mineralized_soil_N (:,1) = 0.0
+            csite%fast_soil_N        (:,1) = 0.0
 
          case (1)
-            csite%fast_soil_C        (1) = 0.2
-            csite%slow_soil_C        (1) = 0.01
-            csite%structural_soil_C  (1) = 10.0
-            csite%structural_soil_L  (1) = csite%structural_soil_C (1)
-            csite%mineralized_soil_N (1) = 1.0
-            csite%fast_soil_N        (1) = 1.0
+            csite%fast_soil_C        (nzl,1) = 20.0  ! 0.2
+            csite%slow_soil_C        (nzl,1) = 10.0  ! 0.01
+            csite%structural_soil_C  (nzl,1) = 50.0  ! 10.0
+            csite%structural_soil_L  (nzl,1) = csite%structural_soil_C (nzl,1)
+            csite%mineralized_soil_N (nzl,1) = 1.0
+            csite%fast_soil_N        (nzl,1) = 1.0
 
          end select
          !---------------------------------------------------------------------------------!
 
          csite%sum_dgd            (1) = 0.0
          csite%sum_chd            (1) = 0.0
-         csite%plant_ag_biomass   (1) = 0.
+         csite%plant_ag_biomass   (1) = 0.0
 
          !----- We now populate the cohorts with near bare ground condition. --------------!
          select case (ied_init_mode)
@@ -429,6 +430,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , size2bl            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
+   use grid_coms          , only : nzl
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -476,20 +478,20 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
 
             select case (n_plant_lim)
             case (0)
-               csite%fast_soil_C        (ipa) = 0.0
-               csite%slow_soil_C        (ipa) = 0.0
-               csite%structural_soil_C  (ipa) = 0.0
-               csite%structural_soil_L  (ipa) = 0.0
-               csite%mineralized_soil_N (ipa) = 0.0
-               csite%fast_soil_N        (ipa) = 0.0
+               csite%fast_soil_C        (:,ipa) = 0.0
+               csite%slow_soil_C        (:,ipa) = 0.0
+               csite%structural_soil_C  (:,ipa) = 0.0
+               csite%structural_soil_L  (:,ipa) = 0.0
+               csite%mineralized_soil_N (:,ipa) = 0.0
+               csite%fast_soil_N        (:,ipa) = 0.0
 
             case (1)
-               csite%fast_soil_C        (ipa) = 0.2
-               csite%slow_soil_C        (ipa) = 0.01
-               csite%structural_soil_C  (ipa) = 10.0
-               csite%structural_soil_L  (ipa) = csite%structural_soil_C (1)
-               csite%mineralized_soil_N (ipa) = 1.0
-               csite%fast_soil_N        (ipa) = 1.0
+               csite%fast_soil_C        (nzl,ipa) = 0.2
+               csite%slow_soil_C        (nzl,ipa) = 0.01
+               csite%structural_soil_C  (nzl,ipa) = 10.0
+               csite%structural_soil_L  (nzl,ipa) = csite%structural_soil_C(nzl,1)
+               csite%mineralized_soil_N (nzl,ipa) = 1.0
+               csite%fast_soil_N        (nzl,ipa) = 1.0
 
             end select
             !------------------------------------------------------------------------------!

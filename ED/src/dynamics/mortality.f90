@@ -20,7 +20,9 @@ module mortality
                                , mort2                      & ! intent(in)
                                , mort3                      & ! intent(in)
                                , plant_min_temp             & ! intent(in)
-                               , frost_mort                 ! ! intent(in)
+                               , frost_mort                 & ! intent(in)
+                               , wind_mort                  & ! intent(in)
+                               , hgt_min                    ! ! intent(in)
       use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
                                , treefall_hite_threshold    & ! intent(in)
                                , time2canopy                ! ! intent(in)
@@ -93,6 +95,17 @@ module mortality
       !cpatch%mort_rate(5,ico) = TBD
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      ! 6.   Mortality due to windshear, function of PFT and hite. Has same log function   !
+      ! as wind. mort = A*ln(hite/hite_min)                                                !
+      ! EJL                                                                                !
+      !------------------------------------------------------------------------------------!
+      cpatch%mort_rate(6,ico) = wind_mort(ipft)*log(cpatch%hite(ico)/hgt_min(ipft))
+      !------------------------------------------------------------------------------------!
+
+
       return
    end subroutine mortality_rates
    !=======================================================================================!
@@ -138,8 +151,6 @@ module mortality
    end subroutine disturbance_mortality
    !=======================================================================================!
    !=======================================================================================!
-
-
 
 
 
@@ -292,6 +303,7 @@ module mortality
    end function survivorship
    !=======================================================================================!
    !=======================================================================================!
+
 end module mortality
 !==========================================================================================!
 !==========================================================================================!

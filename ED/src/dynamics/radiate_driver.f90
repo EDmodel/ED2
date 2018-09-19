@@ -22,7 +22,8 @@ subroutine radiate_driver(cgrid)
                                     , rshort_twilight_min   ! ! intent(in)
    use consts_coms           , only : pio180                ! ! intent(in)
    use grid_coms             , only : nzg                   & ! intent(in)
-                                    , nzs                   ! ! intent(in)
+                                    , nzs                   & ! intent(in)
+                                    , nzl                   ! ! intent(in)
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
    type(edtype)     , target   :: cgrid
@@ -156,7 +157,7 @@ subroutine radiate_driver(cgrid)
 
 
             !----- Get unnormalized radiative transfer information. -----------------------!
-            call sfcrad_ed(cpoly%cosaoi(isi),csite,nzg,nzs,cpoly%ntext_soil(:,isi)         &
+            call sfcrad_ed(cpoly%cosaoi(isi),csite,nzg,nzs,nzl,cpoly%ntext_soil(:,isi)         &
                            ,cpoly%ncol_soil(isi),tuco,cpoly%met(isi)%rlong,twilight)
             !------------------------------------------------------------------------------!
 
@@ -189,9 +190,9 @@ end subroutine radiate_driver
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
-! and soil.                                                                                !
+! and soil.   !EJL added litter                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilight)
+subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,twilight)
 
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
@@ -244,6 +245,7 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilig
    type(sitetype)                  , target      :: csite
    integer                         , intent(in)  :: mzg
    integer                         , intent(in)  :: mzs
+   integer                         , intent(in)  :: mzl
    integer         , dimension(mzg), intent(in)  :: ntext_soil
    integer                         , intent(in)  :: ncol_soil
    real                            , intent(in)  :: rlong
@@ -261,6 +263,7 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilig
    integer                                       :: colour
    integer                                       :: k
    integer                                       :: ksn
+   integer                                       :: klit !vert litter layer
    integer                                       :: tuco_leaf
    real                                          :: fcpct
    real                                          :: albedo_soil_par
@@ -713,8 +716,17 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilig
       end select
       !------------------------------------------------------------------------------------!
 
-
-
+      !EJL IF peat/litter is present, then set soil albedo to peat values
+      klit           = 0!csite%nlev_litter(ipa)
+      if (klit /= 0) then
+        !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
+        fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
+        albedo_soil_par = max (0.07, 0.14 * (1.0 - fcpct))
+        albedo_soil_nir = albedo_soil_par
+        !----- Damp soil, for temporary surface water albedo. ----------------------------!
+        albedo_damp_par = 0.14
+        albedo_damp_nir = 0.14
+      endif ! litter present?
 
       !------------------------------------------------------------------------------------!
       !     Decide what is our surface temperature.  When the soil is exposed, then that   !
@@ -729,9 +741,17 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilig
       abs_sfcw_nir      = 0.0
       ksn               = csite%nlev_sfcwater(ipa)
       if (ksn == 0) then
-         emissivity = soilcol(colour)%emiss_tir
-         T_surface  = csite%soil_tempk(mzg,ipa)
-      else
+         !EJL Check for litter layer. If litter is present, use peat values
+         !instead of soil
+         klit           = 0!csite%nlev_litter(ipa)
+         if (klit == 0) then
+            emissivity = soilcol(colour)%emiss_tir
+            T_surface  = csite%soil_tempk(mzg,ipa)
+         else ! litter present, no surface water
+            emissivity = soilcol(colour)%emiss_tir 
+            T_surface = csite%litter_tempk(mzl,ipa)
+         endif
+      else  !surface water present
          !---------------------------------------------------------------------------------!
          !      Sfcwater albedo ALS ranges from wet-soil value for all-liquid to typical   !
          ! snow albedo for ice.  In the future, we should consider a more realistic snow   !
@@ -796,14 +816,26 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilig
          !---------------------------------------------------------------------------------!
 
 
-         !----- Long wave parameter if sfcwater exists. -----------------------------------!
-         emissivity = snow_emiss_tir            *        csite%snowfac(ipa)                &
+         !----- Long wave parameter if sfcwater exists. EJL-I should adjust emissivity     !
+         ! below, but currently it is the same for all soils, so it doesnt                 !
+         ! matter.
+         if (klit ==0) then ! if litter is not present 
+            emissivity = snow_emiss_tir            *        csite%snowfac(ipa)             &
                     + soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa) )
-         T_surface  = sqrt(sqrt( ( csite%sfcwater_tempk (ksn,ipa)** 4                      &
+            T_surface  = sqrt(sqrt( ( csite%sfcwater_tempk (ksn,ipa)** 4                   &
                                  * snow_emiss_tir            *        csite%snowfac(ipa)   &
                                  + csite%soil_tempk     (mzg,ipa)** 4                      &
                                  * soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa))) &
                                / emissivity ) )
+         else  ! litter is present
+            emissivity = snow_emiss_tir            *        csite%snowfac(ipa)             &
+                    + soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa) )
+            T_surface  = sqrt(sqrt( ( csite%sfcwater_tempk (ksn,ipa)** 4                   &
+                                 * snow_emiss_tir            *        csite%snowfac(ipa)   &
+                                 + csite%litter_tempk     (mzl,ipa)** 4                      &
+                                 * soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa))) &
+                               / emissivity ) )
+         endif
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!

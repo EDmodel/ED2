@@ -11,7 +11,8 @@ module ename_coms
                          , n_pft          & ! intent(in)
                          , maxgrds        & ! intent(in)
                          , nzgmax         & ! intent(in)
-                         , maxpvars       ! ! intent(in)
+                         , maxpvars       & ! intent(in)
+                         , nzlmax         ! intent (in)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -91,9 +92,10 @@ module ename_coms
       integer               , dimension(maxgrds)        :: ninest
       integer               , dimension(maxgrds)        :: njnest
 
-      !----- Soil/surface water variables. ------------------------------------------------!
+      !----- Soil/surface water variables. EJL---------------------------------------------!
       integer                                           :: nzg
       integer                                           :: nzs
+      integer                                           :: nzl
       integer               , dimension(maxgrds)        :: isoilflg
       integer                                           :: nslcon
       integer                                           :: isoilcol
@@ -107,6 +109,10 @@ module ename_coms
       real                  , dimension(nzgmax)         :: slz
       real                  , dimension(nzgmax)         :: slmstr
       real                  , dimension(nzgmax)         :: stgoff
+      real                  , dimension(nzlmax)         :: olz
+      real                  , dimension(nzlmax)         :: olmstr
+      real                  , dimension(nzlmax)         :: otgoff
+ 
 
       !----- Input databases. -------------------------------------------------------------!
       character(len=str_len), dimension(maxgrds)        :: soil_database
@@ -143,6 +149,7 @@ module ename_coms
       integer                                           :: ibranch_thermo
       integer                                           :: iphysiol
       integer                                           :: iallom
+      integer                                           :: icarbdyn
       integer                                           :: igrass
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
@@ -361,6 +368,7 @@ module ename_coms
 
       enl%nzg                       = undef_integer
       enl%nzs                       = undef_integer
+      enl%nzl                       = undef_integer ! EJL
       enl%isoilflg                  = (/ (undef_integer,i=1,maxgrds) /)
       enl%nslcon                    = undef_integer
       enl%isoilcol                  = undef_integer
@@ -374,6 +382,9 @@ module ename_coms
       enl%slz                       = (/ (-undef_real, i=1,nzgmax) /)
       enl%slmstr                    = (/ ( undef_real, i=1,nzgmax) /)
       enl%stgoff                    = (/ ( undef_real, i=1,nzgmax) /)
+      enl%olz                       = (/ (-undef_real, i=1,nzlmax) /)
+      enl%olmstr                    = (/ ( undef_real, i=1,nzlmax) /)
+      enl%otgoff                    = (/ ( undef_real, i=1,nzlmax) /)
 
 
       enl%soil_database             = (/ (undef_path, i=1,maxgrds) /)
@@ -409,6 +420,7 @@ module ename_coms
       enl%ibranch_thermo            = undef_integer
       enl%iphysiol                  = undef_integer
       enl%iallom                    = undef_integer
+      enl%icarbdyn                  = undef_integer
       enl%igrass                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer

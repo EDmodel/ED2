@@ -67,7 +67,9 @@ module ed_max_dims
    integer, parameter :: nzsmax=10
    !---------------------------------------------------------------------------------------!
 
-
+   !----- Maximum number of litter layers. EJL---------------------------------------------!
+   integer, parameter :: nzlmax=30
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Suppose you want to run ED only at a few scattered test polygons.  These are      !
@@ -196,7 +198,7 @@ module ed_max_dims
    !    because this mortality is associated with the creation of a new patch, but it is   !
    !    saved here for posterior analysis.                                                 !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_mort = 5
+   integer, parameter :: n_mort = 6
    !---------------------------------------------------------------------------------------!
 
 

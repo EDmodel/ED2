@@ -118,6 +118,7 @@ subroutine vegetation_dynamics(new_month,new_year)
       ! the carbon and nitrogen pools, and re-set the daily variables.                     !
       !------------------------------------------------------------------------------------!
       call update_C_and_N_pools(cgrid)
+      call organic_layer_depth(cgrid)
       call zero_ed_today_vars(cgrid)
       !------------------------------------------------------------------------------------!
 

@@ -39,7 +39,7 @@ subroutine read_ed21_history_file
                              , allocate_sitetype       & ! subroutine
                              , allocate_patchtype      ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
-                             , nzg                     ! ! intent(in)
+                             , nzg,nzl                 ! ! intent(in)
    use consts_coms    , only : pio4                    ! ! intent(in)
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
@@ -90,6 +90,7 @@ subroutine read_ed21_history_file
    integer                             :: dset_npatches_global
    integer                             :: dset_ncohorts_global
    integer                             :: dset_nzg
+   integer                             :: dset_nzl
    integer                             :: hdferr
    integer                             :: ifpy
    integer                             :: ipft
@@ -192,6 +193,12 @@ subroutine read_ed21_history_file
       call h5dopen_f(file_id,'NZG', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzg,globdims, hdferr)
+      call h5sclose_f(dspace_id, hdferr)
+      call h5dclose_f(dset_id, hdferr)
+
+      call h5dopen_f(file_id,'NZL', dset_id, hdferr)
+      call h5dget_space_f(dset_id, dspace_id, hdferr)
+      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzl,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
 
@@ -478,6 +485,21 @@ subroutine read_ed21_history_file
                                     ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%sum_chd   ,'SUM_CHD '                           &
                                     ,dsetrank,iparallel,.true.,foundvar)
+
+                     !----- Load 2D soil carbon
+                     dsetrank     = 2_8
+                     globdims(1)  = int(dset_nzl,8)
+                     chnkdims(1)  = int(dset_nzl,8)
+                     memdims(1)   = int(dset_nzl,8)
+                     memsize(1)   = int(dset_nzl,8)
+                     chnkoffs(1)  = 0_8
+                     memoffs(1)   = 0_8
+                     globdims(2)  = int(dset_npatches_global,8)
+                     chnkdims(2)  = int(csite%npatches,8)
+                     chnkoffs(2)  = int(sipa_id(si_index)-1,8)
+                     memdims(2)   = int(csite%npatches,8)
+                     memsize(2)   = int(csite%npatches,8)
+                     memoffs(2)   = 0_8
 
                   call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
                                     ,dsetrank,iparallel,.true.,foundvar)
@@ -892,7 +914,7 @@ subroutine read_ed21_history_unstruct
                              , allocate_sitetype       & ! subroutine
                              , allocate_patchtype      ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
-                             , nzg                     ! ! intent(in)
+                             , nzg,nzl                 ! ! intent(in)
    use consts_coms    , only : pio4                    ! ! intent(in)
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
@@ -974,6 +996,7 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: dset_npatches_global
    integer                                                      :: dset_ncohorts_global
    integer                                                      :: dset_nzg
+   integer                                                      :: dset_nzl
    integer                                                      :: ifpy
    integer                                                      :: ipft
    integer                                                      :: ipya
@@ -1253,6 +1276,12 @@ subroutine read_ed21_history_unstruct
          call h5dopen_f(file_id,'NZG', dset_id, hdferr)
          call h5dget_space_f(dset_id, dspace_id, hdferr)
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzg,globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+
+         call h5dopen_f(file_id,'NZL', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzl,globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
 
@@ -1639,6 +1668,22 @@ subroutine read_ed21_history_unstruct
                                     ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                   &
                                     ,dsetrank,iparallel,.true.,foundvar)
+
+                     !----- Load 2D soil carbon
+                     dsetrank     = 2_8
+                     globdims(1)  = int(dset_nzl,8)
+                     chnkdims(1)  = int(dset_nzl,8)
+                     memdims(1)   = int(dset_nzl,8)
+                     memsize(1)   = int(dset_nzl,8)
+                     chnkoffs(1)  = 0_8
+                     memoffs(1)   = 0_8
+                     globdims(2)  = int(dset_npatches_global,8)
+                     chnkdims(2)  = int(csite%npatches,8)
+                     chnkoffs(2)  = int(sipa_id(si_index)-1,8)
+                     memdims(2)   = int(csite%npatches,8)
+                     memsize(2)   = int(csite%npatches,8)
+                     memoffs(2)   = 0_8
+
                   call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
                                     ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
@@ -2097,7 +2142,7 @@ subroutine read_ed21_polyclone
                              , allocate_sitetype       & ! subroutine
                              , allocate_patchtype      ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
-                             , nzg                     ! ! intent(in)
+                             , nzg,nzl                 ! ! intent(in)
    use consts_coms    , only : pio4                    ! ! intent(in)
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
@@ -2151,7 +2196,9 @@ subroutine read_ed21_polyclone
    integer :: minind
    real                  ,  dimension(:, :)        , allocatable :: this_soil_water
    real                  ,  dimension(  :)        , allocatable :: dset_slzm
+   real                  ,  dimension(  :)        , allocatable :: dset_olzm
    integer                , dimension(  :)        , allocatable :: slz_match
+   integer                , dimension(  :)        , allocatable :: olz_match
    integer                                                      :: igr
    integer                                                      :: ipy
    integer                                                      :: isi
@@ -2169,6 +2216,7 @@ subroutine read_ed21_polyclone
    integer                                                      :: dset_npatches_global
    integer                                                      :: dset_ncohorts_global
    integer                                                      :: dset_nzg
+   integer                                                      :: dset_nzl
    integer                                                      :: ifpy
    integer                                                      :: ipft
    integer                                                      :: ipya
@@ -2427,6 +2475,12 @@ subroutine read_ed21_polyclone
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
 
+         call h5dopen_f(file_id,'NZL', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzl,globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+
          call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
          call h5dget_space_f(dset_id, dspace_id, hdferr)
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims,hdferr)
@@ -2521,6 +2575,20 @@ subroutine read_ed21_polyclone
             dset_slzm(kd) = 0.5*(dset_slzm(kd)+dset_slzm(kd+1))
          end do
          dset_slzm(dset_nzg) = 0.5*(dset_slzm(dset_nzg)+0.0)
+
+
+         allocate(this_ntext(dset_nzl))
+         allocate(dset_slzm(dset_nzl))
+
+         call hdf_getslab_r(dset_olzm,'OLZ',dsetrank                  &
+              ,iparallel,.true.,foundvar)
+
+         ! Calculate the mid-points of the dataset soil-layers
+         do kd=1,dset_nzl-1
+            dset_olzm(kd) = 0.5*(dset_olzm(kd)+dset_olzm(kd+1))
+         end do
+         dset_olzm(dset_nzl) = 0.5*(dset_olzm(dset_nzl)+0.0)
+
 
 
 	 polyloop: do ipy = 1,cgrid%npolygons
@@ -2773,6 +2841,23 @@ subroutine read_ed21_polyclone
                           ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                   &
                           ,dsetrank,iparallel,.true.,foundvar)
+
+
+                     !----- Load 2D soil carbon
+                     dsetrank     = 2_8
+                     globdims(1)  = int(dset_nzl,8)
+                     chnkdims(1)  = int(dset_nzl,8)
+                     memdims(1)   = int(dset_nzl,8)
+                     memsize(1)   = int(dset_nzl,8)
+                     chnkoffs(1)  = 0_8
+                     memoffs(1)   = 0_8
+                     globdims(2)  = int(dset_npatches_global,8)
+                     chnkdims(2)  = int(csite%npatches,8)
+                     chnkoffs(2)  = int(sipa_id(si_index)-1,8)
+                     memdims(2)   = int(csite%npatches,8)
+                     memsize(2)   = int(csite%npatches,8)
+                     memoffs(2)   = 0_8
+
                      call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
                           ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &

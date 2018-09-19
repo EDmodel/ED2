@@ -2842,7 +2842,8 @@ module fuse_fiss_utils
       use ed_node_coms        , only : mynum               ! ! intent(in)
       use ed_misc_coms        , only : current_time        ! ! intent(in)
       use grid_coms           , only : nzg                 & ! intent(in)
-                                     , nzs                 ! ! intent(in)
+                                     , nzs                 & ! intent(in)
+                                     , nzl                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)          , target      :: cgrid           ! Current grid
@@ -3107,7 +3108,7 @@ module fuse_fiss_utils
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,nzl                          &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -3377,7 +3378,7 @@ module fuse_fiss_utils
                         !     Take an average of the patch properties of donpatch and      !
                         ! recpatch, and assign the average recpatch.                       !
                         !------------------------------------------------------------------!
-                        call fuse_2_patches(csite,donp,recp,nzg,nzs                        &
+                        call fuse_2_patches(csite,donp,recp,nzg,nzs,nzl                    &
                                            ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
                                            ,cpoly%green_leaf_factor(:,isi),fuse_initial    &
                                            ,elim_nplant,elim_lai)
@@ -3723,7 +3724,7 @@ module fuse_fiss_utils
                   ! properties of donpatch and recpatch, and leave the averaged values at  !
                   ! recpatch.                                                              !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,nzl                          &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -3941,7 +3942,7 @@ module fuse_fiss_utils
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,lsl,ntext_soil,green_leaf_factor &
+   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,mzl,lsl,ntext_soil,green_leaf_factor  &
                             ,fuse_initial,elim_nplant,elim_lai)
       use update_derived_props_module
       use patch_pft_size_profile_mod
@@ -3973,6 +3974,7 @@ module fuse_fiss_utils
       integer                , intent(in)  :: lsl               ! Lowest soil level
       integer                , intent(in)  :: mzg               ! # of soil layers
       integer                , intent(in)  :: mzs               ! # of sfc. water layers
+      integer                , intent(in)  :: mzl               ! # organic layers
       integer, dimension(mzg), intent(in)  :: ntext_soil        ! Soil type
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
       logical                , intent(in)  :: fuse_initial      ! Initialisation?
@@ -3986,6 +3988,7 @@ module fuse_fiss_utils
       integer                              :: t                 ! Counter for time of day
       integer                              :: ndc               ! # of cohorts - donp patch
       integer                              :: nrc               ! # of cohorts - recp patch
+      integer                              :: k
       real                                 :: can_exner         ! Exner function - CAS
       real                                 :: newarea           ! new patch area
       real                                 :: newareai          ! 1./(new patch area)
@@ -4026,31 +4029,33 @@ module fuse_fiss_utils
                                      ( csite%age(donp)                * csite%area(donp)   &
                                      + csite%age(recp)                * csite%area(recp) )
 
-      csite%fast_soil_C(recp)        = newareai *                                          &
-                                     ( csite%fast_soil_C(donp)        * csite%area(donp)   &
-                                     + csite%fast_soil_C(recp)        * csite%area(recp) )
+      do k=1,mzl !EJL 
+        csite%fast_soil_C(k,recp)        = newareai *                                      &
+                                   ( csite%fast_soil_C(k,donp)        * csite%area(donp)   &
+                                   + csite%fast_soil_C(k,recp)        * csite%area(recp) )
 
-      csite%slow_soil_C(recp)        = newareai *                                          &
-                                     ( csite%slow_soil_C(donp)        * csite%area(donp)   &
-                                     + csite%slow_soil_C(recp)        * csite%area(recp) )
+        csite%slow_soil_C(k,recp)        = newareai *                                      &
+                                   ( csite%slow_soil_C(k,donp)        * csite%area(donp)   &
+                                   + csite%slow_soil_C(k,recp)        * csite%area(recp) )
 
-      csite%structural_soil_C(recp)  = newareai *                                          &
-                                     ( csite%structural_soil_C(donp)  * csite%area(donp)   &
-                                     + csite%structural_soil_C(recp)  * csite%area(recp) )
+        csite%structural_soil_C(k,recp)  = newareai *                                      &
+                                   ( csite%structural_soil_C(k,donp)  * csite%area(donp)   &
+                                   + csite%structural_soil_C(k,recp)  * csite%area(recp) )
                                      
 
-      csite%structural_soil_L(recp)  = newareai *                                          &
-                                     ( csite%structural_soil_L(donp)  * csite%area(donp)   &
-                                     + csite%structural_soil_L(recp)  * csite%area(recp) )
+        csite%structural_soil_L(k,recp)  = newareai *                                      &
+                                   ( csite%structural_soil_L(k,donp)  * csite%area(donp)   &
+                                   + csite%structural_soil_L(k,recp)  * csite%area(recp) )
                                      
 
-      csite%mineralized_soil_N(recp) = newareai *                                          &
-                                     ( csite%mineralized_soil_N(donp) * csite%area(donp)   &
-                                     + csite%mineralized_soil_N(recp) * csite%area(recp) )
+        csite%mineralized_soil_N(k,recp) = newareai *                                      &
+                                   ( csite%mineralized_soil_N(k,donp) * csite%area(donp)   &
+                                   + csite%mineralized_soil_N(k,recp) * csite%area(recp) )
 
-      csite%fast_soil_N(recp)        = newareai *                                          &
-                                     ( csite%fast_soil_N(donp)        * csite%area(donp)   &
-                                     + csite%fast_soil_N(recp)        * csite%area(recp) )
+        csite%fast_soil_N(k,recp)        = newareai *                                      &
+                                   ( csite%fast_soil_N(k,donp)        * csite%area(donp)   &
+                                   + csite%fast_soil_N(k,recp)        * csite%area(recp) )
+      end do
 
       csite%sum_dgd(recp)            = newareai *                                          &
                                      ( csite%sum_dgd(donp)            * csite%area(donp)   &
@@ -4223,14 +4228,15 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       call new_patch_sfc_props(csite,recp,mzg,mzs,ntext_soil)
       !------------------------------------------------------------------------------------!
+      do k=1,mzl
+        csite%today_A_decomp(k,recp)         = newareai *                                      &
+                                         ( csite%today_A_decomp(k,donp) * csite%area(donp)   &
+                                         + csite%today_A_decomp(k,recp) * csite%area(recp) )
 
-      csite%today_A_decomp(recp)         = newareai *                                      &
-                                         ( csite%today_A_decomp(donp) * csite%area(donp)   &
-                                         + csite%today_A_decomp(recp) * csite%area(recp) )
-
-      csite%today_Af_decomp(recp)        = newareai *                                      &
-                                         ( csite%today_Af_decomp(donp)* csite%area(donp)   &
-                                         + csite%today_Af_decomp(recp)* csite%area(recp) )
+        csite%today_Af_decomp(k,recp)        = newareai *                                      &
+                                         ( csite%today_Af_decomp(k,donp)* csite%area(donp)   &
+                                         + csite%today_Af_decomp(k,recp)* csite%area(recp) )
+      end do
 
       do iii = 1,n_pft
          csite%repro(iii,recp)           = newareai *                                      &
@@ -5906,7 +5912,7 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          end do
          !---------------------------------------------------------------------------------!
-		end if
+        end if
       end if
       !------------------------------------------------------------------------------------!
 

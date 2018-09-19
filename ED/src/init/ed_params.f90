@@ -292,7 +292,7 @@ subroutine init_ed_misc_coms
 
 
    !----- Maximum DBH [cm] to be split into classes. --------------------------------------!
-   maxdbh = 100.
+   maxdbh = 20.
    !---------------------------------------------------------------------------------------!
 
 
@@ -801,7 +801,8 @@ subroutine init_can_rad_params()
    !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.                 !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   snow_albedo_vis = 0.518
+   ! EJL 4/11/18 increased albedo of snow based on Loranty et al. (2014,2011)
+   snow_albedo_vis = 0.75 !0.518 
    snow_albedo_nir = 0.435
    snow_emiss_tir  = 0.970
    !---------------------------------------------------------------------------------------!
@@ -2016,7 +2017,8 @@ subroutine init_pft_mort_params()
       , fire_s_gtht                & ! intent(out)
       , fire_s_ltht                & ! intent(out)
       , plant_min_temp             & ! intent(out)
-      , frost_mort                 ! ! intent(out)
+      , frost_mort                 & ! intent(out)
+      , wind_mort                  ! ! intent(out)
    use consts_coms , only : t00                        & ! intent(in)
       , lnexp_max                  & ! intent(in)
       , onethird                   & ! intent(in)
@@ -2051,6 +2053,8 @@ subroutine init_pft_mort_params()
    frost_mort(14:15) = 3.0
    frost_mort(16:17) = 3.0
 
+   !EJL - change wind_mort in xmls to include it. default is zero
+   wind_mort(0:17)   = 0.0
 
    !---------------------------------------------------------------------------------------!
    !     The following variables control the density-dependent mortality rates.            !
@@ -3664,7 +3668,7 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       !    Seed_rain is the density of seedling that will be added from somewhere else.    !
       !------------------------------------------------------------------------------------!
-      seed_rain(ipft)  = 0.1 * init_density(ipft)
+      seed_rain(ipft)  = 0.1 / 12. * init_density(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -4409,9 +4413,10 @@ subroutine init_soil_coms
       ,        0.200,        1700.,     1600.,        0.000,        0.000       &
       ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 12. Peat. --------------------------------------------------------------------!
+      ! 4/21/18 EJL change
       ,soil_class( -0.534564359,     0.469200,     6.180000,   874000.,  0.167047523       &
-      ,  0.187868805,  2.357930e-6,  0.000008000, 0.7644011,    0.5333047       &
-      ,    0.8294728,   -0.4678112,  0.285709966,    0.2000,       0.2000       &
+      ,  0.187868805,  2.357930e-6,  0.000008000, 0.05,    0.225                &
+      ,    1.0,   -0.4678112,  0.285709966,    0.2000,       0.2000             &
       ,       0.6000,         500.,         300.,     0.000,        0.000       &
       ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 13. Bedrock. -----------------------------------------------------------------!
@@ -4648,7 +4653,7 @@ subroutine init_soil_coms
       ,soilcol_class   (    0.26,   0.41,   0.15,   0.30,   0.98 )  & ! 09
       ,soilcol_class   (    0.25,   0.39,   0.14,   0.28,   0.98 )  & ! 10
       ,soilcol_class   (    0.24,   0.37,   0.13,   0.26,   0.98 )  & ! 11
-      ,soilcol_class   (    0.23,   0.35,   0.12,   0.24,   0.98 )  & ! 12
+      ,soilcol_class   (    0.10,   0.20,   0.05,   0.10,   0.98 )  & ! 12 -Peat
       ,soilcol_class   (    0.22,   0.33,   0.11,   0.22,   0.98 )  & ! 13
       ,soilcol_class   (    0.20,   0.31,   0.10,   0.20,   0.98 )  & ! 14
       ,soilcol_class   (    0.18,   0.29,   0.09,   0.18,   0.98 )  & ! 15
@@ -5021,6 +5026,7 @@ subroutine init_rk4_params()
       , rk4max_can_temp        & ! intent(out)
       , rk4min_can_shv         & ! intent(out)
       , rk4max_can_shv         & ! intent(out)
+      , rk4min_can_rhv         & ! intent(out)
       , rk4max_can_rhv         & ! intent(out)
       , rk4min_can_co2         & ! intent(out)
       , rk4max_can_co2         & ! intent(out)
@@ -5131,6 +5137,7 @@ subroutine init_rk4_params()
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  6.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
+   rk4min_can_rhv    =  1.0000d-8 ! Min can rel hum
    rk4min_can_co2    =  3.0000d1  ! Minimum canopy    CO2 mixing ratio          [ �mol/mol]
    rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ �mol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]

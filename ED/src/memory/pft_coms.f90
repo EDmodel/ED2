@@ -336,6 +336,9 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: frost_mort  
 
+   !EJL Height based mortality used in tundra
+   real, dimension(n_pft) :: wind_mort
+
    !----- Fraction of seedlings that suffer mortality without becoming a recruit. ---------!
    real, dimension(n_pft) :: seedling_mortality
 

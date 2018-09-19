@@ -54,7 +54,8 @@ module growth_balive
                                  , growth_resp_scheme     & ! intent(in)
                                  , storage_resp_scheme    ! ! intent(in)
       use budget_utils    , only : update_budget          ! ! sub-routine
-      use consts_coms   , only : tiny_num     ! ! intent(in)
+      use consts_coms     , only : tiny_num     ! ! intent(in)
+      use grid_coms       , only : nzl  ! !intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -69,6 +70,7 @@ module growth_balive
       integer                       :: ipa
       integer                       :: ico
       integer                       :: ipft
+      integer                       :: k
       real                          :: salloc
       real                          :: salloci
       real                          :: daily_C_gain
@@ -289,8 +291,11 @@ module growth_balive
                   if (n_plant_lim == 0 .or. N_uptake_pot <= 0.0) then
                      cpatch%fsn(ico) = 1.0
                   else
-                     nitrogen_supply = plant_N_supply_scale * cpatch%broot(ico)            &
-                                     * csite%mineralized_soil_N(ipa)
+                     do k=1,nzl
+                       nitrogen_supply = nitrogen_supply + plant_N_supply_scale            &
+                                     * cpatch%broot(ico)                                   &
+                                     * csite%mineralized_soil_N(k,ipa)
+                     end do 
                      cpatch%fsn(ico) = nitrogen_supply                                     &
                                      / (nitrogen_supply + N_uptake_pot)
                   end if
@@ -398,6 +403,7 @@ module growth_balive
                                  , growth_resp_scheme     & ! intent(in)
                                  , storage_resp_scheme    ! ! intent(in)
       use mortality       , only : mortality_rates        ! ! subroutine
+      use grid_coms       , only : nzl                    ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -411,6 +417,7 @@ module growth_balive
       integer                       :: ipa
       integer                       :: ico
       integer                       :: ipft
+      integer                       :: k
       real                          :: salloc
       real                          :: salloci
       real                          :: daily_C_gain
@@ -595,8 +602,11 @@ module growth_balive
                   if (n_plant_lim == 0 .or. N_uptake_pot <= 0.0) then
                      cpatch%fsn(ico) = 1.0
                   else
-                     nitrogen_supply = plant_N_supply_scale * cpatch%broot(ico)            &
-                                     * csite%mineralized_soil_N(ipa)
+                     do k=1,nzl
+                       nitrogen_supply = nitrogen_supply + plant_N_supply_scale            &
+                                     * cpatch%broot(ico)                                   &
+                                     * csite%mineralized_soil_N(k,ipa)
+                     end do 
                      cpatch%fsn(ico) = nitrogen_supply                                     &
                                      / (nitrogen_supply + N_uptake_pot)
                   end if

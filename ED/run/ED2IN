@@ -304,8 +304,8 @@ $ED_NL
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
 
-   NL%FFILOUT = '/mypath/generic-prefix'
-   NL%SFILOUT = '/mypath/generic-prefix'
+   NL%FFILOUT = '/n/moorcroftfs5/larsonej/Master/ED2/ED/run/analy'
+   NL%SFILOUT = '/n/moorcroftfs5/larsonej/Master/ED2/ED/run/histo'
 
    !---------------------------------------------------------------------------------------!
 
@@ -358,7 +358,7 @@ $ED_NL
    !
    !
    !---------------------------------------------------------------------------------------!
-   NL%IED_INIT_MODE   = 3
+   NL%IED_INIT_MODE   = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -419,6 +419,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%NZG = 9
    NL%NZS = 1
+   NL%NZL = 9
    !---------------------------------------------------------------------------------------!
 
 
@@ -526,7 +527,25 @@ $ED_NL
    NL%STGOFF  =   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00
    !---------------------------------------------------------------------------------------!
 
-
+   !---------------------------------------------------------------------------------------!
+   !    Soil organic grid and initial conditions if no file is provided:                   !
+   !                                                                                       !
+   ! OLZ     - soil depth in m.  Values must be negative and go from the deepest layer to  !
+   !           the top.                                                                    !
+   ! OLMSTR  - this is the initial soil moisture, now given as the soil moisture index.    !
+   !           Values can be fraction, in which case they will be linearly interpolated    !
+   !           between the special points (e.g. 0.5 will put soil moisture half way        !
+   !           between the wilting point and field capacity).                              !
+   !              -1 = dry air soil moisture                                               !
+   !               0 = wilting point                                                       !
+   !               1 = field capacity                                                      !
+   !               2 = porosity (saturation)                                               !
+   ! OTGOFF  - initial temperature offset (soil temperature = air temperature + offset)    !
+   !---------------------------------------------------------------------------------------!
+   NL%OLZ     =  -2.307, -1.789, -1.340, -0.961, -0.648, -0.400, -0.215, -0.089, -0.020
+   NL%OLMSTR  =   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00
+   NL%OTGOFF  =   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

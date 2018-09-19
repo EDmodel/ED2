@@ -153,8 +153,8 @@ module rk4_coms
 
 
       !----- Heterotrophic respiration.[�mol/m�/s] ----------------------------------------!
-      real(kind=8)                        :: cwd_rh
-      real(kind=8)                        :: rh
+      real(kind=8)                         :: cwd_rh
+      real(kind=8), dimension(:), pointer  :: rh
       !------------------------------------------------------------------------------------!
 
 
@@ -862,7 +862,8 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    subroutine allocate_rk4_patch(y)
       use grid_coms     , only : nzg          & ! intent(in)
-                               , nzs          ! ! intent(in)
+                               , nzs          & ! intent(in)
+                               , nzl
       implicit none
       !----- Argument ---------------------------------------------------------------------!
       type(rk4patchtype), target :: y
@@ -881,6 +882,7 @@ module rk4_coms
       allocate(y%sfcwater_depth           (nzs))
       allocate(y%sfcwater_fracliq         (nzs))
       allocate(y%sfcwater_tempk           (nzs))
+      allocate(y%rh                     (0:nzl))
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
@@ -926,6 +928,8 @@ module rk4_coms
       nullify(y%sfcwater_depth  )
       nullify(y%sfcwater_fracliq)
       nullify(y%sfcwater_tempk  )
+
+      nullify(y%rh              )
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
@@ -1035,7 +1039,6 @@ module rk4_coms
       y%rasveg                         = 0.d0
       y%root_res_fac                   = 0.d0
       y%cwd_rh                         = 0.d0
-      y%rh                             = 0.d0
 
       y%upwp                           = 0.d0
       y%wpwp                           = 0.d0
@@ -1102,6 +1105,7 @@ module rk4_coms
       y%flx_qdrainage                  = 0.d0
 
       !----- The following variables are pointers, check whether they are linked or not. --!
+      if(associated(y%rh                    ))   y%rh              (:)            = 0.d0
       if(associated(y%soil_energy           ))   y%soil_energy     (:)            = 0.d0
       if(associated(y%soil_mstpot           ))   y%soil_mstpot     (:)            = 0.d0
       if(associated(y%soil_tempk            ))   y%soil_tempk      (:)            = 0.d0

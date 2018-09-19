@@ -11,9 +11,11 @@
 module soil_coms
    use ed_max_dims  , only : str_len   & ! intent(in)
                            , maxgrds   & ! intent(in)
-                           , nzgmax    ! ! intent(in)
+                           , nzgmax    & ! intent(in)
+                           , nzlmax    ! ! intent(in)
    use grid_coms    , only : nzg       & ! intent(in)
-                           , nzs       ! ! intent(in)
+                           , nzs       & ! intent(in)
+                           , nzl       ! ! intent(in)
 #if defined(COUPLED)
    use leaf_coms    , only : nstyp     & ! intent(in)
                            , nscol     & ! intent(in)
@@ -187,6 +189,32 @@ module soil_coms
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !EJL -Organic soil grid and initial conditions if no file is provided:                   !
+   !                                                                                       !
+   ! OLZ     - soil depth in m.  Values must be negative and go from the deepest layer to  !
+   !           the top.                                                                    !
+   ! OLMSTR  - this is the initial soil moisture, now given as the soil moisture index.    !
+   !           Values can be fraction, in which case they will be linearly interpolated    !
+   !           between the special points (e.g. 0.5 will put soil moisture half way        !
+   !           between the wilting point and field capacity).                              !
+   !              -1 = dry air soil moisture                                               !
+   !               0 = wilting point                                                       !
+   !               1 = field capacity                                                      !
+   !               2 = porosity (saturation)                                               !
+   ! OTGOFF  - initial temperature offset (soil temperature = air temperature + offset)    !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(nzlmax)                    :: olz
+   real, dimension(nzlmax)                    :: olmstr
+   real, dimension(nzlmax)                    :: otgoff
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !  EJL -  Litter grid and initial conditions                                            !
+   !
+   !  LLZ - litter depth in m. follwos soil routine
+   !
 
 
    !---------------------------------------------------------------------------------------!
@@ -306,6 +334,36 @@ module soil_coms
    real(kind=8), dimension(20,20)            :: thick   
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     Variables to be initialised in sfcdata_ed (ed_init.f90).                          !
+   ! EJL - Adding organic soil equivalents
+   !---------------------------------------------------------------------------------------!
+   real   , dimension(ed_nstyp)        :: olden    ! dry soil density               [kg/m3]
+   real   , dimension(ed_nstyp)        :: ohydraul ! vertically varying hydraulic 
+                                                   !    conductivity factor
+   integer, dimension(ed_nvtyp)        :: okroot    ! level in which roots are       [  ---]
+   real   , dimension(nzlmax,ed_nvtyp) :: oroot     ! root depth                     [    m]
+   real, allocatable, dimension(:,:)   :: olcons1  ! z-dep. soil sat hydraul cond   [  m/s]
+   real, allocatable, dimension(:)     :: dolz     ! soil layer thickness at T pt   [    m]
+   real, allocatable, dimension(:)     :: dolzo2   ! ½ soil layer thick. at T pt    [    m]
+   real, allocatable, dimension(:)     :: dolzi    ! 1/dslz                         [  1/m]
+   real, allocatable, dimension(:)     :: dolzidt  ! dtll / dslz                    [  s/m]
+   real, allocatable, dimension(:)     :: olzt     ! soil depth at T pt             [    m]
+   real, allocatable, dimension(:)     :: dolzt    ! soil layer thickness at M pt   [    m]
+   real, allocatable, dimension(:)     :: dolzti   ! 1/dslzt                        [  1/m]
+   real, allocatable, dimension(:)     :: dolztidt ! dtll / dslzt                   [  s/m]
+   !----- The next variables are double precision version of the previous ones. -----------!
+   real(kind=8), allocatable, dimension(:)   :: olz8            ! Soil levels.
+   real(kind=8), allocatable, dimension(:,:) :: olcons18
+   real(kind=8), allocatable, dimension(:)   :: dolz8
+   real(kind=8), allocatable, dimension(:)   :: dolzo28
+   real(kind=8), allocatable, dimension(:)   :: dolzi8
+   real(kind=8), allocatable, dimension(:)   :: dolzidt8
+   real(kind=8), allocatable, dimension(:)   :: olzt8
+   real(kind=8), allocatable, dimension(:)   :: dolzt8
+   real(kind=8), allocatable, dimension(:)   :: dolzti8
+   real(kind=8), allocatable, dimension(:)   :: dolztidt8
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !    Scratch matrix for reading the soil layer and soil depth dataset.  This will be    !
@@ -475,6 +533,28 @@ module soil_coms
       allocate (dslzti8   (  nzg))
       allocate (dslztidt8 (  nzg))
 
+      allocate (olcons1(0:nzl,ed_nstyp))
+
+      allocate (dolz     (0:nzl))
+      allocate (dolzo2   (0:nzl))
+      allocate (dolzi    (0:nzl))
+      allocate (dolzidt  (0:nzl))
+      allocate (olzt     (0:nzl))
+      allocate (dolzt    (  nzl))
+      allocate (dolzti   (  nzl))
+      allocate (dolztidt (  nzl))
+
+      allocate (olcons18(0:nzg,ed_nstyp))
+
+      allocate (olz8      (nzl+1))
+      allocate (dolz8     (0:nzl))
+      allocate (dolzo28   (0:nzl))
+      allocate (dolzi8    (0:nzl))
+      allocate (dolzidt8  (0:nzl))
+      allocate (olzt8     (0:nzl))
+      allocate (dolzt8    (  nzl))
+      allocate (dolzti8   (  nzl))
+      allocate (dolztidt8 (  nzl))
       return
    end subroutine alloc_soilgrid
    !=======================================================================================!

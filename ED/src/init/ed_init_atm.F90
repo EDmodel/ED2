@@ -25,7 +25,8 @@ subroutine ed_init_atm()
                                     , t3ple                  ! ! intent(in)
    use grid_coms             , only : nzs                    & ! intent(in)
                                     , nzg                    & ! intent(in)
-                                    , ngrids                 ! ! intent(in)
+                                    , ngrids                 & ! intent(in)
+                                    , nzl                    ! ! intent(in)
    use fuse_fiss_utils       , only : fuse_patches           & ! subroutine
                                     , rescale_patches        & ! subroutine
                                     , fuse_cohorts           & ! subroutine
@@ -330,6 +331,16 @@ subroutine ed_init_atm()
                                                                  ,csite%soil_water(k,ipa)  )
                      !---------------------------------------------------------------------!
                   end do groundloop2
+
+                  !----- Initial conditions for litter layer EJL --------------------------!
+                  csite%nlev_litter(ipa)    = 0
+                  litterloop: do k=1,nzl
+                     csite%litter_energy (k,ipa) = 0.
+                     csite%litter_depth  (k,ipa) = 0.
+                     csite%litter_mass   (k,ipa) = 0.
+                     csite%litter_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
+                     csite%litter_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
+                  end do litterloop
 
                   !----- Initial condition is with no snow/pond. --------------------------!
                   csite%nlev_sfcwater(ipa)    = 0.

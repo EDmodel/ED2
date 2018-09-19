@@ -1427,6 +1427,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
                             , c2n_storage    & ! intent(in)
                             , c2n_slow       & ! intent(in)
                             , c2n_structural ! ! intent(in)
+   use grid_coms    , only  :nzl             ! ! intent(in) EJL
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)      , target      :: cgrid
@@ -1443,6 +1444,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
    integer                         :: ipa
    integer                         :: ico
    integer                         :: ipft
+   integer                         :: k
    real(kind=8)                    :: area_factor
    real(kind=8)                    :: this_carbon
    real(kind=8)                    :: this_nitrogen
@@ -1473,13 +1475,19 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
          area_factor   = dble(cpoly%area(isi)) * dble(csite%area(ipa))
 
          !----- Find carbon and nitrogen soil pools for this patch. -----------------------!
-         this_carbon   = dble(csite%fast_soil_C(ipa)) + dble(csite%slow_soil_C(ipa))       &
-                       + dble(csite%structural_soil_C(ipa))
-         this_nitrogen = dble(csite%fast_soil_N(ipa))                                      &
-                       + dble(csite%mineralized_soil_N(ipa))                               &
-                       + dble(csite%slow_soil_C(ipa)) / dble(c2n_slow)                     &
-                       + dble(csite%structural_soil_C(ipa)) / dble(c2n_structural)
+         ! Adding loop over organic layers - EJL ------------------------------
+         this_carbon = 0.
+         this_nitrogen = 0.
+         do k=1,nzl
+            this_carbon  = this_carbon + dble(csite%fast_soil_C(k,ipa))                    &
+                       + dble(csite%slow_soil_C(k,ipa))                                    &
+                       + dble(csite%structural_soil_C(k,ipa))
 
+            this_nitrogen = this_nitrogen + dble(csite%fast_soil_N(k,ipa))                 &
+                       + dble(csite%mineralized_soil_N(k,ipa))                             &
+                       + dble(csite%slow_soil_C(k,ipa)) / dble(c2n_slow)                   &
+                       + dble(csite%structural_soil_C(k,ipa)) / dble(c2n_structural)
+         end do
          !----- Add to the full counter. --------------------------------------------------!
          soil_C8 = soil_C8 + area_factor * this_carbon
          soil_N8 = soil_N8 + area_factor * this_nitrogen

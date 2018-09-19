@@ -15,6 +15,7 @@ module grid_coms
                                             ! this is n_soi+n_grids
   integer :: nzg                            ! Number of soil levels
   integer :: nzs                            ! Number of snow/surface water levels
+  integer :: nzl                            !Num litter layers
 
   integer :: nxtnest(maxgrds)               ! next coarser grid number 
                                             ! (0 if grid is not nested)

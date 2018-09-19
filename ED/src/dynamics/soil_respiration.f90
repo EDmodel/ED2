@@ -11,13 +11,17 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
                            , patchtype                ! ! structure
    use soil_coms    , only : soil                     & ! intent(in)
                            , dslz                     & ! intent(in)
-                           , slz                      ! ! intent(in)
+                           , slz                      & ! intent(in)
+                           , dolz                     & ! intent(in)
+                           , olz                      ! ! intent(in)
    use decomp_coms  , only : k_rh_active              ! ! intent(in)
    use consts_coms  , only : wdns                     & ! intent(in)
                            , umols_2_kgCyr            ! ! intent(in)
    use therm_lib    , only : uextcm2tl                ! ! function
    use ed_misc_coms , only : dtlsm                    & ! intent(in)
                            , frqsum                   ! ! intent(in)
+   use grid_coms    , only : nzl
+
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)                , target     :: csite
@@ -31,7 +35,7 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    integer                                    :: k
    integer                                    :: kroot
    integer                                    :: nsoil
-   real                                       :: Lc
+   real                                       :: Lc   !!lignin factor
    real                                       :: rel_soil_moist
    real                                       :: sum_soil_energy
    real                                       :: sum_soil_water
@@ -40,6 +44,8 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    real                                       :: sum_soil_soilcp
    real                                       :: avg_soil_temp
    real                                       :: avg_soil_fliq
+   real                                       :: layer_soil_temp
+   real                                       :: layer_soil_water
    !----- External functions. -------------------------------------------------------------!
    real                          , external   :: het_resp_weight
    real                          , external   :: root_resp_norm
@@ -136,46 +142,44 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    !---------------------------------------------------------------------------------------!
 
 
+   !EJL This is the section that calculates respiration. Need to do this for
+   !each vertical layer - for now, using soil temperatures. will update in
+   !future
+   do k=1,nzl 
 
-   !----- Find the average temperature and the relative soil moisture. --------------------!
-   call uextcm2tl(sum_soil_energy,sum_soil_water,sum_soil_hcap,avg_soil_temp,avg_soil_fliq)
-   rel_soil_moist = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )               &
+     !----- Find the average temperature and the relative soil moisture. -------------------!
+     call uextcm2tl(sum_soil_energy,sum_soil_water,sum_soil_hcap,avg_soil_temp,avg_soil_fliq)
+     layer_soil_temp=csite%soil_tempk(k,ipa)
+     layer_soil_water = csite%soil_water(k,ipa)
+     rel_soil_moist = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )              &
                                      / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
-   !---------------------------------------------------------------------------------------!
+     !--------------------------------------------------------------------------------------!
+     !----- Compute soil/temperature modulation of heterotrophic respiration. --------------!
+     csite%A_decomp(k,ipa) = het_resp_weight(layer_soil_temp,rel_soil_moist)
+     !--------------------------------------------------------------------------------------!
 
+     !----- Compute nitrogen immobilization factor. ----------------------------------------!
+     call resp_f_decomp(csite,ipa,k,Lc)
+     !--------------------------------------------------------------------------------------!
 
+     !----- Compute heterotrophic respiration. ---------------------------------------------!
+     call resp_rh(csite,ipa,k,Lc)
+     !--------------------------------------------------------------------------------------!
 
-   !----- Compute soil/temperature modulation of heterotrophic respiration. ---------------!
-   csite%A_decomp(ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist)
-   !---------------------------------------------------------------------------------------!
+     !----- Update averaged variables. -----------------------------------------------------!
+     csite%today_A_decomp (k,ipa) = csite%today_A_decomp(k,ipa) + csite%A_decomp(k,ipa)
+     csite%today_Af_decomp(k,ipa) = csite%today_Af_decomp(k,ipa)                            &
+                              + csite%A_decomp(k,ipa) * csite%f_decomp(k,ipa)
+     !--------------------------------------------------------------------------------------!
 
+     !----- The output is converted to kgC/m2/yr. ------------------------------------------!
+     csite%fmean_rh(ipa) = csite%fmean_rh(ipa)                                              &
+                           + csite%rh(k,ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+     csite%fmean_cwd_rh(ipa) = csite%fmean_cwd_rh(ipa)                                      &
+                           + csite%cwd_rh(ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+     !--------------------------------------------------------------------------------------!
+   end do ! vertical loop
 
-
-   !----- Compute nitrogen immobilization factor. -----------------------------------------!
-   call resp_f_decomp(csite,ipa, Lc)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Compute heterotrophic respiration. ----------------------------------------------!
-   call resp_rh(csite,ipa, Lc)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Update averaged variables. ------------------------------------------------------!
-   csite%today_A_decomp (ipa) = csite%today_A_decomp (ipa) + csite%A_decomp(ipa)
-   csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa)                                 &
-                              + csite%A_decomp       (ipa) * csite%f_decomp(ipa)
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- The output is converted to kgC/m2/yr. -------------------------------------------!
-   csite%fmean_rh    (ipa) = csite%fmean_rh    (ipa)                                       &
-                           + csite%rh          (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
-   csite%fmean_cwd_rh(ipa) = csite%fmean_cwd_rh(ipa)                                       &
-                           + csite%cwd_rh      (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
-   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine soil_respiration
@@ -192,7 +196,7 @@ end subroutine soil_respiration
 !==========================================================================================!
 !     This subroutine computes the Nitrogen immobilization factor.                         !
 !------------------------------------------------------------------------------------------!
-subroutine resp_f_decomp(csite,ipa,Lc)
+subroutine resp_f_decomp(csite,ipa,k,Lc)
 
    use ed_state_vars, only : sitetype               ! ! structure
    use decomp_coms  , only : r_stsc                 & ! intent(in)
@@ -206,33 +210,34 @@ subroutine resp_f_decomp(csite,ipa,Lc)
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype), target      :: csite
    integer       , intent(in)  :: ipa
+   integer       , intent(in)  :: k
    real          , intent(out) :: Lc
    !----- Local variables. ----------------------------------------------------------------!
    real                        :: N_immobilization_demand
    !---------------------------------------------------------------------------------------!
 
  
-   if (csite%structural_soil_C(ipa) > 0.0) then
-      if (csite%structural_soil_L(ipa) == csite%structural_soil_C(ipa)) then
+   if (csite%structural_soil_C(k,ipa) > 0.0) then
+      if (csite%structural_soil_L(k,ipa) == csite%structural_soil_C(k,ipa)) then
          Lc = 0.049787 ! = exp(-3.0)
       else
-         Lc = exp(-3.0 * csite%structural_soil_L(ipa)/csite%structural_soil_C(ipa))
+         Lc = exp(-3.0 * csite%structural_soil_L(k,ipa)/csite%structural_soil_C(k,ipa))
       end if
    else
       Lc=0.0
    end if
    
    if (n_decomp_lim == 1) then
-      N_immobilization_demand = csite%A_decomp(ipa) * Lc * decay_rate_stsc                 &
-                              * csite%structural_soil_C(ipa)                               &
+      N_immobilization_demand = csite%A_decomp(k,ipa) * Lc * decay_rate_stsc               &
+                              * csite%structural_soil_C(k,ipa)                             &
                               * ((1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
       
-      csite%f_decomp(ipa)     = N_immobil_supply_scale * csite%mineralized_soil_N(ipa)     &
+      csite%f_decomp(k,ipa)     = N_immobil_supply_scale * csite%mineralized_soil_N(k,ipa) &
                               / ( N_immobilization_demand                                  &
-                                + N_immobil_supply_scale  * csite%mineralized_soil_N(ipa))
+                                + N_immobil_supply_scale  * csite%mineralized_soil_N(k,ipa))
    else
       !----- Option for no plant N limitation. --------------------------------------------!
-      csite%f_decomp(ipa)     = 1.0
+      csite%f_decomp(k,ipa)     = 1.0
    end if
 
    return
@@ -249,7 +254,7 @@ end subroutine resp_f_decomp
 !==========================================================================================!
 !     This subroutine computes the heterotrophic respiration.                              !
 !------------------------------------------------------------------------------------------!
-subroutine resp_rh(csite,ipa,Lc)
+subroutine resp_rh(csite,ipa,k,Lc)
 
    use ed_state_vars, only : sitetype        ! ! structure
    use consts_coms  , only : kgCday_2_umols  ! ! intent(in)
@@ -265,6 +270,7 @@ subroutine resp_rh(csite,ipa,Lc)
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype), target       :: csite
    integer       , intent(in)   :: ipa
+   integer       , intent(in)   :: k
    real          , intent(in)   :: Lc
    !----- Local variables. ----------------------------------------------------------------!
    real                         :: fast_C_loss
@@ -275,16 +281,17 @@ subroutine resp_rh(csite,ipa,Lc)
 
 
    !----- The following variables have units of [umol_CO2/m2/s]. --------------------------!
-   fast_C_loss       = kgCday_2_umols * csite%A_decomp(ipa)                                &
-                     * decay_rate_fsc * csite%fast_soil_C(ipa)
-   structural_C_loss = kgCday_2_umols * csite%A_decomp(ipa) * Lc * decay_rate_stsc         &
-                     * csite%structural_soil_C(ipa)* csite%f_decomp(ipa)
-   slow_C_loss       = kgCday_2_umols * csite%A_decomp(ipa)                                &
-                     * decay_rate_ssc * csite%slow_soil_C(ipa)
+   ! EJL - make rh a function of depth
+   fast_C_loss       = kgCday_2_umols * csite%A_decomp(k,ipa)                                &
+                     * decay_rate_fsc * csite%fast_soil_C(k,ipa)
+   structural_C_loss = kgCday_2_umols * csite%A_decomp(k,ipa) * Lc * decay_rate_stsc         &
+                     * csite%structural_soil_C(k,ipa)* csite%f_decomp(k,ipa)
+   slow_C_loss       = kgCday_2_umols * csite%A_decomp(k,ipa)                                &
+                     * decay_rate_ssc * csite%slow_soil_C(k,ipa)
    !---------------------------------------------------------------------------------------!
 
    !----- Find the heterotrophic respiration and the fraction due to CWD. -----------------!
-   csite%rh(ipa)     = r_fsc * fast_C_loss + r_stsc * structural_C_loss                    &
+   csite%rh(k,ipa)     = r_fsc * fast_C_loss + r_stsc * structural_C_loss                    &
                      + r_ssc * slow_C_loss
    csite%cwd_rh(ipa) = cwd_frac * (r_stsc * structural_C_loss + r_ssc * slow_C_loss)
    ! csite%cwd_rh(ipa) = r_stsc * structural_C_loss
@@ -296,6 +303,319 @@ end subroutine resp_rh
 !==========================================================================================!
 
 
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the depth of the organic layers and redistributes
+!     the soil pools vertically. Should be called daily from veg dynamics. Maybe
+!     move to update_soil_CN? 
+!     !EJL 
+!------------------------------------------------------------------------------------------!
+subroutine organic_layer_depth(cgrid)
+
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   &
+                           , sitetype      !
+   use grid_coms,     only : nzg, nzl      !
+   use soil_coms,     only : olz, dolz     ! 
+   use ed_misc_coms,  only : icarbdyn      ! intent(in)  
+
+   implicit none
+   !----- Arguments. ---------------------------------------------------------------------!
+   type(edtype), target       :: cgrid
+   !----- Local variables.    ------------------------------------------------------------!
+   type(polygontype), pointer   :: cpoly
+   type(sitetype)   , pointer   :: csite
+   real                         :: fast_c_den
+   real                         :: slow_c_den
+   real                         :: struct_c_den
+   real                         :: fillfrac
+   real                         :: fillcheck
+   real                         :: ld
+   real                         :: nextld
+   real                         :: edep
+   real                         :: mdep
+   real                         :: extc1
+   real                         :: extc2
+   real                         :: extc3
+   real                         :: ld2 
+   real                         :: c1d
+   real                         :: c2d
+   real                         :: c3d
+   real                         :: n1d
+   real                         :: n2d
+   real                         :: n3d
+   real    , dimension(nzl)     :: oldc1
+   real    , dimension(nzl)     :: oldc2
+   real    , dimension(nzl)     :: oldc3
+   real    , dimension(nzl)     :: newc1
+   real    , dimension(nzl)     :: newc2
+   real    , dimension(nzl)     :: newc3
+   integer                      :: k
+   integer                      :: ipy
+   integer                      :: isi
+   integer                      :: ipa
+   integer                      :: count
+   real                         :: total_peat
+   !---------------------------------------------------------------------------------------!
+
+   !Carbon density of different soil carbon pools (kg/m3). Bulk density * carbon
+   !content from Ise et al. (their source is Yi et al. 2009)
+   fast_c_den = 70. * 0.4152
+   slow_c_den = 179. * 0.3278
+   struct_c_den = 124. * 0.37  ! no values, so just used mean of lit and hum
+
+
+   polygonloop: do ipy = 1,cgrid%npolygons
+
+      cpoly => cgrid%polygon(ipy)
+
+      siteloop: do isi = 1,cpoly%nsites
+
+         csite => cpoly%site(isi)
+
+         patchloop: do ipa = 1,csite%npatches
+
+
+           total_peat = 0.0
+           fillfrac = 0.0
+           ! Find total depth of organic layer
+           do k=1,nzl
+             total_peat = total_peat + csite%slow_soil_C(k,ipa) / slow_c_den   &
+             + csite%fast_soil_C(k,ipa) /fast_c_den                            &
+             + csite%structural_soil_c(k,ipa) / struct_c_den
+           end do   
+           csite%peat_depth(ipa) = total_peat
+
+           ! Find the fill fraction of the layers 
+           csite%litter_depth(:,ipa) = 0.0
+           do k = 1, nzl
+             if (csite%peat_depth(ipa) > (-1.0 * olz(k))) then 
+               csite%litter_depth(k,ipa) = 1.0
+             else if (csite%peat_depth(ipa) < (-1.0*olz(k)) .and. &
+               csite%peat_depth(ipa) > (-1.0*olz(k+1))) then 
+               csite%litter_depth(k,ipa) = (csite%peat_depth(ipa) + olz(k+1)) / dolz(k)
+             endif
+             fillfrac=fillfrac+csite%litter_depth(k,ipa)
+           end do
+
+
+           !Redistribute soil pools based on new depth starting from surface (k=nzl).
+           !Option 1) We will maintain fraciton of each pool in each layer when pushing 
+           ! up or down. i.e. if top layer is 70% met and 30% struct and has 10%
+           ! extra carbon, then 10% of depth of met and depth of struct get
+           ! pushed down.
+           !Option 2) Metabolic carbon gets preferentially moved up while humic
+           !then structural gets preferentially moved down. 
+           fillcheck=0.0 ! Zero out a bunch of values and arrays.
+!           ld = 0.    
+!           nextld = 0.
+!           extc1=0.
+            oldc1(:)=csite%fast_soil_C(:,ipa)
+            oldc2(:)=csite%structural_soil_C(:,ipa)
+            oldc3(:)=csite%slow_soil_C(:,ipa)
+            newc1(:)=0.0
+            newc2(:)=0.0
+            newc3(:)=0.0
+          
+           !debugging print statements
+!           print*, 'dolz', dolz
+!           print*, 'carbon pools', oldc1, oldc2, oldc3 
+   
+            count=0 
+            select case (icarbdyn)
+!!!!!!!!!!!OPTION 1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             case (1)  
+              do while (abs(fillfrac-fillcheck) > 0.01)
+                 if (count > 9) then 
+                     call fatal_error('organic_layer_depth did not converge' &
+                     ,'organic_layer_depth','soil_respiration.f90')
+                 end if
+                 print*, 'while fillfrac ne fillcheck',fillfrac, fillcheck
+                 fillcheck=0.0
+                 do k=nzl,2,-1 
+                    ld = oldc1(k) / fast_c_den &
+                       + oldc2(k) / struct_c_den &
+                       + oldc3(k) / slow_c_den
+                    nextld = oldc1(k-1) / fast_c_den &
+                       + oldc2(k-1) / struct_c_den &
+                       + oldc3(k-1) /slow_c_den
+                    if (ld .ge. dolz(k)) then ! If extra carbon, then new levels
+                    ! equal to layer thickness and extra is difference
+                       newc1(k)=oldc1(k)*dolz(k) / ld
+                       newc2(k)=oldc2(k)*dolz(k) / ld
+                       newc3(k)=oldc3(k)*dolz(k) / ld
+
+                       extc1 = oldc1(k) - newc1(k)                       
+                       extc2 = oldc2(k) - newc2(k)                       
+                       extc3 = oldc3(k) - newc3(k)                       
+
+                       oldc1(k-1)=oldc1(k-1) + extc1
+                       oldc2(k-1)=oldc2(k-1) + extc2
+                       oldc3(k-1)=oldc3(k-1) + extc3
+
+                    else ! missing carbon
+                       mdep = min(dolz(k)-ld, nextld)
+                  
+                       if (nextld .gt. 0.0) then
+                         extc1 = max(oldc1(k-1)*mdep/nextld, 0.0)
+                         extc2 = max(oldc2(k-1)*mdep/nextld, 0.0)
+                         extc3 = max(oldc3(k-1)*mdep/nextld, 0.0)
+                       else
+                         extc1 = 0.0
+                         extc2 = 0.0
+                         extc3 = 0.0
+                       endif
+
+                       newc1(k) = oldc1(k) + extc1
+                       newc2(k) = oldc2(k) + extc2
+                       newc3(k) = oldc3(k) + extc3
+
+                       oldc1(k-1) = oldc1(k-1) - extc1
+                       oldc2(k-1) = oldc2(k-1) - extc2
+                       oldc3(k-1) = oldc3(k-1) - extc3
+                    endif !extra carbon?
+                    
+                    !Test that the algorithm created correct layer thickness
+                    ld2 = newc1(k) / fast_c_den + newc2(k) / struct_c_den &
+                        + newc3(k) / slow_c_den
+
+                    fillcheck = fillcheck+ld2/dolz(k)       
+                 end do ! vert loop
+
+                 !!! ASSUME DEEPEST LAYER NEVER FILLS UP. IF THIS FAILS, CREATED
+                 !!! THICKER LAYERS           
+                 newc1(1) = oldc1(1)
+                 newc2(1) = oldc2(1)
+                 newc3(1) = oldc3(1)
+
+                 ld2 = newc1(1) / fast_c_den + newc2(1) / struct_c_den &
+                     + newc3(1) / slow_c_den
+
+                 fillcheck = fillcheck+ld2/dolz(1)       
+
+                 oldc1(:)=newc1(:)
+                 oldc2(:)=newc2(:)
+                 oldc3(:)=newc3(:)
+                 count=count+1
+              end do ! while loop 
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OPTION 2!!!!!!!!!!!!!!!!!!!!!!!!
+             case (2)
+              do while (abs(fillfrac-fillcheck) .gt. 0.01)
+                 if (count > 9) then 
+                    call fatal_error('organic_layer_depth did not converge' &
+                    ,'organic_layer_depth','soil_respiration.f90')
+                 end if
+                 do k=nzl,2,-1 
+                    ld = oldc1(k) / fast_c_den &
+                       + oldc2(k) / struct_c_den &
+                       + oldc3(k) / slow_c_den
+                    nextld = oldc1(k-1) / fast_c_den &
+                       + oldc2(k-1) / struct_c_den &
+                       + oldc3(k-1) /slow_c_den
+
+                    c1d = oldc1(k) / fast_c_den
+                    c2d = oldc2(k) / struct_c_den
+                    c3d = oldc3(k) / slow_c_den
+                    n1d = oldc1(k-1) / fast_c_den
+                    n2d = oldc2(k-1) / struct_c_den
+                    n3d = oldc3(k-1) / slow_c_den
+
+                    if (ld .ge. dolz(k)) then ! if extra carbon
+                      edep = ld - dolz(k) ! extra depth to be pushed down
+                      if (edep .ge. c3d) then
+                         extc3 = oldc3(k)
+                         if (edep .ge. c3d+c2d) then
+                            extc2 = oldc2(k)
+                            extc1 = (edep - c3d -c2d) * fast_c_den
+                         else
+                            extc1 = 0.0
+                            extc2 = (edep-c3d) * struct_c_den
+                         end if
+                      else
+                         extc1 = 0.0
+                         extc2 = 0.0
+                         extc3 = edep*slow_c_den
+                      end if                 
+
+                       newc1(k)=oldc1(k)-extc1
+                       newc2(k)=oldc2(k)-extc2
+                       newc3(k)=oldc3(k)-extc3
+
+                       oldc1(k-1)=oldc1(k-1) + extc1
+                       oldc2(k-1)=oldc2(k-1) + extc2
+                       oldc3(k-1)=oldc3(k-1) + extc3
+
+                    else ! missing carbon
+                       mdep = min(dolz(k)-ld, nextld)
+                       if (mdep .ge. n1d) then
+                          extc1 = oldc1(k-1)
+                          if (mdep .ge. n1d+n2d) then
+                             extc2 = oldc2(k-1)
+                             extc3 = (mdep - n1d - n2d) * slow_c_den
+                          else
+                             extc3 = 0.0
+                             extc2 = (mdep-n1d) * struct_c_den
+                          endif 
+                       else 
+                          extc1 = mdep * fast_c_den
+                          extc2 = 0.0
+                          extc3 = 0.0
+                       endif
+ 
+                       newc1(k) = oldc1(k) + extc1
+                       newc2(k) = oldc2(k) + extc2
+                       newc3(k) = oldc3(k) + extc3
+
+                       oldc1(k-1) = oldc1(k-1) - extc1
+                       oldc2(k-1) = oldc2(k-1) - extc2
+                       oldc3(k-1) = oldc3(k-1) - extc3
+                    endif !extra carbon?
+                    
+                    !Test that the algorithm created correct layer thickness
+                    ld2 = newc1(k) / fast_c_den + newc2(k) / struct_c_den &
+                        + newc3(k) / slow_c_den
+
+                    fillcheck = fillcheck+ld2/dolz(k)       
+                 end do ! vert loop
+
+                 !!! ASSUME DEEPEST LAYER NEVER FILLS UP. IF THIS FAILS, CREATE
+                 !!! THICKER LAYERS           
+                 newc1(1) = oldc1(1)
+                 newc2(1) = oldc2(1)
+                 newc3(1) = oldc3(1)
+
+                 ld2 = newc1(1) / fast_c_den + newc2(1) / struct_c_den &
+                     + newc3(1) / slow_c_den
+
+                 fillcheck = fillcheck+ld2/dolz(1)       
+
+                 oldc1(:)=newc1(:)
+                 oldc2(:)=newc2(:)
+                 oldc3(:)=newc3(:)
+                 count=count+1
+              end do ! while loop
+ 
+           end select !option of redistribution
+
+
+
+           do k=1,nzl 
+             csite%fast_soil_C(k,ipa) = max(oldc1(k), 0.0)
+             csite%structural_soil_C(k,ipa) = max(oldc2(k),0.0)
+             csite%slow_soil_C(k,ipa) = max(oldc3(k),0.0)
+           end do
+
+         end do patchloop
+      end do siteloop
+   end do polygonloop
+
+
+   return
+end subroutine organic_layer_depth
+!==========================================================================================!
+!==========================================================================================!
 
 
 
@@ -315,6 +635,8 @@ subroutine update_C_and_N_pools(cgrid)
                            , r_stsc          ! ! intent(in)
    use pft_coms     , only : c2n_slow        & ! intent(in)
                            , c2n_structural  ! ! intent(in)
+   use grid_coms    , only : nzl             ! ! intent(in)
+
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target   :: cgrid
@@ -324,13 +646,14 @@ subroutine update_C_and_N_pools(cgrid)
    integer                     :: ipy
    integer                     :: isi
    integer                     :: ipa
-   real                        :: Lc
-   real                        :: fast_C_loss
-   real                        :: fast_N_loss
-   real                        :: structural_C_loss
-   real                        :: structural_L_loss
-   real                        :: slow_C_input
-   real                        :: slow_C_loss
+   integer                     :: k
+   real     , dimension(nzl)   :: Lc
+   real     , dimension(nzl)   :: fast_C_loss
+   real     , dimension(nzl)   :: fast_N_loss
+   real     , dimension(nzl)   :: structural_C_loss
+   real     , dimension(nzl)   :: structural_L_loss
+   real     , dimension(nzl)   :: slow_C_input
+   real     , dimension(nzl)   :: slow_C_loss
    !---------------------------------------------------------------------------------------!
 
    polygonloop: do ipy = 1,cgrid%npolygons
@@ -343,75 +666,93 @@ subroutine update_C_and_N_pools(cgrid)
 
          patchloop: do ipa = 1,csite%npatches
 
-            if (csite%structural_soil_C(ipa) > 0.0) then
-               if (csite%structural_soil_L(ipa) == csite%structural_soil_C(ipa)) then
-                  Lc = 0.049787 ! = exp(-3.0)
-               else
-                  Lc = exp( -3.0 * csite%structural_soil_L(ipa)                            &
-                          /  csite%structural_soil_C(ipa))
-               end if
-            else
-               Lc=0.0
-            end if
+            do k=1,nzl
+
+              if (csite%structural_soil_C(k,ipa) > 0.0) then
+                 if (csite%structural_soil_L(k,ipa) == csite%structural_soil_C(k,ipa)) then
+                    Lc(k) = 0.049787 ! = exp(-3.0)
+                 else
+                    Lc(k) = exp( -3.0 * csite%structural_soil_L(k,ipa)                     &
+                          /  csite%structural_soil_C(k,ipa))
+                 end if
+              else
+                 Lc(k)=0.0
+              end if
       
-            !----- Fast pools. ------------------------------------------------------------!
-            fast_C_loss = csite%today_A_decomp(ipa) * decay_rate_fsc                       &
-                        * csite%fast_soil_C(ipa)
-            fast_N_loss = csite%today_A_decomp(ipa) * decay_rate_fsc                       &
-                        * csite%fast_soil_N(ipa)
+              !----- Fast pools. ----------------------------------------------------------!
+              fast_C_loss(k) = csite%today_A_decomp(k,ipa) * decay_rate_fsc                &
+                        * csite%fast_soil_C(k,ipa)
+              fast_N_loss(k) = csite%today_A_decomp(k,ipa) * decay_rate_fsc                &
+                        * csite%fast_soil_N(k,ipa)
 
-            !----- Structural pools. ------------------------------------------------------!
-            structural_C_loss = csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc          &
-                              * csite%structural_soil_C(ipa)
-            structural_L_loss = csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc          &
-                              * csite%structural_soil_L(ipa)
+              !----- Structural pools. ----------------------------------------------------!
+             structural_C_loss(k) = csite%today_Af_decomp(k,ipa) * Lc(k) * decay_rate_stsc &
+                              * csite%structural_soil_C(k,ipa)
+             structural_L_loss(k) = csite%today_Af_decomp(k,ipa) * Lc(k) * decay_rate_stsc &
+                              * csite%structural_soil_L(k,ipa)
 
-            !----- Slow pools. ------------------------------------------------------------!
-            slow_C_input = (1.0 - r_stsc) * structural_C_loss
-            slow_C_loss  = csite%today_A_decomp(ipa) * decay_rate_ssc                      &
-                         * csite%slow_soil_C(ipa)
+              !----- Slow pools. ----------------------------------------------------------!
+              slow_C_input(k) = (1.0 - r_stsc) * structural_C_loss(k)
+              slow_C_loss(k)  = csite%today_A_decomp(k,ipa) * decay_rate_ssc               &
+                         * csite%slow_soil_C(k,ipa)
             
-            !----- Mineralized pool. ------------------------------------------------------!
-            csite%mineralized_N_input = fast_N_loss + slow_C_loss / c2n_slow
-            csite%mineralized_N_loss  = csite%total_plant_nitrogen_uptake(ipa)             &
-                                      + csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc  &
-                                      * csite%structural_soil_C(ipa)                       &
-                                      * ( (1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
+              !----- Mineralized pool. ----------------------------------------------------!
+              csite%mineralized_N_input(k,ipa) = fast_N_loss(k) + slow_C_loss(k) / c2n_slow
+              csite%mineralized_N_loss(k,ipa)  = csite%total_plant_nitrogen_uptake(ipa)        &
+                                 + csite%today_Af_decomp(k,ipa) * Lc(k) * decay_rate_stsc  &
+                                 * csite%structural_soil_C(k,ipa)                          &
+                                 * ( (1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
 
 
-            !------------------------------------------------------------------------------!
-            !      All carbon fluxes have units kgC/m2/day, and we are updating on the     !
-            ! daily time step.                                                             !
-            !------------------------------------------------------------------------------!
-            csite%fast_soil_C(ipa)       = csite%fast_soil_C(ipa) + csite%fsc_in(ipa)      &
-                                         - fast_C_loss
-            csite%structural_soil_C(ipa) = csite%structural_soil_C(ipa)                    &
-                                         + csite%ssc_in(ipa) - structural_C_loss
-            csite%structural_soil_L(ipa) = csite%structural_soil_L(ipa)                    &
-                                         + csite%ssl_in(ipa) - structural_L_loss
-            csite%slow_soil_C(ipa)       = csite%slow_soil_C(ipa) + slow_C_input           &
-                                         - slow_C_loss
+              !----------------------------------------------------------------------------!
+              !      All carbon fluxes have units kgC/m2/day, and we are updating on the   !
+              ! daily time step. Nitrogen has units kgN/m2/day. Updating with vertical res.!
+              ! Only adding inputs to top organic layer (k==nzl). EJL                      !
+              !----------------------------------------------------------------------------!
+              if (k == nzl) then 
+                csite%fast_soil_C(k,ipa)   = csite%fast_soil_C(k,ipa) + csite%fsc_in(ipa)  &
+                                         - fast_C_loss(k)
+
+                csite%fast_soil_N(k,ipa)   = csite%fast_soil_N(k,ipa) + csite%fsn_in(ipa)  &
+                                         - fast_N_loss(k)
+
+                csite%structural_soil_C(k,ipa) = csite%structural_soil_C(k,ipa)              &
+                                         + csite%ssc_in(ipa) - structural_C_loss(k)
+                csite%structural_soil_L(k,ipa) = csite%structural_soil_L(k,ipa)              &
+                                         + csite%ssl_in(ipa) - structural_L_loss(k)
+              else
+                csite%fast_soil_C(k,ipa)   = csite%fast_soil_C(k,ipa)                      &
+                                         - fast_C_loss(k)
+
+                csite%fast_soil_N(k,ipa)   = csite%fast_soil_N(k,ipa)                      &
+                                         - fast_N_loss(k)
+                csite%structural_soil_C(k,ipa) = csite%structural_soil_C(k,ipa)              &
+                                         - structural_C_loss(k)
+                csite%structural_soil_L(k,ipa) = csite%structural_soil_L(k,ipa)              &
+                                         - structural_L_loss(k)
+              end if
+
+              csite%slow_soil_C(k,ipa)       = csite%slow_soil_C(k,ipa) + slow_C_input(k)  &
+                                         - slow_C_loss(k)
             
-            !------------------------------------------------------------------------------!
-            !      All nitrogen fluxes have units kgN/m2/day, and we are updating on the   !
-            ! daily time step.                                                             !
-            !------------------------------------------------------------------------------!
-            csite%fast_soil_N(ipa)        = csite%fast_soil_N(ipa) + csite%fsn_in(ipa)     &
-                                          - fast_N_loss
-            csite%mineralized_soil_N(ipa) = csite%mineralized_soil_N(ipa)                  &
-                                          + csite%mineralized_N_input(ipa)                 &
-                                          - csite%mineralized_N_loss(ipa)
+              csite%mineralized_soil_N(k,ipa) = csite%mineralized_soil_N(k,ipa)            &
+                                          + csite%mineralized_N_input(k,ipa)               &
+                                          - csite%mineralized_N_loss(k,ipa)
 
-            !------------------------------------------------------------------------------!
-            !      Force all pools to be either zero or positive.                          !
-            !------------------------------------------------------------------------------!
-            csite%fast_soil_C(ipa)        = max(0.0,csite%fast_soil_C(ipa))
-            csite%structural_soil_C(ipa)  = max(0.0,csite%structural_soil_C(ipa))
-            csite%structural_soil_L(ipa)  = max(0.0,csite%structural_soil_L(ipa))
-            csite%slow_soil_C(ipa)        = max(0.0,csite%slow_soil_C(ipa))
-            csite%fast_soil_N(ipa)        = max(0.0,csite%fast_soil_N(ipa))
-            csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa))
+!              call organic_layer_depth(cgrid)
+
+              !----------------------------------------------------------------------------!
+              !      Force all pools to be either zero or positive.                        !
+              !----------------------------------------------------------------------------!
+              csite%fast_soil_C(k,ipa)        = max(0.0,csite%fast_soil_C(k,ipa))
+              csite%structural_soil_C(k,ipa)  = max(0.0,csite%structural_soil_C(k,ipa))
+              csite%structural_soil_L(k,ipa)  = max(0.0,csite%structural_soil_L(k,ipa))
+              csite%slow_soil_C(k,ipa)        = max(0.0,csite%slow_soil_C(k,ipa))
+              csite%fast_soil_N(k,ipa)        = max(0.0,csite%fast_soil_N(k,ipa))
+              csite%mineralized_soil_N(k,ipa) = max(0.0,csite%mineralized_soil_N(k,ipa))
             
+           end do !organic layer
+
          end do patchloop
       end do siteloop
    end do polygonloop

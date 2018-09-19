@@ -25,7 +25,7 @@ BASE=$(ED_ROOT)/build/
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
 #HDF5_PATH=/n/sw/hdf5/hdf5-1.8.2_intel-11.0.083
-HDF5_PATH=/n/sw/centos6/hdf5-1.8.11_openmpi-1.8.3_intel-13.0.079
+#HDF5_PATH=/n/sw/centos6/hdf5-1.8.11_openmpi-1.8.3_intel-13.0.079
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
@@ -128,10 +128,10 @@ ifeq ($(KIND_COMP),D)
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -static
+   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -static -openmp
    C_OPTS= -O3 -DLITTLE -traceback -static
    F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl -static
-   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl
+   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl -openmp
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#
