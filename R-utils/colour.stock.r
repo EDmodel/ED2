@@ -11,9 +11,9 @@ colour.stock <<- function(n,alt=FALSE,shf=alt,pvf=3){
                 ,"#CC6677","#AA4466","#882255","#AA4499"
                 )#end c
    }else{
-      cstock = c("#3B24B3","#A3CC52","#E65C17"
-                ,"#990F0F","#1E4C08","#2996CC"
-                ,"#B49ED2","#F1BD3B","#00F3FB"
+      cstock = c("#811F9E","#2BD2DB","#F87856"
+                ,"#880D32","#0E6E81","#1BA2F7"
+                ,"#CCCA3D","#A3F888","#F9E5C0"
                 )#end c
    }#end if (alt)
    nstock.base = length(cstock)

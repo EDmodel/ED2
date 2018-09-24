@@ -75,6 +75,9 @@ dttask=2                      # Time to wait between task submission
 sim_memory=0                  # Memory per simulation.  If zero, then it will be 
                               #    automatically determined by the maximum number of tasks
                               #    per node.
+runtime="00:00:00"            # Simulation time in hours.  If zero, then it will be
+                              #    automatically determined by the maximum walltime for 
+                              #    the queue.
 #------------------------------------------------------------------------------------------#
 
 
@@ -200,49 +203,49 @@ rclogin*|holy*|moorcroft*|rcnx*)
          n_nodes_max=166
          n_cpt=1
          n_tpn=32
-         runtime="7-00:00:00"
+         runtime_max="7-00:00:00"
          node_memory=262499
          ;;
       shared)
          n_nodes_max=456
          n_cpt=1
          n_tpn=32
-         runtime="7-00:00:00"
+         runtime_max="7-00:00:00"
          node_memory=129072
          ;;
       huce_intel)
          n_nodes_max=276
          n_cpt=1
          n_tpn=24
-         runtime="14-00:00:00"
+         runtime_max="14-00:00:00"
          node_memory=126820
          ;;
       huce_amd)
          n_nodes_max=65
          n_cpt=1
          n_tpn=32
-         runtime="14-00:00:00"
+         runtime_max="14-00:00:00"
          node_memory=262499
          ;;
       moorcroft_amd)
          n_nodes_max=8
          n_cpt=1
          n_tpn=64
-         runtime="infinite"
+         runtime_max="infinite"
          node_memory=256302
          ;;
       moorcroft_6100)
          n_nodes_max=35
          n_cpt=1
          n_tpn=12
-         runtime="infinite"
+         runtime_max="infinite"
          node_memory=22150
          ;;
       unrestricted)
          n_nodes_max=8
          n_cpt=1
          n_tpn=64
-         runtime="31-00:00:00"
+         runtime_max="31-00:00:00"
          node_memory=262499
          ;;
       *)
@@ -259,35 +262,35 @@ sdumont*)
       n_nodes_max=10
       n_cpt=1
       n_tpn=24
-      runtime="31-00:00:00"
+      runtime_max="31-00:00:00"
       node_memory=64000
       ;;
    cpu|nvidia|phi)
       n_nodes_max=50
       n_cpt=1
       n_tpn=24
-      runtime="2-00:00:00"
+      runtime_max="2-00:00:00"
       node_memory=64000
       ;;
    cpu_dev)
       n_nodes_max=20
       n_cpt=1
       n_tpn=24
-      runtime="02:00:00"
+      runtime_max="02:00:00"
       node_memory=64000
       ;;
    nvidia_dev|phi_dev)
       n_nodes_max=2
       n_cpt=1
       n_tpn=24
-      runtime="02:00:00"
+      runtime_max="02:00:00"
       node_memory=64000
       ;;
    cpu_scal|nvidia_scal)
       n_nodes_max=128
       n_cpt=1
       n_tpn=24
-      runtime="18:00:00"
+      runtime_max="18:00:00"
       node_memory=64000
       ;;
    *)
@@ -305,6 +308,112 @@ sdumont*)
    ;;
 esac
 let n_tasks_max=${n_nodes_max}*${n_tpn}
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Set time.                                                                             #
+#------------------------------------------------------------------------------------------#
+runtime=$(echo     ${runtime}     | tr '[:upper:]' '[:lower:]')
+runtime_max=$(echo ${runtime_max} | tr '[:upper:]' '[:lower:]')
+case "${runtime}" in
+infinite)
+   #----- Infinite runtime.  Make sure the queue supports this type of submission. --------#
+   case "${runtime_max}" in
+   infinite)
+      echo "" > /dev/null
+      ;;
+   *)
+      echo " Requested partition:       ${global_queue}"
+      echo " Maximum runtime permitted: ${runtime_max}"
+      echo " Requested runtime:         ${runtime}"
+      echo " Partition ${global_queue} does not support infinite time."
+      exit 91
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+   ;;
+*)
+   #----- Find out the format provided. ---------------------------------------------------#
+   case "${runtime}" in
+   *-*:*)
+      #----- dd-hh:mm:ss. -----------------------------------------------------------------#
+      let ndays=$(echo ${runtime} | sed s@"-.*"@@g)
+      let nhours=$(echo ${runtime} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
+      ;;
+   *:*)
+      #----- hh:mm:ss. --------------------------------------------------------------------#
+      let ndays=0
+      let nhours=$(echo ${runtime} | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
+      ;;
+   *)
+      #----- Hours. -----------------------------------------------------------------------#
+      let ndays=${runtime}/24
+      let nhours=${runtime}%24
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the walltime in hours, and the runtime in nice format. ---------------------#
+   let wall=${nhours}+24*${ndays}
+   let ndays=${wall}/24
+   let nhours=${wall}%24
+   if [[ ${ndays} -gt 0 ]]
+   then
+      fmtday=$(printf '%2.2i' ${ndays})
+      fmthr=$(printf '%2.2i' ${nhours})
+      runtime="${fmtday}-${fmthr}:00:00"
+   else
+      fmthr=$(printf '%2.2i' ${nhours})
+      runtime="${fmthr}:00:00"
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the maximum number of hours allowed in the partition. ----------------------#
+   case "${runtime_max}" in
+   infinite)
+      let ndays_max=${ndays}+1
+      let nhours_max=${nhours}
+      ;;
+   *-*)
+      let ndays_max=$(echo ${runtime} | sed s@"-.*"@@g)
+      let nhours_max=$(echo ${runtime} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+      ;;
+   *)
+      let ndays_max=0
+      let nhours_max=$(echo ${runtime} | sed s@":.*"@@g)
+      ;;
+   esac
+   let wall_max=${nhours_max}+24*${ndays_max}
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check requested walltime and the availability.                                    #
+   #---------------------------------------------------------------------------------------#
+   if [[ ${wall} -eq 0 ]]
+   then
+      case "${runtime_max}" in
+      infinite) runtime="infinite"     ;;
+      *)        runtime=${runtime_max} ;;
+      esac
+   elif [[ ${wall} -gt ${wall_max} ]]
+   then
+      echo " Requested partition:       ${global_queue}"
+      echo " Maximum runtime permitted: ${runtime_max}"
+      echo " Requested runtime:         ${runtime}"
+      echo " - Requested time exceeds limits."
+      exit 92
+   fi
+   #---------------------------------------------------------------------------------------#
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 

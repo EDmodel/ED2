@@ -2342,6 +2342,8 @@ subroutine init_pft_alloc_params()
                              , sla_s0                & ! intent(out)
                              , sla_s1                & ! intent(out)
                              , kplastic_SLA          & ! intent(out)
+                             , eplastic_vm0          & ! intent(out)
+                             , eplastic_sla          & ! intent(out)
                              , fexp_SLA_max          & ! intent(out)
                              , LMA_slope             & ! intent(out)
                              , sapwood_ratio         & ! intent(out)
@@ -2436,12 +2438,12 @@ subroutine init_pft_alloc_params()
    !      3177-3190, Oct 2014. doi:10.1111/gcb.12629 (C14).                                !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   real, dimension(2)    , parameter :: c14l83_bl_xx  = (/ 0.12830780,0.7587000 /)
-   real, dimension(2)    , parameter :: c14l83_bs_tf  = (/ 0.07871283,0.9829948 /)
-   real, dimension(2)    , parameter :: c14l83_bs_sv  = (/ 0.07610888,0.9838431 /)
+   real, dimension(2)    , parameter :: c14l83_bl_xx  = (/ 0.09747026,0.7587000 /)
+   real, dimension(2)    , parameter :: c14l83_bs_tf  = (/ 0.08204475,0.9814422 /)
+   real, dimension(2)    , parameter :: c14l83_bs_sv  = (/ 0.08013971,0.9818603 /)
    real, dimension(2)    , parameter :: c14l83_bs_gr  = (/ 1.0e-5, 1.0 /) * c14l83_bl_xx
-   real                  , parameter :: SLA_ref       = 22.93
-   real                  , parameter :: rho_ref       = 0.615
+   real                  , parameter :: SLA_ref       = 17.419
+   real                  , parameter :: rho_ref       = 0.610
    !---------------------------------------------------------------------------------------!
 
 
@@ -2480,11 +2482,11 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
             select case (ipft)
             case ( 2,12) ! Early-successional tropical/savannah.
-               rho(ipft) = 0.461
+               rho(ipft) = 0.450
             case ( 3,13) ! Mid-successional tropical/savannah.
-               rho(ipft) = 0.612
+               rho(ipft) = 0.615
             case ( 4,14) ! Late-successional tropical/savannah.
-               rho(ipft) = 0.756
+               rho(ipft) = 0.790
             case default ! Just in case some PFT was forgotten, use global average
                rho(ipft) = rho_ref
             end select
@@ -2536,11 +2538,11 @@ subroutine init_pft_alloc_params()
          case (1,16)     ! C4 grass
             leaf_turnover_rate(ipft) = 2.0
          case (2,12)     ! Early-successional tropical/savannah.
-            leaf_turnover_rate(ipft) = 1.4890971
+            leaf_turnover_rate(ipft) = 1.55581030
          case (3,13)     ! Mid-successional tropical/savannah.
-            leaf_turnover_rate(ipft) = 0.8159120
+            leaf_turnover_rate(ipft) = 0.80621772
          case (4,14)     ! Late-successional tropical/savannah.
-            leaf_turnover_rate(ipft) = 0.4597015
+            leaf_turnover_rate(ipft) = 0.40146228
          case default ! Just in case
             leaf_turnover_rate(ipft) = 1.3141913
          end select
@@ -2615,8 +2617,8 @@ subroutine init_pft_alloc_params()
                sla_s0(ipft) = 15.159000
                sla_s1(ipft) = 0.8637294
             else ! Broadleaf trees, use trait data base
-               sla_s0(ipft) = 20.276230
-               sla_s1(ipft) = 0.4501726
+               sla_s0(ipft) = 21.667770
+               sla_s1(ipft) = 0.4314902
             end if
             !------------------------------------------------------------------------------!
          case default
@@ -3757,11 +3759,30 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !     This controls the expansion factor for SLA when using trait plasticity.  The      !
    ! default depends upon Vcmax25 and is initialised in init_derived_params_after_xml.     !
-   ! This function is inferred from SLA-Nitrogen relationship in Lloyd et al. (2010) and   !
-   ! Nitrogen-Vcmax25 relationship from Kattge et al. (2009).  Because this relationship   !
-   ! is empirical, we also allow it to be initialised through XML.                         !
+   ! This relationship is empirical, so we allow it to be initialised through XML too.     !
    !---------------------------------------------------------------------------------------!
-   kplastic_SLA(:) = undef_real
+   kplastic_SLA (:) = undef_real
+   !---------------------------------------------------------------------------------------!
+   !     This controls the expansion/reduction exponent for leaf turnover rate when using  !
+   ! trait plasticity.  Currently we start from Eq. 1 of X17 (originally from K91), by     !
+   ! substituting b with their SMA fit, and fitting a curve relating Aa with Vcmax25_m,    !
+   ! which was obtained by simulating ED-2 for a variety of average diurnal cycles in      !
+   ! tower sites in South America, using a variety of Vcmax25_m values found in trait data !
+   ! bases (TRY/GLOPNET/RAINFOR/NGEE-Tropics).                                             !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Kikuzawa K. 1991. A cost-benefit analysis of leaf habit and leaf longevity of trees   !
+   !    and their geographical pattern. Am. Nat. 138(5): 1250-1263. doi:10.1086/285281     !
+   !    (K91).                                                                             !
+   !                                                                                       !
+   ! Xu X, Medvigy D, Wright SJ, Kitajima K, Wu J, Albert LP, Martins GA, Saleska SR,      !
+   !    Pacala SW. 2017. Variations of leaf longevity in tropical moist forests predicted  !
+   !    by a trait-driven carbon optimality model. Ecol. Lett. 20(9): 1097-1106.           !
+   !    doi:10.1111/ele.12804 (X17).                                                       !
+   !---------------------------------------------------------------------------------------!
+   eplastic_vm0(:) = 0.5 * (-1.36 - 0.8399)
+   eplastic_sla(:) = 0.5 * (-1.36 - 1.0000)
    !----- Maximum expansion factor for SLA. -----------------------------------------------!
    fexp_SLA_max(:) = 2.0
    !----- Linearised slope for when TRAIT_PLASTICITY_SCHEME is negative. ------------------!
@@ -4974,7 +4995,7 @@ subroutine init_pft_nitro_params()
             !    economics spectrum. Nature, 428(6985):821-827, Apr 2004.                  !
             !    doi:10.1038/nature02403 (W04).                                            !
             !------------------------------------------------------------------------------!
-            c2n_leaf(ipft) = 327.1240 / SLA(ipft) ** 0.823498
+            c2n_leaf(ipft) = 337.959 / SLA(ipft) ** 0.834527
             !------------------------------------------------------------------------------!
          end if
       case default
@@ -6686,6 +6707,8 @@ subroutine init_derived_params_after_xml()
                                    , root_turnover_rate        & ! intent(in)
                                    , storage_turnover_rate     & ! intent(in)
                                    , bark_turnover_rate        & ! intent(in)
+                                   , eplastic_vm0              & ! intent(in)
+                                   , eplastic_sla              & ! intent(in)
                                    , mort0                     & ! intent(in)
                                    , mort1                     & ! intent(in)
                                    , mort2                     & ! intent(in)
@@ -7478,7 +7501,7 @@ subroutine init_derived_params_after_xml()
       case (0,1)
          Vcmax258 = arrhenius(temp25C8,refval8,hor8)
       case (2,3)
-         Vcmax258 = arrhenius(temp25C8,refval8,hor8)
+         Vcmax258 = collatz(temp25C8,refval8,q108)
       end select
       !------------------------------------------------------------------------------------!
 
@@ -7510,13 +7533,23 @@ subroutine init_derived_params_after_xml()
 
       !------------------------------------------------------------------------------------!
       !    In case kplastic_vm0 was not initialised through XML, use the function from     !
-      ! Lloyd et al. (2010).                                                               !
+      ! L10.  This is not the same fit, instead it was found using robust standardised     !
+      ! major axis to reduce leverage.                                                     !
+      !                                                                                    !
+      ! Reference:                                                                         !
+      !                                                                                    !
+      ! Lloyd J, Patino S, Paiva RQ, Nardoto GB, Quesada CA, Santos AJB, Baker TR,         !
+      !    Brand WA, Hilke I, Gielmann H, Raessler M, Luizao FJ, Martinelli LA,            !
+      !    Mercado LM. 2009. Optimisation of photosynthetic carbon gain and within-canopy  !
+      !    gradients of associated foliar traits for Amazon forest trees. Biogeosciences   !
+      !    7(6): 1833-1859, doi:10.5194/bg-7-1833-2010 (L10).                              !
       !------------------------------------------------------------------------------------!
       if (kplastic_vm0(ipft) == undef_real) then
          !----- Use the "low" variables as placeholders for double precision. -------------!
-         lnexplow8 = 9.63d-3 * Vcmax258 - 2.43d0
+         lnexplow8 = -2.788d0 + 1.439d-2 * Vcmax258
          lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
-         tlow_fun8 = exp(lnexplow8)
+         !---- Set the value to negative so Vm0 decreases in the understorey. -------------!
+         tlow_fun8 = - 1.d0 * exp(lnexplow8)
          !---------------------------------------------------------------------------------!
 
 
@@ -7528,11 +7561,23 @@ subroutine init_derived_params_after_xml()
 
 
       !------------------------------------------------------------------------------------!
-      !    In case kplastic_SLA was not initialised through XML, use the function from     !
-      ! Lloyd et al. (2010) and Kattge et al. (2009).                                      !
+      !    In case kplastic_vm0 was not initialised through XML, use an empirical          !
+      ! function.  This function is obtained using the data from KN2016, assuming Beer's   !
+      ! law to find the LAI that would cause the drop of light conditions from 40 mol/m2/d !
+      ! to 3 mol/m2/d (their standard light conditions), and assuming that changes in SLA  !
+      ! would follow a exponential decay/expansion, akin to Vm0.  Only tropical trees were !
+      ! used for the standardised major axis regression, and we used a linear-log function !
+      ! because kplastic_SLA may switch sign: in fact KN2016 observations had negative     !
+      ! values for very high-canopy-level SLA values.                                      !
+      !                                                                                    !
+      ! Reference:                                                                         !
+      !                                                                                    !
+      ! Keenan TF, Niinemets U. 2016. Global leaf trait estimates biased due to plasticity !
+      !    in the shade. Nat. Plants, 3:16201, Dec 2016. doi:10.1038/nplants.2016.201      !
+      !    (KN16).                                                                         !
       !------------------------------------------------------------------------------------!
       if (kplastic_SLA(ipft) == undef_real) then
-         kplastic_SLA(ipft) = 2.61e-3 * Vcmax25(ipft)
+         kplastic_SLA(ipft) = 0.462 - 0.1239 * log(SLA(ipft))
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -7597,7 +7642,7 @@ subroutine init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
          !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(39(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(41(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
                                         ,'     VCMAX25','         VM0','         JM0'      &
                                         ,'        TPM0','         RD0','     RD0:VM0'      &
@@ -7609,12 +7654,13 @@ subroutine init_derived_params_after_xml()
                                         ,' RD_EXP_HIGH','      RD_HOR','    ST_SLOPE'      &
                                         ,'         GS0','Q_EFFICIENCY',' CV_ELECTRON'      &
                                         ,' QYIELD_PSII','      KWROOT','  LEAF_WIDTH'      &
-                                        ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'
+                                        ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'      &
+                                        ,'EPLASTIC_VM0','EPLASTIC_SLA'
                                         
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,35(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,37(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
                           ,D0(ipft),Vcmax25(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft) &
                           ,dark_respiration_factor(ipft),electron_transport_factor(ipft)   &
@@ -7628,14 +7674,14 @@ subroutine init_derived_params_after_xml()
                           ,curvpar_electron(ipft),qyield_psII(ipft)                        &
                           ,water_conductance(ipft)*yr_sec,leaf_width(ipft)                 &
                           ,root_respiration_factor(ipft),kplastic_vm0(ipft)                &
-                          ,kplastic_sla(ipft)
+                          ,kplastic_sla(ipft),eplastic_vm0(ipft),eplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
       case (2,3)
          !---------------------------------------------------------------------------------!
          !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(39(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(41(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
                                         ,'     VCMAX25','         VM0','         JM0'      &
                                         ,'        TPM0','         RD0','     RD0:VM0'      &
@@ -7647,11 +7693,12 @@ subroutine init_derived_params_after_xml()
                                         ,' RD_EXP_HIGH','      RD_Q10','    ST_SLOPE'      &
                                         ,'         GS0','Q_EFFICIENCY',' CV_ELECTRON'      &
                                         ,' QYIELD_PSII','      KWROOT','  LEAF_WIDTH'      &
-                                        ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'
+                                        ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'      &
+                                        ,'EPLASTIC_VM0','EPLASTIC_SLA'
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,35(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,37(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
                           ,D0(ipft),Vcmax25(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft) &
                           ,dark_respiration_factor(ipft),electron_transport_factor(ipft)   &
@@ -7665,7 +7712,7 @@ subroutine init_derived_params_after_xml()
                           ,curvpar_electron(ipft),qyield_psII(ipft)                        &
                           ,water_conductance(ipft)*yr_sec,leaf_width(ipft)                 &
                           ,root_respiration_factor(ipft),kplastic_vm0(ipft)                &
-                          ,kplastic_sla(ipft)
+                          ,kplastic_sla(ipft),eplastic_vm0(ipft),eplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
       end select

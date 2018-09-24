@@ -88,7 +88,7 @@ ststcrit=0.01         #   Maximum change allowed between two cycles
 email1day=1
 recipient=""
 mailprog=$(which mutt)
-frqemail=43200
+frqemail=""
 plotstatus=true
 Rscript_plot="${situtils}/plot.region.r"
 R_figlist="${situtils}/status_region.png
@@ -110,9 +110,9 @@ emailday="${here}/emailday.txt"
 
 
 #------ Simulation settings. --------------------------------------------------------------#
-wait_minutes=120
-frqpost=0
-frqtouch=5
+wait_minutes=""
+frqpost=""
+frqtouch=""
 #------------------------------------------------------------------------------------------#
 
 
@@ -154,10 +154,20 @@ outform="JobName%200,State%12"
 #------------------------------------------------------------------------------------------#
 #       First check that the main path and e-mail have been set.  If not, don't run.       #
 #------------------------------------------------------------------------------------------#
-if [ "x${here}" == "x" ] || [ "x${recipient}" == "x" ]
+if [[ "x${here}"         == "x" ]] || [[ "x${recipient}"    == "x" ]] ||
+   [[ "x${frqemail}"     == "x" ]] || [[ "x${wait_minutes}" == "x" ]] ||
+   [[ "x${frqpost}"      == "x" ]] || [[ "x${frqtouch}"     == "x" ]]
 then
-   echo " You must set some variables before running the script:"
-   echo " Check variables \"here\" and \"recipient\"!"
+   echo "----------------------------------------------------------------------"
+   echo " here         = ${here}"
+   echo " recipient    = ${recipient}"
+   echo " frqemail     = ${frqemail}"
+   echo " wait_minutes = ${wait_minutes}"
+   echo " frqpost      = ${frqpost}"
+   echo " frqtouch     = ${frqtouch}"
+   echo " Y All the variables above must be set before running the script."
+   echo " Please check script run_sitter.sh and try again"
+   echo "----------------------------------------------------------------------"
    exit 99
 fi
 #------------------------------------------------------------------------------------------#
@@ -420,10 +430,45 @@ do
       case ${iscenario} in
       default)
          case ${metdriver} in
+         ERAINT_CHIRPS)
+            #----- ERA-Interim (CHIRPS precipitation). ------------------------------------#
+            scentype="ERA_Interim"
+            iscenario="ERAINT_SOUTHAM_CHIRPS"
+            ;;
+         ERAINT_NATIVE)
+            #----- ERA-Interim (native precipitation). ------------------------------------#
+            scentype="ERA_Interim"
+            iscenario="ERAINT_SOUTHAM_NATIVE"
+            ;;
+         MERRA2_CHIRPS)
+            #----- MERRA2 (CHIRPS precipitation). -----------------------------------------#
+            scentype="MERRA2"
+            iscenario="MERRA2_SOUTHAM_CHIRPS"
+            ;;
+         MERRA2_NATIVE)
+            #----- MERRA-2 (native precipitation). ----------------------------------------#
+            scentype="MERRA2"
+            iscenario="MERRA2_SOUTHAM_NATIVE"
+            ;;
+         PGMF3_CHIRPS)
+            #----- PGMF-3 (CHIRPS precipitation). -----------------------------------------#
+            scentype="PGMF3"
+            iscenario="PGMF3_SOUTHAM_CHIRPS"
+            ;;
+         PGMF3_NATIVE)
+            #----- PGMF-3 (native precipitation). -----------------------------------------#
+            scentype="PGMF3"
+            iscenario="PGMF3_SOUTHAM_NATIVE"
+            ;;
          Sheffield)
             #----- Sheffield. -------------------------------------------------------------#
             scentype="sheffield"
             iscenario="sheffield"
+            ;;
+         WFDEI_CHIRPS)
+            #----- WFDEI (CHIRPS Precipitation). ------------------------------------------#
+            scentype="WFDEI"
+            iscenario="WFDEI_SOUTHAM_CHIRPS"
             ;;
          WFDEI_CRUP)
             #----- WFDEI (CRU Precipitation). ---------------------------------------------#
@@ -456,80 +501,185 @@ do
 
 
       #------------------------------------------------------------------------------------#
-      #    Check year range.                                                               #
+      #      Choose the scenario to use.  Iscenario follows the following convention:      #
+      # "default"    -- No scenario.  Use the tower/Sheffield data.                        #
+      # "wmo"        -- No scenario.  Use the WMO-based data.                              #
+      # "rRRR_tTTT   -- Use scenarios, with rRRRR controlling the rainfall, and tTTTT      #
+      #                 controlling temperature.                                           #
+      #                                                                                    #
+      # rRRR         -- Rainfall scenarios, where rRRRR means:                             #
+      #                 r+000: INMET-based time series, no resampling.                     #
+      #                 r+010: Re-sampling with substitution, but equal chances for all    #
+      #                        years                                                       #
+      #                 r-XXX: Shift the location (similar to mean) of the distribution by #
+      #                        -X.XX units of scale (similar to standard deviation), so    #
+      #                        the time series becomes drier.                              #
+      #                 r+XXX: Similar to above, but make the time series wetter.          #
+      #                                                                                    #
+      # tTTT         -- Temperature scenarios, where tTTTT means:                          #
+      #                 t+000: No change in temperature                                    #
+      #                 t-YYY: Change temperature by -Y.YY Kelvin.  Keep relative humidity #
+      #                        the same and correct specific humidity.                     #
+      #                 t+YYY: Change temperature by +Y.YY Kelvin.  Keep relative humidity #
+      #                        the same and correct by +Y.YY Kelvin.                       #
+      #                 r+XXX: Similar to above, but make the time series wetter.          #
+      #------------------------------------------------------------------------------------#
+      #----- Find out which scenario to use. ----------------------------------------------#
+      fullscen="${metmain}/met_driver/${scentype}/${iscenario}"
+      #------------------------------------------------------------------------------------#
+      #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
+      # dataset, otherwise the site-level tower data is used.                              #
       #------------------------------------------------------------------------------------#
       case ${metdriver} in
       Bananal)
+         metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
          metcyc1=2004
          metcycf=2006
+         imetavg=1
          ;;
       Brasilia)
+         metdriverdb="${fullscen}/Brasilia/Brasilia_HEADER"
          metcyc1=2006
          metcycf=2012
+         imetavg=1
          ;;
       Caxiuana)
+         metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
          metcyc1=1999
          metcycf=2003
+         imetavg=1
+         ;;
+      ERAINT_NATIVE)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
+         metcyc1=1979
+         metcycf=2017
+         imetavg=2
+         ;;
+      ERAINT_CHIRPS)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
+         metcyc1=1981
+         metcycf=2017
+         imetavg=2
          ;;
       Fazenda_Nossa_Senhora)
+         metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
          metcyc1=1999
          metcycf=2002
+         imetavg=1
          ;;
       Harvard)
+         metdriverdb="${fullscen}/Harvard/Harvard_HEADER"
          metcyc1=1992
          metcycf=2003
+         imetavg=3
          ;;
       Manaus_Km34)
+         metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
          metcyc1=1999
          metcycf=2006
+         imetavg=1
+         ;;
+      MERRA2_NATIVE)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
+         metcyc1=1980
+         metcycf=2017
+         imetavg=3
+         ;;
+      MERRA2_CHIRPS)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
+         metcyc1=1981
+         metcycf=2017
+         imetavg=3
          ;;
       Natal)
+         metdriverdb="${fullscen}/Natal/Natal_HEADER"
          metcyc1=2009
          metcycf=2012
+         imetavg=1
          ;;
       Paracou)
+         metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
          metcyc1=2004
          metcycf=2014
+         imetavg=1
          ;;
       Pe-de-Gigante)
+         metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
          metcyc1=2001
          metcycf=2003
+         imetavg=1
          ;;
       Petrolina)
+         metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
          metcyc1=2004
          metcycf=2012
+         imetavg=1
          ;;
-      Rebio_Jaru)
-         metcyc1=1999
-         metcycf=2002
-         ;;
-      Santarem_Km67)
-         metcyc1=2001
-         metcycf=2011
-         ;;
-      Santarem_Km77)
-         metcyc1=2001
-         metcycf=2005
-         ;;
-      Santarem_Km83)
-         metcyc1=2000
-         metcycf=2003
-         ;;
-      Sheffield)
-         metcyc1=1969
-         metcycf=2008
-         ;;
-      Tonzi)
-         metcyc1=2000
-         metcycf=2010
-         ;;
-      WFDEI_CRUP)
+      PGMF3_CRUP)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
          metcyc1=1979
          metcycf=2016
+         imetavg=3
+         ;;
+      PGMF3_CHIRPS)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
+         metcyc1=1981
+         metcycf=2016
+         imetavg=3
+         ;;
+      Rebio_Jaru)
+         metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
+         metcyc1=1999
+         metcycf=2002
+         imetavg=1
+         ;;
+      Santarem_Km67)
+         metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
+         metcyc1=2001
+         metcycf=2011
+         imetavg=1
+         ;;
+      Santarem_Km77)
+         metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
+         metcyc1=2001
+         metcycf=2005
+         imetavg=1
+         ;;
+      Santarem_Km83)
+         metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
+         metcyc1=2000
+         metcycf=2003
+         imetavg=1
+         ;;
+      Sheffield)
+         metdriverdb=${fullscen}/${shefhead}
+         metcyc1=1969
+         metcycf=2008
+         imetavg=2
+         ;;
+      Tonzi)
+         metdriverdb="${fullscen}/Tonzi/Tonzi_HEADER"
+         metcyc1=2000
+         metcycf=2010
+         imetavg=1
+         ;;
+      WFDEI_CHIRPS)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
+         metcyc1=1981
+         metcycf=2016
+         imetavg=1
+         ;;
+      WFDEI_CRUP)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
+         metcyc1=1979
+         metcycf=2016
+         imetavg=1
          ;;
       WFDEI_GPCC)
+         metdriverdb="${fullscen}/${iscenario}_HEADER"
          metcyc1=1979
-         metcycf=2013
+         metcycf=2016
+         imetavg=1
          ;;
       *)
          echo "Met driver: ${metdriver}"
@@ -543,13 +693,16 @@ do
       #------------------------------------------------------------------------------------#
       #     Correct years so it is not tower-based or Sheffield.                           #
       #------------------------------------------------------------------------------------#
-      if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
-         [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ] &&
-         [ ${iscenario} != "WFDEI"     ]
-      then
+      case ${iscenario} in
+      default|eft|shr|sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
+         echo "Nothing" > /dev/null
+         ;;
+      *)
          metcyc1=1972
-         metcycf=2011
-      fi
+         metcycf=2012
+         imetavg=1
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
 
 
@@ -845,11 +998,31 @@ do
 
 
 
+   #---------------------------------------------------------------------------------------#
+   #      Run the post processing.                                                         #
+   #---------------------------------------------------------------------------------------#
+   if [ ${frqpost} -gt 0 ]
+   then
+      let xpost=${iter}%${frqpost}
+      if [ -s "${here}/epost.sh" ] && [ ${xpost} -eq 0 -o ${n_ongoing} -eq 0 ]
+      then
+         echo " Run post-processing."
+         ${here}/epost.sh
+
+
+         echo " Compress/clean files."
+         ${here}/last_histo.sh
+      fi
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Run R to make the status check. -------------------------------------------------#
    if ${plotstatus}
    then
       echo "     + Run the status check."
-      Rscript_out="$(dirname ${Rscript_plot})/$(basename ${Rscript_plot} .r).txt"
+      Rscript_out="$(dirname ${Rscript_plot})/out_$(basename ${Rscript_plot} .r).txt"
       R CMD BATCH --no-save --no-restore ${Rscript_plot} ${Rscript_out}
    fi
    #---------------------------------------------------------------------------------------#
@@ -969,26 +1142,6 @@ do
       ${mailprog} -s "${subject}" ${attach} ${recipient} < ${emailbody}
    else
       echo "     + Skip e-mail."
-   fi
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Run the post processing.                                                         #
-   #---------------------------------------------------------------------------------------#
-   if [ ${frqpost} -gt 0 ]
-   then
-      let xpost=${iter}%${frqpost}
-      if [ -s "${here}/epost.sh" ] && [ ${xpost} -eq 0 -o ${n_ongoing} -eq 0 ]
-      then
-         echo " Run post-processing."
-         ${here}/epost.sh
-
-
-         echo " Compress/clean files."
-         ${here}/last_histo.sh
-      fi
    fi
    #---------------------------------------------------------------------------------------#
 

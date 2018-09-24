@@ -1231,6 +1231,76 @@ fix.try.photo.path <<- function(dat){
 
 #==========================================================================================#
 #==========================================================================================#
+#     Fix sun/shade flag.                                                                  #
+#------------------------------------------------------------------------------------------#
+fix.try.sun.shade <<- function(dat){
+
+   #----- Replace original variables with standardised code. ------------------------------#
+   sun.shade.orig = dat$sun.shade
+   sun.flags     = c("sun","Sun","sun only","sun-lit")
+   shade.flags   = c("shade","Shade")
+   partial.flags = c("sun&shade","sun-shade")
+   ans            = rep(NA_character_,times=nrow(dat))
+   ans[dat$sun.shade %in% sun.flags    ] = "sun"
+   ans[dat$sun.shade %in% shade.flags  ] = "shade"
+   ans[dat$sun.shade %in% partial.flags] = "sun-shade"
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end fix.try.photo.path
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Fix crown illumination index flag.  We follow the notation from AS92, which is       #
+# pretty much the same used by PA03 and B10.                                               #
+#                                                                                          #
+# 1 - Completely shaded                                                                    #
+# 2 - Some lateral light                                                                   #
+# 3 - Crown is partially illuminated                                                       #
+# 4 - Crown top is completely illuminated                                                  #
+# 5 - Crown is completely exposed                                                          #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Alder D, Synnott TJ, 1992. Permanent sample plot techniques for mixed tropical forest.   #
+#    Tropical Forestry Papers 25, Oxford Forestry Institute, University of Oxford,         #
+#    Oxford, U.K., 1992.                                                                   #
+#    https://ora.ox.ac.uk/objects/uuid:44f3db1e-6bb9-477c-8ab4-8d723a15550f/ (AS92).       #
+#                                                                                          #
+# Poorter L, Arets EJMM. 2003. Light environment and tree strategies in a Bolivian         #
+#    tropical moist forest: an evaluation of the light partitioning hypothesis.            #
+#    Plant Ecol. 166(2): 295-306, Jun 2003. doi:10.1023/A:1023295806147 (PA03).            #
+#                                                                                          #
+# Baraloto C, Timothy Paine CE, Poorter L, Beauchene J, Bonal D, Domenach AM, Herault B,   #
+#    Patino S, Roggy JC, and Chave J. 2010. Decoupled leaf and stem economics in rain      #
+#    forest trees. Ecol. Lett. 13(11): 1338-1347. doi:10.1111/j.1461-0248.2010.01517.x     #
+#    (B10).                                                                                #
+#------------------------------------------------------------------------------------------#
+fix.try.canopy <<- function(dat){
+
+   #----- Replace original variables with standardised code. ------------------------------#
+   ans = dat$canopy
+   ans[ans %in% 6 ] = 3
+   ans[ans %in% 7 ] = 4
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end fix.try.photo.path
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     Fix life type based on a few additional information.                                 #
 #------------------------------------------------------------------------------------------#
 fix.try.life.type <<- function(dat){

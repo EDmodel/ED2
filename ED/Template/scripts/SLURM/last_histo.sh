@@ -10,8 +10,8 @@ here=""                                        # Main path
 diskthere=""                                   # Disk where the output files are
 joborder="${here}/joborder.txt"                # File with the job instructions
 bzip2="/bin/gzip -9"                           # Program to compress files (with options)
-checkhourly="y"                                # Check hourly files.
-checkstatus="y"                                # Check status before compressing
+checkhourly=""                                 # Check hourly files.
+checkstatus=""                                 # Check status before compressing
 #------ Calculator. -----------------------------------------------------------------------#
 ccc="${HOME}/util/calc.sh"  # Calculator
 #------ # of history files to keep (in odyssey's world, always keep more than one). -------#
@@ -47,11 +47,20 @@ daymax=(0 31 28 31 30 31 30 31 31 30 31 30 31)
 
 
 
-#----- This script is normally ran with crontab.  Make sure the main path is set. ---------#
-if [ "x${here}" == "x" ]
+#------------------------------------------------------------------------------------------#
+#     Look for variables that may nThis script is normally ran with crontab.  Make sure the main path is set. ---------#
+#------------------------------------------------------------------------------------------#
+bad=0
+if [[ "x${here}"        == "x" ]] || [[ "x${checkhourly}" == "x" ]] || 
+   [[ "x${checkstatus}" == "x" ]]
 then
-   echo " here = ${here} "
-   echo " Set up variable here before running email_reset.sh"
+   echo "------------------------------------------------------------"
+   echo " here        = ${here}"
+   echo " checkhourly = ${checkhourly}"
+   echo " checkstatus = ${checkstatus}"
+   echo " None of the variables above should be empty."
+   echo " Please check last_histo.sh settings."
+   echo "------------------------------------------------------------"
    exit 92
 fi
 #------------------------------------------------------------------------------------------#
@@ -84,7 +93,7 @@ do
    namehere=$(basename ${diskhere})
    diskhere=$(dirname ${diskhere})
 done
-if [ "x${diskthere}" == "x" ]
+if [[ "x${diskthere}" == "x" ]] || [[ "x${diskthere}" == "x${here}" ]]
 then
    there=${here}
 else

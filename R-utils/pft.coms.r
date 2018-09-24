@@ -114,7 +114,7 @@ liana.dbh.crit <<- 26.0
 #----- Fudging parameters to try to tune photosynthesis. ----------------------------------#
 if (! "alpha.c3"          %in% ls()) alpha.c3          <<- 0.08
 if (! "alpha.c4"          %in% ls()) alpha.c4          <<- 0.040
-if (! "phi.psII.c3"       %in% ls()) phi.psII.c3       <<- 0.625
+if (! "phi.psII.c3"       %in% ls()) phi.psII.c3       <<- 0.85
 if (! "phi.psII.c4"       %in% ls()) phi.psII.c4       <<- 0.85
 if (! "curvpar.c3"        %in% ls()) curvpar.c3        <<- 0.70
 if (! "curvpar.c4"        %in% ls()) curvpar.c4        <<- 0.70
@@ -144,8 +144,8 @@ if (! "clumping.grass"    %in% ls()) clumping.grass    <<- 0.75
 if (! "lwidth.grass"      %in% ls()) lwidth.grass      <<- 0.05
 if (! "lwidth.bltree"     %in% ls()) lwidth.bltree     <<- 0.05
 if (! "lwidth.nltree"     %in% ls()) lwidth.nltree     <<- 0.05
-if (! "vm.q10.c3"         %in% ls()) vm.q10.c3         <<- 2.21
-if (! "vm.q10.c4"         %in% ls()) vm.q10.c4         <<- 2.21
+if (! "vm.q10.c3"         %in% ls()) vm.q10.c3         <<- 2.43 # 2.21
+if (! "vm.q10.c4"         %in% ls()) vm.q10.c4         <<- 2.43 # 2.21
 if (! "vm.tcold.c3temp"   %in% ls()) vm.tcold.c3temp   <<- 4.7137
 if (! "vm.tcold.c3trop"   %in% ls()) vm.tcold.c3trop   <<- 10.0
 if (! "vm.tcold.aa"       %in% ls()) vm.tcold.aa       <<- 4.7137
@@ -155,11 +155,11 @@ if (! "vm.thot.c3trop"    %in% ls()) vm.thot.c3trop    <<- 37.5
 if (! "vm.thot.aa"        %in% ls()) vm.thot.aa        <<- 37.5
 if (! "vm.thot.c4"        %in% ls()) vm.thot.c4        <<- 40.0
 if (! "vm.decay.ecold.c3" %in% ls()) vm.decay.ecold.c3 <<- 0.3
-if (! "vm.decay.ehot.c3"  %in% ls()) vm.decay.ehot.c3  <<- 0.3
+if (! "vm.decay.ehot.c3"  %in% ls()) vm.decay.ehot.c3  <<- 0.6
 if (! "vm.decay.ecold.c4" %in% ls()) vm.decay.ecold.c4 <<- 0.3
-if (! "vm.decay.ehot.c4"  %in% ls()) vm.decay.ehot.c4  <<- 0.3
-if (! "jm.q10.c3"         %in% ls()) jm.q10.c3         <<- 1.65
-if (! "jm.q10.c4"         %in% ls()) jm.q10.c4         <<- 1.65
+if (! "vm.decay.ehot.c4"  %in% ls()) vm.decay.ehot.c4  <<- 0.6
+if (! "jm.q10.c3"         %in% ls()) jm.q10.c3         <<- 1.81 # 1.65
+if (! "jm.q10.c4"         %in% ls()) jm.q10.c4         <<- 1.81 # 1.65
 if (! "jm.tcold.c3temp"   %in% ls()) jm.tcold.c3temp   <<- vm.tcold.c3temp
 if (! "jm.tcold.c3trop"   %in% ls()) jm.tcold.c3trop   <<- vm.tcold.c3trop
 if (! "jm.tcold.aa"       %in% ls()) jm.tcold.aa       <<- vm.tcold.aa
@@ -172,8 +172,8 @@ if (! "jm.decay.ecold.c3" %in% ls()) jm.decay.ecold.c3 <<- vm.decay.ecold.c3
 if (! "jm.decay.ehot.c3"  %in% ls()) jm.decay.ehot.c3  <<- vm.decay.ehot.c3
 if (! "jm.decay.ecold.c4" %in% ls()) jm.decay.ecold.c4 <<- vm.decay.ecold.c4
 if (! "jm.decay.ehot.c4"  %in% ls()) jm.decay.ehot.c4  <<- vm.decay.ehot.c4
-if (! "lr.q10.c3"         %in% ls()) lr.q10.c3         <<- vm.q10.c3 # 2.46
-if (! "lr.q10.c4"         %in% ls()) lr.q10.c4         <<- vm.q10.c4 # 2.46
+if (! "lr.q10.c3"         %in% ls()) lr.q10.c3         <<- 1.88 # 2.46
+if (! "lr.q10.c4"         %in% ls()) lr.q10.c4         <<- 1.88 # 2.46
 if (! "lr.tcold.c3temp"   %in% ls()) lr.tcold.c3temp   <<- vm.tcold.c3temp
 if (! "lr.tcold.c3trop"   %in% ls()) lr.tcold.c3trop   <<- vm.tcold.c3trop
 if (! "lr.tcold.aa"       %in% ls()) lr.tcold.aa       <<- vm.tcold.aa
@@ -181,11 +181,25 @@ if (! "lr.tcold.c4"       %in% ls()) lr.tcold.c4       <<- vm.tcold.c4
 if (! "lr.thot.c3temp"    %in% ls()) lr.thot.c3temp    <<- vm.thot.c3temp
 if (! "lr.thot.c3trop"    %in% ls()) lr.thot.c3trop    <<- vm.thot.c3trop
 if (! "lr.thot.aa"        %in% ls()) lr.thot.aa        <<- vm.thot.aa
-if (! "lr.thot.c4"        %in% ls()) lr.thot.c4        <<- vm.thot.c4 + 5.0
+if (! "lr.thot.c4"        %in% ls()) lr.thot.c4        <<- vm.thot.c4
 if (! "lr.decay.ecold.c3" %in% ls()) lr.decay.ecold.c3 <<- vm.decay.ecold.c3
 if (! "lr.decay.ehot.c3"  %in% ls()) lr.decay.ehot.c3  <<- vm.decay.ehot.c3
 if (! "lr.decay.ecold.c4" %in% ls()) lr.decay.ecold.c4 <<- vm.decay.ecold.c4
-if (! "lr.decay.ehot.c4"  %in% ls()) lr.decay.ehot.c4  <<- 2.0 * vm.decay.ehot.c4
+if (! "lr.decay.ehot.c4"  %in% ls()) lr.decay.ehot.c4  <<- vm.decay.ehot.c4
+if (! "rr.q10.c3"         %in% ls()) rr.q10.c3         <<- lr.q10.c3 # 2.46
+if (! "rr.q10.c4"         %in% ls()) rr.q10.c4         <<- lr.q10.c4 # 2.46
+if (! "rr.tcold.c3temp"   %in% ls()) rr.tcold.c3temp   <<- lr.tcold.c3temp
+if (! "rr.tcold.c3trop"   %in% ls()) rr.tcold.c3trop   <<- lr.tcold.c3trop
+if (! "rr.tcold.aa"       %in% ls()) rr.tcold.aa       <<- lr.tcold.aa
+if (! "rr.tcold.c4"       %in% ls()) rr.tcold.c4       <<- lr.tcold.c4
+if (! "rr.thot.c3temp"    %in% ls()) rr.thot.c3temp    <<- lr.thot.c3temp
+if (! "rr.thot.c3trop"    %in% ls()) rr.thot.c3trop    <<- lr.thot.c3trop
+if (! "rr.thot.aa"        %in% ls()) rr.thot.aa        <<- lr.thot.aa
+if (! "rr.thot.c4"        %in% ls()) rr.thot.c4        <<- lr.thot.c4
+if (! "rr.decay.ecold.c3" %in% ls()) rr.decay.ecold.c3 <<- lr.decay.ecold.c3
+if (! "rr.decay.ehot.c3"  %in% ls()) rr.decay.ehot.c3  <<- lr.decay.ehot.c3
+if (! "rr.decay.ecold.c4" %in% ls()) rr.decay.ecold.c4 <<- lr.decay.ecold.c4
+if (! "rr.decay.ehot.c4"  %in% ls()) rr.decay.ehot.c4  <<- lr.decay.ehot.c4
 #------------------------------------------------------------------------------------------#
 
 
@@ -354,12 +368,12 @@ if (iallom %in% c(0,1)){
 #      Oct 2014. doi:10.1111/gcb.12629 (C14).                                              #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-c14l83.bl.xx  = c(0.12830780,0.7587000)
-c14l83.bs.tf  = c(0.07871283,0.9829948)
-c14l83.bs.sv  = c(0.07610888,0.9838431)
+c14l83.bl.xx  = c(0.09747026,0.7587000)
+c14l83.bs.tf  = c(0.08204475,0.9814422)
+c14l83.bs.sv  = c(0.08013971,0.9818603)
 c14l83.bs.gr  = c(1.e-5,1.0) * c14l83.bl.xx
-SLA.ref       = 22.93
-rho.ref       = 0.615
+SLA.ref       = 17.419
+rho.ref       = 0.610
 #------------------------------------------------------------------------------------------#
 
 
@@ -409,7 +423,7 @@ pft02 = list( name               = "Early tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.408}else{0.53}
+            , rho                = if(iallom==3){0.450}else{0.53}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -442,7 +456,7 @@ pft03 = list( name               = "Mid tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.604}else{0.71}
+            , rho                = if(iallom==3){0.615}else{0.71}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -475,7 +489,7 @@ pft04 = list( name               = "Late tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.763}else{0.90}
+            , rho                = if(iallom==3){0.790}else{0.90}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -1001,7 +1015,7 @@ ltor.s1 = ifelse( test = rep(iallom,npft+1) == 3
 sla.s0  = ifelse( test = rep(iallom,npft+1) == 3
                 , yes  = ifelse( test = pft$grass
                                , yes  = 15.15900
-                               , no   = 20.27623
+                               , no   = 21.66777
                                )#end if
                 , no   = ifelse( test = pft$grass
                                , yes  = 22.7
@@ -1011,7 +1025,7 @@ sla.s0  = ifelse( test = rep(iallom,npft+1) == 3
 sla.s1  = ifelse( test = rep(iallom,npft+1) == 3
                 , yes  = ifelse( test = pft$grass
                                , yes  = 0.8637294
-                               , no   = 0.4501726
+                               , no   = 0.4314902
                                )#end if
                 , no   = ifelse( test = pft$grass
                                , yes  = 0.0
@@ -1024,7 +1038,7 @@ vm0.s0  = ifelse( test = pft$grass & iallom == 3
                                , no   = 78.2/vm.q10.c3
                                )#end ifelse
                 , no   = ifelse( test = bltree & iallom == 3
-                               , yes  = 9.22326 / vm.q10.c3
+                               , yes  = 7.82655 / vm.q10.c3
                                , no   = NA_real_
                                )#end ifelse
                 )#end ltor.s0
@@ -1034,7 +1048,7 @@ vm0.s1  = ifelse( test = pft$grass & iallom == 3
                                , no   = 0.0
                                )#end ifelse
                 , no   = ifelse( test = bltree & iallom == 3
-                               , yes  = 1.50175 - 1.0 # -1 is to convert to area based.
+                               , yes  = 1.56402 - 1.0 # -1 is to convert to area based.
                                , no   = NA_real_
                                )#end ifelse
                 )#end ltor.s0
@@ -1047,11 +1061,11 @@ vm0.ref = ifelse( test = pft$tropical | pft$grass
                 )#end ifelse
 #---- Tree and grasses had almost the same curve for SLA and C:N ratio. Fit one curve. ----#
 c2nl.s0                = ifelse( test = (pft$grass | bltree) & iallom == 3
-                               , yes  = 327.124
+                               , yes  = 337.959
                                , no   = 1000./ ( 0.11289 + 0.129470 * vm0.ref )
                                )#end ltor.s0
 c2nl.s1                = ifelse( test = (pft$grass | bltree) & iallom == 3
-                               , yes  = -0.823498
+                               , yes  = -0.834527
                                , no   = -1.0
                                )#end ltor.s0
 #------------------------------------------------------------------------------------------#
@@ -1268,6 +1282,38 @@ pft$lr.decay.ehot  = ifelse( test = pft$pathway == 4
                            , yes  = lr.decay.ehot.c4
                            , no   = lr.decay.ehot.c3
                            )#end ifelse
+pft$rr.q10         = ifelse( test = pft$pathway == 4
+                           , yes  = rr.q10.c4
+                           , no   = rr.q10.c3
+                           )#end ifelse
+pft$rr.low.temp    = ifelse( test = pft$pathway == 4
+                           , yes  = rr.tcold.c4
+                           , no   = ifelse( test = pft$tropical & pft$conifer
+                                          , yes  = rr.tcold.aa
+                                          , no   = ifelse( test = pft$tropical
+                                                         , yes  = rr.tcold.c3trop
+                                                         , no   = rr.tcold.c3temp
+                                                         )#end ifelse
+                                          )#end ifelse
+                           )#end ifelse
+pft$rr.high.temp   = ifelse( test = pft$pathway == 4
+                           , yes  = rr.thot.c4
+                           , no   = ifelse( test = pft$tropical & pft$conifer
+                                          , yes  = rr.thot.aa
+                                          , no   = ifelse( test = pft$tropical
+                                                         , yes  = rr.thot.c3trop
+                                                         , no   = rr.thot.c3temp
+                                                         )#end ifelse
+                                          )#end ifelse
+                           )#end ifelse
+pft$rr.decay.ecold = ifelse( test = pft$pathway == 4
+                           , yes  = rr.decay.ecold.c4
+                           , no   = rr.decay.ecold.c3
+                           )#end ifelse
+pft$rr.decay.ehot  = ifelse( test = pft$pathway == 4
+                           , yes  = rr.decay.ehot.c4
+                           , no   = rr.decay.ehot.c3
+                           )#end ifelse
 pft$m              = ifelse( test = pft$pathway == 4
                            , yes  = mphoto.c4
                            , no   = ifelse( test = pft$tropical & pft$conifer
@@ -1324,6 +1370,7 @@ pft$lr0            = ifelse( test = pft$pathway == 4
                            , yes  = gamma.c4 * pft$vm0 * pft$vm.q10 / pft$lr.q10
                            , no   = gamma.c3 * pft$vm0 * pft$vm.q10 / pft$lr.q10
                            )#end ifelse
+pft$rr0            = 0.2455212 + 0. * pft$vm0
 #------------------------------------------------------------------------------------------#
 
 
@@ -1923,6 +1970,85 @@ pft$rdp.max = size2rd( dbh  = pft$dbh.crit[sequence(npft+1)]
                      , ipft = sequence(npft+1)
                      )#end size2bl
 #------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#    Find Vcmax at 25deg C, which is used by the plasticity terms.                         #
+#------------------------------------------------------------------------------------------#
+t25C           = 25. + t00
+Vcmax25.nocorr = collatz(temp=t25C,refval=pft$vm0,q10=pft$vm.q10)
+#------------------------------------------------------------------------------------------#
+#    Find the temperature correction factors to shut down Vm at extreme temperatures.      #
+# This should have minimal effect at 25degC, though.  It is unlikely, but to avoid float-  #
+# ing point exceptions, we also check whether the temperature will make the exponential    #
+# too large or too small.                                                                  #
+#------------------------------------------------------------------------------------------#
+#----- Low temperature. -------------------------------------------------------------------#
+lnexplow   = pft$vm.decay.ecold  * (pft$vm.low.temp + t00 - t25C)
+lnexplow   = pmax(lnexp.min,pmin(lnexp.max,lnexplow))
+tlow.fun   = 1.0 +  exp(lnexplow)
+#----- High temperature. ------------------------------------------------------------------#
+lnexphigh = pft$vm.decay.ehot * (t25C - pft$vm.high.temp - t00)
+lnexphigh = pmax(lnexp.min,pmin(lnexp.max,lnexphigh))
+thigh.fun = 1.0 + exp(lnexphigh)
+#----- Correct Vcmax. ---------------------------------------------------------------------#
+pft$vcmax25 = Vcmax25.nocorr / (tlow.fun * thigh.fun)
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Find the trait plasticity terms.                                                      #
+#                                                                                          #
+# kplastic.vm0:  use the function from L10.  This is not the same fit, instead it was      #
+#                found using robust standardised major axis to reduce leverage.            #
+# kplastic.sla:  use an empirical function obtained using the data from KN2016, assuming   #
+#                Beer's law to find the LAI that would cause the drop of light conditions  #
+#                from 40 mol/m2/d to 3 mol/m2/d (their standard light conditions), and     #
+#                assuming that changes in SLA  would follow a exponential decay/expansion, #
+#                akin to Vm0.  Only tropical trees were used for the standardised major    #
+#                axis regression, and we used a linear-log function because kplastic.SLA   #
+#                may switch sign: in fact KN2016 observations had negative values for very #
+#                high-canopy-level SLA values.                                             #
+# eplastic.xxx:  these variables control the expansion/reduction exponent for leaf turn-   #
+#                over rate when using trait plasticity.  Currently we start from Eq. 1 of  #
+#                X17 (originally from K91), by substituting b with their SMA regression    #
+#                against mass-based Vcmax25, and we fit a curve relating Aa with           #
+#                Vcmax25_m, which was obtained by simulating ED-2 for average diurnal      #
+#                cycles pooled from multiple tower sites in South America (mean diurnal    #
+#                cycle of a month/year randomly selected), using random values of          #
+#                Vcmax25_m within the range of values found in multiple trait data bases   #
+#                (TRY, GLOPNET, RAINFOR, and NGEE-Tropics).                                #
+# kplastic.ltor: the expansion/extinction rate derived from kplastic and eplastic terms    #
+#                above.                                                                    #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Keenan TF, Niinemets U. 2016. Global leaf trait estimates biased due to plasticity in    #
+#    the shade. Nat. Plants 3:16201, Dec 2016. doi:10.1038/nplants.2016.201 (KN16).        #
+#                                                                                          #
+# Kikuzawa K. 1991. A cost-benefit analysis of leaf habit and leaf longevity of trees and  #
+#    their geographical pattern. Am. Nat. 138(5): 1250-1263. doi:10.1086/285281 (K91).     #
+#                                                                                          #
+# Lloyd J, Patino S, Paiva RQ, Nardoto GB, Quesada CA, Santos AJB, Baker TR, Brand WA,     #
+#    Hilke I, Gielmann H, Raessler M, Luizao FJ, Martinelli LA, Mercado LM. 2009.          #
+#    Optimisation of photosynthetic carbon gain and within-canopy gradients of associated  #
+#    foliar traits for Amazon forest trees. Biogeosciences 7(6): 1833-1859,                #
+#    doi:10.5194/bg-7-1833-2010 (L10).                                                     #
+#                                                                                          #
+# Xu X, Medvigy D, Wright SJ, Kitajima K, Wu J, Albert LP, Martins GA, Saleska SR,         #
+#    Pacala SW. 2017. Variations of leaf longevity in tropical moist forests predicted     #
+#    by a trait-driven carbon optimality model. Ecol. Lett. 20(9): 1097-1106.              #
+#    doi:10.1111/ele.12804 (X17).                                                          #
+#------------------------------------------------------------------------------------------#
+pft$kplastic.vm0  = - exp(-2.788 + 0.01439 * pft$vcmax25)
+pft$kplastic.sla  = 0.462 - 0.1239 * log(pft$SLA)
+pft$eplastic.vm0  = 0.5 * (-1.36 - 0.8399) + 0. * pft$kplastic.vm0
+pft$eplastic.sla  = 0.5 * (-1.36 - 1.0000) + 0. * pft$kplastic.vm0
+pft$kplastic.ltor = -1 * with(pft,kplastic.vm0*eplastic.vm0+kplastic.sla*eplastic.sla)
+#------------------------------------------------------------------------------------------#
+
 
 
 #----- Make it global. --------------------------------------------------------------------#

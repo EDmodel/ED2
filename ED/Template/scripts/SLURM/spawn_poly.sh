@@ -71,7 +71,7 @@ submit=false
 #----- Settings for this group of polygons. -----------------------------------------------#
 global_queue="huce_intel"     # Queue
 sim_memory=0                  # Memory per simulation. Zero uses queue's default
-n_cpt=12                      # Number of cpus per task (it will be limited by maximum)
+n_cpt=12                      # Number of cpus per task (Zero uses queue's maximum)
 partial=false                 # Partial submission (false will ignore polya and npartial
                               #    and send all polygons.
 polya=21                      # First polygon to submit
@@ -79,6 +79,7 @@ npartial=300                  # Maximum number of polygons to include in this bu
                               #    (actual number will be adjusted for total number of 
                               #     polygons if needed be).
 dttask=2                      # Time to wait between task submission
+runtime="00:00:00"            # Requested runtime.  Zero uses the queue's maximum.
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -206,49 +207,49 @@ rclogin*|holy*|moorcroft*|rcnx*)
       n_nodes_max=118
       n_cpt_max=16
       n_cpn=32
-      runtime="7-00:00:00"
+      runtime_max="7-00:00:00"
       node_memory=262499
       ;;
    moorcroft_amd)
       n_nodes_max=8
       n_cpt_max=16
       n_cpn=64
-      runtime="Infinite"
+      runtime_max="infinite"
       node_memory=256302
       ;;
    moorcroft_6100)
       n_nodes_max=33
       n_cpt_max=6
       n_cpn=12
-      runtime="Infinite"
+      runtime_max="infinite"
       node_memory=22150
       ;;
    shared)
       n_nodes_max=404
       n_cpt_max=16
       n_cpn=32
-      runtime="7-00:00:00"
+      runtime_max="7-00:00:00"
       node_memory=129072
       ;;
    huce_intel)
       n_nodes_max=276
       n_cpt_max=12
       n_cpn=24
-      runtime="14-00:00:00"
+      runtime_max="14-00:00:00"
       node_memory=126820
       ;;
    huce_amd)
       n_nodes_max=65
       n_cpt_max=32
       n_cpn=8
-      runtime="14-00:00:00"
+      runtime_max="14-00:00:00"
       node_memory=262499
       ;;
    unrestricted)
       n_nodes_max=8
       n_cpt_max=16
       n_cpn=64
-      runtime="Infinite"
+      runtime_max="infinite"
       node_memory=262499
       ;;
    *)
@@ -265,35 +266,35 @@ sdumont*)
       n_nodes_max=10
       n_cpt_max=12
       n_cpn=24
-      runtime="31-00:00:00"
+      runtime_max="31-00:00:00"
       node_memory=64000
       ;;
    cpu|nvidia|phi)
       n_nodes_max=50
       n_cpt_max=12
       n_cpn=24
-      runtime="2-00:00:00"
+      runtime_max="2-00:00:00"
       node_memory=64000
       ;;
    cpu_dev)
       n_nodes_max=20
       n_cpt_max=12
       n_cpn=24
-      runtime="02:00:00"
+      runtime_max="02:00:00"
       node_memory=64000
       ;;
    nvidia_dev|phi_dev)
       n_nodes_max=2
       n_cpt_max=12
       n_cpn=24
-      runtime="02:00:00"
+      runtime_max="02:00:00"
       node_memory=64000
       ;;
    cpu_scal|nvidia_scal)
       n_nodes_max=128
       n_cpt_max=12
       n_cpn=24
-      runtime="18:00:00"
+      runtime_max="18:00:00"
       node_memory=64000
       ;;
    *)
@@ -326,6 +327,112 @@ else
    let n_tasks_max=${n_nodes_max}*${n_cpn}
    let n_tasks_max=${n_tasks_max}/${n_cpt}
 fi
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Set time.                                                                             #
+#------------------------------------------------------------------------------------------#
+runtime=$(echo     ${runtime}     | tr '[:upper:]' '[:lower:]')
+runtime_max=$(echo ${runtime_max} | tr '[:upper:]' '[:lower:]')
+case "${runtime}" in
+infinite)
+   #----- Infinite runtime.  Make sure the queue supports this type of submission. --------#
+   case "${runtime_max}" in
+   infinite)
+      echo "" > /dev/null
+      ;;
+   *)
+      echo " Requested partition:       ${global_queue}"
+      echo " Maximum runtime permitted: ${runtime_max}"
+      echo " Requested runtime:         ${runtime}"
+      echo " Partition ${global_queue} does not support infinite time."
+      exit 91
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+   ;;
+*)
+   #----- Find out the format provided. ---------------------------------------------------#
+   case "${runtime}" in
+   *-*:*)
+      #----- dd-hh:mm:ss. -----------------------------------------------------------------#
+      ndays=$(echo ${runtime} | sed s@"-.*"@@g)
+      nhours=$(echo ${runtime} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
+      ;;
+   *:*)
+      #----- hh:mm:ss. --------------------------------------------------------------------#
+      ndays=0
+      nhours=$(echo ${runtime} | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
+      ;;
+   *)
+      #----- Hours. -----------------------------------------------------------------------#
+      let ndays=${runtime}/24
+      let nhours=${runtime}%24
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the walltime in hours, and the runtime in nice format. ---------------------#
+   let wall=${nhours}+24*${ndays}
+   let ndays=${wall}/24
+   let nhours=${wall}%24
+   if [[ ${ndays} -gt 0 ]]
+   then
+      fmtday=$(printf '%2.2i' ${ndays})
+      fmthr=$(printf '%2.2i' ${nhours})
+      runtime="${fmtday}-${fmthr}:00:00"
+   else
+      fmthr=$(printf '%2.2i' ${nhours})
+      runtime="${fmthr}:00:00"
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the maximum number of hours allowed in the partition. ----------------------#
+   case "${runtime_max}" in
+   infinite)
+      let ndays_max=${ndays}+1
+      let nhours_max=${nhours}
+      ;;
+   *-*)
+      ndays_max=$(echo ${runtime_max} | sed s@"-.*"@@g)
+      nhours_max=$(echo ${runtime_max} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+      ;;
+   *)
+      ndays_max=0
+      nhours_max=$(echo ${runtime_max} | sed s@":.*"@@g)
+      ;;
+   esac
+   let wall_max=${nhours_max}+24*${ndays_max}
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check requested walltime and the availability.                                    #
+   #---------------------------------------------------------------------------------------#
+   if [[ ${wall} -eq 0 ]]
+   then
+      case "${runtime_max}" in
+      infinite) runtime="infinite"     ;;
+      *)        runtime=${runtime_max} ;;
+      esac
+   elif [[ ${wall} -gt ${wall_max} ]]
+   then
+      echo " Requested partition:       ${global_queue}"
+      echo " Maximum runtime permitted: ${runtime_max}"
+      echo " Requested runtime:         ${runtime}"
+      echo " - Requested time exceeds limits."
+      exit 92
+   fi
+   #---------------------------------------------------------------------------------------#
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 
@@ -1036,10 +1143,45 @@ do
    case ${iscenario} in
    default)
       case ${metdriver} in
+      ERAINT_CHIRPS)
+         #----- ERA-Interim (CHIRPS precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_CHIRPS"
+         ;;
+      ERAINT_NATIVE)
+         #----- ERA-Interim (native precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_NATIVE"
+         ;;
+      MERRA2_CHIRPS)
+         #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_CHIRPS"
+         ;;
+      MERRA2_NATIVE)
+         #----- MERRA-2 (native precipitation). -------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_NATIVE"
+         ;;
+      PGMF3_CHIRPS)
+         #----- PGMF-3 (CHIRPS precipitation). --------------------------------------------#
+         scentype="PGMF3"
+         iscenario="PGMF3_SOUTHAM_CHIRPS"
+         ;;
+      PGMF3_NATIVE)
+         #----- PGMF-3 (native precipitation). --------------------------------------------#
+         scentype="PGMF3"
+         iscenario="PGMF3_SOUTHAM_NATIVE"
+         ;;
       Sheffield)
          #----- Sheffield. ----------------------------------------------------------------#
          scentype="sheffield"
          iscenario="sheffield"
+         ;;
+      WFDEI_CHIRPS)
+         #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
+         scentype="WFDEI"
+         iscenario="WFDEI_SOUTHAM_CHIRPS"
          ;;
       WFDEI_CRUP)
          #----- WFDEI (CRU Precipitation). ------------------------------------------------#
@@ -1050,41 +1192,6 @@ do
          #----- WFDEI (GPCC Precipitation). -----------------------------------------------#
          scentype="WFDEI"
          iscenario="WFDEI_SOUTHAM_GPCC"
-         ;;
-      WFDEI_CHIRPS)
-         #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
-         scentype="WFDEI"
-         iscenario="WFDEI_SOUTHAM_CHIRPS"
-         ;;
-      ERAINT_NATIVE)
-         #----- ERA-Interim (native precipitation). ---------------------------------------#
-         scentype="ERA_Interim"
-         iscenario="ERAINT_SOUTHAM_NATIVE"
-         ;;
-      ERAINT_CHIRPS)
-         #----- ERA-Interim (CHIRPS precipitation). ---------------------------------------#
-         scentype="ERA_Interim"
-         iscenario="ERAINT_SOUTHAM_CHIRPS"
-         ;;
-      MERRA2_NATIVE)
-         #----- MERRA-2 (native precipitation). -------------------------------------------#
-         scentype="MERRA2"
-         iscenario="MERRA2_SOUTHAM_NATIVE"
-         ;;
-      MERRA2_CHIRPS)
-         #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
-         scentype="MERRA2"
-         iscenario="MERRA2_SOUTHAM_CHIRPS"
-         ;;
-      PGMF3_NATIVE)
-         #----- PGMF-3 (native precipitation). --------------------------------------------#
-         scentype="PGMF3"
-         iscenario="PGMF3_SOUTHAM_NATIVE"
-         ;;
-      PGMF3_CHIRPS)
-         #----- PGMF-3 (CHIRPS precipitation). --------------------------------------------#
-         scentype="PGMF3"
-         iscenario="PGMF3_SOUTHAM_CHIRPS"
          ;;
       *)
          #----- Tower data. ---------------------------------------------------------------#
@@ -1268,6 +1375,12 @@ do
       metcycf=2010
       imetavg=1
       ;;
+   WFDEI_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2016
+      imetavg=1
+      ;;
    WFDEI_CRUP)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
@@ -1277,12 +1390,6 @@ do
    WFDEI_GPCC)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
-      metcycf=2016
-      imetavg=1
-      ;;
-   WFDEI_CHIRPS)
-      metdriverdb="${fullscen}/${iscenario}_HEADER"
-      metcyc1=1981
       metcycf=2016
       imetavg=1
       ;;

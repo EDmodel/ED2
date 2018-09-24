@@ -2,7 +2,7 @@
 
 #----- Main settings.  Do look at run_sitter.sh and epost.sh for additional settings. -----#
 here=$(pwd)                        # Current path.
-there="/path/to/permanent/storage" # Permanent storage path
+there="/path/to/permanent/storage" # Permanent storage path (leave empty for no transfer)
 email="myself\@myserver.com"       # Your e-mail. Put a backslash before the @
 queue="myqueue"                    # Queue to run run_sitter.sh and epost.sh
 runtime="infinite"                 # Run time request
@@ -11,6 +11,18 @@ sbatch=$(which sbatch)             # SLURM command to submit job.
 rscript="read_monthly.r"           # Which script to run with epost.sh.  See options below. 
                                    #    Multiple scripts are allowed, put spaces between
                                    #    them. (e.g. rscript="plot_monthly.r plot_fast.r")
+frqemail=43200                     # How often to send emails on simulation status?
+wait_minutes=60                    # Waiting time before checking run again (in minutes)
+frqpost=3                          # How often to run post-processing and file management
+                                   #    This number is in iterations.  Zero means never.
+frqtouch=0                         # How often to touch executable, scripts, and Template?
+                                   #    This number is in iterations.  Zero means never.
+checkhourly="n"                    # Check hourly files.
+checkstatus="y"                    # Check status before compressing
+#------------------------------------------------------------------------------------------#
+
+
+
 #------------------------------------------------------------------------------------------#
 #     Which scripts to run.                                                                #
 #                                                                                          #
@@ -65,13 +77,21 @@ fi
 
 
 #----- Make substitutions. ----------------------------------------------------------------#
-sed -i~ s@"here=\"\""@"here=\"${here}\""@g                   ${here}/run_sitter.sh
-sed -i~ s@"recipient=\"\""@"recipient=\"${email}\""@g        ${here}/run_sitter.sh
-sed -i~ s@"here=\"\""@"here=\"${here}\""@g                   ${here}/epost.sh
-sed -i~ s@"global_queue=\"\""@"global_queue=\"${queue}\""@g  ${here}/epost.sh
-sed -i~ s@"rscript=\"\""@"rscript=\"${rscript}\""@g          ${here}/epost.sh
-sed -i~ s@"here=\"\""@"here=\"${here}\""@g                   ${here}/transfer.sh
-sed -i~ s@"there=\"\""@"there=\"${there}\""@g                ${here}/transfer.sh
+sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/run_sitter.sh
+sed -i~ s@"recipient=\"\""@"recipient=\"${email}\""@g            ${here}/run_sitter.sh
+sed -i~ s@"frqemail=\"\""@"frqemail=${frqemail}"@g               ${here}/run_sitter.sh
+sed -i~ s@"wait_minutes=\"\""@"wait_minutes=${wait_minutes}"@g   ${here}/run_sitter.sh
+sed -i~ s@"frqpost=\"\""@"frqpost=${frqpost}"@g                  ${here}/run_sitter.sh
+sed -i~ s@"frqtouch=\"\""@"frqtouch=${frqtouch}"@g               ${here}/run_sitter.sh
+sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/epost.sh
+sed -i~ s@"global_queue=\"\""@"global_queue=\"${queue}\""@g      ${here}/epost.sh
+sed -i~ s@"rscript=\"\""@"rscript=\"${rscript}\""@g              ${here}/epost.sh
+sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/transfer.sh
+sed -i~ s@"there=\"\""@"there=\"${there}\""@g                    ${here}/transfer.sh
+sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/last_histo.sh
+sed -i~ s@"there=\"\""@"there=\"${there}\""@g                    ${here}/last_histo.sh
+sed -i~ s@"checkhourly=\"\""@"checkhourly=\"${checkhourly}\""@g  ${here}/last_histo.sh
+sed -i~ s@"checkstatus=\"\""@"checkstatus=\"${checkstatus}\""@g  ${here}/last_histo.sh
 #------------------------------------------------------------------------------------------#
 
 

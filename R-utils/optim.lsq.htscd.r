@@ -106,6 +106,8 @@ optim.lsq.htscd <<- function( lsq.formula
                             , lsq.first
                             , sig.first
                             , err.method     = c("hessian","hess","bootstrap","boot")
+                            , optim.method   = c("Nelder-Mead","BFGS","CG","L-BFGS-B"
+                                                ,"SANN","Brent")
                             , maxit.optim    = 20000
                             , tol.gain       = 0.0000005
                             , tol.optim      = 0.00000001
@@ -124,8 +126,9 @@ optim.lsq.htscd <<- function( lsq.formula
 
 
    #----- Choose the preferred method to obtain coefficients and errors. ------------------#
-   err.method = match.arg(err.method)
-   err.short  = tolower(substring(err.method,1,1))
+   optim.method = match.arg(optim.method)
+   err.method   = match.arg(err.method)
+   err.short    = tolower(substring(err.method,1,1))
    #---------------------------------------------------------------------------------------#
 
 
@@ -215,12 +218,13 @@ optim.lsq.htscd <<- function( lsq.formula
          #---------------------------------------------------------------------------------#
          #     Evaluate the first guess then use residuals to estimate sigma0.             #
          #---------------------------------------------------------------------------------#
-         zero      = optim.lsq.htscd( lsq.formula = lsq.formula
-                                    , sig.formula = NULL
-                                    , data        = data
-                                    , se.data     = NULL
-                                    , lsq.first   = lsq.first
-                                    , err.method  = "hess"
+         zero      = optim.lsq.htscd( lsq.formula  = lsq.formula
+                                    , sig.formula  = NULL
+                                    , data         = data
+                                    , se.data      = NULL
+                                    , lsq.first    = lsq.first
+                                    , err.method   = "hess"
+                                    , optim.method = optim.method
                                     )#end optim.lsq.htscd
          sig.first = c(list(sigma0=mean(zero$sigma)),sig.first)
          #---------------------------------------------------------------------------------#
@@ -580,6 +584,7 @@ optim.lsq.htscd <<- function( lsq.formula
                               , data        = opt.data
                               , control     = ctrl.optim
                               , hessian     = TRUE
+                              , method      = optim.method
                               , ...
                               )#end optim
                        , silent = TRUE
@@ -685,6 +690,7 @@ optim.lsq.htscd <<- function( lsq.formula
                            , data        = opt.data
                            , control     = ctrl.optim
                            , hessian     = TRUE
+                           , method      = optim.method
                            , ...
                            )#end optim
                     , silent = TRUE
@@ -901,6 +907,7 @@ optim.lsq.htscd <<- function( lsq.formula
                                  , data        = opt.data[idx,,drop=FALSE]
                                  , control     = ctrl.optim
                                  , hessian     = FALSE
+                                 , method      = optim.method
                                  , ...
                                  )#end optim
                           , silent = TRUE
@@ -1042,6 +1049,7 @@ optim.lsq.htscd <<- function( lsq.formula
                                  , data        = sim.data
                                  , control     = ctrl.optim
                                  , hessian     = FALSE
+                                 , method      = optim.method
                                  , ...
                                  )#end optim
                           , silent = TRUE
@@ -1182,6 +1190,7 @@ optim.lsq.htscd <<- function( lsq.formula
                                  , data        = sim.data
                                  , control     = ctrl.optim
                                  , hessian     = FALSE
+                                 , method      = optim.method
                                  , ...
                                  )#end optim
                           , silent = TRUE

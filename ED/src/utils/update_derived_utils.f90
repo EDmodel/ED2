@@ -212,15 +212,19 @@ module update_derived_utils
       use pft_coms       , only : SLA                     & ! intent(in)
                                 , kplastic_vm0            & ! intent(in)
                                 , kplastic_sla            & ! intent(in)
+                                , eplastic_vm0            & ! intent(in)
+                                , eplastic_sla            & ! intent(in)
                                 , fexp_sla_max            & ! intent(in)
                                 , lma_slope               & ! intent(in)
                                 , Vm0                     & ! intent(in)
+                                , leaf_turnover_rate      & ! intent(in)
                                 , is_tropical             & ! intent(in)
                                 , is_grass                ! ! intent(in)
       use consts_coms    , only : lnexp_min               & ! intent(in)
                                 , lnexp_max               ! ! intent(in)
       use allometry      , only : size2bl                 ! ! function
       use physiology_coms, only : trait_plasticity_scheme ! ! intent(in)
+      use phenology_coms , only : llspan_inf              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target     :: cpatch       ! Current patch
@@ -265,8 +269,10 @@ module update_derived_utils
 
       !------------------------------------------------------------------------------------!
       ! 2.  Update Vm0.  This should be defined at the top of canopy [sun-lit leaves].     !
+      !     Note that the sign of kplastic_vm0 is typically negative, so this should       !
+      !     reduce Vm0.                                                                    !
       !------------------------------------------------------------------------------------!
-      lnexp              = max(lnexp_min,- kplastic_vm0(ipft) * max_cum_lai)
+      lnexp              = max(lnexp_min,kplastic_vm0(ipft) * max_cum_lai)
       cpatch%vm_bar(ico) = Vm0(ipft) * exp(lnexp)
       !------------------------------------------------------------------------------------!
 
@@ -303,6 +309,25 @@ module update_derived_utils
       cpatch%sla       (ico) = new_sla
       cpatch%psi_open  (ico) = cpatch%psi_open  (ico) * sla_scaler
       cpatch%psi_closed(ico) = cpatch%psi_closed(ico) * sla_scaler
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 5.  Update leaf life span.  We currently follow Eqn. 1 of X17, assuming that       !
+      !     the net assimilation is linearly correlated with Vcmax25, and we found the     !
+      !     ratio between canopy values and the plastic values.                            !
+      !     For the term b we use X17 slope from Table S1 (log10(b) ~ log10(Vcmax_m)).     !
+      !------------------------------------------------------------------------------------!
+      if (leaf_turnover_rate(ipft) > 0.0) then
+         cpatch%llspan(ico) = 12. / leaf_turnover_rate(ipft)                               &
+                            * ( cpatch%vm_bar(ico) / Vm0(ipft) ) ** eplastic_vm0(ipft)     &
+                            * ( cpatch%sla   (ico) / SLA(ipft) ) ** eplastic_sla(ipft)
+      else
+         !---- Nothing lasts forever, so impose a maximum life span. ----------------------!
+         cpatch%llspan(ico) = llspan_inf
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
       return

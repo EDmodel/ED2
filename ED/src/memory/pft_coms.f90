@@ -181,7 +181,7 @@ module pft_coms
    real, dimension(n_pft) :: Vm0_v1
    !----- Parameters currently used only by trait plasticity. -----------------------------!
    real, dimension(n_pft) :: Vcmax25      ! Vm0 at 25degC
-   real, dimension(n_pft) :: kplastic_vm0 ! Extinction factor for Vm0
+   real, dimension(n_pft) :: kplastic_vm0 ! Expansion factor for Vm0 (extinction if < 0).
 
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Vm_hor 
@@ -269,7 +269,9 @@ module pft_coms
 
    !----- This is the inverse of leaf life span [1/year]. ---------------------------------!
    real, dimension(n_pft) :: leaf_turnover_rate
-
+   !----- Parameters that control the leaf turnover rate. ---------------------------------!
+   real, dimension(n_pft) :: eplastic_vm0  ! Expansion/extinction exponents for turnover
+   real, dimension(n_pft) :: eplastic_sla  ! (extinction if < 1)
    !----- This is the inverse of fine root life span [1/year]. ----------------------------!
    real, dimension(n_pft) :: root_turnover_rate
 
@@ -495,7 +497,7 @@ module pft_coms
    real   , dimension(n_pft)    :: sla_s0
    real   , dimension(n_pft)    :: sla_s1
    !----- Parameters that control the SLA plasticity. -------------------------------------!
-   real   , dimension(n_pft)    :: kplastic_SLA ! Extinction factor for SLA
+   real   , dimension(n_pft)    :: kplastic_SLA ! Expansion factor for SLA
    real   , dimension(n_pft)    :: fexp_SLA_max ! Maximum expansion factor for SLA
    real   , dimension(n_pft)    :: LMA_slope    ! Slope for LMA:Height relationship
    !----- The initialization parameters for SLA:  SLA = sla_pft_init for non-trop PFTs

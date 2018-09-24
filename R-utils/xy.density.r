@@ -164,7 +164,14 @@ xy.density <<- function( x
       }#end if (! "side" %in% names(y.axis.options))
    }#end if
    if (is.null(key.axis.options)){
-      key.axis.options = list(side=ifelse(key.vertical,4,1),las=1)
+      if (key.log){
+         zat     = pretty.log(zlim)
+         zlabels = sprintf("%g",zat)
+      }else{
+         zat     = pretty(zlim)
+         zlabels = sprintf("%g",zat)
+      }#end if
+      key.axis.options = list(side=ifelse(key.vertical,4,1),las=1,at=zat,labels=zlabels)
    }else{
       key.axis.options = as.list(key.axis.options)
       if (! "side" %in% names(y.axis.options)){

@@ -283,7 +283,7 @@ if (idbh.type == 1){
    dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                         , c(classdbh[-1],classdbh[ndbh]),"cm"
                         )#end paste0
-   dbhcols    <<- c("#306614","#3B24B3","#2996CC","#A3CC52","#E65C17","#990F0F",all.colour)
+   dbhcols    <<- c("#811F9E","#0E6E81","#1BA2F7","#2BD2DB","#CCCA3D","#F87856",all.colour)
    dbhltys    <<- c("twodash","dashed","longdash","dotdash","twodash","longdash","solid")
 }else if (idbh.type == 3){
    ndbh       <<-  4
@@ -294,7 +294,7 @@ if (idbh.type == 1){
    dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                         , c(classdbh[-1],classdbh[ndbh]),"cm"
                         )#end paste0
-   dbhcols    <<- c("#3B24B3","#2996CC","#FF9466","#990F0F",all.colour)
+   dbhcols    <<- c("#811F9E","#1BA2F7","#CCCA3D","#F87856",all.colour)
    dbhltys    <<- c("twodash","dashed","longdash","dotdash","solid")
 }else if (idbh.type == 4){
    ndbh       <<-  5
@@ -305,7 +305,7 @@ if (idbh.type == 1){
    dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                         , c(classdbh[-1],classdbh[ndbh]),"cm"
                         )#end paste0
-   dbhcols    <<- c("#3B24B3","#306614","#A3CC52","#E65C17","#990F0F",all.colour)
+   dbhcols    <<- c("#811F9E","#1BA2F7","#2BD2DB","#CCCA3D","#F87856",all.colour)
    dbhltys    <<- c("twodash","dashed","longdash","dotdash","twodash","solid")
 }else if (idbh.type == 5){
    ndbh       <<-  8
@@ -316,8 +316,8 @@ if (idbh.type == 1){
    dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                         , c(classdbh[-1],classdbh[ndbh]),"cm"
                         )#end paste0
-   dbhcols    <<- c("#332288","#6699CC","#88CCEE","#44AA99","#117733"
-                   ,"#DDCC77","#CC6677","#882255",all.colour)
+   dbhcols    <<- c("#811F9E","#0E6E81","#1BA2F7","#2BD2DB","#F9E5C0"
+                   ,"#CCCA3D","#F87856","#880D32",all.colour)
    dbhltys    <<- c("twodash","dashed"  ,"longdash","dotdash","twodash"
                    ,"dashed" ,"longdash","dotdash" ,"solid")
 }else{

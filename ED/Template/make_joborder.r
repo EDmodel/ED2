@@ -231,8 +231,8 @@ default = list( run           = "unnamed"
               , ibigleaf      = 0
               , integ.scheme  = 1
               , nsub.euler    = 50
-              , irepro        = 2
-              , treefall      = 0.0100
+              , irepro        = 3
+              , treefall      = 0.0125
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
               , sl.scale      = 0

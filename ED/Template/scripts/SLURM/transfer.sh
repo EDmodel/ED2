@@ -62,8 +62,13 @@ fi
 
 
 #----- Check whether run_sitter.sh is still running or not.  If it is, exit. --------------#
-if [ -s ${here}/transfer.lock ]
+if [[ "${here}" == "${there}" ]]
 then
+   echo " Source and destination paths are the same. Transfer is not needed."
+   exit 0
+elif [[ -s ${here}/transfer.lock ]]
+then
+   echo " Script transfer is running. Skip transfer for the time being."
    exit
 else
    echo "I am going to back up your run." > ${here}/transfer.lock

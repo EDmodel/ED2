@@ -524,11 +524,12 @@ module growth_balive
    !=======================================================================================!
    !=======================================================================================!
    subroutine get_maintenance(cpatch,ico,year_o_day,tempk)
-      use ed_state_vars, only : patchtype             ! ! structure
-      use pft_coms     , only : phenology             & ! intent(in)
-                              , leaf_turnover_rate    & ! intent(in)
-                              , root_turnover_rate    & ! intent(in)
-                              , bark_turnover_rate    ! ! intent(in)
+      use ed_state_vars  , only : patchtype             ! ! structure
+      use pft_coms       , only : phenology             & ! intent(in)
+                                , leaf_turnover_rate    & ! intent(in)
+                                , root_turnover_rate    & ! intent(in)
+                                , bark_turnover_rate    ! ! intent(in)
+      use physiology_coms, only : trait_plasticity_scheme ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target       :: cpatch
@@ -538,10 +539,31 @@ module growth_balive
       !----- Local variables. -------------------------------------------------------------!
       integer                       :: ipft
       real                          :: maintenance_temp_dep
+      real                          :: fp_turnover
       !------------------------------------------------------------------------------------!
 
       !------ Alias for plant functional type. --------------------------------------------!
       ipft = cpatch%pft(ico)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case this simulation allows trait plasticity, compute the correction factor !
+      ! for turnover.                                                                      !
+      !------------------------------------------------------------------------------------!
+      select case (trait_plasticity_scheme)
+      case (0) ! No plasticity
+         fp_turnover = 1.
+      case default ! Plasticity on.  Use the ratio between expected and actual lifespan.
+         !----- Cold deciduous do not have turnover.  Set fp_turnover to 1. ---------------!
+         if (leaf_turnover_rate(ipft) > 0.) then
+            fp_turnover = 12. / (cpatch%llspan(ico) * leaf_turnover_rate(ipft))
+         else
+            fp_turnover = 1.
+         end if
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !      Find the maintenance costs.  This will depend on the type of phenology that   !
@@ -549,13 +571,13 @@ module growth_balive
       ! [kgC/plant/day].                                                                   !
       !------------------------------------------------------------------------------------!
       cpatch%leaf_maintenance (ico) = leaf_turnover_rate (ipft) * cpatch%bleaf (ico)       &
-                                    * year_o_day
+                                    * year_o_day * fp_turnover
       cpatch%root_maintenance (ico) = root_turnover_rate (ipft) * cpatch%broot (ico)       &
-                                    * year_o_day
+                                    * year_o_day * fp_turnover
       cpatch%barka_maintenance(ico) = bark_turnover_rate(ipft)  * cpatch%bbarka(ico)       &
-                                    * year_o_day
+                                    * year_o_day * fp_turnover
       cpatch%barkb_maintenance(ico) = bark_turnover_rate(ipft)  * cpatch%bbarkb(ico)       &
-                                    * year_o_day
+                                    * year_o_day * fp_turnover
 
       select case (phenology(ipft))
       case (0)
