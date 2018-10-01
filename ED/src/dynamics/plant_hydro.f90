@@ -279,7 +279,7 @@ module plant_hydro
          if (cpatch%dmin_leaf_psi(ico) == 0.) then
              cpatch%dmin_leaf_psi(ico) =  cpatch%leaf_psi(ico)
          else
-             cpatch%dmin_leaf_psi(ico) =  max(cpatch%dmin_leaf_psi(ico),cpatch%leaf_psi(ico))
+             cpatch%dmin_leaf_psi(ico) =  min(cpatch%dmin_leaf_psi(ico),cpatch%leaf_psi(ico))
          endif
 
          if (cpatch%dmax_wood_psi(ico) == 0.) then
@@ -291,7 +291,7 @@ module plant_hydro
          if (cpatch%dmin_wood_psi(ico) == 0.) then
              cpatch%dmin_wood_psi(ico) =  cpatch%wood_psi(ico)
          else
-             cpatch%dmin_wood_psi(ico) =  max(cpatch%dmin_wood_psi(ico),cpatch%wood_psi(ico))
+             cpatch%dmin_wood_psi(ico) =  min(cpatch%dmin_wood_psi(ico),cpatch%wood_psi(ico))
          endif
 
           cpatch%fmean_wflux_wl             (ico) = cpatch%fmean_wflux_wl(ico)         &
