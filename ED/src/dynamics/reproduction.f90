@@ -494,8 +494,8 @@ subroutine reproduction(cgrid,month)
 
                !----- Update the cohort distribution. -------------------------------------!
                if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
+                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
                end if
                !---------------------------------------------------------------------------!
