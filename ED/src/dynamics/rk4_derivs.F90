@@ -803,8 +803,11 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
-   else if (rk4aux(ibuff)%any_resolvable .and. plant_hydro_scheme /= 0) then
+   else if (plant_hydro_scheme /= 0) then
       ! Track plant hydraulics
+      ! In this case, we always need to update soil water 
+      ! no matter whether the cohort is resolvable or not
+
       ! Leaf and wood internal water are updated outside of the integrator
       ! in rk4_driver.f90
       do k1 = klsl, mzg    ! loop over soil layers
