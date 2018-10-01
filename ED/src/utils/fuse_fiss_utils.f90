@@ -978,7 +978,7 @@ module fuse_fiss_utils
                end if
                !---------------------------------------------------------------------------!
 
-               ! since biomass has chaanged, we need to modify wood water_int
+               ! since biomass has changed, we need to modify wood water_int
                ! and hcap
                ! original cohort
                call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdead(ico)                  &
@@ -1097,6 +1097,7 @@ module fuse_fiss_utils
       real                         :: dwai              ! WAI of donor
       real                         :: rnplant           ! nplant of receiver
       real                         :: dnplant           ! nplant of donor
+      real                         :: total_transp      ! total transpiration to conserve
       !------------------------------------------------------------------------------------!
 
 
@@ -1442,6 +1443,16 @@ module fuse_fiss_utils
 
 
 
+      ! Before updating psi_open, psi_closed, fs_open and fs_closed, 
+      ! record total_transp to conserve.
+      ! This is essential to keep consistency in plant hydraulics after fusion
+      total_transp              = ( cpatch%psi_open(recc) * cpatch%fs_open(recc)           &
+                                  + cpatch%psi_closed(recc) * (1. - cpatch%fs_open(recc))) &
+                                  * rlai                                                   &
+                                + ( cpatch%psi_open(donc) * cpatch%fs_open(donc)           &
+                                  + cpatch%psi_closed(donc) * (1. - cpatch%fs_open(donc))) &
+                                  * dlai
+
 
       !------------------------------------------------------------------------------------!
       !    Water demand is in kg/m2_leaf/s, so we scale them by LAI.  Water supply is in   !
@@ -1473,7 +1484,17 @@ module fuse_fiss_utils
                                 + cpatch%fsw     (donc) * dlai
       cpatch%fsn     (recc)     = cpatch%fsn     (recc) * rlai                             &
                                 + cpatch%fsn     (donc) * dlai
-      cpatch%fs_open (recc)     = cpatch%fsw(recc) * cpatch%fsn(recc)
+      ! XXT: The original scaling for fs_open can be problematic 
+      ! when photorespiration is too high (see photosyn_driv.f90 for details).
+      ! In this scenario, fs_open is decoupled from fsw * fsn.
+      ! Now we update cpatch%fs_open by conserving total_transp
+      if ((cpatch%psi_open(recc) - cpatch%psi_closed(recc)) == 0.) then
+          ! This is the original scaling
+          cpatch%fs_open(recc)  = cpatch%fsw(recc) * cpatch%fsn(recc)
+      else
+          cpatch%fs_open (recc) = max(0.,min(1.,(total_transp - cpatch%psi_closed(recc))   &
+                                    / (cpatch%psi_open(recc) - cpatch%psi_closed(recc))))
+      endif
       !------------------------------------------------------------------------------------!
 
 
