@@ -250,7 +250,7 @@ subroutine reproduction(cgrid,month)
                      ! current function can ensure a PFT comes back after a total die-off  !
                      !---------------------------------------------------------------------!
                      csite%repro(ipft,ipa) = csite%repro(ipft,ipa)                         &
-                                           + ( rectest%balive + rectest%bead               &
+                                           + ( rectest%balive + rectest%bdead              &
                                              + rectest%bstorage)                           &
                                            * seed_rain(ipft)
 
