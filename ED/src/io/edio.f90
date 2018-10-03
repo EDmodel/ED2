@@ -53,7 +53,7 @@ subroutine ed_output(observation_time,analysis_time,new_day         &
    ! date or not.  They must be rehashed if there has been any change in the number of     !
    ! cohorts or patches (e.g, a cohort or a patch has been terminated or created).         !
    !---------------------------------------------------------------------------------------!
-   if (analysis_time   .or. history_time    .or.                                           &
+   if (analysis_time   .or. history_time    .or. observation_time .or.                     &
        dail_analy_time .or. mont_analy_time .or. dcyc_analy_time .or. annual_time ) then
 
       if (filltables) then
