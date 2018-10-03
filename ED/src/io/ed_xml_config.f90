@@ -396,7 +396,7 @@ recursive subroutine read_ed_xml_config(filename)
 
 ! mortality
            call getConfigREAL  ('frost_mort','pft',i,rval,texist)
-           if(texist) frost_mort = real(rval)
+           if(texist) frost_mort(myPFT) = real(rval)
            call getConfigREAL  ('mort0','pft',i,rval,texist)
            if(texist) mort0(myPFT) = real(rval)
            call getConfigREAL  ('mort1','pft',i,rval,texist)

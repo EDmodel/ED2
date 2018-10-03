@@ -59,6 +59,13 @@ module plant_hydro
       real                                    :: crown_area ! crown area              [m2]
       real                                    :: transp     ! transpiration rate      [kg/s]
       real                                    :: c_leaf     ! leaf capacitance        [kg/m]
+      !----- Variables for debugging purposes ---------------------------------------------!
+      integer,parameter                       :: dco        = 0 ! the cohort to debug
+      logical                                 :: error_flag
+      logical,parameter                       :: debug_flag = .false.
+      character(len=13) , parameter           :: efmt       = '(a,1x,es12.5)'
+      character(len=9)  , parameter           :: ifmt       = '(a,1x,i5)'
+      character(len=9)  , parameter           :: lfmt       = '(a,1x,l1)'
       !----- Locally saved variables. -----------------------------------------------------!
       real        , save                      :: dtlsm_o_frqsum
       logical     , save                      :: first_time = .true.
@@ -166,6 +173,66 @@ module plant_hydro
 !                                 cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
                 endif
                 
+                !--------------------------------------------------------------------------
+                ! Handling Potential Errors and Help Debugging
+                !--------------------------------------------------------------------------
+                error_flag = (isnan(cpatch%leaf_psi(ico)) )           & ! NaN values
+                         .or.(cpatch%leaf_psi(ico) > 0.)                ! psi is positive
+  
+                ! I copy the error printing from rk4_misc.f90
+                if((debug_flag .and. (dco == 0 .or. ico == dco)) .or. error_flag) then
+                   write (unit=*,fmt='(a)') ' '
+                   write (unit=*,fmt='(92a)') ('=',k=1,92)
+                   write (unit=*,fmt='(92a)') ('=',k=1,92)
+                   write (unit=*,fmt='(a)'  ) ' Input leaf_psi is too high for plant hydodynamics'
+                   write (unit=*,fmt='(92a)') ('-',k=1,92)
+                   write (unit=*,fmt=ifmt   ) ' + IPA              =',ipa
+  
+                   write (unit=*,fmt='(a)'  ) ' '
+                   write (unit=*,fmt=ifmt   ) ' + ICO              =',ico
+                   write (unit=*,fmt=ifmt   ) ' + PFT              =',cpatch%pft(ico)
+                   write (unit=*,fmt=ifmt   ) ' + KRDEPTH          =',cpatch%krdepth(ico)
+                   write (unit=*,fmt=efmt   ) ' + HEIGHT           =',cpatch%hite(ico)
+  
+                   write (unit=*,fmt='(a)'  ) ' '
+                   write (unit=*,fmt=efmt   ) ' + BLEAF            =',cpatch%bleaf(ico)
+                   write (unit=*,fmt=efmt   ) ' + LAI              =',cpatch%lai(ico) 
+                   write (unit=*,fmt=efmt   ) ' + NPLANT           =',cpatch%nplant(ico) 
+                   write (unit=*,fmt=efmt   ) ' + BSAPWOOD         =',bsap 
+                   write (unit=*,fmt=efmt   ) ' + BROOT            =',cpatch%broot(ico)
+                   write (unit=*,fmt=efmt   ) ' + SAPWOOD_AREA     =',sap_area
+                   write (unit=*,fmt=efmt   ) ' + CROWN_AERA       =',crown_area
+  
+                   write (unit=*,fmt='(a)'  ) ' '
+                   write (unit=*,fmt=efmt   ) ' + TRANSP           =',transp
+                   write (unit=*,fmt=efmt   ) ' + c_leaf           =',c_leaf
+                   write (unit=*,fmt=efmt   ) ' + PSI_OPEN         =',cpatch%psi_open(ico)
+                   write (unit=*,fmt=efmt   ) ' + PSI_CLOSED       =',cpatch%psi_closed(ico)
+                   write (unit=*,fmt=efmt   ) ' + FS_OPEN          =',cpatch%fs_open(ico)   
+                   write (unit=*,fmt=efmt   ) ' + LEAF_PSI         =',cpatch%leaf_psi(ico)
+                   write (unit=*,fmt=efmt   ) ' + WOOD_PSI         =',cpatch%wood_psi(ico)
+                   write (unit=*,fmt=efmt   ) ' + WFLUX_GW (LAST)  =',cpatch%wflux_gw(ico) 
+                   write (unit=*,fmt=efmt   ) ' + WFLUX_WL (LAST)  =',cpatch%wflux_wl(ico)
+                   write (unit=*,fmt='(a)'  ) ' + WFLUX_GW_LAYER   ='            
+                   do k = 1, nzg
+                       write (unit=*,fmt='(i5,1x,es12.5)') k, cpatch%wflux_gw_layer(k,ico)
+                   enddo
+  
+                   write (unit=*,fmt='(a)'  ) ' '
+                   write (unit=*,fmt='(a)'  ) ' + SOIL_PSI         ='            
+                   do k = 1, nzg
+                       write (unit=*,fmt='(i5,1x,es12.5)') k, soil_psi(k)                 
+                   enddo
+                   write (unit=*,fmt='(92a)') ('=',k=1,92)
+                   write (unit=*,fmt='(92a)') ('=',k=1,92)
+                   write (unit=*,fmt='(a)') ' '
+  
+                   if (error_flag) then 
+                       call fatal_error('Plant Hydrodynamics is wrong',&
+                                        'plant_hydro_driver'       ,&
+                                        'plant_hydro.f90')
+                   endif
+                endif
 
                 ! note here, transp is from last timestep's psi_open and psi_closed
                 call calc_plant_water_flux(                           &
@@ -212,7 +279,7 @@ module plant_hydro
          if (cpatch%dmin_leaf_psi(ico) == 0.) then
              cpatch%dmin_leaf_psi(ico) =  cpatch%leaf_psi(ico)
          else
-             cpatch%dmin_leaf_psi(ico) =  max(cpatch%dmin_leaf_psi(ico),cpatch%leaf_psi(ico))
+             cpatch%dmin_leaf_psi(ico) =  min(cpatch%dmin_leaf_psi(ico),cpatch%leaf_psi(ico))
          endif
 
          if (cpatch%dmax_wood_psi(ico) == 0.) then
@@ -224,7 +291,7 @@ module plant_hydro
          if (cpatch%dmin_wood_psi(ico) == 0.) then
              cpatch%dmin_wood_psi(ico) =  cpatch%wood_psi(ico)
          else
-             cpatch%dmin_wood_psi(ico) =  max(cpatch%dmin_wood_psi(ico),cpatch%wood_psi(ico))
+             cpatch%dmin_wood_psi(ico) =  min(cpatch%dmin_wood_psi(ico),cpatch%wood_psi(ico))
          endif
 
           cpatch%fmean_wflux_wl             (ico) = cpatch%fmean_wflux_wl(ico)         &

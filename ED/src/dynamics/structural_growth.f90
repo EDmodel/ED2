@@ -1414,9 +1414,12 @@ subroutine update_cohort_plastic_trait(cpatch,ico)
        kvm0 = exp(0.00963 * vm25 - 2.43)
        ! This function is from Lloyd et al. 2010
 
-       ksla = 2.61e-3 * vm25
-       ! This function is inferred from SLA-Nitrogen relationship in 
-       ! Lloyd et al. 2010 and Nitrogen-Vcmax25 relationship inKattge et al. 2009
+       ksla = kvm0 - 0.035
+       ! This value is estimated from canopy and underground 
+       ! leaf traits data from BCI, Panama. It reflects that 
+       ! LMA goes down sloer than Vcmax within canopy.
+       ! So that at lower canopy, Vcmax/LMA is smaller than
+       ! the value at canopy
 
        lma_slope = 0.015  ! linearized slope, should only be used
                           ! when trait_plasticity_scheme < 0

@@ -52,7 +52,8 @@ subroutine reproduction(cgrid,month)
                                  , dbh2krdepth              & ! function
                                  , dbh2sf                   ! ! function
    use grid_coms          , only : nzg                      ! ! intent(in)
-   use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
+   use ed_misc_coms       , only : ibigleaf                 & ! intent(in)
+                                 , ied_init_mode            ! ! intent(in)
    use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
    use budget_utils       , only : update_budget            ! ! sub-routine
    use therm_lib          , only : cmtl2uext                ! ! function
@@ -169,6 +170,7 @@ subroutine reproduction(cgrid,month)
                   !     or forest plantation, it must also be allowed in such patches.     !
                   ! 2.  The temperature is not limiting reproduction.                      !
                   ! 3.  The user wants reproduction to occur.                              !
+                  ! 4.  This is not a true bareground run                                  !
                   !------------------------------------------------------------------------!
                   select case (csite%dist_type(ipa))
                   case (1)
@@ -176,7 +178,8 @@ subroutine reproduction(cgrid,month)
                      allow_pft =                                                           &
                            include_pft_ag(ipft)                                      .and. &
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
-                           repro_scheme                /= 0
+                           repro_scheme                /= 0                          .and. &
+                           ied_init_mode               /= -1
                      !---------------------------------------------------------------------!
 
                   case (2)
@@ -184,7 +187,8 @@ subroutine reproduction(cgrid,month)
                      allow_pft =                                                           &
                            include_pft_fp(ipft)                                      .and. &
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
-                           repro_scheme                /= 0
+                           repro_scheme                /= 0                          .and. &
+                           ied_init_mode               /= -1
                      !---------------------------------------------------------------------!
 
                   case default
@@ -192,7 +196,8 @@ subroutine reproduction(cgrid,month)
                      allow_pft =                                                           &
                            include_pft(ipft)                                         .and. &
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
-                           repro_scheme                /= 0
+                           repro_scheme                /= 0                          .and. &
+                           ied_init_mode               /= -1
                      !---------------------------------------------------------------------!
                   end select
                   !------------------------------------------------------------------------!
@@ -239,11 +244,20 @@ subroutine reproduction(cgrid,month)
                      !     Find the expected population from the reproduction stocks, and  !
                      ! also include the "seed_rain" term, which represents sources of      !
                      ! seed that are external to the polygon.                              !
+                     !     XXT: we first accumulate seed_rain into csite%repro asssuming   !
+                     ! that the seed_rain can be stored in the soil seed bank FOREVER.     !
+                     ! Decay of soil seed bank can be added later if necessary. This       !
+                     ! current function can ensure a PFT comes back after a total die-off  !
                      !---------------------------------------------------------------------!
+                     csite%repro(ipft,ipa) = csite%repro(ipft,ipa)                         &
+                                           + ( rectest%balive + rectest%bdead              &
+                                             + rectest%bstorage)                           &
+                                           * seed_rain(ipft)
+
+                     ! update recruit nplant
                      rectest%nplant    = csite%repro(ipft,ipa)                             &
                                        / ( rectest%balive + rectest%bdead                  &
-                                         + rectest%bstorage)                               &
-                                       + seed_rain(ipft)
+                                         + rectest%bstorage)                               
                      !---------------------------------------------------------------------!
 
 
@@ -480,8 +494,8 @@ subroutine reproduction(cgrid,month)
 
                !----- Update the cohort distribution. -------------------------------------!
                if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
+                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
                end if
                !---------------------------------------------------------------------------!
