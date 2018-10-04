@@ -72,7 +72,7 @@ subroutine ed_output(observation_time,analysis_time,new_day         &
    !      If this is the time for an output, we shall call routines to prepare the vari-   !
    ! ables for output.                                                                     !
    !---------------------------------------------------------------------------------------!
-   if ( analysis_time .or.   history_time .or. dcycle_time  .or.                           &
+   if ( analysis_time .or.   history_time .or. dcycle_time  .or. observation_time .or.     &
        (new_day       .and. (writing_dail .or. writing_mont .or. writing_dcyc))) then
       do ifm=1,ngrids
          call normalize_ed_fmean_vars    (edgrid_g(ifm))
