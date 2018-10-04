@@ -53,7 +53,7 @@ subroutine ed_output(observation_time,analysis_time,new_day         &
    ! date or not.  They must be rehashed if there has been any change in the number of     !
    ! cohorts or patches (e.g, a cohort or a patch has been terminated or created).         !
    !---------------------------------------------------------------------------------------!
-   if (analysis_time   .or. history_time    .or.                                           &
+   if (analysis_time   .or. history_time    .or. observation_time .or.                     &
        dail_analy_time .or. mont_analy_time .or. dcyc_analy_time .or. annual_time ) then
 
       if (filltables) then
@@ -72,7 +72,7 @@ subroutine ed_output(observation_time,analysis_time,new_day         &
    !      If this is the time for an output, we shall call routines to prepare the vari-   !
    ! ables for output.                                                                     !
    !---------------------------------------------------------------------------------------!
-   if ( analysis_time .or.   history_time .or. dcycle_time  .or.                           &
+   if ( analysis_time .or.   history_time .or. dcycle_time  .or. observation_time .or.     &
        (new_day       .and. (writing_dail .or. writing_mont .or. writing_dcyc))) then
       do ifm=1,ngrids
          call normalize_ed_fmean_vars    (edgrid_g(ifm))
