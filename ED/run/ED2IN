@@ -549,6 +549,7 @@ $ED_NL
    !                      not cold deciduous).                                             !
    !  ED_MET_DRIVER_DB -- File containing information for meteorological driver            !
    !                      instructions (the "header" file).                                !
+   !  OBSTIME_DB       -- File containing times of desired IOOUTPUT                        !            
    !  SOILSTATE_DB     -- Dataset in case you want to provide the initial conditions of    !
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
