@@ -1051,6 +1051,8 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) agriculture_on = ival
         
         !! FIRE
+        call getConfigREAL  ('fire_hite_threshold','disturbance',i,rval,texist)
+        if(texist) fire_hite_threshold = real(rval)
         call getConfigREAL  ('fire_dryness_threshold','disturbance',i,rval,texist)
         if(texist) fire_dryness_threshold = real(rval)
         call getConfigREAL  ('fire_parameter','disturbance',i,rval,texist)
@@ -1775,6 +1777,7 @@ subroutine write_ed_xml_config
      call putConfigREAL("min_harvest_biomass",min_harvest_biomass)
      call putConfigREAL("mature_harvest_age",mature_harvest_age)
      ! --- Fire
+     call putConfigREAL("fire_hite_threshold",fire_hite_threshold)
      call putConfigINT("include_fire",include_fire)
      call putConfigREAL("fire_dryness_threshold",fire_dryness_threshold)
      call putConfigREAL("fire_parameter",fire_parameter)
