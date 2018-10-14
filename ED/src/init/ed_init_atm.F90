@@ -495,6 +495,7 @@ subroutine ed_init_atm()
 
             siteloop3: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
+               cmet  => cpoly%met (isi)
                site_area_i = 1./sum(csite%area(:))
 
                patchloop3: do ipa = 1,csite%npatches
@@ -508,7 +509,7 @@ subroutine ed_init_atm()
                      case (1)
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.true.)
                      end select
-                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
                      call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
                   end if
 

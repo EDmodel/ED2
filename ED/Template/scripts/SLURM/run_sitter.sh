@@ -110,6 +110,7 @@ emailday="${here}/emailday.txt"
 
 
 #------ Simulation settings. --------------------------------------------------------------#
+delay1st_min=""
 wait_minutes=""
 frqpost=""
 frqtouch=""
@@ -155,19 +156,22 @@ outform="JobName%200,State%12"
 #       First check that the main path and e-mail have been set.  If not, don't run.       #
 #------------------------------------------------------------------------------------------#
 if [[ "x${here}"         == "x" ]] || [[ "x${recipient}"    == "x" ]] ||
-   [[ "x${frqemail}"     == "x" ]] || [[ "x${wait_minutes}" == "x" ]] ||
-   [[ "x${frqpost}"      == "x" ]] || [[ "x${frqtouch}"     == "x" ]]
+   [[ "x${frqemail}"     == "x" ]] || [[ "x${delay1st_min}" == "x" ]] ||
+   [[ "x${wait_minutes}" == "x" ]] || [[ "x${frqpost}"      == "x" ]] ||
+   [[ "x${frqtouch}"     == "x" ]]
 then
-   echo "----------------------------------------------------------------------"
+   echo "-------------------=========---------------------------------------------------"
+   echo "    The following variables must be set.  In case any of them are empty, check "
+   echo " your script run_sitter.sh."
+   echo " "
    echo " here         = ${here}"
    echo " recipient    = ${recipient}"
    echo " frqemail     = ${frqemail}"
+   echo " delay1st_min = ${delay1st_min}"
    echo " wait_minutes = ${wait_minutes}"
    echo " frqpost      = ${frqpost}"
    echo " frqtouch     = ${frqtouch}"
-   echo " Y All the variables above must be set before running the script."
-   echo " Please check script run_sitter.sh and try again"
-   echo "----------------------------------------------------------------------"
+   echo "-------------------------------------------------------------------------------"
    exit 99
 fi
 #------------------------------------------------------------------------------------------#
@@ -217,8 +221,37 @@ pfmt="%${ndig}.${ndig}i"
 echo "Number of polygons: ${n_polygon}..."
 #------------------------------------------------------------------------------------------#
 
+
+
+#----- Set job name. ----------------------------------------------------------------------#
 desc=$(basename ${here})
 jobname="${desc}-sims"
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#      Check whether to wait a bit before the first check.                                 #
+#------------------------------------------------------------------------------------------#
+if [[ ${delay1st_min} -gt 0 ]]
+then
+   let nsl=${delay1st_min}+1
+   while [ ${nsl} -gt 1 ]
+   do
+      let nsl=${nsl}-1
+      case ${nsl} in
+      1)
+         echo "       - ${nsl} minute before starting."
+         ;;
+      *)
+         echo "       - ${nsl} minutes before starting."
+         ;;
+      esac
+      sleep 1m
+   done
+fi
+#------------------------------------------------------------------------------------------#
+
+
 
 
 #------------------------------------------------------------------------------------------#
@@ -402,22 +435,23 @@ do
       igndvap=$(echo ${oi}      | awk '{print $93 }')
       iphen=$(echo ${oi}        | awk '{print $94 }')
       iallom=$(echo ${oi}       | awk '{print $95 }')
-      igrass=$(echo ${oi}       | awk '{print $96 }')
-      ibigleaf=$(echo ${oi}     | awk '{print $97 }')
-      integscheme=$(echo ${oi}  | awk '{print $98 }')
-      nsubeuler=$(echo ${oi}    | awk '{print $99 }')
-      irepro=$(echo ${oi}       | awk '{print $100}')
-      treefall=$(echo ${oi}     | awk '{print $101}')
-      ianthdisturb=$(echo ${oi} | awk '{print $102}')
-      ianthdataset=$(echo ${oi} | awk '{print $103}')
-      slscale=$(echo ${oi}      | awk '{print $104}')
-      slyrfirst=$(echo ${oi}    | awk '{print $105}')
-      slnyrs=$(echo ${oi}       | awk '{print $106}')
-      bioharv=$(echo ${oi}      | awk '{print $107}')
-      skidarea=$(echo ${oi}     | awk '{print $108}')
-      skidsmall=$(echo ${oi}    | awk '{print $109}')
-      skidlarge=$(echo ${oi}    | awk '{print $110}')
-      fellingsmall=$(echo ${oi} | awk '{print $111}')
+      ieconomics=$(echo ${oi}   | awk '{print $96 }')
+      igrass=$(echo ${oi}       | awk '{print $97 }')
+      ibigleaf=$(echo ${oi}     | awk '{print $98 }')
+      integscheme=$(echo ${oi}  | awk '{print $99 }')
+      nsubeuler=$(echo ${oi}    | awk '{print $100}')
+      irepro=$(echo ${oi}       | awk '{print $101}')
+      treefall=$(echo ${oi}     | awk '{print $102}')
+      ianthdisturb=$(echo ${oi} | awk '{print $103}')
+      ianthdataset=$(echo ${oi} | awk '{print $104}')
+      slscale=$(echo ${oi}      | awk '{print $105}')
+      slyrfirst=$(echo ${oi}    | awk '{print $106}')
+      slnyrs=$(echo ${oi}       | awk '{print $107}')
+      bioharv=$(echo ${oi}      | awk '{print $108}')
+      skidarea=$(echo ${oi}     | awk '{print $109}')
+      skidsmall=$(echo ${oi}    | awk '{print $110}')
+      skidlarge=$(echo ${oi}    | awk '{print $111}')
+      fellingsmall=$(echo ${oi} | awk '{print $112}')
       #------------------------------------------------------------------------------------#
 
 
@@ -656,6 +690,12 @@ do
          metcyc1=1969
          metcycf=2008
          imetavg=2
+         ;;
+      Tanguro)
+         metdriverdb="${fullscen}/Tanguro/Tanguro_HEADER"
+         metcyc1=2008
+         metcycf=2017
+         imetavg=1
          ;;
       Tonzi)
          metdriverdb="${fullscen}/Tonzi/Tonzi_HEADER"

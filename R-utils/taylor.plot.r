@@ -196,10 +196,10 @@ taylor.plot <<- function ( obs
           xlim           = c(0,maxsd)
           ylim           = c(0,maxsd)
           x.xlab         = sd.obs
-          y.xlab         = -0.15 * maxsd
+          y.xlab         = -0.075 * maxsd
           srt.xlab       =  0
-          x.ylab         = -0.15 * maxsd
-          y.ylab         =   0.5 * maxsd
+          x.ylab         = -0.10 * maxsd
+          y.ylab         =   0.5  * maxsd
           srt.ylab       = 90
           x0.axis        = c(     0,     0)
           y0.axis        = c(     0,     0)
@@ -216,10 +216,10 @@ taylor.plot <<- function ( obs
           xlim           = c(-maxsd,maxsd)
           ylim           = c(     0,maxsd)
           x.xlab         = sd.obs
-          y.xlab         = -0.20 * maxsd
+          y.xlab         = -0.075 * maxsd
           srt.xlab       =  0
           x.ylab         =  0
-          y.ylab         = -0.20 * maxsd
+          y.ylab         = -0.15 * maxsd
           srt.ylab       =  0
           x0.axis        = c(-maxsd,     0)
           y0.axis        = c(     0,     0)

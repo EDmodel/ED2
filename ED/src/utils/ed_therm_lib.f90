@@ -128,6 +128,7 @@ module ed_therm_lib
                               , patchtype  ! ! structure
       use therm_lib    , only : uextcm2tl  & ! subroutine
                               , cmtl2uext  ! ! function
+      use ed_misc_coms , only : frqsumi    ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype) , target     :: csite
@@ -141,9 +142,22 @@ module ed_therm_lib
       real                        :: new_fliq
       integer                     :: kclosest
       integer                     :: k
+      real                        :: old_leaf_energy
+      real                        :: old_wood_energy
       !------------------------------------------------------------------------------------!
 
+
       cpatch => csite%patch(ipa)
+
+
+      !------------------------------------------------------------------------------------!
+      !    Save leaf and wood energy before the update, so we can find the change in       !
+      ! energy storage due to change in the storage size (heat capacity).                  !
+      !------------------------------------------------------------------------------------!
+      old_leaf_energy = cpatch%leaf_energy(ico)
+      old_wood_energy = cpatch%wood_energy(ico)
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -198,7 +212,8 @@ module ed_therm_lib
             write(unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
             write(unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_leaf_hcap
             write(unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%leaf_hcap(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' Leaf energy:      ',cpatch%leaf_energy(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' Old leaf energy:  ',old_leaf_energy
+            write(unit=*,fmt='(a,1x,es12.5)') ' New leaf energy:  ',cpatch%leaf_energy(ico)
             write(unit=*,fmt='(a,1x,es12.5)') ' Leaf water:       ',cpatch%leaf_water(ico)
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             call fatal_error('Leaf energy is leaking!!!','update_veg_energy_cweh'          &
@@ -265,7 +280,8 @@ module ed_therm_lib
             write(unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
             write(unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_wood_hcap
             write(unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%wood_hcap(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' Wood energy:      ',cpatch%wood_energy(ico)
+            write(unit=*,fmt='(a,1x,es12.5)') ' Old wood energy:  ',old_wood_energy
+            write(unit=*,fmt='(a,1x,es12.5)') ' New wood energy:  ',cpatch%wood_energy(ico)
             write(unit=*,fmt='(a,1x,es12.5)') ' Wood water:       ',cpatch%wood_water(ico)
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             call fatal_error('Wood energy is leaking!!!','update_veg_energy_cweh'          &
@@ -273,6 +289,18 @@ module ed_therm_lib
          end if
          !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Integrate the "heat capacity effect", i.e. the change in total internal energy  !
+      ! in vegetation due to change in vegetation biomass.                                 !
+      !------------------------------------------------------------------------------------!
+      csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                        &
+                                    + ( cpatch%leaf_energy(ico) - old_leaf_energy          &
+                                      + cpatch%wood_energy(ico) - old_wood_energy )        &
+                                    * frqsumi
       !------------------------------------------------------------------------------------!
 
 

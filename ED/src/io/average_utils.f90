@@ -1204,8 +1204,13 @@ module average_utils
 
 
                !---------------------------------------------------------------------------!
-               !      Budget variables.  They contain integral values, so we must divide   !
+               !      Budget variables.  Most of them contain integral values, so we must  !divide   !
                ! by the elapsed time to get them in flux units.                            !
+               !                                                                           !
+               ! IMPORTANT --- Do NOT include zcaneffect and hcapeffect here.  These       !
+               !               effects are instantaneous values that are incorporated to   !
+               !               the total storage during a single time step.  When they are !
+               !               computed, they already take frqsumi into account.           !
                !---------------------------------------------------------------------------!
                csite%co2budget_gpp        (ipa) = csite%co2budget_gpp        (ipa) * frqsumi
                csite%co2budget_plresp     (ipa) = csite%co2budget_plresp     (ipa) * frqsumi
@@ -1213,6 +1218,9 @@ module average_utils
                csite%co2budget_loss2atm   (ipa) = csite%co2budget_loss2atm   (ipa) * frqsumi
                csite%co2budget_denseffect (ipa) = csite%co2budget_denseffect (ipa) * frqsumi
                csite%co2budget_residual   (ipa) = csite%co2budget_residual   (ipa) * frqsumi
+               csite%cbudget_loss2atm     (ipa) = csite%cbudget_loss2atm     (ipa) * frqsumi
+               csite%cbudget_denseffect   (ipa) = csite%cbudget_denseffect   (ipa) * frqsumi
+               csite%cbudget_residual     (ipa) = csite%cbudget_residual     (ipa) * frqsumi
                csite%ebudget_precipgain   (ipa) = csite%ebudget_precipgain   (ipa) * frqsumi
                csite%ebudget_netrad       (ipa) = csite%ebudget_netrad       (ipa) * frqsumi
                csite%ebudget_denseffect   (ipa) = csite%ebudget_denseffect   (ipa) * frqsumi
@@ -1440,13 +1448,25 @@ module average_utils
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
-               !----- Budget variables. ---------------------------------------------------!
+               !---------------------------------------------------------------------------!
+               ! Budget variables.                                                         !
+               !                                                                           !
+               ! IMPORTANT --- Do NOT include zcaneffect and hcapeffect here.  These       !
+               !               fluxes are instantaneous values that are incorporated to    !
+               !               the total storage during a single time step.  They are      !
+               !               reset to zero as soon as they are used, in compute_budget,  !
+               !               and they shall remain zero unless vegetation dynamics has   !
+               !               just occurred.                                              !
+               !---------------------------------------------------------------------------!
                csite%co2budget_gpp                 (ipa) = 0.0
                csite%co2budget_rh                  (ipa) = 0.0
                csite%co2budget_plresp              (ipa) = 0.0
                csite%co2budget_residual            (ipa) = 0.0
                csite%co2budget_loss2atm            (ipa) = 0.0
                csite%co2budget_denseffect          (ipa) = 0.0
+               csite%cbudget_loss2atm              (ipa) = 0.0
+               csite%cbudget_denseffect            (ipa) = 0.0
+               csite%cbudget_residual              (ipa) = 0.0
                csite%wbudget_precipgain            (ipa) = 0.0
                csite%wbudget_loss2atm              (ipa) = 0.0
                csite%wbudget_loss2runoff           (ipa) = 0.0
@@ -2603,11 +2623,15 @@ module average_utils
             csite => cpoly%site(isi)
 
             patchloop: do ipa=1,csite%npatches
+               cpatch => csite%patch(ipa)
 
-               csite%today_A_decomp (ipa) = csite%today_A_decomp(ipa)  * dtlsm_o_daysec
-               csite%today_B_decomp (ipa) = csite%today_B_decomp(ipa)  * dtlsm_o_daysec
+               !---- Scale decomposition rates. -------------------------------------------!
+               csite%today_A_decomp (ipa) = csite%today_A_decomp (ipa) * dtlsm_o_daysec
+               csite%today_B_decomp (ipa) = csite%today_B_decomp (ipa) * dtlsm_o_daysec
                csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa) * dtlsm_o_daysec
                csite%today_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa) * dtlsm_o_daysec
+               !---------------------------------------------------------------------------!
+
 
                !----- Copy the decomposition terms to the daily mean if they are sought. --!
                if (writing_long) then
@@ -2616,9 +2640,9 @@ module average_utils
                   csite%dmean_Af_decomp(ipa) = csite%today_Af_decomp(ipa)
                   csite%dmean_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa)
                end if
+               !---------------------------------------------------------------------------!
 
-               cpatch => csite%patch(ipa)
-               
+
                !----- Included a loop so it won't crash with empty cohorts... -------------!
                cohortloop: do ico=1,cpatch%ncohorts
                   !------------------------------------------------------------------------!
@@ -2632,7 +2656,7 @@ module average_utils
                                                   * dtlsm_o_daysec
                   cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico)        &
                                                   * dtlsm_o_daysec
-                  cpatch%today_gpp_mlmax    (ico) = cpatch%today_gpp_mlmax (ico)           &
+                  cpatch%today_gpp_mlmax    (ico) = cpatch%today_gpp_mlmax    (ico)        &
                                                   * dtlsm_o_daysec
                   cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico)        &
                                                   * dtlsm_o_daysec
@@ -3264,10 +3288,10 @@ module average_utils
 
             do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
-               
+
                !----- Reset variables stored in sitetype. ---------------------------------!
-               csite%today_A_decomp(ipa)  = 0.0
-               csite%today_B_decomp(ipa)  = 0.0
+               csite%today_A_decomp (ipa) = 0.0
+               csite%today_B_decomp (ipa) = 0.0
                csite%today_Af_decomp(ipa) = 0.0
                csite%today_Bf_decomp(ipa) = 0.0
                !---------------------------------------------------------------------------!
@@ -3287,7 +3311,7 @@ module average_utils
                   cpatch%today_gpp_pot      (ico) = 0.0
                   cpatch%today_gpp_lightmax (ico) = 0.0
                   cpatch%today_gpp_moistmax (ico) = 0.0
-                  cpatch%today_gpp_mlmax (ico) = 0.0
+                  cpatch%today_gpp_mlmax    (ico) = 0.0
                   cpatch%today_leaf_resp    (ico) = 0.0
                   cpatch%today_root_resp    (ico) = 0.0
                end do

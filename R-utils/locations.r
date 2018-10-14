@@ -463,6 +463,12 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                       , values  = seq(from=0,to=3,by=1)
                                       , names   = c("ED-1.0","ED-2.0","ED-2.1","ED-2.2")
                                       )#end list
+   #----- ieconomics is the trait trade-off method. ---------------------------------------#
+   flagvar[["ieconomics"]]      = list( descr   = "Economics"
+                                      , numeric = TRUE
+                                      , values  = seq(from=0,to=1,by=1)
+                                      , names   = c("ED-2.0","TNRG data sets")
+                                      )#end list
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["h2o.plant.limit"]] = list( descr   = "Water limitation"
                                       , numeric = TRUE
@@ -864,6 +870,20 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(0,1)
                                        , names  = c("ED-1.0","ED-2.2")
                                        )#end list
+   flagvar[["iplastic"]]         = list( descr  = "Plasticity"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2)
+                                       , names  = c("Off","height-based","LAI-based")
+                                       )#end list
+   flagvar[["repro.scheme" ]]    = list( descr  = "Seed allocation"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2,3)
+                                       , names  = c("No allocation"
+                                                   ,"Big-bang within site"
+                                                   ,"Big-bang across site"
+                                                   ,"Asymptotic"
+                                                   )#end c
+                                       )#end list
    flagvar[["ianth.disturb"]]    = list( descr  = "Anthropogenic disturbance"
                                        , numeric = TRUE
                                        , values = c(0,1,2)
@@ -1144,7 +1164,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , unit  = "%/yr"
                                      , fmt   = "%.3f"
                                      , off   =    0.0
-                                     , mult  =   0.001)
+                                     , mult  =   0.01)
    numvar[["leaf.absorb.nir"]] = list( descr = "Leaf NIR absorptance"
                                      , unit  = ""
                                      , fmt   = "%.3f"
@@ -1266,6 +1286,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("met.forcing","isas")
          na     = c(            6,    10)
          nz     = c(            8,    12)
+      }else if (lenici == 13 && grepl(pattern="irepro",x=ici)){
+         nparms = 1
+         param  = c("repro.scheme")
+         na     = c(            12)
+         nz     = c(            13)
       }else if (lenici == 13 && grepl(pattern="iphen",x=ici)){
          nparms = 1
          param  = c("iphen.scheme")
@@ -1275,6 +1300,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nparms = 1
          param  = c("isoil.text")
          na     = c(          12)
+         nz     = c(          13)
+      }else if (lenici == 13 && grepl(pattern="tfall",x=ici)){
+         nparms = 1
+         param  = c("treefall")
+         na     = c(          11)
          nz     = c(          13)
       }else if (lenici == 14 && grepl(pattern="ibranch",x=ici)){
          nparms = 1
@@ -1290,6 +1320,21 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nparms = 1
          param  = c("icanrad")
          na     = c(        13)
+         nz     = c(        15)
+      }else if (lenici == 15 && grepl(pattern="iplastic",x=ici)){
+         nparms = 1
+         param  = c("iplastic")
+         na     = c(        14)
+         nz     = c(        15)
+      }else if (lenici == 15 && grepl(pattern="ivegtdyn",x=ici)){
+         nparms = 1
+         param  = c("ivegt.dynamics")
+         na     = c(        14)
+         nz     = c(        15)
+      }else if (lenici == 15 && grepl(pattern="iphysiol",x=ici)){
+         nparms = 1
+         param  = c("iphysiol")
+         na     = c(        14)
          nz     = c(        15)
       }else if (lenici == 15 && grepl(pattern="h2olimit",x=ici)){
          nparms = 1
@@ -1411,7 +1456,12 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iallom","idimort","include.fire")
          na     = c(      12,       22,            30)
          nz     = c(      13,       23,            31)
-      }else if (lenici == 32){
+      }else if (lenici == 32 && grepl(pattern="iecon",x=ici)){
+         nparms = 3
+         param  = c("iallom","ieconomics","iplastic")
+         na     = c(      12,          20,        31)
+         nz     = c(      13,          21,        32)
+      }else if (lenici == 32 && grepl(pattern="imetrad",x=ici)){
          nparms = 3
          param  = c("iage","ihrzrad","imetrad")
          na     = c(    10,       21,       31)
@@ -1451,11 +1501,16 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("grow.resp","vm0","leaf.resp","root.resp")
          na     = c(         10,   18,         28,         37)
          nz     = c(         13,   21,         30,         40)
-      }else if (lenici == 41){
+      }else if (lenici == 41 && grepl(pattern="stext",x=ici)){
          nparms = 5
          param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
          na     = c(            7,           13,           23,            31,          40)
          nz     = c(           10,           16,           24,            33,          41)
+      }else if (lenici == 41 && grepl(pattern="iecon",x=ici)){
+         nparms = 4
+         param  = c("iallom","ieconomics","repro.scheme","iplastic")
+         na     = c(      12,          20,           29,         40)
+         nz     = c(      13,          21,           30,         41)
       }else if (lenici == 50 && grepl(pattern="bharv",x=ici)){
          nparms = 6
          param  = c("ianth.disturb","logging.type",    "sl.scale"
@@ -4684,6 +4739,27 @@ poitmp[[u]] = list( short           = "sobral"
                   , iphen           = 2
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "sorriso"             
+                  , longname        = "Sorriso, MT"                   
+                  , iata            = "smt"
+                  , lon             = -55.723
+                  , lat             = -12.555
+                  , alt             = 379
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 2
+                  , sand            = 0.840
+                  , clay            = 0.120
+                  , depth           = "E"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sorriso"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "tabatinga"         
                   , longname        = "Tabatinga, AM"              
                   , iata            = "tbt"
@@ -4762,9 +4838,9 @@ poitmp[[u]] = list( short           = "tanguro"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
-                  , yeara           = 1974
-                  , yearz           = 2017
+                  , met.driver      = "Tanguro"
+                  , yeara           = 2008
+                  , yearz           = 2018
                   , iphen           = -1
                   )#end list
 u           = u + 1

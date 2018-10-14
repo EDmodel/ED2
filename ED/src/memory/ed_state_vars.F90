@@ -1217,6 +1217,10 @@ module ed_state_vars
       !<Contribution of density change on change in the final storage
       !<(kg_H2O/m2/s)
 
+      real , pointer,dimension(:) :: wbudget_zcaneffect
+      !<Contribution of CAS depth change on change in the final storage
+      !<(kg_H2O/m2/s)
+
       real , pointer,dimension(:) :: wbudget_precipgain
       !<Precipitation [kg_H2O/m2/s]
 
@@ -1245,6 +1249,14 @@ module ed_state_vars
       !<Mean change in storage due to pressure change
       !<(J/m2/s)
 
+      real , pointer,dimension(:) :: ebudget_hcapeffect
+      !<Mean change in storage due to vegetation heat capacity change
+      !<(J/m2/s)
+
+      real , pointer,dimension(:) :: ebudget_zcaneffect
+      !<Mean change in storage due to CAS depth change
+      !<(J/m2/s)
+
       real , pointer,dimension(:) :: ebudget_loss2runoff
       !<Energy associated with runoff (J/m2/s)
 
@@ -1264,6 +1276,26 @@ module ed_state_vars
       real, pointer, dimension(:) :: ebudget_residual
       !<Residual of the energy budget [J/m2/s]
 
+      real , pointer,dimension(:) :: cbudget_initialstorage
+      !<Total Carbon (vegetation plus soil plus CAS) at the beginning of budget-averaging 
+
+      real , pointer,dimension(:) :: cbudget_committed
+      !<Committed change in carbon stocks, because of the net ecosystem 
+      !<productivity during the previous day, to account for the time scale mismatch 
+      !<between canopy air space CO2 and the other carbon pools [kgC/m2].
+
+      real , pointer,dimension(:) :: cbudget_residual
+      !<Residual of the carbon budget [kgC/m2/s]
+
+      real , pointer,dimension(:) :: cbudget_loss2atm
+      !<Carbon flux from the canopy air to the atmosphere [kgC/m2/s]
+
+      real , pointer,dimension(:) :: cbudget_denseffect
+      !<Change in total carbon storage due to change in density [kgC/m2/s]
+
+      real , pointer,dimension(:) :: cbudget_zcaneffect
+      !<Change in total carbon storage due to change in CAS depth [kgC/m2/s]
+
       real , pointer,dimension(:) :: co2budget_initialstorage
       !<Total CO2 (can_shv) at the beginning of budget-averaging 
       !<time. [&mu;mol_CO2/m2]
@@ -1276,6 +1308,9 @@ module ed_state_vars
 
       real , pointer,dimension(:) :: co2budget_denseffect
       !<Change in CO2 total storage due to change in density [&mu;mol_CO2/m2/s]
+
+      real , pointer,dimension(:) :: co2budget_zcaneffect
+      !<Change in CO2 total storage due to change in CAS depth [&mu;mol_CO2/m2/s]
 
       real , pointer,dimension(:) :: co2budget_gpp
       !<Average GPP [&mu;mol_CO2/m2/s]
@@ -2454,13 +2489,16 @@ module ed_state_vars
 
       real,pointer,dimension(:) :: cosz
 
-      real,pointer,dimension(:) :: cbudget_initialstorage
-      !<Total carbon (vegetation plus soil) at the beginning of budget-averaging
-      !<time [kgC/m2]
+      real , pointer,dimension(:) :: cbudget_initialstorage
+      !<Total Carbon (vegetation plus soil plus CAS) at the beginning of budget-averaging 
+      !<time. [kgC/m2]
 
       real,pointer,dimension(:) :: cbudget_nep
       !<Average NEP (GPP - plant respiration - heterotrophic respiration)
       !<[kgC/m2/day], used for evaluating daily carbon budget.
+
+      real , pointer,dimension(:) :: cbudget_removedstorage
+      !<Change in total carbon storage due to removal (e.g. logging, volatilisation, harvesting) [kgC/m2/day]
 
       real,pointer,dimension(:) :: nbudget_initialstorage
       !<Total nitrogen (vegetation plus soil) at the beginning of  
@@ -3522,6 +3560,7 @@ module ed_state_vars
       allocate(cgrid%cosz                       (                    npolygons))
       allocate(cgrid%cbudget_initialstorage     (                    npolygons))
       allocate(cgrid%cbudget_nep                (                    npolygons))
+      allocate(cgrid%cbudget_removedstorage     (                    npolygons))
       allocate(cgrid%nbudget_initialstorage     (                    npolygons))
       allocate(cgrid%max_leaf_temp              (                    npolygons))
       allocate(cgrid%min_leaf_temp              (                    npolygons))
@@ -4648,6 +4687,7 @@ module ed_state_vars
       allocate(csite%avg_monthly_waterdef          (              npatches))
       allocate(csite%wbudget_loss2atm              (              npatches))
       allocate(csite%wbudget_denseffect            (              npatches))
+      allocate(csite%wbudget_zcaneffect            (              npatches))
       allocate(csite%wbudget_precipgain            (              npatches))
       allocate(csite%wbudget_loss2runoff           (              npatches))
       allocate(csite%wbudget_loss2drainage         (              npatches))
@@ -4656,16 +4696,25 @@ module ed_state_vars
       allocate(csite%ebudget_loss2atm              (              npatches))
       allocate(csite%ebudget_denseffect            (              npatches))
       allocate(csite%ebudget_prsseffect            (              npatches))
+      allocate(csite%ebudget_hcapeffect            (              npatches))
+      allocate(csite%ebudget_zcaneffect            (              npatches))
       allocate(csite%ebudget_loss2runoff           (              npatches))
       allocate(csite%ebudget_loss2drainage         (              npatches))
       allocate(csite%ebudget_netrad                (              npatches))
       allocate(csite%ebudget_precipgain            (              npatches))
       allocate(csite%ebudget_initialstorage        (              npatches))
       allocate(csite%ebudget_residual              (              npatches))
+      allocate(csite%cbudget_initialstorage        (              npatches))
+      allocate(csite%cbudget_committed             (              npatches))
+      allocate(csite%cbudget_residual              (              npatches))
+      allocate(csite%cbudget_loss2atm              (              npatches))
+      allocate(csite%cbudget_denseffect            (              npatches))
+      allocate(csite%cbudget_zcaneffect            (              npatches))
       allocate(csite%co2budget_initialstorage      (              npatches))
       allocate(csite%co2budget_residual            (              npatches))
       allocate(csite%co2budget_loss2atm            (              npatches))
       allocate(csite%co2budget_denseffect          (              npatches))
+      allocate(csite%co2budget_zcaneffect          (              npatches))
       allocate(csite%co2budget_gpp                 (              npatches))
       allocate(csite%co2budget_plresp              (              npatches))
       allocate(csite%co2budget_rh                  (              npatches))
@@ -5690,6 +5739,7 @@ module ed_state_vars
       nullify(cgrid%cosz                    )
       nullify(cgrid%cbudget_initialstorage  )
       nullify(cgrid%cbudget_nep             )
+      nullify(cgrid%cbudget_removedstorage  )
       nullify(cgrid%nbudget_initialstorage  )
       nullify(cgrid%max_leaf_temp           )
       nullify(cgrid%min_leaf_temp           )
@@ -6711,6 +6761,7 @@ module ed_state_vars
       nullify(csite%avg_monthly_waterdef       )
       nullify(csite%wbudget_loss2atm           )
       nullify(csite%wbudget_denseffect         )
+      nullify(csite%wbudget_zcaneffect         )
       nullify(csite%wbudget_precipgain         )
       nullify(csite%wbudget_loss2runoff        )
       nullify(csite%wbudget_loss2drainage      )
@@ -6719,16 +6770,25 @@ module ed_state_vars
       nullify(csite%ebudget_loss2atm           )
       nullify(csite%ebudget_denseffect         )
       nullify(csite%ebudget_prsseffect         )
+      nullify(csite%ebudget_hcapeffect         )
+      nullify(csite%ebudget_zcaneffect         )
       nullify(csite%ebudget_loss2runoff        )
       nullify(csite%ebudget_loss2drainage      )
       nullify(csite%ebudget_netrad             )
       nullify(csite%ebudget_precipgain         )
       nullify(csite%ebudget_initialstorage     )
       nullify(csite%ebudget_residual           )
+      nullify(csite%cbudget_initialstorage     )
+      nullify(csite%cbudget_committed          )
+      nullify(csite%cbudget_residual           )
+      nullify(csite%cbudget_loss2atm           )
+      nullify(csite%cbudget_denseffect         )
+      nullify(csite%cbudget_zcaneffect         )
       nullify(csite%co2budget_initialstorage   )
       nullify(csite%co2budget_residual         )
       nullify(csite%co2budget_loss2atm         )
       nullify(csite%co2budget_denseffect       )
+      nullify(csite%co2budget_zcaneffect       )
       nullify(csite%co2budget_gpp              )
       nullify(csite%co2budget_plresp           )
       nullify(csite%co2budget_rh               )
@@ -7753,6 +7813,7 @@ module ed_state_vars
       if(associated(csite%avg_monthly_waterdef       )) deallocate(csite%avg_monthly_waterdef       )
       if(associated(csite%wbudget_loss2atm           )) deallocate(csite%wbudget_loss2atm           )
       if(associated(csite%wbudget_denseffect         )) deallocate(csite%wbudget_denseffect         )
+      if(associated(csite%wbudget_zcaneffect         )) deallocate(csite%wbudget_zcaneffect         )
       if(associated(csite%wbudget_precipgain         )) deallocate(csite%wbudget_precipgain         )
       if(associated(csite%wbudget_loss2runoff        )) deallocate(csite%wbudget_loss2runoff        )
       if(associated(csite%wbudget_loss2drainage      )) deallocate(csite%wbudget_loss2drainage      )
@@ -7761,16 +7822,26 @@ module ed_state_vars
       if(associated(csite%ebudget_loss2atm           )) deallocate(csite%ebudget_loss2atm           )
       if(associated(csite%ebudget_denseffect         )) deallocate(csite%ebudget_denseffect         )
       if(associated(csite%ebudget_prsseffect         )) deallocate(csite%ebudget_prsseffect         )
+      if(associated(csite%ebudget_hcapeffect         )) deallocate(csite%ebudget_hcapeffect         )
+      if(associated(csite%ebudget_zcaneffect         )) deallocate(csite%ebudget_zcaneffect         )
       if(associated(csite%ebudget_loss2runoff        )) deallocate(csite%ebudget_loss2runoff        )
       if(associated(csite%ebudget_loss2drainage      )) deallocate(csite%ebudget_loss2drainage      )
       if(associated(csite%ebudget_netrad             )) deallocate(csite%ebudget_netrad             )
       if(associated(csite%ebudget_precipgain         )) deallocate(csite%ebudget_precipgain         )
       if(associated(csite%ebudget_initialstorage     )) deallocate(csite%ebudget_initialstorage     )
       if(associated(csite%ebudget_residual           )) deallocate(csite%ebudget_residual           )
+      if(associated(csite%cbudget_initialstorage     )) deallocate(csite%cbudget_initialstorage     )
+      if(associated(csite%cbudget_committed          )) deallocate(csite%cbudget_committed          )
+      if(associated(csite%cbudget_residual           )) deallocate(csite%cbudget_residual           )
+      if(associated(csite%cbudget_committed          )) deallocate(csite%cbudget_committed          )
+      if(associated(csite%cbudget_loss2atm           )) deallocate(csite%cbudget_loss2atm           )
+      if(associated(csite%cbudget_denseffect         )) deallocate(csite%cbudget_denseffect         )
+      if(associated(csite%cbudget_zcaneffect         )) deallocate(csite%cbudget_zcaneffect         )
       if(associated(csite%co2budget_initialstorage   )) deallocate(csite%co2budget_initialstorage   )
       if(associated(csite%co2budget_residual         )) deallocate(csite%co2budget_residual         )
       if(associated(csite%co2budget_loss2atm         )) deallocate(csite%co2budget_loss2atm         )
       if(associated(csite%co2budget_denseffect       )) deallocate(csite%co2budget_denseffect       )
+      if(associated(csite%co2budget_zcaneffect       )) deallocate(csite%co2budget_zcaneffect       )
       if(associated(csite%co2budget_gpp              )) deallocate(csite%co2budget_gpp              )
       if(associated(csite%co2budget_plresp           )) deallocate(csite%co2budget_plresp           )
       if(associated(csite%co2budget_rh               )) deallocate(csite%co2budget_rh               )
@@ -8818,6 +8889,7 @@ module ed_state_vars
          osite%avg_monthly_waterdef       (opa) = isite%avg_monthly_waterdef       (ipa)
          osite%wbudget_loss2atm           (opa) = isite%wbudget_loss2atm           (ipa)
          osite%wbudget_denseffect         (opa) = isite%wbudget_denseffect         (ipa)
+         osite%wbudget_zcaneffect         (opa) = isite%wbudget_zcaneffect         (ipa)
          osite%wbudget_precipgain         (opa) = isite%wbudget_precipgain         (ipa)
          osite%wbudget_loss2runoff        (opa) = isite%wbudget_loss2runoff        (ipa)
          osite%wbudget_loss2drainage      (opa) = isite%wbudget_loss2drainage      (ipa)
@@ -8826,16 +8898,25 @@ module ed_state_vars
          osite%ebudget_loss2atm           (opa) = isite%ebudget_loss2atm           (ipa)
          osite%ebudget_denseffect         (opa) = isite%ebudget_denseffect         (ipa)
          osite%ebudget_prsseffect         (opa) = isite%ebudget_prsseffect         (ipa)
+         osite%ebudget_hcapeffect         (opa) = isite%ebudget_hcapeffect         (ipa)
+         osite%ebudget_zcaneffect         (opa) = isite%ebudget_zcaneffect         (ipa)
          osite%ebudget_loss2runoff        (opa) = isite%ebudget_loss2runoff        (ipa)
          osite%ebudget_loss2drainage      (opa) = isite%ebudget_loss2drainage      (ipa)
          osite%ebudget_netrad             (opa) = isite%ebudget_netrad             (ipa)
          osite%ebudget_precipgain         (opa) = isite%ebudget_precipgain         (ipa)
          osite%ebudget_initialstorage     (opa) = isite%ebudget_initialstorage     (ipa)
          osite%ebudget_residual           (opa) = isite%ebudget_residual           (ipa)
+         osite%cbudget_initialstorage     (opa) = isite%cbudget_initialstorage     (ipa)
+         osite%cbudget_committed          (opa) = isite%cbudget_committed          (ipa)
+         osite%cbudget_residual           (opa) = isite%cbudget_residual           (ipa)
+         osite%cbudget_loss2atm           (opa) = isite%cbudget_loss2atm           (ipa)
+         osite%cbudget_denseffect         (opa) = isite%cbudget_denseffect         (ipa)
+         osite%cbudget_zcaneffect         (opa) = isite%cbudget_zcaneffect         (ipa)
          osite%co2budget_initialstorage   (opa) = isite%co2budget_initialstorage   (ipa)
          osite%co2budget_residual         (opa) = isite%co2budget_residual         (ipa)
          osite%co2budget_loss2atm         (opa) = isite%co2budget_loss2atm         (ipa)
          osite%co2budget_denseffect       (opa) = isite%co2budget_denseffect       (ipa)
+         osite%co2budget_zcaneffect       (opa) = isite%co2budget_zcaneffect       (ipa)
          osite%co2budget_gpp              (opa) = isite%co2budget_gpp              (ipa)
          osite%co2budget_plresp           (opa) = isite%co2budget_plresp           (ipa)
          osite%co2budget_rh               (opa) = isite%co2budget_rh               (ipa)
@@ -9538,6 +9619,7 @@ module ed_state_vars
       osite%avg_monthly_waterdef       (1:z) = pack(isite%avg_monthly_waterdef       ,lmask)
       osite%wbudget_loss2atm           (1:z) = pack(isite%wbudget_loss2atm           ,lmask)
       osite%wbudget_denseffect         (1:z) = pack(isite%wbudget_denseffect         ,lmask)
+      osite%wbudget_zcaneffect         (1:z) = pack(isite%wbudget_zcaneffect         ,lmask)
       osite%wbudget_precipgain         (1:z) = pack(isite%wbudget_precipgain         ,lmask)
       osite%wbudget_loss2runoff        (1:z) = pack(isite%wbudget_loss2runoff        ,lmask)
       osite%wbudget_loss2drainage      (1:z) = pack(isite%wbudget_loss2drainage      ,lmask)
@@ -9546,16 +9628,25 @@ module ed_state_vars
       osite%ebudget_loss2atm           (1:z) = pack(isite%ebudget_loss2atm           ,lmask)
       osite%ebudget_denseffect         (1:z) = pack(isite%ebudget_denseffect         ,lmask)
       osite%ebudget_prsseffect         (1:z) = pack(isite%ebudget_prsseffect         ,lmask)
+      osite%ebudget_hcapeffect         (1:z) = pack(isite%ebudget_hcapeffect         ,lmask)
+      osite%ebudget_zcaneffect         (1:z) = pack(isite%ebudget_zcaneffect         ,lmask)
       osite%ebudget_loss2runoff        (1:z) = pack(isite%ebudget_loss2runoff        ,lmask)
       osite%ebudget_loss2drainage      (1:z) = pack(isite%ebudget_loss2drainage      ,lmask)
       osite%ebudget_netrad             (1:z) = pack(isite%ebudget_netrad             ,lmask)
       osite%ebudget_precipgain         (1:z) = pack(isite%ebudget_precipgain         ,lmask)
       osite%ebudget_initialstorage     (1:z) = pack(isite%ebudget_initialstorage     ,lmask)
       osite%ebudget_residual           (1:z) = pack(isite%ebudget_residual           ,lmask)
+      osite%cbudget_initialstorage     (1:z) = pack(isite%cbudget_initialstorage     ,lmask)
+      osite%cbudget_committed          (1:z) = pack(isite%cbudget_committed          ,lmask)
+      osite%cbudget_residual           (1:z) = pack(isite%cbudget_residual           ,lmask)
+      osite%cbudget_loss2atm           (1:z) = pack(isite%cbudget_loss2atm           ,lmask)
+      osite%cbudget_denseffect         (1:z) = pack(isite%cbudget_denseffect         ,lmask)
+      osite%cbudget_zcaneffect         (1:z) = pack(isite%cbudget_zcaneffect         ,lmask)
       osite%co2budget_initialstorage   (1:z) = pack(isite%co2budget_initialstorage   ,lmask)
       osite%co2budget_residual         (1:z) = pack(isite%co2budget_residual         ,lmask)
       osite%co2budget_loss2atm         (1:z) = pack(isite%co2budget_loss2atm         ,lmask)
       osite%co2budget_denseffect       (1:z) = pack(isite%co2budget_denseffect       ,lmask)
+      osite%co2budget_zcaneffect       (1:z) = pack(isite%co2budget_zcaneffect       ,lmask)
       osite%co2budget_gpp              (1:z) = pack(isite%co2budget_gpp              ,lmask)
       osite%co2budget_plresp           (1:z) = pack(isite%co2budget_plresp           ,lmask)
       osite%co2budget_rh               (1:z) = pack(isite%co2budget_rh               ,lmask)
@@ -12503,21 +12594,28 @@ module ed_state_vars
       if (associated(cgrid%cbudget_initialstorage)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%cbudget_initialstorage,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CBUDGET_INITIALSTORAGE :11:hist') 
+              var_len,var_len_global,max_ptrs,'CBUDGET_INITIALSTORAGE_PY :11:hist') 
          call metadata_edio(nvar,igr,'Vegetation and soil carbon,at start of budget-averaging','[kgC/m2]','ipoly')
       end if
           
       if (associated(cgrid%cbudget_nep)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%cbudget_nep,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CBUDGET_NEP :11:hist') 
+              var_len,var_len_global,max_ptrs,'CBUDGET_NEP_PY :11:hist') 
          call metadata_edio(nvar,igr,'Polygon average net ecosystem production','[kgC/m2/day]','ipoly')
+      end if
+      
+      if (associated(cgrid%cbudget_removedstorage)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%cbudget_removedstorage,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'CBUDGET_REMOVEDSTORAGE_PY :11:hist') 
+         call metadata_edio(nvar,igr,'Vegetation and soil carbon removed from polygon','[kgC/m2]','ipoly')
       end if
       
       if (associated(cgrid%nbudget_initialstorage)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%nbudget_initialstorage,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NBUDGET_INITIALSTORAGE :11:hist') 
+              var_len,var_len_global,max_ptrs,'NBUDGET_INITIALSTORAGE_PY :11:hist') 
          call metadata_edio(nvar,igr,'Veg and soil nitrogen, at start of budget-averaging','[kgN/m2]','ipoly')
       end if
 
@@ -21602,6 +21700,7 @@ module ed_state_vars
 
       call filltab_sitetype_p30     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p31inst (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p31today(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p31fmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p31dmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p31mmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
@@ -21735,8 +21834,8 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !       This part should have only 1-D vectors (npatches).  Notice that they all use !
-      ! npts = csite%npatches.  Add only variables of type 31 that are not fmean, dmean,   !
-      ! mmean, or mmsqu.                                                                   !
+      ! npts = csite%npatches.  Add only variables of type 31 that are not today, fmean,   !
+      ! dmean, mmean, or mmsqu.                                                            !
       !------------------------------------------------------------------------------------!
       npts = csite%npatches
 
@@ -22027,6 +22126,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%wbudget_zcaneffect)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%wbudget_zcaneffect,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'WBUDGET_ZCANEFFECT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%wbudget_precipgain)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%wbudget_precipgain,nvar,igr,init,csite%paglob_id, &
@@ -22083,6 +22189,20 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%ebudget_hcapeffect)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%ebudget_hcapeffect,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'EBUDGET_HCAPEFFECT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%ebudget_zcaneffect)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%ebudget_zcaneffect,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'EBUDGET_ZCANEFFECT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%ebudget_loss2runoff)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ebudget_loss2runoff,nvar,igr,init,csite%paglob_id, &
@@ -22125,6 +22245,48 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%cbudget_initialstorage)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%cbudget_initialstorage,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CBUDGET_INITIALSTORAGE :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%cbudget_committed)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%cbudget_committed,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CBUDGET_COMMITTED :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%cbudget_residual)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%cbudget_residual,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CBUDGET_RESIDUAL :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%cbudget_loss2atm)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%cbudget_loss2atm,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CBUDGET_LOSS2ATM :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%cbudget_denseffect)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%cbudget_denseffect,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CBUDGET_DENSEFFECT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%cbudget_zcaneffect)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%cbudget_zcaneffect,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CBUDGET_ZCANEFFECT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%co2budget_initialstorage)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%co2budget_initialstorage,nvar,igr,init,csite%paglob_id, &
@@ -22150,6 +22312,13 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,csite%co2budget_denseffect,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'CO2BUDGET_DENSEFFECT :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%co2budget_zcaneffect)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%co2budget_zcaneffect,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CO2BUDGET_ZCANEFFECT :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -22194,34 +22363,6 @@ module ed_state_vars
            call vtable_edio_r(npts,csite%co2budget_rh,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'CO2BUDGET_RH :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%today_A_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_A_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_A_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
-      end if
-
-      if (associated(csite%today_B_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_B_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_B_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
-      end if
-
-      if (associated(csite%today_Af_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_Af_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_AF_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
-      end if
-
-      if (associated(csite%today_Bf_decomp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_Bf_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_BF_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
       end if
 
       if (associated(csite%veg_rough)) then
@@ -22727,6 +22868,79 @@ module ed_state_vars
 
       return
    end subroutine filltab_sitetype_p31inst
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the patch-level variables           !
+   !  (sitetype) that have one dimension are real (type 31), and are daily integrals       !
+   ! (today).                                                                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_sitetype_p31today(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype), target        :: csite
+      integer       , intent(in)    :: init
+      integer       , intent(in)    :: igr
+      integer       , intent(in)    :: var_len
+      integer       , intent(in)    :: max_ptrs
+      integer       , intent(in)    :: var_len_global
+      integer       , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                       :: npts
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !       This part should have only 1-D vectors (npatches).  Notice that they all use !
+      ! npts = csite%npatches.  Add only variables of type 31 that are today.              !
+      !------------------------------------------------------------------------------------!
+      npts = csite%npatches
+
+
+
+      if (associated(csite%today_A_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_A_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_A_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      if (associated(csite%today_B_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_B_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_B_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      if (associated(csite%today_Af_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_Af_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_AF_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      if (associated(csite%today_Bf_decomp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_Bf_decomp,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_BF_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      return
+   end subroutine filltab_sitetype_p31today
    !=======================================================================================!
    !=======================================================================================!
 
@@ -26513,6 +26727,7 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       call filltab_patchtype_p40     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p41inst (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_patchtype_p41today(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p41fmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p41dmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p41mmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
@@ -26636,8 +26851,8 @@ module ed_state_vars
    !=======================================================================================!
    !=======================================================================================!
    !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and not fmean, dmean,      !
-   ! mmean, mmsqu, qmean, or qmsqu.                                                        !
+   ! (patchtype) that have one dimension and are real (type 41) and not today, fmean,      !
+   ! dmean, mmean, mmsqu, qmean, or qmsqu.                                                 !
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41inst (cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -26662,7 +26877,7 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !       This part should have only 1-D vectors, with dimension ncohorts.  Notice     !
       ! that they all use the same npts.  Here you should only add variables of type 41    !
-      ! (real, scalar, and not one of the fmean, dmean, mmean, mmsqu variables).           !
+      ! (real, scalar, and not one of the today, fmean, dmean, mmean, mmsqu variables).    !
       !------------------------------------------------------------------------------------!
       npts = cpatch%ncohorts
 
@@ -27009,111 +27224,6 @@ module ed_state_vars
            call vtable_edio_r(npts,cpatch%lint_co2_open,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'LINT_CO2_OPEN :41:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(cpatch%today_leaf_resp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_leaf_resp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_LEAF_RESP :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%today_root_resp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_root_resp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_ROOT_RESP :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%today_gpp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_gpp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_GPP :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppleaf)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppleaf,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPLEAF :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppfroot)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppfroot,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPFROOT :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppsapwood)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppsapwood,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPSAPWOOD :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppbark)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppbark,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPBARK :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppcroot)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppcroot,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPCROOT :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppseeds)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppseeds,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPSEEDS :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppwood)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppwood,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPWOOD :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_nppdaily)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_nppdaily,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_NPPDAILY :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-      
-      if (associated(cpatch%today_gpp_pot)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_gpp_pot,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_GPP_POT :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%today_gpp_lightmax)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_gpp_lightmax,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_GPP_LIGHTMAX :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%today_gpp_moistmax)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_gpp_moistmax,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_GPP_MOISTMAX :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
-      end if
-
-      if (associated(cpatch%today_gpp_mlmax)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_gpp_mlmax,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_GPP_MLMAX :41:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
       end if
 
       if (associated(cpatch%leaf_growth_resp)) then
@@ -27574,6 +27684,154 @@ module ed_state_vars
 
       return
    end subroutine filltab_patchtype_p41inst
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the cohort-level variables          !
+   ! (patchtype) that have one dimension and are real (type 41) and daily integrals        !
+   ! (today).                                                                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_patchtype_p41today(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
+                                        ,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(patchtype), target        :: cpatch
+      integer        , intent(in)    :: init
+      integer        , intent(in)    :: igr
+      integer        , intent(in)    :: var_len
+      integer        , intent(in)    :: max_ptrs
+      integer        , intent(in)    :: var_len_global
+      integer        , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                        :: npts
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !       This part should have only 1-D vectors, with dimension ncohorts.  Notice     !
+      ! that they all use the same npts.  Here you should only add variables of type 41    !
+      ! (real, scalar) that are daily integrals (today).                                   !
+      !------------------------------------------------------------------------------------!
+      npts = cpatch%ncohorts
+
+      if (associated(cpatch%today_leaf_resp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_leaf_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_LEAF_RESP :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+
+      if (associated(cpatch%today_root_resp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_root_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_ROOT_RESP :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+
+      if (associated(cpatch%today_gpp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_gpp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppleaf)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppleaf,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPLEAF :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppfroot)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppfroot,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPFROOT :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppsapwood)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppsapwood,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPSAPWOOD :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppbark)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppbark,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPBARK :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppcroot)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppcroot,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPCROOT :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppseeds)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppseeds,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPSEEDS :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppwood)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppwood,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPWOOD :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_nppdaily)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppdaily,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPDAILY :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
+      if (associated(cpatch%today_gpp_pot)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_gpp_pot,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP_POT :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+
+      if (associated(cpatch%today_gpp_lightmax)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_gpp_lightmax,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP_LIGHTMAX :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+
+      if (associated(cpatch%today_gpp_moistmax)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_gpp_moistmax,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP_MOISTMAX :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+
+      if (associated(cpatch%today_gpp_mlmax)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_gpp_mlmax,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP_MLMAX :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+
+      return
+   end subroutine filltab_patchtype_p41today
    !=======================================================================================!
    !=======================================================================================!
 

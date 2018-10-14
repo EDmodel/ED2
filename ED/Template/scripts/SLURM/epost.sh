@@ -338,20 +338,20 @@ infinite)
    case "${runtime}" in
    *-*:*)
       #----- dd-hh:mm:ss. -----------------------------------------------------------------#
-      let ndays=$(echo ${runtime} | sed s@"-.*"@@g)
-      let nhours=$(echo ${runtime} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+      ndays=$(echo ${runtime} | sed s@"-.*"@@g)
+      nhours=$(echo ${runtime} | sed s@"^.*-"@@g | sed s@":.*"@@g)
       #------------------------------------------------------------------------------------#
       ;;
    *:*)
       #----- hh:mm:ss. --------------------------------------------------------------------#
-      let ndays=0
-      let nhours=$(echo ${runtime} | sed s@":.*"@@g)
+      ndays=0
+      nhours=$(echo ${runtime} | sed s@":.*"@@g)
       #------------------------------------------------------------------------------------#
       ;;
    *)
       #----- Hours. -----------------------------------------------------------------------#
-      let ndays=${runtime}/24
-      let nhours=${runtime}%24
+      let ndays="10#${runtime}"/24
+      let nhours="10#${runtime}"%24
       #------------------------------------------------------------------------------------#
       ;;
    esac
@@ -359,9 +359,9 @@ infinite)
 
 
    #----- Find the walltime in hours, and the runtime in nice format. ---------------------#
-   let wall=${nhours}+24*${ndays}
-   let ndays=${wall}/24
-   let nhours=${wall}%24
+   let wall="10#${nhours}"+24*"10#${ndays}"
+   let ndays="10#${wall}"/24
+   let nhours="10#${wall}"%24
    if [[ ${ndays} -gt 0 ]]
    then
       fmtday=$(printf '%2.2i' ${ndays})
@@ -378,19 +378,27 @@ infinite)
    #----- Find the maximum number of hours allowed in the partition. ----------------------#
    case "${runtime_max}" in
    infinite)
-      let ndays_max=${ndays}+1
-      let nhours_max=${nhours}
+      let ndays_max="10#${ndays}"+1
+      let nhours_max="10#${nhours}"
       ;;
-   *-*)
-      let ndays_max=$(echo ${runtime} | sed s@"-.*"@@g)
-      let nhours_max=$(echo ${runtime} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+   *-*:*)
+      #----- dd-hh:mm:ss. -----------------------------------------------------------------#
+      ndays_max=$(echo ${runtime_max} | sed s@"-.*"@@g)
+      nhours_max=$(echo ${runtime_max} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
+      ;;
+   *:*)
+      #----- hh:mm:ss. --------------------------------------------------------------------#
+      ndays_max=0
+      nhours_max=$(echo ${runtime_max} | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
       ;;
    *)
-      let ndays_max=0
-      let nhours_max=$(echo ${runtime} | sed s@":.*"@@g)
+      ndays_max=0
+      nhours_max=$(echo ${runtime_max} | sed s@":.*"@@g)
       ;;
    esac
-   let wall_max=${nhours_max}+24*${ndays_max}
+   let wall_max="10#${nhours_max}"+24*"10#${ndays_max}"
    #---------------------------------------------------------------------------------------#
 
 
@@ -595,6 +603,7 @@ echo ""
 echo "  Memory per cpu:      ${sim_memory}"
 echo "  Tasks per node:      ${n_tpn}"
 echo "  Queue:               ${global_queue}"
+echo "  Run time:            ${runtime}"
 echo "  First polygon:       ${polya}"
 echo "  Last polygon:        ${polyz}"
 echo "  Job Name:            ${epostjob}"
@@ -796,22 +805,23 @@ do
    igndvap=$(echo ${oi}      | awk '{print $93 }')
    iphen=$(echo ${oi}        | awk '{print $94 }')
    iallom=$(echo ${oi}       | awk '{print $95 }')
-   igrass=$(echo ${oi}       | awk '{print $96 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $97 }')
-   integscheme=$(echo ${oi}  | awk '{print $98 }')
-   nsubeuler=$(echo ${oi}    | awk '{print $99 }')
-   irepro=$(echo ${oi}       | awk '{print $100}')
-   treefall=$(echo ${oi}     | awk '{print $101}')
-   ianthdisturb=$(echo ${oi} | awk '{print $102}')
-   ianthdataset=$(echo ${oi} | awk '{print $103}')
-   slscale=$(echo ${oi}      | awk '{print $104}')
-   slyrfirst=$(echo ${oi}    | awk '{print $105}')
-   slnyrs=$(echo ${oi}       | awk '{print $106}')
-   bioharv=$(echo ${oi}      | awk '{print $107}')
-   skidarea=$(echo ${oi}     | awk '{print $108}')
-   skidsmall=$(echo ${oi}    | awk '{print $109}')
-   skidlarge=$(echo ${oi}    | awk '{print $110}')
-   fellingsmall=$(echo ${oi} | awk '{print $111}')
+   ieconomics=$(echo ${oi}   | awk '{print $96 }')
+   igrass=$(echo ${oi}       | awk '{print $97 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $98 }')
+   integscheme=$(echo ${oi}  | awk '{print $99 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $100}')
+   irepro=$(echo ${oi}       | awk '{print $101}')
+   treefall=$(echo ${oi}     | awk '{print $102}')
+   ianthdisturb=$(echo ${oi} | awk '{print $103}')
+   ianthdataset=$(echo ${oi} | awk '{print $104}')
+   slscale=$(echo ${oi}      | awk '{print $105}')
+   slyrfirst=$(echo ${oi}    | awk '{print $106}')
+   slnyrs=$(echo ${oi}       | awk '{print $107}')
+   bioharv=$(echo ${oi}      | awk '{print $108}')
+   skidarea=$(echo ${oi}     | awk '{print $109}')
+   skidsmall=$(echo ${oi}    | awk '{print $110}')
+   skidlarge=$(echo ${oi}    | awk '{print $111}')
+   fellingsmall=$(echo ${oi} | awk '{print $112}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1247,6 +1257,55 @@ do
 
 
 
+   #---------------------------------------------------------------------------------------#
+   #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.        #
+   # Run it several times until it is complete.                                            #
+   #---------------------------------------------------------------------------------------#
+   case ${rscript} in
+   plot_eval_ed.r)
+      #----- Create script that will run R until all files have been read. ----------------#
+      epostsh="${here}/${polyname}/exec_$(basename ${rscript} .r).sh"
+      complete="${here}/${polyname}/eval_load_complete.txt"
+      rm -fr ${epostsh}
+      touch ${epostsh}
+      chmod u+x ${epostsh}
+      echo "#!/bin/bash"                                                 >> ${epostsh}
+      echo "main=\"${here}/${polyname}\""                                >> ${epostsh}
+      echo "complete=\"\${main}/eval_load_complete.txt\""                >> ${epostsh}
+      echo "yeara=${thisyeara}"                                          >> ${epostsh}
+      echo "yearz=${thisyearz}"                                          >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo ". \${HOME}/.bashrc"                                          >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo "cd \${main}"                                                 >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo "let itmax=\${yearz}-\${yeara}+2"                             >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo "/bin/rm -fr \${complete}"                                    >> ${epostsh}
+      echo "it=0"                                                        >> ${epostsh}
+      echo "while [[ ! -s \${complete} ]] && [[ \${it} -lt \${itmax} ]]" >> ${epostsh}
+      echo "do"                                                          >> ${epostsh}
+      echo "   let it=\${it}+1"                                          >> ${epostsh}
+      echo "   sleep 3"                                                  >> ${epostsh}
+      echo "   ${epostexe}"                                              >> ${epostsh}
+      echo "done"                                                        >> ${epostsh}
+      #------------------------------------------------------------------------------------#
+
+      #----- The command becomes the shell script, not the R script. ----------------------#
+      epostcomm=${epostsh}
+      #------------------------------------------------------------------------------------#
+      ;;
+   *)
+      #----- Use the general command to submit job. ---------------------------------------#
+      epostcomm=${epostexe}
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
+
    #----- Make sure this is not the census script for a site we don't have census. --------#
    if [ ${rscript} != "plot_census.r" ] || [ ${subcens} -ne 0 ]
    then
@@ -1265,7 +1324,7 @@ do
       srun="${srun} --chdir=\${here}/${polyname}"
       srun="${srun} --output=\${here}/${polyname}/${epoststo}"
       srun="${srun} --error=\${here}/${polyname}/${epostste}"
-      echo "${srun} ${epostexe} &" >> ${sbatch}
+      echo "${srun} ${epostcomm} &" >> ${sbatch}
       #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#

@@ -48,6 +48,8 @@ module ed_cn_utils
                                                        ,soil_C+veg_C-cgrid%cbudget_nep(ipy)
             write (unit=*,fmt='(a,1x,es12.5)') 'SOIL_C+VEG_C      = ',soil_C + veg_C
             write (unit=*,fmt='(a,1x,es12.5)') 'NEP               = ',cgrid%cbudget_nep(ipy)
+            write (unit=*,fmt='(a,1x,es12.5)') 'C_REMOVED_STORAGE = '                      &
+                                                         ,cgrid%cbudget_removedstorage(ipy)
             write (unit=*,fmt='(a,1x,es12.5)') 'N_INITIAL_STORAGE ='                       &
                                                        ,cgrid%nbudget_initialstorage(ipy)
             write (unit=*,fmt='(a,1x,es12.5)') 'SOIL_N+VEG_N      = ',soil_N + veg_N

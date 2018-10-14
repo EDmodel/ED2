@@ -46,6 +46,7 @@ module vegetation_dynamics
       use phenology_driv       , only : phenology_driver              ! ! sub-routine
       use update_derived_utils , only : update_workload               & ! sub-routine
                                       , update_polygon_derived_props  ! ! sub-routine
+      use budget_utils         , only : zero_cbudget_committed        ! ! sub-routine
       use fusion_fission_coms  , only : ifusion                       ! ! intent(in)
       use fire                 , only : fire_frequency                ! ! sub-routine
       implicit none
@@ -92,6 +93,8 @@ module vegetation_dynamics
          !---------------------------------------------------------------------------------!
          !     The following block corresponds to the daily time-step.                     !
          !---------------------------------------------------------------------------------!
+         !----- Reset committed changes in carbon stocks. ---------------------------------!
+         call zero_cbudget_committed(cgrid)
          !----- Standardise the fast-scale uptake and respiration, for growth rates. ------!
          call normalize_ed_today_vars(cgrid)
          !----- Update phenology and growth of live tissues. ------------------------------!

@@ -47,6 +47,7 @@ radial.flex <<- function ( lengths
                          , boxed.radial       = TRUE
                          , poly.col           = NULL
                          , add                = FALSE
+                         , cex.main           = par("cex.main")
                          , ...
                          ){
 
@@ -141,7 +142,7 @@ radial.flex <<- function ( lengths
        par(mar = mar, pty = "s")
        plot.new()
        plot.window( xlim = c(-maxlength, maxlength), ylim = c(-maxlength, maxlength),...)
-       title(main = main, xlab = xlab, ylab = ylab)
+       title(main = main, xlab = xlab, ylab = ylab,cex.main=cex.main)
        #---- Add the grid in case it is sought. -------------------------------------------#
        if (show.grid){
           for (i in rev(seq_along(grid.pos))){

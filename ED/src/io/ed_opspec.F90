@@ -1169,6 +1169,7 @@ subroutine ed_opspec_misc
                                     , integration_scheme           & ! intent(in)
                                     , nsub_euler                   & ! intent(in)
                                     , iallom                       & ! intent(in)
+                                    , economics_scheme             & ! intent(in)
                                     , igrass                       & ! intent(in)
                                     , growth_resp_scheme           & ! intent(in)
                                     , storage_resp_scheme          & ! intent(in)
@@ -1724,6 +1725,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IALLOM, it must be between 0 and 3. Yours is set to'          &
                     ,iallom,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (economics_scheme < 0 .or. economics_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ECONOMICS_SCHEME, it must be 0 or 1. Yours is set to'         &
+                    ,economics_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

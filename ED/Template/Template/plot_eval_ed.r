@@ -4,6 +4,8 @@
 #------------------------------------------------------------------------------------------#
 rm(list=ls())
 graphics.off()
+options(warn=0)
+gc()
 #==========================================================================================#
 #==========================================================================================#
 
@@ -94,6 +96,170 @@ idbh.type           = myidbhtype   # Type of DBH class
                                    # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
 corr.growth.storage = mycorrection # Correction factor to be applied to growth and
                                    #   storage respiration
+#------------------------------------------------------------------------------------------#
+
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Eddy flux comparisons.                                                               #
+#------------------------------------------------------------------------------------------#
+n            = 0
+compvar      = list()
+n            = n + 1
+compvar[[n]] = list( vnam       = "hflxca"
+                   , desc       = "Sensible heat flux"
+                   , unit       = "wom2"
+                   , col.obser  = "#404040"
+                   , col.model  = "#F87856"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "wflxca"
+                   , desc       = "Water vapour flux"
+                   , unit       = "kgwom2oday"
+                   , col.obser  = "#404040"
+                   , col.model  = "#1BA2F7"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "cflxca"
+                   , desc       = "Carbon dioxide flux"
+                   , unit       = "umolcom2os"
+                   , col.obser  = "#404040"
+                   , col.model  = "#2BD2DB"
+                   , leg.corner = "bottomright"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "cflxst"
+                   , desc       = "Carbon dioxide storage"
+                   , unit       = "umolcom2os"
+                   , col.obser  = "#404040"
+                   , col.model  = "#0E6E81"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "gpp"
+                   , desc       = "Gross primary productivity"
+                   , unit       = "kgcom2oyr"
+                   , col.obser  = "#404040"
+                   , col.model  = "#0E6E81"
+                   , leg.corner = "topleft"
+                   , sunvar     = TRUE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "reco"
+                   , desc       = "Ecosystem respiration"
+                   , unit       = "kgcom2oyr"
+                   , col.obser  = "#404040"
+                   , col.model  = "#F87856"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "nep"
+                   , desc       = "Net ecosystem productivity"
+                   , unit       = "kgcom2oyr"
+                   , col.obser  = "#404040"
+                   , col.model  = "#2BD2DB"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "nee"
+                   , desc       = "Net ecosystem exchange"
+                   , unit       = "umolcom2os"
+                   , col.obser  = "#404040"
+                   , col.model  = "#2BD2DB"
+                   , leg.corner = "bottomright"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "ustar"
+                   , desc       = "Friction velocity"
+                   , unit       = "mos"
+                   , col.obser  = "#404040"
+                   , col.model  = "#811F9E"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "rlongup"
+                   , desc       = "Outgoing longwave radiation"
+                   , unit       = "wom2"
+                   , col.obser  = "#404040"
+                   , col.model  = "#880D32"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "rnet"
+                   , desc       = "Net radiation"
+                   , unit       = "wom2"
+                   , col.obser  = "#404040"
+                   , col.model  = "#F87856"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "albedo"
+                   , desc       = "Albedo"
+                   , unit       = "empty"
+                   , col.obser  = "#404040"
+                   , col.model  = "#F87856"
+                   , leg.corner = "topleft"
+                   , sunvar     = TRUE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "parup"
+                   , desc       = "Outgoing PAR"
+                   , unit       = "umolom2os"
+                   , col.obser  = "#404040"
+                   , col.model  = "#2BD2DB"
+                   , leg.corner = "topleft"
+                   , sunvar     = TRUE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "rshortup"
+                   , desc       = "Outgoing SW"
+                   , unit       = "wom2"
+                   , col.obser  = "#404040"
+                   , col.model  = "#F87856"
+                   , leg.corner = "topleft"
+                   , sunvar     = TRUE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "can.tmp"
+                   , desc       = "CAS temperature"
+                   , unit       = "degC"
+                   , col.obser  = "#404040"
+                   , col.model  = "#F87856"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "can.shv"
+                   , desc       = "CAS specific humidity"
+                   , unit       = "gwokg"
+                   , col.obser  = "#404040"
+                   , col.model  = "#1BA2F7"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
+n            = n + 1
+compvar[[n]] = list( vnam       = "can.co2"
+                   , desc       = "CAS CO2"
+                   , unit       = "umolcomol"
+                   , col.obser  = "#404040"
+                   , col.model  = "#2BD2DB"
+                   , leg.corner = "topleft"
+                   , sunvar     = FALSE
+                   )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -237,6 +403,30 @@ compvar[[14]] = list( vnam       = "rshortup"
                     , col.model  = c("deepskyblue","royalblue3")
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
+                    )#end list
+compvar[[15]] = list( vnam       = "can.tmp"
+                    , desc       = "CAS temperature"
+                    , unit       = untab$degc
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c("gold","orangered")
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[16]] = list( vnam       = "can.shv"
+                    , desc       = "CAS specific humidity"
+                    , unit       = untab$gwokg
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c("deepskyblue","royalblue3")
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[17]] = list( vnam       = "can.co2"
+                    , desc       = "CAS CO2"
+                    , unit       = untab$umolcomol
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c("chartreuse","chartreuse4")
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -433,6 +623,9 @@ for (place in myplaces){
          model$atm.co2     = c    (partial$atm.co2     ,na.pad.vec)
          model$atm.vels    = c    (partial$atm.vels    ,na.pad.vec)
          model$atm.vpdef   = c    (partial$atm.vpdef   ,na.pad.vec)
+         model$can.tmp     = c    (partial$can.tmp     ,na.pad.vec)
+         model$can.shv     = c    (partial$can.shv     ,na.pad.vec)
+         model$can.co2     = c    (partial$can.co2     ,na.pad.vec)
          model$rshort      = c    (partial$rshort      ,na.pad.vec)
          model$rlong       = c    (partial$rlong       ,na.pad.vec)
          model$par         = c    (partial$par         ,na.pad.vec)
@@ -574,6 +767,9 @@ for (place in myplaces){
                model$atm.co2     = empty.vec
                model$atm.vels    = empty.vec
                model$atm.vpdef   = empty.vec
+               model$can.tmp     = empty.vec
+               model$can.shv     = empty.vec
+               model$can.co2     = empty.vec
                model$rshort      = empty.vec
                model$rlong       = empty.vec
                model$par         = empty.vec
@@ -613,6 +809,9 @@ for (place in myplaces){
             model$atm.co2    [tt ] =   myinst$FMEAN.ATM.CO2.PY
             model$atm.vels   [tt ] =   myinst$FMEAN.ATM.VELS.PY
             model$atm.vpdef  [tt ] =   myinst$FMEAN.ATM.VPDEF.PY      * 0.01
+            model$can.tmp    [tt ] =   myinst$FMEAN.CAN.TEMP.PY       - t00
+            model$can.shv    [tt ] =   myinst$FMEAN.CAN.SHV.PY        * 1000.
+            model$can.co2    [tt ] =   myinst$FMEAN.CAN.CO2.PY
             model$rshort     [tt ] =   myinst$FMEAN.ATM.RSHORT.PY
             model$rlong      [tt ] =   myinst$FMEAN.ATM.RLONG.PY
             model$par        [tt ] =   myinst$FMEAN.ATM.PAR.PY        * Watts.2.Ein * 1.e6
@@ -874,8 +1073,13 @@ for (place in myplaces){
          #     Grab the variables that we are going to use now.                            #
          #---------------------------------------------------------------------------------#
          cat("     * ",this.desc,"...","\n")
-         this.obser    = obser[[this.vnam]]
-         this.measured = obser[[this.meas]]
+         if (this.vnam %in% names(obser)){
+            this.obser    = obser[[this.vnam]]
+            this.measured = obser[[this.meas]]
+         }else{
+            this.obser    = rep(NA   ,times=length(obser$when))
+            this.measured = rep(FALSE,times=length(obser$when))
+         }#end if
          this.model    = model[[this.vnam]]
          #---------------------------------------------------------------------------------#
 

@@ -2344,7 +2344,8 @@ subroutine init_pft_alloc_params()
                              , kplastic_SLA          & ! intent(out)
                              , eplastic_vm0          & ! intent(out)
                              , eplastic_sla          & ! intent(out)
-                             , fexp_SLA_max          & ! intent(out)
+                             , kplastic_LL           & ! intent(out)
+                             , laimax_plastic        & ! intent(out)
                              , LMA_slope             & ! intent(out)
                              , sapwood_ratio         & ! intent(out)
                              , f_bstorage_init       & ! intent(out)
@@ -2366,6 +2367,7 @@ subroutine init_pft_alloc_params()
                              , str_len               & ! intent(in)
                              , undef_real            ! ! intent(in)
    use ed_misc_coms   , only : iallom                & ! intent(in)
+                             , economics_scheme      & ! intent(in)
                              , ibigleaf              & ! intent(in)
                              , ivegt_dynamics        ! ! intent(in)
    use canopy_air_coms, only : lwidth_grass          & ! intent(in)
@@ -2475,8 +2477,8 @@ subroutine init_pft_alloc_params()
          rho(ipft) = 0.00
       else
          !----- Tropical broadleaf trees.  These must be defined individually. ------------!
-         select case (iallom)
-         case (2,3)
+         select case (economics_scheme)
+         case (1)
             !------------------------------------------------------------------------------!
             !     Test: use TRY+GLOPNET data base and cluster analysis to define PFTs.     !
             !------------------------------------------------------------------------------!
@@ -2525,7 +2527,7 @@ subroutine init_pft_alloc_params()
          leaf_turnover_rate(ipft) = 2.0
       elseif (.not. is_tropical(ipft)) then ! Hardwoods. Phenology drives turnover.
          leaf_turnover_rate(ipft) = 0.0
-      elseif (iallom == 2 .or. iallom == 3) then
+      elseif (economics_scheme == 1) then
          !---------------------------------------------------------------------------------!
          !      Trait trade-off and cluster analysis uses SLA because of the abundance of  !
          ! SLA data in the TRY+GLOPNET data bases.  Here we provide the leaf turnover rate !
@@ -2571,8 +2573,9 @@ subroutine init_pft_alloc_params()
 
    !---------------------------------------------------------------------------------------!
    !     Set specific leaf area (SLA, m2leaf/kgC).  The curve relating SLA and leaf        !
-   ! turnover rate for IALLOM = 3 came a combination of multiple data sets (W04, C09, K11, !
-   ! B17, N17).  The model fitting for IALLOM /= 3 was developed by K12.                   !
+   ! turnover rate for ECONOMICS_SCHEME = 1 came a combination of multiple data sets (W04, !
+   ! C09, K11, B17, N17).  The model fitting for ECONOMICS_SCHEME = 0 was developed by     !
+   ! K12.                                                                                  !
    !                                                                                       !
    ! References:                                                                           !
    !                                                                                       !
@@ -2609,9 +2612,9 @@ subroutine init_pft_alloc_params()
          sla_s1(ipft) = 0.0
          !---------------------------------------------------------------------------------!
       elseif (is_tropical(ipft)) then
-         !----- Tropical trees, check iallom. ---------------------------------------------!
-         select case (iallom)
-         case (2,3)
+         !----- Tropical trees, check economics_scheme. -----------------------------------!
+         select case (economics_scheme)
+         case (1)
             !----- Standard Major Axis derived from TRY/GLOPNET/RAINFOR/NGEE-Tropics. -----!
             if (is_grass(ipft)) then ! Grasses, use trait data base
                sla_s0(ipft) = 15.159000
@@ -3724,7 +3727,7 @@ subroutine init_pft_alloc_params()
       !----- Big leaf. 1st we set the maximum initial LAI for each PFT. -------------------!
       init_laimax(:)   = 0.1
       do ipft=1,n_pft
-         init_bleaf = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
+         init_bleaf         = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
          init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
       end do
       !------------------------------------------------------------------------------------!
@@ -3757,18 +3760,19 @@ subroutine init_pft_alloc_params()
    !     Parameters for the trait-plasticity model.  These control SLA, for the controls   !
    ! on Vm0, check init_pft_photo_params.                                                  !
    !---------------------------------------------------------------------------------------!
-   !     This controls the expansion factor for SLA when using trait plasticity.  The      !
-   ! default depends upon Vcmax25 and is initialised in init_derived_params_after_xml.     !
-   ! This relationship is empirical, so we allow it to be initialised through XML too.     !
+   !     This controls the expansion/extinction factor for SLA when                        !
+   ! TRAIT_PLASTICITY_SCHEME > 0.  The default depends upon the reference SLA and is       !
+   ! initialised in init_derived_params_after_xml.  This relationship is empirical, so we  !
+   !  allow it to be initialised through XML too.                                          !
    !---------------------------------------------------------------------------------------!
    kplastic_SLA (:) = undef_real
    !---------------------------------------------------------------------------------------!
    !     This controls the expansion/reduction exponent for leaf turnover rate when using  !
-   ! trait plasticity.  Currently we start from Eq. 1 of X17 (originally from K91), by     !
-   ! substituting b with their SMA fit, and fitting a curve relating Aa with Vcmax25_m,    !
-   ! which was obtained by simulating ED-2 for a variety of average diurnal cycles in      !
-   ! tower sites in South America, using a variety of Vcmax25_m values found in trait data !
-   ! bases (TRY/GLOPNET/RAINFOR/NGEE-Tropics).                                             !
+   ! trait plasticity when TRAIT_PLASTICITY_SCHEME is negative.  Currently we start from   !
+   ! Eq. 1 of X17 (originally from K91), by substituting b with their SMA fit, and fitting !
+   ! a curve relating Aa with Vcmax25_m, which was obtained by simulating ED-2 for         !
+   ! multiple average diurnal cycles at tower sites in South America, using multiple       !
+   ! Vcmax25_m values found in trait data bases (TRY/GLOPNET/RAINFOR/NGEE-Tropics).        !
    !                                                                                       !
    ! References:                                                                           !
    !                                                                                       !
@@ -3781,12 +3785,19 @@ subroutine init_pft_alloc_params()
    !    by a trait-driven carbon optimality model. Ecol. Lett. 20(9): 1097-1106.           !
    !    doi:10.1111/ele.12804 (X17).                                                       !
    !---------------------------------------------------------------------------------------!
-   eplastic_vm0(:) = 0.5 * (-1.36 - 0.8399)
-   eplastic_sla(:) = 0.5 * (-1.36 - 1.0000)
-   !----- Maximum expansion factor for SLA. -----------------------------------------------!
-   fexp_SLA_max(:) = 2.0
+   eplastic_vm0  (:) = 0.5 * (-1.36 - 0.8399)
+   eplastic_sla  (:) = 0.5 * (-1.36 - 1.0000)
+   !---------------------------------------------------------------------------------------!
+   !     This controls the expansion/extinction factor for leaf longevity when             !
+   ! TRAIT_PLASTICITY_SCHEME > 0.  The default depends upon the reference leaf turnover    !
+   ! rate so it is initialised in init_derived_params_after_xml.  This relationship is     !
+   ! empirical, so we allow it to be initialised through XML too.                          !
+   !---------------------------------------------------------------------------------------!
+   kplastic_LL   (:) = undef_real
+   !----- Maximum LAI to consider for plasticity (TRAIT_PLASTICITY_SCHEME is positive). ---!
+   laimax_plastic(:) = 6.0
    !----- Linearised slope for when TRAIT_PLASTICITY_SCHEME is negative. ------------------!
-   LMA_slope   (:) = 0.015  ! linearized slope (Trait_plasticity_scheme < 0)
+   LMA_slope     (:) = 0.015  ! linearized slope (Trait_plasticity_scheme < 0)
    !---------------------------------------------------------------------------------------!
 
    return
@@ -3805,7 +3816,7 @@ subroutine init_pft_photo_params()
    use ed_max_dims    , only : n_pft                     & ! intent(in)
                              , undef_real                ! ! intent(in)
    use ed_misc_coms   , only : ibigleaf                  & ! intent(in)
-                             , iallom                    ! ! intent(in)
+                             , economics_scheme          ! ! intent(in)
    use pft_coms       , only : is_tropical               & ! intent(in)
                              , is_conifer                & ! intent(in)
                              , is_grass                  & ! intent(in)
@@ -3988,8 +3999,8 @@ subroutine init_pft_photo_params()
    do ipft=1,n_pft
       if (is_tropical(ipft) .and. (.not. is_conifer(ipft)) .and. (.not. is_liana(ipft)) )  &
       then
-         select case (iallom)
-         case (2,3)
+         select case (economics_scheme)
+         case (1)
             !------------------------------------------------------------------------------!
             !     New tropical parameters based on multiple data sets (K11,W04, B17, and   !
             ! N17) and using a standard major axis on log-transformed SLA and              !
@@ -4366,7 +4377,8 @@ subroutine init_pft_resp_params()
                              , rrf_q10                   & ! intent(out)
                              , f_labile_leaf             & ! intent(out)
                              , f_labile_stem             ! ! intent(out)
-   use ed_misc_coms   , only : iallom                    ! ! intent(in)
+   use ed_misc_coms   , only : iallom                    & ! intent(out)
+                             , economics_scheme          ! ! intent(in)
    use consts_coms    , only : onesixth                  & ! intent(in)
                              , onethird                  & ! intent(in)
                              , t00                       ! ! intent(in)
@@ -4388,8 +4400,8 @@ subroutine init_pft_resp_params()
    !     Root turnover rate. Currently values are the same as leaf turnover rate, except   !
    ! for temperate trees whose values come from M09 optimization.  For tropical trees, the !
    ! default (ED-1/ED-2.0 style) is to assume that leaf and fine root turnover rate are    !
-   ! the same.  In case IALLOM=3, the ratio is defined based on very limited, plot-level   !
-   ! aggregated data from M11's review (assuming that NPP = maintenance costs).            !
+   ! the same.  In case ECONOMICS_SCHEME=1, the ratio is defined based on very limited,    !
+   ! plot-level aggregated data from M11's review (assuming that NPP = maintenance costs). !
    !                                                                                       !
    ! Malhi, Y., C. Doughty, and D. Galbraith. The allocation of ecosystem net primary      !
    !     productivity in tropical forests. Philos. Trans. R. Soc. B-Biol. Sci.,            !
@@ -4418,8 +4430,8 @@ subroutine init_pft_resp_params()
       case (11)    ! Late hardwoods. 
          root_turnover_rate(ipft) = 5.070992
       case default ! Grasses, tropical trees, and lianas
-         select case (iallom)
-         case (2,3)
+         select case (economics_scheme)
+         case (1)
             root_turnover_rate(ipft) = 0.9 * leaf_turnover_rate(ipft)
          case default
             root_turnover_rate(ipft) = leaf_turnover_rate(ipft)
@@ -4462,7 +4474,7 @@ subroutine init_pft_resp_params()
    case (2,3)
       !------------------------------------------------------------------------------------!
       !   For tropical leaves/fine roots, assume the metabolic/structural ratio obtained   !
-      ! by B17.  For grasses and temperate plants, use B17 equation anf R96 values for     !
+      ! by B17.  For grasses and temperate plants, use B17 equation and R96 values for     !
       !lignin and C:N ratio. For now, assume sapwood, bark, and heartwood are 100%         !
       ! structural (even though some studies use mixed structural and metabolic, see S09). !
       !                                                                                    !
@@ -4577,7 +4589,7 @@ subroutine init_pft_mort_params()
                           , onethird                   & ! intent(in)
                           , twothirds                  ! ! intent(in)
    use ed_misc_coms, only : ibigleaf                   & ! intent(in)
-                          , iallom                     ! ! intent(in)
+                          , economics_scheme           ! ! intent(in)
    use disturb_coms, only : include_fire               & ! intent(in)
                           , time2canopy                & ! intent(in)
                           , sl_skid_s_gtharv           & ! intent(in)
@@ -4587,17 +4599,32 @@ subroutine init_pft_mort_params()
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
-   real     :: aquad
-   real     :: bquad
-   real     :: cquad
-   real     :: discr
-   real     :: lambda_ref
-   real     :: lambda_eff
-   real     :: leff_neg
-   real     :: leff_pos
-   integer  :: ipft
-   !----- Local constants. ----------------------------------------------------------------!
-   real, parameter :: lambda_brokaw = 1./126. ! Default disturbance rate for BCI (B82).
+   real                   :: aquad
+   real                   :: bquad
+   real                   :: cquad
+   real                   :: discr
+   real                   :: lambda_ref
+   real                   :: lambda_eff
+   real                   :: leff_neg
+   real                   :: leff_pos
+   real, dimension(n_pft) :: rho_use
+   integer                :: ipft
+   !----- Local constants for C17 mortality (see below). ----------------------------------!
+   real, parameter        :: rho_c17      =  0.600     ! C17 ref. wood density
+   real, parameter        :: alpha0_c17   =  0.0498774 ! scale for alpha
+   real, parameter        :: alpha1_c17   = -0.5598224 ! exponent for alpha
+   real, parameter        :: beta0_c17    = 23.6258866 ! scale for beta
+   real, parameter        :: beta1_c17    =  0.3672854 ! exponent for beta
+   real, parameter        :: gamma0_c17   =  0.0110928 ! scale for gamma
+   real, parameter        :: gamma1_c17   = -2.2347380 ! exponent for gamma
+   real, parameter        :: delta_c17    =  0.8998337 ! average correction term
+   real, parameter        :: epsilon_ed2  =  1.20      ! quick scaling factor to transform 
+                                                       !    CBAREL into growth
+   real, parameter        :: extinct_mort = 10.0       ! Maximum mortality rate for C17
+                                                       !    This should be high to cause
+                                                       !    near-extinction but not so 
+                                                       !    high that it would be 
+                                                       !    difficult to display in output
    !---------------------------------------------------------------------------------------!
 
 
@@ -4633,29 +4660,79 @@ subroutine init_pft_mort_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     The following variables control the density-dependent mortality rates.            !
-   !  DD = mort1 / (1 + exp(mort0 + mort2 * CB))                                           !
+   !     The following variables control the density-dependent mortality rates.  The       !
+   ! functional form depends on the trait data base, be sure to familiarise with the       !
+   ! differences before changing these parameters.  Also, keep in mind that both           !
+   ! approaches have caveats.                                                              !
    !                                                                                       !
-   ! New parameters are not based on literature, but tuning.  They allow mortality to be   !
-   ! essentially 100% when carbon balance is negative.                                     !
+   !   ECONOMICS_SCHEME = 0                                                                !
+   !  ----------------------                                                               !
+   !     This follows ED-1 original formulation (M01):                                     !
+   !                                                                                       !
+   !                     DD = mort1 / (1 + exp(mort2 * (CBAREL - mort0))                   !
+   !                                                                                       !
+   !     Parameters are not based on literature, but tuning.  They allow mortality to      !
+   ! quickly increase to maximum (set by mort1) when carbon balance is negative.  The      !
+   ! term mort0 (typically negative) allows to offset the curve so mortality is not        !
+   ! too high when carbon balance is still positive but low.                               !
+   !                                                                                       !
+   !   ECONOMICS_SCHEME = 1                                                                !
+   !  ----------------------                                                               !
+   !     This follows the trait-dependent exponential model by C17:                        !
+   !                                                                                       !
+   !                     DD = mort1 * exp( - mort2 * (CBAREL-mort0) )                      !
+   !                                                                                       !
+   !     Note that in the original C17 model, growth rates are used instead of CB.  We     !
+   ! translate the growth rates into CBAREL using a simple conversion of 1.20.  This       !
+   ! factor came from a quick look on one simulation for Paracou, so mind that it is       !
+   ! highly speculative.  Using CBAREL makes catastrophic mortality in case carbon balance !
+   ! is negative.  Hazard rates are unbounded in this case, which may need to be           !
+   ! revisited.                                                                            !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   !                                                                                       !
+   !  Moorcroft, PR, Hurtt GC, and Pacala SW. A method for scaling vegetation dynamics:    !
+   !     The Ecosystem Demography model (ED). Ecol. Monogr., 71(4):557-586, Nov 2001.      !
+   !     doi:10.1890/0012- 9615(2001)071[0557:AMFSVD]2.0.CO;2 (M01).                       !
+   !                                                                                       !
+   !  Camac JS, Condit R, FitzJohn RG, McCalman L, Steinberg D, Westoby M, Wright SJ,      !
+   !     Falster DS. Unifying intra- and inter-specific variation in tropical tree         !
+   !     mortality. bioRxiv, 2017, in review. doi:10.1101/228361 (C17).                    !
    !---------------------------------------------------------------------------------------!
-   mort0(:) = merge(-0.30,  0.0,is_tropical(:))
-   mort1(:) = merge(  1.0,  1.0,is_tropical(:))
-   mort2(:) = merge( 20.0, 20.0,is_tropical(:))
+   select case (economics_scheme)
+   case (1)
+      rho_use(:) = merge(rho_c17                                                           &
+                        ,rho(:)                                                            &
+                        ,is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:)) )
+      mort0(:) = 0.0
+      mort1(:) = delta_c17   * alpha0_c17 * (rho_use(:)/rho_c17) ** alpha1_c17
+      mort2(:) = epsilon_ed2 * beta0_c17  * (rho_use(:)/rho_c17) ** beta1_c17
+   case default
+      mort0(:) = merge(-0.30,  0.0,is_tropical(:))
+      mort1(:) = merge(  1.0,  1.0,is_tropical(:))
+      mort2(:) = merge( 20.0, 20.0,is_tropical(:))
+   end select
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
    !     Variable mort3 controls the density-independent mortality rate due to ageing.     !
-   ! This value is a constant in units of [fraction/year].
+   ! This value is a constant in "hazard rates" (i.e. m in dn/dt = - m * n).               !
+   !                                                                                       !
+   !     For tropical trees, parameter choice will also depend on economics_scheme.        !
+   !                                                                                       !
    ! With lianas the idea is to give it the normal mort3 mortality that is basically rho   !
    ! dependent. Then in the next phase I will try to add a limit to the maximum liana load !
    ! that a tree can born. When the number of lianas hosted by a given tree exceeds the    !
    ! avreage values given in O. Phillips (2005) I will kill the lianas(...and the trees?..)!
    ! That will increase mortality as a consequence. I should later check if the resulting  !
    ! mortality is in line with what stated in the aforementioned article (lianas have +-6% !
-   ! turnover rate, 3 times that of trees...)                                              !
+   ! turnover rate, 3 times that of trees...).                                             !
+   ! MLO to MdPB: Liana load mortality should _NOT_ be part of mort3, because you are      !
+   !              describing a density-dependent mortality.  We may need a mort4 parameter !
+   !              for that.                                                                !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       if (is_liana(ipft)) then ! Lianas, taken from O. Phillips (2005). 
@@ -4663,8 +4740,9 @@ subroutine init_pft_mort_params()
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then
          mort3(ipft) = 0.00111 ! Based on TRY (but likely guesstimated).
       elseif (is_tropical(ipft)) then
-          select case (iallom)
-          case (2,3)
+          select case (economics_scheme)
+          case (1)
+             !----- Updated parameters. ---------------------------------------------------!
              if (is_grass(ipft)) then
                 !--------------------------------------------------------------------------!
                 !    Median plant lifespan of the grasses and herbs included in the TRY    !
@@ -4675,53 +4753,25 @@ subroutine init_pft_mort_params()
              else
                 !--------------------------------------------------------------------------!
                 !      The slope was defined based on the 50-ha inventory data from Barro  !
-                ! Colorado (C12), applying the C06 model to define the mortality rates by  !
-                ! genus (average wood density of genera taken mostly from C09, with a few  !
-                ! values from K11 and indirectly from N17).  The excess ageing mortality   !
-                ! was estimated by subtracting the background gap turnover rate calculated !
-                ! by B82 (40 m2 gaps).   We fitted a standard major axis model to the      !
-                ! mortality rate as a function of the average wood density for each        !
-                ! species.                                                                 !
+                ! Colorado (C12), using the growth-independent mortality function from     !
+                ! C17, which they call "baseline mortality".                               !
                 !                                                                          !
-                ! References:                                                              !
-                !                                                                          !
-                ! Brokaw, N. V. L. The definition of treefall gap and its effect on        !
-                !    measures of forest dynamics. Biotropica, 14(2), 158-160, Jun. 1982.   !
-                !    doi:10.2307/2387750 (B82).                                            !
-                !                                                                          !
-                ! Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and         !
-                !    A. E. Zanne. Towards a worldwide wood economics spectrum. Ecol.       !
-                !    Lett., 12(4):351-366, Apr 2009.                                       !
-                !    doi:10.1111/j.1461-0248.2009.01285.x (C09).                           !
-                !                                                                          !
-                ! Condit, R., P. Ashton, S. Bunyavejchewin, et al. The importance of demo- !
-                !    graphic niches to tree diversity. Science, 313(5783), 98-101,         !
-                !    Jul. 2006. doi:10.1126/science.1124712 (C06).                         !
-                !                                                                          !
-                ! Condit, R., S. Lao, R. Perez, S. C. Dollins, R. Foster, S. Hubbell.      !
-                !    Barro Colorado forest census plot data, 2012 version. Data set.       !
-                !    doi: 10.5479/data.bci.20130603 (C12)                                  !
-                !                                                                          !
-                ! Kattge, J., S. Diaz, S. Lavorel, et al., TRY -- a global database of     !
-                !    plant traits.  Glob. Change Biol., 17 (9): 2905-2935, Sep 2011.       !
-                !    doi:10.1111/j.1365-2486.2011.02451.x (K11).                           !
-                !                                                                          !
-                ! Norby, R. J., L. Gu, I. C. Haworth, A. M. Jensen, B. L. Turner,          !
-                !    A. P. Walker, J. M. Warren, D. J. Weston, C. Xu, and K. Winter.       !
-                !    Informing models through empirical relationships between foliar       !
-                !    phosphorus, nitrogen and photosynthesis across diverse woody species  !
-                !    in tropical forests of Panama. New Phytol., 215 (4):1425-1437,        !
-                !    Sep 2017. doi:10.1111/nph.14319 (N17).                                !
+                ! Note: we may be double counting treefall mortality rates, but mort3      !
+                ! would become negative for mid- and late-successional PFTs when using a   !
+                ! typical 0.014 yr-1 (which may be too large anyway).                      !
                 !--------------------------------------------------------------------------!
-                mort3(ipft) = max(0.,exp(-0.396 - 5.20 * rho(ipft)) - lambda_brokaw)
+                mort3(ipft) = delta_c17   * gamma0_c17 * (rho(ipft)/rho_c17) ** gamma1_c17
                 !--------------------------------------------------------------------------!
              end if
+             !-----------------------------------------------------------------------------!
           case default
+             !----- Default parameters (ED-1.0). ------------------------------------------!
              if (is_grass(ipft)) then ! Tropical grasses.  Same as temperate grasses
                 mort3(ipft) = 0.066
              else                     ! Tropical trees, use ED-1 approach.
                 mort3(ipft) = 0.15 * (1. - rho(ipft) / 0.90)
              end if
+             !-----------------------------------------------------------------------------!
           end select
       else
          !----- Temperate trees, use optimised values from Medvigy et al. (2009). ---------!
@@ -4755,7 +4805,12 @@ subroutine init_pft_mort_params()
    !  Default in ED-1.0 and ED-2.0 was to assume zero, an alternative is to assume maximum !
    !  mortality.                                                                           !
    !---------------------------------------------------------------------------------------!
-   cbr_severe_stress(:) = log(epsilon(1.0)) / mort2(:)
+   select case (economics_scheme)
+   case (1)
+      cbr_severe_stress(:) = mort0(:) - 1.0 / mort2(:) * log(extinct_mort/mort1(:))
+   case default
+      cbr_severe_stress(:) = log(epsilon(1.0)) / mort2(:)
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -4830,13 +4885,7 @@ subroutine init_pft_mort_params()
    case (0)
       seedling_mortality(:) = 0.95
    case (1)
-      select case (iallom)
-      case (0,1)
-         seedling_mortality(:) = merge(0.9500,onethird,is_grass(:))
-      case default
-         seedling_mortality(:) = merge(0.9500,0.4000  ,is_grass(:))
-      end select
-      !------------------------------------------------------------------------------------!
+      seedling_mortality(:) = merge(0.9500,onethird,is_grass(:))
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -4847,8 +4896,8 @@ subroutine init_pft_mort_params()
    !----- Trees taller than treefall_hite_threshold (liana survivorship: Putz 1983). ------!
    treefall_s_gtht(:) = merge(0.80,0.00,is_liana(:))
    !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
-   select case (iallom)
-   case (2,3)
+   select case (economics_scheme)
+   case (1)
       !------------------------------------------------------------------------------------!
       !    Higher survivorship.  Tree survivorship is based on measurements at Paracou.    !
       ! Estimate is the average ratio between secondary and primary tree fall mortality.   !
@@ -4930,7 +4979,7 @@ subroutine init_pft_nitro_params()
                           , c2n_fast_0           & ! intent(out)
                           , c2n_structural       ! ! intent(out)
    use ed_max_dims , only : n_pft                ! ! intent(in)
-   use ed_misc_coms, only : iallom               ! ! intent(in)
+   use ed_misc_coms, only : economics_scheme     ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer :: ipft
@@ -4957,8 +5006,8 @@ subroutine init_pft_nitro_params()
 
 
       !----- Ratio. -----------------------------------------------------------------------!
-      select case (iallom)
-      case (2,3)
+      select case (economics_scheme)
+      case (1)
          if (is_liana(ipft) .or. (.not. is_tropical(ipft))) then
             !----- Use ED-1 default. ------------------------------------------------------!
             c2n_leaf(ipft) = 1000.0 / ( (0.11289 + 0.12947 *   vm0_ref) * SLA(ipft) )
@@ -5032,7 +5081,7 @@ end subroutine init_pft_nitro_params
 subroutine init_pft_leaf_params()
    use phenology_coms , only : iphen_scheme         ! ! intent(in)
    use ed_misc_coms   , only : igrass               & ! intent(in)
-                             , iallom               ! ! intent(in)
+                             , economics_scheme     ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , is_grass             & ! intent(in)
                              , is_conifer           & ! intent(in)
@@ -5172,13 +5221,13 @@ subroutine init_pft_leaf_params()
    !              converted to water:oven-dry ratio (XWDR = XWC / (1 - XWC)).  Their       !
    !              data suggest that water content depends on wood density but were         !
    !              indistinguishable between moist and dry forests.  Values for tropical    !
-   !              trees follow the fitted curve using SMA.  We only apply this in IALLOM   !
-   !              4 for back-compability.                                                  !
+   !              trees follow the fitted curve using SMA.  This is used only when         !
+   !              ECONOMICS_SCHEME=1.                                                      !
    !                                                                                       !
    ! Temperate -- Use values from FPL10.                                                   !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (2,3)
+   select case (economics_scheme)
+   case (1)
       do ipft=1,n_pft
          if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
             wat_dry_ratio_wood(ipft) = 0.7
@@ -5252,7 +5301,7 @@ subroutine init_pft_repro_params()
                             , repro_min_h        ! ! intent(out)
    use ed_max_dims   , only : n_pft              & ! intent(in)
                             , undef_real         ! ! intent(in)
-   use ed_misc_coms  , only : iallom             ! ! intent(in)
+   use ed_misc_coms  , only : economics_scheme   ! ! intent(in)
    use consts_coms   , only : onesixth           & ! intent(in)
                             , onethird           ! ! intent(in)
    use phenology_coms, only : repro_scheme       ! ! intent(in)
@@ -5263,17 +5312,17 @@ subroutine init_pft_repro_params()
 
    !---------------------------------------------------------------------------------------!
    !      Allocation to storage (amount that is save in each month, not going to           !
-   ! reproduction or growth).  Currently only tropical trees with IALLOM=3 maintain        !
-   ! storage pools.  The fraction is tuned to make the pool somewhat closer to the         !
-   ! typical storage/biomass ratio (e.g. MV16).                                            !
+   ! reproduction or growth).  Currently only tropical trees with ECONOMICS_SCHEME=1       !
+   ! maintain storage pools.  The fraction is tuned to make the pool somewhat closer to    !
+   ! the typical storage/biomass ratio (e.g. MV16).                                        !
    !                                                                                       !
    ! Martinez-Vilalta, J, A. Sala, D. Asensio, L. Galiano, G. Hoch, S. Palacio,            !
    !    F. I. Piper, and F. Lloret. Dynamics of non-structural carbohydrates in            !
    !    terrestrial plants: a global synthesis. Ecol. Monogr., 86(4):495-516, Nov 2016.    !
    !    doi:10.1002/ecm.1231.                                                              !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
+   select case (economics_scheme)
+   case (1)
       st_fract(:) = merge(0.0,onesixth                                                     &
                          ,is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:)))
    case default
@@ -5295,12 +5344,13 @@ subroutine init_pft_repro_params()
    !                                                                                       !
    !               Details on the default values: for trees, we take repro_min_h as the    !
    !               average value reported in W05 (mind that the study is for tropical      !
-   !               trees).  The grass strategy depends on iallom.  The original  scheme    !
-   !               assumes that they always allocate 30% to growth ("partial bang"),       !
-   !               whereas when IALLOM=3 the plants will allocate 100% to reproduction     !
-   !               once they reach the maximum height (W15's "big bang").  The fraction    !
-   !               allocated to reproduction for tropical trees was updated to match F10's !
-   !               number, or the default ED-1.0 numbers (0.30, following M01).            !
+   !               trees).  The grass strategy depends on economics_scheme.  The original  !
+   !               scheme assumes that they always allocate 30% to growth ("partial        !
+   !               bang"), whereas when ECONOMICS_SCHEME=1 the plants will allocate 100%   !
+   !               to reproduction once they reach the maximum height (W15's "big bang").  !
+   !               The fraction allocated to reproduction for tropical trees was updated   !
+   !               to match F10's number, or the default ED-1.0 numbers (0.30, following   !
+   !               M01).                                                                   !
    ! r_cv50      - This is only used when r_bang is .false..  For plants with asymptote    !
    !               reproduction (r_bang = .false.), this is the dimensionless curvature    !
    !               parameter.  The reproduction allocation converges to "big bang" when    !
@@ -5329,8 +5379,8 @@ subroutine init_pft_repro_params()
    !    doi:10.1002/ece3.1802. (W15)                                                       !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
+   select case (economics_scheme)
+   case (1)
       !----- New parameters. --------------------------------------------------------------!
       repro_min_h(:) = merge(hgt_max(:),                           18.0,is_grass(:))
       r_fract    (:) = merge(       1.0,merge(0.37,0.30,is_tropical(:)),is_grass(:))
@@ -5341,10 +5391,18 @@ subroutine init_pft_repro_params()
       r_fract    (:) = 0.30
       !------------------------------------------------------------------------------------!
    end select
-   !------ Asymptote parameters. ----------------------------------------------------------!
-   r_cv50(:) = onethird
-   r_bang(:) = (repro_scheme /= 3) .or. is_grass(:) .or. is_liana(:) .or.                  &
-               (.not. is_tropical(:))
+   !---------------------------------------------------------------------------------------!
+   !      Asymptote parameters.  This is a temporary sensitivity test, these options will  !
+   ! be combined soon into a single option (repro_scheme=3).                               !
+   !---------------------------------------------------------------------------------------!
+   select case (repro_scheme)
+   case (3)
+      r_cv50(:) = onethird
+      r_bang(:) = is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:))
+   case default
+      r_cv50(:) = onethird
+      r_bang(:) = .true.
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -6709,6 +6767,7 @@ subroutine init_derived_params_after_xml()
                                    , bark_turnover_rate        & ! intent(in)
                                    , eplastic_vm0              & ! intent(in)
                                    , eplastic_sla              & ! intent(in)
+                                   , kplastic_LL               & ! intent(in)
                                    , mort0                     & ! intent(in)
                                    , mort1                     & ! intent(in)
                                    , mort2                     & ! intent(in)
@@ -6942,7 +7001,7 @@ subroutine init_derived_params_after_xml()
    ! tropical trees (IALLOM=2 or IALLOM=3).                                                !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
-   case (2,3) ! This must remain 2,3
+   case (2,3)
       where(is_tropical(:) .and. (hgt_max(:) >= 0.99 * hgt_ref(:)))
          hgt_max(:) = 0.99 * hgt_ref(:)
       end where
@@ -7123,10 +7182,11 @@ subroutine init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
          !    Seed_rain is the density of seedling that will be added from somewhere else. !
          ! By default, this variable is initialised as a function of the cohort's minimum  !
-         ! size.                                                                           !
+         ! size.  Setting the size to be 1/10 of the minimum size to allow the model to    !
+         ! try establishing cohorts in different months.                                   !
          !---------------------------------------------------------------------------------! 
          if (seed_rain(ipft) == undef_real) then
-            seed_rain(ipft)  = min_recruit_size(ipft) / one_plant_c(ipft) / 12.
+            seed_rain(ipft)  = 0.1 * min_recruit_size(ipft) / one_plant_c(ipft)
          end if
          !---------------------------------------------------------------------------------! 
       case default
@@ -7561,7 +7621,7 @@ subroutine init_derived_params_after_xml()
 
 
       !------------------------------------------------------------------------------------!
-      !    In case kplastic_vm0 was not initialised through XML, use an empirical          !
+      !    In case kplastic_SLA was not initialised through XML, use an empirical          !
       ! function.  This function is obtained using the data from KN2016, assuming Beer's   !
       ! law to find the LAI that would cause the drop of light conditions from 40 mol/m2/d !
       ! to 3 mol/m2/d (their standard light conditions), and assuming that changes in SLA  !
@@ -7578,6 +7638,32 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
       if (kplastic_SLA(ipft) == undef_real) then
          kplastic_SLA(ipft) = 0.462 - 0.1239 * log(SLA(ipft))
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    In case kplastic_LL was not initialised through XML, use an empirical           !
+      ! function.  This function is obtained using digitsed data from RK2016 (Figure 5a),  !
+      ! assuming Beer's law to find the LAI that would cause the drop of light conditions  !
+      ! to 0.8% of the full illumination  (their reference light levels), and assuming     !
+      ! that changes in leaf longevity (LL) would follow a exponential decay/expansion,    !
+      ! akin to Vm0.  We used a linear-log function because kplastic_LL may switch sign.   !
+      ! It did not happen in RK2016 but some individuals had near-zero decay, and none of  !
+      ! their species had extremely high SLA like KN2016.                                  !
+      !                                                                                    !
+      ! Reference:                                                                         !
+      !                                                                                    !
+      ! Russo S, Kitajima K. 2016. The ecophysiology of leaf lifespan in tropical forests: !
+      !    Adaptive and plastic responses to environmental heterogeneity. In: Goldstein G, !
+      !    Santiago, LS, eds. Tropical Tree Physiology: Adaptations and Responses in a     !
+      !    Changing Environment, 357-383. Springer International Publishing, Cham,         !
+      !    Switzerland. doi:10.1007/978-3-319-27422- 5 17.                                 !
+      !------------------------------------------------------------------------------------!
+      if (kplastic_LL(ipft) == undef_real .and. leaf_turnover_rate(ipft) > 0.) then
+         kplastic_LL(ipft) = 0.2126 - 0.062 * log(12./leaf_turnover_rate(ipft))
+      elseif (kplastic_LL(ipft) == undef_real) then
+         kplastic_LL(ipft) = 0.0
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -7642,7 +7728,7 @@ subroutine init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
          !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(41(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(42(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
                                         ,'     VCMAX25','         VM0','         JM0'      &
                                         ,'        TPM0','         RD0','     RD0:VM0'      &
@@ -7655,12 +7741,12 @@ subroutine init_derived_params_after_xml()
                                         ,'         GS0','Q_EFFICIENCY',' CV_ELECTRON'      &
                                         ,' QYIELD_PSII','      KWROOT','  LEAF_WIDTH'      &
                                         ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'      &
-                                        ,'EPLASTIC_VM0','EPLASTIC_SLA'
+                                        ,' KPLASTIC_LL','EPLASTIC_VM0','EPLASTIC_SLA'
                                         
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,37(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,38(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
                           ,D0(ipft),Vcmax25(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft) &
                           ,dark_respiration_factor(ipft),electron_transport_factor(ipft)   &
@@ -7674,14 +7760,15 @@ subroutine init_derived_params_after_xml()
                           ,curvpar_electron(ipft),qyield_psII(ipft)                        &
                           ,water_conductance(ipft)*yr_sec,leaf_width(ipft)                 &
                           ,root_respiration_factor(ipft),kplastic_vm0(ipft)                &
-                          ,kplastic_sla(ipft),eplastic_vm0(ipft),eplastic_sla(ipft)
+                          ,kplastic_sla(ipft),kplastic_LL(ipft),eplastic_vm0(ipft)         &
+                          ,eplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
       case (2,3)
          !---------------------------------------------------------------------------------!
          !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(41(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(42(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
                                         ,'     VCMAX25','         VM0','         JM0'      &
                                         ,'        TPM0','         RD0','     RD0:VM0'      &
@@ -7694,11 +7781,11 @@ subroutine init_derived_params_after_xml()
                                         ,'         GS0','Q_EFFICIENCY',' CV_ELECTRON'      &
                                         ,' QYIELD_PSII','      KWROOT','  LEAF_WIDTH'      &
                                         ,'       RRFF0','KPLASTIC_VM0','KPLASTIC_SLA'      &
-                                        ,'EPLASTIC_VM0','EPLASTIC_SLA'
+                                        ,' KPLASTIC_LL','EPLASTIC_VM0','EPLASTIC_SLA'
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,37(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,38(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
                           ,D0(ipft),Vcmax25(ipft),Vm0(ipft),Jm0(ipft),TPm0(ipft),Rd0(ipft) &
                           ,dark_respiration_factor(ipft),electron_transport_factor(ipft)   &
@@ -7712,7 +7799,8 @@ subroutine init_derived_params_after_xml()
                           ,curvpar_electron(ipft),qyield_psII(ipft)                        &
                           ,water_conductance(ipft)*yr_sec,leaf_width(ipft)                 &
                           ,root_respiration_factor(ipft),kplastic_vm0(ipft)                &
-                          ,kplastic_sla(ipft),eplastic_vm0(ipft),eplastic_sla(ipft)
+                          ,kplastic_sla(ipft),kplastic_LL(ipft),eplastic_vm0(ipft)         &
+                          ,eplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
       end select

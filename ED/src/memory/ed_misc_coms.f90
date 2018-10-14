@@ -260,6 +260,21 @@ Module ed_misc_coms
                      ! 1 -- New grass scheme which has bdead = 0, height = f(bleaf), and   
                      !      growth occurs daily
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ECONOMICS_SCHEME -- Temporary variable for testing the relationship amongst traits in !
+   !                     the tropics.                                                      !
+   !                     0. ED-2.1 standard, based on Reich et al. (1997) and some updates !
+   !                        following Kim et al. (2012).                                   !
+   !                     1. When available, trait relationships were derived from more     !
+   !                        up-to-date data sets, including the TRY database,              !
+   !                        NGEE-Tropics, RAINFOR, and GLOPNET. Check ed_params.f90 for    !
+   !                        details and references.                                        !
+   !---------------------------------------------------------------------------------------!
+   integer :: economics_scheme
+   !---------------------------------------------------------------------------------------!
    
    !----- Namelist option to suppress warnings when HDF5 data is not in the 
    !      initialization file.  Errors will still report and halt the run.

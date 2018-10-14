@@ -7,29 +7,30 @@ module hybrid_driver
    !     Euler integration scheme.                                                         !
    !---------------------------------------------------------------------------------------!
    subroutine hybrid_timestep(cgrid)
-     use rk4_coms              , only : integration_vars   & ! structure
-                                      , rk4patchtype       & ! structure
-                                      , zero_rk4_patch     & ! subroutine
-                                      , zero_rk4_cohort    & ! subroutine
-                                      , zero_bdf2_patch    &
-                                      , integration_buff   & ! intent(out)
-                                      , bdf2patchtype      &
-                                      , tbeg               &
-                                      , tend               &
-                                      , dtrk4i             !
-     use ed_para_coms          , only : nthreads           ! ! intent(in)
+     use rk4_coms              , only : integration_vars           & ! structure
+                                      , rk4patchtype               & ! structure
+                                      , zero_rk4_patch             & ! subroutine
+                                      , zero_rk4_cohort            & ! subroutine
+                                      , zero_bdf2_patch            &
+                                      , integration_buff           & ! intent(out)
+                                      , bdf2patchtype              &
+                                      , tbeg                       &
+                                      , tend                       &
+                                      , dtrk4i                     !
+     use ed_para_coms          , only : nthreads                   ! ! intent(in)
      use rk4_driver            , only : initp2modelp
-     use ed_state_vars         , only : edtype             & ! structure
-                                      , polygontype        & ! structure
-                                      , sitetype           ! ! structure
-     use met_driver_coms       , only : met_driv_state     ! ! structure
-     use grid_coms             , only : nzg                & ! intent(in)
-                                      , nzs                ! ! intent(in)
-     use ed_misc_coms          , only : current_time       & ! intent(in)
-                                      , dtlsm              ! ! intent(in)
-     use therm_lib             , only : tq2enthalpy        ! ! function
-     use budget_utils          , only : update_budget      & ! function
-                                      , compute_budget     ! ! function
+     use ed_state_vars         , only : edtype                     & ! structure
+                                      , polygontype                & ! structure
+                                      , sitetype                   ! ! structure
+     use met_driver_coms       , only : met_driv_state             ! ! structure
+     use grid_coms             , only : nzg                        & ! intent(in)
+                                      , nzs                        ! ! intent(in)
+     use ed_misc_coms          , only : current_time               & ! intent(in)
+                                      , dtlsm                      ! ! intent(in)
+     use therm_lib             , only : tq2enthalpy                ! ! function
+     use budget_utils          , only : update_budget              & ! function
+                                      , update_cbudget_committed   & ! function
+                                      , compute_budget             ! ! function
      use soil_respiration      , only : soil_respiration_driver    ! ! function
      use photosyn_driv         , only : canopy_photosynthesis      ! ! function
      use update_derived_utils  , only : update_patch_thermo_props  & ! subroutine
@@ -228,8 +229,13 @@ module hybrid_driver
                       cpoly%ntext_soil(:,isi),cpoly%leaf_aging_factor(:,isi),       &
                       cpoly%green_leaf_factor(:,isi))
 
-                  !----- Compute root and heterotrophic respiration. ----------------!
+                 !----- Compute root and heterotrophic respiration. ----------------!
                  call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+
+
+                 !----- Update the committed carbon change pool. -------------------!
+                 call update_cbudget_committed(csite,ipa)
+                 !------------------------------------------------------------------!
 
                  !------------------------------------------------------------------!
                  ! Set up the remaining, carbon-dependent variables to the buffer.  !

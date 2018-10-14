@@ -174,6 +174,7 @@ module soil_respiration
       !------------------------------------------------------------------------------------!
 
 
+
       !----- The output is converted to kgC/m2/yr. ----------------------------------------!
       csite%fmean_rh     (ipa) = csite%fmean_rh     (ipa)                                  &
                                + csite%rh           (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
@@ -494,6 +495,8 @@ module soil_respiration
                               , fx_ssc_psc_slp  & ! intent(in)
                               , c2n_slow        & ! intent(in)
                               , c2n_structural  ! ! intent(in)
+      use consts_coms  , only : umol_2_kgC      & ! intent(in)
+                              , day_sec         ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target   :: cgrid
@@ -749,6 +752,8 @@ module soil_respiration
                   !------------------------------------------------------------------------!
                end select
                !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !      All carbon fluxes have units kgC/m2/day, and we are updating on the  !

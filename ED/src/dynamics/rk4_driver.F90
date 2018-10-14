@@ -28,6 +28,7 @@ module rk4_driver
                                         , dtlsm                      ! ! intent(in)
       use therm_lib              , only : tq2enthalpy                ! ! function
       use budget_utils           , only : update_budget              & ! function
+                                        , update_cbudget_committed   & ! function
                                         , compute_budget             ! ! function
       use soil_respiration       , only : soil_respiration_driver    ! ! sub-routine
       use photosyn_driv          , only : canopy_photosynthesis      ! ! sub-routine
@@ -255,6 +256,11 @@ module rk4_driver
 
                   !----- Compute root and heterotrophic respiration. ----------------------!
                   call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Update the committed carbon change pool. -------------------------!
+                  call update_cbudget_committed(csite,ipa)
                   !------------------------------------------------------------------------!
 
 

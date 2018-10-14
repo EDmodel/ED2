@@ -12,7 +12,7 @@ colour.stock <<- function(n,alt=FALSE,shf=alt,pvf=3){
                 )#end c
    }else{
       cstock = c("#811F9E","#2BD2DB","#F87856"
-                ,"#880D32","#0E6E81","#1BA2F7"
+                ,"#CB003D","#0E6E81","#1BA2F7"
                 ,"#CCCA3D","#A3F888","#F9E5C0"
                 )#end c
    }#end if (alt)
@@ -77,21 +77,23 @@ colour.stock <<- function(n,alt=FALSE,shf=alt,pvf=3){
    #---------------------------------------------------------------------------------------#
    #    Expand data to include pale and darker colours.                                    #
    #---------------------------------------------------------------------------------------#
-   pale     = col2hsv(cstock)
-   pale[2,] = czero + cwgt * pale[2,]
-   pale[3,] = cone  + cwgt * pale[3,]
-   pale     = hsv(h=pale[1,],s=pale[2,],v=pale[3,])
-   vibr     = col2hsv(cstock)
-   vibr[2,] = cone  + cwgt * vibr[2,]
-   vibr[3,] = czero + cwgt * vibr[3,]
-   vibr     = hsv(h=vibr[1,],s=vibr[2,],v=vibr[3,])
-   cstock   = c(cstock,vibr,pale)
+   hsv0       = col2hsv(cstock)
+   hsv1       = hsv0
+   hsv1[2,]   = ifelse(test=hsv1[2,] > 0.5,yes=czero+cwgt*hsv1[2,],no=cone +cwgt*hsv1[2,])
+   hsv1[3,]   = ifelse(test=hsv1[3,] > 0.5,yes=cone +cwgt*hsv1[3,],no=czero+cwgt*hsv1[3,])
+   hsv2       = hsv0
+   hsv2[2,]   = ifelse(test=hsv2[2,] > 0.5,yes=cone +cwgt*hsv2[2,],no=czero+cwgt*hsv2[2,])
+   hsv2[3,]   = ifelse(test=hsv2[3,] > 0.5,yes=czero+cwgt*hsv2[3,],no=cone +cwgt*hsv2[3,])
+   alt1       = hsv(h=hsv1[1,],s=hsv1[2,],v=hsv1[3,])
+   alt2       = hsv(h=hsv2[1,],s=hsv2[2,],v=hsv2[3,])
+   cstock.new = c(cstock,alt1,alt2)
+   hsv.new    = round(rbind(t(hsv0),t(hsv1),t(hsv2)),2)
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #    Make sure does not exceed the maximum number of colours.                           #
    #---------------------------------------------------------------------------------------#
-   ans = cstock[sequence(n)]
+   ans = cstock.new[sequence(n)]
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end colour.stock

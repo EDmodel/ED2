@@ -40,6 +40,7 @@ subroutine read_ed21_history_file
                                   , allocate_polygontype        & ! subroutine
                                   , allocate_sitetype           & ! subroutine
                                   , allocate_patchtype          ! ! subroutine
+   use met_driver_coms     , only : met_driv_state              ! ! structure
    use grid_coms           , only : ngrids                      & ! intent(in)
                                   , nzg                         ! ! intent(in)
    use consts_coms         , only : pio4                        & ! intent(in)
@@ -85,6 +86,7 @@ subroutine read_ed21_history_file
    type(edtype)          , pointer     :: cgrid
    type(polygontype)     , pointer     :: cpoly
    type(sitetype)        , pointer     :: csite
+   type(met_driv_state)  , pointer     :: cmet
    type(patchtype)       , pointer     :: cpatch
    character(len=3)                    :: cgr
    character(len=str_len)              :: hnamel
@@ -460,6 +462,7 @@ subroutine read_ed21_history_file
                end do
 
                csite => cpoly%site(isi)
+               cmet  => cpoly%met (isi)
 
                if (sipa_n(si_index) > 0) then
 
@@ -944,7 +947,7 @@ subroutine read_ed21_history_file
                      !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
                      ! set to zero so it would be removed).                                !
                      !---------------------------------------------------------------------!
-                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
                      !---------------------------------------------------------------------!
                   end do patchloop
                   !------------------------------------------------------------------------!
@@ -1060,6 +1063,7 @@ subroutine read_ed21_history_unstruct
                                   , edgrid_g                    & ! subroutine
                                   , allocate_sitetype           & ! subroutine
                                   , allocate_patchtype          ! ! subroutine
+   use met_driver_coms     , only : met_driv_state              ! ! structure
    use grid_coms           , only : ngrids                      & ! intent(in)
                                   , nzg                         ! ! intent(in)
    use consts_coms         , only : pio4                        & ! intent(in)
@@ -1108,6 +1112,7 @@ subroutine read_ed21_history_unstruct
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)          , pointer                              :: cgrid
    type(polygontype)     , pointer                              :: cpoly
+   type(met_driv_state)  , pointer                              :: cmet
    type(sitetype)        , pointer                              :: csite
    type(patchtype)       , pointer                              :: cpatch
    character(len=str_len), dimension(maxlist)                   :: full_list
@@ -1647,7 +1652,7 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
             !     Loop over the sites, seeking only those that are land sites.             !
             !------------------------------------------------------------------------------!
-             siteloop1: do isi=1,pysi_n(py_index)
+            siteloop1: do isi=1,pysi_n(py_index)
                select case (islakesite(isi))
                case (0)
 
@@ -1738,6 +1743,7 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
             siteloop2: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
+               cmet  => cpoly%met (isi)
 
                nsoil = cpoly%ntext_soil(nzg,isi)
 
@@ -2316,7 +2322,7 @@ subroutine read_ed21_history_unstruct
                      !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
                      ! set to zero so it would be removed).                                !
                      !---------------------------------------------------------------------!
-                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
                      !---------------------------------------------------------------------!
                   end do patchloop
                   !------------------------------------------------------------------------!
@@ -2439,6 +2445,7 @@ subroutine read_ed21_polyclone
                                   , allocate_polygontype        & ! subroutine
                                   , allocate_sitetype           & ! subroutine
                                   , allocate_patchtype          ! ! subroutine
+   use met_driver_coms     , only : met_driv_state              ! ! structure
    use grid_coms           , only : ngrids                      & ! intent(in)
                                   , nzg                         ! ! intent(in)
    use consts_coms         , only : pio4                        & ! intent(in)
@@ -2490,6 +2497,7 @@ subroutine read_ed21_polyclone
    type(polygontype)     , pointer                              :: cpoly
    type(sitetype)        , pointer                              :: csite
    type(patchtype)       , pointer                              :: cpatch
+   type(met_driv_state)  , pointer                              :: cmet
    character(len=str_len), dimension(maxlist)                   :: full_list
    character(len=str_len), dimension(maxfiles)                  :: histo_list
    character(len=str_len)                                       :: hnamel
@@ -2990,6 +2998,7 @@ subroutine read_ed21_polyclone
                   is = is + 1
 
                   csite => cpoly%site(is)
+                  cmet  => cpoly%met (is)
 
                   si_index = pysi_id(py_index)+isi-1
 
@@ -3666,7 +3675,7 @@ subroutine read_ed21_polyclone
                      !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
                      ! set to zero so it would be removed).                                !
                      !---------------------------------------------------------------------!
-                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
                      !---------------------------------------------------------------------!
                   end do patchloop
                   !------------------------------------------------------------------------!

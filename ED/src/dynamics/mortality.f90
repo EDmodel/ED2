@@ -20,11 +20,13 @@ module mortality
                                , mort2                      & ! intent(in)
                                , mort3                      & ! intent(in)
                                , plant_min_temp             & ! intent(in)
-                               , frost_mort                 ! ! intent(in)
+                               , frost_mort                 & ! intent(in)
+                               , cbr_severe_stress          ! ! intent(in)
       use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
                                , treefall_hite_threshold    & ! intent(in)
                                , time2canopy                ! ! intent(in)
       use ed_max_dims   , only : n_pft                      ! ! intent(in)
+      use ed_misc_coms  , only : economics_scheme           ! ! intent(in)
       use consts_coms   , only : lnexp_min                  & ! intent(in)
                                , lnexp_max                  ! ! intent(in)
       implicit none
@@ -38,6 +40,7 @@ module mortality
       integer                     :: ipft            ! PFT 
       real                        :: temp_dep        ! Temp. function  (frost mortality)
       real                        :: expmort         ! Carbon-balance term
+      real                        :: cbr_use         ! Bounded carbon balance.
       !------------------------------------------------------------------------------------!
 
 
@@ -53,11 +56,21 @@ module mortality
 
 
       !------------------------------------------------------------------------------------!
-      ! 2.  Mortality rates due to negative carbon balance.                                !
+      ! 2.  Mortality rates due to negative carbon balance.   Note that the functional     !
+      !     form is slightly different for economics_scheme = 1.                           !
       !------------------------------------------------------------------------------------!
-      expmort = max( lnexp_min, min( lnexp_max                                             &
-                                   , mort2(ipft) * ( cpatch%cbr_bar(ico) - mort0(ipft) ) ) )
-      cpatch%mort_rate(2,ico) = mort1(ipft) / (1. + exp(expmort))
+      cbr_use = max(cpatch%cbr_bar(ico),cbr_severe_stress(ipft))
+      expmort = max( lnexp_min, min( lnexp_max,mort2(ipft) * ( cbr_use - mort0(ipft) ) ) )
+      select case (economics_scheme)
+      case (1)
+         !----- Camac et al (2017).  Mind the minus sign. ---------------------------------!
+         cpatch%mort_rate(2,ico) = mort1(ipft) * exp(-expmort)
+         !---------------------------------------------------------------------------------!
+      case default
+         !----- Moorcroft et al (2001).  Exponential should not have minus sign. ----------!
+         cpatch%mort_rate(2,ico) = mort1(ipft) / (1. + exp(expmort))
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
 

@@ -12,6 +12,11 @@ rscript="read_monthly.r"           # Which script to run with epost.sh.  See opt
                                    #    Multiple scripts are allowed, put spaces between
                                    #    them. (e.g. rscript="plot_monthly.r plot_fast.r")
 frqemail=43200                     # How often to send emails on simulation status?
+delay1st_min=20                    # Time (in minutes) to wait before the first check
+                                   #    (needed in case the run_sitter script is submitted
+                                   #    before the simulation starts.  In case the
+                                   #    simulation is already running, it is fine to set
+                                   #    this to zero).
 wait_minutes=60                    # Waiting time before checking run again (in minutes)
 frqpost=3                          # How often to run post-processing and file management
                                    #    This number is in iterations.  Zero means never.
@@ -57,19 +62,17 @@ checkstatus="y"                    # Check status before compressing
 
 
 #----- Make sure e-mail and queue are pre-defined. ----------------------------------------#
-if [ "x${email}" == "x" ]
+if [[ "x${email}" == "x" ]] || [[ "x${queue}" == "x" ]] || [[ "x${rscript}" == "x" ]]
 then
-   echo " You must set up variable \"email\" before running sim_sitter.sh"
-   exit 99
-fi
-if [ "x${queue}" == "x" ]
-then
-   echo " You must set up variable \"queue\" before running sim_sitter.sh"
-   exit 99
-fi
-if [ "x${rscript}" == "x" ]
-then
-   echo " You must set up variable \"rscript\" before running sim_sitter.sh"
+   echo "---------------------------------------------------------------------------------"
+   echo "    The following variables must be set.  In case any of them are empty, check"
+   echo " your script sim_sitter.sh."
+   echo " "
+   echo " email   = ${email}"
+   echo " queue   = ${queue}"
+   echo " rscript = ${rscript}"
+   echo " "
+   echo "---------------------------------------------------------------------------------"
    exit 99
 fi
 #------------------------------------------------------------------------------------------#
@@ -80,12 +83,14 @@ fi
 sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/run_sitter.sh
 sed -i~ s@"recipient=\"\""@"recipient=\"${email}\""@g            ${here}/run_sitter.sh
 sed -i~ s@"frqemail=\"\""@"frqemail=${frqemail}"@g               ${here}/run_sitter.sh
+sed -i~ s@"delay1st_min=\"\""@"delay1st_min=${delay1st_min}"@g   ${here}/run_sitter.sh
 sed -i~ s@"wait_minutes=\"\""@"wait_minutes=${wait_minutes}"@g   ${here}/run_sitter.sh
 sed -i~ s@"frqpost=\"\""@"frqpost=${frqpost}"@g                  ${here}/run_sitter.sh
 sed -i~ s@"frqtouch=\"\""@"frqtouch=${frqtouch}"@g               ${here}/run_sitter.sh
 sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/epost.sh
 sed -i~ s@"global_queue=\"\""@"global_queue=\"${queue}\""@g      ${here}/epost.sh
 sed -i~ s@"rscript=\"\""@"rscript=\"${rscript}\""@g              ${here}/epost.sh
+sed -i~ s@"submit=false"@"submit=true"@g                         ${here}/epost.sh
 sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/transfer.sh
 sed -i~ s@"there=\"\""@"there=\"${there}\""@g                    ${here}/transfer.sh
 sed -i~ s@"here=\"\""@"here=\"${here}\""@g                       ${here}/last_histo.sh
@@ -99,10 +104,24 @@ sed -i~ s@"checkstatus=\"\""@"checkstatus=\"${checkstatus}\""@g  ${here}/last_hi
 joblog="${here}/out_sitter.out"
 jobpref=$(basename ${here})
 jobname="${jobpref}-control"
+jobmain="${jobpref}-sims"
 #------------------------------------------------------------------------------------------#
 
 
-if [ -s "${here}/run_sitter.lock" ] || [ -s "${here}/transfer.lock" ]
+#------ Check ID of main job name, so it includes a dependency. ---------------------------#
+mainid=$(sjobs | grep -i ${jobmain} | grep -v CANCELLED | grep -v COMPLETED | grep -v COMPLETING | grep -v FAILED | awk '{print $1}')
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#    Check whether to submit the job.                                                      #
+#------------------------------------------------------------------------------------------#
+if [[ "x${mainid}" == "x" ]]
+then
+   echo " Job name ${jobmain} was not found, so the run_sitter.sh job will not be queued."
+   goahead="n"
+elif [[ -s "${here}/run_sitter.lock" ]] || [[ -s "${here}/transfer.lock" ]]
 then
    echo " Lock file found for run_sitter.sh and/or transfer.lock."
    echo " The scripts may be already running."
@@ -112,21 +131,23 @@ else
    goahead="y"
 fi
 goahead="$(echo ${goahead} | tr '[:upper:]' '[:lower:]')"
+#------------------------------------------------------------------------------------------#
 
 
 #----- Submit run_sitter.sh in batch mode. ------------------------------------------------#
+comm="${sbatch} -p ${queue} --mem-per-cpu=${memory} -t ${runtime} -o ${joblog}"
+comm="${comm} -J ${jobname} -n 1 --dependency=after:${mainid}"
+comm="${comm} --wrap=\"${here}/run_sitter.sh\""
 case ${goahead} in
 y|yes)
    /bin/rm -f ${here}/run_sitter.lock
    /bin/rm -f ${here}/transfer.lock
-   ${sbatch} -p ${queue} --mem-per-cpu=${memory} -t ${runtime} -o ${joblog} -J ${jobname}  \
-      -n 1 --wrap="${here}/run_sitter.sh"
+   echo ${comm}
+   ${comm}
    ;;
 *)
    bann="Script run_sitter was not submitted.  In case you want to submit manually"
    bann="${bann} this is the command:"
-   comm="${sbatch} -p ${queue} --mem-per-cpu=${memory} -t ${runtime} -o ${joblog}"
-   comm="${comm} -J ${jobname} -n 1 --wrap=\"${here}/run_sitter.sh\""
    echo ${bann}
    echo " "
    echo ${comm}

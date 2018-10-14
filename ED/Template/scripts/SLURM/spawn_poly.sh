@@ -369,8 +369,8 @@ infinite)
       ;;
    *)
       #----- Hours. -----------------------------------------------------------------------#
-      let ndays=${runtime}/24
-      let nhours=${runtime}%24
+      let ndays="10#${runtime}"/24
+      let nhours="10#${runtime}"%24
       #------------------------------------------------------------------------------------#
       ;;
    esac
@@ -378,9 +378,9 @@ infinite)
 
 
    #----- Find the walltime in hours, and the runtime in nice format. ---------------------#
-   let wall=${nhours}+24*${ndays}
-   let ndays=${wall}/24
-   let nhours=${wall}%24
+   let wall="10#${nhours}"+24*"10#${ndays}"
+   let ndays="10#${wall}"/24
+   let nhours="10#${wall}"%24
    if [[ ${ndays} -gt 0 ]]
    then
       fmtday=$(printf '%2.2i' ${ndays})
@@ -397,19 +397,27 @@ infinite)
    #----- Find the maximum number of hours allowed in the partition. ----------------------#
    case "${runtime_max}" in
    infinite)
-      let ndays_max=${ndays}+1
-      let nhours_max=${nhours}
+      let ndays_max="10#${ndays}"+1
+      let nhours_max="10#${nhours}"
       ;;
-   *-*)
+   *-*:*)
+      #----- dd-hh:mm:ss. -----------------------------------------------------------------#
       ndays_max=$(echo ${runtime_max} | sed s@"-.*"@@g)
       nhours_max=$(echo ${runtime_max} | sed s@"^.*-"@@g | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
+      ;;
+   *:*)
+      #----- hh:mm:ss. --------------------------------------------------------------------#
+      ndays_max=0
+      nhours_max=$(echo ${runtime_max} | sed s@":.*"@@g)
+      #------------------------------------------------------------------------------------#
       ;;
    *)
       ndays_max=0
       nhours_max=$(echo ${runtime_max} | sed s@":.*"@@g)
       ;;
    esac
-   let wall_max=${nhours_max}+24*${ndays_max}
+   let wall_max="10#${nhours_max}"+24*"10#${ndays_max}"
    #---------------------------------------------------------------------------------------#
 
 
@@ -501,6 +509,7 @@ echo "  Memory per cpu:      ${sim_memory}"
 echo "  CPUs per node:       ${n_cpn}"
 echo "  CPUs per task:       ${n_cpt}"
 echo "  Queue:               ${global_queue}"
+echo "  Run time:            ${runtime}"
 echo "  First polygon:       ${polya}"
 echo "  Last polygon:        ${polyz}"
 echo "  Job Name:            ${jobname}"
@@ -725,22 +734,23 @@ do
    igndvap=$(echo ${oi}      | awk '{print $93 }')
    iphen=$(echo ${oi}        | awk '{print $94 }')
    iallom=$(echo ${oi}       | awk '{print $95 }')
-   igrass=$(echo ${oi}       | awk '{print $96 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $97 }')
-   integscheme=$(echo ${oi}  | awk '{print $98 }')
-   nsubeuler=$(echo ${oi}    | awk '{print $99 }')
-   irepro=$(echo ${oi}       | awk '{print $100}')
-   treefall=$(echo ${oi}     | awk '{print $101}')
-   ianthdisturb=$(echo ${oi} | awk '{print $102}')
-   ianthdataset=$(echo ${oi} | awk '{print $103}')
-   slscale=$(echo ${oi}      | awk '{print $104}')
-   slyrfirst=$(echo ${oi}    | awk '{print $105}')
-   slnyrs=$(echo ${oi}       | awk '{print $106}')
-   bioharv=$(echo ${oi}      | awk '{print $107}')
-   skidarea=$(echo ${oi}     | awk '{print $108}')
-   skidsmall=$(echo ${oi}    | awk '{print $109}')
-   skidlarge=$(echo ${oi}    | awk '{print $110}')
-   fellingsmall=$(echo ${oi} | awk '{print $111}')
+   ieconomics=$(echo ${oi}   | awk '{print $96 }')
+   igrass=$(echo ${oi}       | awk '{print $97 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $98 }')
+   integscheme=$(echo ${oi}  | awk '{print $99 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $100}')
+   irepro=$(echo ${oi}       | awk '{print $101}')
+   treefall=$(echo ${oi}     | awk '{print $102}')
+   ianthdisturb=$(echo ${oi} | awk '{print $103}')
+   ianthdataset=$(echo ${oi} | awk '{print $104}')
+   slscale=$(echo ${oi}      | awk '{print $105}')
+   slyrfirst=$(echo ${oi}    | awk '{print $106}')
+   slnyrs=$(echo ${oi}       | awk '{print $107}')
+   bioharv=$(echo ${oi}      | awk '{print $108}')
+   skidarea=$(echo ${oi}     | awk '{print $109}')
+   skidsmall=$(echo ${oi}    | awk '{print $110}')
+   skidlarge=$(echo ${oi}    | awk '{print $111}')
+   fellingsmall=$(echo ${oi} | awk '{print $112}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1368,6 +1378,12 @@ do
       metcyc1=1969
       metcycf=2008
       imetavg=2
+      ;;
+   Tanguro)
+      metdriverdb="${fullscen}/Tanguro/Tanguro_HEADER"
+      metcyc1=2008
+      metcycf=2017
+      imetavg=1
       ;;
    Tonzi)
       metdriverdb="${fullscen}/Tonzi/Tonzi_HEADER"
@@ -2109,6 +2125,7 @@ do
    sed -i~ s@myplantation@${plantation}@g        ${ED2IN}
    sed -i~ s@myiphen@${iphen}@g                  ${ED2IN}
    sed -i~ s@myallom@${iallom}@g                 ${ED2IN}
+   sed -i~ s@myeconomics@${ieconomics}@g         ${ED2IN}
    sed -i~ s@mygrass@${igrass}@g                 ${ED2IN}
    sed -i~ s@myisoilflg@${polyisoil}@g           ${ED2IN}
    sed -i~ s@mynslcon@${polyntext}@g             ${ED2IN}

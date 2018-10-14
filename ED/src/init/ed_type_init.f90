@@ -768,12 +768,20 @@ module ed_type_init
       csite%co2budget_initialstorage        (ipaa:ipaz) = 0.0
       csite%co2budget_loss2atm              (ipaa:ipaz) = 0.0
       csite%co2budget_denseffect            (ipaa:ipaz) = 0.0
+      csite%co2budget_zcaneffect            (ipaa:ipaz) = 0.0
       csite%co2budget_residual              (ipaa:ipaz) = 0.0
+      csite%cbudget_loss2atm                (ipaa:ipaz) = 0.0
+      csite%cbudget_denseffect              (ipaa:ipaz) = 0.0
+      csite%cbudget_zcaneffect              (ipaa:ipaz) = 0.0
+      csite%cbudget_initialstorage          (ipaa:ipaz) = 0.0
+      csite%cbudget_committed               (ipaa:ipaz) = 0.0
+      csite%cbudget_residual                (ipaa:ipaz) = 0.0
       csite%wbudget_precipgain              (ipaa:ipaz) = 0.0
       csite%wbudget_loss2atm                (ipaa:ipaz) = 0.0
       csite%wbudget_loss2runoff             (ipaa:ipaz) = 0.0
       csite%wbudget_loss2drainage           (ipaa:ipaz) = 0.0
       csite%wbudget_denseffect              (ipaa:ipaz) = 0.0
+      csite%wbudget_zcaneffect              (ipaa:ipaz) = 0.0
       csite%wbudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%wbudget_residual                (ipaa:ipaz) = 0.0
       csite%ebudget_precipgain              (ipaa:ipaz) = 0.0
@@ -783,6 +791,8 @@ module ed_type_init
       csite%ebudget_loss2drainage           (ipaa:ipaz) = 0.0
       csite%ebudget_denseffect              (ipaa:ipaz) = 0.0
       csite%ebudget_prsseffect              (ipaa:ipaz) = 0.0
+      csite%ebudget_hcapeffect              (ipaa:ipaz) = 0.0
+      csite%ebudget_zcaneffect              (ipaa:ipaz) = 0.0
       csite%ebudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%ebudget_residual                (ipaa:ipaz) = 0.0
       csite%rshort_g                        (ipaa:ipaz) = 0.0
@@ -1534,6 +1544,7 @@ module ed_type_init
          cgrid%cbudget_initialstorage(ipy) = soil_C + veg_C
          cgrid%nbudget_initialstorage(ipy) = soil_N + veg_N
          cgrid%cbudget_nep           (ipy) = 0.0
+         cgrid%cbudget_removedstorage(ipy) = 0.0
          !---------------------------------------------------------------------------------!
 
 

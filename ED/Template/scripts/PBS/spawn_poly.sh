@@ -362,22 +362,23 @@ do
    igndvap=$(echo ${oi}      | awk '{print $93 }')
    iphen=$(echo ${oi}        | awk '{print $94 }')
    iallom=$(echo ${oi}       | awk '{print $95 }')
-   igrass=$(echo ${oi}       | awk '{print $96 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $97 }')
-   integscheme=$(echo ${oi}  | awk '{print $98 }')
-   nsubeuler=$(echo ${oi}    | awk '{print $99 }')
-   irepro=$(echo ${oi}       | awk '{print $100}')
-   treefall=$(echo ${oi}     | awk '{print $101}')
-   ianthdisturb=$(echo ${oi} | awk '{print $102}')
-   ianthdataset=$(echo ${oi} | awk '{print $103}')
-   slscale=$(echo ${oi}      | awk '{print $104}')
-   slyrfirst=$(echo ${oi}    | awk '{print $105}')
-   slnyrs=$(echo ${oi}       | awk '{print $106}')
-   bioharv=$(echo ${oi}      | awk '{print $107}')
-   skidarea=$(echo ${oi}     | awk '{print $108}')
-   skidsmall=$(echo ${oi}    | awk '{print $109}')
-   skidlarge=$(echo ${oi}    | awk '{print $110}')
-   fellingsmall=$(echo ${oi} | awk '{print $111}')
+   ieconomics=$(echo ${oi}   | awk '{print $96 }')
+   igrass=$(echo ${oi}       | awk '{print $97 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $98 }')
+   integscheme=$(echo ${oi}  | awk '{print $99 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $100}')
+   irepro=$(echo ${oi}       | awk '{print $101}')
+   treefall=$(echo ${oi}     | awk '{print $102}')
+   ianthdisturb=$(echo ${oi} | awk '{print $103}')
+   ianthdataset=$(echo ${oi} | awk '{print $104}')
+   slscale=$(echo ${oi}      | awk '{print $105}')
+   slyrfirst=$(echo ${oi}    | awk '{print $106}')
+   slnyrs=$(echo ${oi}       | awk '{print $107}')
+   bioharv=$(echo ${oi}      | awk '{print $108}')
+   skidarea=$(echo ${oi}     | awk '{print $109}')
+   skidsmall=$(echo ${oi}    | awk '{print $110}')
+   skidlarge=$(echo ${oi}    | awk '{print $111}')
+   fellingsmall=$(echo ${oi} | awk '{print $112}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1009,6 +1010,12 @@ do
       metcyc1=1969
       metcycf=2008
       imetavg=2
+      ;;
+   Tanguro)
+      metdriverdb="${fullscen}/Tanguro/Tanguro_HEADER"
+      metcyc1=2008
+      metcycf=2017
+      imetavg=1
       ;;
    Tonzi)
       metdriverdb="${fullscen}/Tonzi/Tonzi_HEADER"
@@ -1733,6 +1740,7 @@ do
    sed -i~ s@myplantation@${plantation}@g        ${ED2IN}
    sed -i~ s@myiphen@${iphen}@g                  ${ED2IN}
    sed -i~ s@myallom@${iallom}@g                 ${ED2IN}
+   sed -i~ s@myeconomics@${ieconomics}@g         ${ED2IN}
    sed -i~ s@mygrass@${igrass}@g                 ${ED2IN}
    sed -i~ s@myisoilflg@${polyisoil}@g           ${ED2IN}
    sed -i~ s@mynslcon@${polyntext}@g             ${ED2IN}

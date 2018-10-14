@@ -10,6 +10,9 @@ del.outliers <<- function( x                  # Vector to be evaluated
                          , ncheck.min = 100   # Minimum vector size to check
                          , bw         = 2     # One-sided bandwidth for spike check
                          , spike.min  = 0.25  # Minimum difference to be considered a spike
+                         , f.unreal   = 0.25  # Factor above outlier limit to be considered
+                                              #    unrealistic (to be removed regardless of
+                                              #    whether it is a spike or not).
                          ){
 
    #----- Copy x to a local variable. -----------------------------------------------------#
@@ -55,6 +58,7 @@ del.outliers <<- function( x                  # Vector to be evaluated
          valid       = length(is.finite(thisvar))
          pfine       = (valid - 2) / valid
          max.fine    = max(3.0,qnorm(pfine, mean = 0., sd = 1.0))
+         max.real    = (1.+f.unreal) * max.fine
          #---------------------------------------------------------------------------------#
 
 
@@ -95,14 +99,15 @@ del.outliers <<- function( x                  # Vector to be evaluated
          #---------------------------------------------------------------------------------#
          #     Discard suspicious data.                                                    #
          #---------------------------------------------------------------------------------#
+         is.infty            = is.infinite(thisnorm)
+         is.unreal           = abs(thisnorm  )           %>% max.real
          is.outlier          = abs(thisnorm  )           %>% max.fine
          is.spike            = abs(thisnorm-neigh.norm) %>=% spike.min
-         weird               = is.outlier & is.spike
-         thisvar[weird]      = NA
+         weird               = is.infty | is.unreal | (is.outlier & is.spike)
+         thisvar[weird]      = NA_real_
          nweird              = sum(weird)
          nremain             = sum(is.finite(thisvar))
          #---------------------------------------------------------------------------------#
-
 
 
          #---------------------------------------------------------------------------------#
@@ -150,6 +155,7 @@ del.outliers <<- function( x                  # Vector to be evaluated
          valid       = length(is.finite(thisvar))
          pfine       = (valid - 2) / valid
          max.fine    = max(3.0,qnorm(pfine, mean = 0., sd = 1.0))
+         max.real    = (1.+f.unreal) * max.fine
          #---------------------------------------------------------------------------------#
 
 
@@ -181,10 +187,12 @@ del.outliers <<- function( x                  # Vector to be evaluated
          #---------------------------------------------------------------------------------#
          #     Discard suspicious data.                                                    #
          #---------------------------------------------------------------------------------#
+         is.infty            = is.infinite(thisnorm)
+         is.unreal           = abs(thisnorm  )           %>% max.real
          is.outlier          = abs(thisnorm  )           %>% max.fine
          is.spike            = abs(thisnorm-neigh.norm) %>=% spike.min
-         weird               = is.outlier & is.spike
-         thisvar[weird]      = NA
+         weird               = is.infty | is.unreal | (is.outlier & is.spike)
+         thisvar[weird]      = NA_real_
          nweird              = sum(weird)
          nremain             = sum(is.finite(thisvar))
          #---------------------------------------------------------------------------------#

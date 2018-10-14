@@ -26,6 +26,7 @@ module heun_driver
       use ed_max_dims           , only : n_dbh                      ! ! intent(in)
       use therm_lib             , only : tq2enthalpy                ! ! function
       use budget_utils          , only : update_budget              & ! function
+                                       , update_cbudget_committed   & ! function
                                        , compute_budget             ! ! function
       use soil_respiration      , only : soil_respiration_driver    ! ! function
       use photosyn_driv         , only : canopy_photosynthesis      ! ! function
@@ -197,6 +198,9 @@ module heun_driver
                   !----- Compute current storage terms. -----------------------------------!
                   call update_budget(csite,cpoly%lsl(isi),ipa)
                   !------------------------------------------------------------------------!
+
+
+
                   !------------------------------------------------------------------------!
                   !      Test whether temperature and energy are reasonable.               !
                   !------------------------------------------------------------------------!
@@ -224,6 +228,12 @@ module heun_driver
 
                   !----- Compute root and heterotrophic respiration. ----------------------!
                   call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+                  !------------------------------------------------------------------------!
+
+
+
+                  !----- Update the committed carbon change pool. -------------------------!
+                  call update_cbudget_committed(csite,ipa)
                   !------------------------------------------------------------------------!
 
 

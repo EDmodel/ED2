@@ -484,8 +484,7 @@ module rk4_misc
    subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
       use ed_state_vars        , only : sitetype              & ! structure
                                       , patchtype             ! ! structure
-      use consts_coms          , only : day_sec8              & ! intent(in)
-                                      , umol_2_kgC8           ! ! intent(in)
+      use consts_coms          , only : kgCday_2_umols8       ! ! intent(in)
       use rk4_coms             , only : rk4patchtype          ! ! structure
       implicit none
 
@@ -497,6 +496,7 @@ module rk4_misc
       type(patchtype)       , pointer    :: cpatch
       integer                            :: ico
       !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -514,30 +514,30 @@ module rk4_misc
          !     The following variables are in kgC/plant/day, convert them to umol/m2/s.    !
          !---------------------------------------------------------------------------------!
          targetp%leaf_growth_resp  (ico) = dble(cpatch%leaf_growth_resp (ico))             &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%root_growth_resp  (ico) = dble(cpatch%root_growth_resp (ico))             &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%sapa_growth_resp  (ico) = dble(cpatch%sapa_growth_resp (ico))             &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%sapb_growth_resp  (ico) = dble(cpatch%sapb_growth_resp  (ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%barka_growth_resp (ico) = dble(cpatch%barka_growth_resp (ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%barkb_growth_resp (ico) = dble(cpatch%barkb_growth_resp (ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
 
          targetp%leaf_storage_resp (ico) = dble(cpatch%leaf_storage_resp (ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%root_storage_resp (ico) = dble(cpatch%root_storage_resp (ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%sapa_storage_resp (ico) = dble(cpatch%sapa_storage_resp (ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%sapb_storage_resp (ico) = dble(cpatch%sapb_storage_resp (ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%barka_storage_resp(ico) = dble(cpatch%barka_storage_resp(ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
          targetp%barkb_storage_resp(ico) = dble(cpatch%barkb_storage_resp(ico))            &
-                                         * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+                                         * targetp%nplant(ico) * kgCday_2_umols8
       end do
 
       !----- Heterotrophic respiration terms. ---------------------------------------------!

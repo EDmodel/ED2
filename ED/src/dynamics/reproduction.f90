@@ -19,6 +19,7 @@ module reproduction
                                      , allocate_patchtype         & ! subroutine
                                      , copy_patchtype             & ! subroutine
                                      , deallocate_patchtype       ! ! subroutine
+      use met_driver_coms     , only : met_driv_state             ! ! structure
       use pft_coms            , only : recruittype                & ! structure
                                      , zero_recruit               & ! subroutine
                                      , copy_recruit               & ! subroutine
@@ -45,7 +46,8 @@ module reproduction
       use phenology_coms      , only : repro_scheme               ! ! intent(in)
       use mem_polygons        , only : maxcohort                  ! ! intent(in)
       use consts_coms         , only : pio4                       ! ! intent(in)
-      use ed_therm_lib        , only : calc_veg_hcap              ! ! function
+      use ed_therm_lib        , only : calc_veg_hcap              & ! function
+                                     , update_veg_energy_cweh     ! ! function
       use allometry           , only : size2bl                    & ! function
                                      , size2bd                    & ! function
                                      , h2dbh                      & ! function
@@ -59,7 +61,6 @@ module reproduction
                                      , current_time               ! ! intent(in)
       use phenology_aux       , only : pheninit_balive_bstorage   ! ! intent(in)
       use budget_utils        , only : update_budget              ! ! sub-routine
-      use therm_lib           , only : cmtl2uext                  ! ! function
       use stable_cohorts      , only : is_resolvable              ! ! function
       use update_derived_utils, only : update_patch_derived_props & ! sub-routine
                                      , update_site_derived_props  ! ! sub-routine
@@ -67,42 +68,43 @@ module reproduction
       use ed_type_init        , only : init_ed_cohort_vars        ! ! sub-routine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(edtype)     , target     :: cgrid
-      integer          , intent(in) :: month
-      logical          , intent(in) :: veget_dyn_on
+      type(edtype)        , target     :: cgrid
+      integer             , intent(in) :: month
+      logical             , intent(in) :: veget_dyn_on
       !----- Local variables --------------------------------------------------------------!
-      type(polygontype), pointer          :: cpoly
-      type(sitetype)   , pointer          :: csite
-      type(patchtype)  , pointer          :: cpatch
-      type(patchtype)  , pointer          :: temppatch
-      type(recruittype), dimension(n_pft) :: recruit
-      type(recruittype)                   :: rectest
-      integer                             :: ipy
-      integer                             :: isi
-      integer                             :: ipa
-      integer                             :: ico
-      integer                             :: ipft
-      integer                             :: inew
-      integer                             :: imon
-      integer                             :: ncohorts_new
-      logical                             :: late_spring
-      logical                             :: allow_pft
-      logical                             :: make_recruit
-      real                                :: elim_nplant
-      real                                :: elim_lai
-      real                                :: nplant_inc
-      real                                :: bleaf_plant
-      real                                :: bdead_plant
-      real                                :: broot_plant
-      real                                :: bsapwood_plant
-      real                                :: bbark_plant
-      real                                :: balive_plant
-      real                                :: rec_bdead
-      real                                :: rec_biomass
-      logical          , parameter        :: printout  = .false.
-      character(len=17), parameter        :: fracfile  = 'repro_details.txt'
+      type(polygontype)   , pointer          :: cpoly
+      type(sitetype)      , pointer          :: csite
+      type(met_driv_state), pointer          :: cmet
+      type(patchtype)     , pointer          :: cpatch
+      type(patchtype)     , pointer          :: temppatch
+      type(recruittype)   , dimension(n_pft) :: recruit
+      type(recruittype)                      :: rectest
+      integer                                :: ipy
+      integer                                :: isi
+      integer                                :: ipa
+      integer                                :: ico
+      integer                                :: ipft
+      integer                                :: inew
+      integer                                :: imon
+      integer                                :: ncohorts_new
+      logical                                :: late_spring
+      logical                                :: allow_pft
+      logical                                :: make_recruit
+      real                                   :: elim_nplant
+      real                                   :: elim_lai
+      real                                   :: nplant_inc
+      real                                   :: bleaf_plant
+      real                                   :: bdead_plant
+      real                                   :: broot_plant
+      real                                   :: bsapwood_plant
+      real                                   :: bbark_plant
+      real                                   :: balive_plant
+      real                                   :: rec_bdead
+      real                                   :: rec_biomass
+      logical             , parameter        :: printout  = .false.
+      character(len=17)   , parameter        :: fracfile  = 'repro_details.txt'
       !----- Saved variables --------------------------------------------------------------!
-      logical          , save             :: first_time = .true.
+      logical             , save             :: first_time = .true.
       !------------------------------------------------------------------------------------!
 
 
@@ -204,6 +206,7 @@ module reproduction
 
             siteloop: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
+               cmet  => cpoly%met(isi)
 
                !---------------------------------------------------------------------------!
                !    For the recruitment to happen, four requirements must be met:          !
@@ -530,16 +533,14 @@ module reproduction
                                           ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)        &
                                           ,cpatch%nplant(ico),cpatch%pft(ico)              &
                                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-
-                        cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)         &
-                                                           ,cpatch%leaf_water(ico)         &
-                                                           ,cpatch%leaf_temp (ico)         &
-                                                           ,cpatch%leaf_fliq (ico))
-                        cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)         &
-                                                           ,cpatch%wood_water(ico)         &
-                                                           ,cpatch%wood_temp (ico)         &
-                                                           ,cpatch%wood_fliq (ico))
-
+                        !------------------------------------------------------------------!
+                        !    Set internal energy to 0., then update it so the effect of    !
+                        ! recruits to the carbon balance is accounted for.                 !
+                        !------------------------------------------------------------------!
+                        cpatch%leaf_energy(ico) = 0.0
+                        cpatch%wood_energy(ico) = 0.0
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.)
+                        !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico)
                         !------------------------------------------------------------------!
 
@@ -576,7 +577,7 @@ module reproduction
                      case (1)
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
                      end select
-                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
                      call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
                   end if
                   !------------------------------------------------------------------------!
@@ -761,14 +762,13 @@ module reproduction
                                           ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)        &
                                           ,cpatch%nplant(ico),cpatch%pft(ico)              &
                                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-                        cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)         &
-                                                           ,cpatch%leaf_water(ico)         &
-                                                           ,cpatch%leaf_temp (ico)         &
-                                                           ,cpatch%leaf_fliq (ico))
-                        cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)         &
-                                                           ,cpatch%wood_water(ico)         &
-                                                           ,cpatch%wood_temp (ico)         &
-                                                           ,cpatch%wood_fliq (ico))
+                        !------------------------------------------------------------------!
+                        !    Set internal energy to 0., then update it so the effect of    !
+                        ! recruits to the carbon balance is accounted for.                 !
+                        !------------------------------------------------------------------!
+                        cpatch%leaf_energy(ico) = 0.0
+                        cpatch%wood_energy(ico) = 0.0
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.)
                         !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico)
                         !------------------------------------------------------------------!
@@ -860,6 +860,7 @@ module reproduction
                                     , phenology             & ! intent(in)
                                     , plant_min_temp        & ! intent(in)
                                     , seed_rain             & ! intent(in)
+                                    , one_plant_c           & ! intent(in)
                                     , include_pft           & ! intent(in)
                                     , include_pft_ag        & ! intent(in)
                                     , include_pft_fp        ! ! intent(in)
@@ -896,8 +897,9 @@ module reproduction
       !------------------------------------------------------------------------------------!
       select case (repro_scheme)
       case (0)
-          !------ No reproduction, quit. --------------------------------------------------!
-          return
+         !------ No reproduction, quit. ---------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
       case default
          !---------------------------------------------------------------------------------!
          !     Seed rain should apply to all patches and sites, include them to the seed   !
@@ -952,7 +954,8 @@ module reproduction
                   !    In case this PFT is allowed, update the seed pool.                  !
                   !------------------------------------------------------------------------!
                   if (allow_pft) then
-                     csite%repro(ipft,ipa) = csite%repro(ipft,ipa) + seed_rain(ipft)
+                     csite%repro(ipft,ipa) = csite%repro(ipft,ipa)                         &
+                                           + seed_rain(ipft) * one_plant_c(ipft)
                   end if
                   !------------------------------------------------------------------------!
                end do pftloop
@@ -970,6 +973,10 @@ module reproduction
       !      In this select block we decide the seed dispersal depending the cross-site    !
       !------------------------------------------------------------------------------------!
       select case (repro_scheme)
+      case (0)
+         !------ This should never happen, but just in case, quit. ------------------------!
+         return
+         !---------------------------------------------------------------------------------!
       case (1)
          !---------------------------------------------------------------------------------!
          !     Seeds are dispersed amongst patches that belong to the same site, but they  !
@@ -1047,7 +1054,7 @@ module reproduction
          end do siteloop1
          !---------------------------------------------------------------------------------!
 
-      case (2,3)
+      case default
 
          !---------------------------------------------------------------------------------!
          !     Seeds are dispersed amongst patches that belong to the same polygon.  They  !

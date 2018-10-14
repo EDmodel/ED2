@@ -812,6 +812,9 @@ for (place in myplaces){
       }#end if
       #----- Check whether the user wants to have this variable plotted. ------------------#
       if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
+         #------ Append "all" to the PFT classes to plot. ---------------------------------#
+         pftplt = c(pftuse,npft+1)
+         #---------------------------------------------------------------------------------#
 
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
@@ -829,17 +832,9 @@ for (place in myplaces){
          #     Find the limit, make some room for the legend, and in case the field is a   #
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
-         xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
-         ylimit = pretty.xylim(u=thisvar[,,pftuse]        ,fracexp=0.0,is.log=plog )
-         if (plog){
-            xylog    = "y"
-            ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
-                        , exp(sqrt(ylimit[2]^3/ylimit[1]))
-                        )#end c
-         }else{
-            xylog    = ""
-            ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
-         }#end if
+         xlimit     = pretty.xylim(u=datum$tomonth    ,fracexp=0.0,is.log=FALSE)
+         ylimit.pft = pretty.xylim(u=thisvar[,,pftuse],fracexp=0.0,is.log=plog)
+         ylimit.all = pretty.xylim(u=thisvar[,,npft+1],fracexp=0.0,is.log=plog)
          #---------------------------------------------------------------------------------#
 
 
@@ -848,10 +843,30 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #       Loop over plant functional types.                                         #
          #---------------------------------------------------------------------------------#
-         for (p in pftuse){
-            pftlab = paste0("pft-",sprintf("%2.2i",p))
-
+         for (p in pftplt){
+            if (p == (npft + 1)){
+               pftlab = "pft-00"
+               ylimit = ylimit.all
+            }else{
+               pftlab = paste0("pft-",sprintf("%2.2i",p))
+               ylimit = ylimit.pft
+            }#end if
             cat0("        - ",pft$name[p],".")
+
+
+            #------------------------------------------------------------------------------#
+            #     Set y-limits for drought rectangle.                                      #
+            #------------------------------------------------------------------------------#
+            if (plog){
+               xylog    = "y"
+               ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
+                           , exp(sqrt(ylimit[2]^3/ylimit[1]))
+                           )#end c
+            }else{
+               xylog    = ""
+               ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
+            }#end if
+            #------------------------------------------------------------------------------#
 
 
             #----- Loop over output formats. ----------------------------------------------#

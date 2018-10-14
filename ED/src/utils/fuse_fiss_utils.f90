@@ -113,7 +113,7 @@ module fuse_fiss_utils
    !    This subroutine will eliminate cohorts based on their sizes. This is intended to   !
    ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
    !---------------------------------------------------------------------------------------!
-   subroutine terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+   subroutine terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
       use pft_coms           , only : min_cohort_size  & ! intent(in)
                                     , l2n_stem         & ! intent(in)
                                     , c2n_stem         & ! intent(in)
@@ -122,27 +122,40 @@ module fuse_fiss_utils
                                     , f_labile_leaf    & ! intent(in)
                                     , f_labile_stem    & ! intent(in)
                                     , agf_bs           ! ! intent(in)
-
+      use ed_misc_coms       , only : frqsumi          ! ! intent(in)
       use ed_state_vars      , only : patchtype        & ! structure
                                     , sitetype         ! ! structure
+      use met_driver_coms    , only : met_driv_state   ! ! structure
+      use therm_lib          , only : tq2enthalpy      & ! function
+                                    , idealdenssh      & ! function
+                                    , reducedpress     ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)       , target      :: csite        ! Current site
-      integer              , intent(in)  :: ipa          ! Current patch ID
-      real                 , intent(out) :: elim_nplant  ! Nplants eliminated here
-      real                 , intent(out) :: elim_lai     ! LAI eliminated here
+      type(sitetype)       , target      :: csite         ! Current site
+      integer              , intent(in)  :: ipa           ! Current patch ID
+      type(met_driv_state) , target      :: cmet          ! Current met forcing
+      real                 , intent(out) :: elim_nplant   ! Nplants eliminated here
+      real                 , intent(out) :: elim_lai      ! LAI eliminated here
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)      , pointer     :: cpatch       ! Current patch
-      type(patchtype)      , pointer     :: temppatch    ! Scratch patch structure
-      logical, dimension(:), allocatable :: remain_table ! Flag: this cohort will remain.
-      integer                            :: ico          ! Counter
-      integer                            :: ipft         ! PFT size
-      real                               :: csize        ! Size of current cohort
+      type(patchtype)      , pointer     :: cpatch        ! Current patch
+      type(patchtype)      , pointer     :: temppatch     ! Scratch patch structure
+      logical, dimension(:), allocatable :: remain_table  ! Flag: this cohort will remain.
+      integer                            :: ico           ! Counter
+      integer                            :: ipft          ! PFT size
+      real                               :: csize         ! Size of current cohort
+      real                               :: elim_energy   ! Energy lost due to termination
+      real                               :: leaf_qboil    ! Leaf energy transferred to CAS
+      real                               :: wood_qboil    ! Wood energy going to CAS
+      real                               :: veg_boil_tot  ! Water transferred to CAS
+      real                               :: can_prss      ! CAS pressure
+      real                               :: can_rhos      ! CAS density
       !------------------------------------------------------------------------------------!
       
-      cpatch => csite%patch(ipa)
-      elim_nplant = 0.
-      elim_lai    = 0.
+      cpatch        => csite%patch(ipa)
+      elim_nplant   = 0.
+      elim_lai      = 0.
+      elim_energy   = 0.
+      veg_boil_tot  = 0.
 
       !----- Initialize the temporary patch structures and the remain/terminate table -----!
       nullify(temppatch)
@@ -228,30 +241,87 @@ module fuse_fiss_utils
                                    + cpatch%bdeada   (ico)                      ) )        &
                                  / c2n_stem(ipft)
 
-            csite%stsn_in(ipa) = csite%stsn_in(ipa) + cpatch%nplant(ico)                     &
+            csite%stsn_in(ipa) = csite%stsn_in(ipa) + cpatch%nplant(ico)                   &
                                * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%broot(ico)       &
                                  + ( 1.0 - f_labile_stem(ipft) )                           &
                                  * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)            &
                                    + cpatch%bdeadb   (ico)                      ) )        &
                                  / c2n_stem(ipft)
+
+
+            !------------------------------------------------------------------------------!
+            !     In case the cohort has any intercepted water, exchange moisture with the !
+            ! canopy air space by donating the total amount as "boiling" (fast evaporation !
+            ! or sublimation).                                                             !
+            !------------------------------------------------------------------------------!
+            if ( (cpatch%leaf_water(ico) + cpatch%wood_water(ico) ) > 0.0 ) then
+               !----- Find the associated enthalpy to be transferred to the CAS. ----------!
+               leaf_qboil   = cpatch%leaf_water(ico)                                       &
+                            * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
+               wood_qboil   = cpatch%wood_water(ico)                                       &
+                            * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update the patch-level transfer and loss of water and energy. -------!
+               elim_energy   = elim_energy                                                 &
+                             + cpatch%leaf_energy(ico) - leaf_qboil                        &
+                             + cpatch%wood_energy(ico) - wood_qboil
+               veg_boil_tot  = veg_boil_tot                                                &
+                             + cpatch%leaf_water(ico) + cpatch%wood_water(ico)
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Update total change in energy due to change in vegetation mass, and send the    !
+      ! water to the canopy air space.  Total enthalpy due to the forced boiling will be   !
+      ! consistently updated because the higher specific humidity will translate into more !
+      ! enthalpy.                                                                          !
+      !------------------------------------------------------------------------------------!
+      csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa) - elim_energy * frqsumi
+      if (veg_boil_tot > 0.0) then
+         can_prss           = reducedpress(cmet%prss,cmet%atm_theta,cmet%atm_shv           &
+                                          ,cmet%geoht,csite%can_theta(ipa)                 &
+                                          ,csite%can_shv(ipa),csite%can_depth(ipa) )
+         can_rhos           = idealdenssh (can_prss,csite%can_temp(ipa),csite%can_shv(ipa))
+         csite%can_shv(ipa) = csite%can_shv(ipa)                                           &
+                            + veg_boil_tot / (csite%can_depth(ipa) * can_rhos)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !----- Copy the remaining cohorts to a temporary patch ------------------------------!
       call allocate_patchtype(temppatch,count(remain_table))
       call copy_patchtype_mask(cpatch,temppatch,remain_table,size(remain_table)            &
                               ,count(remain_table))
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Reallocate the new patch and populate with the saved cohorts -----------------!
       call deallocate_patchtype(cpatch)
       call allocate_patchtype(cpatch,count(remain_table))
       call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
       call sort_cohorts(cpatch)
-     
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Deallocate the temporary patch -----------------------------------------------!     
       call deallocate_patchtype(temppatch)
       deallocate(temppatch)
       deallocate(remain_table)
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Update the cohort census at the site level -----------------------------------!
       csite%cohort_count(ipa) = cpatch%ncohorts
@@ -259,6 +329,9 @@ module fuse_fiss_utils
          write (unit=*,fmt='(a,1x,es12.5)') 'TERMINATE: ELIM_LAI=',elim_lai
          write (unit=*,fmt='(a,1x,es12.5)') 'TERMINATE: ELIM_NPLANT=',elim_nplant
       end if
+      !------------------------------------------------------------------------------------!
+
+
       return
    end subroutine terminate_cohorts
    !=======================================================================================!
@@ -3846,7 +3919,7 @@ module fuse_fiss_utils
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)               &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -4081,7 +4154,7 @@ module fuse_fiss_utils
                         !     Take an average of the patch properties of donpatch and      !
                         ! recpatch, and assign the average recpatch.                       !
                         !------------------------------------------------------------------!
-                        call fuse_2_patches(csite,donp,recp,nzg,nzs                        &
+                        call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)         &
                                            ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
                                            ,cpoly%green_leaf_factor(:,isi),fuse_initial    &
                                            ,elim_nplant,elim_lai)
@@ -4379,7 +4452,7 @@ module fuse_fiss_utils
                   ! properties of donpatch and recpatch, and leave the averaged values at  !
                   ! recpatch.                                                              !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)               &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -4968,7 +5041,7 @@ module fuse_fiss_utils
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)               &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -5238,7 +5311,7 @@ module fuse_fiss_utils
                         !     Take an average of the patch properties of donpatch and      !
                         ! recpatch, and assign the average recpatch.                       !
                         !------------------------------------------------------------------!
-                        call fuse_2_patches(csite,donp,recp,nzg,nzs                        &
+                        call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)         &
                                            ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
                                            ,cpoly%green_leaf_factor(:,isi),fuse_initial    &
                                            ,elim_nplant,elim_lai)
@@ -5584,7 +5657,7 @@ module fuse_fiss_utils
                   ! properties of donpatch and recpatch, and leave the averaged values at  !
                   ! recpatch.                                                              !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)               &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -5802,10 +5875,11 @@ module fuse_fiss_utils
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,lsl,ntext_soil,green_leaf_factor      &
+   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,cmet,lsl,ntext_soil,green_leaf_factor &
                             ,fuse_initial,elim_nplant,elim_lai)
       use ed_state_vars       , only : sitetype                      & ! Structure 
                                      , patchtype                     ! ! Structure
+      use met_driver_coms     , only : met_driv_state                ! ! structure
       use soil_coms           , only : soil                          & ! intent(in)
                                      , tiny_sfcwater_mass            & ! intent(in)
                                      , matric_potential              ! ! intent(in)
@@ -5838,6 +5912,7 @@ module fuse_fiss_utils
       integer                , intent(in)  :: lsl               ! Lowest soil level
       integer                , intent(in)  :: mzg               ! # of soil layers
       integer                , intent(in)  :: mzs               ! # of sfc. water layers
+      type(met_driv_state)   , target      :: cmet              ! Current met forcing
       integer, dimension(mzg), intent(in)  :: ntext_soil        ! Soil type
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
       logical                , intent(in)  :: fuse_initial      ! Initialisation?
@@ -6194,6 +6269,11 @@ module fuse_fiss_utils
                                            + csite%co2budget_denseffect  (donp)            &
                                            * csite%area                  (donp) )          &
                                          * newareai
+      csite%co2budget_zcaneffect  (recp) = ( csite%co2budget_zcaneffect  (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%co2budget_zcaneffect  (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
       csite%co2budget_gpp         (recp) = ( csite%co2budget_gpp         (recp)            &
                                            * csite%area                  (recp)            &
                                            + csite%co2budget_gpp         (donp)            &
@@ -6207,6 +6287,31 @@ module fuse_fiss_utils
       csite%co2budget_rh          (recp) = ( csite%co2budget_rh          (recp)            &
                                            * csite%area                  (recp)            &
                                            + csite%co2budget_rh          (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
+      csite%cbudget_residual      (recp) = ( csite%cbudget_residual      (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%cbudget_residual      (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
+      csite%cbudget_loss2atm      (recp) = ( csite%cbudget_loss2atm      (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%cbudget_loss2atm      (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
+      csite%cbudget_committed     (recp) = ( csite%cbudget_committed       (donp)          &
+                                           * csite%area                    (donp)          &
+                                           + csite%cbudget_committed       (recp)          &
+                                           * csite%area                    (recp) )        &
+                                         * newareai
+      csite%cbudget_denseffect    (recp) = ( csite%cbudget_denseffect    (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%cbudget_denseffect    (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
+      csite%cbudget_zcaneffect    (recp) = ( csite%cbudget_zcaneffect    (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%cbudget_zcaneffect    (donp)            &
                                            * csite%area                  (donp) )          &
                                          * newareai
       csite%ebudget_residual      (recp) = ( csite%ebudget_residual      (recp)            &
@@ -6232,6 +6337,16 @@ module fuse_fiss_utils
       csite%ebudget_prsseffect    (recp) = ( csite%ebudget_prsseffect    (recp)            &
                                            * csite%area                  (recp)            &
                                            + csite%ebudget_prsseffect    (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
+      csite%ebudget_hcapeffect    (recp) = ( csite%ebudget_hcapeffect    (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%ebudget_hcapeffect    (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
+      csite%ebudget_zcaneffect    (recp) = ( csite%ebudget_zcaneffect    (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%ebudget_zcaneffect    (donp)            &
                                            * csite%area                  (donp) )          &
                                          * newareai
       csite%ebudget_loss2runoff   (recp) = ( csite%ebudget_loss2runoff   (recp)            &
@@ -6262,6 +6377,11 @@ module fuse_fiss_utils
       csite%wbudget_denseffect    (recp) = ( csite%wbudget_denseffect    (recp)            &
                                            * csite%area                  (recp)            &
                                            + csite%wbudget_denseffect    (donp)            &
+                                           * csite%area                  (donp) )          &
+                                         * newareai
+      csite%wbudget_zcaneffect    (recp) = ( csite%wbudget_zcaneffect    (recp)            &
+                                           * csite%area                  (recp)            &
+                                           + csite%wbudget_zcaneffect    (donp)            &
                                            * csite%area                  (donp) )          &
                                          * newareai
       csite%wbudget_loss2runoff   (recp) = ( csite%wbudget_loss2runoff   (recp)            &
@@ -8212,7 +8332,7 @@ module fuse_fiss_utils
             case (1)
                call new_fuse_cohorts(csite,recp,lsl,fuse_initial)
             end select
-            call terminate_cohorts(csite,recp,elim_nplant,elim_lai)
+            call terminate_cohorts(csite,recp,cmet,elim_nplant,elim_lai)
             call split_cohorts(cpatch,green_leaf_factor)
          end if
          !---------------------------------------------------------------------------------!
@@ -8236,6 +8356,7 @@ module fuse_fiss_utils
       ! + csite%wbudget_initialstorage(recp)                                               !
       ! + csite%ebudget_initialstorage(recp)                                               !
       ! + csite%co2budget_initialstorage(recp)                                             !
+      ! + csite%cbudget_initialstorage(recp)                                               !
       !------------------------------------------------------------------------------------!
       call update_budget(csite,lsl,recp)
       !------------------------------------------------------------------------------------!

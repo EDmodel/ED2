@@ -4,6 +4,8 @@
 #------------------------------------------------------------------------------------------#
 rm(list=ls())
 graphics.off()
+options(warn=0)
+gc()
 #==========================================================================================#
 #==========================================================================================#
 
@@ -1943,6 +1945,19 @@ for (place in myplaces){
 
 
 
+            #------------------------------------------------------------------------------#
+            #     Discard cohorts that are near-recruit size.                              #
+            #------------------------------------------------------------------------------#
+            keepww = popww %>% 0.
+            ageww  = ageww[keepww]
+            dbhww  = dbhww[keepww]
+            pftww  = pftww[keepww]
+            varww  = varww[keepww]
+            popww  = popww[keepww]
+            #------------------------------------------------------------------------------#
+
+
+
 
             #------------------------------------------------------------------------------#
             #     We only plot the SAS figures when the polygon is not an absolute desert. #
@@ -2009,7 +2024,7 @@ for (place in myplaces){
                dbhww   = rep(dbhww,each=3)
                pftww   = rep(pftww,each=3)
                varww   = as.vector( rbind( rep(floor3d,times=ncohnow)
-                                         , varco[[ww]]
+                                         , varww
                                          , rep(NA,times=ncohnow)
                                          )#end rbind
                                   )#end as.vector
@@ -2020,7 +2035,7 @@ for (place in myplaces){
                cexww   = rep(cexww,each=3)
                colww   = pft$colour[pftww]
 
-               pftin   = sort(unique(cohort$pft[[ww]]))
+               pftin   = sort(unique(pftww))
                colleg  = pft$colour[pftin]
                pftleg  = pft$name  [pftin]
                #---------------------------------------------------------------------------#

@@ -8,9 +8,20 @@
 #  ~ x.obs          -- the observed values of x                                            #
 #  ~ n.parameters   -- number of parameters (if the number of parameters is unknown, we    #
 #                      don't assume any parameters).                                       #
-#  ~ out.dfr        -- output as a data frame? (FALSE returns a list).                     #
+#  ~ out.dfr        -- output as a data frame? This can be either a logical or a character #
+#                      variable.                                                           #
+#                      Logical: TRUE (FALSE) means output as data frame (list)             #
+#                      Character: "list", "data.frame", "vector" for the actual type.      #
 #------------------------------------------------------------------------------------------#
 test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FALSE){
+
+   #----- Make sure out.dfr is properly set. ----------------------------------------------#
+   if (is.logical(out.dfr)){
+      out.type = if(out.dfr){"data.frame"}else{"list"}
+   }else{
+      out.type = match.arg(out.dfr,choices=c("list","vector","data.frame"))
+   }#end if (is.logical(out.dfr))
+   #---------------------------------------------------------------------------------------#
 
 
    #---- Crash if the x.mod and x.obs don't have the same size and class. -----------------#
@@ -199,7 +210,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
    #---------------------------------------------------------------------------------------#
    #     Return everything to the user.                                                    #
    #---------------------------------------------------------------------------------------#
-   if (out.dfr){
+   if (out.type %in% "data.frame"){
       ans = data.frame( n            = n.ok
                       , p            = n.ok - df.err
                       , df.tot       = df.tot
@@ -232,6 +243,39 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
                       , ks.statistic = ks.statistic
                       , ks.p.value   = ks.p.value
                       )#end list
+   }else if (out.type %in% "vector"){
+      ans = c( n            = n.ok
+             , p            = n.ok - df.err
+             , df.tot       = df.tot
+             , df.err       = df.err
+             , obs.mean     = obs.moment[1]
+             , obs.sdev     = sqrt(obs.moment[2])
+             , obs.skew     = obs.moment[3]
+             , obs.kurt     = obs.moment[4]
+             , mod.mean     = mod.moment[1]
+             , mod.sdev     = sqrt(mod.moment[2])
+             , mod.skew     = mod.moment[3]
+             , mod.kurt     = mod.moment[4]
+             , res.mean     = res.moment[1]
+             , res.sdev     = sqrt(res.moment[2])
+             , res.skew     = res.moment[3]
+             , res.kurt     = res.moment[4]
+             , bias         = bias
+             , sigma        = sigma
+             , lsq.lnlike   = lsq.lnlike
+             , mae          = mae
+             , mse          = mse
+             , rmse         = rmse
+             , ss.tot       = ss.tot
+             , ss.err       = ss.err
+             , r.squared    = r.squared
+             , fvue         = fvue
+             , sbias        = sbias
+             , sw.statistic = sw.statistic
+             , sw.p.value   = sw.p.value
+             , ks.statistic = ks.statistic
+             , ks.p.value   = ks.p.value
+             )#end c
    }else{
       ans = list ( n            = n.ok 
                  , p            = n.ok - df.err

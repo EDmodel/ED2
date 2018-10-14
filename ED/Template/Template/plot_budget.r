@@ -1,8 +1,36 @@
-#----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath"     # Current directory.
-srcdir         = "thisrscpath"  # Source  directory.
-outroot        = "thisoutroot"  # Output  directory.
+#==========================================================================================#
+#==========================================================================================#
+#     Leave these commands at the beginning.  They will refresh the session.               #
+#------------------------------------------------------------------------------------------#
+rm(list=ls())
+graphics.off()
+options(warn=0)
+gc()
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Here is the user defined variable section.                                          #
+#------------------------------------------------------------------------------------------#
+
+#----- Paths. -----------------------------------------------------------------------------#
+here           = "thispath"    # Current directory.
+srcdir         = "thisrscpath" # Source  directory.
+outroot        = "thisoutroot" # Directory for figures
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Name of the simulations. -----------------------------------------------------------#
 myplaces       = c("thispoly")
+budget_midfix  = "budget_state_patch" # Text that defines a budget file.
+#------------------------------------------------------------------------------------------#
+
+
+
 #------------------------------------------------------------------------------------------#
 #     Initial and final times, they must be character vectors of size 2, the first one     #
 # with m/d/y, and the second one with h:m:s".                                              #
@@ -10,33 +38,28 @@ myplaces       = c("thispoly")
 whena          = c("thismontha/thisdatea/thisyeara","thishoura:thisminua:00")
 whenz          = c("thismonthz/thisdatez/thisyearz","thishourz:thisminuz:00")
 ptype          = "l"                  # Type of plot
-ptyped         = "p"                  # Type of plot
-ptypeb         = "o"                  # Type of plot
+#------------------------------------------------------------------------------------------#
 
-outform        = thisoutform           # Formats for output file.  Supported formats are:
-                                 #   - "X11" - for printing on screen
-                                 #   - "eps" - for postscript printing
-                                 #   - "png" - for PNG printing
-                                 #   - "pdf" - for PDF printing
 
-cex.main       = 0.8             # Scale coefficient for the title
 
-byeold         = TRUE           # Remove old files of the given format?
+#----- Plot options. ----------------------------------------------------------------------#
+outform        = thisoutform   # Formats for output file.  Supported formats are:
+                               #   - "X11"    - for printing on screen
+                               #   - "quartz" - for printing on Mac OS screen
+                               #   - "eps"    - for postscript printing
+                               #   - "png"    - for PNG printing
+                               #   - "tif"    - for TIFF printing
+                               #   - "pdf"    - for PDF printing
+depth          = 96            # PNG resolution, in pixels per inch
+ptsz           = 22            # Font size.
+paper          = "square"      # Paper
+lwidth         = 2.5           # Line width
+plotgrid       = FALSE         # Should I plot the grid in the background? 
+cex.main       = 0.8           # Scale coefficient for the title
+ibackground    = mybackground  # Background settings (check load_everything.r)
+f.leg          = 1/6           # Fraction of plotting area for legend.
+#------------------------------------------------------------------------------------------#
 
-depth          = 96             # PNG resolution, in pixels per inch
-paper          = "square"       # Paper size, to define the plot shape
-ptsz           = 22             # Font size.
-lwidth         = 2.5            # Line width
-plotgrid       = TRUE           # Should I plot the grid in the background? 
-
-legwhere       = "topleft"      # Where should I place the legend?
-inset          = 0.05           # inset distance between legend and edge of plot region.
-
-scalleg        = 0.32           # Increase in y scale to fit the legend.
-ncolshov       = 200            # Target number of colours for Hovmoller diagrams.
-plotgrid       = FALSE           # Should I include a grid in plots?
-ibackground    = mybackground   # Background settings (check load_everything.r)
-f.leg          = 1/6            # Fraction of plotting area for legend.
 
 
 #------------------------------------------------------------------------------------------#
@@ -49,163 +72,226 @@ f.leg          = 1/6            # Fraction of plotting area for legend.
 n           = 0
 budget      = list()
 n           = n + 1
-budget[[n]] = list( vnam   = c("co2.nep.rel","co2.eddy.flux.rel"
-                              ,"co2.dstorage.rel","co2.residual.rel")
-                  , desc   = c("NEP","Eddy flux","Delta (Storage)","Residual")
-                  , colour = c("#A3CC52","#2996CC","#990F0F","grey30")
-                  , lty    = c("longdash","twodash","dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0)
-                  , range  = c(TRUE,TRUE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "co2.rel"
-                  , theme  = "Accumulated Carbon dioxide (relative)"
-                  , unit   = "pc"
-                  , ylim   = NA
-                  , aggr   = FALSE
-                  , plt    = TRUE)
-n           = n + 1
-budget[[n]] = list( vnam   = c("ene.precip.rel","ene.netrad.rel","ene.prss.eff.rel"
-                              ,"ene.eddy.flux.rel","ene.runoff.rel","ene.dstorage.rel"
-                              ,"ene.residual.rel")
-                  , desc   = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                              ,"Total runoff","Delta (Storage)","Residual")
-                  , colour = c("#3B24B3","#E65C17","#306614","#2996CC"
-                              ,"#A3CC52","#990F0F","grey30")
-                  , lty    = c("longdash","dotdash","dashed","twodash"
-                              ,"longdash"  ,"dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0,3.0,3.0,3.0)
-                  , range  = c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "ene.rel"
-                  , theme  = "Accumulated enthalpy (relative)"
-                  , unit   = "pc"
-                  , ylim   = c(-1.5,1.5)
-                  , aggr   = FALSE
-                  , plt    = TRUE)
-n           = n + 1
-budget[[n]] = list( vnam   = c("h2o.precip.rel","h2o.eddy.flux.rel","h2o.runoff.rel"
-                              ,"h2o.dstorage.rel","h2o.residual.rel")
-                  , desc   = c("Rainfall","Eddy flux","Total Runoff"
-                              ,"Delta (Storage)","Residual")
-                  , colour = c("#3B24B3","#2996CC","#A3CC52","#990F0F","grey30")
-                  , lty    = c("longdash","twodash","longdash","dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0,3.0)
-                  , range  = c(TRUE,TRUE,TRUE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "h2o.rel"
-                  , theme  = "Accumulated water (relative)"
-                  , unit   = "pc"
-                  , ylim   = c(-1.5,1.5)
-                  , aggr   = FALSE
-                  , plt    = TRUE)
-n           = n + 1
-budget[[n]] = list( vnam   = c("co2.nep.cum","co2.eddy.flux.cum"
-                              ,"co2.dstorage.cum","co2.residual.cum")
-                  , desc   = c("NEP","Eddy flux","Delta (Storage)","Residual")
-                  , colour = c("#A3CC52","#2996CC","#990F0F","grey30")
-                  , lty    = c("longdash","twodash","dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0)
-                  , range  = c(TRUE,TRUE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "co2.cum"
-                  , theme  = "Accumulated Carbon dioxide"
-                  , unit   = "umolcom2"
-                  , ylim   = NA
-                  , aggr   = FALSE
-                  , plt    = TRUE)
-n           = n + 1
-budget[[n]] = list( vnam   = c("ene.precip.cum","ene.netrad.cum","ene.prss.eff.cum"
-                              ,"ene.eddy.flux.cum","ene.runoff.cum","ene.dstorage.cum"
-                              ,"ene.residual.cum")
-                  , desc   = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                              ,"Total runoff","Delta (Storage)","Residual")
-                  , colour = c("#3B24B3","#E65C17","#306614","#2996CC"
-                              ,"#A3CC52","#990F0F","grey30")
-                  , lty    = c("longdash","dotdash","dashed","twodash"
-                              ,"longdash"  ,"dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0,3.0,3.0,3.0)
-                  , range  = c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "ene.cum"
-                  , theme  = "Accumulated enthalpy"
-                  , unit   = "jom2"
-                  , ylim   = NA
-                  , aggr   = FALSE
-                  , plt    = TRUE)
-n           = n + 1
-budget[[n]] = list( vnam   = c("h2o.precip.cum","h2o.eddy.flux.cum","h2o.runoff.cum"
-                              ,"h2o.dstorage.cum","h2o.residual.cum")
-                  , desc   = c("Rainfall","Eddy flux","Total Runoff"
-                              ,"Delta (Storage)","Residual")
-                  , colour = c("#3B24B3","#2996CC","#A3CC52","#990F0F","grey30")
-                  , lty    = c("longdash","twodash","longdash","dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0,3.0)
-                  , range  = c(TRUE,TRUE,TRUE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "h2o.cum"
-                  , theme  = "Accumulated water"
-                  , unit   = "kgwom2"
-                  , ylim   = NA
-                  , aggr   = FALSE
-                  , plt    = TRUE)
-n           = n + 1
-budget[[n]] = list( vnam   = c("co2.nep","co2.eddy.flux","co2.dstorage","co2.residual")
-                  , desc   = c("NEP","Eddy flux","Delta (Storage)","Residual")
-                  , colour = c("#A3CC52" ,"#2996CC","#990F0F","grey30")
-                  , lty    = c("longdash","twodash","dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0)
-                  , range  = c(TRUE,TRUE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "carbflux"
-                  , theme  = "Carbon dioxide budget"
-                  , unit   = "umolom2"
-                  , ylim   = NA
-                  , aggr   = TRUE
-                  , plt    = TRUE
+budget[[n]] = list( vnam    = c("co2.nee.rel","co2.eddy.flux.rel","co2.veg.dyn.rel"
+                               ,"co2.dstorage.rel","co2.residual.rel")
+                  , desc    = c("NEE","Eddy flux","Canopy change","Delta (Storage)"
+                               ,"Residual")
+                  , colour  = c("#811F9E","#1BA2F7","#0E6E81","#CB003D","grey30")
+                  , lty     = c("longdash","dashed","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "co2.rel"
+                  , theme   = "Accumulated Carbon dioxide (relative)"
+                  , unit    = "pc"
+                  , ylim    = NA
+                  , average = FALSE
+                  , poly    = TRUE
+                  , plt     = TRUE
                   )#end list
 n           = n + 1
-budget[[n]] = list( vnam   = c("ene.precip","ene.netrad","ene.prss.eff","ene.eddy.flux"
-                              ,"ene.runoff","ene.dstorage","ene.residual")
-                  , desc   = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                              ,"Total runoff","Delta (Storage)","Residual")
-                  , colour = c("#3B24B3","#E65C17","#306614","#2996CC"
-                              ,"#A3CC52","#990F0F","grey30")
-                  , lty    = c("longdash","dotdash","dashed","twodash"
-                              ,"longdash"  ,"dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0,3.0,3.0,3.0)
-                  , range  = c(FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "eneflux"
-                  , theme  = "Enthalpy budget"
-                  , unit   = "wom2"
-                  , ylim   = NA
-                  , aggr   = TRUE
-                  , plt    = TRUE)
+budget[[n]] = list( vnam    = c("crb.eddy.flux.rel","crb.veg.dyn.rel"
+                               ,"crb.dstorage.rel","crb.residual.rel")
+                  , desc    = c("Eddy flux","Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#1BA2F7","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dashed","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "crb.rel"
+                  , theme   = "Accumulated Carbon (relative)"
+                  , unit    = "pc"
+                  , ylim    = NA
+                  , average = FALSE
+                  , poly    = TRUE
+                  , plt     = TRUE
+                  )#end list
 n           = n + 1
-budget[[n]] = list( vnam   = c("h2o.precip","h2o.eddy.flux","h2o.runoff"
-                              ,"h2o.dstorage","h2o.residual")
-                  , desc   = c("Rainfall","Eddy flux","Total Runoff"
-                              ,"Delta (Storage)","Residual")
-                  , colour = c("#3B24B3","#2996CC","#A3CC52","#990F0F","grey30")
-                  , lty    = c("longdash","twodash","longdash","dotdash","solid")
-                  , lwd    = c(3.0,3.0,3.0,3.0,3.0)
-                  , range  = c(FALSE,TRUE,FALSE,FALSE,TRUE)
-                  , type   = ptype
-                  , plog   = ""
-                  , prefix = "h2oflux"
-                  , theme  = "Water budget"
-                  , unit   = "kgwom2oday"
-                  , ylim   = NA
-                  , aggr   = TRUE
-                  , plt    = TRUE)
+budget[[n]] = list( vnam    = c("ent.precip.rel","ent.netrad.rel","ent.prss.eff.rel"
+                               ,"ent.eddy.flux.rel","ent.runoff.rel","ent.veg.dyn.rel"
+                               ,"ent.dstorage.rel","ent.residual.rel")
+                  , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
+                               ,"Total runoff","Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7"
+                               ,"#811F9E","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dotdash","dashed","longdash","dashed"
+                               ,"dotted","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "ent.rel"
+                  , theme   = "Accumulated enthalpy (relative)"
+                  , unit    = "pc"
+                  , ylim    = c(-1.5,1.5)
+                  , average = FALSE
+                  , poly    = TRUE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("h2o.precip.rel","h2o.eddy.flux.rel","h2o.runoff.rel"
+                               ,"h2o.veg.dyn.rel","h2o.dstorage.rel","h2o.residual.rel")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff"
+                               ,"Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dotdash","dashed","dotted","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "h2o.rel"
+                  , theme   = "Accumulated water (relative)"
+                  , unit    = "pc"
+                  , ylim    = c(-1.5,1.5)
+                  , average = FALSE
+                  , poly    = TRUE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("co2.nee.cum","co2.eddy.flux.cum","co2.veg.dyn.cum"
+                               ,"co2.dstorage.cum","co2.residual.cum")
+                  , desc    = c("NEE","Eddy flux","Canopy change","Delta (Storage)"
+                               ,"Residual")
+                  , colour  = c("#811F9E","#1BA2F7","#0E6E81","#CB003D","grey30")
+                  , lty     = c("longdash","dashed","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "co2.cum"
+                  , theme   = "Accumulated Carbon dioxide"
+                  , unit    = "umolcom2"
+                  , ylim    = NA
+                  , average = FALSE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("crb.eddy.flux.cum","crb.veg.dyn.cum"
+                               ,"crb.dstorage.cum","crb.residual.cum")
+                  , desc    = c("Eddy flux","Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#1BA2F7","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dashed","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "crb.cum"
+                  , theme   = "Accumulated Carbon"
+                  , unit    = "kgcom2"
+                  , ylim    = NA
+                  , average = FALSE
+                  , poly    = TRUE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("ent.precip.cum","ent.netrad.cum","ent.prss.eff.cum"
+                               ,"ent.eddy.flux.cum","ent.runoff.cum","ent.veg.dyn.cum"
+                               ,"ent.dstorage.cum","ent.residual.cum")
+                  , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
+                               ,"Total runoff","Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7"
+                               ,"#811F9E","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dotdash","dashed","longdash","dashed"
+                               ,"dotted","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "ent.cum"
+                  , theme   = "Accumulated enthalpy (relative)"
+                  , unit    = "jom2"
+                  , ylim    = NA
+                  , average = FALSE
+                  , poly    = TRUE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("h2o.precip.cum","h2o.eddy.flux.cum","h2o.runoff.cum"
+                               ,"h2o.veg.dyn.cum","h2o.dstorage.cum","h2o.residual.cum")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff"
+                               ,"Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dotdash","dashed","dotted","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "h2o.cum"
+                  , theme   = "Accumulated water (relative)"
+                  , unit    = "kgwom2"
+                  , ylim    = NA
+                  , average = FALSE
+                  , poly    = TRUE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("co2.nee","co2.eddy.flux","co2.veg.dyn"
+                               ,"co2.dstorage","co2.residual")
+                  , desc    = c("NEE","Eddy flux","Canopy change","Delta (Storage)"
+                               ,"Residual")
+                  , colour  = c("#811F9E","#1BA2F7","#0E6E81","#CB003D","grey30")
+                  , lty     = c("longdash","dashed","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "co2.avg"
+                  , theme   = "Carbon dioxide budget"
+                  , unit    = "umolcom2os"
+                  , ylim    = NA
+                  , average = TRUE
+                  , poly    = FALSE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("crb.eddy.flux","crb.veg.dyn"
+                               ,"crb.dstorage","crb.residual")
+                  , desc    = c("Eddy flux","Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#1BA2F7","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dashed","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "crb.avg"
+                  , theme   = "Carbon budget"
+                  , unit    = "kgcom2oday"
+                  , ylim    = NA
+                  , average = TRUE
+                  , poly    = FALSE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("ent.precip","ent.netrad","ent.prss.eff"
+                               ,"ent.eddy.flux","ent.runoff","ent.veg.dyn"
+                               ,"ent.dstorage","ent.residual")
+                  , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
+                               ,"Total runoff","Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7"
+                               ,"#811F9E","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dotdash","dashed","longdash","dashed"
+                               ,"dotted","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "ent.avg"
+                  , theme   = "Enthalpy budget"
+                  , unit    = "wom2"
+                  , ylim    = NA
+                  , average = TRUE
+                  , poly    = FALSE
+                  , plt     = TRUE
+                  )#end list
+n           = n + 1
+budget[[n]] = list( vnam    = c("h2o.precip","h2o.eddy.flux","h2o.runoff"
+                               ,"h2o.veg.dyn","h2o.dstorage","h2o.residual")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff"
+                               ,"Canopy change","Delta (Storage)","Residual")
+                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#0E6E81","#CB003D","grey30")
+                  , lty     = c("dotdash","dashed","dotted","twodash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                  , type    = ptype
+                  , prefix  = "h2o.avg"
+                  , theme   = "Water budget"
+                  , unit    = "kgwom2oday"
+                  , ylim    = NA
+                  , average = TRUE
+                  , poly    = FALSE
+                  , plt     = TRUE
+                  )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -241,7 +327,7 @@ nout = length(outform)
 
 #----- Define plot window size ------------------------------------------------------------#
 f.ext   = f.leg / (1. - f.leg)
-ex.size = plotsize(proje=FALSE,paper=paper,extendfc="lat",extfactor=f.ext)
+ey.size = plotsize(proje=FALSE,paper=paper,extendfc="lat",extfactor=f.ext)
 #------------------------------------------------------------------------------------------#
 
 
@@ -266,7 +352,7 @@ for (place in myplaces){
 
    #----- Retrieve default information about this place and set up some variables. --------#
    thispoi    = locations(where=place,here=here)
-   inpref     = file.path(here,place)
+   inpref     = file.path(here,place,"analy")
    outpref    = thispoi$pathout
    lieu       = thispoi$lieu
    suffix     = thispoi$iata
@@ -288,9 +374,8 @@ for (place in myplaces){
 
    #----- Determine the number of patches. ------------------------------------------------#
    filelist  = dir(inpref)
-   mypatches = length(grep("budget_state_patch_",filelist))
+   mypatches = length(grep(budget_midfix,filelist))
    #---------------------------------------------------------------------------------------#
-
 
 
    #---------------------------------------------------------------------------------------#
@@ -302,12 +387,16 @@ for (place in myplaces){
 
       cat0("    - Patch # ",ipa,".")
       #----- Define the output directory. -------------------------------------------------#
-      patchdir  = file.path(outdir,paste("patch_",cipa,sep=""))
+      patchdir  = file.path(outdir,paste0("patch_",cipa))
       if (! file.exists(patchdir)) dir.create(patchdir)
+      #------------------------------------------------------------------------------------#
+
 
       #----- Define the input file name. --------------------------------------------------#
-      inputfile = file.path(inpref,paste("budget_state_patch_",cipa,".txt",sep=""))
-      cat0("      * Open file:",inputfile)
+      inputfile = file.path(inpref,paste0(place,"_",budget_midfix,"_",cipa,".txt"))
+      cat0("      * Open file: ",basename(inputfile))
+      #------------------------------------------------------------------------------------#
+
 
       #----- Read the file, just to grab the header. --------------------------------------#
       vnames   = scan(file=inputfile,what="raw",nlines=1,quiet=TRUE)
@@ -331,6 +420,8 @@ for (place in myplaces){
       cpatch              = matrix(aux,ncol=nvars,byrow=TRUE)
       dimnames(cpatch)    = list(NULL,vnames)
       cpatch              = data.frame(cpatch)
+      #------------------------------------------------------------------------------------#
+
 
       #----- Reduce the size of the file to be the period of interest only. ---------------#
       cat0("      * Reduce data to the period of interest.")
@@ -339,6 +430,9 @@ for (place in myplaces){
       sel    = when >= whena & when <= whenz
       cpatch = cpatch[sel,]
       when   = when[sel]
+      #------------------------------------------------------------------------------------#
+
+
 
 
       #------------------------------------------------------------------------------------#
@@ -349,14 +443,22 @@ for (place in myplaces){
       cat0("      * Reduce the number of terms.")
       #----- CO2. -------------------------------------------------------------------------#
       cpatch$co2.eddy.flux = - cpatch$co2.loss2atm
+      cpatch$co2.nee       = - cpatch$co2.nep
+      cpatch$co2.veg.dyn   =   cpatch$co2.zcan.eff
       cpatch$co2.residual  =   cpatch$co2.residual + cpatch$co2.dens.eff
+      #----- Carbon. ----------------------------------------------------------------------#
+      cpatch$crb.eddy.flux = - cpatch$crb.loss2atm
+      cpatch$crb.veg.dyn   =   cpatch$crb.zcan.eff
+      cpatch$crb.residual  =   cpatch$crb.residual + cpatch$crb.dens.eff
       #----- Enthalpy. --------------------------------------------------------------------#
-      cpatch$ene.eddy.flux = - cpatch$ene.loss2atm
-      cpatch$ene.runoff    = - cpatch$ene.runoff   - cpatch$ene.drainage
-      cpatch$ene.residual  =   cpatch$ene.residual + cpatch$ene.dens.eff
+      cpatch$ent.eddy.flux = - cpatch$ent.loss2atm
+      cpatch$ent.runoff    = - cpatch$ent.runoff   - cpatch$ent.drainage
+      cpatch$ent.veg.dyn   =   cpatch$ent.zcan.eff + cpatch$ent.hcap.eff
+      cpatch$ent.residual  =   cpatch$ent.residual + cpatch$ent.dens.eff
       #----- Water. -----------------------------------------------------------------------#
       cpatch$h2o.eddy.flux = - cpatch$h2o.loss2atm
       cpatch$h2o.runoff    = - cpatch$h2o.runoff   - cpatch$h2o.drainage
+      cpatch$h2o.veg.dyn   =   cpatch$h2o.zcan.eff
       cpatch$h2o.residual  =   cpatch$h2o.residual + cpatch$h2o.dens.eff
       #------------------------------------------------------------------------------------#
 
@@ -364,7 +466,8 @@ for (place in myplaces){
       #----- Re-scale or re-define some variables. ----------------------------------------#
       cat0("      * Find the average storage.")
       co2.scale = mean(cpatch$co2.storage)
-      ene.scale = mean(cpatch$ene.storage)
+      crb.scale = mean(cpatch$crb.storage)
+      ent.scale = mean(cpatch$ent.storage)
       h2o.scale = mean(cpatch$h2o.storage)
       #------------------------------------------------------------------------------------#
 
@@ -375,22 +478,30 @@ for (place in myplaces){
       cat0("      * Define the cumulative sum of all budget terms.")
       #----- Cumulative terms for all CO2 budget. -----------------------------------------#
       cpatch$co2.dstorage.cum  = cumsum(cpatch$co2.dstorage )
-      cpatch$co2.nep.cum       = cumsum(cpatch$co2.nep      )
+      cpatch$co2.nee.cum       = cumsum(cpatch$co2.nee      )
       cpatch$co2.eddy.flux.cum = cumsum(cpatch$co2.eddy.flux)
+      cpatch$co2.veg.dyn.cum   = cumsum(cpatch$co2.veg.dyn  )
       cpatch$co2.residual.cum  = cumsum(cpatch$co2.residual )
+      #----- Cumulative terms for all carbon budget. --------------------------------------#
+      cpatch$crb.dstorage.cum  = cumsum(cpatch$crb.dstorage ) / day.sec
+      cpatch$crb.eddy.flux.cum = cumsum(cpatch$crb.eddy.flux) / day.sec
+      cpatch$crb.veg.dyn.cum   = cumsum(cpatch$crb.veg.dyn  ) / day.sec
+      cpatch$crb.residual.cum  = cumsum(cpatch$crb.residual ) / day.sec
       #----- Cumulative terms for all enthalpy budget. ------------------------------------#
-      cpatch$ene.dstorage.cum  = cumsum(cpatch$ene.dstorage )
-      cpatch$ene.precip.cum    = cumsum(cpatch$ene.precip   )
-      cpatch$ene.netrad.cum    = cumsum(cpatch$ene.netrad   )
-      cpatch$ene.prss.eff.cum  = cumsum(cpatch$ene.prss.eff )
-      cpatch$ene.eddy.flux.cum = cumsum(cpatch$ene.eddy.flux)
-      cpatch$ene.runoff.cum    = cumsum(cpatch$ene.runoff   )
-      cpatch$ene.residual.cum  = cumsum(cpatch$ene.residual )
+      cpatch$ent.dstorage.cum  = cumsum(cpatch$ent.dstorage )
+      cpatch$ent.precip.cum    = cumsum(cpatch$ent.precip   )
+      cpatch$ent.netrad.cum    = cumsum(cpatch$ent.netrad   )
+      cpatch$ent.prss.eff.cum  = cumsum(cpatch$ent.prss.eff )
+      cpatch$ent.eddy.flux.cum = cumsum(cpatch$ent.eddy.flux)
+      cpatch$ent.runoff.cum    = cumsum(cpatch$ent.runoff   )
+      cpatch$ent.veg.dyn.cum   = cumsum(cpatch$ent.veg.dyn  )
+      cpatch$ent.residual.cum  = cumsum(cpatch$ent.residual )
       #----- Cumulative terms for all water budget. ---------------------------------------#
       cpatch$h2o.dstorage.cum  = cumsum(cpatch$h2o.dstorage ) / day.sec
       cpatch$h2o.precip.cum    = cumsum(cpatch$h2o.precip   ) / day.sec
       cpatch$h2o.eddy.flux.cum = cumsum(cpatch$h2o.eddy.flux) / day.sec
       cpatch$h2o.runoff.cum    = cumsum(cpatch$h2o.runoff   ) / day.sec
+      cpatch$h2o.veg.dyn.cum   = cumsum(cpatch$h2o.veg.dyn  ) / day.sec
       cpatch$h2o.residual.cum  = cumsum(cpatch$h2o.residual ) / day.sec
       #------------------------------------------------------------------------------------#
 
@@ -401,22 +512,30 @@ for (place in myplaces){
       cat0("      * Define the relative cumulative sum of the terms.")
       #----- Cumulative terms for all CO2 budget. -----------------------------------------#
       cpatch$co2.dstorage.rel  = 100. * cpatch$co2.dstorage.cum  / co2.scale
-      cpatch$co2.nep.rel       = 100. * cpatch$co2.nep.cum       / co2.scale
+      cpatch$co2.nee.rel       = 100. * cpatch$co2.nee.cum       / co2.scale
       cpatch$co2.eddy.flux.rel = 100. * cpatch$co2.eddy.flux.cum / co2.scale
+      cpatch$co2.veg.dyn.rel   = 100. * cpatch$co2.veg.dyn.cum   / co2.scale
       cpatch$co2.residual.rel  = 100. * cpatch$co2.residual.cum  / co2.scale
+      #----- Cumulative terms for all carbon budget. --------------------------------------#
+      cpatch$crb.dstorage.rel  = 100. * cpatch$crb.dstorage.cum  / crb.scale
+      cpatch$crb.eddy.flux.rel = 100. * cpatch$crb.eddy.flux.cum / crb.scale
+      cpatch$crb.veg.dyn.rel   = 100. * cpatch$crb.veg.dyn.cum   / crb.scale
+      cpatch$crb.residual.rel  = 100. * cpatch$crb.residual.cum  / crb.scale
       #----- Cumulative terms for all enthalpy budget. ------------------------------------#
-      cpatch$ene.dstorage.rel  = 100. * cpatch$ene.dstorage.cum  / ene.scale
-      cpatch$ene.precip.rel    = 100. * cpatch$ene.precip.cum    / ene.scale
-      cpatch$ene.netrad.rel    = 100. * cpatch$ene.netrad.cum    / ene.scale
-      cpatch$ene.prss.eff.rel  = 100. * cpatch$ene.prss.eff.cum  / ene.scale
-      cpatch$ene.eddy.flux.rel = 100. * cpatch$ene.eddy.flux.cum / ene.scale
-      cpatch$ene.runoff.rel    = 100. * cpatch$ene.runoff.cum    / ene.scale
-      cpatch$ene.residual.rel  = 100. * cpatch$ene.residual.cum  / ene.scale
+      cpatch$ent.dstorage.rel  = 100. * cpatch$ent.dstorage.cum  / ent.scale
+      cpatch$ent.precip.rel    = 100. * cpatch$ent.precip.cum    / ent.scale
+      cpatch$ent.netrad.rel    = 100. * cpatch$ent.netrad.cum    / ent.scale
+      cpatch$ent.prss.eff.rel  = 100. * cpatch$ent.prss.eff.cum  / ent.scale
+      cpatch$ent.eddy.flux.rel = 100. * cpatch$ent.eddy.flux.cum / ent.scale
+      cpatch$ent.runoff.rel    = 100. * cpatch$ent.runoff.cum    / ent.scale
+      cpatch$ent.veg.dyn.rel   = 100. * cpatch$ent.veg.dyn.cum   / ent.scale
+      cpatch$ent.residual.rel  = 100. * cpatch$ent.residual.cum  / ent.scale
       #----- Cumulative terms for all water budget. ---------------------------------------#
       cpatch$h2o.dstorage.rel  = 100. * cpatch$h2o.dstorage.cum  / h2o.scale
       cpatch$h2o.precip.rel    = 100. * cpatch$h2o.precip.cum    / h2o.scale
       cpatch$h2o.eddy.flux.rel = 100. * cpatch$h2o.eddy.flux.cum / h2o.scale
       cpatch$h2o.runoff.rel    = 100. * cpatch$h2o.runoff.cum    / h2o.scale
+      cpatch$h2o.veg.dyn.rel   = 100. * cpatch$h2o.veg.dyn.cum   / h2o.scale
       cpatch$h2o.residual.rel  = 100. * cpatch$h2o.residual.cum  / h2o.scale
       #------------------------------------------------------------------------------------#
 
@@ -449,13 +568,12 @@ for (place in myplaces){
          llwd         = budget.now$lwd
          lrange       = budget.now$range
          ltype        = budget.now$type
-         plog         = budget.now$plog
          prefix       = budget.now$prefix
          theme        = budget.now$theme
          unit         = budget.now$unit
          ylimit       = budget.now$ylim
          legpos       = budget.now$legpos
-         aggrit       = budget.now$aggr
+         averageit    = budget.now$average
          plotit       = budget.now$plt
 
          if (plotit){
@@ -482,31 +600,19 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Check if the directory exists.  If not, create it.                       #
             #------------------------------------------------------------------------------#
-            cat0("        > ",theme," time series .")
+            cat0("        > ",theme," time series.")
 
             #----- Loop over formats. -----------------------------------------------------#
             for (o in sequence(nout)){
                #----- Open file. ----------------------------------------------------------#
-               fichier = file.path( patchdir
-                                  , paste0(prefix,"-patch-",cipa,"-",suffix,".",outform[o])
-                                  )#end file.path
-               if(outform[o] %in% "x11"){
-                  X11(width=ex.size$width,height=ex.size$height,pointsize=ptsz)
-               }else if(outform[o] %in% "png"){
-                  png(filename=fichier,width=ex.size$width*depth
-                     ,height=ex.size$height*depth,pointsize=ptsz,res=depth
-                     ,bg="transparent")
-               }else if(outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=ex.size$width*depth
-                      ,height=ex.size$height*depth,pointsize=ptsz,res=depth
-                      ,bg="transparent",compression="lzw")
-               }else if(outform[o] %in% "eps"){
-                  postscript(file=fichier,width=ex.size$width,height=ex.size$height
-                            ,pointsize=ptsz,paper=ex.size$paper)
-               }else if(outform[o] %in% "pdf"){
-                  pdf(file=fichier,onefile=FALSE,width=ex.size$width,height=ex.size$height
-                     ,pointsize=ptsz,paper=ex.size$paper)
-               }#end if
+               fichier = paste0(prefix,"-patch-",cipa,"-",suffix,".",outform[o])
+               fichier = file.path(patchdir,fichier)
+               dummy   = open.plot( fichier = fichier
+                                  , outform = outform[o]
+                                  , size    = ey.size
+                                  , ptsz    = ptsz
+                                  , depth   = depth
+                                  )#end open.plot
                #---------------------------------------------------------------------------#
 
 
@@ -540,7 +646,7 @@ for (place in myplaces){
                #---- Open the window and plot the axes and annotations. -------------------#
                par(mar=c(5.1,5.1,3.1,0.6))
                plot.new()
-               plot.window(xlim=range(when),ylim=ylimit,log=plog)
+               plot.window(xlim=range(when),ylim=ylimit,log="")
                axis.rt(side=1,at=whenout$levels,labels=whenout$labels,padj=whenout$padj
                       ,las=5,off=0.05)
                axis(side=2,las=1)
@@ -559,7 +665,7 @@ for (place in myplaces){
                today   = chron(unique(datenow))
                for (l in sequence(nlayers)){
                   #----- Aggregate data into daily groups, to reduce file size. -----------#
-                  if (aggrit){
+                  if (averageit){
                      ynow = tapply(X=cpatch[[vnames[l]]],INDEX=datenow,FUN=mean,na.rm=TRUE)
                   }else{
                      ynow = tapply(X=cpatch[[vnames[l]]],INDEX=datenow,FUN=max ,na.rm=TRUE)
@@ -573,13 +679,7 @@ for (place in myplaces){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] %in% "x11"){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-               clean.tmp()
+               dummy = close.plot(outform=outform[o])
                #---------------------------------------------------------------------------#
             }#end for outform
             #------------------------------------------------------------------------------#

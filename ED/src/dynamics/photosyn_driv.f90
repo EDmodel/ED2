@@ -29,6 +29,7 @@ module photosyn_driv
                                 , epi                     & ! intent(in)
                                 , wdnsi                   & ! intent(in)
                                 , wdns                    & ! intent(in)
+                                , umol_2_kgC              & ! intent(in)
                                 , umols_2_kgCyr           & ! intent(in)
                                 , yr_day                  & ! intent(in)
                                 , lnexp_min               & ! intent(in)
@@ -384,198 +385,198 @@ module photosyn_driv
          !---------------------------------------------------------------------------------!
          if (cpatch%leaf_resolvable(ico)) then
 
-               !---------------------------------------------------------------------------!
-               !    Scale photosynthetically active radiation per unit of leaf.            !
-               !---------------------------------------------------------------------------!
-               leaf_par = cpatch%par_l(ico) / cpatch%lai(ico)
-               !---------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !    Scale photosynthetically active radiation per unit of leaf.               !
+            !------------------------------------------------------------------------------!
+            leaf_par = cpatch%par_l(ico) / cpatch%lai(ico)
+            !------------------------------------------------------------------------------!
 
-               !----- Root biomass [kg/m2]. -----------------------------------------------!
-               broot_loc = cpatch%broot(ico)  * cpatch%nplant(ico)
+            !----- Root biomass [kg/m2]. --------------------------------------------------!
+            broot_loc = cpatch%broot(ico)  * cpatch%nplant(ico)
 
-               !----- Supply of water. ----------------------------------------------------!
-               cpatch%water_supply      (ico) = water_conductance       (ipft) * broot_loc &
-                                              * avail_h2o_coh            (ico)
-               cpatch%fmean_water_supply(ico) = cpatch%fmean_water_supply(ico)             &
-                                              + cpatch%water_supply      (ico)             &
-                                              * dtlsm_o_frqsum
+            !----- Supply of water. -------------------------------------------------------!
+            cpatch%water_supply      (ico) = water_conductance       (ipft) * broot_loc    &
+                                           * avail_h2o_coh            (ico)
+            cpatch%fmean_water_supply(ico) = cpatch%fmean_water_supply(ico)                &
+                                           + cpatch%water_supply      (ico)                &
+                                           * dtlsm_o_frqsum
  
-               !----- Find the VPD limitation factor (aka Leuning's D0). ------------------!
-               select case (h2o_plant_lim)
-               case(3)
-                  leaf_D0 = max( 0.005 * D0(ipft)                                          &
-                               , epi * cpatch%water_supply(ico)                            &
-                               / (cpatch%lai(ico) * cpatch%leaf_gsw(ico) ) )
-               case default
-                  leaf_D0 = D0(ipft)
-               end select
-               !---------------------------------------------------------------------------!
+            !----- Find the VPD limitation factor (aka Leuning's D0). ---------------------!
+            select case (h2o_plant_lim)
+            case(3)
+               leaf_D0 = max( 0.005 * D0(ipft)                                             &
+                            , epi * cpatch%water_supply(ico)                               &
+                            / (cpatch%lai(ico) * cpatch%leaf_gsw(ico) ) )
+            case default
+               leaf_D0 = D0(ipft)
+            end select
+            !------------------------------------------------------------------------------!
 
 
 
 
-               !---------------------------------------------------------------------------!
-               !    Call the photosynthesis for actual photosynthetic rates.  The units    !
-               ! of the input and output are the standard in most of ED modules, but many  !
-               ! of them are converted inside the photosynthesis model.                    !
-               !    Notice that the units that are per unit area are per m2 of leaf, not   !
-               ! the patch area.                                                           !
-               !---------------------------------------------------------------------------!
-               call lphysiol_full(ibuff       & ! Multithread ID
-                , csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
-                , csite%can_rhos(ipa)         & ! Canopy air density            [    kg/m3]
-                , csite%can_shv(ipa)          & ! Canopy air sp. humidity       [    kg/kg]
-                , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio   [ umol/mol]
-                , ipft                        & ! Plant functional type         [      ---]
-                , leaf_par                    & ! Absorbed photos. active rad.  [ W/m2leaf]
-                , cpatch%leaf_temp(ico)       & ! Leaf temperature              [        K]
-                , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum. [    kg/kg]
-                , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
-                , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
-                , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
-                , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
-                , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
-                , leaf_D0                     & ! VPD scale for stom. closure   [  mol/mol]
-                , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
-                , cpatch%A_closed(ico)        & ! Photosynthesis rate (closed)  [umol/m2/s]
-                , cpatch%A_light(ico)         & ! Photosynthesis rate (light)   [umol/m2/s]
-                , cpatch%A_rubp(ico)          & ! Photosynthesis rate (RuBP)    [umol/m2/s]
-                , cpatch%A_co2(ico)           & ! Photosynthesis rate (CO2)     [umol/m2/s]
-                , cpatch%gsw_open(ico)        & ! Stom. condct. (water, open)   [  kg/m2/s]
-                , cpatch%gsw_closed(ico)      & ! Stom. condct. (water, closed) [  kg/m2/s]
-                , cpatch%lsfc_shv_open(ico)   & ! Leaf sp. humidity (open)      [    kg/kg]
-                , cpatch%lsfc_shv_closed(ico) & ! Leaf sp. humidity (closed)    [    kg/kg]
-                , cpatch%lsfc_co2_open(ico)   & ! Leaf CO2 mix. rat. (open)     [ umol/mol]
-                , cpatch%lsfc_co2_closed(ico) & ! Leaf CO2 mix. rat. (closed)   [ umol/mol]
-                , cpatch%lint_co2_open(ico)   & ! Intercellular CO2  (open)     [ umol/mol]
-                , cpatch%lint_co2_closed(ico) & ! Intercellular CO2  (closed)   [ umol/mol]
-                , leaf_resp                   & ! Leaf respiration rate         [umol/m2/s]
-                , vm                          & ! Max. capacity of Rubisco      [umol/m2/s]
-                , jm                          & ! Max. electron transport       [umol/m2/s]
-                , tpm                         & ! Max. triose phosphate         [umol/m2/s]
-                , jact                        & ! Actual electron transport     [umol/m2/s]
-                , compp                       & ! Gross photo. compens. point   [ umol/mol]
-                , limit_flag                  & ! Photosynth. limitation flag   [      ---]
-                )
+            !------------------------------------------------------------------------------!
+            !    Call the photosynthesis for actual photosynthetic rates.  The units       !
+            ! of the input and output are the standard in most of ED modules, but many     !
+            ! of them are converted inside the photosynthesis model.                       !
+            !    Notice that the units that are per unit area are per m2 of leaf, not      !
+            ! the patch area.                                                              !
+            !------------------------------------------------------------------------------!
+            call lphysiol_full(ibuff       & ! Multithread ID
+             , csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
+             , csite%can_rhos(ipa)         & ! Canopy air density            [    kg/m3]
+             , csite%can_shv(ipa)          & ! Canopy air sp. humidity       [    kg/kg]
+             , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio   [ umol/mol]
+             , ipft                        & ! Plant functional type         [      ---]
+             , leaf_par                    & ! Absorbed photos. active rad.  [ W/m2leaf]
+             , cpatch%leaf_temp(ico)       & ! Leaf temperature              [        K]
+             , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum. [    kg/kg]
+             , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
+             , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
+             , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
+             , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
+             , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
+             , leaf_D0                     & ! VPD scale for stom. closure   [  mol/mol]
+             , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
+             , cpatch%A_closed(ico)        & ! Photosynthesis rate (closed)  [umol/m2/s]
+             , cpatch%A_light(ico)         & ! Photosynthesis rate (light)   [umol/m2/s]
+             , cpatch%A_rubp(ico)          & ! Photosynthesis rate (RuBP)    [umol/m2/s]
+             , cpatch%A_co2(ico)           & ! Photosynthesis rate (CO2)     [umol/m2/s]
+             , cpatch%gsw_open(ico)        & ! Stom. condct. (water, open)   [  kg/m2/s]
+             , cpatch%gsw_closed(ico)      & ! Stom. condct. (water, closed) [  kg/m2/s]
+             , cpatch%lsfc_shv_open(ico)   & ! Leaf sp. humidity (open)      [    kg/kg]
+             , cpatch%lsfc_shv_closed(ico) & ! Leaf sp. humidity (closed)    [    kg/kg]
+             , cpatch%lsfc_co2_open(ico)   & ! Leaf CO2 mix. rat. (open)     [ umol/mol]
+             , cpatch%lsfc_co2_closed(ico) & ! Leaf CO2 mix. rat. (closed)   [ umol/mol]
+             , cpatch%lint_co2_open(ico)   & ! Intercellular CO2  (open)     [ umol/mol]
+             , cpatch%lint_co2_closed(ico) & ! Intercellular CO2  (closed)   [ umol/mol]
+             , leaf_resp                   & ! Leaf respiration rate         [umol/m2/s]
+             , vm                          & ! Max. capacity of Rubisco      [umol/m2/s]
+             , jm                          & ! Max. electron transport       [umol/m2/s]
+             , tpm                         & ! Max. triose phosphate         [umol/m2/s]
+             , jact                        & ! Actual electron transport     [umol/m2/s]
+             , compp                       & ! Gross photo. compens. point   [ umol/mol]
+             , limit_flag                  & ! Photosynth. limitation flag   [      ---]
+             )
 
-               !----- Convert leaf respiration to [umol/m2ground/s] -----------------------!
-               cpatch%leaf_respiration(ico) = leaf_resp * cpatch%lai (ico)
-               cpatch%today_leaf_resp(ico)  = cpatch%today_leaf_resp (ico)                 &
-                                            + cpatch%leaf_respiration(ico)
-               !----- The output variable must be in [kgC/plant/yr]. ----------------------!
-               cpatch%fmean_leaf_resp(ico)  = cpatch%fmean_leaf_resp (ico)                 &
-                                            + cpatch%leaf_respiration(ico)                 &
-                                            * dtlsm_o_frqsum * umols_2_kgCyr               &
-                                            / cpatch%nplant          (ico)
-
-               root_depth_indices(kroot) = .true.
-               broot_tot                 = broot_tot + broot_loc
-               pss_available_water       = pss_available_water                             &
-                                         + avail_h2o_coh(ico) * broot_loc
-
-               !---------------------------------------------------------------------------!
-               !     Determine the fraction of open stomata due to water limitation.       !
-               ! This is a function of the ratio between the potential water demand        !
-               ! (cpatch%psi_open, which is the average over the last time step), and the  !
-               ! supply (cpatch%water_supply).                                             !
-               !---------------------------------------------------------------------------!
-               select case (h2o_plant_lim)
-               case (0)
-                  !---- No water limitation, fsw is always 1.0. ---------------------------!
-                  cpatch%fsw(ico) = 1.0
-
-               case (1,2)
-                  water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico)
-                  if (cpatch%water_supply (ico) < tiny_num) then
-                     cpatch%fsw(ico) = 0.0
-                  else
-                     cpatch%fsw(ico) = 1.0                                                 &
-                                     / (1.0 + water_demand / cpatch%water_supply(ico))
-                  end if
-               case (3)
-                  !---- Water limitation is embedded in gsw, so fsw must remain 1.0. ------!
-                  cpatch%fsw(ico) = 1.0
-                  
-               end select
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Photorespiration can become important at high temperatures.  If so,  !
-               ! close down the stomata.                                                   !
-               !---------------------------------------------------------------------------!
-               if (cpatch%A_open(ico) < cpatch%A_closed(ico)) then
-                  cpatch%fs_open(ico) = 0.0
-               else
-                  cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
-               end if
-
-               !----- Net stomatal conductance. -------------------------------------------!
-               cpatch%leaf_gsw(ico) =        cpatch%fs_open(ico)  * cpatch%gsw_open(ico)   &
-                                    + (1.0 - cpatch%fs_open(ico)) * cpatch%gsw_closed(ico)
-               !---------------------------------------------------------------------------!
-
-
-               !----- GPP, averaged over frqstate. ----------------------------------------!
-               cpatch%gpp(ico) = max(0., cpatch%lai(ico)                                   &
-                                       * ( cpatch%fs_open(ico) * cpatch%A_open(ico)        &
-                                         + (1. - cpatch%fs_open(ico))                      &
-                                         * cpatch%A_closed(ico))                           &
-                                       + cpatch%leaf_respiration(ico) )
-               !----- The average must be in [kgC/plant/yr]. ------------------------------!
-               cpatch%fmean_gpp(ico) = cpatch%fmean_gpp(ico)                               &
-                                     + cpatch%gpp      (ico) * umols_2_kgCyr               &
-                                     * dtlsm_o_frqsum                                      &
-                                     / cpatch%nplant(ico)
-               !---------------------------------------------------------------------------!
-
-
-               !----- GPP, summed over 1 day. [umol/m2ground] -----------------------------!
-               cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Potential GPP if no N limitation. [umol/m2ground] -------------------!
-               cpatch%today_gpp_pot(ico) = cpatch%today_gpp_pot(ico)                       &
-                                         + cpatch%lai(ico)                                 &
-                                         * ( cpatch%fsw(ico) * cpatch%A_open(ico)          &
-                                           + (1.0 - cpatch%fsw(ico))                       &
-                                           * cpatch%A_closed(ico))                         &
+            !----- Convert leaf respiration to [umol/m2ground/s] --------------------------!
+            cpatch%leaf_respiration(ico) = leaf_resp * cpatch%lai (ico)
+            cpatch%today_leaf_resp(ico)  = cpatch%today_leaf_resp (ico)                    &
                                          + cpatch%leaf_respiration(ico)
-               !---------------------------------------------------------------------------!
+            !----- The output variable must be in [kgC/plant/yr]. -------------------------!
+            cpatch%fmean_leaf_resp(ico)  = cpatch%fmean_leaf_resp (ico)                    &
+                                         + cpatch%leaf_respiration(ico)                    &
+                                         * dtlsm_o_frqsum * umols_2_kgCyr                  &
+                                         / cpatch%nplant          (ico)
+
+            root_depth_indices(kroot) = .true.
+            broot_tot                 = broot_tot + broot_loc
+            pss_available_water       = pss_available_water                                &
+                                      + avail_h2o_coh(ico) * broot_loc
+
+            !------------------------------------------------------------------------------!
+            !     Determine the fraction of open stomata due to water limitation.          !
+            ! This is a function of the ratio between the potential water demand           !
+            ! (cpatch%psi_open, which is the average over the last time step), and the     !
+            ! supply (cpatch%water_supply).                                                !
+            !------------------------------------------------------------------------------!
+            select case (h2o_plant_lim)
+            case (0)
+               !---- No water limitation, fsw is always 1.0. ------------------------------!
+               cpatch%fsw(ico) = 1.0
+
+            case (1,2)
+               water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico)
+               if (cpatch%water_supply (ico) < tiny_num) then
+                  cpatch%fsw(ico) = 0.0
+               else
+                  cpatch%fsw(ico) = 1.0                                                    &
+                                  / (1.0 + water_demand / cpatch%water_supply(ico))
+               end if
+            case (3)
+               !---- Water limitation is embedded in gsw, so fsw must remain 1.0. ---------!
+               cpatch%fsw(ico) = 1.0
+               
+            end select
+            !------------------------------------------------------------------------------!
 
 
 
-               !---------------------------------------------------------------------------!
-               !     Find the maximum productivities:                                      !
-               !                                                                           !
-               !     - today_gpp_lightmax: productivity of this cohort if it were at the   !
-               !                           top canopy (full light), with the actual fsw.   !
-               !     - today_gpp_moistmax: productivity of this cohort if the soil         !
-               !                           moisture was such that fsw would be 1 (full     !
-               !                           moisture), with the actual light.               !
-               !     - today_gpp_mlmax:    productivity of this cohort if it was at the    !
-               !                           top canopy (full light) AND the soil moisture   !
-               !                           was such that fsw would be 1 (full moisture).   !
-               !                                                                           !
-               !     These productivites are used to scale the relative carbon balance,    !
-               ! which controls density-dependent mortality.                               !
-               !---------------------------------------------------------------------------!
-               cpatch%today_gpp_lightmax(ico) = cpatch%today_gpp_lightmax(ico)             &
-                                              + cpatch%lai(ico)                            &
-                                              * ( cpatch%fs_open(ico)                      &
-                                                * csite%A_o_max(ipft,ipa)                  &
-                                                + (1.0 - cpatch%fs_open(ico))              &
-                                                * csite%A_c_max(ipft,ipa) )                &
-                                              + cpatch%leaf_respiration(ico)
-               cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)             &
-                                              + cpatch%lai(ico) * cpatch%A_open(ico)       &
-                                              + cpatch%leaf_respiration(ico)
-               cpatch%today_gpp_mlmax(ico)    = cpatch%today_gpp_mlmax(ico)                &
-                                              + cpatch%lai(ico) * csite%A_o_max(ipft,ipa)  &
-                                              + cpatch%leaf_respiration(ico)
-               !---------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !      Photorespiration can become important at high temperatures.  If so,     !
+            ! close down the stomata.                                                      !
+            !------------------------------------------------------------------------------!
+            if (cpatch%A_open(ico) < cpatch%A_closed(ico)) then
+               cpatch%fs_open(ico) = 0.0
+            else
+               cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
+            end if
+
+            !----- Net stomatal conductance. ----------------------------------------------!
+            cpatch%leaf_gsw(ico) =        cpatch%fs_open(ico)  * cpatch%gsw_open(ico)      &
+                                 + (1.0 - cpatch%fs_open(ico)) * cpatch%gsw_closed(ico)
+            !------------------------------------------------------------------------------!
+
+
+            !----- GPP, averaged over frqstate. -------------------------------------------!
+            cpatch%gpp(ico) = max(0., cpatch%lai(ico)                                      &
+                                    * ( cpatch%fs_open(ico) * cpatch%A_open(ico)           &
+                                      + (1. - cpatch%fs_open(ico))                         &
+                                      * cpatch%A_closed(ico))                              &
+                                    + cpatch%leaf_respiration(ico) )
+            !----- The average must be in [kgC/plant/yr]. ---------------------------------!
+            cpatch%fmean_gpp(ico) = cpatch%fmean_gpp(ico)                                  &
+                                  + cpatch%gpp      (ico) * umols_2_kgCyr                  &
+                                  * dtlsm_o_frqsum                                         &
+                                  / cpatch%nplant(ico)
+            !------------------------------------------------------------------------------!
+
+
+            !----- GPP, summed over 1 day. [umol/m2ground] --------------------------------!
+            cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Potential GPP if no N limitation. [umol/m2ground] ----------------------!
+            cpatch%today_gpp_pot(ico) = cpatch%today_gpp_pot(ico)                          &
+                                      + cpatch%lai(ico)                                    &
+                                      * ( cpatch%fsw(ico) * cpatch%A_open(ico)             &
+                                        + (1.0 - cpatch%fsw(ico))                          &
+                                        * cpatch%A_closed(ico))                            &
+                                      + cpatch%leaf_respiration(ico)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Find the maximum productivities:                                         !
+            !                                                                              !
+            !     - today_gpp_lightmax: productivity of this cohort if it were at the      !
+            !                           top canopy (full light), with the actual fsw.      !
+            !     - today_gpp_moistmax: productivity of this cohort if the soil            !
+            !                           moisture was such that fsw would be 1 (full        !
+            !                           moisture), with the actual light.                  !
+            !     - today_gpp_mlmax:    productivity of this cohort if it was at the       !
+            !                           top canopy (full light) AND the soil moisture      !
+            !                           was such that fsw would be 1 (full moisture).      !
+            !                                                                              !
+            !     These productivites are used to scale the relative carbon balance,       !
+            ! which controls density-dependent mortality.                                  !
+            !------------------------------------------------------------------------------!
+            cpatch%today_gpp_lightmax(ico) = cpatch%today_gpp_lightmax(ico)                &
+                                           + cpatch%lai(ico)                               &
+                                           * ( cpatch%fs_open(ico)                         &
+                                             * csite%A_o_max(ipft,ipa)                     &
+                                             + (1.0 - cpatch%fs_open(ico))                 &
+                                             * csite%A_c_max(ipft,ipa) )                   &
+                                           + cpatch%leaf_respiration(ico)
+            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
+                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
+                                           + cpatch%leaf_respiration(ico)
+            cpatch%today_gpp_mlmax(ico)    = cpatch%today_gpp_mlmax(ico)                   &
+                                           + cpatch%lai(ico) * csite%A_o_max(ipft,ipa)     &
+                                           + cpatch%leaf_respiration(ico)
+            !------------------------------------------------------------------------------!
 
          else
             !----- If the cohort wasn't solved, we must assign some zeroes. ---------------!

@@ -43,6 +43,7 @@ module disturbance
                                      , polygontype                & ! structure
                                      , sitetype                   & ! structure
                                      , patchtype                  ! ! structure
+      use met_driver_coms     , only : met_driv_state             ! ! structure
       use ed_misc_coms        , only : current_time               & ! intent(in)
                                      , ibigleaf                   & ! intent(in)
                                      , lianas_included            ! ! intent(in)
@@ -77,6 +78,7 @@ module disturbance
       type(edtype)                    , target      :: cgrid
       !----- Local variables. -------------------------------------------------------------!
       type(polygontype)               , pointer     :: cpoly
+      type(met_driv_state)            , pointer     :: cmet
       type(sitetype)                  , pointer     :: csite
       type(sitetype)                  , pointer     :: tsite
       type(patchtype)                 , pointer     :: cpatch
@@ -184,6 +186,7 @@ module disturbance
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
+            cmet  => cpoly%met(isi)
 
             !----- Save the Original Number (of) Site Patches, onsp... --------------------!
             onsp = csite%npatches
@@ -844,7 +847,7 @@ module disturbance
                      case (1)
                         call new_fuse_cohorts(csite,onsp+new_lu,cpoly%lsl(isi),.false.)
                      end select
-                     call terminate_cohorts(csite,onsp+new_lu,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,onsp+new_lu,cmet,elim_nplant,elim_lai)
                      call split_cohorts(qpatch, cpoly%green_leaf_factor(:,isi))
                   end if
                   !------------------------------------------------------------------------!
@@ -1020,6 +1023,7 @@ module disturbance
                            then
                               !----- Fuse both patches. -----------------------------------!
                               call fuse_2_patches(csite,npa,ipa,nzg,nzs                    &
+                                                 ,cpoly%met(isi)                           &
                                                  ,cpoly%lsl(isi)                           &
                                                  ,cpoly%ntext_soil(:,isi)                  &
                                                  ,cpoly%green_leaf_factor(:,isi)           &
@@ -1050,7 +1054,7 @@ module disturbance
 
 
                               !------ Remove emptied cohorts. -----------------------------!
-                              call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
                               !------------------------------------------------------------!
 
 
@@ -1190,6 +1194,16 @@ module disturbance
             !------------------------------------------------------------------------------!
          end do siteloop
          !---------------------------------------------------------------------------------!
+
+
+
+         !----- Save the total carbon loss through removal for the C budget bookkeeping. --!
+         cgrid%cbudget_removedstorage(ipy) = cgrid%crop_harvest   (ipy)                    &
+                                           + cgrid%logging_harvest(ipy)                    &
+                                           + cgrid%combusted_fuel (ipy)
+         !---------------------------------------------------------------------------------!
+
+
       end do polyloop
       !------------------------------------------------------------------------------------!
 
@@ -1837,6 +1851,9 @@ module disturbance
                                             * area_fac
       csite%today_Bf_decomp            (np) = csite%today_Bf_decomp            (np)        &
                                             + csite%today_Bf_decomp            (cp)        &
+                                            * area_fac
+      csite%cbudget_committed          (np) = csite%cbudget_committed          (np)        &
+                                            + csite%cbudget_committed          (cp)        &
                                             * area_fac
       csite%fgc_in                     (np) = csite%fgc_in                     (np)        &
                                             + csite%fgc_in                     (cp)        &

@@ -146,6 +146,7 @@ module ename_coms
       integer                                           :: ibranch_thermo
       integer                                           :: iphysiol
       integer                                           :: iallom
+      integer                                           :: economics_scheme
       integer                                           :: igrass
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
@@ -434,6 +435,7 @@ module ename_coms
       enl%ibranch_thermo            = undef_integer
       enl%iphysiol                  = undef_integer
       enl%iallom                    = undef_integer
+      enl%economics_scheme          = undef_integer
       enl%igrass                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer

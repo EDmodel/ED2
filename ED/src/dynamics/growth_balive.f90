@@ -35,6 +35,7 @@ module growth_balive
                                      , polygontype                & ! structure
                                      , sitetype                   & ! structure
                                      , patchtype                  ! ! structure
+      use met_driver_coms     , only : met_driv_state             ! ! structure
       use pft_coms            , only : plant_N_supply_scale       & ! intent(in)
                                      , c2n_storage                & ! intent(in)
                                      , growth_resp_factor         & ! intent(in)
@@ -63,80 +64,81 @@ module growth_balive
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype)     , target     :: cgrid        !< the ed grid
-      real             , intent(in) :: gr_tfact0    !< Correction factor for steady growth
-      real             , intent(in) :: year_o_day   !< "time factor" i.e. call frequency
-      logical          , intent(in) :: veget_dyn_on !< Is vegetation dynamics on?
+      type(edtype)        , target     :: cgrid        !< the ed grid
+      real                , intent(in) :: gr_tfact0    !< Corr. factor for steady growth
+      real                , intent(in) :: year_o_day   !< "time factor" i.e. call frequency
+      logical             , intent(in) :: veget_dyn_on !< Is vegetation dynamics on?
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype), pointer    :: cpoly
-      type(sitetype)   , pointer    :: csite
-      type(patchtype)  , pointer    :: cpatch
-      integer                       :: ipy
-      integer                       :: isi
-      integer                       :: ipa
-      integer                       :: ico
-      integer                       :: ipft
-      integer                       :: phenstatus_in
-      integer                       :: krdepth_in
-      real                          :: daily_C_gain
-      real                          :: carbon_balance
-      real                          :: carbon_balance_pot
-      real                          :: carbon_balance_lightmax
-      real                          :: carbon_balance_moistmax
-      real                          :: carbon_balance_mlmax
-      real                          :: bleaf_in
-      real                          :: broot_in
-      real                          :: bsapwooda_in
-      real                          :: bsapwoodb_in
-      real                          :: bbarka_in
-      real                          :: bbarkb_in
-      real                          :: balive_in
-      real                          :: bdeada_in
-      real                          :: bdeadb_in
-      real                          :: hite_in
-      real                          :: dbh_in
-      real                          :: nplant_in
-      real                          :: bstorage_in
-      real                          :: agb_in
-      real                          :: lai_in
-      real                          :: wai_in
-      real                          :: cai_in
-      real                          :: ba_in
-      real                          :: nitrogen_supply
-      real                          :: dndt
-      real                          :: dlnndt
-      real                          :: old_leaf_hcap
-      real                          :: old_wood_hcap
-      real                          :: nitrogen_uptake
-      real                          :: N_uptake_pot
-      real                          :: temp_dep
-      real                          :: growth_resp_int          ! Growth resp / balive
-      real                          :: storage_resp_int         ! Growth resp / balive
-      real                          :: tr_bleaf
-      real                          :: tr_broot
-      real                          :: tr_bbarka
-      real                          :: tr_bbarkb
-      real                          :: tr_bsapwooda
-      real                          :: tr_bsapwoodb
-      real                          :: tr_bstorage
-      real                          :: cb_decrement
-      real                          :: carbon_debt
-      real                          :: balive_aim
-      real                          :: elim_nplant
-      real                          :: elim_lai
-      logical                       :: flushing
-      logical                       :: on_allometry
+      type(polygontype)   , pointer    :: cpoly
+      type(met_driv_state), pointer    :: cmet
+      type(sitetype)      , pointer    :: csite
+      type(patchtype)     , pointer    :: cpatch
+      integer                          :: ipy
+      integer                          :: isi
+      integer                          :: ipa
+      integer                          :: ico
+      integer                          :: ipft
+      integer                          :: phenstatus_in
+      integer                          :: krdepth_in
+      real                             :: daily_C_gain
+      real                             :: carbon_balance
+      real                             :: carbon_balance_pot
+      real                             :: carbon_balance_lightmax
+      real                             :: carbon_balance_moistmax
+      real                             :: carbon_balance_mlmax
+      real                             :: bleaf_in
+      real                             :: broot_in
+      real                             :: bsapwooda_in
+      real                             :: bsapwoodb_in
+      real                             :: bbarka_in
+      real                             :: bbarkb_in
+      real                             :: balive_in
+      real                             :: bdeada_in
+      real                             :: bdeadb_in
+      real                             :: hite_in
+      real                             :: dbh_in
+      real                             :: nplant_in
+      real                             :: bstorage_in
+      real                             :: agb_in
+      real                             :: lai_in
+      real                             :: wai_in
+      real                             :: cai_in
+      real                             :: ba_in
+      real                             :: nitrogen_supply
+      real                             :: dndt
+      real                             :: dlnndt
+      real                             :: old_leaf_hcap
+      real                             :: old_wood_hcap
+      real                             :: nitrogen_uptake
+      real                             :: N_uptake_pot
+      real                             :: temp_dep
+      real                             :: growth_resp_int   ! Growth resp / balive
+      real                             :: storage_resp_int  ! Growth resp / balive
+      real                             :: tr_bleaf
+      real                             :: tr_broot
+      real                             :: tr_bbarka
+      real                             :: tr_bbarkb
+      real                             :: tr_bsapwooda
+      real                             :: tr_bsapwoodb
+      real                             :: tr_bstorage
+      real                             :: cb_decrement
+      real                             :: carbon_debt
+      real                             :: balive_aim
+      real                             :: elim_nplant
+      real                             :: elim_lai
+      logical                          :: flushing
+      logical                          :: on_allometry
       !------------------------------------------------------------------------------------!
 
 
-      !------ Find the number of days in a month to limit growth rate. --------------------!
-      !------------------------------------------------------------------------------------!
+
 
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
+            cmet  => cpoly%met(isi)
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
@@ -255,6 +257,9 @@ module growth_balive
                                                         +  cpatch%barka_storage_resp(ico)  &
                                                         +  cpatch%barkb_storage_resp(ico)) &
                                                         / c2n_storage * cpatch%nplant(ico)
+                  !------------------------------------------------------------------------!
+
+
 
                   !------------------------------------------------------------------------!
                   !      Calculate actual, potential and maximum carbon balances.          !
@@ -316,6 +321,31 @@ module growth_balive
                                        ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb        &
                                        ,tr_bbarka,tr_bbarkb,tr_bstorage,nitrogen_uptake    &
                                        ,csite%fgn_in(ipa),csite%fsn_in(ipa))
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !      Update the committed carbon change.  This is the beginning of the !
+                  ! day, so we initialise the pool with what is going to be lost as growth !
+                  ! and storage respiration.  The committed pool will be updated           !
+                  ! throughout the day, as the respiration is actually released from it    !
+                  ! towards the atmosphere.  Because this represents what is going to be   !
+                  ! released, we ADD respiration instead of subtracting.                   !
+                  !------------------------------------------------------------------------!
+                  csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)              &
+                                               + cpatch%nplant(ico)                        &
+                                               * ( cpatch%leaf_storage_resp (ico)          &
+                                                 + cpatch%root_storage_resp (ico)          &
+                                                 + cpatch%sapa_storage_resp (ico)          &
+                                                 + cpatch%sapb_storage_resp (ico)          &
+                                                 + cpatch%barka_storage_resp(ico)          &
+                                                 + cpatch%barkb_storage_resp(ico)          &
+                                                 + cpatch%leaf_growth_resp  (ico)          &
+                                                 + cpatch%root_growth_resp  (ico)          &
+                                                 + cpatch%sapa_growth_resp  (ico)          &
+                                                 + cpatch%sapb_growth_resp  (ico)          &
+                                                 + cpatch%barka_growth_resp (ico)          &
+                                                 + cpatch%barkb_growth_resp (ico) )
                   !------------------------------------------------------------------------!
 
                   if ( is_grass(ipft).and. igrass==1) then
@@ -483,7 +513,7 @@ module growth_balive
                if (veget_dyn_on) then
                   select case (igrass)
                   case (1)
-                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
                      call sort_cohorts(cpatch)
                   end select
                end if
@@ -1417,6 +1447,7 @@ module growth_balive
       logical, dimension(n_pft), save        :: first_time  = .true.
       !------------------------------------------------------------------------------------!
 
+
       !----- Alias for PFT type. ----------------------------------------------------------!
       ipft = cpatch%pft(ico)
       !------------------------------------------------------------------------------------!
@@ -1433,6 +1464,7 @@ module growth_balive
                                     - cpatch%barka_growth_resp(ico)                        &
                                     - cpatch%barkb_growth_resp(ico)
       !------------------------------------------------------------------------------------!
+
 
       if (cpatch%nplant(ico) > tiny(1.0)) then
 

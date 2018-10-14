@@ -212,9 +212,10 @@ module update_derived_utils
       use pft_coms       , only : SLA                     & ! intent(in)
                                 , kplastic_vm0            & ! intent(in)
                                 , kplastic_sla            & ! intent(in)
+                                , kplastic_ll             & ! intent(in)
                                 , eplastic_vm0            & ! intent(in)
                                 , eplastic_sla            & ! intent(in)
-                                , fexp_sla_max            & ! intent(in)
+                                , laimax_plastic          & ! intent(in)
                                 , lma_slope               & ! intent(in)
                                 , Vm0                     & ! intent(in)
                                 , leaf_turnover_rate      & ! intent(in)
@@ -262,6 +263,7 @@ module update_derived_utils
             max_cum_lai = max_cum_lai + bl_max * cpatch%sla(jco) * cpatch%nplant(jco)
          end do
          !---------------------------------------------------------------------------------!
+         max_cum_lai = min(laimax_plastic(ipft),max_cum_lai)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -283,10 +285,10 @@ module update_derived_utils
       !     reference.                                                                     !
       !------------------------------------------------------------------------------------!
       select case (trait_plasticity_scheme)
-      case (1,2)
+      case ( 1, 2)
          !------ SLA is defined at the top of canopy, use LAI to change SLA. --------------!
-         lnexp   = min(lnexp_max,kplastic_sla(ipft) * max_cum_lai)
-         new_sla = SLA(ipft) * min(fexp_sla_max(ipft),exp(lnexp))
+         lnexp   = max(lnexp_min,min(lnexp_max,kplastic_sla(ipft) * max_cum_lai))
+         new_sla = SLA(ipft) * exp(lnexp)
          !---------------------------------------------------------------------------------!
       case (-1,-2)
          !------ SLA is defined at the bottom of canopy, use height to change SLA. --------!
@@ -314,15 +316,34 @@ module update_derived_utils
 
 
       !------------------------------------------------------------------------------------!
-      ! 5.  Update leaf life span.  We currently follow Eqn. 1 of X17, assuming that       !
-      !     the net assimilation is linearly correlated with Vcmax25, and we found the     !
-      !     ratio between canopy values and the plastic values.                            !
-      !     For the term b we use X17 slope from Table S1 (log10(b) ~ log10(Vcmax_m)).     !
+      ! 5.  Update leaf life span.                                                         !
       !------------------------------------------------------------------------------------!
       if (leaf_turnover_rate(ipft) > 0.0) then
-         cpatch%llspan(ico) = 12. / leaf_turnover_rate(ipft)                               &
-                            * ( cpatch%vm_bar(ico) / Vm0(ipft) ) ** eplastic_vm0(ipft)     &
-                            * ( cpatch%sla   (ico) / SLA(ipft) ) ** eplastic_sla(ipft)
+         !---------------------------------------------------------------------------------!
+         !     Decide which method to employ based on TRAIT_PLASTICITY_SCHEME.             !
+         !---------------------------------------------------------------------------------!
+         select case (trait_plasticity_scheme)
+         case ( 1, 2)
+            !------------------------------------------------------------------------------!
+            !    Use a leaf longevity extinction/expansion factor derived from digitised   !
+            ! data (Fig 5a of RK16).                                                       !
+            !------------------------------------------------------------------------------!
+            lnexp              = max(lnexp_min,min(lnexp_max,kplastic_ll(ipft)*max_cum_lai))
+            cpatch%llspan(ico) = 12. / leaf_turnover_rate(ipft) * exp(lnexp)
+            !------------------------------------------------------------------------------!
+         case (-1,-2)
+            !------------------------------------------------------------------------------!
+            !    Follow Eqn. 1 of X17, assuming that the net assimilation is linearly      !
+            ! correlated with Vcmax25, and find the ratio between canopy values and the    !
+            ! plastic values.  For the term b we use X17 slope from Table S1               !
+            ! (log10(b) ~ log10(Vcmax_m)).                                                 !
+            !------------------------------------------------------------------------------!
+            cpatch%llspan(ico) = 12. / leaf_turnover_rate(ipft)                            &
+                               * ( cpatch%vm_bar(ico) / Vm0(ipft) ) ** eplastic_vm0(ipft)  &
+                               * ( cpatch%sla   (ico) / SLA(ipft) ) ** eplastic_sla(ipft)
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
       else
          !---- Nothing lasts forever, so impose a maximum life span. ----------------------!
          cpatch%llspan(ico) = llspan_inf
@@ -470,8 +491,12 @@ module update_derived_utils
                                      , tiny_sfcwater_mass         ! ! intent(in)
       use consts_coms         , only : wdns                       & ! intent(in)
                                      , fsdns                      & ! intent(in)
-                                     , fsdnsi                     ! ! intent(in)
-      
+                                     , fsdnsi                     & ! intent(in)
+                                     , mmdryi                     & ! intent(in)
+                                     , umol_2_kgC                 ! ! intent(in)
+      use therm_lib           , only : tq2enthalpy                ! ! function
+      use ed_misc_coms        , only : frqsumi                    ! ! intent(in)
+
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -483,6 +508,9 @@ module update_derived_utils
       real                         :: weight_sum
       real                         :: total_sfcw_mass
       real                         :: bulk_sfcw_dens
+      real                         :: fdelta_storage
+      real                         :: old_can_depth
+      real                         :: can_enthalpy
       integer                      :: ico
       integer                      :: k
       integer                      :: ksn
@@ -567,7 +595,33 @@ module update_derived_utils
 
 
       !----- Update the canopy depth, and impose the minimum if needed be. ----------------!
+      old_can_depth        = csite%can_depth(ipa)
       csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Compute specific enthalpy, which will be used to find changes in storage. ----!
+      can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the changes in canopy air space storage due to the change in canopy       !
+      ! depth.                                                                             !
+      !------------------------------------------------------------------------------------!
+      fdelta_storage                  = frqsumi * csite%can_rhos(ipa)                      &
+                                      * (csite%can_depth(ipa) - old_can_depth)
+      csite%co2budget_zcaneffect(ipa) = csite%co2budget_zcaneffect(ipa)                    &
+                                      + fdelta_storage * csite%can_co2(ipa)                &
+                                      * mmdryi
+      csite%cbudget_zcaneffect  (ipa) = csite%cbudget_zcaneffect(ipa)                      &
+                                      + fdelta_storage * csite%can_co2(ipa)                &
+                                      * mmdryi * umol_2_kgC
+      csite%wbudget_zcaneffect  (ipa) = csite%wbudget_zcaneffect(ipa)                      &
+                                      + fdelta_storage * csite%can_shv(ipa)
+      csite%ebudget_zcaneffect  (ipa) = csite%ebudget_zcaneffect(ipa)                      &
+                                      + fdelta_storage * can_enthalpy
       !------------------------------------------------------------------------------------!
 
 

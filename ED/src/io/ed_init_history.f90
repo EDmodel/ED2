@@ -604,9 +604,11 @@ module ed_init_history
       call hdf_getslab_r(cgrid%cosz                    (ipy:ipy)                           &
                         ,'COSZ '                     ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cgrid%cbudget_initialstorage  (ipy:ipy)                           &
-                        ,'CBUDGET_INITIALSTORAGE '   ,dsetrank,iparallel,.true. ,foundvar)
+                        ,'CBUDGET_INITIALSTORAGE_PY ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cgrid%cbudget_nep             (ipy:ipy)                           &
-                        ,'CBUDGET_NEP '              ,dsetrank,iparallel,.true. ,foundvar)
+                        ,'CBUDGET_NEP_PY '           ,dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cgrid%cbudget_removedstorage  (ipy:ipy)                           &
+                        ,'CBUDGET_REMOVEDSTORAGE_PY ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cgrid%nbudget_initialstorage  (ipy:ipy)                           &
                         ,'NBUDGET_INITIALSTORAGE '   ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cgrid%Cleaf_grow              (ipy:ipy)                           &
@@ -3666,6 +3668,8 @@ module ed_init_history
                      ,'WBUDGET_LOSS2ATM            ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_denseffect                                          &
                      ,'WBUDGET_DENSEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%wbudget_zcaneffect                                          &
+                     ,'WBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_precipgain                                          &
                      ,'WBUDGET_PRECIPGAIN          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_loss2runoff                                         &
@@ -3682,6 +3686,10 @@ module ed_init_history
                      ,'EBUDGET_DENSEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_prsseffect                                          &
                      ,'EBUDGET_PRSSEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%ebudget_hcapeffect                                          &
+                     ,'EBUDGET_HCAPEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%ebudget_zcaneffect                                          &
+                     ,'EBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_loss2runoff                                         &
                      ,'EBUDGET_LOSS2RUNOFF         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_loss2drainage                                       &
@@ -3702,12 +3710,26 @@ module ed_init_history
                      ,'CO2BUDGET_LOSS2ATM          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%co2budget_denseffect                                        &
                      ,'CO2BUDGET_DENSEFFECT        ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%co2budget_zcaneffect                                        &
+                     ,'CO2BUDGET_ZCANEFFECT        ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%co2budget_gpp                                               &
                      ,'CO2BUDGET_GPP               ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%co2budget_plresp                                            &
                      ,'CO2BUDGET_PLRESP            ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%co2budget_rh                                                &
                      ,'CO2BUDGET_RH                ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_loss2atm                                            &
+                     ,'CBUDGET_LOSS2ATM            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_denseffect                                          &
+                     ,'CBUDGET_DENSEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_zcaneffect                                          &
+                     ,'CBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_initialstorage                                      &
+                     ,'CBUDGET_INITIALSTORAGE      ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_residual                                            &
+                     ,'CBUDGET_COMMITTED           ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_committed                                           &
+                     ,'CBUDGET_RESIDUAL            ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%today_A_decomp                                              &
                      ,'TODAY_A_DECOMP              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%today_B_decomp                                              &

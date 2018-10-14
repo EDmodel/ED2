@@ -289,6 +289,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
+  use met_driver_coms, only : met_driv_state             ! ! structure
   use pft_coms, only:qsw,qbark,q,hgt_min, agf_bs, is_grass
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
@@ -312,6 +313,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   integer :: ifm,ipy,isi,ipa,ico,pft
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
+  type(met_driv_state), pointer :: cmet
   type(sitetype),pointer :: csite
   type(patchtype),pointer :: cpatch
 
@@ -341,6 +343,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
         do isi = 1,cpoly%nsites
 
            csite => cpoly%site(isi)
+           cmet  => cpoly%met(isi)
 
            do ipa=1,csite%npatches
 
@@ -441,7 +444,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               enddo
 
               !! remove small cohorts
-              call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
 
               call update_patch_derived_props(csite,ipa)
               call update_budget(csite, cpoly%lsl(isi),ipa)
@@ -706,6 +709,7 @@ subroutine event_till(rval8)
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype
+  use met_driver_coms, only : met_driv_state             ! ! structure
   use pft_coms, only: c2n_storage,c2n_leaf,c2n_stem,l2n_stem,f_labile_leaf,f_labile_stem,agf_bs
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
@@ -720,6 +724,7 @@ subroutine event_till(rval8)
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
   type(sitetype),pointer :: csite
+  type(met_driv_state), pointer :: cmet
   type(patchtype),pointer :: cpatch
 
 
@@ -747,6 +752,7 @@ subroutine event_till(rval8)
         do isi = 1,cpoly%nsites
 
            csite => cpoly%site(isi)
+           cmet  => cpoly%met(isi)
 
            do ipa=1,csite%npatches
 
@@ -845,7 +851,7 @@ subroutine event_till(rval8)
 
               enddo
               !! remove small cohorts
-              call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
 
               !! update patch properties
               call update_patch_derived_props(csite,ipa)

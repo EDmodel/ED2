@@ -333,11 +333,11 @@ module phenology_aux
    !=======================================================================================!
    !=======================================================================================!
    !      This sub-routine will assign the initial potential available water and the       !
-   ! phenology that has been assigned.  This sub-routine should be called whenever a new   !
-   ! cohort is created, or at the initial run (except history).  The initial running aver- !
-   ! age is simply the the instantaneous soil moisture variable.  For plants other than    !
-   ! the drought-deciduous, the potential available water is found but it doesn't control  !
-   ! the phenology, so we assign fully flushed leaves.                                     !
+   ! initial leaf phenology.  This sub-routine should be called at the beginning of the    !
+   ! simulation, except when this is a full history restart.  The initial running average  !
+   ! is simply the the instantaneous soil moisture variable.  For plants other than the    !
+   ! drought-deciduous, the potential available water is found but it doesn't control the  !
+   ! phenology, so we assign fully flushed leaves.                                         !
    !---------------------------------------------------------------------------------------!
    subroutine first_phenology(cgrid)
       use ed_state_vars , only : edtype           & ! structure

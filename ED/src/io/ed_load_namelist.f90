@@ -219,6 +219,7 @@ subroutine copy_nl(copy_type)
                                    , unitstate                 & ! intent(out)
                                    , event_file                & ! intent(out)
                                    , iallom                    & ! intent(out)
+                                   , economics_scheme          & ! intent(out)
                                    , igrass                    & ! intent(out)
                                    , min_site_area             & ! intent(out)
                                    , fast_diagnostics          & ! intent(out)
@@ -396,6 +397,7 @@ subroutine copy_nl(copy_type)
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol
       iallom                    = nl%iallom
+      economics_scheme          = nl%economics_scheme
       igrass                    = nl%igrass
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme

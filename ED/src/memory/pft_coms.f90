@@ -182,7 +182,6 @@ module pft_coms
    !----- Parameters currently used only by trait plasticity. -----------------------------!
    real, dimension(n_pft) :: Vcmax25      ! Vm0 at 25degC
    real, dimension(n_pft) :: kplastic_vm0 ! Expansion factor for Vm0 (extinction if < 0).
-
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Vm_hor 
 
@@ -269,9 +268,11 @@ module pft_coms
 
    !----- This is the inverse of leaf life span [1/year]. ---------------------------------!
    real, dimension(n_pft) :: leaf_turnover_rate
-   !----- Parameters that control the leaf turnover rate. ---------------------------------!
+   !----- Parameters that control the leaf turnover rate (TRAIT_PLASTICITY < 0). ----------!
    real, dimension(n_pft) :: eplastic_vm0  ! Expansion/extinction exponents for turnover
    real, dimension(n_pft) :: eplastic_sla  ! (extinction if < 1)
+   !----- Parameters that control the leaf turnover rate (TRAIT_PLASTICITY > 0). ----------!
+   real, dimension(n_pft) :: kplastic_LL   ! Expansion factor for leaf longevity
    !----- This is the inverse of fine root life span [1/year]. ----------------------------!
    real, dimension(n_pft) :: root_turnover_rate
 
@@ -498,8 +499,9 @@ module pft_coms
    real   , dimension(n_pft)    :: sla_s1
    !----- Parameters that control the SLA plasticity. -------------------------------------!
    real   , dimension(n_pft)    :: kplastic_SLA ! Expansion factor for SLA
-   real   , dimension(n_pft)    :: fexp_SLA_max ! Maximum expansion factor for SLA
    real   , dimension(n_pft)    :: LMA_slope    ! Slope for LMA:Height relationship
+   !----- Parameter that limits plasticity (Vm, SLA, LTOR). -------------------------------!
+   real   , dimension(n_pft)    :: laimax_plastic
    !----- The initialization parameters for SLA:  SLA = sla_pft_init for non-trop PFTs
    real   , dimension(n_pft)    :: sla_pft_init
    !----- Mass ratio between fine root and leaves [kg_fine_roots]/[kg_leaves]. ------------!

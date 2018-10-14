@@ -1,4 +1,4 @@
-n!==========================================================================================!
+!==========================================================================================!
 !==========================================================================================!
 !    ED2IN .                                                                               !
 !                                                                                          !
@@ -745,12 +745,27 @@ $ED_NL
    !               b. Balive is retuned, using a few leaf biomass allometric equations for !
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
-   !           3. Updated allometric and trait-based parameters for tropical PFTs.  When   !
-   !              available, parameters came from regional data sets and regional studies, !
-   !              or from local studies when regional ones were not found. Check           !
-   !              ed_params.f90 for details and references.                                !
+   !           3. Updated allometric for tropical PFTs based on Lescure et al. (1983)      !
+   !              (leaves), Feldpausch et al. (2012) (Height) and Chave et al. (2014)      !
+   !              (biomass).  Both leaf and structural biomass take DBH and Height as      !
+   !              dependent variables.                                                     !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 3
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ECONOMICS_SCHEME -- Temporary variable for testing the relationship amongst traits in !
+   !                     the tropics.                                                      !
+   !                     0. ED-2.1 standard, based on Reich et al. (1997) and some updates !
+   !                        following Kim et al. (2012).                                   !
+   !                     1. When available, trait relationships were derived from more     !
+   !                        up-to-date data sets, including the TRY database,              !
+   !                        NGEE-Tropics, RAINFOR, and GLOPNET. Check ed_params.f90 for    !
+   !                        details and references.                                        !
+   !---------------------------------------------------------------------------------------!
+   NL%ECONOMICS_SCHEME = 0
    !---------------------------------------------------------------------------------------!
 
 

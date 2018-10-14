@@ -793,6 +793,7 @@ Module consts_coms
    real(kind=8), parameter :: umol_2_kgC8     = dble(umol_2_kgC    )
    real(kind=8), parameter :: Watts_2_Ein8    = dble(Watts_2_Ein   )
    real(kind=8), parameter :: Ein_2_Watts8    = dble(Ein_2_Watts   )
+   real(kind=8), parameter :: kgCday_2_umols8 = dble(kgCday_2_umols)
    !---------------------------------------------------------------------------------------!
 
 
