@@ -150,7 +150,7 @@ subroutine ed_init_atm()
                ! compute the initial canopy pressure...  It must be called again to have   !
                ! the storage right.                                                        !
                !---------------------------------------------------------------------------!
-               call update_patch_derived_props(csite,ipa)
+               call update_patch_derived_props(csite,ipa,.false.)
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -354,7 +354,7 @@ subroutine ed_init_atm()
                   end do snowloop2
                
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
-                  call update_patch_derived_props(csite,ipa)
+                  call update_patch_derived_props(csite,ipa,.false.)
 
                   nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
@@ -369,7 +369,7 @@ subroutine ed_init_atm()
                                  ,csite%ggsoil(ipa))
                else
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
-                  call update_patch_derived_props(csite,ipa)
+                  call update_patch_derived_props(csite,ipa,.false.)
 
                   nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
@@ -386,9 +386,6 @@ subroutine ed_init_atm()
 
                !----- Initialise vegetation wind and turbulence parameters. ---------------!
                call canopy_turbulence_init(cpoly,isi,ipa)
-
-               !----- Compute the storage terms for CO2, energy, and water budgets. -------!
-               call update_budget(csite,cpoly%lsl(isi),ipa)
 
             end do patchloop2
 

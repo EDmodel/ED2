@@ -645,8 +645,8 @@ Module consts_coms
 
    !---------------------------------------------------------------------------------------!
    !     Tolerance for truncation errors.  "s" are the strict tolerance (literally the     !
-   ! machine epsilon), whereas the "r" are the relaxed tolerance (the square root of the   !
-   ! strict tolerance).                                                                    !
+   ! machine epsilon), whereas the "r" are the relaxed tolerance (two orders of magnitude  !
+   ! up from the strict tolerance).                                                        !
    !---------------------------------------------------------------------------------------!
    real(kind=4), parameter :: s_tol_trunc  = epsilon(1.)
    real(kind=4), parameter :: r_tol_trunc  = 100. * s_tol_trunc

@@ -28,8 +28,7 @@ module hybrid_driver
      use ed_misc_coms          , only : current_time               & ! intent(in)
                                       , dtlsm                      ! ! intent(in)
      use therm_lib             , only : tq2enthalpy                ! ! function
-     use budget_utils          , only : update_budget              & ! function
-                                      , update_cbudget_committed   & ! function
+     use budget_utils          , only : update_cbudget_committed   & ! function
                                       , compute_budget             ! ! function
      use soil_respiration      , only : soil_respiration_driver    ! ! function
      use photosyn_driv         , only : canopy_photosynthesis      ! ! function
@@ -178,13 +177,6 @@ module hybrid_driver
 
                  !------------------------------------------------------------------!
 
-                 !------------------------------------------------------------------!
-                 !    Update roughness and canopy depth.                            !
-                 !------------------------------------------------------------------!
-                 call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,&
-                      cpoly%ntext_soil(:,isi))
-                 call update_patch_derived_props(csite,ipa)
-                 !------------------------------------------------------------------!
 
                  !----- Save the previous thermodynamic state. ---------------------!
                  old_can_shv      = csite%can_shv(ipa)
@@ -197,8 +189,13 @@ module hybrid_driver
                  !------------------------------------------------------------------!
 
 
-                 !----- Compute current storage terms. -----------------------------!
-                 call update_budget(csite,cpoly%lsl(isi),ipa)
+
+                 !------------------------------------------------------------------!
+                 !    Update roughness and canopy depth.                            !
+                 !------------------------------------------------------------------!
+                 call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,&
+                      cpoly%ntext_soil(:,isi))
+                 call update_patch_derived_props(csite,ipa,.false.)
                  !------------------------------------------------------------------!
 
 

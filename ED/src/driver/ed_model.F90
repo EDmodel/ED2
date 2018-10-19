@@ -86,6 +86,7 @@ subroutine ed_model()
                                   , initialize_misc_stepvars    ! ! sub-routine
    use stable_cohorts      , only : flag_stable_cohorts         ! ! sub-routine
    use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
+   use budget_utils        , only : ed_init_budget              ! ! intent(in)
    use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    implicit none
    !----- Common blocks. ------------------------------------------------------------------!
@@ -218,6 +219,16 @@ subroutine ed_model()
    !    Initialize some stepping variables.                                                !
    !---------------------------------------------------------------------------------------!
    call initialize_misc_stepvars()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Last, we initialise the budget variables.                                        !
+   !---------------------------------------------------------------------------------------!
+   do ifm=1,ngrids
+      call ed_init_budget(edgrid_g(ifm))
+   end do
    !---------------------------------------------------------------------------------------!
 
 

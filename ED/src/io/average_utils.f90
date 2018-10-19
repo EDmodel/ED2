@@ -2630,6 +2630,7 @@ module average_utils
                csite%today_B_decomp (ipa) = csite%today_B_decomp (ipa) * dtlsm_o_daysec
                csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa) * dtlsm_o_daysec
                csite%today_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa) * dtlsm_o_daysec
+               csite%today_rh       (ipa) = csite%today_rh       (ipa) * dtlsm_o_daysec
                !---------------------------------------------------------------------------!
 
 
@@ -3294,6 +3295,7 @@ module average_utils
                csite%today_B_decomp (ipa) = 0.0
                csite%today_Af_decomp(ipa) = 0.0
                csite%today_Bf_decomp(ipa) = 0.0
+               csite%today_rh       (ipa) = 0.0
                !---------------------------------------------------------------------------!
 
 

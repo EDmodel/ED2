@@ -42,6 +42,7 @@ subroutine ed_coup_driver()
                                    , zero_ed_mmean_vars    ! ! sub-routine
    use hrzshade_utils       , only : init_cci_variables    ! ! subroutine
    use canopy_radiation_coms, only : ihrzrad               ! ! intent(in)
+   use budget_utils         , only : ed_init_budget        ! ! intent(in)
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -276,6 +277,17 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
    call find_frqsum()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Last, we initialise the budget variables.                                        !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Initialise budget variables...'
+   do ifm=1,ngrids
+      call ed_init_budget(edgrid_g(ifm))
+   end do
    !---------------------------------------------------------------------------------------!
 
 

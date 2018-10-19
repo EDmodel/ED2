@@ -22,8 +22,7 @@ module euler_driver
                                        , dtlsm                      ! ! intent(in)
       use ed_max_dims           , only : n_dbh                      ! ! intent(in)
       use therm_lib             , only : tq2enthalpy                ! ! function
-      use budget_utils          , only : update_budget              & ! function
-                                       , update_cbudget_committed   & ! function
+      use budget_utils          , only : update_cbudget_committed   & ! function
                                        , compute_budget             ! ! function
       use soil_respiration      , only : soil_respiration_driver    ! ! function
       use photosyn_driv         , only : canopy_photosynthesis      ! ! function
@@ -177,16 +176,6 @@ module euler_driver
 
 
 
-                  !------------------------------------------------------------------------!
-                  !    Update roughness and canopy depth.                                  !
-                  !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
-                                                ,cpoly%ntext_soil(:,isi))
-                  call update_patch_derived_props(csite,ipa)
-                  !------------------------------------------------------------------------!
-
-
-
                   !----- Save the previous thermodynamic state. ---------------------------!
                   old_can_shv      = csite%can_shv(ipa)
                   old_can_co2      = csite%can_co2(ipa)
@@ -197,8 +186,14 @@ module euler_driver
                                                 ,.true.)
                   !------------------------------------------------------------------------!
 
-                  !----- Compute current storage terms. -----------------------------------!
-                  call update_budget(csite,cpoly%lsl(isi),ipa)
+
+
+                  !------------------------------------------------------------------------!
+                  !    Update roughness and canopy depth.                                  !
+                  !------------------------------------------------------------------------!
+                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
+                                                ,cpoly%ntext_soil(:,isi))
+                  call update_patch_derived_props(csite,ipa,.false.)
                   !------------------------------------------------------------------------!
 
 

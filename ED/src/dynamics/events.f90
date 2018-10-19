@@ -297,7 +297,6 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                       , ed_biomass,size2bt,size2xb,ed_balive
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
-  use budget_utils     , only : update_budget
   implicit none
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
@@ -446,9 +445,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               !! remove small cohorts
               call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
 
-              call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa)
-           end if  !! check to make sure there ARE cohorts
+              call update_patch_derived_props(csite,ipa,.true.)
+            end if  !! check to make sure there ARE cohorts
 
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -474,7 +472,6 @@ subroutine event_planting(pft,density8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
        filltab_alltypes
   use disturbance      , only : plant_patch
-  use budget_utils     , only : update_budget
   use ed_type_init     , only : new_patch_sfc_props
   implicit none
   integer(kind=4),intent(in) :: pft
@@ -514,9 +511,8 @@ subroutine event_planting(pft,density8)
               call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
               call plant_patch(csite,ipa,nzg,pft,density,cpoly%ntext_soil(:,isi) &
                               ,planting_ht,cpoly%lsl(isi))
-              call update_patch_derived_props(csite,ipa)
+              call update_patch_derived_props(csite,ipa,.true.)
               call new_patch_sfc_props(csite, ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
-              call update_budget(csite, cpoly%lsl(isi),ipa)
 
            enddo
 
@@ -542,7 +538,6 @@ subroutine event_fertilize(rval8)
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype
-  use budget_utils     , only : update_budget
   real(kind=8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
@@ -587,8 +582,7 @@ subroutine event_fertilize(rval8)
               csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa) + nh4 + no3)
 
               !! update patch properties
-              call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa)
+              call update_patch_derived_props(csite,ipa,.true.)
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -713,7 +707,6 @@ subroutine event_till(rval8)
   use pft_coms, only: c2n_storage,c2n_leaf,c2n_stem,l2n_stem,f_labile_leaf,f_labile_stem,agf_bs
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
-  use budget_utils     , only : update_budget
   use therm_lib        , only : cmtl2uext
   implicit none
   real(kind=8),intent(in) :: rval8
@@ -854,8 +847,7 @@ subroutine event_till(rval8)
               call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
 
               !! update patch properties
-              call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa)
+              call update_patch_derived_props(csite,ipa,.true.)
               endif
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -918,6 +910,5 @@ end subroutine event_till
 !!$
 !!$              call sort_cohorts(cpatch)
 !!$
-!!$!              call update_patch_derived_props(csite, ipa)
-!!$!              call update_budget(csite, cpoly%lsl(isi), ipa, ipa)
+!!$!              call update_patch_derived_props(csite, ipa,.true.)
 !!$

@@ -3724,6 +3724,10 @@ module ed_init_history
                      ,'CBUDGET_DENSEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%cbudget_zcaneffect                                          &
                      ,'CBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_seedrain                                            &
+                     ,'CBUDGET_SEEDRAIN            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_loss2yield                                          &
+                     ,'CBUDGET_LOSS2YIELD          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%cbudget_initialstorage                                      &
                      ,'CBUDGET_INITIALSTORAGE      ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%cbudget_residual                                            &
@@ -3738,6 +3742,8 @@ module ed_init_history
                      ,'TODAY_AF_DECOMP             ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%today_Bf_decomp                                             &
                      ,'TODAY_BF_DECOMP             ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_rh                                                    &
+                     ,'TODAY_RH                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%veg_rough                                                   &
                      ,'VEG_ROUGH                   ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%veg_height                                                  &

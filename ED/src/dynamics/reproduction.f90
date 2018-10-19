@@ -60,7 +60,6 @@ module reproduction
       use ed_misc_coms        , only : ibigleaf                   & ! intent(in)
                                      , current_time               ! ! intent(in)
       use phenology_aux       , only : pheninit_balive_bstorage   ! ! intent(in)
-      use budget_utils        , only : update_budget              ! ! sub-routine
       use stable_cohorts      , only : is_resolvable              ! ! function
       use update_derived_utils, only : update_patch_derived_props & ! sub-routine
                                      , update_site_derived_props  ! ! sub-routine
@@ -593,8 +592,7 @@ module reproduction
 
 
                   !----- Since cohorts may have changed, update patch properties... -------!
-                  call update_patch_derived_props(csite,ipa)
-                  call update_budget(csite,cpoly%lsl(isi),ipa)
+                  call update_patch_derived_props(csite,ipa,.true.)
                   !------------------------------------------------------------------------!
                end do update_patch_loop
                !---------------------------------------------------------------------------!
@@ -810,8 +808,7 @@ module reproduction
                   !------------------------------------------------------------------------!
 
                   !----- Since cohorts may have changed, update patch properties... -------!
-                  call update_patch_derived_props(csite,ipa)
-                  call update_budget(csite,cpoly%lsl(isi),ipa)
+                  call update_patch_derived_props(csite,ipa,.true.)
                   !------------------------------------------------------------------------!
                end do update_patch_loop_big
                !---------------------------------------------------------------------------!
@@ -864,32 +861,41 @@ module reproduction
                                     , include_pft           & ! intent(in)
                                     , include_pft_ag        & ! intent(in)
                                     , include_pft_fp        ! ! intent(in)
-      use ed_misc_coms       , only : ibigleaf              ! ! intent(in)
-
+      use ed_misc_coms       , only : ibigleaf              & ! intent(in)
+                                    , frqsumi               ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(polygontype), target     :: cpoly       ! Current polygon            [      ---]
-      logical          , intent(in) :: late_spring ! Is it late spring          [      T|F]
+      type(polygontype), target     :: cpoly       ! Current polygon             [     ---]
+      logical          , intent(in) :: late_spring ! Is it late spring           [     T|F]
       !----- Local variables. -------------------------------------------------------------!
-      type(sitetype)   , pointer    :: csite       ! Current site               [      ---]
-      type(sitetype)   , pointer    :: donsite     ! Donor site                 [      ---]
-      type(sitetype)   , pointer    :: recsite     ! Receptor site              [      ---]
-      type(patchtype)  , pointer    :: donpatch    ! Donor patch                [      ---]
-      logical                       :: allow_pft   ! Flag: is this PFT allowed? [      ---]
-      integer                       :: isi         ! Site counter               [      ---]
-      integer                       :: ipa         ! Patch counter              [      ---]
-      integer                       :: ipft        ! PFT counter                [      ---]
-      integer                       :: recsi       ! Receptor site counter      [      ---]
-      integer                       :: donsi       ! Donor site counter         [      ---]
-      integer                       :: recpa       ! Receptor patch counter     [      ---]
-      integer                       :: donpa       ! Donor patch counter        [      ---]
-      integer                       :: donco       ! Donor cohort counter       [      ---]
-      integer                       :: donpft      ! Donor PFT                  [      ---]
-      real                          :: bseedling   ! Surviving seedling biomass [   kgC/m2]
-      real                          :: bseed_stays ! Seedl. biomass that stays  [   kgC/m2]
-      real                          :: bseed_maygo ! Seedl. biomass that may go [   kgC/m2]
+      type(sitetype)   , pointer    :: csite        ! Current site               [     ---]
+      type(sitetype)   , pointer    :: donsite      ! Donor site                 [     ---]
+      type(sitetype)   , pointer    :: recsite      ! Receptor site              [     ---]
+      type(patchtype)  , pointer    :: donpatch     ! Donor patch                [     ---]
+      logical                       :: allow_pft    ! Flag: is this PFT allowed? [     ---]
+      integer                       :: isi          ! Site counter               [     ---]
+      integer                       :: ipa          ! Patch counter              [     ---]
+      integer                       :: ipft         ! PFT counter                [     ---]
+      integer                       :: recsi        ! Receptor site counter      [     ---]
+      integer                       :: donsi        ! Donor site counter         [     ---]
+      integer                       :: recpa        ! Receptor patch counter     [     ---]
+      integer                       :: donpa        ! Donor patch counter        [     ---]
+      integer                       :: donco        ! Donor cohort counter       [     ---]
+      integer                       :: donpft       ! Donor PFT                  [     ---]
+      real                          :: bseedling    ! Surviving seedling biomass [  kgC/m2]
+      real                          :: bseed_stays  ! Seedl. biomass that stays  [  kgC/m2]
+      real                          :: bseed_maygo  ! Seedl. biomass that may go [  kgC/m2]
+      real                          :: bseed_xpatch ! Seedl. X-patch exchange    [  kgC/m2]
+      real                          :: seed_rain_c  ! Seed rain carbon input     [  kgC/m2]
+      real, dimension(n_pft)        :: pft_seedrain ! Sum of all ext. seed rain  [  kgC/m2]
       !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !    The following variables are used to ensure reproduction is conserving carbon.   !
+      !------------------------------------------------------------------------------------!
+      pft_seedrain(:) = 0.0
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -951,11 +957,17 @@ module reproduction
 
 
                   !------------------------------------------------------------------------!
-                  !    In case this PFT is allowed, update the seed pool.                  !
+                  !    In case this PFT is allowed, update the seed pool.  Also update the !
+                  ! seed rain budget checks.                                               !
                   !------------------------------------------------------------------------!
                   if (allow_pft) then
-                     csite%repro(ipft,ipa) = csite%repro(ipft,ipa)                         &
-                                           + seed_rain(ipft) * one_plant_c(ipft)
+                     seed_rain_c                 = seed_rain(ipft) * one_plant_c(ipft)
+                     csite%repro      (ipft,ipa) = csite%repro(ipft,ipa) + seed_rain_c
+                     csite%cbudget_seedrain(ipa) = csite%cbudget_seedrain(ipa)             &
+                                                 + seed_rain_c * frqsumi
+                     pft_seedrain(ipft)          = pft_seedrain(ipft)                      &
+                                                 + seed_rain_c                             &
+                                                 * csite%area(ipa) * cpoly%area(isi)
                   end if
                   !------------------------------------------------------------------------!
                end do pftloop
@@ -994,6 +1006,10 @@ module reproduction
 
                   !----- Define an alias for PFT. -----------------------------------------!
                   donpft = donpatch%pft(donco)
+                  !------------------------------------------------------------------------!
+
+
+
 
                   !------------------------------------------------------------------------!
                   !    Find the biomass of survivor seedlings.  Units: kgC/m2              !
@@ -1019,6 +1035,47 @@ module reproduction
                   end if
                   !------------------------------------------------------------------------!
 
+
+
+                  !------------------------------------------------------------------------!
+                  !     Subtract the seeds that leave the patch from the seed rain.  Some  !
+                  ! of them will land again in this patch, and we correct for this further !
+                  ! down.                                                                  !
+                  !------------------------------------------------------------------------!
+                  csite%cbudget_seedrain(donpa) = csite%cbudget_seedrain(donpa)            &
+                                                - bseed_maygo * frqsumi
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     This is the seed biomass that crosses patches, in units of         !
+                  ! kgC/m2_recp_patch.                                                     !
+                  !                                                                        !
+                  !  Variable names for rationale:                                         !
+                  !  ------------------------------                                        !
+                  ! DPY - Seeds that may leave donor patch     [           kgC/m2_polygon] !
+                  ! DPA - Seeds that may leave donor patch     [       kgC/m2_donor_patch] !
+                  ! AD  - Area of the donor patch, in          [m2_donor_patch/m2_polygon] !
+                  ! RPY - Seeds that land in the recp. patch   [           kgC/m2_polygon] !
+                  ! RPA - Seeds that land in the recp. patch   [        kgC/m2_recp_patch] !
+                  ! AR  - Area of the receptor patch           [ m2_recp_patch/m2_polygon] !
+                  !                                                                        !
+                  !  Rationale:                                                            !
+                  ! -------------                                                          !
+                  !                                                                        !
+                  ! (1) DPY = DPA * AD + 0 * (1-AD)   (General patch->polygon definition)  !
+                  ! (2) RPY = RPA * AR + 0 * (1-AR)   (General patch->polygon definition)  !
+                  ! (3) RPY = DPY * AR                (Probabilty is prop. to area)        !
+                  ! (4) RPY = DPA * AD * AR           (1->3)                               !
+                  ! (5) RPA = DPA * AD                (4->2, regardless of the patch)      !
+                  !------------------------------------------------------------------------!
+                  bseed_xpatch = bseed_maygo * csite%area(donpa)
+                  !------------------------------------------------------------------------!
+
+
+
+
                   !------------------------------------------------------------------------!
                   !   Spread the seedlings across all patches in this site.                !
                   !------------------------------------------------------------------------!
@@ -1030,8 +1087,19 @@ module reproduction
                      ! combined area of this patch and site so the total carbon is         !
                      ! preserved.                                                          !
                      !---------------------------------------------------------------------!
-                     csite%repro(donpft,recpa) = csite%repro(donpft,recpa)                 &
-                                               + bseed_maygo * csite%area(donpa)
+                     csite%repro(donpft,recpa) = csite%repro(donpft,recpa) + bseed_xpatch
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Donor and receptor patches are different.  Account for cross-    !
+                     ! patch seed exchange in the seed rain pool.  Some of them are        !
+                     ! from the patch itself, but they should be added because we          !
+                     ! subtracted all the non-local dispersal outside the receptor site    !
+                     ! loop.                                                               !
+                     !---------------------------------------------------------------------!
+                     csite%cbudget_seedrain(recpa) = csite%cbudget_seedrain(recpa)         &
+                                                   + bseed_xpatch * frqsumi
                      !---------------------------------------------------------------------!
 
 
@@ -1044,7 +1112,6 @@ module reproduction
                         csite%repro(donpft,recpa) = csite%repro(donpft,recpa) + bseed_stays
                      end if
                      !---------------------------------------------------------------------!
-
                   end do recpaloop1
                   !------------------------------------------------------------------------!
                end do doncoloop1
@@ -1075,6 +1142,9 @@ module reproduction
 
                   !----- Define an alias for PFT. -----------------------------------------!
                   donpft = donpatch%pft(donco)
+                  !------------------------------------------------------------------------!
+
+
 
                   !------------------------------------------------------------------------!
                   !    Find the biomass of survivor seedlings.  Units: kgC/m2              !
@@ -1100,6 +1170,45 @@ module reproduction
                   end if
                   !------------------------------------------------------------------------!
 
+
+
+                  !------------------------------------------------------------------------!
+                  !     Subtract the seeds that leave the patch from the seed rain.  Some  !
+                  ! of them will land again in this patch, and we correct for this further !
+                  ! down.                                                                  !
+                  !------------------------------------------------------------------------!
+                  csite%cbudget_seedrain(donpa) = csite%cbudget_seedrain(donpa)            &
+                                                - bseed_maygo * frqsumi
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     This is the seed biomass that crosses patches, in units of         !
+                  ! kgC/m2_recp_patch.                                                     !
+                  !                                                                        !
+                  !  Variable names for rationale:                                         !
+                  !  ------------------------------                                        !
+                  ! DPY - Seeds that may leave donor patch     [           kgC/m2_polygon] !
+                  ! DPA - Seeds that may leave donor patch     [       kgC/m2_donor_patch] !
+                  ! AD  - Area of the donor patch, in          [m2_donor_patch/m2_polygon] !
+                  ! RPY - Seeds that land in the recp. patch   [           kgC/m2_polygon] !
+                  ! RPA - Seeds that land in the recp. patch   [        kgC/m2_recp_patch] !
+                  ! AR  - Area of the receptor patch           [ m2_recp_patch/m2_polygon] !
+                  !                                                                        !
+                  !  Rationale:                                                            !
+                  ! -------------                                                          !
+                  !                                                                        !
+                  ! (1) DPY = DPA * AD + 0 * (1-AD)   (General patch->polygon definition)  !
+                  ! (2) RPY = RPA * AR + 0 * (1-AR)   (General patch->polygon definition)  !
+                  ! (3) RPY = DPY * AR                (Probabilty is prop. to area)        !
+                  ! (4) RPY = DPA * AD * AR           (1->3)                               !
+                  ! (5) RPA = DPA * AD                (4->2, regardless of the patch)      !
+                  !------------------------------------------------------------------------!
+                  bseed_xpatch = bseed_maygo * csite%area(donpa) * cpoly%area(donsi)
+                  !------------------------------------------------------------------------!
+
+
                   !------------------------------------------------------------------------!
                   !   Spread the seedlings across all patches in this polygon.             !
                   !------------------------------------------------------------------------!
@@ -1114,9 +1223,23 @@ module reproduction
                         ! preserved.                                                       !
                         !------------------------------------------------------------------!
                         recsite%repro(donpft,recpa) = recsite%repro(donpft,recpa)          &
-                                                    + bseed_maygo * recsite%area(donpa)    &
-                                                    * cpoly%area(donsi)
+                                                    + bseed_xpatch
                         !------------------------------------------------------------------!
+
+
+                        !------------------------------------------------------------------!
+                        !    Donor and receptor patches are different.  Account for cross- !
+                        ! patch seed exchange in the seed rain pool.  Some of them are     !
+                        ! from the patch itself, but they should be added because we       !
+                        ! subtracted all the non-local dispersal outside the receptor site !
+                        ! loop.                                                            !
+                        !------------------------------------------------------------------!
+                        csite%cbudget_seedrain(recpa) = csite%cbudget_seedrain(recpa)      &
+                                                      + bseed_xpatch * frqsumi
+                        !------------------------------------------------------------------!
+
+
+
 
                         !------------------------------------------------------------------!
                         !      Include the local dispersal if this is the donor patch.     !
@@ -1137,11 +1260,141 @@ module reproduction
             !------------------------------------------------------------------------------!
          end do donsiloop2
          !---------------------------------------------------------------------------------!
-
-
       end select
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Before we leave the seeds grow, we check that the carbon is being conserved.  !
+      !------------------------------------------------------------------------------------!
+      call check_budget_bseeds(cpoly,pft_seedrain)
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine seed_dispersal
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This sub-routine checks that seed biomass and seed bank match.                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine check_budget_bseeds(cpoly,pft_seedrain)
+      use ed_state_vars      , only : polygontype           & ! structure
+                                    , sitetype              & ! structure
+                                    , patchtype             ! ! structure
+      use ed_max_dims        , only : n_pft                 ! ! intent(in)
+      use pft_coms           , only : seedling_mortality    & ! intent(in)
+                                    , min_recruit_size      ! ! intent(in)
+      use consts_coms        , only : r_tol_trunc           ! ! intent(in)
+      use ed_misc_coms       , only : current_time          ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(polygontype)        , target     :: cpoly        ! Current polygon     [    ---]
+      real   , dimension(n_pft), intent(in) :: pft_seedrain ! Total seed rain     [ kgC/m2]
+      !----- Local variables. -------------------------------------------------------------!
+      type(sitetype)           , pointer    :: csite        ! Current site        [    ---]
+      type(patchtype)          , pointer    :: cpatch       ! Current patch       [    ---]
+      integer                               :: isi          ! Site counter        [    ---]
+      integer                               :: ipa          ! Patch counter       [    ---]
+      integer                               :: ico          ! Cohort counter      [    ---]
+      integer                               :: ipft         ! PFT counter         [    ---]
+      real   , dimension(n_pft)             :: toler_bseeds ! Scale for tolerance [ kgC/m2]
+      real   , dimension(n_pft)             :: pft_bseeds   ! Total viable bseeds [ kgC/m2]
+      real   , dimension(n_pft)             :: pft_repro    ! Total seed bank     [ kgC/m2]
+      real   , dimension(n_pft)             :: resid_bseeds ! Residual seed stock [ kgC/m2]
+      logical, dimension(n_pft)             :: ok_seedbank  ! Consistent seedbank [ kgC/m2]
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=11)        , parameter  :: fmth='(a,6(1x,a))'
+      character(len=23)        , parameter  :: fmtp='(i5,5(1x,es12.5),1x,l1)'
+      character(len=27)        , parameter  :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Initialise seed checking pools.                                                 !
+      !------------------------------------------------------------------------------------!
+      pft_repro (:) = 0.0
+      pft_bseeds(:) = 0.0
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Loop through all the sites, patches and cohorts, and add the total seed        !
+      ! biomass.  
+      !------------------------------------------------------------------------------------!
+      siteloop: do isi = 1,cpoly%nsites
+         csite => cpoly%site(isi)
+
+         !----- Patch loop. ---------------------------------------------------------------!
+         patchloop: do ipa = 1,csite%npatches
+            cpatch => csite%patch(ipa)
+
+            !----- First loop: PFT loop, in which we add seeds in the seed bank. ----------!
+            pftreproloop: do ipft = 1, n_pft
+               pft_repro(ipft) = pft_repro(ipft)                                           &
+                               + csite%repro(ipft,ipa) * csite%area(ipa) * cpoly%area(isi)
+            end do pftreproloop
+            !------------------------------------------------------------------------------!
+
+            !----- Second loop: Add seeds that went to the seed bank. ---------------------!
+            cohortloop: do ico = 1,cpatch%ncohorts
+               ipft = cpatch%pft(ico)
+               pft_bseeds(ipft) = pft_bseeds(ipft)                                         &
+                                + cpatch%nplant(ico) * (1.0 - seedling_mortality(ipft))    &
+                                * cpatch%bseeds(ico) * csite%area(ipa) * cpoly%area(isi)
+            end do cohortloop
+            !------------------------------------------------------------------------------!
+         end do patchloop
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     In this loop, we check that the total seed bank is consistent for each PFT.    !
+      !------------------------------------------------------------------------------------!
+      pftcheckloop: do ipft=1,n_pft
+         resid_bseeds(ipft) = pft_repro(ipft) - pft_bseeds(ipft) - pft_seedrain(ipft)
+         toler_bseeds(ipft) = r_tol_trunc * max(pft_repro(ipft),min_recruit_size(ipft))
+         ok_seedbank (ipft) = abs(resid_bseeds(ipft)) < toler_bseeds(ipft)
+      end do pftcheckloop
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case anything is inconsitent, we print the information on screen and stop   !
+      ! the simulation.                                                                    !
+      !------------------------------------------------------------------------------------!
+      if (.not. all(ok_seedbank(:))) then
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|          !!!   Bseeds budget failed   !!!          |'
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
+                                                           ,current_time%month             &
+                                                           ,current_time%date              &
+                                                           ,current_time%time
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt=fmth )  ' IPFT','       REPRO','      BSEEDS','   SEED_RAIN'     &
+                                         ,'       RESID','       TOLER','  ACCEPTABLE'
+         do ipft=1,n_pft
+            write(unit=*,fmt=fmtp ) ipft,pft_repro(ipft),pft_bseeds(ipft)                  &
+                                        ,pft_seedrain(ipft),resid_bseeds(ipft)             &
+                                        ,toler_bseeds(ipft),ok_seedbank(ipft)
+         end do
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt='(a)')  ' '
+         call fatal_error('Budget check has failed, see message above.'                    &
+                         ,'check_budget_bseeds','reproduction.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine check_budget_bseeds
    !=======================================================================================!
    !=======================================================================================!
 end module reproduction

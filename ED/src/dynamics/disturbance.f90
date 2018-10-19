@@ -64,7 +64,7 @@ module disturbance
       use consts_coms         , only : lnexp_max                  & ! intent(in)
                                      , tiny_num                   & ! intent(in)
                                      , huge_num                   ! ! intent(in)
-      use budget_utils        , only : update_budget              ! ! sub-routine
+      use budget_utils        , only : initial_patch_budget       ! ! sub-routine
       use forestry            , only : find_lambda_harvest        ! ! sub-routine
       use detailed_coms       , only : idetailed                  ! ! intent(in)
       use update_derived_utils, only : update_patch_thermo_props  & ! subroutine
@@ -854,17 +854,34 @@ module disturbance
 
 
 
+                  !------------------------------------------------------------------------!
+                  !     Prune lianas in case they are included in the simulation.          !
+                  ! MLO -> Manfredo, this used to be outside the loop, I moved into here   !
+                  !        so we don't update derived properties twice, and to make it     !
+                  !        easier to track budget.  However, I wonder if this should be    !
+                  !        done before the cohort sorting, fusion, fission and extinction  !
+                  !        just above this comment.                                        !
+                  !------------------------------------------------------------------------!
+                  if (lianas_included) then
+                     !----------------------- Prune the lianas ----------------------------!
+                     call prune_lianas(csite, onsp + new_lu, cpoly%lsl(isi))
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
 
                   !------------------------------------------------------------------------!
                   !     Update the derived properties including veg_height, and patch-     !
                   ! -level LAI, WAI.                                                       !
                   !------------------------------------------------------------------------!
-                  call update_patch_derived_props(csite,onsp+new_lu)
+                  call update_patch_derived_props(csite,onsp+new_lu,.false.)
                   !----- Update soil temperature, liquid fraction, etc. -------------------!
                   call new_patch_sfc_props(csite,onsp+new_lu,nzg,nzs                       &
                                           ,cpoly%ntext_soil(:,isi))
-                  !----- Update budget properties. ----------------------------------------!
-                  call update_budget(csite,cpoly%lsl(isi),onsp+new_lu)
+                  !----- Initialise budget variables for the new patch. -------------------!
+                  call initial_patch_budget(csite,cpoly%lsl(isi),onsp+new_lu)
                   !----- Update AGB, basal area. ------------------------------------------!
                   call update_site_derived_props(cpoly,1,isi)
                   !------------------------------------------------------------------------!
@@ -941,19 +958,6 @@ module disturbance
                call disturbance_mortality(csite,ipa,pat_area_loss,mindbh_harvest)
                csite%area(ipa) = csite%area(ipa) - sum(pat_area_loss)
             end do old_lu_l4th
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Prune lianas in case they are included in the simulation.                !
-            !------------------------------------------------------------------------------!
-            if (lianas_included) then
-               prune_loop: do new_lu=1,n_dist_types
-               !----------------------- Prune the lianas ----------------------------------!
-               call prune_lianas(csite, onsp + new_lu, cpoly%lsl(isi))
-               !---------------------------------------------------------------------------!
-               end do prune_loop
-            end if
             !------------------------------------------------------------------------------!
 
 
@@ -1852,8 +1856,8 @@ module disturbance
       csite%today_Bf_decomp            (np) = csite%today_Bf_decomp            (np)        &
                                             + csite%today_Bf_decomp            (cp)        &
                                             * area_fac
-      csite%cbudget_committed          (np) = csite%cbudget_committed          (np)        &
-                                            + csite%cbudget_committed          (cp)        &
+      csite%today_rh                   (np) = csite%today_rh                   (np)        &
+                                            + csite%today_rh                   (cp)        &
                                             * area_fac
       csite%fgc_in                     (np) = csite%fgc_in                     (np)        &
                                             + csite%fgc_in                     (cp)        &
@@ -3752,9 +3756,7 @@ module disturbance
                                 , f_labile_stem            ! ! intent(in)
       use ed_max_dims,     only : n_pft                    ! ! intent(in)
       use consts_coms,     only : pio4                     ! ! intent(in)
-      use budget_utils,    only : update_budget            ! ! sub-routine
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
-      use update_derived_utils, only : update_patch_derived_props !
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3909,14 +3911,6 @@ module disturbance
       csite%structural_grnd_C(np) = csite%structural_grnd_C(np) + a_struct_litter
       csite%structural_grnd_L(np) = csite%structural_grnd_L(np) + a_struct_lignin
       csite%fast_grnd_N(np)       = csite%fast_grnd_N(np)       + a_fast_litter_n
-      !------------------------------------------------------------------------------------!
-
-      !------------------- Update patch LAI, WAI, height, roughness... --------------------!
-      call update_patch_derived_props(csite,np)
-      !------------------------------------------------------------------------------------!
-
-      !----- Recalculate storage terms (for budget assessment). ---------------------------!
-      call update_budget(csite,lsl,np)
       !------------------------------------------------------------------------------------!
 
       return

@@ -320,7 +320,7 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
    !      Check how the output was configured and determine the averaging frequency.       !
    !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Find frqsum...'
    call find_frqsum()
    !---------------------------------------------------------------------------------------!
 

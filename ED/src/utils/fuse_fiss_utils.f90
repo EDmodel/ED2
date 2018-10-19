@@ -169,13 +169,13 @@ module fuse_fiss_utils
          !----- Save the PFT type in a convenient alias. ----------------------------------!
          ipft = cpatch%pft(ico)
 
-         !----- Checking whether the cohort size is too small -----------------------------!
+         !----- Check whether the cohort size is too small --------------------------------!
          csize = cpatch%nplant(ico)                                                        &
                * ( cpatch%balive(ico) + cpatch%bstorage(ico)                               &
                  + cpatch%bdeada(ico) + cpatch%bdeadb  (ico) )
 
-         if ( csize < min_cohort_size(ipft) ) then
-            !----- Cohort is indeed too small, it won't remain ----------------------------!
+         if ( (csize < min_cohort_size(ipft)) .or. (.not. cpatch%is_viable(ico)) ) then
+            !----- Cohort is indeed too small or it is not viable, terminate it. ----------!
             remain_table(ico) = .false.
             elim_nplant = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
             elim_lai    = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
@@ -821,6 +821,9 @@ module fuse_fiss_utils
             if (.not. fuse_table(recc)) cycle recloop
             !------------------------------------------------------------------------------!
 
+            !----- Skip cohort in case it is inviable.  Terminate it instead. -------------!
+            if (.not. cpatch%is_viable(recc)) cycle recloop
+            !------------------------------------------------------------------------------!
 
             !----- Handy aliases. ---------------------------------------------------------!
             rpft          = cpatch%pft(recc)
@@ -836,6 +839,10 @@ module fuse_fiss_utils
                !      Make sure this cohort hasn't been fused yet, otherwise skip it.      !
                !---------------------------------------------------------------------------!
                if (.not. fuse_table(donc)) cycle donloop
+               !---------------------------------------------------------------------------!
+
+               !----- Skip cohort in case it is inviable.  Terminate it instead. ----------!
+               if (.not. cpatch%is_viable(donc)) cycle donloop
                !---------------------------------------------------------------------------!
 
 
@@ -1218,10 +1225,15 @@ module fuse_fiss_utils
          
          donloop:do donc = 1,cpatch%ncohorts-1
             if (.not. fuse_table(donc)) cycle donloop ! This one is gone, move to next.
+            
+            if (.not. cpatch%is_viable(donc)) cycle donloop ! Inviable cohort, skip it.
 
             recloop: do recc = donc+1,cpatch%ncohorts
                if (.not. fuse_table(recc)) cycle recloop ! This one is gone, move to next.
                                                          ! Hope it never happens...
+
+               if (.not. cpatch%is_viable(recc)) cycle recloop ! Inviable cohort, skip it.
+
 
                !---------------------------------------------------------------------------!
                !     Test for similarity.  Again, we use height to assess similarity only  !
@@ -5895,7 +5907,6 @@ module fuse_fiss_utils
                                      , writing_eorq                  & ! intent(in)
                                      , writing_dcyc                  & ! intent(in)
                                      , ndcycle                       ! ! intent(in)
-      use budget_utils        , only : update_budget                 ! ! intent(in)
       use consts_coms         , only : wdns                          ! ! intent(in)
       use fusion_fission_coms , only : ifusion                       & ! intent(in)
                                      , corr_patch                    ! ! intent(in)
@@ -6240,6 +6251,10 @@ module fuse_fiss_utils
                                          ( csite%today_Bf_decomp(donp)* csite%area(donp)   &
                                          + csite%today_Bf_decomp(recp)* csite%area(recp) )
 
+      csite%today_rh       (recp)        = newareai *                                      &
+                                         ( csite%today_rh       (donp)* csite%area(donp)   &
+                                         + csite%today_rh       (recp)* csite%area(recp) )
+
       do iii = 1,n_pft
          csite%repro(iii,recp)           = newareai *                                      &
                                          ( csite%repro(iii,donp)      * csite%area(donp)   &
@@ -6254,151 +6269,181 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Budget variables.                                                              !
       !------------------------------------------------------------------------------------!
-      csite%co2budget_residual    (recp) = ( csite%co2budget_residual    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%co2budget_residual    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%co2budget_loss2atm    (recp) = ( csite%co2budget_loss2atm    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%co2budget_loss2atm    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%co2budget_denseffect  (recp) = ( csite%co2budget_denseffect  (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%co2budget_denseffect  (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%co2budget_zcaneffect  (recp) = ( csite%co2budget_zcaneffect  (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%co2budget_zcaneffect  (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%co2budget_gpp         (recp) = ( csite%co2budget_gpp         (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%co2budget_gpp         (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%co2budget_plresp      (recp) = ( csite%co2budget_plresp      (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%co2budget_plresp      (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%co2budget_rh          (recp) = ( csite%co2budget_rh          (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%co2budget_rh          (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%cbudget_residual      (recp) = ( csite%cbudget_residual      (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%cbudget_residual      (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%cbudget_loss2atm      (recp) = ( csite%cbudget_loss2atm      (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%cbudget_loss2atm      (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%cbudget_committed     (recp) = ( csite%cbudget_committed       (donp)          &
-                                           * csite%area                    (donp)          &
-                                           + csite%cbudget_committed       (recp)          &
-                                           * csite%area                    (recp) )        &
-                                         * newareai
-      csite%cbudget_denseffect    (recp) = ( csite%cbudget_denseffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%cbudget_denseffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%cbudget_zcaneffect    (recp) = ( csite%cbudget_zcaneffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%cbudget_zcaneffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_residual      (recp) = ( csite%ebudget_residual      (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_residual      (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_netrad        (recp) = ( csite%ebudget_netrad        (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_netrad        (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_loss2atm      (recp) = ( csite%ebudget_loss2atm      (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_loss2atm      (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_denseffect    (recp) = ( csite%ebudget_denseffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_denseffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_prsseffect    (recp) = ( csite%ebudget_prsseffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_prsseffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_hcapeffect    (recp) = ( csite%ebudget_hcapeffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_hcapeffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_zcaneffect    (recp) = ( csite%ebudget_zcaneffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_zcaneffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_loss2runoff   (recp) = ( csite%ebudget_loss2runoff   (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_loss2runoff   (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_loss2drainage (recp) = ( csite%ebudget_loss2drainage (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_loss2drainage (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%ebudget_precipgain    (recp) = ( csite%ebudget_precipgain    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%ebudget_precipgain    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%wbudget_residual      (recp) = ( csite%wbudget_residual      (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%wbudget_residual      (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%wbudget_loss2atm      (recp) = ( csite%wbudget_loss2atm      (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%wbudget_loss2atm      (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%wbudget_denseffect    (recp) = ( csite%wbudget_denseffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%wbudget_denseffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%wbudget_zcaneffect    (recp) = ( csite%wbudget_zcaneffect    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%wbudget_zcaneffect    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%wbudget_loss2runoff   (recp) = ( csite%wbudget_loss2runoff   (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%wbudget_loss2runoff   (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%wbudget_loss2drainage (recp) = ( csite%wbudget_loss2drainage (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%wbudget_loss2drainage (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
-      csite%wbudget_precipgain    (recp) = ( csite%wbudget_precipgain    (recp)            &
-                                           * csite%area                  (recp)            &
-                                           + csite%wbudget_precipgain    (donp)            &
-                                           * csite%area                  (donp) )          &
-                                         * newareai
+      csite%co2budget_initialstorage(recp) = ( csite%co2budget_initialstorage    (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_initialstorage    (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%co2budget_residual      (recp) = ( csite%co2budget_residual          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_residual          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%co2budget_loss2atm      (recp) = ( csite%co2budget_loss2atm          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_loss2atm          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%co2budget_denseffect    (recp) = ( csite%co2budget_denseffect        (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_denseffect        (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%co2budget_zcaneffect    (recp) = ( csite%co2budget_zcaneffect        (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_zcaneffect        (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%co2budget_gpp           (recp) = ( csite%co2budget_gpp               (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_gpp               (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%co2budget_plresp        (recp) = ( csite%co2budget_plresp            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_plresp            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%co2budget_rh            (recp) = ( csite%co2budget_rh                (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%co2budget_rh                (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%cbudget_initialstorage  (recp) = ( csite%cbudget_initialstorage      (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%cbudget_initialstorage      (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%cbudget_residual        (recp) = ( csite%cbudget_residual            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%cbudget_residual            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%cbudget_loss2atm        (recp) = ( csite%cbudget_loss2atm            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%cbudget_loss2atm            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%cbudget_committed       (recp) = ( csite%cbudget_committed           (donp)    &
+                                             * csite%area                        (donp)    &
+                                             + csite%cbudget_committed           (recp)    &
+                                             * csite%area                        (recp) )  &
+                                           * newareai
+      csite%cbudget_denseffect      (recp) = ( csite%cbudget_denseffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%cbudget_denseffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%cbudget_zcaneffect      (recp) = ( csite%cbudget_zcaneffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%cbudget_zcaneffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%cbudget_loss2yield      (recp) = ( csite%cbudget_loss2yield          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%cbudget_loss2yield          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%cbudget_seedrain        (recp) = ( csite%cbudget_seedrain            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%cbudget_seedrain            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_initialstorage  (recp) = ( csite%ebudget_initialstorage      (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_initialstorage      (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_residual        (recp) = ( csite%ebudget_residual            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_residual            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_netrad          (recp) = ( csite%ebudget_netrad              (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_netrad              (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_loss2atm        (recp) = ( csite%ebudget_loss2atm            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_loss2atm            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_denseffect      (recp) = ( csite%ebudget_denseffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_denseffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_prsseffect      (recp) = ( csite%ebudget_prsseffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_prsseffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_hcapeffect      (recp) = ( csite%ebudget_hcapeffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_hcapeffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_zcaneffect      (recp) = ( csite%ebudget_zcaneffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_zcaneffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_loss2runoff     (recp) = ( csite%ebudget_loss2runoff         (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_loss2runoff         (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_loss2drainage   (recp) = ( csite%ebudget_loss2drainage       (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_loss2drainage       (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%ebudget_precipgain      (recp) = ( csite%ebudget_precipgain          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_precipgain          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_initialstorage  (recp) = ( csite%wbudget_initialstorage      (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_initialstorage      (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_residual        (recp) = ( csite%wbudget_residual            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_residual            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_loss2atm        (recp) = ( csite%wbudget_loss2atm            (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_loss2atm            (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_denseffect      (recp) = ( csite%wbudget_denseffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_denseffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_zcaneffect      (recp) = ( csite%wbudget_zcaneffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_zcaneffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_loss2runoff     (recp) = ( csite%wbudget_loss2runoff         (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_loss2runoff         (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_loss2drainage   (recp) = ( csite%wbudget_loss2drainage       (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_loss2drainage       (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_precipgain      (recp) = ( csite%wbudget_precipgain          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_precipgain          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
       !------------------------------------------------------------------------------------!
 
 
@@ -8347,18 +8392,11 @@ module fuse_fiss_utils
       ! + csite%total_sfcw_depth(recp)                                                     !
       ! + csite%snowfac(recp)                                                              !
       ! + csite%opencan_frac(recp)                                                         !
+      !                                                                                    !
+      !     We do not update the canopy air space depth effect, because the effect is      !
+      ! already accounted for in the fusion above.                                         !
       !------------------------------------------------------------------------------------!
-      call update_patch_derived_props(csite,recp)
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !    Now we update the budget variables:                                             !
-      ! + csite%wbudget_initialstorage(recp)                                               !
-      ! + csite%ebudget_initialstorage(recp)                                               !
-      ! + csite%co2budget_initialstorage(recp)                                             !
-      ! + csite%cbudget_initialstorage(recp)                                               !
-      !------------------------------------------------------------------------------------!
-      call update_budget(csite,lsl,recp)
+      call update_patch_derived_props(csite,recp,.false.)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!

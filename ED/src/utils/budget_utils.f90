@@ -15,10 +15,10 @@ module budget_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the committed changes in carbon stocks (biomass and         !
-   ! necromass).                                                                           !
+   !     This sub-routine initialises all the budget variables.  This is called only once, !
+   ! at the beginning of the simulation, after all variables have been initialised.        !
    !---------------------------------------------------------------------------------------!
-   subroutine zero_cbudget_committed(cgrid)
+   subroutine ed_init_budget(cgrid)
      
       use ed_state_vars, only : edtype       & ! structure
                               , polygontype  & ! structure
@@ -32,6 +32,7 @@ module budget_utils
       type(sitetype)   , pointer   :: csite
       integer                      :: ipy
       integer                      :: isi
+      integer                      :: lsl
       integer                      :: ipa
       !------------------------------------------------------------------------------------!
 
@@ -43,15 +44,198 @@ module budget_utils
          cpoly => cgrid%polygon(ipy)
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
+            lsl   =  cpoly%lsl (isi)
             patchloop: do ipa=1,csite%npatches
-               csite%cbudget_committed(ipa) = 0.0
+               !---- Reset patch budget variables. ----------------------------------------!
+               call initial_patch_budget(csite,lsl,ipa)
+               !---------------------------------------------------------------------------!
             end do patchloop
          end do siteloop
       end do polyloop
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine zero_cbudget_committed
+   end subroutine ed_init_budget
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Call this subroutine whenever all budget terms should be reset.  This should be   !
+   ! called only when the patch is new or during the model initialisation.  All budget     !
+   ! terms will be set to zero, and the initial storage will be computed based on the      !
+   ! carbon stocks.                                                                        !
+   !---------------------------------------------------------------------------------------!
+   subroutine initial_patch_budget(csite,lsl,ipa)
+      use ed_state_vars, only : sitetype ! ! intent(in)
+      implicit none
+
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: lsl
+      integer          , intent(in) :: ipa
+      !----- Local variables. -------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Set all flux terms to zero. --------------------------------------------------!
+      csite%co2budget_loss2atm   (ipa) = 0.0
+      csite%co2budget_denseffect (ipa) = 0.0
+      csite%co2budget_zcaneffect (ipa) = 0.0
+      csite%co2budget_gpp        (ipa) = 0.0
+      csite%co2budget_plresp     (ipa) = 0.0
+      csite%co2budget_rh         (ipa) = 0.0
+      csite%co2budget_residual   (ipa) = 0.0
+      csite%cbudget_loss2atm     (ipa) = 0.0
+      csite%cbudget_loss2yield   (ipa) = 0.0
+      csite%cbudget_seedrain     (ipa) = 0.0
+      csite%cbudget_denseffect   (ipa) = 0.0
+      csite%cbudget_zcaneffect   (ipa) = 0.0
+      csite%cbudget_residual     (ipa) = 0.0
+      csite%ebudget_precipgain   (ipa) = 0.0
+      csite%ebudget_netrad       (ipa) = 0.0
+      csite%ebudget_loss2atm     (ipa) = 0.0
+      csite%ebudget_loss2runoff  (ipa) = 0.0
+      csite%ebudget_loss2drainage(ipa) = 0.0
+      csite%ebudget_denseffect   (ipa) = 0.0
+      csite%ebudget_prsseffect   (ipa) = 0.0
+      csite%ebudget_hcapeffect   (ipa) = 0.0
+      csite%ebudget_zcaneffect   (ipa) = 0.0
+      csite%ebudget_residual     (ipa) = 0.0
+      csite%wbudget_precipgain   (ipa) = 0.0
+      csite%wbudget_loss2atm     (ipa) = 0.0
+      csite%wbudget_loss2runoff  (ipa) = 0.0
+      csite%wbudget_loss2drainage(ipa) = 0.0
+      csite%wbudget_denseffect   (ipa) = 0.0
+      csite%wbudget_zcaneffect   (ipa) = 0.0
+      csite%wbudget_residual     (ipa) = 0.0
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Committed carbon may not be zero (e.g. newly disturbed patch). ---------------!
+      call reset_cbudget_committed(csite,ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Compute current storage terms. -----------------------------------------------!
+      csite%co2budget_initialstorage(ipa) = compute_co2_storage     (csite,ipa)
+      csite%cbudget_initialstorage  (ipa) = compute_carbon_storage  (csite,ipa)
+      csite%wbudget_initialstorage  (ipa) = compute_water_storage   (csite,lsl,ipa)
+      csite%ebudget_initialstorage  (ipa) = compute_enthalpy_storage(csite,lsl,ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      return
+   end subroutine initial_patch_budget
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine should be used for testing only.  It resets the storage terms.    !
+   !---------------------------------------------------------------------------------------!
+   subroutine storage_patch_budget(csite,lsl,ipa)
+      use ed_state_vars, only : sitetype ! ! intent(in)
+      implicit none
+
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: lsl
+      integer          , intent(in) :: ipa
+      !----- Local variables. -------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Compute current storage terms. -----------------------------------------------!
+      csite%co2budget_initialstorage(ipa) = compute_co2_storage     (csite,ipa)
+      csite%cbudget_initialstorage  (ipa) = compute_carbon_storage  (csite,ipa)
+      csite%wbudget_initialstorage  (ipa) = compute_water_storage   (csite,lsl,ipa)
+      csite%ebudget_initialstorage  (ipa) = compute_enthalpy_storage(csite,lsl,ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      return
+   end subroutine storage_patch_budget
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine resets the committed changes in carbon stocks (biomass and         !
+   ! necromass).                                                                           !
+   !---------------------------------------------------------------------------------------!
+   subroutine reset_cbudget_committed(csite,ipa)
+      use ed_state_vars, only : sitetype     & ! structure
+                              , patchtype    ! ! structured
+      implicit none
+
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: ipa
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)  , pointer    :: cpatch
+      integer                       :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Alias for current patch. -----------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Start committed pool over.                                                     !
+      !                                                                                    !
+      !     The committed pool exists because carbon fluxes in ecosystem dynamics are not  !
+      ! updated every thermodynamics time step, so the carbon lost by the ecosystem        !
+      ! (excluding canopy air space) is only transferred to the canopy air space during    !
+      ! the following day.  This is the beginning of the day, so we initialise the pool    !
+      ! with what is going to be lost as growth and storage respiration.  The committed    !
+      ! pool will be updated throughout the day, as the respiration is actually released   !
+      ! from the committed pool towards the atmosphere, and gross primary productivity is  !
+      ! captures carbon that will only be assimilated by the ecosystem in the day after.   !
+      ! This is the initial time, so we ADD respiration terms here because they will be    !
+      ! released.                                                                          !
+      !------------------------------------------------------------------------------------!
+      csite%cbudget_committed(ipa) = 0.0
+      do ico=1,cpatch%ncohorts
+         csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)                       &
+                                      + cpatch%nplant(ico)                                 &
+                                      * ( cpatch%leaf_storage_resp (ico)                   &
+                                        + cpatch%root_storage_resp (ico)                   &
+                                        + cpatch%sapa_storage_resp (ico)                   &
+                                        + cpatch%sapb_storage_resp (ico)                   &
+                                        + cpatch%barka_storage_resp(ico)                   &
+                                        + cpatch%barkb_storage_resp(ico)                   &
+                                        + cpatch%leaf_growth_resp  (ico)                   &
+                                        + cpatch%root_growth_resp  (ico)                   &
+                                        + cpatch%sapa_growth_resp  (ico)                   &
+                                        + cpatch%sapb_growth_resp  (ico)                   &
+                                        + cpatch%barka_growth_resp (ico)                   &
+                                        + cpatch%barkb_growth_resp (ico) )
+      end do
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine reset_cbudget_committed
    !=======================================================================================!
    !=======================================================================================!
 
@@ -102,7 +286,7 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       cohloop: do ico=1,cpatch%ncohorts
          !---------------------------------------------------------------------------------!
-         !     Update committed pools based on physiological NPP.  These variables are in  !
+         !     Update committed pools based on metabolic NPP.  These variables are in      !
          ! umol/m2/s, so apply the appropriate unit conversion.                            !
          !---------------------------------------------------------------------------------!
          csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)                       &
@@ -221,7 +405,7 @@ module budget_utils
                               , rdry               & ! intent(in)
                               , mmdryi             & ! intent(in)
                               , epim1              ! ! intent(in)
-      use rk4_coms     , only : rk4eps             & ! intent(in)
+      use rk4_coms     , only : toler_budget       & ! intent(in)
                               , print_budget       & ! intent(in)
                               , budget_pref        & ! intent(in)
                               , checkbudget        ! ! intent(in)
@@ -254,6 +438,7 @@ module budget_utils
       real                                                    :: co2budget_initialstorage
       real                                                    :: co2budget_finalstorage
       real                                                    :: co2budget_deltastorage
+      real                                                    :: co2budget_tolerance
       real                                                    :: co2curr_gpp
       real                                                    :: co2curr_leafresp
       real                                                    :: co2curr_rootresp
@@ -277,13 +462,17 @@ module budget_utils
       real                                                    :: cbudget_initialstorage
       real                                                    :: cbudget_finalstorage
       real                                                    :: cbudget_deltastorage
+      real                                                    :: cbudget_tolerance
       real                                                    :: ccurr_loss2atm
       real                                                    :: ccurr_denseffect
       real                                                    :: ccurr_zcaneffect
+      real                                                    :: ccurr_loss2yield
+      real                                                    :: ccurr_seedrain
       real                                                    :: ccurr_residual
       real                                                    :: ebudget_initialstorage
       real                                                    :: ebudget_finalstorage
       real                                                    :: ebudget_deltastorage
+      real                                                    :: ebudget_tolerance
       real                                                    :: ecurr_precipgain
       real                                                    :: ecurr_denseffect
       real                                                    :: ecurr_prsseffect
@@ -293,6 +482,7 @@ module budget_utils
       real                                                    :: wbudget_initialstorage
       real                                                    :: wbudget_finalstorage
       real                                                    :: wbudget_deltastorage
+      real                                                    :: wbudget_tolerance
       real                                                    :: wcurr_precipgain
       real                                                    :: wcurr_denseffect
       real                                                    :: wcurr_zcaneffect
@@ -328,8 +518,8 @@ module budget_utils
       logical                                                 :: water_ok
       !----- Local constants. -------------------------------------------------------------!
       character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
-      character(len=10)     , parameter     :: bhfmt='(41(a,1x))'
-      character(len=48)     , parameter     :: bbfmt='(3(i13,1x),38(es13.6,1x))'
+      character(len=10)     , parameter     :: bhfmt='(43(a,1x))'
+      character(len=48)     , parameter     :: bbfmt='(3(i13,1x),40(es14.7,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical               , save          :: first_time = .true.
       !------------------------------------------------------------------------------------!
@@ -353,29 +543,28 @@ module budget_utils
             if (print_budget) then
                !---------------------------------------------------------------------------!
                open (unit=86,file=trim(budget_fout),status='replace',action='write')
-               write(unit=86,fmt=bhfmt)   '         YEAR' , '        MONTH'                &
-                                        , '          DAY' , '         TIME'                &
-                                        , '          LAI' , '          WAI'                &
-                                        , '       HEIGHT' , '  CO2.STORAGE'                &
-                                        , ' CO2.RESIDUAL' , ' CO2.DSTORAGE'                &
-                                        , '      CO2.NEP' , ' CO2.DENS.EFF'                &
-                                        , ' CO2.ZCAN.EFF' , ' CO2.LOSS2ATM'                &
-                                        , '  CRB.STORAGE' , ' CRB.RESIDUAL'                &
-                                        , ' CRB.DSTORAGE' , ' CRB.DENS.EFF'                &
-                                        , ' CRB.ZCAN.EFF' , ' CRB.LOSS2ATM'                &
-                                        , '  ENT.STORAGE' , ' ENT.RESIDUAL'                &
-                                        , ' ENT.DSTORAGE' , '   ENT.PRECIP'                &
-                                        , '   ENT.NETRAD' , ' ENT.DENS.EFF'                &
-                                        , ' ENT.PRSS.EFF' , ' ENT.HCAP.EFF'                &
-                                        , ' ENT.ZCAN.EFF' , ' ENT.LOSS2ATM'                &
-                                        , ' ENT.DRAINAGE' , '   ENT.RUNOFF'                &
-                                        , '  H2O.STORAGE' , ' H2O.RESIDUAL'                &
-                                        , ' H2O.DSTORAGE' , '   H2O.PRECIP'                &
-                                        , ' H2O.DENS.EFF' , ' H2O.ZCAN.EFF'                &
-                                        , ' H2O.LOSS2ATM' , ' H2O.DRAINAGE'                &
-                                        , '   H2O.RUNOFF'
-                                        
-                                        
+               write(unit=86,fmt=bhfmt)   '          YEAR' , '         MONTH'              &
+                                        , '           DAY' , '          TIME'              &
+                                        , '           LAI' , '           WAI'              &
+                                        , '        HEIGHT' , '   CO2.STORAGE'              &
+                                        , '  CO2.RESIDUAL' , '  CO2.DSTORAGE'              &
+                                        , '       CO2.NEP' , '  CO2.DENS.EFF'              &
+                                        , '  CO2.ZCAN.EFF' , '  CO2.LOSS2ATM'              &
+                                        , '   CRB.STORAGE' , '  CRB.RESIDUAL'              &
+                                        , '  CRB.DSTORAGE' , '  CRB.DENS.EFF'              &
+                                        , '  CRB.ZCAN.EFF' , '  CRB.SEEDRAIN'              &
+                                        , 'CRB.LOSS2YIELD' , '  CRB.LOSS2ATM'              &
+                                        , '   ENT.STORAGE' , '  ENT.RESIDUAL'              &
+                                        , '  ENT.DSTORAGE' , '    ENT.PRECIP'              &
+                                        , '    ENT.NETRAD' , '  ENT.DENS.EFF'              &
+                                        , '  ENT.PRSS.EFF' , '  ENT.HCAP.EFF'              &
+                                        , '  ENT.ZCAN.EFF' , '  ENT.LOSS2ATM'              &
+                                        , '  ENT.DRAINAGE' , '    ENT.RUNOFF'              &
+                                        , '   H2O.STORAGE' , '  H2O.RESIDUAL'              &
+                                        , '  H2O.DSTORAGE' , '    H2O.PRECIP'              &
+                                        , '  H2O.DENS.EFF' , '  H2O.ZCAN.EFF'              &
+                                        , '  H2O.LOSS2ATM' , '  H2O.DRAINAGE'              &
+                                        , '    H2O.RUNOFF'
                close(unit=86,status='keep')
             end if
          end do
@@ -451,6 +640,8 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       co2curr_zcaneffect = csite%co2budget_zcaneffect(ipa) * frqsum
       ccurr_zcaneffect   = csite%cbudget_zcaneffect  (ipa) * frqsum
+      ccurr_loss2yield   = csite%cbudget_loss2yield  (ipa) * frqsum
+      ccurr_seedrain     = csite%cbudget_seedrain    (ipa) * frqsum
       wcurr_zcaneffect   = csite%wbudget_zcaneffect  (ipa) * frqsum
       ecurr_hcapeffect   = csite%ebudget_hcapeffect  (ipa) * frqsum
       ecurr_zcaneffect   = csite%ebudget_zcaneffect  (ipa) * frqsum
@@ -475,13 +666,13 @@ module budget_utils
       co2curr_sapbstorageresp  = sapb_storage_resp  * dtlsm
       co2curr_barkastorageresp = barka_storage_resp * dtlsm
       co2curr_barkbstorageresp = barkb_storage_resp * dtlsm
-      co2curr_hetresp          = csite%rh(ipa)      * dtlsm
       co2curr_leafgrowthresp   = leaf_growth_resp   * dtlsm
       co2curr_rootgrowthresp   = root_growth_resp   * dtlsm
       co2curr_sapagrowthresp   = sapa_growth_resp   * dtlsm
       co2curr_sapbgrowthresp   = sapb_growth_resp   * dtlsm
       co2curr_barkagrowthresp  = barka_growth_resp  * dtlsm
       co2curr_barkbgrowthresp  = barkb_growth_resp  * dtlsm
+      co2curr_hetresp          = csite%rh(ipa)      * dtlsm
       !------------------------------------------------------------------------------------!
 
 
@@ -511,19 +702,15 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !     Find the initial storage.  Because of patch fusion, we must account for the    !
       ! vegetation dynamics internally, and thus the initial storage must exclude recent   !
-      ! additions/losses due to vegetation dynamics.  Note that zcaneffect and hcapeffect  !
-      ! also appear in the residual calculation, and this is a way to make sure we account !
-      ! for these artificial effects when checking the conservation of thermodynamic       !
-      ! state.                                                                             !
+      ! additions/losses due to vegetation dynamics.  Note that zcaneffect, hcapeffect,    !
+      ! and seedrain also appear in the residual calculation, and this is a way to make    !
+      ! sure we account for these effects when checking the conservation of the state      !
+      ! variables.                                                                         !
       !------------------------------------------------------------------------------------!
-      co2budget_initialstorage = csite%co2budget_initialstorage(ipa)                       &
-                               - co2curr_zcaneffect
-      cbudget_initialstorage   = csite%cbudget_initialstorage(ipa)                         &
-                               - ccurr_zcaneffect
-      wbudget_initialstorage   = csite%wbudget_initialstorage(ipa)                         &
-                               - wcurr_zcaneffect
-      ebudget_initialstorage   = csite%ebudget_initialstorage(ipa)                         &
-                               - ecurr_hcapeffect - ecurr_zcaneffect
+      co2budget_initialstorage = csite%co2budget_initialstorage(ipa)
+      cbudget_initialstorage   = csite%cbudget_initialstorage  (ipa)
+      wbudget_initialstorage   = csite%wbudget_initialstorage  (ipa)
+      ebudget_initialstorage   = csite%ebudget_initialstorage  (ipa)
       !------------------------------------------------------------------------------------!
 
 
@@ -552,23 +739,22 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !----- 1. Canopy CO2. ---------------------------------------------------------------!
       co2curr_residual = co2budget_deltastorage                                            &
-                       - ( - co2curr_nep       - co2curr_loss2atm + co2curr_zcaneffect )   &
-                       - co2curr_denseffect
+                       - ( - co2curr_nep      - co2curr_loss2atm   )                       &
+                       - ( co2curr_denseffect + co2curr_zcaneffect )
       !----- 2. Carbon. -------------------------------------------------------------------!
       ccurr_residual   = cbudget_deltastorage                                              &
-                       - ( - ccurr_loss2atm + ccurr_zcaneffect )                           &
-                       - ccurr_denseffect
+                       - ( ccurr_seedrain   - ccurr_loss2atm   - ccurr_loss2yield )        &
+                       - ( ccurr_denseffect + ccurr_zcaneffect )
       !----- 3. Energy. -------------------------------------------------------------------!
       ecurr_residual   = ebudget_deltastorage                                              &
                        - ( ecurr_precipgain    - ecurr_loss2atm   - ecurr_loss2drainage    &
-                         - ecurr_loss2runoff   + ecurr_netrad     + ecurr_prsseffect       &
-                         + ecurr_hcapeffect    + ecurr_zcaneffect                       )  &
-                       - ecurr_denseffect
+                         - ecurr_loss2runoff   + ecurr_netrad     + ecurr_prsseffect    )  &
+                       - ( ecurr_denseffect    + ecurr_hcapeffect    + ecurr_zcaneffect )
       !----- 4. Water. --------------------------------------------------------------------!
       wcurr_residual   = wbudget_deltastorage                                              &
-                       - ( wcurr_precipgain    - wcurr_loss2atm   - wcurr_loss2drainage    &
-                         - wcurr_loss2runoff   + wcurr_zcaneffect                       )  &
-                       - wcurr_denseffect
+                       - ( wcurr_precipgain    - wcurr_loss2atm                            &
+                         - wcurr_loss2drainage - wcurr_loss2runoff )                       &
+                       - ( wcurr_denseffect    + wcurr_zcaneffect  )
       !------------------------------------------------------------------------------------!
 
 
@@ -635,10 +821,10 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !     Update density and initial storage for next step.                              !
       !------------------------------------------------------------------------------------!
-      csite%wbudget_initialstorage  (ipa) = wbudget_finalstorage
-      csite%ebudget_initialstorage  (ipa) = ebudget_finalstorage
       csite%co2budget_initialstorage(ipa) = co2budget_finalstorage
       csite%cbudget_initialstorage  (ipa) = cbudget_finalstorage
+      csite%wbudget_initialstorage  (ipa) = wbudget_finalstorage
+      csite%ebudget_initialstorage  (ipa) = ebudget_finalstorage
       !------------------------------------------------------------------------------------!
 
 
@@ -648,7 +834,9 @@ module budget_utils
       ! time step.                                                                         !
       !------------------------------------------------------------------------------------!
       csite%co2budget_zcaneffect(ipa) = 0.0
+      csite%cbudget_loss2yield  (ipa) = 0.0
       csite%cbudget_zcaneffect  (ipa) = 0.0
+      csite%cbudget_seedrain    (ipa) = 0.0
       csite%ebudget_hcapeffect  (ipa) = 0.0
       csite%ebudget_zcaneffect  (ipa) = 0.0
       csite%wbudget_zcaneffect  (ipa) = 0.0
@@ -661,14 +849,25 @@ module budget_utils
       ! some significant leak of CO2, water, or energy.                                    !
       !------------------------------------------------------------------------------------!
       if (checkbudget) then
-         co2_ok      = abs(co2curr_residual) <= rk4eps * ( abs(co2budget_finalstorage)     &
-                                                         + abs(co2budget_deltastorage) )
-         carbon_ok   = abs(ccurr_residual)   <= rk4eps * ( abs(cbudget_finalstorage  )     &
-                                                         + abs(cbudget_deltastorage  ) )
-         enthalpy_ok = abs(ecurr_residual)   <= rk4eps * ( abs(ebudget_finalstorage  )     &
-                                                         + abs(ebudget_deltastorage  ) )
-         water_ok    = abs(wcurr_residual)   <= rk4eps * ( abs(wbudget_finalstorage  )     &
-                                                         + abs(wbudget_deltastorage  ) )
+         !----- Look for violation of conservation in all quantities. ---------------------!
+         co2budget_tolerance = toler_budget * ( abs(co2budget_finalstorage)                &
+                                              + abs(co2budget_deltastorage) )
+         cbudget_tolerance   = toler_budget * ( abs(cbudget_finalstorage  )                &
+                                              + abs(cbudget_deltastorage  ) )
+         ebudget_tolerance   = toler_budget * ( abs(ebudget_finalstorage  )                &
+                                              + abs(ebudget_deltastorage  ) )
+         wbudget_tolerance   = toler_budget * ( abs(wbudget_finalstorage  )                &
+                                              + abs(wbudget_deltastorage  ) )
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Look for violation of conservation in all quantities. ---------------------!
+         co2_ok      = abs(co2curr_residual) <= co2budget_tolerance
+         carbon_ok   = abs(ccurr_residual)   <= cbudget_tolerance
+         enthalpy_ok = abs(ecurr_residual)   <= ebudget_tolerance
+         water_ok    = abs(wcurr_residual)   <= wbudget_tolerance
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -699,6 +898,7 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' CAN_RHOS          : ',csite%can_rhos(ipa)
             write (unit=*,fmt=fmtf ) ' OLD_CAN_RHOS      : ',old_can_rhos
             write (unit=*,fmt=fmtf ) ' CAN_DEPTH         : ',csite%can_depth(ipa)
+            write (unit=*,fmt=fmtf ) ' TOLERANCE         : ',co2budget_tolerance
             write (unit=*,fmt=fmtf ) ' RESIDUAL          : ',co2curr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE   : ',co2budget_initialstorage
             write (unit=*,fmt=fmtf ) ' FINAL_STORAGE     : ',co2budget_finalstorage
@@ -739,13 +939,17 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' LAI             : ',patch_lai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT      : ',csite%veg_height(ipa)
             write (unit=*,fmt=fmtf ) ' CAN_DEPTH       : ',csite%can_depth(ipa)
+            write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',cbudget_tolerance
             write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',ccurr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',cbudget_initialstorage
             write (unit=*,fmt=fmtf ) ' FINAL_STORAGE   : ',cbudget_finalstorage
             write (unit=*,fmt=fmtf ) ' DELTA_STORAGE   : ',cbudget_deltastorage
             write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT  : ',ccurr_denseffect
+            write (unit=*,fmt=fmtf ) ' SEEDRAIN        : ',ccurr_seedrain
             write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT : ',ccurr_zcaneffect
+            write (unit=*,fmt=fmtf ) ' LOSS2YIELD      : ',ccurr_loss2yield
             write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',ccurr_loss2atm
+            write (unit=*,fmt=fmtf ) ' COMMITTED       : ',csite%cbudget_committed(ipa)
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') ' '
          end if
@@ -762,6 +966,7 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' LAI             : ',patch_lai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT      : ',csite%veg_height(ipa)
             write (unit=*,fmt=fmtf ) ' CAN_DEPTH       : ',csite%can_depth(ipa)
+            write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',ebudget_tolerance
             write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',ecurr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',ebudget_initialstorage
             write (unit=*,fmt=fmtf ) ' FINAL_STORAGE   : ',ebudget_finalstorage
@@ -791,6 +996,7 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' LAI             : ',patch_lai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT      : ',csite%veg_height(ipa)
             write (unit=*,fmt=fmtf ) ' CAN_DEPTH       : ',csite%can_depth(ipa)
+            write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',wbudget_tolerance
             write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',wcurr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',wbudget_initialstorage
             write (unit=*,fmt=fmtf ) ' FINAL_STORAGE   : ',wbudget_finalstorage
@@ -816,9 +1022,9 @@ module budget_utils
          !---------------------------------------------------------------------------------!
          if (print_budget) then 
             co2_factor =      1. / dtlsm
-            crb_factor = day_sec / dtlsm
+            crb_factor =      1. / dtlsm
             ent_factor =      1. / dtlsm
-            h2o_factor = day_sec / dtlsm
+            h2o_factor =      1. / dtlsm
 
             !----- Fix the units so the terms are expressed as fluxes. --------------------!
             co2curr_residual       = co2curr_residual       * co2_factor
@@ -830,7 +1036,9 @@ module budget_utils
             ccurr_residual         = ccurr_residual         * crb_factor
             cbudget_deltastorage   = cbudget_deltastorage   * crb_factor
             ccurr_denseffect       = ccurr_denseffect       * crb_factor
+            ccurr_loss2yield       = ccurr_loss2yield       * crb_factor
             ccurr_zcaneffect       = ccurr_zcaneffect       * crb_factor
+            ccurr_seedrain         = ccurr_seedrain         * crb_factor
             ccurr_loss2atm         = ccurr_loss2atm         * crb_factor
             ecurr_residual         = ecurr_residual         * ent_factor
             ebudget_deltastorage   = ebudget_deltastorage   * ent_factor
@@ -867,14 +1075,15 @@ module budget_utils
                , co2budget_deltastorage , co2curr_nep            , co2curr_denseffect      &
                , co2curr_zcaneffect     , co2curr_loss2atm       , cbudget_finalstorage    &
                , ccurr_residual         , cbudget_deltastorage   , ccurr_denseffect        &
-               , ccurr_zcaneffect       , ccurr_loss2atm         , ebudget_finalstorage    &
-               , ecurr_residual         , ebudget_deltastorage   , ecurr_precipgain        &
-               , ecurr_netrad           , ecurr_denseffect       , ecurr_prsseffect        &
-               , ecurr_hcapeffect       , ecurr_zcaneffect       , ecurr_loss2atm          &
-               , ecurr_loss2drainage    , ecurr_loss2runoff      , wbudget_finalstorage    &
-               , wcurr_residual         , wbudget_deltastorage   , wcurr_precipgain        &
-               , wcurr_denseffect       , wcurr_zcaneffect       , wcurr_loss2atm          &
-               , wcurr_loss2drainage    , wcurr_loss2runoff
+               , ccurr_zcaneffect       , ccurr_seedrain         , ccurr_loss2yield        &
+               , ccurr_loss2atm         , ebudget_finalstorage   , ecurr_residual          &
+               , ebudget_deltastorage   , ecurr_precipgain       , ecurr_netrad            &
+               , ecurr_denseffect       , ecurr_prsseffect       , ecurr_hcapeffect        &
+               , ecurr_zcaneffect       , ecurr_loss2atm         , ecurr_loss2drainage     &
+               , ecurr_loss2runoff      , wbudget_finalstorage   , wcurr_residual          &
+               , wbudget_deltastorage   , wcurr_precipgain       , wcurr_denseffect        &
+               , wcurr_zcaneffect       , wcurr_loss2atm         , wcurr_loss2drainage     &
+               , wcurr_loss2runoff
             close(unit=86,status='keep')
             !------------------------------------------------------------------------------!
          end if

@@ -60,6 +60,15 @@ module ed_type_init
       cpatch%wood_resolvable(ico) = .false.
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !    Set all cohorts to be viable.  The only case in which cohorts become inviable   !
+      ! is when they reach extremely negative carbon balance and they cannot leave the     !
+      ! improductive status because they have no storage and no living tissues.  We use    !
+      ! this flag to terminate them.                                                       !
+      !------------------------------------------------------------------------------------!
+      cpatch%is_viable(ico) = .true.
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -742,6 +751,7 @@ module ed_type_init
       csite%today_B_decomp                  (ipaa:ipaz) = 0.0
       csite%today_Af_decomp                 (ipaa:ipaz) = 0.0
       csite%today_Bf_decomp                 (ipaa:ipaz) = 0.0
+      csite%today_rh                        (ipaa:ipaz) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -773,6 +783,8 @@ module ed_type_init
       csite%cbudget_loss2atm                (ipaa:ipaz) = 0.0
       csite%cbudget_denseffect              (ipaa:ipaz) = 0.0
       csite%cbudget_zcaneffect              (ipaa:ipaz) = 0.0
+      csite%cbudget_seedrain                (ipaa:ipaz) = 0.0
+      csite%cbudget_loss2yield              (ipaa:ipaz) = 0.0
       csite%cbudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%cbudget_committed               (ipaa:ipaz) = 0.0
       csite%cbudget_residual                (ipaa:ipaz) = 0.0

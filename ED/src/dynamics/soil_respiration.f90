@@ -171,6 +171,7 @@ module soil_respiration
                                  + csite%A_decomp       (ipa) * csite%f_decomp(ipa)
       csite%today_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa)                              &
                                  + csite%B_decomp       (ipa) * csite%f_decomp(ipa)
+      csite%today_rh       (ipa) = csite%today_rh       (ipa) + csite%rh      (ipa)
       !------------------------------------------------------------------------------------!
 
 
@@ -532,21 +533,38 @@ module soil_respiration
       real                        :: er_psc
       real                        :: fl_stg
       real                        :: fl_sts
+      real                        :: ex_fgc_msc
+      real                        :: ex_fgc_ssc
+      real                        :: ex_fgc_psc
+      real                        :: ex_fsc_msc
+      real                        :: ex_fsc_ssc
+      real                        :: ex_fsc_psc
       real                        :: ex_stgc_msc
       real                        :: ex_stgc_ssc
+      real                        :: ex_stgc_psc
       real                        :: ex_stsc_msc
       real                        :: ex_stsc_ssc
-      real                        :: ex_msc_psc
-      real                        :: ex_ssc_psc
+      real                        :: ex_stsc_psc
       real                        :: ex_msc_ssc
+      real                        :: ex_msc_psc
       real                        :: ex_ssc_msc
+      real                        :: ex_ssc_psc
+      real                        :: ex_psc_msc
       real                        :: ex_psc_ssc
+      real                        :: fast_grnd_C_in
+      real                        :: fast_soil_C_in
+      real                        :: structural_grnd_C_in
+      real                        :: structural_soil_C_in
+      real                        :: microbial_soil_C_in
+      real                        :: slow_soil_C_in
+      real                        :: passive_soil_C_in
       !------------------------------------------------------------------------------------!
 
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
          siteloop: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
 
             !------------------------------------------------------------------------------!
             !      Decide the respiration factors based on the method.                     !
@@ -572,13 +590,24 @@ module soil_respiration
                !---------------------------------------------------------------------------!
                !     Find transfer rates between soil pools.                               !
                !---------------------------------------------------------------------------!
+               ex_fgc_msc = (1.0 - er_fsc)
+               ex_fgc_ssc = 0.0
+               ex_fgc_psc = 0.0
+
+               ex_fsc_msc = (1.0 - er_fsc)
+               ex_fsc_ssc = 0.0
+               ex_fsc_psc = 0.0
+
                ex_msc_psc = min( 1.0 - er_msc                                              &
                                , fx_msc_psc_int + fx_msc_psc_slp * soil(nsoil)%xclay )
+               ex_msc_ssc = 1.0 - er_msc - ex_msc_psc
+
                ex_ssc_psc = min( 1.0 - er_ssc                                              &
                                , fx_ssc_psc_int + fx_ssc_psc_slp * soil(nsoil)%xclay )
-               ex_msc_ssc = 1.0 - er_msc - ex_msc_psc
                ex_ssc_msc = 1.0 - er_ssc - ex_ssc_psc
+
                ex_psc_ssc = 1.0 - er_psc
+               ex_psc_msc = 0.0
                !---------------------------------------------------------------------------!
             case default
                !---------------------------------------------------------------------------!
@@ -598,22 +627,54 @@ module soil_respiration
                !---------------------------------------------------------------------------!
                !     No transfer between soil pools.                                       !
                !---------------------------------------------------------------------------!
-               ex_msc_psc = 0.0
-               ex_msc_psc = 0.0
-               ex_msc_ssc = 0.0
-               ex_ssc_msc = 0.0
-               ex_psc_ssc = 0.0
+               ex_fgc_msc  = 0.0
+               ex_fgc_ssc  = (1.0 - er_fsc )
+               ex_fgc_psc  = 0.0
+
+               ex_fsc_msc  = 0.0
+               ex_fsc_ssc  = (1.0 - er_fsc )
+               ex_fsc_psc  = 0.0
+
+               ex_stgc_msc = 0.0
+               ex_stgc_ssc = (1.0 - er_stsc)
+               ex_stgc_psc = 0.0
+
+               ex_stsc_msc = 0.0
+               ex_stsc_ssc = (1.0 - er_stsc)
+               ex_stsc_psc = 0.0
+
+               ex_msc_ssc  = 0.0
+               ex_msc_psc  = 0.0
+
+               ex_ssc_msc  = 0.0
+               ex_ssc_psc  = 0.0
+
+               ex_psc_msc  = 0.0
+               ex_psc_ssc  = 0.0
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
 
 
-            csite => cpoly%site(isi)
 
             !------------------------------------------------------------------------------!
             !       Find the transition rates between all pools.                           !
             !------------------------------------------------------------------------------!
             patchloop: do ipa = 1,csite%npatches
+
+
+
+               !----- Save soil carbon state prior to the soil carbon dynamics. -----------!
+               fast_grnd_C_in       = csite%fast_grnd_C      (ipa)
+               fast_soil_C_in       = csite%fast_soil_C      (ipa)
+               structural_grnd_C_in = csite%structural_grnd_C(ipa)
+               structural_soil_C_in = csite%structural_soil_C(ipa)
+               microbial_soil_C_in  = csite%microbial_soil_C (ipa)
+               slow_soil_C_in       = csite%slow_soil_C      (ipa)
+               passive_soil_C_in    = csite%passive_soil_C   (ipa)
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Fast pools. ---------------------------------------------------------!
                fg_C_loss  = csite%today_A_decomp(ipa)         * decay_rate_fsc             &
@@ -624,6 +685,7 @@ module soil_respiration
                           * csite%fast_grnd_N(ipa)
                fs_N_loss  = csite%today_B_decomp(ipa)         * decay_rate_fsc             &
                           * csite%fast_soil_N(ipa)
+               !---------------------------------------------------------------------------!
 
                !----- Structural pools. ---------------------------------------------------!
                stg_C_loss   = csite%today_Af_decomp(ipa)   * csite%Lg_decomp(ipa)          &
@@ -695,63 +757,56 @@ module soil_respiration
                      fl_sts = 1.0
                   end if
                   ex_stgc_msc = (1.0 - er_stsc) * (1.0 - fl_stg)
-                  ex_stsc_msc = (1.0 - er_stsc) * (1.0 - fl_sts)
                   ex_stgc_ssc = (1.0 - er_stsc) *        fl_stg
+                  ex_stgc_psc = 0.0
+
+                  ex_stsc_msc = (1.0 - er_stsc) * (1.0 - fl_sts)
                   ex_stsc_ssc = (1.0 - er_stsc) *        fl_sts
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !     Microbial pool.  All metabolic litter that is not respired becomes !
-                  ! microbial, and passive soil carbon cannot become microbial.            !
-                  !------------------------------------------------------------------------!
-                  ms_C_input = (1.0 - er_fsc) * (fg_C_loss + fs_C_loss)                    &
-                             + ex_stgc_msc    * stg_C_loss                                 &
-                             + ex_stsc_msc    * sts_C_loss                                 &
-                             + ex_ssc_msc     * ss_C_loss
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Humified (slow) pool.  Lignified structural carbon that doesn't    !
-                  ! become CO2 becomes humus.  Some passive carbon may revert back to      !
-                  ! humified, but this should be a small fraction given the decay rate.    !
-                  !------------------------------------------------------------------------!
-                  ss_C_input = ex_stgc_ssc * stg_C_loss                                    &
-                             + ex_stsc_ssc * sts_C_loss                                    &
-                             + ex_psc_ssc  * ps_C_loss
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Passive pool.  Only microbial and humified soil can contribute to  !
-                  ! the passive soil pool.                                                 !
-                  !------------------------------------------------------------------------!
-                  ps_C_input = ex_msc_psc  * ms_C_loss + ex_ssc_psc  * ss_C_loss
-                  !------------------------------------------------------------------------!
-               case default
-                  !----- Microbial pool is inactive. --------------------------------------!
-                  ms_C_input = 0.0
-                  !------------------------------------------------------------------------!
-
-                  !------------------------------------------------------------------------!
-                  !     Slow carbon receives everything that decayed and was not lost as   !
-                  ! CO2 (heterotrophic respiration).                                       !
-                  !------------------------------------------------------------------------!
-                  ss_C_input = (1.0 - er_fsc ) * ( fg_C_loss  + fs_C_loss  )               &
-                             + (1.0 - er_stsc) * ( stg_C_loss + sts_C_loss )               &
-                             + (1.0 - er_msc ) * ms_C_loss                                 &
-                             + (1.0 - er_psc ) * ps_C_loss
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Passive pool is inactive. ----------------------------------------!
-                  ps_C_input = 0.0
+                  ex_stsc_psc = 0.0
                   !------------------------------------------------------------------------!
                end select
                !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Microbial pool.  All metabolic litter that is not respired becomes    !
+               ! microbial, and passive soil carbon cannot become microbial.               !
+               !---------------------------------------------------------------------------!
+               ms_C_input = ex_fgc_msc     * fg_C_loss                                     &
+                          + ex_fsc_msc     * fs_C_loss                                     &
+                          + ex_stgc_msc    * stg_C_loss                                    &
+                          + ex_stsc_msc    * sts_C_loss                                    &
+                          + ex_ssc_msc     * ss_C_loss                                     &
+                          + ex_psc_msc     * ps_C_loss
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Humified (slow) pool.  Lignified structural carbon that doesn't       !
+               ! become CO2 becomes humus.  Some passive carbon may revert back to         !
+               ! humified, but this should be a small fraction given the decay rate.       !
+               !---------------------------------------------------------------------------!
+               ss_C_input = ex_fgc_ssc  * fg_C_loss                                        &
+                          + ex_fsc_ssc  * fs_C_loss                                        &
+                          + ex_stgc_ssc * stg_C_loss                                       &
+                          + ex_stsc_ssc * sts_C_loss                                       &
+                          + ex_msc_ssc  * ms_C_loss                                        &
+                          + ex_psc_ssc  * ps_C_loss
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Passive pool.  Only microbial and humified soil can contribute to     !
+               ! the passive soil pool.                                                    !
+               !---------------------------------------------------------------------------!
+               ps_C_input = ex_fgc_psc  * fg_C_loss                                        &
+                          + ex_fsc_psc  * fs_C_loss                                        &
+                          + ex_stgc_psc * stg_C_loss                                       &
+                          + ex_stsc_psc * sts_C_loss                                       &
+                          + ex_msc_psc  * ms_C_loss                                        &
+                          + ex_ssc_psc  * ss_C_loss
+               !---------------------------------------------------------------------------!
+
 
 
 
@@ -780,6 +835,7 @@ module soil_respiration
                !---------------------------------------------------------------------------!
 
 
+
                !---------------------------------------------------------------------------!
                !      All nitrogen fluxes have units kgN/m2/day, and we are updating on    !
                ! the daily time step.  Currently the microbial pool does not have          !
@@ -801,23 +857,27 @@ module soil_respiration
                !---------------------------------------------------------------------------!
 
 
+               !---------------------------------------------------------------------------!
+               !    As the last step, we make sure that there is no soil C being smuggled  !
+               ! or evaded from this patch.  We also check that all pools are non-negative !
+               ! (tiny negative values will be fixed, but not large numbers).              !
+               !                                                                           !
+               ! Disclaimer: this check is currently looking only at soil C, in the future !
+               ! we should also include nitrogen checks.                                   !
+               !---------------------------------------------------------------------------!
+               call check_budget_soilc(csite,ipa,fast_grnd_C_in,fast_soil_C_in             &
+                                      ,structural_grnd_C_in,structural_soil_C_in           &
+                                      ,microbial_soil_C_in,slow_soil_C_in                  &
+                                      ,passive_soil_C_in,er_fsc,er_stsc,er_msc,er_ssc      &
+                                      ,er_psc,ex_fgc_msc,ex_fgc_ssc,ex_fgc_psc             &
+                                      ,ex_fsc_msc,ex_fsc_ssc,ex_fsc_psc,ex_stgc_msc        &
+                                      ,ex_stgc_ssc,ex_stgc_psc,ex_stsc_msc,ex_stsc_ssc     &
+                                      ,ex_stsc_psc,ex_msc_ssc,ex_msc_psc,ex_ssc_msc        &
+                                      ,ex_ssc_psc,ex_psc_msc,ex_psc_ssc,fg_C_loss          &
+                                      ,fs_C_loss,stg_C_loss,sts_C_loss,ms_C_input          &
+                                      ,ms_C_loss,ss_C_input,ss_C_loss,ps_C_input,ps_C_loss)
+               !---------------------------------------------------------------------------!
 
-               !---------------------------------------------------------------------------!
-               !      Force all pools to be either zero or positive.                       !
-               !---------------------------------------------------------------------------!
-               csite%fast_grnd_C       (ipa) = max(0.0,csite%fast_grnd_C       (ipa))
-               csite%fast_soil_C       (ipa) = max(0.0,csite%fast_soil_C       (ipa))
-               csite%structural_grnd_C (ipa) = max(0.0,csite%structural_grnd_C (ipa))
-               csite%structural_soil_C (ipa) = max(0.0,csite%structural_soil_C (ipa))
-               csite%structural_grnd_L (ipa) = max(0.0,csite%structural_grnd_L (ipa))
-               csite%structural_soil_L (ipa) = max(0.0,csite%structural_soil_L (ipa))
-               csite%microbial_soil_C  (ipa) = max(0.0,csite%microbial_soil_C  (ipa))
-               csite%slow_soil_C       (ipa) = max(0.0,csite%slow_soil_C       (ipa))
-               csite%passive_soil_C    (ipa) = max(0.0,csite%passive_soil_C    (ipa))
-               csite%fast_grnd_N       (ipa) = max(0.0,csite%fast_grnd_N       (ipa))
-               csite%fast_soil_N       (ipa) = max(0.0,csite%fast_soil_N       (ipa))
-               csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa))
-               !---------------------------------------------------------------------------!
             end do patchloop
             !------------------------------------------------------------------------------!
          end do siteloop
@@ -1055,6 +1115,340 @@ module soil_respiration
 
       return
    end function het_resp_weight
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine checks whether carbon is conserved when soil carbon pools are    !
+   ! updated.                                                                              !
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine check_budget_soilc(csite,ipa,fast_grnd_C_in,fast_soil_C_in                   &
+                                ,structural_grnd_C_in,structural_soil_C_in                 &
+                                ,microbial_soil_C_in,slow_soil_C_in,passive_soil_C_in      &
+                                ,er_fsc,er_stsc,er_msc,er_ssc,er_psc,ex_fgc_msc,ex_fgc_ssc &
+                                ,ex_fgc_psc,ex_fsc_msc,ex_fsc_ssc,ex_fsc_psc,ex_stgc_msc   &
+                                ,ex_stgc_ssc,ex_stgc_psc,ex_stsc_msc,ex_stsc_ssc           &
+                                ,ex_stsc_psc,ex_msc_ssc,ex_msc_psc,ex_ssc_msc,ex_ssc_psc   &
+                                ,ex_psc_msc,ex_psc_ssc,fg_C_loss,fs_C_loss,stg_C_loss      &
+                                ,sts_C_loss,ms_C_input,ms_C_loss,ss_C_input,ss_C_loss      &
+                                ,ps_C_input,ps_C_loss)
+
+      use ed_state_vars, only : sitetype      ! ! structure
+      use ed_misc_coms , only : current_time  ! ! intent(in)
+      use consts_coms  , only : r_tol_trunc   & ! intent(in)
+                              , umol_2_kgC    & ! intent(in)
+                              , onethird      & ! intent(in)
+                              , day_sec       ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: ipa
+      real             , intent(in) :: fast_grnd_C_in
+      real             , intent(in) :: fast_soil_C_in
+      real             , intent(in) :: structural_grnd_C_in
+      real             , intent(in) :: structural_soil_C_in
+      real             , intent(in) :: microbial_soil_C_in
+      real             , intent(in) :: slow_soil_C_in
+      real             , intent(in) :: passive_soil_C_in
+      real             , intent(in) :: er_fsc
+      real             , intent(in) :: er_stsc
+      real             , intent(in) :: er_msc
+      real             , intent(in) :: er_ssc
+      real             , intent(in) :: er_psc
+      real             , intent(in) :: ex_fgc_msc
+      real             , intent(in) :: ex_fgc_ssc
+      real             , intent(in) :: ex_fgc_psc
+      real             , intent(in) :: ex_fsc_msc
+      real             , intent(in) :: ex_fsc_ssc
+      real             , intent(in) :: ex_fsc_psc
+      real             , intent(in) :: ex_stgc_msc
+      real             , intent(in) :: ex_stgc_ssc
+      real             , intent(in) :: ex_stgc_psc
+      real             , intent(in) :: ex_stsc_msc
+      real             , intent(in) :: ex_stsc_ssc
+      real             , intent(in) :: ex_stsc_psc
+      real             , intent(in) :: ex_msc_ssc
+      real             , intent(in) :: ex_msc_psc
+      real             , intent(in) :: ex_ssc_msc
+      real             , intent(in) :: ex_ssc_psc
+      real             , intent(in) :: ex_psc_msc
+      real             , intent(in) :: ex_psc_ssc
+      real             , intent(in) :: fg_C_loss
+      real             , intent(in) :: fs_C_loss
+      real             , intent(in) :: stg_C_loss
+      real             , intent(in) :: sts_C_loss
+      real             , intent(in) :: ms_C_input
+      real             , intent(in) :: ms_C_loss
+      real             , intent(in) :: ss_C_input
+      real             , intent(in) :: ss_C_loss
+      real             , intent(in) :: ps_C_input
+      real             , intent(in) :: ps_C_loss
+       !----- Local variables. -------------------------------------------------------------!
+      real                          :: soil_C_initial
+      real                          :: soil_C_final
+      real                          :: net_C_input
+      real                          :: net_C_loss
+      real                          :: delta_soil_C
+      real                          :: resid_soil_C
+      real                          :: toler_soil_C
+      real                          :: fgc_ok_min
+      real                          :: fsc_ok_min
+      real                          :: stgc_ok_min
+      real                          :: stsc_ok_min
+      real                          :: msc_ok_min
+      real                          :: ssc_ok_min
+      real                          :: psc_ok_min
+      real                          :: carbon_miss
+      real                          :: today_rh
+      real                          :: fracloss_rh
+      real                          :: nettrans_rh
+      real                          :: toler_rh
+      logical                       :: neg_soil_C
+      logical, dimension(3)         :: rh_violation
+      logical                       :: soil_C_violation
+      !----- Local constants. -------------------------------------------------------------!
+      real             , parameter  :: soil_C_min = 0.1
+      real             , parameter  :: rh_min     = 3.e-4
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=10), parameter  :: fmti='(a,1x,i14)'
+      character(len= 9), parameter  :: fmtl='(a,1x,l1)'
+      character(len=13), parameter  :: fmtf='(a,1x,es14.7)'
+      character(len=27), parameter  :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the minimum acceptable soil C stock. ------------------------------------!
+      fgc_ok_min  = - r_tol_trunc * max( soil_C_min, fast_grnd_C_in       )
+      fsc_ok_min  = - r_tol_trunc * max( soil_C_min, fast_soil_C_in       )
+      stgc_ok_min = - r_tol_trunc * max( soil_C_min, structural_grnd_C_in )
+      stsc_ok_min = - r_tol_trunc * max( soil_C_min, structural_soil_C_in )
+      msc_ok_min  = - r_tol_trunc * max( soil_C_min, microbial_soil_C_in  )
+      ssc_ok_min  = - r_tol_trunc * max( soil_C_min, slow_soil_C_in       )
+      psc_ok_min  = - r_tol_trunc * max( soil_C_min, passive_soil_C_in    )
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check every soil carbon pool, to make sure they have sensible numbers.  Tiny    !
+      ! negative stocks will be tolerated, but don't fix anything in case any of the pools !
+      ! are too negative.                                                                  !
+      !------------------------------------------------------------------------------------!
+      neg_soil_C = csite%fast_grnd_C       (ipa) < fgc_ok_min   .or.                       &
+                   csite%fast_soil_C       (ipa) < fsc_ok_min   .or.                       &
+                   csite%structural_grnd_C (ipa) < stgc_ok_min  .or.                       &
+                   csite%structural_soil_C (ipa) < stsc_ok_min  .or.                       &
+                   csite%microbial_soil_C  (ipa) < msc_ok_min   .or.                       &
+                   csite%slow_soil_C       (ipa) < ssc_ok_min   .or.                       &
+                   csite%passive_soil_C    (ipa) < psc_ok_min
+      !------------------------------------------------------------------------------------!
+
+
+      if (.not. neg_soil_C) then
+         !----- Account for any potential violation of carbon stocks. ---------------------!
+         carbon_miss = - min(csite%fast_grnd_C       (ipa),0.0)                            &
+                       - min(csite%fast_soil_C       (ipa),0.0)                            &
+                       - min(csite%structural_grnd_C (ipa),0.0)                            &
+                       - min(csite%structural_soil_C (ipa),0.0)                            &
+                       - min(csite%microbial_soil_C  (ipa),0.0)                            &
+                       - min(csite%slow_soil_C       (ipa),0.0)                            &
+                       - min(csite%passive_soil_C    (ipa),0.0)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !------ Force all pools to be either zero or positive. ---------------------------!
+         csite%fast_grnd_C       (ipa) = max(0.0,csite%fast_grnd_C       (ipa))
+         csite%fast_soil_C       (ipa) = max(0.0,csite%fast_soil_C       (ipa))
+         csite%structural_grnd_C (ipa) = max(0.0,csite%structural_grnd_C (ipa))
+         csite%structural_soil_C (ipa) = max(0.0,csite%structural_soil_C (ipa))
+         csite%structural_grnd_L (ipa) = max(0.0,csite%structural_grnd_L (ipa))
+         csite%structural_soil_L (ipa) = max(0.0,csite%structural_soil_L (ipa))
+         csite%microbial_soil_C  (ipa) = max(0.0,csite%microbial_soil_C  (ipa))
+         csite%slow_soil_C       (ipa) = max(0.0,csite%slow_soil_C       (ipa))
+         csite%passive_soil_C    (ipa) = max(0.0,csite%passive_soil_C    (ipa))
+         csite%fast_grnd_N       (ipa) = max(0.0,csite%fast_grnd_N       (ipa))
+         csite%fast_soil_N       (ipa) = max(0.0,csite%fast_soil_N       (ipa))
+         csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa))
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Set missing carbon to zero so the code works with debugging. --------------!
+         carbon_miss = 0.0
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the net input (litter flux and mortality) and the total output             !
+      ! (heterotrophic respiration).                                                       !
+      !------------------------------------------------------------------------------------!
+      net_C_input  = csite%fgc_in (ipa)  + csite%fsc_in (ipa)                              &
+                   + csite%stgc_in(ipa)  + csite%stsc_in(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the initial and final soil carbon stocks.                                  !
+      !------------------------------------------------------------------------------------!
+      soil_C_initial = fast_grnd_C_in       + fast_soil_C_in       + structural_grnd_C_in  &
+                     + structural_soil_C_in + microbial_soil_C_in  + slow_soil_C_in        &
+                     + passive_soil_C_in
+      soil_C_final   = csite%fast_grnd_C       (ipa) + csite%fast_soil_C       (ipa)       &
+                     + csite%structural_grnd_C (ipa) + csite%structural_soil_C (ipa)       &
+                     + csite%microbial_soil_C  (ipa) + csite%slow_soil_C       (ipa)       &
+                     + csite%passive_soil_C    (ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Compare the heterotrophic respiration with two metrics: the residual from       !
+      ! transition between pools, and the fraction of carbon loss that is supposed to be   !
+      ! heterotrophic respiration.  These three should be all the same.                    !
+      !------------------------------------------------------------------------------------!
+      today_rh        = csite%today_rh(ipa) * umol_2_kgC * day_sec
+      fracloss_rh     = er_fsc  * ( fg_C_loss  + fs_C_loss  )                              &
+                      + er_stsc * ( stg_C_loss + sts_C_loss )                              &
+                      + er_msc  * ms_C_loss                                                &
+                      + er_ssc  * ss_C_loss                                                &
+                      + er_psc  * ps_C_loss
+      nettrans_rh     = fg_C_loss + fs_C_loss + stg_C_loss + sts_C_loss + ms_C_loss        &
+                      + ss_C_loss + ps_C_loss - ms_C_input - ss_C_input - ps_C_input
+      net_C_loss      = onethird * (today_rh + fracloss_rh + nettrans_rh)
+      toler_rh        = max(rh_min,net_C_loss) * r_tol_trunc
+      rh_violation(1) = abs(today_rh    - fracloss_rh) > toler_rh
+      rh_violation(2) = abs(today_rh    - nettrans_rh) > toler_rh
+      rh_violation(3) = abs(fracloss_rh - nettrans_rh) > toler_rh
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the change and the residual (unexplained change).                         !
+      !------------------------------------------------------------------------------------!
+      delta_soil_C     = net_C_input - net_C_loss
+      resid_soil_C     = soil_C_final - soil_C_initial - delta_soil_C - carbon_miss
+      toler_soil_C     = r_tol_trunc * max(soil_C_initial,soil_C_min)
+      soil_C_violation = abs(resid_soil_C) > toler_soil_C
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case we identify carbon conservation issues, print information on screen    !
+      ! and stop the model.                                                                !
+      !------------------------------------------------------------------------------------!
+      if ( neg_soil_C .or. soil_C_violation .or. any(rh_violation)) then
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|       !!!   Soil Carbon budget failed   !!!        |'
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
+                                                           ,current_time%month             &
+                                                           ,current_time%date              &
+                                                           ,current_time%time
+         write(unit=*,fmt=fmti )  ' PATCH               : ',ipa
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' FAST_GRND_C_IN        : ',fast_grnd_C_in
+         write(unit=*,fmt=fmtf )  ' FAST_SOIL_C_IN        : ',fast_soil_C_in
+         write(unit=*,fmt=fmtf )  ' STRUCTURAL_GRND_C_IN  : ',structural_grnd_C_in
+         write(unit=*,fmt=fmtf )  ' STRUCTURAL_SOIL_C_IN  : ',structural_soil_C_in
+         write(unit=*,fmt=fmtf )  ' MICROBIAL_SOIL_C_IN   : ',microbial_soil_C_in
+         write(unit=*,fmt=fmtf )  ' SLOW_SOIL_C_IN        : ',slow_soil_C_in
+         write(unit=*,fmt=fmtf )  ' PASSIVE_SOIL_C_IN     : ',passive_soil_C_in
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' FAST_GRND_C_FN        : ',csite%fast_grnd_C      (ipa)
+         write(unit=*,fmt=fmtf )  ' FAST_SOIL_C_FN        : ',csite%fast_soil_C      (ipa)
+         write(unit=*,fmt=fmtf )  ' STRUCTURAL_GRND_C_FN  : ',csite%structural_grnd_C(ipa)
+         write(unit=*,fmt=fmtf )  ' STRUCTURAL_SOIL_C_FN  : ',csite%structural_soil_C(ipa)
+         write(unit=*,fmt=fmtf )  ' MICROBIAL_SOIL_C_FN   : ',csite%microbial_soil_C (ipa)
+         write(unit=*,fmt=fmtf )  ' SLOW_SOIL_C_FN        : ',csite%slow_soil_C      (ipa)
+         write(unit=*,fmt=fmtf )  ' PASSIVE_SOIL_C_FN     : ',csite%passive_soil_C   (ipa)
+         write(unit=*,fmt=fmtl )  ' NEGATIVE SOIL C       : ',neg_soil_C
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' FGC_INPUT             : ',csite%fgc_in(ipa)
+         write(unit=*,fmt=fmtf )  ' FSC_INPUT             : ',csite%fsc_in(ipa)
+         write(unit=*,fmt=fmtf )  ' STGC_INPUT            : ',csite%stgc_in(ipa)
+         write(unit=*,fmt=fmtf )  ' STSC_INPUT            : ',csite%stsc_in(ipa)
+         write(unit=*,fmt=fmtf )  ' MSC_INPUT             : ',ms_C_input
+         write(unit=*,fmt=fmtf )  ' SSC_INPUT             : ',ss_C_input
+         write(unit=*,fmt=fmtf )  ' PSC_INPUT             : ',ps_C_input
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' FGC_LOSS              : ',fg_C_loss
+         write(unit=*,fmt=fmtf )  ' FSC_LOSS              : ',fs_C_loss
+         write(unit=*,fmt=fmtf )  ' STGC_LOSS             : ',stg_C_loss
+         write(unit=*,fmt=fmtf )  ' STSC_LOSS             : ',sts_C_loss
+         write(unit=*,fmt=fmtf )  ' MSC_LOSS              : ',ms_C_loss
+         write(unit=*,fmt=fmtf )  ' SSC_LOSS              : ',ss_C_loss
+         write(unit=*,fmt=fmtf )  ' PSC_LOSS              : ',ps_C_loss
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' FRAC_FGC_CO2          : ',er_fsc
+         write(unit=*,fmt=fmtf )  ' FRAC_FGC_MSC          : ',ex_fgc_msc
+         write(unit=*,fmt=fmtf )  ' FRAC_FGC_SSC          : ',ex_fgc_ssc
+         write(unit=*,fmt=fmtf )  ' FRAC_FGC_PSC          : ',ex_fgc_psc
+         write(unit=*,fmt='(a)')  ' '
+         write(unit=*,fmt=fmtf )  ' FRAC_FSC_CO2          : ',er_fsc
+         write(unit=*,fmt=fmtf )  ' FRAC_FSC_MSC          : ',ex_fsc_msc
+         write(unit=*,fmt=fmtf )  ' FRAC_FSC_SSC          : ',ex_fsc_ssc
+         write(unit=*,fmt=fmtf )  ' FRAC_FSC_PSC          : ',ex_fsc_psc
+         write(unit=*,fmt='(a)')  ' '
+         write(unit=*,fmt=fmtf )  ' FRAC_STGC_CO2         : ',er_stsc
+         write(unit=*,fmt=fmtf )  ' FRAC_STGC_MSC         : ',ex_stgc_msc
+         write(unit=*,fmt=fmtf )  ' FRAC_STGC_SSC         : ',ex_stgc_ssc
+         write(unit=*,fmt=fmtf )  ' FRAC_STGC_PSC         : ',ex_stgc_psc
+         write(unit=*,fmt='(a)')  ' '
+         write(unit=*,fmt=fmtf )  ' FRAC_STSC_CO2         : ',er_stsc
+         write(unit=*,fmt=fmtf )  ' FRAC_STSC_MSC         : ',ex_stsc_msc
+         write(unit=*,fmt=fmtf )  ' FRAC_STSC_SSC         : ',ex_stsc_ssc
+         write(unit=*,fmt=fmtf )  ' FRAC_STSC_PSC         : ',ex_stsc_psc
+         write(unit=*,fmt='(a)')  ' '
+         write(unit=*,fmt=fmtf )  ' FRAC_MSC_CO2          : ',er_msc
+         write(unit=*,fmt=fmtf )  ' FRAC_MSC_SSC          : ',ex_msc_ssc
+         write(unit=*,fmt=fmtf )  ' FRAC_MSC_PSC          : ',ex_msc_psc
+         write(unit=*,fmt='(a)')  ' '
+         write(unit=*,fmt=fmtf )  ' FRAC_SSC_CO2          : ',er_ssc
+         write(unit=*,fmt=fmtf )  ' FRAC_SSC_MSC          : ',ex_ssc_msc
+         write(unit=*,fmt=fmtf )  ' FRAC_SSC_PSC          : ',ex_ssc_psc
+         write(unit=*,fmt='(a)')  ' '
+         write(unit=*,fmt=fmtf )  ' FRAC_PSC_CO2          : ',er_psc
+         write(unit=*,fmt=fmtf )  ' FRAC_PSC_MSC          : ',ex_psc_msc
+         write(unit=*,fmt=fmtf )  ' FRAC_PSC_SSC          : ',ex_psc_ssc
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' TODAY_RH (T)          : ',today_rh
+         write(unit=*,fmt=fmtf )  ' FRACLOSS_RH (F)       : ',fracloss_rh
+         write(unit=*,fmt=fmtf )  ' NETTRANS_RH (N)       : ',nettrans_rh
+         write(unit=*,fmt=fmtf )  ' TOLERANCE_RH          : ',toler_rh
+         write(unit=*,fmt=fmtl )  ' T-F VIOLATION         : ',rh_violation(1)
+         write(unit=*,fmt=fmtl )  ' T-N VIOLATION         : ',rh_violation(2)
+         write(unit=*,fmt=fmtl )  ' F-N VIOLATION         : ',rh_violation(3)
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' SOIL_C_INITIAL        : ',soil_C_initial
+         write(unit=*,fmt=fmtf )  ' SOIL_C_FINAL          : ',soil_C_final
+         write(unit=*,fmt=fmtf )  ' NET_C_INPUT           : ',net_C_input
+         write(unit=*,fmt=fmtf )  ' NET_C_LOSS            : ',net_C_loss
+         write(unit=*,fmt=fmtf )  ' DELTA_SOIL_C          : ',delta_soil_C
+         write(unit=*,fmt=fmtf )  ' CARBON_MISS           : ',carbon_miss
+         write(unit=*,fmt=fmtf )  ' RESIDUAL_SOIL_C       : ',resid_soil_C
+         write(unit=*,fmt=fmtf )  ' TOLERANCE_SOIL_C      : ',toler_soil_C
+         write(unit=*,fmt=fmtl )  ' SOIL CARBON VIOLATION : ',soil_C_violation
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  ' '
+
+
+         call fatal_error('Budget check has failed, see message above.'                    &
+                         ,'check_budget_soilc','soil_respiration.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine check_budget_soilc
    !=======================================================================================!
    !=======================================================================================!
 end module soil_respiration

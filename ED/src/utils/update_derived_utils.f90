@@ -27,7 +27,7 @@ module update_derived_utils
            csite => cpoly%site(isi)
 
            do ipa = 1,csite%npatches
-              call update_patch_derived_props(csite,ipa)
+              call update_patch_derived_props(csite,ipa,.false.)
            end do
 
            call update_site_derived_props(cpoly, 0, isi)
@@ -476,7 +476,7 @@ module update_derived_utils
    ! These depend on the results from reproduction, which in turn depends on structural    !
    ! growth results from all patches.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine update_patch_derived_props(csite,ipa)
+   subroutine update_patch_derived_props(csite,ipa,update_zcaneff)
      
       use ed_state_vars       , only : sitetype                   & ! structure
                                      , patchtype                  ! ! structure
@@ -502,6 +502,7 @@ module update_derived_utils
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)  , target     :: csite
       integer         , intent(in) :: ipa
+      logical         , intent(in) :: update_zcaneff
       !----- Local variables --------------------------------------------------------------!
       type(patchtype) , pointer    :: cpatch
       real                         :: weight
@@ -600,28 +601,37 @@ module update_derived_utils
       !------------------------------------------------------------------------------------!
 
 
-
-      !----- Compute specific enthalpy, which will be used to find changes in storage. ----!
-      can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
-      !------------------------------------------------------------------------------------!
-
-
       !------------------------------------------------------------------------------------!
       !     Find the changes in canopy air space storage due to the change in canopy       !
-      ! depth.                                                                             !
+      ! depth.  We update the budget variables during the patch and cohort dynamics step,  !
+      ! but we skip this step during the initialisation, when we are creating a new patch  !
+      ! or when we are updating (e.g. disturbance).                                        !
       !------------------------------------------------------------------------------------!
-      fdelta_storage                  = frqsumi * csite%can_rhos(ipa)                      &
-                                      * (csite%can_depth(ipa) - old_can_depth)
-      csite%co2budget_zcaneffect(ipa) = csite%co2budget_zcaneffect(ipa)                    &
-                                      + fdelta_storage * csite%can_co2(ipa)                &
-                                      * mmdryi
-      csite%cbudget_zcaneffect  (ipa) = csite%cbudget_zcaneffect(ipa)                      &
-                                      + fdelta_storage * csite%can_co2(ipa)                &
-                                      * mmdryi * umol_2_kgC
-      csite%wbudget_zcaneffect  (ipa) = csite%wbudget_zcaneffect(ipa)                      &
-                                      + fdelta_storage * csite%can_shv(ipa)
-      csite%ebudget_zcaneffect  (ipa) = csite%ebudget_zcaneffect(ipa)                      &
-                                      + fdelta_storage * can_enthalpy
+      if (update_zcaneff) then
+         !----- Compute specific enthalpy, which will be used to find changes in storage. -!
+         can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Find the volume change of the canopy air space. --------------------------!
+         fdelta_storage                  = frqsumi * csite%can_rhos(ipa)                   &
+                                         * (csite%can_depth(ipa) - old_can_depth)
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Update the change in storage due to change in CAS capacity. --------------!
+         csite%co2budget_zcaneffect(ipa) = csite%co2budget_zcaneffect(ipa)                 &
+                                         + fdelta_storage * csite%can_co2(ipa)             &
+                                         * mmdryi
+         csite%cbudget_zcaneffect  (ipa) = csite%cbudget_zcaneffect(ipa)                   &
+                                         + fdelta_storage * csite%can_co2(ipa)             &
+                                         * mmdryi * umol_2_kgC
+         csite%wbudget_zcaneffect  (ipa) = csite%wbudget_zcaneffect(ipa)                   &
+                                         + fdelta_storage * csite%can_shv(ipa)
+         csite%ebudget_zcaneffect  (ipa) = csite%ebudget_zcaneffect(ipa)                   &
+                                         + fdelta_storage * can_enthalpy
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 

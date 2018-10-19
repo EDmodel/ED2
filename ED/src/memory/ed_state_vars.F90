@@ -238,6 +238,12 @@ module ed_state_vars
       logical, pointer, dimension(:) :: wood_resolvable
       !<Logical test to check whether the cohort wood can be resolved...
      
+      logical, pointer, dimension(:) :: is_viable
+      !< Logical test to check whether the cohort should be terminated because it is
+      !< no longer viable.  This occurs when the cohort enters in an extremely negative 
+      !< carbon balance and cannot recover because it has no active tissues or storage
+      !< to leave the improductive status.
+
       real, pointer,dimension(:,:) :: cb           !(13,ncohorts)
       !<Monthly carbon balance for past 12 months and the current month
       !!(kgC/plant) - 13th column holds the partial month integration
@@ -1296,6 +1302,12 @@ module ed_state_vars
       real , pointer,dimension(:) :: cbudget_zcaneffect
       !<Change in total carbon storage due to change in CAS depth [kgC/m2/s]
 
+      real , pointer,dimension(:) :: cbudget_seedrain
+      !<Change in total carbon storage due to seed rain [kgC/m2/s]
+
+      real , pointer,dimension(:) :: cbudget_loss2yield
+      !<Carbon depletion due to seed yield production (shipped off site) [kgC/m2/s]
+
       real , pointer,dimension(:) :: co2budget_initialstorage
       !<Total CO2 (can_shv) at the beginning of budget-averaging 
       !<time. [&mu;mol_CO2/m2]
@@ -1340,6 +1352,11 @@ module ed_state_vars
       !<Daily average of the product B_decomp * f_decomp, which incorporates
       !<temperature, moisture, and N dependence of decomposition (belowground).  The "today" 
       !<variable is used in the model, whereas dmean and mmean are for output only.
+
+      real , pointer,dimension(:) :: today_rh
+      !<Daily average of heterotrophic respiration, used only for budget checks.  
+      !<The "today" variable is used in the model, whereas dmean and mmean are for 
+      !<output only.
 
       real, pointer,dimension(:,:) :: repro    !(n_pft,npatches)  
       !<Carbon available to establish recruits [kgC/m2]
@@ -4710,6 +4727,8 @@ module ed_state_vars
       allocate(csite%cbudget_loss2atm              (              npatches))
       allocate(csite%cbudget_denseffect            (              npatches))
       allocate(csite%cbudget_zcaneffect            (              npatches))
+      allocate(csite%cbudget_seedrain              (              npatches))
+      allocate(csite%cbudget_loss2yield            (              npatches))
       allocate(csite%co2budget_initialstorage      (              npatches))
       allocate(csite%co2budget_residual            (              npatches))
       allocate(csite%co2budget_loss2atm            (              npatches))
@@ -4722,6 +4741,7 @@ module ed_state_vars
       allocate(csite%today_B_decomp                (              npatches))
       allocate(csite%today_Af_decomp               (              npatches))
       allocate(csite%today_Bf_decomp               (              npatches))
+      allocate(csite%today_rh                      (              npatches))
       allocate(csite%repro                         (        n_pft,npatches))
       allocate(csite%veg_rough                     (              npatches))
       allocate(csite%veg_height                    (              npatches))
@@ -5227,6 +5247,7 @@ module ed_state_vars
       allocate(cpatch%crown_area                   (                    ncohorts))
       allocate(cpatch%leaf_resolvable              (                    ncohorts))
       allocate(cpatch%wood_resolvable              (                    ncohorts))
+      allocate(cpatch%is_viable                    (                    ncohorts))
       allocate(cpatch%cb                           (                 13,ncohorts))
       allocate(cpatch%cb_lightmax                  (                 13,ncohorts))
       allocate(cpatch%cb_moistmax                  (                 13,ncohorts))
@@ -6784,6 +6805,8 @@ module ed_state_vars
       nullify(csite%cbudget_loss2atm           )
       nullify(csite%cbudget_denseffect         )
       nullify(csite%cbudget_zcaneffect         )
+      nullify(csite%cbudget_seedrain           )
+      nullify(csite%cbudget_loss2yield         )
       nullify(csite%co2budget_initialstorage   )
       nullify(csite%co2budget_residual         )
       nullify(csite%co2budget_loss2atm         )
@@ -6796,6 +6819,7 @@ module ed_state_vars
       nullify(csite%today_B_decomp             )
       nullify(csite%today_Af_decomp            )
       nullify(csite%today_Bf_decomp            )
+      nullify(csite%today_rh                   )
       nullify(csite%repro                      )
       nullify(csite%veg_rough                  )
       nullify(csite%veg_height                 )
@@ -7273,6 +7297,7 @@ module ed_state_vars
       nullify(cpatch%crown_area              )
       nullify(cpatch%leaf_resolvable         )
       nullify(cpatch%wood_resolvable         )
+      nullify(cpatch%is_viable               )
       nullify(cpatch%cb                      )
       nullify(cpatch%cb_lightmax             )
       nullify(cpatch%cb_moistmax             )
@@ -7837,6 +7862,8 @@ module ed_state_vars
       if(associated(csite%cbudget_loss2atm           )) deallocate(csite%cbudget_loss2atm           )
       if(associated(csite%cbudget_denseffect         )) deallocate(csite%cbudget_denseffect         )
       if(associated(csite%cbudget_zcaneffect         )) deallocate(csite%cbudget_zcaneffect         )
+      if(associated(csite%cbudget_seedrain           )) deallocate(csite%cbudget_seedrain           )
+      if(associated(csite%cbudget_loss2yield         )) deallocate(csite%cbudget_loss2yield         )
       if(associated(csite%co2budget_initialstorage   )) deallocate(csite%co2budget_initialstorage   )
       if(associated(csite%co2budget_residual         )) deallocate(csite%co2budget_residual         )
       if(associated(csite%co2budget_loss2atm         )) deallocate(csite%co2budget_loss2atm         )
@@ -7849,6 +7876,7 @@ module ed_state_vars
       if(associated(csite%today_B_decomp             )) deallocate(csite%today_B_decomp             )
       if(associated(csite%today_Af_decomp            )) deallocate(csite%today_Af_decomp            )
       if(associated(csite%today_Bf_decomp            )) deallocate(csite%today_Bf_decomp            )
+      if(associated(csite%today_rh                   )) deallocate(csite%today_rh                   )
       if(associated(csite%repro                      )) deallocate(csite%repro                      )
       if(associated(csite%veg_rough                  )) deallocate(csite%veg_rough                  )
       if(associated(csite%veg_height                 )) deallocate(csite%veg_height                 )
@@ -8330,6 +8358,7 @@ module ed_state_vars
       if(associated(cpatch%crown_area              )) deallocate(cpatch%crown_area              )
       if(associated(cpatch%leaf_resolvable         )) deallocate(cpatch%leaf_resolvable         )
       if(associated(cpatch%wood_resolvable         )) deallocate(cpatch%wood_resolvable         )
+      if(associated(cpatch%is_viable               )) deallocate(cpatch%is_viable               )
       if(associated(cpatch%cb                      )) deallocate(cpatch%cb                      )
       if(associated(cpatch%cb_lightmax             )) deallocate(cpatch%cb_lightmax             )
       if(associated(cpatch%cb_moistmax             )) deallocate(cpatch%cb_moistmax             )
@@ -8912,6 +8941,8 @@ module ed_state_vars
          osite%cbudget_loss2atm           (opa) = isite%cbudget_loss2atm           (ipa)
          osite%cbudget_denseffect         (opa) = isite%cbudget_denseffect         (ipa)
          osite%cbudget_zcaneffect         (opa) = isite%cbudget_zcaneffect         (ipa)
+         osite%cbudget_seedrain           (opa) = isite%cbudget_seedrain           (ipa)
+         osite%cbudget_loss2yield         (opa) = isite%cbudget_loss2yield         (ipa)
          osite%co2budget_initialstorage   (opa) = isite%co2budget_initialstorage   (ipa)
          osite%co2budget_residual         (opa) = isite%co2budget_residual         (ipa)
          osite%co2budget_loss2atm         (opa) = isite%co2budget_loss2atm         (ipa)
@@ -8924,6 +8955,7 @@ module ed_state_vars
          osite%today_B_decomp             (opa) = isite%today_B_decomp             (ipa)
          osite%today_Af_decomp            (opa) = isite%today_Af_decomp            (ipa)
          osite%today_Bf_decomp            (opa) = isite%today_Bf_decomp            (ipa)
+         osite%today_rh                   (opa) = isite%today_rh                   (ipa)
          osite%veg_rough                  (opa) = isite%veg_rough                  (ipa)
          osite%veg_height                 (opa) = isite%veg_height                 (ipa)
          osite%veg_displace               (opa) = isite%veg_displace               (ipa)
@@ -9641,7 +9673,8 @@ module ed_state_vars
       osite%cbudget_residual           (1:z) = pack(isite%cbudget_residual           ,lmask)
       osite%cbudget_loss2atm           (1:z) = pack(isite%cbudget_loss2atm           ,lmask)
       osite%cbudget_denseffect         (1:z) = pack(isite%cbudget_denseffect         ,lmask)
-      osite%cbudget_zcaneffect         (1:z) = pack(isite%cbudget_zcaneffect         ,lmask)
+      osite%cbudget_seedrain           (1:z) = pack(isite%cbudget_seedrain           ,lmask)
+      osite%cbudget_loss2yield         (1:z) = pack(isite%cbudget_loss2yield         ,lmask)
       osite%co2budget_initialstorage   (1:z) = pack(isite%co2budget_initialstorage   ,lmask)
       osite%co2budget_residual         (1:z) = pack(isite%co2budget_residual         ,lmask)
       osite%co2budget_loss2atm         (1:z) = pack(isite%co2budget_loss2atm         ,lmask)
@@ -9654,6 +9687,7 @@ module ed_state_vars
       osite%today_B_decomp             (1:z) = pack(isite%today_B_decomp             ,lmask)
       osite%today_Af_decomp            (1:z) = pack(isite%today_Af_decomp            ,lmask)
       osite%today_Bf_decomp            (1:z) = pack(isite%today_Bf_decomp            ,lmask)
+      osite%today_rh                   (1:z) = pack(isite%today_rh                   ,lmask)
       osite%veg_rough                  (1:z) = pack(isite%veg_rough                  ,lmask)
       osite%veg_height                 (1:z) = pack(isite%veg_height                 ,lmask)
       osite%veg_displace               (1:z) = pack(isite%veg_displace               ,lmask)
@@ -10385,6 +10419,7 @@ module ed_state_vars
          opatch%crown_area              (oco) = ipatch%crown_area              (ico)
          opatch%leaf_resolvable         (oco) = ipatch%leaf_resolvable         (ico)
          opatch%wood_resolvable         (oco) = ipatch%wood_resolvable         (ico)
+         opatch%is_viable               (oco) = ipatch%is_viable               (ico)
          opatch%cbr_bar                 (oco) = ipatch%cbr_bar                 (ico)
          opatch%leaf_energy             (oco) = ipatch%leaf_energy             (ico)
          opatch%leaf_temp               (oco) = ipatch%leaf_temp               (ico)
@@ -11027,6 +11062,7 @@ module ed_state_vars
       opatch%crown_area            (1:z) = pack(ipatch%crown_area                ,lmask)
       opatch%leaf_resolvable       (1:z) = pack(ipatch%leaf_resolvable           ,lmask)
       opatch%wood_resolvable       (1:z) = pack(ipatch%wood_resolvable           ,lmask)
+      opatch%is_viable             (1:z) = pack(ipatch%is_viable                 ,lmask)
       opatch%cbr_bar               (1:z) = pack(ipatch%cbr_bar                   ,lmask)
       opatch%leaf_energy           (1:z) = pack(ipatch%leaf_energy               ,lmask)
       opatch%leaf_temp             (1:z) = pack(ipatch%leaf_temp                 ,lmask)
@@ -21698,18 +21734,19 @@ module ed_state_vars
       nvar=nioglobal+niogrid+niopoly
       !------------------------------------------------------------------------------------!
 
-      call filltab_sitetype_p30     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p31inst (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p31today(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p31fmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p31dmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p31mmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_m31     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p32     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_m32     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p33     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p34     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_sitetype_p346    (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p30      (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p31inst  (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p31budget(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p31today (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p31fmean (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p31dmean (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p31mmean (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_m31      (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p32      (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_m32      (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p33      (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p34      (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_p346     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       !------------------------------------------------------------------------------------!
 
       !----- Save the number of patch-level (sitetype) variables that go to the output. ---!
@@ -21809,7 +21846,8 @@ module ed_state_vars
    !=======================================================================================!
    !     This routine will fill the pointer table with the patch-level variables           !
    !  (sitetype) that have one dimension and are real (type 31).  Because of the sheer     !
-   ! amount of variables with type 31, we do the averages in separate sub-routines.        !
+   ! amount of variables with type 31, we do the budget, today, fmean, dmean, mmean, and   !
+   ! mmsqu variables in separate sub-routines.                                             !
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31inst(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -21834,8 +21872,8 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !       This part should have only 1-D vectors (npatches).  Notice that they all use !
-      ! npts = csite%npatches.  Add only variables of type 31 that are not today, fmean,   !
-      ! dmean, mmean, or mmsqu.                                                            !
+      ! npts = csite%npatches.  Add only variables of type 31 that are not budget, today,  !
+      ! fmean, dmean, mmean, or mmsqu.                                                     !
       !------------------------------------------------------------------------------------!
       npts = csite%npatches
 
@@ -22112,224 +22150,6 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%wbudget_loss2atm)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_loss2atm,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_LOSS2ATM :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wbudget_denseffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_denseffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_DENSEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wbudget_zcaneffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_zcaneffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_ZCANEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wbudget_precipgain)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_precipgain,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_PRECIPGAIN :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wbudget_loss2runoff)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_loss2runoff,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_LOSS2RUNOFF :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wbudget_loss2drainage)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_loss2drainage,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_LOSS2DRAINAGE :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wbudget_initialstorage)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_initialstorage,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_INITIALSTORAGE :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%wbudget_residual)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%wbudget_residual,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'WBUDGET_RESIDUAL :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_loss2atm)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_loss2atm,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_LOSS2ATM :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_denseffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_denseffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_DENSEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_prsseffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_prsseffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_PRSSEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_hcapeffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_hcapeffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_HCAPEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_zcaneffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_zcaneffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_ZCANEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_loss2runoff)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_loss2runoff,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_LOSS2RUNOFF :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_loss2drainage)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_loss2drainage,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_LOSS2DRAINAGE :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_netrad)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_netrad,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_NETRAD :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_precipgain)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_precipgain,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_PRECIPGAIN :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_initialstorage)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_initialstorage,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_INITIALSTORAGE :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%ebudget_residual)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%ebudget_residual,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'EBUDGET_RESIDUAL :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%cbudget_initialstorage)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%cbudget_initialstorage,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CBUDGET_INITIALSTORAGE :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%cbudget_committed)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%cbudget_committed,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CBUDGET_COMMITTED :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%cbudget_residual)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%cbudget_residual,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CBUDGET_RESIDUAL :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%cbudget_loss2atm)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%cbudget_loss2atm,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CBUDGET_LOSS2ATM :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%cbudget_denseffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%cbudget_denseffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CBUDGET_DENSEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%cbudget_zcaneffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%cbudget_zcaneffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CBUDGET_ZCANEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%co2budget_initialstorage)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_initialstorage,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_INITIALSTORAGE :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%co2budget_residual)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_residual,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_RESIDUAL :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%co2budget_loss2atm)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_loss2atm,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_LOSS2ATM :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%co2budget_denseffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_denseffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_DENSEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%co2budget_zcaneffect)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_zcaneffect,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_ZCANEFFECT :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%co2budget_gpp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_gpp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_GPP :31:hist') 
-         call metadata_edio(nvar,igr,'Patch total gross primary productivity per timestep','[umol/m2/dtlsm]','NA') 
-      end if
-
-
       if (associated(csite%avg_daily_temp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%avg_daily_temp,nvar,igr,init,csite%paglob_id, &
@@ -22350,20 +22170,6 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'AVG_MONTHLY_WATERDEF :31:hist:anal:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'Running average of water deficit','[kg/m2/30days]','NA') 
       end if  
-
-      if (associated(csite%co2budget_plresp)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_plresp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_PLRESP :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%co2budget_rh)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%co2budget_rh,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CO2BUDGET_RH :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
 
       if (associated(csite%veg_rough)) then
          nvar=nvar+1
@@ -22879,6 +22685,400 @@ module ed_state_vars
    !=======================================================================================!
    !=======================================================================================!
    !     This routine will fill the pointer table with the patch-level variables           !
+   !  (sitetype) that have one dimension are real (type 31), and are budget variables      !
+   ! (co2budget, cbudget, ebudget, wbudget).                                               !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_sitetype_p31budget(csite,igr,init,var_len,var_len_global,max_ptrs    &
+                                        ,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype), target        :: csite
+      integer       , intent(in)    :: init
+      integer       , intent(in)    :: igr
+      integer       , intent(in)    :: var_len
+      integer       , intent(in)    :: max_ptrs
+      integer       , intent(in)    :: var_len_global
+      integer       , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                       :: npts
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !       This part should have only 1-D vectors (npatches).  Notice that they all use !
+      ! npts = csite%npatches.  Add only variables of type 31 that are budget variables.   !
+      !------------------------------------------------------------------------------------!
+      npts = csite%npatches
+
+      if (associated(csite%wbudget_loss2atm)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_loss2atm                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_LOSS2ATM :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: water loss due to eddy flux'                    &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
+      if (associated(csite%wbudget_denseffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_denseffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_DENSEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: change in storage due to change in density'     &
+                           ,'[  kgW/m2/s]','NA')
+      end if
+
+      if (associated(csite%wbudget_zcaneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_zcaneffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_ZCANEFFECT :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: change in storage due to change in CAS depth'   &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
+      if (associated(csite%wbudget_precipgain)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_precipgain                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_PRECIPGAIN :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: water gain due to precipitation'                &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
+      if (associated(csite%wbudget_loss2runoff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_loss2runoff                                 &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_LOSS2RUNOFF :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: water loss due to surface runoff'               &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
+      if (associated(csite%wbudget_loss2drainage)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_loss2drainage                               &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_LOSS2DRAINAGE :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: water loss due to sub-surface runoff'           &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
+      if (associated(csite%wbudget_initialstorage)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_initialstorage                              &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_INITIALSTORAGE :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: total water storage'                            &
+                           ,'[    kgW/m2]','NA') 
+      end if
+
+      if (associated(csite%wbudget_residual)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_residual                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_RESIDUAL :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: residual (unexplained) change in storage'       &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_loss2atm)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_loss2atm                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_LOSS2ATM :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: enthalpy loss due to eddy flux'              &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_denseffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_denseffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_DENSEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: change in storage due to change in density'  &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_prsseffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_prsseffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_PRSSEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: change in storage due to change in pressure' &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_hcapeffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_hcapeffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_HCAPEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: storage change due to heat capacity change'  &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_zcaneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_zcaneffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_ZCANEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: change in storage due to change in CAS depth'&
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_loss2runoff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_loss2runoff                                 &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_LOSS2RUNOFF :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: enthalpy loss due to surface runoff'         &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_loss2drainage)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_loss2drainage                               &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_LOSS2DRAINAGE :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: enthalpy loss due to sub-surface runoff'     &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_netrad)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_netrad                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_NETRAD :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: enthalpy change due to net irradiance'       &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_precipgain)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_precipgain                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_PRECIPGAIN :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: enthalpy gain due to precipitation'          &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_initialstorage)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_initialstorage                              &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_INITIALSTORAGE :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: total enthalpy storage'                      &
+                           ,'[      J/m2]','NA') 
+      end if
+
+      if (associated(csite%ebudget_residual)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_residual                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_RESIDUAL :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: residual (unexplained) change in storage'    &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%cbudget_initialstorage)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_initialstorage                              &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_INITIALSTORAGE :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: total carbon storage'                          &
+                           ,'[    kgC/m2]','NA') 
+      end if
+
+      if (associated(csite%cbudget_committed)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_committed                                   &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_COMMITTED :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: committed carbon storage'                      &
+                           ,'[    kgC/m2]','NA') 
+      end if
+
+      if (associated(csite%cbudget_residual)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_residual                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_RESIDUAL :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: residual (unexplained) change in storage'      &
+                           ,'[  kgC/m2/s]','NA') 
+      end if
+
+      if (associated(csite%cbudget_loss2atm)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_loss2atm                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_LOSS2ATM :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: carbon loss due to eddy flux'                  &
+                           ,'[  kgC/m2/s]','NA') 
+      end if
+
+      if (associated(csite%cbudget_denseffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_denseffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_DENSEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: change in storage due to change in density'    &
+                           ,'[  kgC/m2/s]','NA') 
+      end if
+
+      if (associated(csite%cbudget_zcaneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_zcaneffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_ZCANEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: change in storage due to change in CAS depth'  &
+                           ,'[  kgC/m2/s]','NA') 
+      end if
+
+      if (associated(csite%cbudget_seedrain)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_seedrain                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_SEEDRAIN :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: change in storage due to seed rain'            &
+                           ,'[  kgC/m2/s]','NA') 
+      end if
+
+      if (associated(csite%cbudget_loss2yield)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%cbudget_loss2yield                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CBUDGET_LOSS2YIELD :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Carbon budget: change in storage due to seed yield'           &
+                           ,'[  kgC/m2/s]','NA') 
+      end if
+
+      if (associated(csite%co2budget_initialstorage)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_initialstorage                            &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_INITIALSTORAGE :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: total carbon dioxide storage'                     &
+                           ,'[   umol/m2]','NA') 
+      end if
+
+      if (associated(csite%co2budget_residual)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_residual                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_RESIDUAL :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: residual (unexplained) change in storage'         &
+                           ,'[ umol/m2/s]','NA') 
+      end if
+
+      if (associated(csite%co2budget_loss2atm)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_loss2atm                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_LOSS2ATM :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: carbon dioxide loss due to eddy flux'             &
+                           ,'[ umol/m2/s]','NA') 
+      end if
+
+      if (associated(csite%co2budget_denseffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_denseffect                                &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_DENSEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: change in storage due to change in density'       &
+                           ,'[ umol/m2/s]','NA') 
+      end if
+
+      if (associated(csite%co2budget_zcaneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_zcaneffect                                &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_ZCANEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: change in storage due to change in CAS depth'     &
+                           ,'[ umol/m2/s]','NA') 
+      end if
+
+      if (associated(csite%co2budget_gpp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_gpp                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_GPP :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: storage loss due to gross primary productivity'   &
+                           ,'[ umol/m2/s]','NA') 
+      end if
+
+      if (associated(csite%co2budget_plresp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_plresp                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_PLRESP :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: storage gain due to autotrophic respiration'      &
+                           ,'[ umol/m2/s]','NA') 
+      end if
+
+      if (associated(csite%co2budget_rh)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%co2budget_rh                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CO2BUDGET_RH :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'CO2 budget: storage gain due to heterotrophic respiration'    &
+                           ,'[ umol/m2/s]','NA') 
+      end if
+
+      return
+   end subroutine filltab_sitetype_p31budget
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the patch-level variables           !
    !  (sitetype) that have one dimension are real (type 31), and are daily integrals       !
    ! (today).                                                                              !
    !---------------------------------------------------------------------------------------!
@@ -22936,6 +23136,13 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,csite%today_Bf_decomp,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'TODAY_BF_DECOMP :31:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+      end if
+
+      if (associated(csite%today_rh       )) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%today_rh,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_RH :31:hist') 
          call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
       end if
 

@@ -6316,7 +6316,8 @@ subroutine init_dt_thermo_params()
                              , ffilout                & ! intent(in)
                              , nsub_euler             & ! intent(in)
                              , dteuler                ! ! intent(out)
-   use consts_coms    , only : wdnsi8                 ! ! intent(in)
+   use consts_coms    , only : wdnsi8                 & ! intent(in)
+                             , r_tol_trunc            ! ! intent(in)
    use detailed_coms  , only : idetailed              ! ! intent(in)
    use pft_coms       , only : is_conifer             ! ! intent(in)
    use rk4_coms       , only : rk4_tolerance          & ! intent(in)
@@ -6324,6 +6325,7 @@ subroutine init_dt_thermo_params()
                              , rk4eps                 & ! intent(out)
                              , rk4eps2                & ! intent(out)
                              , rk4epsi                & ! intent(out)
+                             , toler_budget           & ! intent(out)
                              , hmin                   & ! intent(out)
                              , print_diags            & ! intent(out)
                              , checkbudget            & ! intent(out)
@@ -6404,6 +6406,17 @@ subroutine init_dt_thermo_params()
                                      !     time step and stop the run in case any of these
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Tolerance for fast-scale budget.  We set the tolerance as a function of time     !
+   ! step because estimates of unaccounted effects (e.g. density effect) lose accuracy.    !
+   ! We also impose a maximum tolerance to be the RK4.                                     !
+   !---------------------------------------------------------------------------------------!
+   toler_budget = min(rk4_tolerance, dtlsm * r_tol_trunc / 1.0 )
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
