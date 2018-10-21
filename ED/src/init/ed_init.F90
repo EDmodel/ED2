@@ -1180,7 +1180,7 @@ subroutine read_obstime()
                       ,'ed_init.F90')
    end if
 
-   if (outfast .ne. frqfast) then
+   if (.not.((outfast .eq. frqfast) .or. (outfast .eq. 0))) then
       write (unit=*,fmt='(a,1x,f7.0,1x,a)') &
          'OUTFAST must be 0 or equal to FRQFAST for observation time output. (Yours is ',outfast,').'
       call fatal_error('OUTFAST should be = FRQFAST or zero','read_obstime'                 &
