@@ -303,12 +303,15 @@ pretty.time <<- function(when,n=10,...){
 pretty.elapsed <<- function(x,base,n=5,...){
 
    #------ Make sure the base is known. ---------------------------------------------------#
-   if (! base %in% c(12,24,60)){
-      stop( paste0(" Invalid base (",base,")!"
-                  ,"  It must be 12 (months), 24 (hours), or 60 (minutes/seconds)."
-                  )#end paste0
-          )#end stop
-   }#end if  (! base %in% c(12,24,60))
+   if (! base %in% c(12,24,30,60)){
+      cat0(" Function pretty.elapsed.  Invalid base provided: ",base)
+      cat0(" Accepted bases:"      )
+      cat0(" - 12 (months)"        )
+      cat0(" - 24 (hours)"         )
+      cat0(" - 30 (days)"          )
+      cat0(" - 60 (minutes/seconds")
+      stop(" Invalid base.")
+   }#end if  (! base %in% c(12,24,30,60))
    #---------------------------------------------------------------------------------------#
 
 
@@ -327,10 +330,20 @@ pretty.elapsed <<- function(x,base,n=5,...){
    if (diff.base %<=% 0.075 || diff.base %>=% 0.75){
       dbase = diff.base * base
    }else if (diff.base %<% 0.15){
-      dbase = base / 12
+      if (base == 30){
+         dbase = base / 15
+      }else{
+         dbase = base / 12
+      }#end if (base == 30)
    }else if (diff.base %<% 0.35){
-      dbase = base / 4
-   }else{ 
+      if (base == 30){
+         dbase = base / 6
+      }else{
+         dbase = base / 4
+      }#end if (base == 30)
+   }else if (diff.base %<% 0.50){
+      dbase = base / 3
+   }else{
       dbase = base / 2
    }#end if
    #---------------------------------------------------------------------------------------#

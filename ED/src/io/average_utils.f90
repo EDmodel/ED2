@@ -2626,11 +2626,24 @@ module average_utils
                cpatch => csite%patch(ipa)
 
                !---- Scale decomposition rates. -------------------------------------------!
-               csite%today_A_decomp (ipa) = csite%today_A_decomp (ipa) * dtlsm_o_daysec
-               csite%today_B_decomp (ipa) = csite%today_B_decomp (ipa) * dtlsm_o_daysec
-               csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa) * dtlsm_o_daysec
-               csite%today_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa) * dtlsm_o_daysec
-               csite%today_rh       (ipa) = csite%today_rh       (ipa) * dtlsm_o_daysec
+               csite%today_fg_C_loss (ipa) = csite%today_fg_C_loss (ipa) * dtlsm_o_daysec
+               csite%today_fs_C_loss (ipa) = csite%today_fs_C_loss (ipa) * dtlsm_o_daysec
+               csite%today_fg_N_loss (ipa) = csite%today_fg_N_loss (ipa) * dtlsm_o_daysec
+               csite%today_fs_N_loss (ipa) = csite%today_fs_N_loss (ipa) * dtlsm_o_daysec
+               csite%today_stg_C_loss(ipa) = csite%today_stg_C_loss(ipa) * dtlsm_o_daysec
+               csite%today_sts_C_loss(ipa) = csite%today_sts_C_loss(ipa) * dtlsm_o_daysec
+               csite%today_stg_L_loss(ipa) = csite%today_stg_L_loss(ipa) * dtlsm_o_daysec
+               csite%today_sts_L_loss(ipa) = csite%today_sts_L_loss(ipa) * dtlsm_o_daysec
+               csite%today_stg_N_loss(ipa) = csite%today_stg_N_loss(ipa) * dtlsm_o_daysec
+               csite%today_sts_N_loss(ipa) = csite%today_sts_N_loss(ipa) * dtlsm_o_daysec
+               csite%today_ms_C_loss (ipa) = csite%today_ms_C_loss (ipa) * dtlsm_o_daysec
+               csite%today_ss_C_loss (ipa) = csite%today_ss_C_loss (ipa) * dtlsm_o_daysec
+               csite%today_ps_C_loss (ipa) = csite%today_ps_C_loss (ipa) * dtlsm_o_daysec
+               csite%today_A_decomp  (ipa) = csite%today_A_decomp  (ipa) * dtlsm_o_daysec
+               csite%today_B_decomp  (ipa) = csite%today_B_decomp  (ipa) * dtlsm_o_daysec
+               csite%today_Af_decomp (ipa) = csite%today_Af_decomp (ipa) * dtlsm_o_daysec
+               csite%today_Bf_decomp (ipa) = csite%today_Bf_decomp (ipa) * dtlsm_o_daysec
+               csite%today_rh        (ipa) = csite%today_rh        (ipa) * dtlsm_o_daysec
                !---------------------------------------------------------------------------!
 
 
@@ -3291,11 +3304,24 @@ module average_utils
                cpatch => csite%patch(ipa)
 
                !----- Reset variables stored in sitetype. ---------------------------------!
-               csite%today_A_decomp (ipa) = 0.0
-               csite%today_B_decomp (ipa) = 0.0
-               csite%today_Af_decomp(ipa) = 0.0
-               csite%today_Bf_decomp(ipa) = 0.0
-               csite%today_rh       (ipa) = 0.0
+               csite%today_fg_C_loss (ipa) = 0.0
+               csite%today_fs_C_loss (ipa) = 0.0
+               csite%today_fg_N_loss (ipa) = 0.0
+               csite%today_fs_N_loss (ipa) = 0.0
+               csite%today_stg_C_loss(ipa) = 0.0
+               csite%today_sts_C_loss(ipa) = 0.0
+               csite%today_stg_L_loss(ipa) = 0.0
+               csite%today_sts_L_loss(ipa) = 0.0
+               csite%today_stg_N_loss(ipa) = 0.0
+               csite%today_sts_N_loss(ipa) = 0.0
+               csite%today_ms_C_loss (ipa) = 0.0
+               csite%today_ss_C_loss (ipa) = 0.0
+               csite%today_ps_C_loss (ipa) = 0.0
+               csite%today_A_decomp  (ipa) = 0.0
+               csite%today_B_decomp  (ipa) = 0.0
+               csite%today_Af_decomp (ipa) = 0.0
+               csite%today_Bf_decomp (ipa) = 0.0
+               csite%today_rh        (ipa) = 0.0
                !---------------------------------------------------------------------------!
 
 

@@ -119,7 +119,7 @@ module budget_utils
 
 
       !----- Committed carbon may not be zero (e.g. newly disturbed patch). ---------------!
-      call reset_cbudget_committed(csite,ipa)
+      call reset_cbudget_committed(csite,ipa,.true.)
       !------------------------------------------------------------------------------------!
 
 
@@ -182,7 +182,7 @@ module budget_utils
    !    This subroutine resets the committed changes in carbon stocks (biomass and         !
    ! necromass).                                                                           !
    !---------------------------------------------------------------------------------------!
-   subroutine reset_cbudget_committed(csite,ipa)
+   subroutine reset_cbudget_committed(csite,ipa,reset)
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structured
       implicit none
@@ -190,6 +190,7 @@ module budget_utils
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)   , target     :: csite
       integer          , intent(in) :: ipa
+      logical          , intent(in) :: reset
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)  , pointer    :: cpatch
       integer                       :: ico
@@ -202,7 +203,8 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     Start committed pool over.                                                     !
+      !     Start committed pool over in case this is the initialisation or in case this   !
+      ! simulation has vegetation dynamics.                                                !
       !                                                                                    !
       !     The committed pool exists because carbon fluxes in ecosystem dynamics are not  !
       ! updated every thermodynamics time step, so the carbon lost by the ecosystem        !
@@ -214,8 +216,12 @@ module budget_utils
       ! captures carbon that will only be assimilated by the ecosystem in the day after.   !
       ! This is the initial time, so we ADD respiration terms here because they will be    !
       ! released.                                                                          !
+      !                                                                                    !
+      !     In case vegetation dynamics is not active, this pool is never reset to account !
+      ! for the fact that carbon storage does not change in spite of the NEP not being     !
+      ! zero.                                                                              !
       !------------------------------------------------------------------------------------!
-      csite%cbudget_committed(ipa) = 0.0
+      if (reset) csite%cbudget_committed(ipa) = 0.0
       do ico=1,cpatch%ncohorts
          csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)                       &
                                       + cpatch%nplant(ico)                                 &
@@ -331,38 +337,6 @@ module budget_utils
 
       return
    end subroutine update_cbudget_committed
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine finds the total storage of CO2, carbon, enthalpy, and water        !
-   ! amongst all thermodynamic pools that ED2 solves.                                      !
-   !---------------------------------------------------------------------------------------!
-   subroutine update_budget(csite,lsl,ipa)
-     
-      use ed_state_vars, only : sitetype     ! ! structure
-      implicit none
-
-      !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)  , target     :: csite
-      integer         , intent(in) :: lsl
-      integer         , intent(in) :: ipa
-      !------------------------------------------------------------------------------------!
-
-
-      csite%co2budget_initialstorage(ipa) = compute_co2_storage       (csite,ipa)
-      csite%cbudget_initialstorage  (ipa) = compute_carbon_storage    (csite,ipa)
-      csite%wbudget_initialstorage  (ipa) = compute_water_storage     (csite,lsl,ipa)
-      csite%ebudget_initialstorage  (ipa) = compute_enthalpy_storage  (csite,lsl,ipa)
-
-      return
-   end subroutine update_budget
    !=======================================================================================!
    !=======================================================================================!
 
@@ -512,14 +486,17 @@ module budget_utils
       integer                                                 :: jpa
       integer                                                 :: ico
       logical                                                 :: isthere
-      logical                                                 :: co2_ok
-      logical                                                 :: carbon_ok
-      logical                                                 :: enthalpy_ok
-      logical                                                 :: water_ok
+      logical                                                 :: budget_fine
+      logical                                                 :: co2_fine
+      logical                                                 :: carbon_fine
+      logical                                                 :: enthalpy_fine
+      logical                                                 :: water_fine
       !----- Local constants. -------------------------------------------------------------!
       character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
+      character(len= 9)     , parameter     :: fmti='(a,1x,i7)'
+      character(len= 9)     , parameter     :: fmtl='(a,1x,l1)'
       character(len=10)     , parameter     :: bhfmt='(43(a,1x))'
-      character(len=48)     , parameter     :: bbfmt='(3(i13,1x),40(es14.7,1x))'
+      character(len=48)     , parameter     :: bbfmt='(3(i14,1x),40(es14.7,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical               , save          :: first_time = .true.
       !------------------------------------------------------------------------------------!
@@ -863,18 +840,18 @@ module budget_utils
 
 
          !----- Look for violation of conservation in all quantities. ---------------------!
-         co2_ok      = abs(co2curr_residual) <= co2budget_tolerance
-         carbon_ok   = abs(ccurr_residual)   <= cbudget_tolerance
-         enthalpy_ok = abs(ecurr_residual)   <= ebudget_tolerance
-         water_ok    = abs(wcurr_residual)   <= wbudget_tolerance
+         co2_fine      = abs(co2curr_residual) <= co2budget_tolerance
+         carbon_fine   = abs(ccurr_residual)   <= cbudget_tolerance
+         enthalpy_fine = abs(ecurr_residual)   <= ebudget_tolerance
+         water_fine    = abs(wcurr_residual)   <= wbudget_tolerance
+         budget_fine   = co2_fine .and. carbon_fine .and. enthalpy_fine .and. water_fine
          !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
          !     Find the patch LAI and WAI for output, only if it is needed.                !
          !---------------------------------------------------------------------------------!
-         if ( .not. (co2_ok .and. carbon_ok .and. enthalpy_ok .and. water_ok) .or.         &
-              print_budget                                                       ) then
+         if ( (.not. budget_fine) .or. print_budget ) then
             cpatch => csite%patch(ipa)
             patch_lai = 0.0
             patch_wai = 0.0
@@ -886,18 +863,37 @@ module budget_utils
          !---------------------------------------------------------------------------------!
 
 
-         !------ Report all the terms for the CO2 budget in case it failed. ---------------!
-         if (.not. co2_ok) then
+         !---------------------------------------------------------------------------------!
+         !       Report all the budget terms in case any of the budget checks have failed. !in case it failed. ---------------!
+         !---------------------------------------------------------------------------------!
+         if (.not. budget_fine) then
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a)') '|           !!!    CO2 budget failed    !!!        |'
+            write (unit=*,fmt='(a)') '|       !!!    Sub-daily budget failed    !!!      |'
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
+            write (unit=*,fmt=fmti ) ' IPA               : ',ipa
+            write (unit=*,fmt=fmti ) ' DIST_TYPE         : ',csite%dist_type(ipa)
+            write (unit=*,fmt=fmtf ) ' AGE               : ',csite%age(ipa)
             write (unit=*,fmt=fmtf ) ' LAI               : ',patch_lai
+            write (unit=*,fmt=fmtf ) ' WAI               : ',patch_wai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT        : ',csite%veg_height(ipa)
+            write (unit=*,fmt=fmtf ) ' CAN_DEPTH         : ',csite%can_depth(ipa)
             write (unit=*,fmt=fmtf ) ' CAN_RHOS          : ',csite%can_rhos(ipa)
             write (unit=*,fmt=fmtf ) ' OLD_CAN_RHOS      : ',old_can_rhos
-            write (unit=*,fmt=fmtf ) ' CAN_DEPTH         : ',csite%can_depth(ipa)
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') '  Summary'
+            write (unit=*,fmt='(a)') ' .................................................. '
+            write (unit=*,fmt=fmtl ) ' CO2_FINE          : ',co2_fine
+            write (unit=*,fmt=fmtl ) ' CARBON_FINE       : ',carbon_fine
+            write (unit=*,fmt=fmtl ) ' ENTHALPY_FINE     : ',enthalpy_fine
+            write (unit=*,fmt=fmtl ) ' WATER_FINE        : ',water_fine
+            write (unit=*,fmt=fmtf ) ' REL_TOLERANCE     : ',toler_budget
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') '  CO2 Budget'
+            write (unit=*,fmt='(a)') ' .................................................. '
             write (unit=*,fmt=fmtf ) ' TOLERANCE         : ',co2budget_tolerance
             write (unit=*,fmt=fmtf ) ' RESIDUAL          : ',co2curr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE   : ',co2budget_initialstorage
@@ -923,49 +919,25 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT    : ',co2curr_denseffect
             write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT   : ',co2curr_zcaneffect
             write (unit=*,fmt=fmtf ) ' LOSS2ATM          : ',co2curr_loss2atm
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') ' '
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-         !------ Report all the terms for the carbon budget in case it failed. ------------!
-         if (.not. carbon_ok) then
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a)') '|         !!!    Carbon budget failed    !!!       |'
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
-               current_time%year,current_time%month,current_time%date ,current_time%time
-            write (unit=*,fmt=fmtf ) ' LAI             : ',patch_lai
-            write (unit=*,fmt=fmtf ) ' VEG_HEIGHT      : ',csite%veg_height(ipa)
-            write (unit=*,fmt=fmtf ) ' CAN_DEPTH       : ',csite%can_depth(ipa)
-            write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',cbudget_tolerance
-            write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',ccurr_residual
-            write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',cbudget_initialstorage
-            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE   : ',cbudget_finalstorage
-            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE   : ',cbudget_deltastorage
-            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT  : ',ccurr_denseffect
-            write (unit=*,fmt=fmtf ) ' SEEDRAIN        : ',ccurr_seedrain
-            write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT : ',ccurr_zcaneffect
-            write (unit=*,fmt=fmtf ) ' LOSS2YIELD      : ',ccurr_loss2yield
-            write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',ccurr_loss2atm
-            write (unit=*,fmt=fmtf ) ' COMMITTED       : ',csite%cbudget_committed(ipa)
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') ' '
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-         !------ Report all the terms for the enthalpy budget in case it failed. ----------!
-         if (.not. enthalpy_ok) then
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a)') '|         !!!    Enthalpy budget failed    !!!     |'
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
-               current_time%year,current_time%month,current_time%date ,current_time%time
-            write (unit=*,fmt=fmtf ) ' LAI             : ',patch_lai
-            write (unit=*,fmt=fmtf ) ' VEG_HEIGHT      : ',csite%veg_height(ipa)
-            write (unit=*,fmt=fmtf ) ' CAN_DEPTH       : ',csite%can_depth(ipa)
+            write (unit=*,fmt='(a)') '  Carbon budget'
+            write (unit=*,fmt='(a)') ' .................................................. '
+            write (unit=*,fmt=fmtf ) ' TOLERANCE         : ',cbudget_tolerance
+            write (unit=*,fmt=fmtf ) ' RESIDUAL          : ',ccurr_residual
+            write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE   : ',cbudget_initialstorage
+            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE     : ',cbudget_finalstorage
+            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE     : ',cbudget_deltastorage
+            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT    : ',ccurr_denseffect
+            write (unit=*,fmt=fmtf ) ' SEEDRAIN          : ',ccurr_seedrain
+            write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT   : ',ccurr_zcaneffect
+            write (unit=*,fmt=fmtf ) ' LOSS2YIELD        : ',ccurr_loss2yield
+            write (unit=*,fmt=fmtf ) ' LOSS2ATM          : ',ccurr_loss2atm
+            write (unit=*,fmt=fmtf ) ' COMMITTED         : ',csite%cbudget_committed(ipa)
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') '  Enthalpy budget'
+            write (unit=*,fmt='(a)') ' .................................................. '
             write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',ebudget_tolerance
             write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',ecurr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',ebudget_initialstorage
@@ -980,22 +952,10 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',ecurr_loss2atm
             write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE   : ',ecurr_loss2drainage
             write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF     : ',ecurr_loss2runoff
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') ' '
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-         !------ Report all the terms for the water budget in case it failed. -------------!
-         if (.not. water_ok) then
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a)') '|          !!!    Water budget failed    !!!       |'
-            write (unit=*,fmt='(a)') '|--------------------------------------------------|'
-            write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
-               current_time%year,current_time%month,current_time%date ,current_time%time
-            write (unit=*,fmt=fmtf ) ' LAI             : ',patch_lai
-            write (unit=*,fmt=fmtf ) ' VEG_HEIGHT      : ',csite%veg_height(ipa)
-            write (unit=*,fmt=fmtf ) ' CAN_DEPTH       : ',csite%can_depth(ipa)
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') '  Water budget'
+            write (unit=*,fmt='(a)') ' .................................................. '
             write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',wbudget_tolerance
             write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',wcurr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',wbudget_initialstorage
@@ -1007,6 +967,22 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',wcurr_loss2atm
             write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE   : ',wcurr_loss2drainage
             write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF     : ',wcurr_loss2runoff
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') '  A note on budget check'
+            write (unit=*,fmt='(a)') ' .................................................. '
+            write (unit=*,fmt='(a)') '    Budget failure doesn''t necessarily mean a'      &
+                                  // ' problem in the RK4 or Euler integrators.  If you'
+            write (unit=*,fmt='(a)') ' see NaN in any variable above, and the simulation'  &
+                                  // ' time is the first day of the month near 00UTC,'
+            write (unit=*,fmt='(a)') ' then it is very likely that some variable has'      &
+                                  // ' not been properly initialised in the patch or'
+            write (unit=*,fmt='(a)') ' cohort dynamics (e.g. new recruit or new patch).'   &
+                                  // '  The best way to spot the error is to compile the'
+            write (unit=*,fmt='(a)') ' model with strict debugging options and checks.'
+            write (unit=*,fmt='(a)') '     Problems that occur in the middle of the day'   &
+                                  // ' and middle of the month more are more likely to'
+            write (unit=*,fmt='(a)') ' be true budget violations.'
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') ' '
          end if
@@ -1093,7 +1069,7 @@ module budget_utils
          !---------------------------------------------------------------------------------!
          !      Stop the run in case there is any leak of CO2, enthalpy, or water.         !
          !---------------------------------------------------------------------------------!
-         if (.not. (co2_ok .and. carbon_ok .and. enthalpy_ok .and. water_ok)) then
+         if (.not. budget_fine) then
             call fatal_error('Budget check has failed, see message above!'                 &
                             ,'compute_budget','budget_utils.f90')
          end if

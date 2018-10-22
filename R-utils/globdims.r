@@ -256,7 +256,7 @@ nnecro     = 7
 necrokeys  = c("PSC","SSC","STSC","MSC","FSC","STGC","FGC","ALL")
 necronames = c("Passive","Humified","BG woody debris","Microbial"
               ,"BG litter","AG woody debris","AG litter","Total")
-necrocols  = c("#811F9E","#1BA2F7","#880D32","#CCCA3D","#0E6E81","#F87856","#2BD2DB"
+necrocols  = c("#811F9E","#1BA2F7","#880D32","#CCCA3D","#107C92","#F87856","#2BD2DB"
               ,all.colour)
 necroltys  = c("dotted","dotdash","twodash","dashed","longdash","dotdash","twodash","solid")
 #------------------------------------------------------------------------------------------#
@@ -299,7 +299,7 @@ if (idbh.type == 1){
    dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                         , c(classdbh[-1],classdbh[ndbh]),"cm"
                         )#end paste0
-   dbhcols    <<- c("#811F9E","#0E6E81","#1BA2F7","#2BD2DB","#CCCA3D","#F87856",all.colour)
+   dbhcols    <<- c("#811F9E","#107C92","#1BA2F7","#2BD2DB","#CCCA3D","#F87856",all.colour)
    dbhltys    <<- c("twodash","dashed","longdash","dotdash","twodash","longdash","solid")
 }else if (idbh.type == 3){
    ndbh       <<-  4
@@ -332,7 +332,7 @@ if (idbh.type == 1){
    dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                         , c(classdbh[-1],classdbh[ndbh]),"cm"
                         )#end paste0
-   dbhcols    <<- c("#811F9E","#0E6E81","#1BA2F7","#2BD2DB","#F9E5C0"
+   dbhcols    <<- c("#811F9E","#107C92","#1BA2F7","#2BD2DB","#F9E5C0"
                    ,"#CCCA3D","#F87856","#880D32",all.colour)
    dbhltys    <<- c("twodash","dashed"  ,"longdash","dotdash","twodash"
                    ,"dashed" ,"longdash","dotdash" ,"solid")

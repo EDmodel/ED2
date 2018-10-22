@@ -468,7 +468,7 @@ module growth_balive
 
 
                !------ Update the committed carbon for the upcoming day. ------------------!
-               call reset_cbudget_committed(csite,ipa)
+               call reset_cbudget_committed(csite,ipa,veget_dyn_on)
                !---------------------------------------------------------------------------!
 
 

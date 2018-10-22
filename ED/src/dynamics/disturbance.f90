@@ -1844,6 +1844,45 @@ module disturbance
       csite%rough                      (np) = csite%rough                      (np)        &
                                             + csite%rough                      (cp)        &
                                             * area_fac
+      csite%today_fg_C_loss            (np) = csite%today_fg_C_loss            (np)        &
+                                            + csite%today_fg_C_loss            (cp)        &
+                                            * area_fac
+      csite%today_fs_C_loss            (np) = csite%today_fs_C_loss            (np)        &
+                                            + csite%today_fs_C_loss            (cp)        &
+                                            * area_fac
+      csite%today_fg_N_loss            (np) = csite%today_fg_N_loss            (np)        &
+                                            + csite%today_fg_N_loss            (cp)        &
+                                            * area_fac
+      csite%today_fs_N_loss            (np) = csite%today_fs_N_loss            (np)        &
+                                            + csite%today_fs_N_loss            (cp)        &
+                                            * area_fac
+      csite%today_stg_C_loss           (np) = csite%today_stg_C_loss           (np)        &
+                                            + csite%today_stg_C_loss           (cp)        &
+                                            * area_fac
+      csite%today_sts_C_loss           (np) = csite%today_sts_C_loss           (np)        &
+                                            + csite%today_sts_C_loss           (cp)        &
+                                            * area_fac
+      csite%today_stg_L_loss           (np) = csite%today_stg_L_loss           (np)        &
+                                            + csite%today_stg_L_loss           (cp)        &
+                                            * area_fac
+      csite%today_sts_L_loss           (np) = csite%today_sts_L_loss           (np)        &
+                                            + csite%today_sts_L_loss           (cp)        &
+                                            * area_fac
+      csite%today_stg_N_loss           (np) = csite%today_stg_N_loss           (np)        &
+                                            + csite%today_stg_N_loss           (cp)        &
+                                            * area_fac
+      csite%today_sts_N_loss           (np) = csite%today_sts_N_loss           (np)        &
+                                            + csite%today_sts_N_loss           (cp)        &
+                                            * area_fac
+      csite%today_ms_C_loss            (np) = csite%today_ms_C_loss            (np)        &
+                                            + csite%today_ms_C_loss            (cp)        &
+                                            * area_fac
+      csite%today_ss_C_loss            (np) = csite%today_ss_C_loss            (np)        &
+                                            + csite%today_ss_C_loss            (cp)        &
+                                            * area_fac
+      csite%today_ps_C_loss            (np) = csite%today_ps_C_loss            (np)        &
+                                            + csite%today_ps_C_loss            (cp)        &
+                                            * area_fac
       csite%today_A_decomp             (np) = csite%today_A_decomp             (np)        &
                                             + csite%today_A_decomp             (cp)        &
                                             * area_fac

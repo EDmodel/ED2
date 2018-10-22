@@ -164,18 +164,6 @@ module soil_respiration
 
 
 
-      !----- Update averaged variables. ---------------------------------------------------!
-      csite%today_A_decomp (ipa) = csite%today_A_decomp (ipa) + csite%A_decomp(ipa)
-      csite%today_B_decomp (ipa) = csite%today_B_decomp (ipa) + csite%B_decomp(ipa)
-      csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa)                              &
-                                 + csite%A_decomp       (ipa) * csite%f_decomp(ipa)
-      csite%today_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa)                              &
-                                 + csite%B_decomp       (ipa) * csite%f_decomp(ipa)
-      csite%today_rh       (ipa) = csite%today_rh       (ipa) + csite%rh      (ipa)
-      !------------------------------------------------------------------------------------!
-
-
-
       !----- The output is converted to kgC/m2/yr. ----------------------------------------!
       csite%fmean_rh     (ipa) = csite%fmean_rh     (ipa)                                  &
                                + csite%rh           (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
@@ -274,6 +262,18 @@ module soil_respiration
       end select
       !------------------------------------------------------------------------------------!
 
+
+
+
+      !----- Update averaged variables. ---------------------------------------------------!
+      csite%today_A_decomp (ipa) = csite%today_A_decomp (ipa) + csite%A_decomp(ipa)
+      csite%today_B_decomp (ipa) = csite%today_B_decomp (ipa) + csite%B_decomp(ipa)
+      csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa)                              &
+                                 + csite%A_decomp       (ipa) * csite%f_decomp(ipa)
+      csite%today_Bf_decomp(ipa) = csite%today_Bf_decomp(ipa)                              &
+                                 + csite%B_decomp       (ipa) * csite%f_decomp(ipa)
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine resp_f_decomp
    !=======================================================================================!
@@ -314,19 +314,34 @@ module soil_respiration
       integer          , intent(in) :: ipa
       integer          , intent(in) :: ntext
       !----- Local variables. -------------------------------------------------------------!
-      real                          :: fgc_C_loss
-      real                          :: fsc_C_loss
-      real                          :: stgc_C_loss
-      real                          :: stsc_C_loss
-      real                          :: msc_C_loss
-      real                          :: ssc_C_loss
-      real                          :: psc_C_loss
-      real                          :: tot_C_loss
+      real                          :: fg_C_loss
+      real                          :: fs_C_loss
+      real                          :: fg_N_loss
+      real                          :: fs_N_loss
+      real                          :: stg_C_loss
+      real                          :: sts_C_loss
+      real                          :: stg_L_loss
+      real                          :: sts_L_loss
+      real                          :: stg_N_loss
+      real                          :: sts_N_loss
+      real                          :: ms_C_loss
+      real                          :: ss_C_loss
+      real                          :: ps_C_loss
+      real                          :: fg_C_resp
+      real                          :: fs_C_resp
+      real                          :: stg_C_resp
+      real                          :: sts_C_resp
+      real                          :: ms_C_resp
+      real                          :: ss_C_resp
+      real                          :: ps_C_resp
+      real                          :: tot_C_resp
       real                          :: er_fsc
       real                          :: er_stsc
       real                          :: er_msc
       real                          :: er_ssc
       real                          :: er_psc
+      real                          :: AfL_decomp
+      real                          :: BfL_decomp
       !----- Local constants. -------------------------------------------------------------!
       logical          , parameter  :: print_debug = .false.
       character(len=12), parameter  :: rhetfile    = 'het_resp.txt'
@@ -357,24 +372,26 @@ module soil_respiration
       !------------------------------------------------------------------------------------!
 
 
+      !----- Decay rate for structural carbon. --------------------------------------------!
+      AfL_decomp = csite%A_decomp(ipa) * csite%f_decomp(ipa) * csite%Lg_decomp(ipa)
+      BfL_decomp = csite%B_decomp(ipa) * csite%f_decomp(ipa) * csite%Ls_decomp(ipa)
+      !------------------------------------------------------------------------------------!
 
-      !----- The following variables have units of [umol_CO2/m2/s]. -----------------------!
-      fgc_C_loss        = kgCday_2_umols  * csite%A_decomp(ipa)                            &
-                        * decay_rate_fsc  * csite%fast_grnd_C(ipa)
-      fsc_C_loss        = kgCday_2_umols  * csite%B_decomp(ipa)                            &
-                        * decay_rate_fsc  * csite%fast_soil_C(ipa)
-      stgc_C_loss       = kgCday_2_umols                                                   &
-                        * csite%A_decomp(ipa) * csite%f_decomp(ipa) * csite%Lg_decomp(ipa) &
-                        * decay_rate_stsc * csite%structural_grnd_C(ipa)
-      stsc_C_loss       = kgCday_2_umols                                                   &
-                        * csite%B_decomp(ipa) * csite%f_decomp(ipa) * csite%Ls_decomp(ipa) &
-                        * decay_rate_stsc * csite%structural_soil_C(ipa)
-      msc_C_loss        = kgCday_2_umols * csite%B_decomp(ipa)                             &
-                        * decay_rate_msc * csite%microbial_soil_C(ipa)
-      ssc_C_loss        = kgCday_2_umols * csite%B_decomp(ipa)                             &
-                        * decay_rate_ssc * csite%slow_soil_C(ipa)
-      psc_C_loss        = kgCday_2_umols * csite%B_decomp(ipa)                             &
-                        * decay_rate_psc * csite%passive_soil_C(ipa)
+
+      !----- The following variables have units of [kgC/m2/day]. --------------------------!
+      fg_C_loss  = csite%A_decomp(ipa) * decay_rate_fsc  * csite%fast_grnd_C       (ipa)
+      fs_C_loss  = csite%B_decomp(ipa) * decay_rate_fsc  * csite%fast_soil_C       (ipa)
+      fg_N_loss  = csite%A_decomp(ipa) * decay_rate_fsc  * csite%fast_grnd_N       (ipa)
+      fs_N_loss  = csite%B_decomp(ipa) * decay_rate_fsc  * csite%fast_soil_N       (ipa)
+      stg_C_loss = AfL_decomp          * decay_rate_stsc * csite%structural_grnd_C (ipa)
+      sts_C_loss = BfL_decomp          * decay_rate_stsc * csite%structural_soil_C (ipa)
+      stg_L_loss = AfL_decomp          * decay_rate_stsc * csite%structural_grnd_L (ipa)
+      sts_L_loss = BfL_decomp          * decay_rate_stsc * csite%structural_soil_L (ipa)
+      stg_N_loss = AfL_decomp          * decay_rate_stsc * csite%structural_grnd_N (ipa)
+      sts_N_loss = BfL_decomp          * decay_rate_stsc * csite%structural_soil_N (ipa)
+      ms_C_loss  = csite%B_decomp(ipa) * decay_rate_msc  * csite%microbial_soil_C  (ipa)
+      ss_C_loss  = csite%B_decomp(ipa) * decay_rate_ssc  * csite%slow_soil_C       (ipa)
+      ps_C_loss  = csite%B_decomp(ipa) * decay_rate_psc  * csite%passive_soil_C    (ipa)
       !------------------------------------------------------------------------------------!
 
 
@@ -412,13 +429,13 @@ module soil_respiration
 
 
       !----- Find the heterotrophic respiration (total and components). -------------------!
-      csite%fgc_rh (ipa) = er_fsc  * fgc_C_loss
-      csite%fsc_rh (ipa) = er_fsc  * fsc_C_loss
-      csite%stgc_rh(ipa) = er_stsc * stgc_C_loss
-      csite%stsc_rh(ipa) = er_stsc * stsc_C_loss
-      csite%msc_rh (ipa) = er_msc  * msc_C_loss
-      csite%ssc_rh (ipa) = er_ssc  * ssc_C_loss
-      csite%psc_rh (ipa) = er_psc  * psc_C_loss
+      csite%fgc_rh (ipa) = er_fsc  * kgCday_2_umols * fg_C_loss
+      csite%fsc_rh (ipa) = er_fsc  * kgCday_2_umols * fs_C_loss
+      csite%stgc_rh(ipa) = er_stsc * kgCday_2_umols * stg_C_loss
+      csite%stsc_rh(ipa) = er_stsc * kgCday_2_umols * sts_C_loss
+      csite%msc_rh (ipa) = er_msc  * kgCday_2_umols * ms_C_loss
+      csite%ssc_rh (ipa) = er_ssc  * kgCday_2_umols * ss_C_loss
+      csite%psc_rh (ipa) = er_psc  * kgCday_2_umols * ps_C_loss
       csite%rh     (ipa) = csite%fgc_rh (ipa) + csite%fsc_rh (ipa) + csite%stgc_rh(ipa)    &
                          + csite%stsc_rh(ipa) + csite%msc_rh (ipa) + csite%ssc_rh (ipa)    &
                          + csite%psc_rh (ipa)
@@ -426,17 +443,41 @@ module soil_respiration
 
 
 
+      !------------------------------------------------------------------------------------!
+      !     Save respiration and total carbon loss.  Today_rh is used for carbon           !
+      ! conservation verification only, but the daily losses are needed to conserve carbon !
+      ! even when patch dynamics occurs (today_A_decomp and related variables may not      !
+      ! conserve carbon in case fusion or fission occurs as they are relative rates).      !
+      !------------------------------------------------------------------------------------!
+      csite%today_rh        (ipa) = csite%today_rh        (ipa) + csite%rh(ipa)
+      csite%today_fg_C_loss (ipa) = csite%today_fg_C_loss (ipa) + fg_C_loss
+      csite%today_fs_C_loss (ipa) = csite%today_fs_C_loss (ipa) + fs_C_loss
+      csite%today_fg_N_loss (ipa) = csite%today_fg_N_loss (ipa) + fg_N_loss
+      csite%today_fs_N_loss (ipa) = csite%today_fs_N_loss (ipa) + fs_N_loss
+      csite%today_stg_C_loss(ipa) = csite%today_stg_C_loss(ipa) + stg_C_loss
+      csite%today_sts_C_loss(ipa) = csite%today_sts_C_loss(ipa) + sts_C_loss
+      csite%today_stg_L_loss(ipa) = csite%today_stg_L_loss(ipa) + stg_L_loss
+      csite%today_sts_L_loss(ipa) = csite%today_sts_L_loss(ipa) + sts_L_loss
+      csite%today_stg_N_loss(ipa) = csite%today_stg_N_loss(ipa) + stg_N_loss
+      csite%today_sts_N_loss(ipa) = csite%today_sts_N_loss(ipa) + sts_N_loss
+      csite%today_ms_C_loss (ipa) = csite%today_ms_C_loss (ipa) + ms_C_loss
+      csite%today_ss_C_loss (ipa) = csite%today_ss_C_loss (ipa) + ss_C_loss
+      csite%today_ps_C_loss (ipa) = csite%today_ps_C_loss (ipa) + ps_C_loss
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Write debugging information. -------------------------------------------------!
       if (print_debug) then
          !----- Convert units for output. -------------------------------------------------!
-         fgc_C_loss  = umols_2_kgCyr * csite%fgc_rh (ipa)
-         fsc_C_loss  = umols_2_kgCyr * csite%fsc_rh (ipa)
-         stgc_C_loss = umols_2_kgCyr * csite%stgc_rh(ipa)
-         stsc_C_loss = umols_2_kgCyr * csite%stsc_rh(ipa)
-         msc_C_loss  = umols_2_kgCyr * csite%msc_rh (ipa)
-         ssc_C_loss  = umols_2_kgCyr * csite%ssc_rh (ipa)
-         psc_C_loss  = umols_2_kgCyr * csite%psc_rh (ipa)
-         tot_C_loss  = umols_2_kgCyr * csite%rh     (ipa)
+         fg_C_resp  = umols_2_kgCyr * csite%fgc_rh (ipa)
+         fs_C_resp  = umols_2_kgCyr * csite%fsc_rh (ipa)
+         stg_C_resp = umols_2_kgCyr * csite%stgc_rh(ipa)
+         sts_C_resp = umols_2_kgCyr * csite%stsc_rh(ipa)
+         ms_C_resp  = umols_2_kgCyr * csite%msc_rh (ipa)
+         ss_C_resp  = umols_2_kgCyr * csite%ssc_rh (ipa)
+         ps_C_resp  = umols_2_kgCyr * csite%psc_rh (ipa)
+         tot_C_resp = umols_2_kgCyr * csite%rh     (ipa)
          !---------------------------------------------------------------------------------!
 
 
@@ -449,8 +490,8 @@ module soil_respiration
                        ,csite%fast_grnd_C(ipa),csite%fast_soil_C(ipa)                      &
                        ,csite%structural_grnd_C(ipa),csite%structural_soil_C(ipa)          &
                        ,csite%microbial_soil_C(ipa),csite%slow_soil_C(ipa)                 &
-                       ,er_fsc,er_stsc,er_msc,er_ssc,fgc_C_loss,fsc_C_loss,stgc_C_loss     &
-                       ,stsc_C_loss,msc_C_loss,ssc_C_loss,psc_C_loss,tot_C_loss            &
+                       ,er_fsc,er_stsc,er_msc,er_ssc,fg_C_resp,fs_C_resp,stg_C_resp        &
+                       ,sts_C_resp,ms_C_resp,ss_C_resp,ps_C_resp,tot_C_resp                &
                        ,csite%A_decomp(ipa),csite%B_decomp(ipa),csite%f_decomp(ipa)        &
                        ,csite%Lg_decomp(ipa),csite%Ls_decomp(ipa)
          close (unit=84,status='keep')
@@ -479,11 +520,6 @@ module soil_respiration
       use grid_coms    , only : nzg             ! ! intent(in)
       use soil_coms    , only : soil            ! ! look-up table
       use decomp_coms  , only : decomp_scheme   & ! intent(in)
-                              , decay_rate_fsc  & ! intent(in)
-                              , decay_rate_stsc & ! intent(in)
-                              , decay_rate_msc  & ! intent(in)
-                              , decay_rate_ssc  & ! intent(in)
-                              , decay_rate_psc  & ! intent(in)
                               , r_fsc           & ! intent(in)
                               , r_stsc          & ! intent(in)
                               , r_msc_int       & ! intent(in)
@@ -677,29 +713,21 @@ module soil_respiration
 
 
                !----- Fast pools. ---------------------------------------------------------!
-               fg_C_loss  = csite%today_A_decomp(ipa)         * decay_rate_fsc             &
-                          * csite%fast_grnd_C(ipa)
-               fs_C_loss  = csite%today_B_decomp(ipa)         * decay_rate_fsc             &
-                          * csite%fast_soil_C(ipa)
-               fg_N_loss  = csite%today_A_decomp(ipa)         * decay_rate_fsc             &
-                          * csite%fast_grnd_N(ipa)
-               fs_N_loss  = csite%today_B_decomp(ipa)         * decay_rate_fsc             &
-                          * csite%fast_soil_N(ipa)
+               fg_C_loss  = csite%today_fg_C_loss(ipa)
+               fs_C_loss  = csite%today_fs_C_loss(ipa)
+               fg_N_loss  = csite%today_fg_N_loss(ipa)
+               fs_N_loss  = csite%today_fs_N_loss(ipa)
                !---------------------------------------------------------------------------!
 
+
+
                !----- Structural pools. ---------------------------------------------------!
-               stg_C_loss   = csite%today_Af_decomp(ipa)   * csite%Lg_decomp(ipa)          &
-                            * decay_rate_stsc * csite%structural_grnd_C(ipa)
-               sts_C_loss   = csite%today_Bf_decomp(ipa)   * csite%Ls_decomp(ipa)          &
-                            * decay_rate_stsc * csite%structural_soil_C(ipa)
-               stg_L_loss   = csite%today_Af_decomp(ipa)   * csite%Lg_decomp(ipa)          &
-                            * decay_rate_stsc * csite%structural_grnd_L(ipa)
-               sts_L_loss   = csite%today_Bf_decomp(ipa)   * csite%Ls_decomp(ipa)          &
-                            * decay_rate_stsc * csite%structural_soil_L(ipa)
-               stg_N_loss   = csite%today_Af_decomp(ipa)   * csite%Lg_decomp(ipa)          &
-                            * decay_rate_stsc * csite%structural_grnd_N(ipa)
-               sts_N_loss   = csite%today_Bf_decomp(ipa)   * csite%Ls_decomp(ipa)          &
-                            * decay_rate_stsc * csite%structural_soil_N(ipa)
+               stg_C_loss   = csite%today_stg_C_loss(ipa)
+               sts_C_loss   = csite%today_sts_C_loss(ipa)
+               stg_L_loss   = csite%today_stg_L_loss(ipa)
+               sts_L_loss   = csite%today_sts_L_loss(ipa)
+               stg_N_loss   = csite%today_stg_N_loss(ipa)
+               sts_N_loss   = csite%today_sts_N_loss(ipa)
                !----- Demand to maintain stoichiometry (see Moorcroft et al. 2001). -------!
                stg_N_demand = stg_C_loss                                                   &
                             * ( (1.0 - er_stsc) * (1./c2n_slow) - (1./c2n_structural) )
@@ -709,20 +737,17 @@ module soil_respiration
 
 
                !----- Microbial pool (carbon only). ---------------------------------------!
-               ms_C_loss  = csite%today_B_decomp(ipa)         * decay_rate_msc             &
-                          * csite%microbial_soil_C(ipa)
+               ms_C_loss  = csite%today_ms_C_loss(ipa)
                !---------------------------------------------------------------------------!
 
 
                !----- Slow pool (carbon only). --------------------------------------------!
-               ss_C_loss  = csite%today_B_decomp(ipa)         * decay_rate_ssc             &
-                          * csite%slow_soil_C(ipa)
+               ss_C_loss  = csite%today_ss_C_loss(ipa)
                !---------------------------------------------------------------------------!
 
 
                !----- Passive pool (carbon only). -----------------------------------------!
-               ps_C_loss  = csite%today_B_decomp(ipa)         * decay_rate_psc             &
-                          * csite%passive_soil_C(ipa)
+               ps_C_loss  = csite%today_ps_C_loss(ipa)
                !---------------------------------------------------------------------------!
 
 

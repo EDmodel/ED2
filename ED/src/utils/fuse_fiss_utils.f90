@@ -6235,25 +6235,77 @@ module fuse_fiss_utils
       call new_patch_sfc_props(csite,recp,mzg,mzs,ntext_soil)
       !------------------------------------------------------------------------------------!
 
-      csite%today_A_decomp(recp)         = newareai *                                      &
-                                         ( csite%today_A_decomp(donp) * csite%area(donp)   &
-                                         + csite%today_A_decomp(recp) * csite%area(recp) )
+      csite%today_fg_C_loss (recp)      = newareai *                                       &
+                                        ( csite%today_fg_C_loss (donp) * csite%area(donp)  &
+                                        + csite%today_fg_C_loss (recp) * csite%area(recp) )
 
-      csite%today_B_decomp(recp)         = newareai *                                      &
-                                         ( csite%today_B_decomp(donp) * csite%area(donp)   &
-                                         + csite%today_B_decomp(recp) * csite%area(recp) )
+      csite%today_fs_C_loss (recp)      = newareai *                                       &
+                                        ( csite%today_fs_C_loss (donp) * csite%area(donp)  &
+                                        + csite%today_fs_C_loss (recp) * csite%area(recp) )
 
-      csite%today_Af_decomp(recp)        = newareai *                                      &
-                                         ( csite%today_Af_decomp(donp)* csite%area(donp)   &
-                                         + csite%today_Af_decomp(recp)* csite%area(recp) )
+      csite%today_fg_N_loss (recp)      = newareai *                                       &
+                                        ( csite%today_fg_N_loss (donp) * csite%area(donp)  &
+                                        + csite%today_fg_N_loss (recp) * csite%area(recp) )
 
-      csite%today_Bf_decomp(recp)        = newareai *                                      &
-                                         ( csite%today_Bf_decomp(donp)* csite%area(donp)   &
-                                         + csite%today_Bf_decomp(recp)* csite%area(recp) )
+      csite%today_fs_N_loss (recp)      = newareai *                                       &
+                                        ( csite%today_fs_N_loss (donp) * csite%area(donp)  &
+                                        + csite%today_fs_N_loss (recp) * csite%area(recp) )
 
-      csite%today_rh       (recp)        = newareai *                                      &
-                                         ( csite%today_rh       (donp)* csite%area(donp)   &
-                                         + csite%today_rh       (recp)* csite%area(recp) )
+      csite%today_stg_C_loss(recp)      = newareai *                                       &
+                                        ( csite%today_stg_C_loss(donp) * csite%area(donp)  &
+                                        + csite%today_stg_C_loss(recp) * csite%area(recp) )
+
+      csite%today_sts_C_loss(recp)      = newareai *                                       &
+                                        ( csite%today_sts_C_loss(donp) * csite%area(donp)  &
+                                        + csite%today_sts_C_loss(recp) * csite%area(recp) )
+
+      csite%today_stg_L_loss(recp)      = newareai *                                       &
+                                        ( csite%today_stg_L_loss(donp) * csite%area(donp)  &
+                                        + csite%today_stg_L_loss(recp) * csite%area(recp) )
+
+      csite%today_sts_L_loss(recp)      = newareai *                                       &
+                                        ( csite%today_sts_L_loss(donp) * csite%area(donp)  &
+                                        + csite%today_sts_L_loss(recp) * csite%area(recp) )
+
+      csite%today_stg_N_loss(recp)      = newareai *                                       &
+                                        ( csite%today_stg_N_loss(donp) * csite%area(donp)  &
+                                        + csite%today_stg_N_loss(recp) * csite%area(recp) )
+
+      csite%today_sts_N_loss(recp)      = newareai *                                       &
+                                        ( csite%today_sts_N_loss(donp) * csite%area(donp)  &
+                                        + csite%today_sts_N_loss(recp) * csite%area(recp) )
+
+      csite%today_ms_C_loss (recp)      = newareai *                                       &
+                                        ( csite%today_ms_C_loss (donp) * csite%area(donp)  &
+                                        + csite%today_ms_C_loss (recp) * csite%area(recp) )
+
+      csite%today_ss_C_loss (recp)      = newareai *                                       &
+                                        ( csite%today_ss_C_loss (donp) * csite%area(donp)  &
+                                        + csite%today_ss_C_loss (recp) * csite%area(recp) )
+
+      csite%today_ps_C_loss (recp)      = newareai *                                       &
+                                        ( csite%today_ps_C_loss (donp) * csite%area(donp)  &
+                                        + csite%today_ps_C_loss (recp) * csite%area(recp) )
+
+      csite%today_A_decomp  (recp)      = newareai *                                       &
+                                        ( csite%today_A_decomp  (donp) * csite%area(donp)  &
+                                        + csite%today_A_decomp  (recp) * csite%area(recp) )
+
+      csite%today_B_decomp  (recp)      = newareai *                                       &
+                                        ( csite%today_B_decomp  (donp) * csite%area(donp)  &
+                                        + csite%today_B_decomp  (recp) * csite%area(recp) )
+
+      csite%today_Af_decomp (recp)      = newareai *                                       &
+                                        ( csite%today_Af_decomp (donp) * csite%area(donp)  &
+                                        + csite%today_Af_decomp (recp) * csite%area(recp) )
+
+      csite%today_Bf_decomp (recp)      = newareai *                                       &
+                                        ( csite%today_Bf_decomp (donp) * csite%area(donp)  &
+                                        + csite%today_Bf_decomp (recp) * csite%area(recp) )
+
+      csite%today_rh        (recp)      = newareai *                                       &
+                                        ( csite%today_rh        (donp) * csite%area(donp)  &
+                                        + csite%today_rh        (recp) * csite%area(recp) )
 
       do iii = 1,n_pft
          csite%repro(iii,recp)           = newareai *                                      &

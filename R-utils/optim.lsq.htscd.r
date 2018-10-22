@@ -218,15 +218,31 @@ optim.lsq.htscd <<- function( lsq.formula
          #---------------------------------------------------------------------------------#
          #     Evaluate the first guess then use residuals to estimate sigma0.             #
          #---------------------------------------------------------------------------------#
-         zero      = optim.lsq.htscd( lsq.formula  = lsq.formula
-                                    , sig.formula  = NULL
-                                    , data         = data
-                                    , se.data      = NULL
-                                    , lsq.first    = lsq.first
-                                    , err.method   = "hess"
-                                    , optim.method = optim.method
-                                    )#end optim.lsq.htscd
-         sig.first = c(list(sigma0=mean(zero$sigma)),sig.first)
+         zero             = optim.lsq.htscd( lsq.formula  = lsq.formula
+                                           , sig.formula  = NULL
+                                           , data         = data
+                                           , se.data      = NULL
+                                           , lsq.first    = lsq.first
+                                           , err.method   = "hess"
+                                           , optim.method = optim.method
+                                           )#end optim.lsq.htscd
+         data$sigma       = sqrt(zero$residuals^2)
+         data$yres        = zero$residuals
+         data$yhat        = zero$fitted
+         s1.formula       = as.formula(paste(c("sigma",as.character(sig.formula)),collapse=" "))
+         sig.first        = modifyList( x   = list(sigma0=mean(zero$sigma))
+                                      , val = sig.first
+                                      )#end modifyList
+         sig.fit          = optim.lsq.htscd( lsq.formula = s1.formula
+                                           , sig.formula = NULL
+                                           , data        = data
+                                           , se.data     = NULL
+                                           , lsq.first   = sig.first
+                                           , err.method  = "hess"
+                                           , optim.method = optim.method
+                                           )#end optim.lsq.htscd
+         sig.first        = coefficients(sig.fit)
+         names(sig.first) = gsub(pattern="^lsq\\.",replacement="",x=names(sig.first))
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#

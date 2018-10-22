@@ -493,7 +493,7 @@ module update_derived_utils
                                      , fsdns                      & ! intent(in)
                                      , fsdnsi                     & ! intent(in)
                                      , mmdryi                     & ! intent(in)
-                                     , umol_2_kgC                 ! ! intent(in)
+                                     , mmcod1em6                  ! ! intent(in)
       use therm_lib           , only : tq2enthalpy                ! ! function
       use ed_misc_coms        , only : frqsumi                    ! ! intent(in)
 
@@ -625,7 +625,7 @@ module update_derived_utils
                                          * mmdryi
          csite%cbudget_zcaneffect  (ipa) = csite%cbudget_zcaneffect(ipa)                   &
                                          + fdelta_storage * csite%can_co2(ipa)             &
-                                         * mmdryi * umol_2_kgC
+                                         * mmcod1em6
          csite%wbudget_zcaneffect  (ipa) = csite%wbudget_zcaneffect(ipa)                   &
                                          + fdelta_storage * csite%can_shv(ipa)
          csite%ebudget_zcaneffect  (ipa) = csite%ebudget_zcaneffect(ipa)                   &

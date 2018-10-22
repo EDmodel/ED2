@@ -1333,6 +1333,71 @@ module ed_state_vars
       real , pointer,dimension(:) :: co2budget_rh
       !<Average heterotrophic respiration [&mu;mol_CO2/m2/s]
 
+      real , pointer,dimension(:) :: today_fg_C_loss
+      !<Daily average of decay of above-ground metabolic litter [kg_C/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_fs_C_loss
+      !<Daily average of decay of below-ground metabolic litter [kg_C/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_fg_N_loss
+      !<Daily average of decay of above-ground metabolic litter [kg_N/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_fs_N_loss
+      !<Daily average of decay of below-ground metabolic litter [kg_N/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_stg_C_loss
+      !<Daily average of decay of above-ground structural litter [kg_C/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_sts_C_loss
+      !<Daily average of decay of below-ground structural litter [kg_C/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_stg_L_loss
+      !<Daily average of decay of above-ground structural litter [kg_lignin/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_sts_L_loss
+      !<Daily average of decay of below-ground structural litter [kg_lignin/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_stg_N_loss
+      !<Daily average of decay of above-ground structural litter [kg_N/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_sts_N_loss
+      !<Daily average of decay of below-ground structural litter [kg_N/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_ms_C_loss
+      !<Daily average of decay of microbial soil carbon [kg_C/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_ss_C_loss
+      !<Daily average of decay of humified (slow) soil carbon [kg_C/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
+      real , pointer,dimension(:) :: today_ps_C_loss
+      !<Daily average of decay of passive (very slow) soil carbon [kg_C/m2/day].  
+      !<The "today" variable is used internally in the model only, and shall never be
+      !<used for analyses.
+
       real , pointer,dimension(:) :: today_A_decomp
       !<Daily average of A_decomp, the temperature and moisture dependence
       !<of heterotrophic respiration (aboveground).  The "today" variable is used in the
@@ -4737,6 +4802,19 @@ module ed_state_vars
       allocate(csite%co2budget_gpp                 (              npatches))
       allocate(csite%co2budget_plresp              (              npatches))
       allocate(csite%co2budget_rh                  (              npatches))
+      allocate(csite%today_fg_C_loss               (              npatches))
+      allocate(csite%today_fs_C_loss               (              npatches))
+      allocate(csite%today_fg_N_loss               (              npatches))
+      allocate(csite%today_fs_N_loss               (              npatches))
+      allocate(csite%today_stg_C_loss              (              npatches))
+      allocate(csite%today_sts_C_loss              (              npatches))
+      allocate(csite%today_stg_L_loss              (              npatches))
+      allocate(csite%today_sts_L_loss              (              npatches))
+      allocate(csite%today_stg_N_loss              (              npatches))
+      allocate(csite%today_sts_N_loss              (              npatches))
+      allocate(csite%today_ms_C_loss               (              npatches))
+      allocate(csite%today_ss_C_loss               (              npatches))
+      allocate(csite%today_ps_C_loss               (              npatches))
       allocate(csite%today_A_decomp                (              npatches))
       allocate(csite%today_B_decomp                (              npatches))
       allocate(csite%today_Af_decomp               (              npatches))
@@ -6815,6 +6893,19 @@ module ed_state_vars
       nullify(csite%co2budget_gpp              )
       nullify(csite%co2budget_plresp           )
       nullify(csite%co2budget_rh               )
+      nullify(csite%today_fg_C_loss            )
+      nullify(csite%today_fs_C_loss            )
+      nullify(csite%today_fg_N_loss            )
+      nullify(csite%today_fs_N_loss            )
+      nullify(csite%today_stg_C_loss           )
+      nullify(csite%today_sts_C_loss           )
+      nullify(csite%today_stg_L_loss           )
+      nullify(csite%today_sts_L_loss           )
+      nullify(csite%today_stg_N_loss           )
+      nullify(csite%today_sts_N_loss           )
+      nullify(csite%today_ms_C_loss            )
+      nullify(csite%today_ss_C_loss            )
+      nullify(csite%today_ps_C_loss            )
       nullify(csite%today_A_decomp             )
       nullify(csite%today_B_decomp             )
       nullify(csite%today_Af_decomp            )
@@ -7872,6 +7963,19 @@ module ed_state_vars
       if(associated(csite%co2budget_gpp              )) deallocate(csite%co2budget_gpp              )
       if(associated(csite%co2budget_plresp           )) deallocate(csite%co2budget_plresp           )
       if(associated(csite%co2budget_rh               )) deallocate(csite%co2budget_rh               )
+      if(associated(csite%today_fg_C_loss            )) deallocate(csite%today_fg_C_loss            )
+      if(associated(csite%today_fs_C_loss            )) deallocate(csite%today_fs_C_loss            )
+      if(associated(csite%today_fg_N_loss            )) deallocate(csite%today_fg_N_loss            )
+      if(associated(csite%today_fs_N_loss            )) deallocate(csite%today_fs_N_loss            )
+      if(associated(csite%today_stg_C_loss           )) deallocate(csite%today_stg_C_loss           )
+      if(associated(csite%today_sts_C_loss           )) deallocate(csite%today_sts_C_loss           )
+      if(associated(csite%today_stg_L_loss           )) deallocate(csite%today_stg_L_loss           )
+      if(associated(csite%today_sts_L_loss           )) deallocate(csite%today_sts_L_loss           )
+      if(associated(csite%today_stg_N_loss           )) deallocate(csite%today_stg_N_loss           )
+      if(associated(csite%today_sts_N_loss           )) deallocate(csite%today_sts_N_loss           )
+      if(associated(csite%today_ms_C_loss            )) deallocate(csite%today_ms_C_loss            )
+      if(associated(csite%today_ss_C_loss            )) deallocate(csite%today_ss_C_loss            )
+      if(associated(csite%today_ps_C_loss            )) deallocate(csite%today_ps_C_loss            )
       if(associated(csite%today_A_decomp             )) deallocate(csite%today_A_decomp             )
       if(associated(csite%today_B_decomp             )) deallocate(csite%today_B_decomp             )
       if(associated(csite%today_Af_decomp            )) deallocate(csite%today_Af_decomp            )
@@ -8951,6 +9055,19 @@ module ed_state_vars
          osite%co2budget_gpp              (opa) = isite%co2budget_gpp              (ipa)
          osite%co2budget_plresp           (opa) = isite%co2budget_plresp           (ipa)
          osite%co2budget_rh               (opa) = isite%co2budget_rh               (ipa)
+         osite%today_fg_C_loss            (opa) = isite%today_fg_C_loss            (ipa)
+         osite%today_fs_C_loss            (opa) = isite%today_fs_C_loss            (ipa)
+         osite%today_fg_N_loss            (opa) = isite%today_fg_N_loss            (ipa)
+         osite%today_fs_N_loss            (opa) = isite%today_fs_N_loss            (ipa)
+         osite%today_stg_C_loss           (opa) = isite%today_stg_C_loss           (ipa)
+         osite%today_sts_C_loss           (opa) = isite%today_sts_C_loss           (ipa)
+         osite%today_stg_L_loss           (opa) = isite%today_stg_L_loss           (ipa)
+         osite%today_sts_L_loss           (opa) = isite%today_sts_L_loss           (ipa)
+         osite%today_stg_N_loss           (opa) = isite%today_stg_N_loss           (ipa)
+         osite%today_sts_N_loss           (opa) = isite%today_sts_N_loss           (ipa)
+         osite%today_ms_C_loss            (opa) = isite%today_ms_C_loss            (ipa)
+         osite%today_ss_C_loss            (opa) = isite%today_ss_C_loss            (ipa)
+         osite%today_ps_C_loss            (opa) = isite%today_ps_C_loss            (ipa)
          osite%today_A_decomp             (opa) = isite%today_A_decomp             (ipa)
          osite%today_B_decomp             (opa) = isite%today_B_decomp             (ipa)
          osite%today_Af_decomp            (opa) = isite%today_Af_decomp            (ipa)
@@ -9673,6 +9790,7 @@ module ed_state_vars
       osite%cbudget_residual           (1:z) = pack(isite%cbudget_residual           ,lmask)
       osite%cbudget_loss2atm           (1:z) = pack(isite%cbudget_loss2atm           ,lmask)
       osite%cbudget_denseffect         (1:z) = pack(isite%cbudget_denseffect         ,lmask)
+      osite%cbudget_zcaneffect         (1:z) = pack(isite%cbudget_zcaneffect         ,lmask)
       osite%cbudget_seedrain           (1:z) = pack(isite%cbudget_seedrain           ,lmask)
       osite%cbudget_loss2yield         (1:z) = pack(isite%cbudget_loss2yield         ,lmask)
       osite%co2budget_initialstorage   (1:z) = pack(isite%co2budget_initialstorage   ,lmask)
@@ -9683,6 +9801,19 @@ module ed_state_vars
       osite%co2budget_gpp              (1:z) = pack(isite%co2budget_gpp              ,lmask)
       osite%co2budget_plresp           (1:z) = pack(isite%co2budget_plresp           ,lmask)
       osite%co2budget_rh               (1:z) = pack(isite%co2budget_rh               ,lmask)
+      osite%today_fg_C_loss            (1:z) = pack(isite%today_fg_C_loss            ,lmask)
+      osite%today_fs_C_loss            (1:z) = pack(isite%today_fs_C_loss            ,lmask)
+      osite%today_fg_N_loss            (1:z) = pack(isite%today_fg_N_loss            ,lmask)
+      osite%today_fs_N_loss            (1:z) = pack(isite%today_fs_N_loss            ,lmask)
+      osite%today_stg_C_loss           (1:z) = pack(isite%today_stg_C_loss           ,lmask)
+      osite%today_sts_C_loss           (1:z) = pack(isite%today_sts_C_loss           ,lmask)
+      osite%today_stg_L_loss           (1:z) = pack(isite%today_stg_L_loss           ,lmask)
+      osite%today_sts_L_loss           (1:z) = pack(isite%today_sts_L_loss           ,lmask)
+      osite%today_stg_N_loss           (1:z) = pack(isite%today_stg_N_loss           ,lmask)
+      osite%today_sts_N_loss           (1:z) = pack(isite%today_sts_N_loss           ,lmask)
+      osite%today_ms_C_loss            (1:z) = pack(isite%today_ms_C_loss            ,lmask)
+      osite%today_ss_C_loss            (1:z) = pack(isite%today_ss_C_loss            ,lmask)
+      osite%today_ps_C_loss            (1:z) = pack(isite%today_ps_C_loss            ,lmask)
       osite%today_A_decomp             (1:z) = pack(isite%today_A_decomp             ,lmask)
       osite%today_B_decomp             (1:z) = pack(isite%today_B_decomp             ,lmask)
       osite%today_Af_decomp            (1:z) = pack(isite%today_Af_decomp            ,lmask)
@@ -23111,39 +23242,184 @@ module ed_state_vars
 
 
 
+      if (associated(csite%today_fg_C_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_fg_C_loss                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_FG_C_LOSS               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_fs_C_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_fs_C_loss                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_FS_C_LOSS               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_fg_N_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_fg_N_loss                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_FG_N_LOSS               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_fs_N_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_fs_N_loss                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_FS_N_LOSS               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_stg_C_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_stg_C_loss                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_STG_C_LOSS              :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_sts_C_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_sts_C_loss                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_STS_C_LOSS              :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_stg_L_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_stg_L_loss                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_STG_L_LOSS              :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_sts_L_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_sts_L_loss                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_STS_L_LOSS              :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_stg_N_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_stg_N_loss                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_STG_N_LOSS              :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_sts_N_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_sts_N_loss                                    &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_STS_N_LOSS              :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_ms_C_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_ms_C_loss                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_MS_C_LOSS               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_ss_C_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_ss_C_loss                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_SS_C_LOSS               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
+      if (associated(csite%today_ps_C_loss)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%today_ps_C_loss                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_PS_C_LOSS               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
+      end if
+
       if (associated(csite%today_A_decomp)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_A_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_A_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+         call vtable_edio_r(npts,csite%today_A_decomp                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_A_DECOMP                :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
       end if
 
       if (associated(csite%today_B_decomp)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_B_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_B_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+         call vtable_edio_r(npts,csite%today_B_decomp                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_B_DECOMP                :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
       end if
 
       if (associated(csite%today_Af_decomp)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_Af_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_AF_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+         call vtable_edio_r(npts,csite%today_Af_decomp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_AF_DECOMP               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
       end if
 
       if (associated(csite%today_Bf_decomp)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_Bf_decomp,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_BF_DECOMP :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+         call vtable_edio_r(npts,csite%today_Bf_decomp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_BF_DECOMP               :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
       end if
 
       if (associated(csite%today_rh       )) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%today_rh,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_RH :31:hist') 
-         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+         call vtable_edio_r(npts,csite%today_rh                                            &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'TODAY_RH                      :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'For internal ED2 use only.  Do not use for research'          &
+                           ,'[   NA]','(ipatch)'            )
       end if
 
       return

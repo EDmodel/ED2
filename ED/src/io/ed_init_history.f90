@@ -3734,6 +3734,32 @@ module ed_init_history
                      ,'CBUDGET_COMMITTED           ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%cbudget_committed                                           &
                      ,'CBUDGET_RESIDUAL            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_fg_C_loss                                             &
+                     ,'TODAY_FG_C_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_fs_C_loss                                             &
+                     ,'TODAY_FS_C_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_fg_N_loss                                             &
+                     ,'TODAY_FG_N_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_fs_N_loss                                             &
+                     ,'TODAY_FS_N_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_stg_C_loss                                            &
+                     ,'TODAY_STG_C_LOSS            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_sts_C_loss                                            &
+                     ,'TODAY_STS_C_LOSS            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_stg_L_loss                                            &
+                     ,'TODAY_STG_L_LOSS            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_sts_L_loss                                            &
+                     ,'TODAY_STS_L_LOSS            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_stg_N_loss                                            &
+                     ,'TODAY_STG_N_LOSS            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_sts_N_loss                                            &
+                     ,'TODAY_STS_N_LOSS            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_ms_C_loss                                             &
+                     ,'TODAY_MS_C_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_ss_C_loss                                             &
+                     ,'TODAY_SS_C_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%today_ps_C_loss                                             &
+                     ,'TODAY_PS_C_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%today_A_decomp                                              &
                      ,'TODAY_A_DECOMP              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%today_B_decomp                                              &

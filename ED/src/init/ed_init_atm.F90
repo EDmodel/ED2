@@ -53,7 +53,6 @@ subroutine ed_init_atm()
                                     , cmtl2uext                    ! ! function
    use met_driver_coms       , only : met_driv_state               ! ! structure
    use canopy_struct_dynamics, only : canopy_turbulence_init       ! ! subroutine
-   use budget_utils          , only : update_budget                ! ! subroutine
    use canopy_radiation_coms , only : ihrzrad                      ! ! intent(in)
    use hrzshade_utils        , only : split_hrzshade               & ! sub-routine
                                     , reset_hrzshade               ! ! sub-routine

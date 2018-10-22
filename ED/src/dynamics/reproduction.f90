@@ -373,10 +373,7 @@ module reproduction
                         ! Send the seed litter to the soil pools for decomposition.        !
                         !                                                                  !
                         !  ALS: dont send all seeds to litter!  Keep it for harvesting?    !
-                        !  MLO: not here because these are the PFTs that are not allowed   !
-                        !       on this patch (for example, trees on agriculture patch).   !
-                        !       Perhaps when we convert bseeds to repro, we should ask     !
-                        !       how much of the seed pool should be lost to harvest.       !
+                        !  MLO: byield now captures seeds that are harvested.              !
                         !-------------------------------------------- ---------------------!
                         csite%fast_grnd_N(ipa) = csite%fast_grnd_N(ipa)                    &
                                                + csite%repro(ipft,ipa) / c2n_recruit(ipft)
@@ -888,6 +885,7 @@ module reproduction
       real                          :: bseed_xpatch ! Seedl. X-patch exchange    [  kgC/m2]
       real                          :: seed_rain_c  ! Seed rain carbon input     [  kgC/m2]
       real, dimension(n_pft)        :: pft_seedrain ! Sum of all ext. seed rain  [  kgC/m2]
+      real, dimension(n_pft)        :: pft_repro0   ! Seed bank before dispersal [  kgC/m2]
       !------------------------------------------------------------------------------------!
 
 
@@ -895,6 +893,7 @@ module reproduction
       !    The following variables are used to ensure reproduction is conserving carbon.   !
       !------------------------------------------------------------------------------------!
       pft_seedrain(:) = 0.0
+      pft_repro0  (:) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -920,6 +919,16 @@ module reproduction
             !------------------------------------------------------------------------------!
             seedloop: do ipa = 1,csite%npatches
                pftloop: do ipft=1,n_pft
+                  !------------------------------------------------------------------------!
+                  !     Save original seed bank, for budget check.                         !
+                  !------------------------------------------------------------------------!
+                  pft_repro0(ipft) = pft_repro0(ipft)                                      &
+                                   + csite%repro(ipft,ipa) * csite%area(ipa)               &
+                                   * cpoly%area(isi)
+                  !------------------------------------------------------------------------!
+
+
+
                   !------------------------------------------------------------------------!
                   !     Check whether to include this PFT or not.  The decision depends on !
                   ! the following decisions.                                               !
@@ -1267,7 +1276,7 @@ module reproduction
       !------------------------------------------------------------------------------------!
       !      Before we leave the seeds grow, we check that the carbon is being conserved.  !
       !------------------------------------------------------------------------------------!
-      call check_budget_bseeds(cpoly,pft_seedrain)
+      call check_budget_bseeds(cpoly,pft_repro0,pft_seedrain)
       !------------------------------------------------------------------------------------!
 
       return
@@ -1284,7 +1293,7 @@ module reproduction
    !=======================================================================================!
    !      This sub-routine checks that seed biomass and seed bank match.                   !
    !---------------------------------------------------------------------------------------!
-   subroutine check_budget_bseeds(cpoly,pft_seedrain)
+   subroutine check_budget_bseeds(cpoly,pft_repro0,pft_seedrain)
       use ed_state_vars      , only : polygontype           & ! structure
                                     , sitetype              & ! structure
                                     , patchtype             ! ! structure
@@ -1296,6 +1305,7 @@ module reproduction
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(polygontype)        , target     :: cpoly        ! Current polygon     [    ---]
+      real   , dimension(n_pft), intent(in) :: pft_repro0   ! Previous seed bank  [ kgC/m2]
       real   , dimension(n_pft), intent(in) :: pft_seedrain ! Total seed rain     [ kgC/m2]
       !----- Local variables. -------------------------------------------------------------!
       type(sitetype)           , pointer    :: csite        ! Current site        [    ---]
@@ -1310,8 +1320,8 @@ module reproduction
       real   , dimension(n_pft)             :: resid_bseeds ! Residual seed stock [ kgC/m2]
       logical, dimension(n_pft)             :: ok_seedbank  ! Consistent seedbank [ kgC/m2]
       !----- Local constants. -------------------------------------------------------------!
-      character(len=11)        , parameter  :: fmth='(a,6(1x,a))'
-      character(len=23)        , parameter  :: fmtp='(i5,5(1x,es12.5),1x,l1)'
+      character(len=11)        , parameter  :: fmth='(a,7(1x,a))'
+      character(len=23)        , parameter  :: fmtp='(i5,6(1x,es12.5),1x,l1)'
       character(len=27)        , parameter  :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
       !------------------------------------------------------------------------------------!
 
@@ -1358,7 +1368,8 @@ module reproduction
       !     In this loop, we check that the total seed bank is consistent for each PFT.    !
       !------------------------------------------------------------------------------------!
       pftcheckloop: do ipft=1,n_pft
-         resid_bseeds(ipft) = pft_repro(ipft) - pft_bseeds(ipft) - pft_seedrain(ipft)
+         resid_bseeds(ipft) = pft_repro (ipft) - pft_bseeds(ipft) - pft_seedrain(ipft)     &
+                            - pft_repro0(ipft)
          toler_bseeds(ipft) = r_tol_trunc * max(pft_repro(ipft),min_recruit_size(ipft))
          ok_seedbank (ipft) = abs(resid_bseeds(ipft)) < toler_bseeds(ipft)
       end do pftcheckloop
@@ -1379,10 +1390,11 @@ module reproduction
                                                            ,current_time%date              &
                                                            ,current_time%time
          write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
-         write(unit=*,fmt=fmth )  ' IPFT','       REPRO','      BSEEDS','   SEED_RAIN'     &
-                                         ,'       RESID','       TOLER','  ACCEPTABLE'
+         write(unit=*,fmt=fmth )  ' IPFT','REPRO_BEFORE','   REPRO_NOW','      BSEEDS'     &
+                                         ,'   SEED_RAIN','       RESID','       TOLER'     &
+                                         ,'  ACCEPTABLE'
          do ipft=1,n_pft
-            write(unit=*,fmt=fmtp ) ipft,pft_repro(ipft),pft_bseeds(ipft)                  &
+            write(unit=*,fmt=fmtp ) ipft,pft_repro0(ipft),pft_repro(ipft),pft_bseeds(ipft) &
                                         ,pft_seedrain(ipft),resid_bseeds(ipft)             &
                                         ,toler_bseeds(ipft),ok_seedbank(ipft)
          end do
