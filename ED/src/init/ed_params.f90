@@ -6414,7 +6414,7 @@ subroutine init_dt_thermo_params()
    ! step because estimates of unaccounted effects (e.g. density effect) lose accuracy.    !
    ! We also impose a maximum tolerance to be the RK4.                                     !
    !---------------------------------------------------------------------------------------!
-   toler_budget = min(rk4_tolerance, dtlsm * r_tol_trunc / 1.0 )
+   toler_budget = max(r_tol_trunc,min(rk4_tolerance, dtlsm * r_tol_trunc / 10.0 ))
    !---------------------------------------------------------------------------------------!
 
 

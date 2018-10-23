@@ -1333,6 +1333,20 @@ module ed_state_vars
       real , pointer,dimension(:) :: co2budget_rh
       !<Average heterotrophic respiration [&mu;mol_CO2/m2/s]
 
+      real , pointer, dimension(:) :: commit_storage_resp
+      !<Committed emissions due to storage respiration [kg_C/m2/day].
+      !<Storage respiration is committed emission (i.e. the losses in biomass occur 
+      !<before the loss is released to the canopy air space), so we must save them
+      !<in a patch-level variable to ensure that they will be emitted even if the cohort
+      !<is terminated, otherwise carbon cannot be conserved.
+
+      real , pointer, dimension(:) :: commit_growth_resp
+      !<Committed emissions due to growth respiration [kg_C/m2/day].
+      !<Storage respiration is committed emission (i.e. the losses in biomass occur 
+      !<before the loss is released to the canopy air space), so we must save them
+      !<in a patch-level variable to ensure that they will be emitted even if the cohort
+      !<is terminated, otherwise carbon cannot be conserved.
+
       real , pointer,dimension(:) :: today_fg_C_loss
       !<Daily average of decay of above-ground metabolic litter [kg_C/m2/day].  
       !<The "today" variable is used internally in the model only, and shall never be
@@ -4802,6 +4816,8 @@ module ed_state_vars
       allocate(csite%co2budget_gpp                 (              npatches))
       allocate(csite%co2budget_plresp              (              npatches))
       allocate(csite%co2budget_rh                  (              npatches))
+      allocate(csite%commit_storage_resp           (              npatches))
+      allocate(csite%commit_growth_resp            (              npatches))
       allocate(csite%today_fg_C_loss               (              npatches))
       allocate(csite%today_fs_C_loss               (              npatches))
       allocate(csite%today_fg_N_loss               (              npatches))
@@ -6893,6 +6909,8 @@ module ed_state_vars
       nullify(csite%co2budget_gpp              )
       nullify(csite%co2budget_plresp           )
       nullify(csite%co2budget_rh               )
+      nullify(csite%commit_storage_resp        )
+      nullify(csite%commit_growth_resp         )
       nullify(csite%today_fg_C_loss            )
       nullify(csite%today_fs_C_loss            )
       nullify(csite%today_fg_N_loss            )
@@ -7963,6 +7981,8 @@ module ed_state_vars
       if(associated(csite%co2budget_gpp              )) deallocate(csite%co2budget_gpp              )
       if(associated(csite%co2budget_plresp           )) deallocate(csite%co2budget_plresp           )
       if(associated(csite%co2budget_rh               )) deallocate(csite%co2budget_rh               )
+      if(associated(csite%commit_storage_resp        )) deallocate(csite%commit_storage_resp        )
+      if(associated(csite%commit_growth_resp         )) deallocate(csite%commit_growth_resp         )
       if(associated(csite%today_fg_C_loss            )) deallocate(csite%today_fg_C_loss            )
       if(associated(csite%today_fs_C_loss            )) deallocate(csite%today_fs_C_loss            )
       if(associated(csite%today_fg_N_loss            )) deallocate(csite%today_fg_N_loss            )
@@ -9055,6 +9075,8 @@ module ed_state_vars
          osite%co2budget_gpp              (opa) = isite%co2budget_gpp              (ipa)
          osite%co2budget_plresp           (opa) = isite%co2budget_plresp           (ipa)
          osite%co2budget_rh               (opa) = isite%co2budget_rh               (ipa)
+         osite%commit_storage_resp        (opa) = isite%commit_storage_resp        (ipa)
+         osite%commit_growth_resp         (opa) = isite%commit_growth_resp         (ipa)
          osite%today_fg_C_loss            (opa) = isite%today_fg_C_loss            (ipa)
          osite%today_fs_C_loss            (opa) = isite%today_fs_C_loss            (ipa)
          osite%today_fg_N_loss            (opa) = isite%today_fg_N_loss            (ipa)
@@ -9801,6 +9823,8 @@ module ed_state_vars
       osite%co2budget_gpp              (1:z) = pack(isite%co2budget_gpp              ,lmask)
       osite%co2budget_plresp           (1:z) = pack(isite%co2budget_plresp           ,lmask)
       osite%co2budget_rh               (1:z) = pack(isite%co2budget_rh               ,lmask)
+      osite%commit_storage_resp        (1:z) = pack(isite%commit_storage_resp        ,lmask)
+      osite%commit_growth_resp         (1:z) = pack(isite%commit_growth_resp         ,lmask)
       osite%today_fg_C_loss            (1:z) = pack(isite%today_fg_C_loss            ,lmask)
       osite%today_fs_C_loss            (1:z) = pack(isite%today_fs_C_loss            ,lmask)
       osite%today_fg_N_loss            (1:z) = pack(isite%today_fg_N_loss            ,lmask)
@@ -22800,6 +22824,26 @@ module ed_state_vars
               var_len,var_len_global,max_ptrs,'PAR_L_DIFFUSE_MAX :31:hist') 
          call metadata_edio(nvar,igr,'Maximum diffuse PAR - not an output variable' &
                            ,'[W/m2]','ipatch')
+      end if
+
+      if (associated(csite%commit_storage_resp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%commit_storage_resp                                 &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'COMMIT_STORAGE_RESP :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Committed emission due to storage respiration'                &
+                           ,'[  kgW/m2/day]','NA') 
+      end if
+
+      if (associated(csite%commit_growth_resp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%commit_growth_resp                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'COMMIT_GROWTH_RESP :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Committed emission due to growth respiration'                 &
+                           ,'[  kgW/m2/day]','NA') 
       end if
       !------------------------------------------------------------------------------------!
 

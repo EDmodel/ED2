@@ -6216,7 +6216,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-      
+
 
       !------------------------------------------------------------------------------------!
       !    This subroutine takes care of filling:                                          !
@@ -6234,6 +6234,59 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       call new_patch_sfc_props(csite,recp,mzg,mzs,ntext_soil)
       !------------------------------------------------------------------------------------!
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Inputs and losses of carbon must be fused in order to conserve carbon.          !
+      ! Inputs may not be zero (i.e. in case there was any cohort termination), so they    !
+      ! must be fused.  The losses must be tracked and fused too, as losses cannot be      !
+      ! derived from the down-regulation functions (today_A_decomp and alikes) when        !
+      ! patches are fused, because both the carbon stocks (C) and the down-regulation      !
+      ! functions (f) are averaged between patches (areas ar and ad), but the total loss   !
+      ! (f*C) cannot be easily retrieved from the fused averages (<f*C> /= <f>*<C>).       !
+      !------------------------------------------------------------------------------------!
+      csite%fgc_in          (recp)      = newareai *                                       &
+                                        ( csite%fgc_in          (donp) * csite%area(donp)  &
+                                        + csite%fgc_in          (recp) * csite%area(recp) )
+
+      csite%fsc_in          (recp)      = newareai *                                       &
+                                        ( csite%fsc_in          (donp) * csite%area(donp)  &
+                                        + csite%fsc_in          (recp) * csite%area(recp) )
+
+      csite%fgn_in          (recp)      = newareai *                                       &
+                                        ( csite%fgn_in          (donp) * csite%area(donp)  &
+                                        + csite%fgn_in          (recp) * csite%area(recp) )
+
+      csite%fsn_in          (recp)      = newareai *                                       &
+                                        ( csite%fsn_in          (donp) * csite%area(donp)  &
+                                        + csite%fsn_in          (recp) * csite%area(recp) )
+
+      csite%stgc_in         (recp)      = newareai *                                       &
+                                        ( csite%stgc_in         (donp) * csite%area(donp)  &
+                                        + csite%stgc_in         (recp) * csite%area(recp) )
+
+      csite%stsc_in         (recp)      = newareai *                                       &
+                                        ( csite%stsc_in         (donp) * csite%area(donp)  &
+                                        + csite%stsc_in         (recp) * csite%area(recp) )
+
+      csite%stgl_in         (recp)      = newareai *                                       &
+                                        ( csite%stgl_in         (donp) * csite%area(donp)  &
+                                        + csite%stgl_in         (recp) * csite%area(recp) )
+
+      csite%stsl_in         (recp)      = newareai *                                       &
+                                        ( csite%stsl_in         (donp) * csite%area(donp)  &
+                                        + csite%stsl_in         (recp) * csite%area(recp) )
+
+      csite%stgn_in         (recp)      = newareai *                                       &
+                                        ( csite%stgn_in         (donp) * csite%area(donp)  &
+                                        + csite%stgn_in         (recp) * csite%area(recp) )
+
+      csite%stsn_in         (recp)      = newareai *                                       &
+                                        ( csite%stsn_in         (donp) * csite%area(donp)  &
+                                        + csite%stsn_in         (recp) * csite%area(recp) )
 
       csite%today_fg_C_loss (recp)      = newareai *                                       &
                                         ( csite%today_fg_C_loss (donp) * csite%area(donp)  &
@@ -6499,6 +6552,23 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !     Committed respiration.  These variables are used to release storage and growth !
+      ! respiration to the canopy air space.  Cohort variables cannot be used because      !
+      ! these are committed emissions that should be honoured even if the cohort is        !
+      ! terminated, to ensure carbon conservation.                                         !
+      !------------------------------------------------------------------------------------!
+      csite%commit_storage_resp    (recp)  = ( csite%commit_storage_resp         (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%commit_storage_resp         (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%commit_growth_resp     (recp)  = ( csite%commit_growth_resp          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%commit_growth_resp          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!

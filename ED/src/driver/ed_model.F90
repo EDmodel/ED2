@@ -402,9 +402,9 @@ subroutine ed_model()
          end if
 
 
-         !----- Find the number of days in this month and the previous month. ----------------!
+         !----- Find the number of days in this month and the previous month. -------------!
          call yesterday_info(current_time,daybefore,dbndays,dbndaysi)
-         !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!

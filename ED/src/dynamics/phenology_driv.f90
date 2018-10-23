@@ -162,17 +162,14 @@ module phenology_driv
       patchloop: do ipa = 1,csite%npatches
          cpatch => csite%patch(ipa)
 
-         !----- Re-initialize litter inputs. ----------------------------------------------!
-         csite%fgc_in (ipa) = 0.0
-         csite%fsc_in (ipa) = 0.0
-         csite%fgn_in (ipa) = 0.0
-         csite%fsn_in (ipa) = 0.0
-         csite%stgc_in(ipa) = 0.0
-         csite%stsc_in(ipa) = 0.0
-         csite%stgl_in(ipa) = 0.0
-         csite%stsl_in(ipa) = 0.0
-         csite%stgn_in(ipa) = 0.0
-         csite%stsn_in(ipa) = 0.0
+         !---------------------------------------------------------------------------------!
+         !     Litter inputs (fsc_in, stsc_in and alikes) used to be reset here.  This is  !
+         ! not an intuitive place to reset them, plus carbon transfers could be lost       !
+         ! because some carbon may go to the inputs after update_C_and_N_pools and this    !
+         ! point (mostly because of cohort termination).  The input litter pools are now   !
+         ! reset in update_C_and_N_pools, immediately after they are transferred to the    !
+         ! litter pools.                                                                   !
+         !---------------------------------------------------------------------------------!
 
          !----- Determine what phenology thresholds have been crossed. --------------------!
          call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa)                &

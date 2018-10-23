@@ -105,6 +105,9 @@ module rk4_copy_patch
 
       targetp%water_deficit    = sourcep%water_deficit
 
+      targetp%commit_storage_resp = sourcep%commit_storage_resp
+      targetp%commit_growth_resp  = sourcep%commit_growth_resp
+
       do k=rk4site%lsl,nzg      
          targetp%soil_water            (k) = sourcep%soil_water            (k)
          targetp%soil_energy           (k) = sourcep%soil_energy           (k)
@@ -176,18 +179,6 @@ module rk4_copy_patch
          targetp%gpp               (k) = sourcep%gpp               (k)
          targetp%leaf_resp         (k) = sourcep%leaf_resp         (k)
          targetp%root_resp         (k) = sourcep%root_resp         (k)
-         targetp%leaf_growth_resp  (k) = sourcep%leaf_growth_resp  (k)
-         targetp%root_growth_resp  (k) = sourcep%root_growth_resp  (k)
-         targetp%sapa_growth_resp  (k) = sourcep%sapa_growth_resp  (k)
-         targetp%sapb_growth_resp  (k) = sourcep%sapb_growth_resp  (k)
-         targetp%barka_growth_resp (k) = sourcep%barka_growth_resp (k)
-         targetp%barkb_growth_resp (k) = sourcep%barkb_growth_resp (k)
-         targetp%leaf_storage_resp (k) = sourcep%leaf_storage_resp (k)
-         targetp%root_storage_resp (k) = sourcep%root_storage_resp (k)
-         targetp%sapa_storage_resp (k) = sourcep%sapa_storage_resp (k)
-         targetp%sapb_storage_resp (k) = sourcep%sapb_storage_resp (k)
-         targetp%barka_storage_resp(k) = sourcep%barka_storage_resp(k)
-         targetp%barkb_storage_resp(k) = sourcep%barkb_storage_resp(k)
       end do
 
       if (checkbudget) then

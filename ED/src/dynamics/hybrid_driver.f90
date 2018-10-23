@@ -860,6 +860,9 @@ module hybrid_driver
       targetp%nlev_sfcwater   = sourcep%nlev_sfcwater
       targetp%flag_sfcwater   = sourcep%flag_sfcwater
 
+      targetp%commit_storage_resp = sourcep%commit_storage_resp
+      targetp%commit_growth_resp  = sourcep%commit_growth_resp
+
       do k=1,nzs
          targetp%sfcwater_mass     (k) = sourcep%sfcwater_mass     (k)
          targetp%sfcwater_energy   (k) = sourcep%sfcwater_energy   (k)
@@ -925,18 +928,6 @@ module hybrid_driver
          targetp%gpp               (k) = sourcep%gpp               (k)
          targetp%leaf_resp         (k) = sourcep%leaf_resp         (k)
          targetp%root_resp         (k) = sourcep%root_resp         (k)
-         targetp%leaf_growth_resp  (k) = sourcep%leaf_growth_resp  (k)
-         targetp%root_growth_resp  (k) = sourcep%root_growth_resp  (k)
-         targetp%sapa_growth_resp  (k) = sourcep%sapa_growth_resp  (k)
-         targetp%sapb_growth_resp  (k) = sourcep%sapb_growth_resp  (k)
-         targetp%barka_growth_resp (k) = sourcep%barka_growth_resp (k)
-         targetp%barkb_growth_resp (k) = sourcep%barkb_growth_resp (k)
-         targetp%leaf_storage_resp (k) = sourcep%leaf_storage_resp (k)
-         targetp%root_storage_resp (k) = sourcep%root_storage_resp (k)
-         targetp%sapa_storage_resp (k) = sourcep%sapa_storage_resp (k)
-         targetp%sapb_storage_resp (k) = sourcep%sapb_storage_resp (k)
-         targetp%barka_storage_resp(k) = sourcep%barka_storage_resp(k)
-         targetp%barkb_storage_resp(k) = sourcep%barkb_storage_resp(k)
       end do
 
       if (checkbudget) then

@@ -89,7 +89,17 @@ module growth_balive
       real                             :: npp_pot
       real                             :: tissue_maintenance
       real                             :: storage_maintenance
-      real                             :: pat_storage_maintenance
+      real                             :: fgc_in_in
+      real                             :: fsc_in_in
+      real                             :: stgc_in_in
+      real                             :: stsc_in_in
+      real                             :: pat_balive_in
+      real                             :: pat_bdead_in
+      real                             :: pat_bstorage_in
+      real                             :: pat_carbon_miss
+      real                             :: pat_metnpp_actual
+      real                             :: pat_npp_actual
+      real                             :: pat_tissue_maintenance
       real                             :: bleaf_in
       real                             :: broot_in
       real                             :: bsapwooda_in
@@ -148,9 +158,38 @@ module growth_balive
                csite%total_plant_nitrogen_uptake(ipa) = 0.0
                !---------------------------------------------------------------------------!
 
-               !----- Reset total storage maintenance costs (used for N litter inputs). ---!
-               pat_storage_maintenance = 0.0
+
                !---------------------------------------------------------------------------!
+               !      Save patch-level litter inputs before growth balive.  We use these   !
+               ! variables to check carbon conservation at the patch level.                !
+               !---------------------------------------------------------------------------!
+               fgc_in_in              = csite%fgc_in (ipa)
+               fsc_in_in              = csite%fsc_in (ipa)
+               stgc_in_in             = csite%stgc_in(ipa)
+               stsc_in_in             = csite%stsc_in(ipa)
+               pat_balive_in          = 0.0
+               pat_bdead_in           = 0.0
+               pat_bstorage_in        = 0.0
+               pat_carbon_miss        = 0.0
+               pat_metnpp_actual      = 0.0
+               pat_npp_actual         = 0.0
+               pat_tissue_maintenance = 0.0
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Reset the patch-level storage and growth respiration, in kgC/m2/day.  !
+               ! These variables are used in the fast time steps to release these          !
+               ! committed respiration fluxes to the canopy air space.  We use these       !
+               ! variables instead of the cohort-level variables because the cohorts may   !
+               ! be terminated, in which case their committed carbon losses to CAS will    !
+               ! never be accounted, violating carbon conservation.                        !
+               !---------------------------------------------------------------------------!
+               csite%commit_storage_resp(ipa) = 0.0
+               csite%commit_growth_resp (ipa) = 0.0
+               !---------------------------------------------------------------------------!
+
 
                !----- Loop over cohorts. --------------------------------------------------!
                cohortloop: do ico = 1,cpatch%ncohorts
@@ -199,6 +238,9 @@ module growth_balive
                   wai_in          = cpatch%wai             (ico)
                   cai_in          = cpatch%crown_area      (ico)
                   krdepth_in      = cpatch%krdepth         (ico)
+                  pat_balive_in   = pat_balive_in   + nplant_in * balive_in
+                  pat_bdead_in    = pat_bdead_in    + nplant_in * (bdeada_in + bdeadb_in)
+                  pat_bstorage_in = pat_bstorage_in + nplant_in * bstorage_in
                   !------------------------------------------------------------------------!
 
 
@@ -212,8 +254,10 @@ module growth_balive
 
 
                   !----- Update patch total storage maintenance costs. --------------------!
-                  pat_storage_maintenance = pat_storage_maintenance                        &
-                                          + cpatch%nplant(ico) * storage_maintenance
+                  pat_tissue_maintenance         = pat_tissue_maintenance                  &
+                                                 + cpatch%nplant(ico) * tissue_maintenance
+                  csite%commit_storage_resp(ipa) = csite%commit_storage_resp(ipa)          &
+                                                 + cpatch%nplant(ico) * storage_maintenance
                   !------------------------------------------------------------------------!
 
 
@@ -244,7 +288,7 @@ module growth_balive
                                              ,metnpp_lightmax,metnpp_moistmax,metnpp_mlmax &
                                              ,growresp_actual,growresp_pot                 &
                                              ,growresp_lightmax,growresp_moistmax          &
-                                             ,growresp_mlmax)
+                                             ,growresp_mlmax,csite%commit_growth_resp(ipa))
                   !------------------------------------------------------------------------!
 
 
@@ -284,6 +328,17 @@ module growth_balive
                                        ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb        &
                                        ,tr_bbarka,tr_bbarkb,tr_bstorage,nitrogen_uptake    &
                                        ,csite%fgn_in(ipa),csite%fsn_in(ipa))
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Update transient carbon (metabolic NPP, total NPP and missed       !
+                  ! carbon due to cohort extremely negative carbon balance.                !
+                  !------------------------------------------------------------------------!
+                  pat_metnpp_actual = pat_metnpp_actual + cpatch%nplant(ico) * metnpp_actual
+                  pat_npp_actual    = pat_npp_actual    + cpatch%nplant(ico) * npp_actual
+                  pat_carbon_miss   = pat_carbon_miss   + cpatch%nplant(ico) * carbon_miss
                   !------------------------------------------------------------------------!
 
 
@@ -450,12 +505,12 @@ module growth_balive
 
 
                   !------------------------------------------------------------------------!
-                  !    Before we let this cohort carry on with their lives, we must check  !
+                  !    Before we let these plants carry on with their lives, we must check !
                   ! that we can account for all changes in carbon.  In case there is any-  !
                   ! thing missing or excessive, stop the simulation.                       !
                   !------------------------------------------------------------------------!
                   if (veget_dyn_on) then
-                     call check_budget_balive(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in &
+                     call check_balive_cohort(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in &
                                              ,bsapwoodb_in,bbarka_in,bbarkb_in,balive_in   &
                                              ,bstorage_in,bdeada_in,bdeadb_in              &
                                              ,metnpp_actual,npp_actual,growresp_actual     &
@@ -487,16 +542,33 @@ module growth_balive
 
 
                !----- Update litter. ------------------------------------------------------!
-               call update_litter_inputs(csite,ipa,pat_storage_maintenance)
+               call update_litter_inputs(csite,ipa)
                !---------------------------------------------------------------------------!
+
+
 
                !----- Update patch LAI, WAI, height, roughness... -------------------------!
                call update_patch_derived_props(csite,ipa,.true.)
                !---------------------------------------------------------------------------!
 
 
+
                !----- It's a new day, reset average daily temperature. --------------------!
                csite%avg_daily_temp(ipa) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Make sure that the patch did not try to smuggle or evade carbon.      !
+               ! For this we compare the live stocks and the necromass inputs before and   !
+               ! after updating living tissues.                                            !
+               !---------------------------------------------------------------------------!
+               if (veget_dyn_on) then
+                  call check_balive_patch(csite,ipa,fgc_in_in,fsc_in_in,stgc_in_in         &
+                                         ,stsc_in_in,pat_balive_in,pat_bdead_in            &
+                                         ,pat_bstorage_in,pat_metnpp_actual,pat_npp_actual &
+                                         ,pat_tissue_maintenance,pat_carbon_miss)
+               end if
                !---------------------------------------------------------------------------!
             end do patchloop
             !------------------------------------------------------------------------------!
@@ -767,7 +839,7 @@ module growth_balive
          !---------------------------------------------------------------------------------!
 
          !----- Find the metabolic respiration, assumed to be the same for all NPP. -------!
-         metab_resp    = cpatch%today_leaf_resp(ico) - cpatch%today_root_resp(ico)
+         metab_resp    = cpatch%today_leaf_resp(ico) + cpatch%today_root_resp(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -806,34 +878,37 @@ module growth_balive
    subroutine get_growth_respiration(cpatch,ico,metnpp_actual,metnpp_pot,metnpp_lightmax   &
                                     ,metnpp_moistmax,metnpp_mlmax,growresp_actual          &
                                     ,growresp_pot,growresp_lightmax,growresp_moistmax      &
-                                    ,growresp_mlmax)
+                                    ,growresp_mlmax,pat_growth_resp)
       use ed_state_vars, only : patchtype             ! ! structure
       use consts_coms  , only : tiny_num              ! ! intent(in)
       use ed_misc_coms , only : growth_resp_scheme    ! ! intent(in)
       use pft_coms     , only : growth_resp_factor    ! ! intent(in)
        implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target       :: cpatch
-      integer        , intent(in)   :: ico
-      real           , intent(in)   :: metnpp_actual
-      real           , intent(in)   :: metnpp_pot
-      real           , intent(in)   :: metnpp_lightmax
-      real           , intent(in)   :: metnpp_moistmax
-      real           , intent(in)   :: metnpp_mlmax
-      real           , intent(out)  :: growresp_actual
-      real           , intent(out)  :: growresp_pot
-      real           , intent(out)  :: growresp_lightmax
-      real           , intent(out)  :: growresp_moistmax
-      real           , intent(out)  :: growresp_mlmax
+      type(patchtype), target        :: cpatch
+      integer        , intent(in)    :: ico
+      real           , intent(in)    :: metnpp_actual
+      real           , intent(in)    :: metnpp_pot
+      real           , intent(in)    :: metnpp_lightmax
+      real           , intent(in)    :: metnpp_moistmax
+      real           , intent(in)    :: metnpp_mlmax
+      real           , intent(out)   :: growresp_actual
+      real           , intent(out)   :: growresp_pot
+      real           , intent(out)   :: growresp_lightmax
+      real           , intent(out)   :: growresp_moistmax
+      real           , intent(out)   :: growresp_mlmax
+      real           , intent(inout) :: pat_growth_resp
       !----- Local variables. -------------------------------------------------------------!
-      integer                       :: ipft
-      real                          :: grow_resp_o_balive
+      integer                        :: ipft
+      real                           :: grow_resp_o_balive
       !------------------------------------------------------------------------------------!
+
 
 
       !------ Alias for plant functional type. --------------------------------------------!
       ipft = cpatch%pft(ico)
       !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -864,6 +939,12 @@ module growth_balive
          return
       end if
       !------------------------------------------------------------------------------------!
+
+
+      !----- Update the committed growth respiration at patch level. ----------------------!
+      pat_growth_resp = pat_growth_resp + cpatch%nplant(ico) * growresp_actual
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -1890,7 +1971,7 @@ module growth_balive
    !=======================================================================================!
    !     This sub-routine updates litter carbon and nitrogen inputs.                       !
    !---------------------------------------------------------------------------------------!
-   subroutine update_litter_inputs(csite,ipa,pat_storage_maintenance)
+   subroutine update_litter_inputs(csite,ipa)
 
       use ed_state_vars, only : patchtype      & ! structure
                               , sitetype       ! ! structure
@@ -1904,7 +1985,6 @@ module growth_balive
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)  , target     :: csite
       integer         , intent(in) :: ipa
-      real            , intent(in) :: pat_storage_maintenance
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype) , pointer    :: cpatch
       integer                      :: ico
@@ -1960,7 +2040,8 @@ module growth_balive
          ! in order to maintain prescribed C2N ratio.  Carbon does not go to litter        !
          ! because it becomes CO2.                                                         !
          !---------------------------------------------------------------------------------!
-         csite%fsn_in(ipa) = csite%fsn_in(ipa) + pat_storage_maintenance / c2n_storage
+         csite%fsn_in(ipa) = csite%fsn_in(ipa)                                             &
+                           + csite%commit_storage_resp(ipa) / c2n_storage
          !---------------------------------------------------------------------------------!
       end do
       return
@@ -1975,13 +2056,13 @@ module growth_balive
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine checks that carbon is conserved.  There are a few, extreme       !
-   ! instances in which carbon conservation is not attainable (e.g. severely negative      !
-   ! daily NPP when plant has almost no carbon left or minor truncation errors), and we    !
-   ! account for them.  Otherwise, we stop any cohort that is attempting to smuggle or     !
-   ! to evade carbon.                                                                      !
+   !     This sub-routine checks that carbon is conserved at the cohort level.  There are  !
+   ! a few, extreme instances in which carbon conservation is not attainable (e.g.         !
+   ! severely negative daily NPP when plant has almost no carbon left or minor truncation  !
+   ! errors), and we account for them.  Otherwise, we stop any cohort that is attempting   !
+   ! to smuggle or to evade carbon.                                                        !
    !---------------------------------------------------------------------------------------!
-   subroutine check_budget_balive(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in             &
+   subroutine check_balive_cohort(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in             &
                                  ,bsapwoodb_in,bbarka_in,bbarkb_in,balive_in,bstorage_in   &
                                  ,bdeada_in,bdeadb_in,metnpp_actual,npp_actual             &
                                  ,growresp_actual,tissue_maintenance,storage_maintenance   &
@@ -2115,7 +2196,7 @@ module growth_balive
       if ( neg_biomass .or. btotal_violation ) then
          write(unit=*,fmt='(a)')  '|====================================================|'
          write(unit=*,fmt='(a)')  '|====================================================|'
-         write(unit=*,fmt='(a)')  '|          !!!   Balive budget failed   !!!          |'
+         write(unit=*,fmt='(a)')  '|       !!!   Cohort Balive budget failed   !!!      |'
          write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
          write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
                                                            ,current_time%month             &
@@ -2168,12 +2249,179 @@ module growth_balive
 
 
          call fatal_error('Budget check has failed, see message above.'                    &
-                         ,'check_budget_balive','growth_balive.f90')
+                         ,'check_balive_cohort','growth_balive.f90')
       end if
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine check_budget_balive
+   end subroutine check_balive_cohort
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine checks that carbon is conserved at the patch level.  There are   !
+   ! a few, extreme instances in which carbon conservation is not attainable (e.g.         !
+   ! severely negative daily NPP when plant has almost no carbon left or minor truncation  !
+   ! errors), and we account for them.  Otherwise, we stop any patch that is attempting    !
+   ! to smuggle or to evade carbon.                                                        !
+   !---------------------------------------------------------------------------------------!
+   subroutine check_balive_patch(csite,ipa,fgc_in_in,fsc_in_in,stgc_in_in,stsc_in_in       &
+                                ,pat_balive_in,pat_bdead_in,pat_bstorage_in                &
+                                ,pat_metnpp_actual,pat_npp_actual                          &
+                                ,pat_tissue_maintenance,pat_carbon_miss)
+      use ed_state_vars, only : sitetype     & ! structure
+                              , patchtype    ! ! structure
+      use consts_coms  , only : r_tol_trunc  ! ! intent(in)
+      use ed_misc_coms , only : current_time ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)  , target        :: csite
+      integer         , intent(in)    :: ipa
+      real            , intent(in)    :: fgc_in_in
+      real            , intent(in)    :: fsc_in_in
+      real            , intent(in)    :: stgc_in_in
+      real            , intent(in)    :: stsc_in_in
+      real            , intent(in)    :: pat_balive_in
+      real            , intent(in)    :: pat_bdead_in
+      real            , intent(in)    :: pat_bstorage_in
+      real            , intent(in)    :: pat_metnpp_actual
+      real            , intent(in)    :: pat_npp_actual
+      real            , intent(in)    :: pat_tissue_maintenance
+      real            , intent(in)    :: pat_carbon_miss
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype) , pointer       :: cpatch
+      integer                         :: ico
+      real                            :: fgc_in_fn
+      real                            :: fsc_in_fn
+      real                            :: stgc_in_fn
+      real                            :: stsc_in_fn
+      real                            :: pat_balive_fn
+      real                            :: pat_bdead_fn
+      real                            :: pat_bstorage_fn
+      real                            :: pat_btotal_in
+      real                            :: pat_btotal_fn
+      real                            :: pat_biomass_in
+      real                            :: pat_biomass_fn
+      real                            :: pat_storage_maintenance
+      real                            :: soilc_in_in
+      real                            :: soilc_in_fn
+      real                            :: resid_pat_btotal
+      logical                         :: pat_btotal_violation
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=10), parameter :: fmti='(a,1x,i14)'
+      character(len=13), parameter :: fmtf='(a,1x,es14.7)'
+      character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Handy aliases. ---------------------------------------------------------------!
+      cpatch                  => csite%patch  (ipa)
+      fgc_in_fn               =  csite%fgc_in (ipa)
+      fsc_in_fn               =  csite%fsc_in (ipa)
+      stgc_in_fn              =  csite%stgc_in(ipa)
+      stsc_in_fn              =  csite%stsc_in(ipa)
+      pat_storage_maintenance = csite%commit_storage_resp(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Count current stocks. --------------------------------------------------------!
+      pat_balive_fn = 0.0
+      pat_bdead_fn  = 0.0
+      pat_bstorage_fn = 0.0
+      do ico=1,cpatch%ncohorts
+         pat_balive_fn   = pat_balive_fn   + cpatch%nplant(ico) * cpatch%balive  (ico)
+         pat_bdead_fn    = pat_bdead_fn                                                    &
+                         + cpatch%nplant(ico) * ( cpatch%bdeada(ico) + cpatch%bdeadb(ico) )
+         pat_bstorage_fn = pat_bstorage_fn + cpatch%nplant(ico) * cpatch%bstorage(ico)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Summary of the carbon stocks. -----------------------------------------------!
+      pat_biomass_in = pat_balive_in + pat_bdead_in + pat_bstorage_in
+      pat_biomass_fn = pat_balive_fn + pat_bdead_fn + pat_bstorage_fn
+      soilc_in_in    = fgc_in_in + fsc_in_in + stgc_in_in + stsc_in_in
+      soilc_in_fn    = fgc_in_fn + fsc_in_fn + stgc_in_fn + stsc_in_fn
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check carbon stocks before and after active tissue growth.  Storage            !
+      ! maintenance is positive in the residual calculation because it is a committed loss !
+      ! that doesn't go to the soil carbon, but to the canopy air space.                   !
+      !------------------------------------------------------------------------------------!
+      pat_btotal_in        = pat_biomass_in + soilc_in_in
+      pat_btotal_fn        = pat_biomass_fn + soilc_in_fn
+      resid_pat_btotal     = pat_btotal_fn - pat_btotal_in                                 &
+                           + pat_storage_maintenance - pat_npp_actual - pat_carbon_miss
+      pat_btotal_violation = abs(resid_pat_btotal) > (r_tol_trunc * pat_btotal_in)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case we identify carbon conservation issues, print information on screen    !
+      ! and stop the model.                                                                !
+      !------------------------------------------------------------------------------------!
+      if ( pat_btotal_violation ) then
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|       !!!   Patch Balive budget failed   !!!       |'
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
+                                                           ,current_time%month             &
+                                                           ,current_time%date              &
+                                                           ,current_time%time
+         write(unit=*,fmt=fmti )  ' PATCH               : ',ipa
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BALIVE_IN           : ',pat_balive_in
+         write(unit=*,fmt=fmtf )  ' BDEAD_IN            : ',pat_bdead_in
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_IN         : ',pat_bstorage_in
+         write(unit=*,fmt=fmtf )  ' FGC_IN_IN           : ',fgc_in_in
+         write(unit=*,fmt=fmtf )  ' FSC_IN_IN           : ',fsc_in_in
+         write(unit=*,fmt=fmtf )  ' STGC_IN_IN          : ',stgc_in_in
+         write(unit=*,fmt=fmtf )  ' STSC_IN_IN          : ',stsc_in_in
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BALIVE_FN           : ',pat_balive_fn
+         write(unit=*,fmt=fmtf )  ' BDEAD_FN            : ',pat_bdead_fn
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_FN         : ',pat_bstorage_fn
+         write(unit=*,fmt=fmtf )  ' FGC_IN_FN           : ',fgc_in_fn
+         write(unit=*,fmt=fmtf )  ' FSC_IN_FN           : ',fsc_in_fn
+         write(unit=*,fmt=fmtf )  ' STGC_IN_FN          : ',stgc_in_fn
+         write(unit=*,fmt=fmtf )  ' STSC_IN_FN          : ',stsc_in_fn
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BIOMASS_IN          : ',pat_biomass_in
+         write(unit=*,fmt=fmtf )  ' SOILC_IN_IN         : ',soilc_in_in
+         write(unit=*,fmt=fmtf )  ' BIOMASS_FN          : ',pat_biomass_fn
+         write(unit=*,fmt=fmtf )  ' SOILC_IN_FN         : ',soilc_in_fn
+         write(unit=*,fmt=fmtf )  ' METABOLIC_NPP       : ',pat_metnpp_actual
+         write(unit=*,fmt=fmtf )  ' NPP                 : ',pat_npp_actual
+         write(unit=*,fmt=fmtf )  ' TISSUE_MAINTENANCE  : ',pat_tissue_maintenance
+         write(unit=*,fmt=fmtf )  ' STORAGE_MAINTENANCE : ',pat_storage_maintenance
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BTOTAL_IN           : ',pat_btotal_in
+         write(unit=*,fmt=fmtf )  ' BTOTAL_FN           : ',pat_btotal_fn
+         write(unit=*,fmt=fmtf )  ' CARBON_MISS         : ',pat_carbon_miss
+         write(unit=*,fmt=fmtf )  ' RESIDUAL_BTOTAL     : ',resid_pat_btotal
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  ' '
+
+
+         call fatal_error('Budget check has failed, see message above.'                    &
+                         ,'check_balive_patch','growth_balive.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine check_balive_patch
    !=======================================================================================!
    !=======================================================================================!
 end module growth_balive

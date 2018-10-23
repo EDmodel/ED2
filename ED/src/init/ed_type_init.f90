@@ -820,6 +820,8 @@ module ed_type_init
       csite%ebudget_zcaneffect              (ipaa:ipaz) = 0.0
       csite%ebudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%ebudget_residual                (ipaa:ipaz) = 0.0
+      csite%commit_storage_resp             (ipaa:ipaz) = 0.0
+      csite%commit_growth_resp              (ipaa:ipaz) = 0.0
       csite%rshort_g                        (ipaa:ipaz) = 0.0
       csite%rshort_g_beam                   (ipaa:ipaz) = 0.0
       csite%rshort_g_diffuse                (ipaa:ipaz) = 0.0

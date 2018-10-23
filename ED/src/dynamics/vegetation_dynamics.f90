@@ -132,6 +132,7 @@ module vegetation_dynamics
 
          !------  update dmean and mmean values for NPP allocation terms ------------------!
          call normalize_ed_todayNPP_vars(cgrid)
+         !---------------------------------------------------------------------------------!
          
          !---------------------------------------------------------------------------------!
          !     This should be done every day, but after the longer-scale steps.  We update !

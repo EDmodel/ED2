@@ -74,6 +74,17 @@ module structural_growth
       integer                       :: phenstatus_in
       integer                       :: krdepth_in
       real                          :: tor_fact
+      real                          :: fgc_in_in
+      real                          :: fsc_in_in
+      real                          :: stgc_in_in
+      real                          :: stsc_in_in
+      real                          :: nplant_loss
+      real                          :: pat_balive_in
+      real                          :: pat_bdead_in
+      real                          :: pat_bstorage_in
+      real                          :: pat_mortality
+      real                          :: pat_carbon_miss
+      real                          :: carbon_miss
       real                          :: bleaf_in
       real                          :: broot_in
       real                          :: bsapwooda_in
@@ -226,6 +237,27 @@ module structural_growth
                maxh = maxh + h_edge
                !---------------------------------------------------------------------------!
 
+
+               !---------------------------------------------------------------------------!
+               !      Save patch-level litter inputs before growth balive.  We use these   !
+               ! variables to check carbon conservation at the patch level.                !
+               !---------------------------------------------------------------------------!
+               fgc_in_in       = csite%fgc_in (ipa)
+               fsc_in_in       = csite%fsc_in (ipa)
+               stgc_in_in      = csite%stgc_in(ipa)
+               stsc_in_in      = csite%stsc_in(ipa)
+               pat_balive_in   = 0.0
+               pat_bdead_in    = 0.0
+               pat_bstorage_in = 0.0
+               pat_mortality   = 0.0
+               pat_carbon_miss = 0.0
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !    Loop over cohorts.                                                     !
+               !---------------------------------------------------------------------------!
                cohortloop: do ico = 1,cpatch%ncohorts
 
                   !----- Assigning an alias for PFT type. ---------------------------------!
@@ -237,40 +269,44 @@ module structural_growth
                   !      Remember inputs in order to calculate increments (and to revert   !
                   ! back to these values later on in case vegetation dynamics is off).     !
                   !------------------------------------------------------------------------!
-                  balive_in     = cpatch%balive          (ico)
-                  bdeada_in     = cpatch%bdeada          (ico)
-                  bdeadb_in     = cpatch%bdeadb          (ico)
-                  bleaf_in      = cpatch%bleaf           (ico)
-                  broot_in      = cpatch%broot           (ico)
-                  bsapwooda_in  = cpatch%bsapwooda       (ico)
-                  bsapwoodb_in  = cpatch%bsapwoodb       (ico)
-                  bbarka_in     = cpatch%bbarka          (ico)
-                  bbarkb_in     = cpatch%bbarkb          (ico)
-                  hite_in       = cpatch%hite            (ico)
-                  dbh_in        = cpatch%dbh             (ico)
-                  nplant_in     = cpatch%nplant          (ico)
-                  bstorage_in   = cpatch%bstorage        (ico)
-                  agb_in        = cpatch%agb             (ico)
-                  ba_in         = cpatch%basarea         (ico)
-                  phenstatus_in = cpatch%phenology_status(ico)
-                  lai_in        = cpatch%lai             (ico)
-                  wai_in        = cpatch%wai             (ico)
-                  cai_in        = cpatch%crown_area      (ico)
-                  krdepth_in    = cpatch%krdepth         (ico)
-                  bevery_in     = bleaf_in  + broot_in  + bsapwooda_in + bsapwoodb_in      &
-                                + bbarka_in + bbarkb_in + bdeada_in    + bdeadb_in
-                  bag_in        = sum(cpoly%basal_area_growth(ipft,:,isi))
-                  bam_in        = sum(cpoly%basal_area_mort(ipft,:,isi))
-                  vm_bar_in     = cpatch%vm_bar          (ico)
-                  sla_in        = cpatch%sla             (ico)
-                  psi_open_in   = cpatch%psi_open        (ico)
-                  psi_closed_in = cpatch%psi_closed      (ico)
+                  balive_in       = cpatch%balive          (ico)
+                  bdeada_in       = cpatch%bdeada          (ico)
+                  bdeadb_in       = cpatch%bdeadb          (ico)
+                  bleaf_in        = cpatch%bleaf           (ico)
+                  broot_in        = cpatch%broot           (ico)
+                  bsapwooda_in    = cpatch%bsapwooda       (ico)
+                  bsapwoodb_in    = cpatch%bsapwoodb       (ico)
+                  bbarka_in       = cpatch%bbarka          (ico)
+                  bbarkb_in       = cpatch%bbarkb          (ico)
+                  hite_in         = cpatch%hite            (ico)
+                  dbh_in          = cpatch%dbh             (ico)
+                  nplant_in       = cpatch%nplant          (ico)
+                  bstorage_in     = cpatch%bstorage        (ico)
+                  agb_in          = cpatch%agb             (ico)
+                  ba_in           = cpatch%basarea         (ico)
+                  phenstatus_in   = cpatch%phenology_status(ico)
+                  lai_in          = cpatch%lai             (ico)
+                  wai_in          = cpatch%wai             (ico)
+                  cai_in          = cpatch%crown_area      (ico)
+                  krdepth_in      = cpatch%krdepth         (ico)
+                  bevery_in       = bleaf_in  + broot_in  + bsapwooda_in + bsapwoodb_in    &
+                                  + bbarka_in + bbarkb_in + bdeada_in    + bdeadb_in
+                  bag_in          = sum(cpoly%basal_area_growth(ipft,:,isi))
+                  bam_in          = sum(cpoly%basal_area_mort(ipft,:,isi))
+                  vm_bar_in       = cpatch%vm_bar          (ico)
+                  sla_in          = cpatch%sla             (ico)
+                  psi_open_in     = cpatch%psi_open        (ico)
+                  psi_closed_in   = cpatch%psi_closed      (ico)
+                  pat_balive_in   = pat_balive_in   + nplant_in * balive_in
+                  pat_bdead_in    = pat_bdead_in    + nplant_in * (bdeada_in + bdeadb_in)
+                  pat_bstorage_in = pat_bstorage_in + nplant_in * bstorage_in
                   !------------------------------------------------------------------------!
+
 
                   !------------------------------------------------------------------------!
                   !    Apply mortality, and do not allow nplant < negligible_nplant (such  !
                   ! a sparse cohort is about to be terminated, anyway).                    !
-                  ! NB: monthly_dndt may be negative.                                      !
+                  ! NB: monthly_dndt and monthly_dlnndt will be zero or negative.          !
                   !------------------------------------------------------------------------!
                   cpatch%monthly_dndt  (ico) = max( cpatch%monthly_dndt   (ico)            &
                                                   , negligible_nplant     (ipft)           &
@@ -280,7 +316,10 @@ module structural_growth
                                                        / cpatch%nplant    (ico) ) )
                   cpatch%nplant(ico)         = cpatch%nplant(ico)                          &
                                              * exp(cpatch%monthly_dlnndt(ico))
+                  nplant_loss                = nplant_in - cpatch%nplant(ico)
                   !------------------------------------------------------------------------!
+
+
 
                   !----- Split biomass components that are labile or structural. ----------!
                   a_bfast    = f_labile_leaf(ipft) * cpatch%bleaf(ico)                     &
@@ -304,24 +343,37 @@ module structural_growth
                   !------------------------------------------------------------------------!
 
 
-                  !----- Calculate litter owing to mortality. -----------------------------!
-                  a_bfast_mort_litter    = - a_bfast    * cpatch%monthly_dndt(ico)
-                  b_bfast_mort_litter    = - b_bfast    * cpatch%monthly_dndt(ico)
-                  a_bstruct_mort_litter  = - a_bstruct  * cpatch%monthly_dndt(ico)
-                  b_bstruct_mort_litter  = - b_bstruct  * cpatch%monthly_dndt(ico)
-                  a_bstorage_mort_litter = - a_bstorage * cpatch%monthly_dndt(ico)
-                  b_bstorage_mort_litter = - b_bstorage * cpatch%monthly_dndt(ico)
+                  !------------------------------------------------------------------------!
+                  !     Calculate litter owing to mortality.                               !
+                  ! MLO - Replaced the former accounting using monthly_dndt with the       !
+                  !       actual change in nplant, which is derived from dlnndt.  The      !
+                  !       latter is preferred becuse it linearises the demographic ODE,    !
+                  !       but regardless of the choice, the litter inputs should be        !
+                  !       exactly the same as the gross mortality loss (i.e. the           !
+                  !       actual change in nplant).                                        !
+                  !------------------------------------------------------------------------!
+                  a_bfast_mort_litter    = a_bfast    * nplant_loss
+                  b_bfast_mort_litter    = b_bfast    * nplant_loss
+                  a_bstruct_mort_litter  = a_bstruct  * nplant_loss
+                  b_bstruct_mort_litter  = b_bstruct  * nplant_loss
+                  a_bstorage_mort_litter = a_bstorage * nplant_loss
+                  b_bstorage_mort_litter = b_bstorage * nplant_loss
                   mort_litter            = a_bfast_mort_litter    + b_bfast_mort_litter    &
                                          + a_bstruct_mort_litter  + b_bstruct_mort_litter  &
                                          + a_bstorage_mort_litter + b_bstorage_mort_litter
                   !------------------------------------------------------------------------!
 
 
+                  !----- Integrate mortality losses. --------------------------------------!
+                  pat_mortality = pat_mortality + mort_litter
+                  !------------------------------------------------------------------------!
+
 
                   !----- Reset monthly_dndt. ----------------------------------------------!
                   cpatch%monthly_dndt  (ico) = 0.0
                   cpatch%monthly_dlnndt(ico) = 0.0
                   !------------------------------------------------------------------------!
+
 
 
                   !----- Determine how to distribute what is in bstorage. -----------------!
@@ -458,6 +510,11 @@ module structural_growth
                   !------------------------------------------------------------------------!
                   bseeds_mort_litter = cpatch%bseeds(ico) * cpatch%nplant(ico)             &
                                      * seedling_mortality(ipft)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Integrate mortality losses. --------------------------------------!
+                  pat_mortality = pat_mortality + bseeds_mort_litter
                   !------------------------------------------------------------------------!
 
 
@@ -763,13 +820,44 @@ module structural_growth
 
 
 
+                  !------------------------------------------------------------------------!
+                  !    Before we let these plants carry on with their lives, we must check !
+                  ! that we can account for all changes in carbon.  In case there is any-  !
+                  ! thing missing or excessive, stop the simulation.                       !
+                  !------------------------------------------------------------------------!
+                  if (veget_dyn_on) then
+                     call check_bstruct_cohort(csite,ipa,ico,bleaf_in,broot_in             &
+                                              ,bsapwooda_in,bsapwoodb_in,bbarka_in         &
+                                              ,bbarkb_in,balive_in,bstorage_in,bdeada_in   &
+                                              ,bdeadb_in,f_bseeds,f_growth,f_bdeada        &
+                                              ,f_bdeadb,f_bstorage,carbon_miss)
+                     pat_carbon_miss = pat_carbon_miss + carbon_miss
+                  end if
+                  !------------------------------------------------------------------------!
+
 
                end do cohortloop
                !---------------------------------------------------------------------------!
 
+
                !----- Age the patch if this is not agriculture. ---------------------------!
                if (csite%dist_type(ipa) /= 1) csite%age(ipa) = csite%age(ipa) + 1.0/12.0
                !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Make sure that the patch did not try to smuggle or evade carbon.      !
+               ! For this we compare the live stocks and the necromass inputs before and   !
+               ! after updating structural and reproduction tissues.                       !
+               !---------------------------------------------------------------------------!
+               if (veget_dyn_on) then
+                  call check_bstruct_patch(csite,ipa,fgc_in_in,fsc_in_in,stgc_in_in        &
+                                          ,stsc_in_in,pat_balive_in,pat_bdead_in           &
+                                          ,pat_bstorage_in,pat_carbon_miss,pat_mortality)
+               end if
+               !---------------------------------------------------------------------------!
+
+
 
             end do patchloop
             !------------------------------------------------------------------------------!
@@ -1055,15 +1143,15 @@ module structural_growth
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine checks that carbon is conserved.  Minor truncation errors may    !
-   ! cause slightly negative pools.  In this case, we fix them and account for the missed  !
-   ! carbon source.  Otherwise, we stop any cohort that is attempting to smuggle or to     !
-   ! evade carbon.                                                                         !
+   !     This sub-routine checks that carbon is conserved at the cohort level.  Minor      !
+   ! truncation errors ma cause slightly negative pools.  In this case, we fix them and    !
+   ! account for the missed carbon source.  Otherwise, we stop any cohort that is          !
+   ! attempting to smuggle or to evade carbon.                                             !
    !---------------------------------------------------------------------------------------!
-   subroutine check_budget_bstruct(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in             &
-                                 ,bsapwoodb_in,bbarka_in,bbarkb_in,balive_in,bstorage_in   &
-                                 ,bdeada_in,bdeadb_in,f_bseeds,f_growth,f_bdeada,f_bdeadb  &
-                                 ,f_bstorage)
+   subroutine check_bstruct_cohort(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in            &
+                                  ,bsapwoodb_in,bbarka_in,bbarkb_in,balive_in,bstorage_in  &
+                                  ,bdeada_in,bdeadb_in,f_bseeds,f_growth,f_bdeada,f_bdeadb &
+                                  ,f_bstorage,carbon_miss)
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
       use allometry    , only : size2bl      & ! function
@@ -1093,6 +1181,7 @@ module structural_growth
       real            , intent(in)    :: f_bdeada
       real            , intent(in)    :: f_bdeadb
       real            , intent(in)    :: f_bstorage
+      real            , intent(out)   :: carbon_miss
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype) , pointer    :: cpatch
       integer                      :: ipft
@@ -1107,7 +1196,6 @@ module structural_growth
       real                         :: resid_btotal
       logical                      :: neg_biomass
       logical                      :: btotal_violation
-      real                         :: carbon_miss
       !----- Local constants. -------------------------------------------------------------!
       character(len=10), parameter :: fmti='(a,1x,i14)'
       character(len=13), parameter :: fmtf='(a,1x,es14.7)'
@@ -1167,7 +1255,7 @@ module structural_growth
       btotal_fn         = cpatch%balive(ico) + cpatch%bdeada  (ico)                        &
                         + cpatch%bdeadb(ico) + cpatch%bstorage(ico)
       delta_btotal      = f_bseeds * bstorage_in
-      resid_btotal      = btotal_fn - btotal_in - delta_btotal - carbon_miss
+      resid_btotal      = btotal_fn - btotal_in + delta_btotal - carbon_miss
       btotal_violation  = abs(resid_btotal) > (r_tol_trunc * btotal_in)
       !------------------------------------------------------------------------------------!
 
@@ -1180,7 +1268,7 @@ module structural_growth
       if ( neg_biomass .or. btotal_violation ) then
          write(unit=*,fmt='(a)')  '|====================================================|'
          write(unit=*,fmt='(a)')  '|====================================================|'
-         write(unit=*,fmt='(a)')  '|         !!!   Bstruct budget failed   !!!          |'
+         write(unit=*,fmt='(a)')  '|      !!!   Cohort Bstruct budget failed   !!!      |'
          write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
          write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
                                                            ,current_time%month             &
@@ -1233,12 +1321,181 @@ module structural_growth
 
 
          call fatal_error('Budget check has failed, see message above.'                    &
-                         ,'check_budget_bstruct','structural_growth.f90')
+                         ,'check_bstruct_cohort','structural_growth.f90')
       end if
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine check_budget_bstruct
+   end subroutine check_bstruct_cohort
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine checks that carbon is conserved at the patch level.  Minor       !
+   ! truncation errors may cause slightly negative pools, which are accounted.  Otherwise, !
+   ! we stop any patch that is attempting to smuggle or to evade carbon.                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine check_bstruct_patch(csite,ipa,fgc_in_in,fsc_in_in,stgc_in_in,stsc_in_in      &
+                                 ,pat_balive_in,pat_bdead_in,pat_bstorage_in               &
+                                 ,pat_carbon_miss,pat_mortality)
+      use ed_state_vars, only : sitetype           & ! structure
+                              , patchtype          ! ! structure
+      use consts_coms  , only : r_tol_trunc        ! ! intent(in)
+      use ed_misc_coms , only : current_time       ! ! intent(in)
+      use pft_coms     , only : seedling_mortality ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)  , target        :: csite
+      integer         , intent(in)    :: ipa
+      real            , intent(in)    :: fgc_in_in
+      real            , intent(in)    :: fsc_in_in
+      real            , intent(in)    :: stgc_in_in
+      real            , intent(in)    :: stsc_in_in
+      real            , intent(in)    :: pat_balive_in
+      real            , intent(in)    :: pat_bdead_in
+      real            , intent(in)    :: pat_bstorage_in
+      real            , intent(in)    :: pat_carbon_miss
+      real            , intent(in)    :: pat_mortality
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype) , pointer       :: cpatch
+      integer                         :: ico
+      integer                         :: ipft
+      real                            :: fgc_in_fn
+      real                            :: fsc_in_fn
+      real                            :: stgc_in_fn
+      real                            :: stsc_in_fn
+      real                            :: pat_balive_fn
+      real                            :: pat_bdead_fn
+      real                            :: pat_bstorage_fn
+      real                            :: pat_bseeds_fn
+      real                            :: pat_byield_fn
+      real                            :: pat_btotal_in
+      real                            :: pat_btotal_fn
+      real                            :: pat_biomass_in
+      real                            :: pat_biomass_fn
+      real                            :: soilc_in_in
+      real                            :: soilc_in_fn
+      real                            :: resid_pat_btotal
+      logical                         :: pat_btotal_violation
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=10), parameter :: fmti='(a,1x,i14)'
+      character(len=13), parameter :: fmtf='(a,1x,es14.7)'
+      character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Handy aliases. ---------------------------------------------------------------!
+      cpatch     => csite%patch  (ipa)
+      fgc_in_fn  =  csite%fgc_in (ipa)
+      fsc_in_fn  =  csite%fsc_in (ipa)
+      stgc_in_fn =  csite%stgc_in(ipa)
+      stsc_in_fn =  csite%stsc_in(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Count current stocks. --------------------------------------------------------!
+      pat_balive_fn   = 0.0
+      pat_bdead_fn    = 0.0
+      pat_bstorage_fn = 0.0
+      pat_bseeds_fn   = 0.0
+      pat_byield_fn   = 0.0
+      do ico=1,cpatch%ncohorts
+         ipft            = cpatch%pft(ico)
+         pat_balive_fn   = pat_balive_fn   + cpatch%nplant(ico) * cpatch%balive  (ico)
+         pat_bdead_fn    = pat_bdead_fn                                                    &
+                         + cpatch%nplant(ico) * ( cpatch%bdeada(ico) + cpatch%bdeadb(ico) )
+         pat_bstorage_fn = pat_bstorage_fn + cpatch%nplant(ico) * cpatch%bstorage(ico)
+         pat_bseeds_fn   = pat_bseeds_fn   + cpatch%nplant(ico) * cpatch%bseeds(ico)       &
+                         * (1.0-seedling_mortality(ipft))
+         pat_byield_fn   = pat_byield_fn   + cpatch%nplant(ico) * cpatch%byield(ico)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Summary of the carbon stocks. -----------------------------------------------!
+      pat_biomass_in = pat_balive_in + pat_bdead_in + pat_bstorage_in
+      pat_biomass_fn = pat_balive_fn + pat_bdead_fn + pat_bstorage_fn
+      soilc_in_in    = fgc_in_in + fsc_in_in + stgc_in_in + stsc_in_in
+      soilc_in_fn    = fgc_in_fn + fsc_in_fn + stgc_in_fn + stsc_in_fn
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check carbon stocks before and after active tissue growth.  Yield is positive  !
+      ! in the residual calculation because it is a committed permanent loss of carbon     !
+      ! (shipped off-site).                                                                !
+      !------------------------------------------------------------------------------------!
+      pat_btotal_in        = pat_biomass_in + soilc_in_in
+      pat_btotal_fn        = pat_biomass_fn + soilc_in_fn
+      resid_pat_btotal     = pat_btotal_fn + pat_bseeds_fn + pat_byield_fn - pat_btotal_in &
+                           - pat_carbon_miss
+      pat_btotal_violation = abs(resid_pat_btotal) > (r_tol_trunc * pat_btotal_in)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case we identify carbon conservation issues, print information on screen    !
+      ! and stop the model.                                                                !
+      !------------------------------------------------------------------------------------!
+      if ( pat_btotal_violation ) then
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|       !!!   Patch Bstruct budget failed   !!!      |'
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
+                                                           ,current_time%month             &
+                                                           ,current_time%date              &
+                                                           ,current_time%time
+         write(unit=*,fmt=fmti )  ' PATCH               : ',ipa
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BALIVE_IN           : ',pat_balive_in
+         write(unit=*,fmt=fmtf )  ' BDEAD_IN            : ',pat_bdead_in
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_IN         : ',pat_bstorage_in
+         write(unit=*,fmt=fmtf )  ' FGC_IN_IN           : ',fgc_in_in
+         write(unit=*,fmt=fmtf )  ' FSC_IN_IN           : ',fsc_in_in
+         write(unit=*,fmt=fmtf )  ' STGC_IN_IN          : ',stgc_in_in
+         write(unit=*,fmt=fmtf )  ' STSC_IN_IN          : ',stsc_in_in
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BALIVE_FN           : ',pat_balive_fn
+         write(unit=*,fmt=fmtf )  ' BDEAD_FN            : ',pat_bdead_fn
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_FN         : ',pat_bstorage_fn
+         write(unit=*,fmt=fmtf )  ' BSEEDS_FN (alive)   : ',pat_bseeds_fn
+         write(unit=*,fmt=fmtf )  ' FGC_IN_FN           : ',fgc_in_fn
+         write(unit=*,fmt=fmtf )  ' FSC_IN_FN           : ',fsc_in_fn
+         write(unit=*,fmt=fmtf )  ' STGC_IN_FN          : ',stgc_in_fn
+         write(unit=*,fmt=fmtf )  ' STSC_IN_FN          : ',stsc_in_fn
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BIOMASS_IN          : ',pat_biomass_in
+         write(unit=*,fmt=fmtf )  ' SOILC_IN_IN         : ',soilc_in_in
+         write(unit=*,fmt=fmtf )  ' BIOMASS_FN          : ',pat_biomass_fn
+         write(unit=*,fmt=fmtf )  ' SOILC_IN_FN         : ',soilc_in_fn
+         write(unit=*,fmt=fmtf )  ' MORTALITY           : ',pat_mortality
+         write(unit=*,fmt=fmtf )  ' YIELD               : ',pat_byield_fn
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BTOTAL_IN           : ',pat_btotal_in
+         write(unit=*,fmt=fmtf )  ' BTOTAL_FN           : ',pat_btotal_fn
+         write(unit=*,fmt=fmtf )  ' CARBON_MISS         : ',pat_carbon_miss
+         write(unit=*,fmt=fmtf )  ' RESIDUAL_BTOTAL     : ',resid_pat_btotal
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  ' '
+
+
+         call fatal_error('Budget check has failed, see message above.'                    &
+                         ,'check_bstruct_patch','structural_growth.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine check_bstruct_patch
    !=======================================================================================!
    !=======================================================================================!
 end module structural_growth

@@ -899,8 +899,7 @@ module rk4_derivs
       real(kind=8)                 :: hflxwc_tot        ! Total wood -> CAS heat flux
       real(kind=8)                 :: transp_tot        ! Total transpiration (water)
       real(kind=8)                 :: qtransp_tot       ! Total transpiration (energy)
-      real(kind=8)                 :: cflxlc_tot        ! Total leaf -> CAS CO2 flux
-      real(kind=8)                 :: cflxwc_tot        ! Total wood -> CAS CO2 flux
+      real(kind=8)                 :: cflxvc_tot        ! Total AG veg -> CAS CO2 flux
       real(kind=8)                 :: cflxsc_tot        ! Total soil -> CAS CO2 flux
       real(kind=8)                 :: wflxlc_tot        ! Leaf -> CAS evaporation (water)
       real(kind=8)                 :: wflxwc_tot        ! Wood -> CAS evaporation (water)
@@ -1224,8 +1223,7 @@ module rk4_derivs
       ! the coarse woody debris, and remove that from the ground to canopy carbon flux to  !
       ! avoid double counting.                                                             !
       !------------------------------------------------------------------------------------!
-      cflxlc_tot = 0.d0
-      cflxwc_tot = 0.d0
+      cflxvc_tot = initp%commit_storage_resp + initp%commit_growth_resp
       cflxsc_tot = initp%fsc_rh + initp%stsc_rh + initp%msc_rh + initp%ssc_rh + initp%psc_rh
       cflxgc     = initp%fgc_rh + initp%stgc_rh
       !------------------------------------------------------------------------------------!
@@ -1233,29 +1231,16 @@ module rk4_derivs
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft = cpatch%pft(ico)
 
-         cflxsc_tot = cflxsc_tot + initp%root_resp         (ico)                           &
-                                 + initp%root_growth_resp  (ico)                           &
-                                 + initp%sapb_growth_resp  (ico)                           &
-                                 + initp%barkb_growth_resp (ico)                           &
-                                 + initp%root_storage_resp (ico)                           &
-                                 + initp%sapb_storage_resp (ico)                           &
-                                 + initp%barkb_storage_resp(ico)
+         cflxsc_tot = cflxsc_tot + initp%root_resp         (ico)
 
          !---------------------------------------------------------------------------------!
          !    Add the respiration terms according to their "source".                       !
-         ! Ground -> CAS : surface litter and woody debris.                                !
-         ! Soil   -> CAS : soil Carbon, fine root and coarse root respiration.             !
-         ! Wood   -> CAS : wood respiration (AG sapwood and bark).                         !
-         ! Leaf   -> CAS : Leaf respiration - GPP.                                         !
+         ! Ground        -> CAS : surface litter and woody debris.                         !
+         ! Soil          -> CAS : soil Carbon, fine root and coarse root respiration.      !
+         ! AG Vegetation -> CAS : wood respiration (AG sapwood and bark).                  !
          !---------------------------------------------------------------------------------!
-         cflxlc_tot = cflxlc_tot + initp%leaf_resp         (ico)                           &
-                                 + initp%leaf_growth_resp  (ico)                           &
-                                 + initp%leaf_storage_resp (ico)                           &
+         cflxvc_tot = cflxvc_tot + initp%leaf_resp         (ico)                           &
                                  - initp%gpp               (ico)
-         cflxwc_tot = cflxwc_tot + initp%sapa_growth_resp  (ico)                           &
-                                 + initp%barka_growth_resp (ico)                           &
-                                 + initp%sapa_storage_resp (ico)                           &
-                                 + initp%barka_storage_resp(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -1881,8 +1866,8 @@ module rk4_derivs
                             + wflxlc_tot  + wflxwc_tot  + transp_tot                       &
                             + wflxac                                  )                    &
                           * rk4aux(ibuff)%wcapcani
-      dinitp%can_co2      = ( cflxgc      + cflxlc_tot  + cflxwc_tot                       &
-                            + cflxsc_tot  + cflxac                    )                    &
+      dinitp%can_co2      = ( cflxgc      + cflxvc_tot  + cflxsc_tot                       &
+                            + cflxac                                  )                    &
                           * rk4aux(ibuff)%ccapcani
       !------------------------------------------------------------------------------------!
 
@@ -1890,7 +1875,7 @@ module rk4_derivs
       if (.false.) then
       !if (is_hybrid) then
 
-         a = ( cflxgc + cflxlc_tot + cflxwc_tot + cflxsc_tot                               &
+         a = ( cflxgc + cflxvc_tot + cflxsc_tot                                            &
              + initp%can_rhos*initp%ggbare*mmdryi8*rk4site%atm_co2)                        &
              * rk4aux(ibuff)%ccapcani
 
@@ -1906,7 +1891,7 @@ module rk4_derivs
                 * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +                      &
                    c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
 
-         dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxwc_tot + cflxsc_tot + cflxac)        &
+         dinitp%can_co2 = ( cflxgc + cflxvc_tot + cflxsc_tot + cflxac)                     &
                         * rk4aux(ibuff)%ccapcani
 
       end if
@@ -1931,9 +1916,8 @@ module rk4_derivs
 
 
          dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy
-         dinitp%avg_carbon_st    = cflxgc     + cflxwc_tot                                 &
-                                 + cflxlc_tot + cflxsc_tot                                 &
-                                 + cflxac                       ! Carbon storage flux
+         dinitp%avg_carbon_st    = cflxgc     + cflxvc_tot                                 &
+                                 + cflxsc_tot + cflxac          ! Carbon storage flux
          dinitp%avg_sensible_ac  = hflxac                       ! Sens. heat,  Atmo->Canopy
          dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
@@ -1964,7 +1948,7 @@ module rk4_derivs
          dinitp%ebudget_loss2atm   = - eflxac
          dinitp%wbudget_loss2atm   = - wflxac
          dinitp%co2budget_storage  = dinitp%co2budget_storage                              &
-                                   + cflxgc + cflxlc_tot + cflxwc_tot + cflxsc_tot + cflxac
+                                   + cflxgc + cflxvc_tot + cflxsc_tot + cflxac
          dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
          dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad      &
                                    + rk4site%qpcpg - dinitp%ebudget_loss2atm

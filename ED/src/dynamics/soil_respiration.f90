@@ -16,7 +16,8 @@ module soil_respiration
       use consts_coms  , only : wdns                     & ! intent(in)
                               , umols_2_kgCyr            ! ! intent(in)
       use therm_lib    , only : uextcm2tl                ! ! function
-      use ed_misc_coms , only : dtlsm_o_frqsum           ! ! intent(in)
+      use ed_misc_coms , only : dtlsm                    & ! intent(in)
+                              , dtlsm_o_frqsum           ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                , target     :: csite
@@ -77,7 +78,7 @@ module soil_respiration
 
          !----- Add this time step to the daily mean root respiration. --------------------!
          cpatch%today_root_resp(ico)  = cpatch%today_root_resp(ico)                        &
-                                      + cpatch%root_respiration(ico)
+                                      + cpatch%root_respiration(ico) * dtlsm
          !---------------------------------------------------------------------------------!
 
 
@@ -291,7 +292,8 @@ module soil_respiration
    subroutine resp_rh(csite,ipa,ntext)
 
       use ed_state_vars, only : sitetype        ! ! structure
-      use ed_misc_coms , only : current_time    ! ! intent(in)
+      use ed_misc_coms , only : dtlsm           & ! intent(in)
+                              , current_time    ! ! intent(in)
       use consts_coms  , only : kgCday_2_umols  & ! intent(in)
                               , umols_2_kgCyr   ! ! intent(in)
       use soil_coms    , only : soil            ! ! look-up table
@@ -449,20 +451,20 @@ module soil_respiration
       ! even when patch dynamics occurs (today_A_decomp and related variables may not      !
       ! conserve carbon in case fusion or fission occurs as they are relative rates).      !
       !------------------------------------------------------------------------------------!
-      csite%today_rh        (ipa) = csite%today_rh        (ipa) + csite%rh(ipa)
-      csite%today_fg_C_loss (ipa) = csite%today_fg_C_loss (ipa) + fg_C_loss
-      csite%today_fs_C_loss (ipa) = csite%today_fs_C_loss (ipa) + fs_C_loss
-      csite%today_fg_N_loss (ipa) = csite%today_fg_N_loss (ipa) + fg_N_loss
-      csite%today_fs_N_loss (ipa) = csite%today_fs_N_loss (ipa) + fs_N_loss
-      csite%today_stg_C_loss(ipa) = csite%today_stg_C_loss(ipa) + stg_C_loss
-      csite%today_sts_C_loss(ipa) = csite%today_sts_C_loss(ipa) + sts_C_loss
-      csite%today_stg_L_loss(ipa) = csite%today_stg_L_loss(ipa) + stg_L_loss
-      csite%today_sts_L_loss(ipa) = csite%today_sts_L_loss(ipa) + sts_L_loss
-      csite%today_stg_N_loss(ipa) = csite%today_stg_N_loss(ipa) + stg_N_loss
-      csite%today_sts_N_loss(ipa) = csite%today_sts_N_loss(ipa) + sts_N_loss
-      csite%today_ms_C_loss (ipa) = csite%today_ms_C_loss (ipa) + ms_C_loss
-      csite%today_ss_C_loss (ipa) = csite%today_ss_C_loss (ipa) + ss_C_loss
-      csite%today_ps_C_loss (ipa) = csite%today_ps_C_loss (ipa) + ps_C_loss
+      csite%today_rh        (ipa) = csite%today_rh        (ipa) + csite%rh(ipa) * dtlsm
+      csite%today_fg_C_loss (ipa) = csite%today_fg_C_loss (ipa) + fg_C_loss     * dtlsm
+      csite%today_fs_C_loss (ipa) = csite%today_fs_C_loss (ipa) + fs_C_loss     * dtlsm
+      csite%today_fg_N_loss (ipa) = csite%today_fg_N_loss (ipa) + fg_N_loss     * dtlsm
+      csite%today_fs_N_loss (ipa) = csite%today_fs_N_loss (ipa) + fs_N_loss     * dtlsm
+      csite%today_stg_C_loss(ipa) = csite%today_stg_C_loss(ipa) + stg_C_loss    * dtlsm
+      csite%today_sts_C_loss(ipa) = csite%today_sts_C_loss(ipa) + sts_C_loss    * dtlsm
+      csite%today_stg_L_loss(ipa) = csite%today_stg_L_loss(ipa) + stg_L_loss    * dtlsm
+      csite%today_sts_L_loss(ipa) = csite%today_sts_L_loss(ipa) + sts_L_loss    * dtlsm
+      csite%today_stg_N_loss(ipa) = csite%today_stg_N_loss(ipa) + stg_N_loss    * dtlsm
+      csite%today_sts_N_loss(ipa) = csite%today_sts_N_loss(ipa) + sts_N_loss    * dtlsm
+      csite%today_ms_C_loss (ipa) = csite%today_ms_C_loss (ipa) + ms_C_loss     * dtlsm
+      csite%today_ss_C_loss (ipa) = csite%today_ss_C_loss (ipa) + ss_C_loss     * dtlsm
+      csite%today_ps_C_loss (ipa) = csite%today_ps_C_loss (ipa) + ps_C_loss     * dtlsm
       !------------------------------------------------------------------------------------!
 
 
@@ -901,6 +903,26 @@ module soil_respiration
                                       ,ex_ssc_psc,ex_psc_msc,ex_psc_ssc,fg_C_loss          &
                                       ,fs_C_loss,stg_C_loss,sts_C_loss,ms_C_input          &
                                       ,ms_C_loss,ss_C_input,ss_C_loss,ps_C_input,ps_C_loss)
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     This used to be reset in phenology, however, patch and cohort fusion  !
+               ! and termination may occur in between the calls and carbon may go          !
+               ! unaccounted.  This is the safest place to reset, because the litter       !
+               ! inputs have just been sent to the litter pools.                           !
+               !---------------------------------------------------------------------------!
+               csite%fgc_in (ipa) = 0.0
+               csite%fsc_in (ipa) = 0.0
+               csite%fgn_in (ipa) = 0.0
+               csite%fsn_in (ipa) = 0.0
+               csite%stgc_in(ipa) = 0.0
+               csite%stsc_in(ipa) = 0.0
+               csite%stgl_in(ipa) = 0.0
+               csite%stsl_in(ipa) = 0.0
+               csite%stgn_in(ipa) = 0.0
+               csite%stsn_in(ipa) = 0.0
                !---------------------------------------------------------------------------!
 
             end do patchloop

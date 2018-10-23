@@ -3734,6 +3734,10 @@ module ed_init_history
                      ,'CBUDGET_COMMITTED           ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%cbudget_committed                                           &
                      ,'CBUDGET_RESIDUAL            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%commit_storage_resp                                         &
+                     ,'COMMIT_STORAGE_RESP         ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%commit_growth_resp                                          &
+                     ,'COMMIT_GROWTH_RESP          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%today_fg_C_loss                                             &
                      ,'TODAY_FG_C_LOSS             ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%today_fs_C_loss                                             &

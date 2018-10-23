@@ -36,7 +36,8 @@ module photosyn_driv
                                 , tiny_num                & ! intent(in)
                                 , umol_2_mol              & ! intent(in)
                                 , mmdry                   ! ! intent(in)
-      use ed_misc_coms   , only : dtlsm_o_frqsum          ! ! intent(in)
+      use ed_misc_coms   , only : dtlsm                   & ! intent(in)
+                                , dtlsm_o_frqsum          ! ! intent(in)
       use met_driver_coms, only : met_driv_state          ! ! structure
       use physiology_coms, only : print_photo_debug       & ! intent(in)
                                 , h2o_plant_lim           ! ! intent(in)
@@ -461,8 +462,14 @@ module photosyn_driv
 
             !----- Convert leaf respiration to [umol/m2ground/s] --------------------------!
             cpatch%leaf_respiration(ico) = leaf_resp * cpatch%lai (ico)
+            !------------------------------------------------------------------------------!
+
+            !------ Leaf respiration, summed over 1 day. [umol/m2ground] ------------------!
             cpatch%today_leaf_resp(ico)  = cpatch%today_leaf_resp (ico)                    &
-                                         + cpatch%leaf_respiration(ico)
+                                         + cpatch%leaf_respiration(ico) * dtlsm
+            !------------------------------------------------------------------------------!
+
+
             !----- The output variable must be in [kgC/plant/yr]. -------------------------!
             cpatch%fmean_leaf_resp(ico)  = cpatch%fmean_leaf_resp (ico)                    &
                                          + cpatch%leaf_respiration(ico)                    &
@@ -511,6 +518,8 @@ module photosyn_driv
             else
                cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
             end if
+            !------------------------------------------------------------------------------!
+
 
             !----- Net stomatal conductance. ----------------------------------------------!
             cpatch%leaf_gsw(ico) =        cpatch%fs_open(ico)  * cpatch%gsw_open(ico)      &
@@ -518,13 +527,16 @@ module photosyn_driv
             !------------------------------------------------------------------------------!
 
 
-            !----- GPP, averaged over frqstate. -------------------------------------------!
+            !----- GPP in umol/m2/s, averaged over dtlsm. ---------------------------------!
             cpatch%gpp(ico) = max(0., cpatch%lai(ico)                                      &
                                     * ( cpatch%fs_open(ico) * cpatch%A_open(ico)           &
                                       + (1. - cpatch%fs_open(ico))                         &
                                       * cpatch%A_closed(ico))                              &
                                     + cpatch%leaf_respiration(ico) )
-            !----- The average must be in [kgC/plant/yr]. ---------------------------------!
+            !------------------------------------------------------------------------------!
+
+
+            !----- The average must be in [kgC/plant/yr]. Average over frqsum. ------------!
             cpatch%fmean_gpp(ico) = cpatch%fmean_gpp(ico)                                  &
                                   + cpatch%gpp      (ico) * umols_2_kgCyr                  &
                                   * dtlsm_o_frqsum                                         &
@@ -533,17 +545,17 @@ module photosyn_driv
 
 
             !----- GPP, summed over 1 day. [umol/m2ground] --------------------------------!
-            cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico)
+            cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico) * dtlsm
             !------------------------------------------------------------------------------!
 
 
             !----- Potential GPP if no N limitation. [umol/m2ground] ----------------------!
             cpatch%today_gpp_pot(ico) = cpatch%today_gpp_pot(ico)                          &
-                                      + cpatch%lai(ico)                                    &
-                                      * ( cpatch%fsw(ico) * cpatch%A_open(ico)             &
-                                        + (1.0 - cpatch%fsw(ico))                          &
-                                        * cpatch%A_closed(ico))                            &
-                                      + cpatch%leaf_respiration(ico)
+                                      + ( cpatch%lai(ico)                                  &
+                                        * ( cpatch%fsw(ico) * cpatch%A_open(ico)           &
+                                          + (1.0 - cpatch%fsw(ico))                        &
+                                          * cpatch%A_closed(ico))                          &
+                                        + cpatch%leaf_respiration(ico) ) * dtlsm
             !------------------------------------------------------------------------------!
 
 
@@ -564,18 +576,19 @@ module photosyn_driv
             ! which controls density-dependent mortality.                                  !
             !------------------------------------------------------------------------------!
             cpatch%today_gpp_lightmax(ico) = cpatch%today_gpp_lightmax(ico)                &
-                                           + cpatch%lai(ico)                               &
-                                           * ( cpatch%fs_open(ico)                         &
-                                             * csite%A_o_max(ipft,ipa)                     &
-                                             + (1.0 - cpatch%fs_open(ico))                 &
-                                             * csite%A_c_max(ipft,ipa) )                   &
-                                           + cpatch%leaf_respiration(ico)
+                                           + ( cpatch%lai(ico)                             &
+                                             * ( cpatch%fs_open(ico)                       &
+                                               * csite%A_o_max(ipft,ipa)                   &
+                                               + (1.0 - cpatch%fs_open(ico))               &
+                                               * csite%A_c_max(ipft,ipa) )                 &
+                                             + cpatch%leaf_respiration(ico) ) * dtlsm
+                                             
             cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
-                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
-                                           + cpatch%leaf_respiration(ico)
+                                           + ( cpatch%lai(ico) * cpatch%A_open(ico)        &
+                                             + cpatch%leaf_respiration(ico) ) * dtlsm
             cpatch%today_gpp_mlmax(ico)    = cpatch%today_gpp_mlmax(ico)                   &
-                                           + cpatch%lai(ico) * csite%A_o_max(ipft,ipa)     &
-                                           + cpatch%leaf_respiration(ico)
+                                           + ( cpatch%lai(ico) * csite%A_o_max(ipft,ipa)   &
+                                             + cpatch%leaf_respiration(ico) ) * dtlsm
             !------------------------------------------------------------------------------!
 
          else

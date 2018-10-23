@@ -164,6 +164,13 @@ module rk4_coms
 
 
 
+      !----- Committed respiration.[umol/m2/s] --------------------------------------------!
+      real(kind=8)                        :: commit_storage_resp
+      real(kind=8)                        :: commit_growth_resp
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Leaf (cohort-level) variables. -----------------------------------------------!
       real(kind=8), pointer, dimension(:) :: leaf_energy     ! Internal energy  [     J/m2]
       real(kind=8), pointer, dimension(:) :: leaf_water      ! Sfc. water mass  [    kg/m2]
@@ -227,18 +234,6 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [umol/m2/s]
       real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [umol/m2/s]
       real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: leaf_storage_resp  ! Storage resp  [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: root_storage_resp  ! Storage resp  [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapa_storage_resp  ! Storage resp  [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapb_storage_resp  ! Storage resp  [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: barka_storage_resp ! Storage resp  [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: barkb_storage_resp ! Storage resp  [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: leaf_growth_resp   !               [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: root_growth_resp   !               [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapa_growth_resp   !               [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: sapb_growth_resp   !               [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: barka_growth_resp  !               [umol/m2/s]
-      real(kind=8), pointer, dimension(:) :: barkb_growth_resp  !               [umol/m2/s]
 
 
       !------ Variables used for hybrid stepping -----------------------------------------!
@@ -1060,6 +1055,9 @@ module rk4_coms
       y%ssc_rh                         = 0.d0
       y%psc_rh                         = 0.d0
 
+      y%commit_storage_resp            = 0.d0
+      y%commit_growth_resp             = 0.d0
+
       y%upwp                           = 0.d0
       y%wpwp                           = 0.d0
       y%tpwp                           = 0.d0
@@ -1216,18 +1214,6 @@ module rk4_coms
       allocate(y%gpp               (maxcohort))
       allocate(y%leaf_resp         (maxcohort))
       allocate(y%root_resp         (maxcohort))
-      allocate(y%leaf_growth_resp  (maxcohort))
-      allocate(y%root_growth_resp  (maxcohort))
-      allocate(y%sapa_growth_resp  (maxcohort))
-      allocate(y%sapb_growth_resp  (maxcohort))
-      allocate(y%barka_growth_resp (maxcohort))
-      allocate(y%barkb_growth_resp (maxcohort))
-      allocate(y%leaf_storage_resp (maxcohort))
-      allocate(y%root_storage_resp (maxcohort))
-      allocate(y%sapa_storage_resp (maxcohort))
-      allocate(y%sapb_storage_resp (maxcohort))
-      allocate(y%barka_storage_resp(maxcohort))
-      allocate(y%barkb_storage_resp(maxcohort))
 
       allocate(y%wflxlc            (maxcohort))
       allocate(y%wflxwc            (maxcohort))
@@ -1324,18 +1310,6 @@ module rk4_coms
       nullify(y%gpp               )
       nullify(y%leaf_resp         )
       nullify(y%root_resp         )
-      nullify(y%leaf_growth_resp  )
-      nullify(y%root_growth_resp  )
-      nullify(y%sapa_growth_resp  )
-      nullify(y%sapb_growth_resp  )
-      nullify(y%barka_growth_resp )
-      nullify(y%barkb_growth_resp )
-      nullify(y%leaf_storage_resp )
-      nullify(y%root_storage_resp )
-      nullify(y%sapa_storage_resp )
-      nullify(y%sapb_storage_resp )
-      nullify(y%barka_storage_resp)
-      nullify(y%barkb_storage_resp)
 
       nullify(y%wflxlc            )
       nullify(y%wflxwc            )
@@ -1431,18 +1405,6 @@ module rk4_coms
       if (associated(y%gpp               )) y%gpp                = 0.d0
       if (associated(y%leaf_resp         )) y%leaf_resp          = 0.d0
       if (associated(y%root_resp         )) y%root_resp          = 0.d0
-      if (associated(y%leaf_growth_resp  )) y%leaf_growth_resp   = 0.d0
-      if (associated(y%root_growth_resp  )) y%root_growth_resp   = 0.d0
-      if (associated(y%sapa_growth_resp  )) y%sapa_growth_resp   = 0.d0
-      if (associated(y%sapb_growth_resp  )) y%sapb_growth_resp   = 0.d0
-      if (associated(y%barka_growth_resp )) y%barka_growth_resp  = 0.d0
-      if (associated(y%barkb_growth_resp )) y%barkb_growth_resp  = 0.d0
-      if (associated(y%leaf_storage_resp )) y%leaf_storage_resp  = 0.d0
-      if (associated(y%root_storage_resp )) y%root_storage_resp  = 0.d0
-      if (associated(y%sapa_storage_resp )) y%sapa_storage_resp  = 0.d0
-      if (associated(y%sapb_storage_resp )) y%sapb_storage_resp  = 0.d0
-      if (associated(y%barka_storage_resp)) y%barka_storage_resp = 0.d0
-      if (associated(y%barkb_storage_resp)) y%barkb_storage_resp = 0.d0
 
       if (associated(y%wflxlc            )) y%wflxlc             = 0.d0
       if (associated(y%wflxwc            )) y%wflxwc             = 0.d0
@@ -1537,18 +1499,6 @@ module rk4_coms
       if (associated(y%gpp               )) deallocate(y%gpp               )
       if (associated(y%leaf_resp         )) deallocate(y%leaf_resp         )
       if (associated(y%root_resp         )) deallocate(y%root_resp         )
-      if (associated(y%leaf_growth_resp  )) deallocate(y%leaf_growth_resp  )
-      if (associated(y%root_growth_resp  )) deallocate(y%root_growth_resp  )
-      if (associated(y%sapa_growth_resp  )) deallocate(y%sapa_growth_resp  )
-      if (associated(y%sapb_growth_resp  )) deallocate(y%sapb_growth_resp  )
-      if (associated(y%barka_growth_resp )) deallocate(y%barka_growth_resp )
-      if (associated(y%barkb_growth_resp )) deallocate(y%barkb_growth_resp )
-      if (associated(y%leaf_storage_resp )) deallocate(y%leaf_storage_resp )
-      if (associated(y%root_storage_resp )) deallocate(y%root_storage_resp )
-      if (associated(y%sapa_storage_resp )) deallocate(y%sapa_storage_resp )
-      if (associated(y%sapb_storage_resp )) deallocate(y%sapb_storage_resp )
-      if (associated(y%barka_storage_resp)) deallocate(y%barka_storage_resp)
-      if (associated(y%barkb_storage_resp)) deallocate(y%barkb_storage_resp)
 
       if (associated(y%wflxlc            )) deallocate(y%wflxlc            )
       if (associated(y%wflxwc            )) deallocate(y%wflxwc            )

@@ -180,26 +180,105 @@ module budget_utils
    !=======================================================================================!
    !=======================================================================================!
    !    This subroutine resets the committed changes in carbon stocks (biomass and         !
-   ! necromass).                                                                           !
+   ! necromass).  This pool must be zero at the end of the day when vegetation dynamics is !
+   ! on and after the metabolic NPP and heterotrophic respiration are accounted.  In case  !
+   ! it is not zero, then stop the run, because carbon is not being conserved.             !
    !---------------------------------------------------------------------------------------!
-   subroutine reset_cbudget_committed(csite,ipa,reset)
-      use ed_state_vars, only : sitetype     & ! structure
-                              , patchtype    ! ! structured
+   subroutine reset_cbudget_committed(csite,ipa,flush_to_zero)
+      use ed_state_vars, only : sitetype       & ! structure
+                              , patchtype      ! ! structured
+      use consts_coms  , only : kgCday_2_umols & ! intent(in)
+                              , r_tol_trunc    ! ! intent(in)
+      use ed_misc_coms , only : current_time ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)   , target     :: csite
       integer          , intent(in) :: ipa
-      logical          , intent(in) :: reset
+      logical          , intent(in) :: flush_to_zero
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)  , pointer    :: cpatch
       integer                       :: ico
+      real                          :: today_gpp
+      real                          :: today_leaf_resp
+      real                          :: today_root_resp
+      real                          :: today_het_resp
+      real                          :: toler_committed
+      real                          :: resid_committed
+      logical                       :: committed_violation
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=10), parameter :: fmti='(a,1x,i14)'
+      character(len=13), parameter :: fmtf='(a,1x,es14.7)'
+      character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
       !------------------------------------------------------------------------------------!
 
 
       !----- Alias for current patch. -----------------------------------------------------!
       cpatch => csite%patch(ipa)
       !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Before we flush the committed carbon to zero, we check that we are not         !
+      ! violating carbon conservation.                                                     !
+      !------------------------------------------------------------------------------------!
+      if (flush_to_zero) then
+         !----- Make sure we are conserving carbon. ---------------------------------------!
+         today_gpp          = 0.
+         today_leaf_resp    = 0.
+         today_root_resp    = 0.
+         do ico=1,cpatch%ncohorts
+            today_gpp       = today_gpp       + cpatch%today_gpp      (ico)
+            today_leaf_resp = today_leaf_resp + cpatch%today_leaf_resp(ico)
+            today_root_resp = today_root_resp + cpatch%today_root_resp(ico)
+         end do
+         today_gpp           = today_gpp           / kgCday_2_umols
+         today_leaf_resp     = today_leaf_resp     / kgCday_2_umols
+         today_root_resp     = today_root_resp     / kgCday_2_umols
+         today_het_resp      = csite%today_rh(ipa) / kgCday_2_umols
+         toler_committed     = r_tol_trunc                                                 &
+                             * max(today_gpp,today_leaf_resp,today_root_resp,today_het_resp)
+         resid_committed     = csite%cbudget_committed(ipa) - today_gpp                    &
+                             + today_leaf_resp + today_root_resp + today_het_resp
+         committed_violation = abs(resid_committed) > toler_committed
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Stop in case the committed pool is not flushed. ---------------------------!
+         if (committed_violation) then
+            write(unit=*,fmt='(a)')  '|==================================================|'
+            write(unit=*,fmt='(a)')  '|==================================================|'
+            write(unit=*,fmt='(a)')  '|    !!!   Committed carbon budget failed   !!!    |'
+            write(unit=*,fmt='(a)')  '|--------------------------------------------------|'
+            write(unit=*,fmt=fmtt )  ' TIME               : ',current_time%year            &
+                                                             ,current_time%month           &
+                                                             ,current_time%date            &
+                                                             ,current_time%time
+            write(unit=*,fmt=fmti )  ' PATCH              : ',ipa
+            write(unit=*,fmt='(a)')  ' -------------------------------------------------- '
+            write(unit=*,fmt=fmtf )  ' COMMITTED_CARBON   : ',csite%cbudget_committed(ipa)
+            write(unit=*,fmt=fmtf )  ' GPP                : ',today_gpp
+            write(unit=*,fmt=fmtf )  ' LEAF RESPIRATION   : ',today_leaf_resp
+            write(unit=*,fmt=fmtf )  ' ROOT RESPIRATION   : ',today_root_resp
+            write(unit=*,fmt=fmtf )  ' HETEROTROPHIC RESP : ',today_het_resp
+            write(unit=*,fmt=fmtf )  ' RESIDUAL           : ',resid_committed
+            write(unit=*,fmt=fmtf )  ' TOLERANCE          : ',toler_committed
+            write(unit=*,fmt='(a)')  '|==================================================|'
+            write(unit=*,fmt='(a)')  '|==================================================|'
+            write(unit=*,fmt='(a)')  ' '
+
+
+            call fatal_error('Budget check has failed, see message above.'                 &
+                            ,'reset_cbudget_committed','budget_utils.f90')
+         else
+            !----- No carbon leak, reset the committed pool. ------------------------------!
+            csite%cbudget_committed(ipa) = 0.0
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -221,23 +300,9 @@ module budget_utils
       ! for the fact that carbon storage does not change in spite of the NEP not being     !
       ! zero.                                                                              !
       !------------------------------------------------------------------------------------!
-      if (reset) csite%cbudget_committed(ipa) = 0.0
-      do ico=1,cpatch%ncohorts
-         csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)                       &
-                                      + cpatch%nplant(ico)                                 &
-                                      * ( cpatch%leaf_storage_resp (ico)                   &
-                                        + cpatch%root_storage_resp (ico)                   &
-                                        + cpatch%sapa_storage_resp (ico)                   &
-                                        + cpatch%sapb_storage_resp (ico)                   &
-                                        + cpatch%barka_storage_resp(ico)                   &
-                                        + cpatch%barkb_storage_resp(ico)                   &
-                                        + cpatch%leaf_growth_resp  (ico)                   &
-                                        + cpatch%root_growth_resp  (ico)                   &
-                                        + cpatch%sapa_growth_resp  (ico)                   &
-                                        + cpatch%sapb_growth_resp  (ico)                   &
-                                        + cpatch%barka_growth_resp (ico)                   &
-                                        + cpatch%barkb_growth_resp (ico) )
-      end do
+      csite%cbudget_committed(ipa) = csite%cbudget_committed  (ipa)                        &
+                                   + csite%commit_storage_resp(ipa)                        &
+                                   + csite%commit_growth_resp (ipa)
       !------------------------------------------------------------------------------------!
 
       return
@@ -259,7 +324,8 @@ module budget_utils
      
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
-      use ed_misc_coms , only : dtlsm        ! ! intent(in)
+      use ed_misc_coms , only : dtlsm        & ! intent(in)
+                              , current_time ! ! intent(in)
       use consts_coms  , only : umol_2_kgC   & ! intent(in)
                               , day_sec      ! ! intent(in)
       implicit none
@@ -269,9 +335,22 @@ module budget_utils
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)  , pointer   :: cpatch
       integer                      :: ipa
+      integer                      :: jpa
       integer                      :: ico
       real                         :: dtlsm_o_daysec
       real                         :: umol_o_sec_2_kgC
+      real                         :: bef_committed
+      real                         :: step_delta
+      real                         :: step_gpp
+      real                         :: step_leaf_resp
+      real                         :: step_root_resp
+      real                         :: step_growth_resp
+      real                         :: step_storage_resp
+      real                         :: step_het_resp
+      character(len=27)            :: committed_file
+      !----- Local parameters, for debugging. ---------------------------------------------!
+      logical          , save      :: first_time = .true.
+      logical          , parameter :: print_step = .false.
       !------------------------------------------------------------------------------------!
 
 
@@ -286,42 +365,48 @@ module budget_utils
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !     Print header with time and variables.                                          !
+      !------------------------------------------------------------------------------------!
+      if (first_time) then
+         first_time = .false.
+         if (print_step) then
+            do jpa=1,csite%npatches
+               write(committed_file,fmt='(a,i4.4,a)') 'check_committed_ipa',jpa,'.txt'
+               open(unit=59,file=committed_file,status='replace',action='write')
+               write(unit=59,fmt='(13(a,1x))')                                             &
+                     '  YEAR',' MONTH','   DAY','        TIME','  BEF_COMMIT'              &
+                                ,'  NOW_COMMIT','       DELTA','         GPP'              &
+                                ,'   LEAF_RESP','   ROOT_RESP','  STORE_RESP'              &
+                                ,'   GROW_RESP','    HET_RESP'
+               close(unit=59,status='keep')
+            end do
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
       !------------------------------------------------------------------------------------!
       !     Loop through all cohorts, and update the virtual pool based on each cohort's   !
       ! NPP.                                                                               !
       !------------------------------------------------------------------------------------!
+      bef_committed     = csite%cbudget_committed(ipa)
+      step_gpp          = 0.
+      step_leaf_resp    = 0.
+      step_root_resp    = 0.
+      step_growth_resp  = 0.
+      step_storage_resp = 0.
       cohloop: do ico=1,cpatch%ncohorts
          !---------------------------------------------------------------------------------!
-         !     Update committed pools based on metabolic NPP.  These variables are in      !
-         ! umol/m2/s, so apply the appropriate unit conversion.                            !
+         !     Update committed pools based on metabolic NPP.  These variables are scaled  !
+         ! by LAI and thus are extensive, no need to multiply by number density.           !
          !---------------------------------------------------------------------------------!
-         csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)                       &
-                                      + umol_o_sec_2_kgC                                   &
-                                      * ( cpatch%gpp(ico)                                  &
-                                        - cpatch%leaf_respiration(ico)                     &
-                                        - cpatch%root_respiration(ico) )
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Update committed pools based on growth and storage respiration.  These      !
-         ! variables are in kgC/plant/day, so apply the appropriate unit conversion.       !
-         !---------------------------------------------------------------------------------!
-         csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)                       &
-                                      - cpatch%nplant(ico) * dtlsm_o_daysec                &
-                                      * ( cpatch%leaf_storage_resp (ico)                   &
-                                        + cpatch%root_storage_resp (ico)                   &
-                                        + cpatch%sapa_storage_resp (ico)                   &
-                                        + cpatch%sapb_storage_resp (ico)                   &
-                                        + cpatch%barka_storage_resp(ico)                   &
-                                        + cpatch%barkb_storage_resp(ico)                   &
-                                        + cpatch%leaf_growth_resp  (ico)                   &
-                                        + cpatch%root_growth_resp  (ico)                   &
-                                        + cpatch%sapa_growth_resp  (ico)                   &
-                                        + cpatch%sapb_growth_resp  (ico)                   &
-                                        + cpatch%barka_growth_resp (ico)                   &
-                                        + cpatch%barkb_growth_resp (ico) )
+         step_gpp       = step_gpp       + cpatch%gpp(ico)
+         step_leaf_resp = step_leaf_resp + cpatch%leaf_respiration(ico)
+         step_root_resp = step_root_resp + cpatch%root_respiration(ico)
          !---------------------------------------------------------------------------------!
       end do cohloop
       !------------------------------------------------------------------------------------!
@@ -329,10 +414,50 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
+      !     Integrate the step.  Notice that metabolic terms are in umol/m2/s and storage  !
+      ! and growth respiration are in kgC/m2/day.  We want everything to be in kgC/m2      !
+      ! (integrated over dtlsm).                                                           !
+      !------------------------------------------------------------------------------------!
+      step_gpp          = step_gpp                       * umol_o_sec_2_kgC
+      step_leaf_resp    = step_leaf_resp                 * umol_o_sec_2_kgC
+      step_root_resp    = step_root_resp                 * umol_o_sec_2_kgC
+      step_storage_resp = csite%commit_storage_resp(ipa) * dtlsm_o_daysec
+      step_growth_resp  = csite%commit_growth_resp (ipa) * dtlsm_o_daysec
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
       !     Integrate committed change in carbon stocks due to heterotrophic respiration.  !
       !------------------------------------------------------------------------------------!
-      csite%cbudget_committed(ipa) = csite%cbudget_committed(ipa)                          &
-                                   - csite%rh(ipa) * umol_o_sec_2_kgC
+      step_het_resp = csite%rh(ipa) * umol_o_sec_2_kgC
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Update the committed carbon pool.  Add assimilation and subtract respiration.  !
+      !------------------------------------------------------------------------------------!
+      step_delta                   = step_gpp          - step_leaf_resp   - step_root_resp &
+                                   - step_storage_resp - step_growth_resp - step_het_resp 
+      csite%cbudget_committed(ipa) = bef_committed     + step_delta
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print step in case it's needed.                                                !
+      !------------------------------------------------------------------------------------!
+      if (print_step) then
+         write(committed_file,fmt='(a,i4.4,a)') 'check_committed_ipa',ipa,'.txt'
+         open(unit=59,file=committed_file,status='old',position='append',action='write')
+         write(unit=59,fmt='(3(i6,1x),f12.1,9(1x,es12.5))')                                &
+                 current_time%year,current_time%month,current_time%date,current_time%time  &
+                ,bef_committed,csite%cbudget_committed(ipa),step_delta,step_gpp            &
+                ,step_leaf_resp,step_root_resp,step_storage_resp,step_growth_resp          &
+                ,step_het_resp
+         close(unit=59,status='keep')
+      end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -416,24 +541,15 @@ module budget_utils
       real                                                    :: co2curr_gpp
       real                                                    :: co2curr_leafresp
       real                                                    :: co2curr_rootresp
-      real                                                    :: co2curr_leafgrowthresp
-      real                                                    :: co2curr_rootgrowthresp
-      real                                                    :: co2curr_sapagrowthresp
-      real                                                    :: co2curr_sapbgrowthresp
-      real                                                    :: co2curr_barkagrowthresp
-      real                                                    :: co2curr_barkbgrowthresp
-      real                                                    :: co2curr_leafstorageresp
-      real                                                    :: co2curr_rootstorageresp
-      real                                                    :: co2curr_sapastorageresp
-      real                                                    :: co2curr_sapbstorageresp
-      real                                                    :: co2curr_barkastorageresp
-      real                                                    :: co2curr_barkbstorageresp
+      real                                                    :: co2curr_storageresp
+      real                                                    :: co2curr_growthresp
       real                                                    :: co2curr_hetresp
       real                                                    :: co2curr_nep
       real                                                    :: co2curr_denseffect
       real                                                    :: co2curr_zcaneffect
       real                                                    :: co2curr_residual
       real                                                    :: cbudget_initialstorage
+      real                                                    :: cbudget_committed
       real                                                    :: cbudget_finalstorage
       real                                                    :: cbudget_deltastorage
       real                                                    :: cbudget_tolerance
@@ -465,18 +581,8 @@ module budget_utils
       real                                                    :: gpp
       real                                                    :: leaf_resp
       real                                                    :: root_resp
-      real                                                    :: leaf_growth_resp
-      real                                                    :: root_growth_resp
-      real                                                    :: sapa_growth_resp
-      real                                                    :: sapb_growth_resp
-      real                                                    :: barka_growth_resp
-      real                                                    :: barkb_growth_resp
-      real                                                    :: leaf_storage_resp
-      real                                                    :: root_storage_resp
-      real                                                    :: sapa_storage_resp
-      real                                                    :: sapb_storage_resp
-      real                                                    :: barka_storage_resp
-      real                                                    :: barkb_storage_resp
+      real                                                    :: storage_resp
+      real                                                    :: growth_resp
       real                                                    :: co2_factor
       real                                                    :: crb_factor
       real                                                    :: ent_factor
@@ -495,8 +601,8 @@ module budget_utils
       character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
       character(len= 9)     , parameter     :: fmti='(a,1x,i7)'
       character(len= 9)     , parameter     :: fmtl='(a,1x,l1)'
-      character(len=10)     , parameter     :: bhfmt='(43(a,1x))'
-      character(len=48)     , parameter     :: bbfmt='(3(i14,1x),40(es14.7,1x))'
+      character(len=10)     , parameter     :: bhfmt='(44(a,1x))'
+      character(len=48)     , parameter     :: bbfmt='(3(i14,1x),41(es14.7,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical               , save          :: first_time = .true.
       !------------------------------------------------------------------------------------!
@@ -527,21 +633,22 @@ module budget_utils
                                         , '  CO2.RESIDUAL' , '  CO2.DSTORAGE'              &
                                         , '       CO2.NEP' , '  CO2.DENS.EFF'              &
                                         , '  CO2.ZCAN.EFF' , '  CO2.LOSS2ATM'              &
-                                        , '   CRB.STORAGE' , '  CRB.RESIDUAL'              &
-                                        , '  CRB.DSTORAGE' , '  CRB.DENS.EFF'              &
-                                        , '  CRB.ZCAN.EFF' , '  CRB.SEEDRAIN'              &
-                                        , 'CRB.LOSS2YIELD' , '  CRB.LOSS2ATM'              &
-                                        , '   ENT.STORAGE' , '  ENT.RESIDUAL'              &
-                                        , '  ENT.DSTORAGE' , '    ENT.PRECIP'              &
-                                        , '    ENT.NETRAD' , '  ENT.DENS.EFF'              &
-                                        , '  ENT.PRSS.EFF' , '  ENT.HCAP.EFF'              &
-                                        , '  ENT.ZCAN.EFF' , '  ENT.LOSS2ATM'              &
-                                        , '  ENT.DRAINAGE' , '    ENT.RUNOFF'              &
-                                        , '   H2O.STORAGE' , '  H2O.RESIDUAL'              &
-                                        , '  H2O.DSTORAGE' , '    H2O.PRECIP'              &
-                                        , '  H2O.DENS.EFF' , '  H2O.ZCAN.EFF'              &
-                                        , '  H2O.LOSS2ATM' , '  H2O.DRAINAGE'              &
-                                        , '    H2O.RUNOFF'
+                                        , '   CRB.STORAGE' , ' CRB.COMMITTED'              &
+                                        , '  CRB.RESIDUAL' , '  CRB.DSTORAGE'              &
+                                        , '  CRB.DENS.EFF' , '  CRB.ZCAN.EFF'              &
+                                        , '  CRB.SEEDRAIN' , 'CRB.LOSS2YIELD'              &
+                                        , '  CRB.LOSS2ATM' , '   ENT.STORAGE'              &
+                                        , '  ENT.RESIDUAL' , '  ENT.DSTORAGE'              &
+                                        , '    ENT.PRECIP' , '    ENT.NETRAD'              &
+                                        , '  ENT.DENS.EFF' , '  ENT.PRSS.EFF'              &
+                                        , '  ENT.HCAP.EFF' , '  ENT.ZCAN.EFF'              &
+                                        , '  ENT.LOSS2ATM' , '  ENT.DRAINAGE'              &
+                                        , '    ENT.RUNOFF' , '   H2O.STORAGE'              &
+                                        , '  H2O.RESIDUAL' , '  H2O.DSTORAGE'              &
+                                        , '    H2O.PRECIP' , '  H2O.DENS.EFF'              &
+                                        , '  H2O.ZCAN.EFF' , '  H2O.LOSS2ATM'              &
+                                        , '  H2O.DRAINAGE' , '    H2O.RUNOFF'
+                                        
                close(unit=86,status='keep')
             end if
          end do
@@ -629,27 +736,13 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !     Compute the carbon dioxide flux components.                                    !
       !------------------------------------------------------------------------------------!
-      call sum_plant_cfluxes(csite,ipa,gpp,leaf_resp,root_resp,leaf_growth_resp            &
-                            ,root_growth_resp,sapa_growth_resp,sapb_growth_resp            &
-                            ,barka_growth_resp,barkb_growth_resp,leaf_storage_resp         &
-                            ,root_storage_resp,sapa_storage_resp,sapb_storage_resp         &
-                            ,barka_storage_resp,barkb_storage_resp)
-      co2curr_gpp              = gpp                * dtlsm
-      co2curr_leafresp         = leaf_resp          * dtlsm
-      co2curr_rootresp         = root_resp          * dtlsm
-      co2curr_leafstorageresp  = leaf_storage_resp  * dtlsm
-      co2curr_rootstorageresp  = root_storage_resp  * dtlsm
-      co2curr_sapastorageresp  = sapa_storage_resp  * dtlsm
-      co2curr_sapbstorageresp  = sapb_storage_resp  * dtlsm
-      co2curr_barkastorageresp = barka_storage_resp * dtlsm
-      co2curr_barkbstorageresp = barkb_storage_resp * dtlsm
-      co2curr_leafgrowthresp   = leaf_growth_resp   * dtlsm
-      co2curr_rootgrowthresp   = root_growth_resp   * dtlsm
-      co2curr_sapagrowthresp   = sapa_growth_resp   * dtlsm
-      co2curr_sapbgrowthresp   = sapb_growth_resp   * dtlsm
-      co2curr_barkagrowthresp  = barka_growth_resp  * dtlsm
-      co2curr_barkbgrowthresp  = barkb_growth_resp  * dtlsm
-      co2curr_hetresp          = csite%rh(ipa)      * dtlsm
+      call sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,storage_resp,growth_resp)
+      co2curr_gpp         = gpp           * dtlsm
+      co2curr_leafresp    = leaf_resp     * dtlsm
+      co2curr_rootresp    = root_resp     * dtlsm
+      co2curr_storageresp = storage_resp  * dtlsm
+      co2curr_growthresp  = growth_resp   * dtlsm
+      co2curr_hetresp     = csite%rh(ipa) * dtlsm
       !------------------------------------------------------------------------------------!
 
 
@@ -661,13 +754,7 @@ module budget_utils
       ! in the canopy air space.                                                           !
       !------------------------------------------------------------------------------------!
       co2curr_nep         = co2curr_gpp - co2curr_leafresp - co2curr_rootresp              &
-                          - co2curr_leafgrowthresp   - co2curr_rootgrowthresp              &
-                          - co2curr_sapagrowthresp   - co2curr_sapbgrowthresp              &
-                          - co2curr_barkagrowthresp  - co2curr_barkbgrowthresp             &
-                          - co2curr_leafstorageresp  - co2curr_rootstorageresp             &
-                          - co2curr_sapastorageresp  - co2curr_sapbstorageresp             &
-                          - co2curr_barkastorageresp - co2curr_barkbstorageresp            &
-                          - co2curr_hetresp
+                          - co2curr_storageresp - co2curr_growthresp - co2curr_hetresp
       cbudget_nep         = cbudget_nep + site_area * csite%area(ipa) * co2curr_nep        &
                                         * umol_2_kgC
       !----- Leverage the CO2 budget loss term to find the carbon equivalent. -------------!
@@ -686,6 +773,7 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       co2budget_initialstorage = csite%co2budget_initialstorage(ipa)
       cbudget_initialstorage   = csite%cbudget_initialstorage  (ipa)
+      cbudget_committed        = csite%cbudget_committed       (ipa)
       wbudget_initialstorage   = csite%wbudget_initialstorage  (ipa)
       ebudget_initialstorage   = csite%ebudget_initialstorage  (ipa)
       !------------------------------------------------------------------------------------!
@@ -756,12 +844,7 @@ module budget_utils
       csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)       + gpp       *dtlsm
       csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                       &
                                        + ( leaf_resp          + root_resp                  &
-                                         + leaf_growth_resp   + root_growth_resp           &
-                                         + sapa_growth_resp   + sapb_growth_resp           & 
-                                         + barka_growth_resp  + barkb_growth_resp          &
-                                         + leaf_storage_resp  + root_storage_resp          &
-                                         + sapa_storage_resp  + sapb_storage_resp          &
-                                         + barka_storage_resp + barkb_storage_resp )       &
+                                         + storage_resp       + growth_resp        )       &
                                        * dtlsm
       csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                           &
                                        + csite%rh(ipa) * dtlsm
@@ -811,8 +894,8 @@ module budget_utils
       ! time step.                                                                         !
       !------------------------------------------------------------------------------------!
       csite%co2budget_zcaneffect(ipa) = 0.0
-      csite%cbudget_loss2yield  (ipa) = 0.0
       csite%cbudget_zcaneffect  (ipa) = 0.0
+      csite%cbudget_loss2yield  (ipa) = 0.0
       csite%cbudget_seedrain    (ipa) = 0.0
       csite%ebudget_hcapeffect  (ipa) = 0.0
       csite%ebudget_zcaneffect  (ipa) = 0.0
@@ -902,18 +985,8 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' GPP               : ',co2curr_gpp
             write (unit=*,fmt=fmtf ) ' LEAF_RESP         : ',co2curr_leafresp
             write (unit=*,fmt=fmtf ) ' ROOT_RESP         : ',co2curr_rootresp
-            write (unit=*,fmt=fmtf ) ' LEAF_GROWTH_RESP  : ',co2curr_leafgrowthresp
-            write (unit=*,fmt=fmtf ) ' ROOT_GROWTH_RESP  : ',co2curr_rootgrowthresp
-            write (unit=*,fmt=fmtf ) ' SAPA_GROWTH_RESP  : ',co2curr_sapagrowthresp
-            write (unit=*,fmt=fmtf ) ' SAPB_GROWTH_RESP  : ',co2curr_sapbgrowthresp
-            write (unit=*,fmt=fmtf ) ' BARKA_GROWTH_RESP : ',co2curr_barkagrowthresp
-            write (unit=*,fmt=fmtf ) ' BARKB_GROWTH_RESP : ',co2curr_barkbgrowthresp
-            write (unit=*,fmt=fmtf ) ' LEAF_STORE_RESP   : ',co2curr_leafstorageresp
-            write (unit=*,fmt=fmtf ) ' ROOT_STORE_RESP   : ',co2curr_rootstorageresp
-            write (unit=*,fmt=fmtf ) ' SAPA_STORE_RESP   : ',co2curr_sapastorageresp
-            write (unit=*,fmt=fmtf ) ' SAPB_STORE_RESP   : ',co2curr_sapbstorageresp
-            write (unit=*,fmt=fmtf ) ' BARKA_STORE_RESP  : ',co2curr_barkastorageresp
-            write (unit=*,fmt=fmtf ) ' BARKB_STORE_RESP  : ',co2curr_barkbstorageresp
+            write (unit=*,fmt=fmtf ) ' STORAGE_RESP      : ',co2curr_storageresp
+            write (unit=*,fmt=fmtf ) ' GROWTH_RESP       : ',co2curr_growthresp
             write (unit=*,fmt=fmtf ) ' HET_RESP          : ',co2curr_hetresp
             write (unit=*,fmt=fmtf ) ' NEP               : ',co2curr_nep
             write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT    : ',co2curr_denseffect
@@ -933,7 +1006,7 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT   : ',ccurr_zcaneffect
             write (unit=*,fmt=fmtf ) ' LOSS2YIELD        : ',ccurr_loss2yield
             write (unit=*,fmt=fmtf ) ' LOSS2ATM          : ',ccurr_loss2atm
-            write (unit=*,fmt=fmtf ) ' COMMITTED         : ',csite%cbudget_committed(ipa)
+            write (unit=*,fmt=fmtf ) ' COMMITTED         : ',cbudget_committed
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '  Enthalpy budget'
@@ -982,7 +1055,8 @@ module budget_utils
             write (unit=*,fmt='(a)') ' model with strict debugging options and checks.'
             write (unit=*,fmt='(a)') '     Problems that occur in the middle of the day'   &
                                   // ' and middle of the month more are more likely to'
-            write (unit=*,fmt='(a)') ' be true budget violations.'
+            write (unit=*,fmt='(a)') ' be true budget violations at sub-daily steps (i.e.' &
+                                  // ' thermodynamics, photosynthesis, radiation).'
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') ' '
          end if
@@ -1050,16 +1124,16 @@ module budget_utils
                , csite%veg_height(ipa)  , co2budget_finalstorage , co2curr_residual        &
                , co2budget_deltastorage , co2curr_nep            , co2curr_denseffect      &
                , co2curr_zcaneffect     , co2curr_loss2atm       , cbudget_finalstorage    &
-               , ccurr_residual         , cbudget_deltastorage   , ccurr_denseffect        &
-               , ccurr_zcaneffect       , ccurr_seedrain         , ccurr_loss2yield        &
-               , ccurr_loss2atm         , ebudget_finalstorage   , ecurr_residual          &
-               , ebudget_deltastorage   , ecurr_precipgain       , ecurr_netrad            &
-               , ecurr_denseffect       , ecurr_prsseffect       , ecurr_hcapeffect        &
-               , ecurr_zcaneffect       , ecurr_loss2atm         , ecurr_loss2drainage     &
-               , ecurr_loss2runoff      , wbudget_finalstorage   , wcurr_residual          &
-               , wbudget_deltastorage   , wcurr_precipgain       , wcurr_denseffect        &
-               , wcurr_zcaneffect       , wcurr_loss2atm         , wcurr_loss2drainage     &
-               , wcurr_loss2runoff
+               , cbudget_committed      , ccurr_residual         , cbudget_deltastorage    &
+               , ccurr_denseffect       , ccurr_zcaneffect       , ccurr_seedrain          &
+               , ccurr_loss2yield       , ccurr_loss2atm         , ebudget_finalstorage    &
+               , ecurr_residual         , ebudget_deltastorage   , ecurr_precipgain        &
+               , ecurr_netrad           , ecurr_denseffect       , ecurr_prsseffect        &
+               , ecurr_hcapeffect       , ecurr_zcaneffect       , ecurr_loss2atm          &
+               , ecurr_loss2drainage    , ecurr_loss2runoff      , wbudget_finalstorage    &
+               , wcurr_residual         , wbudget_deltastorage   , wcurr_precipgain        &
+               , wcurr_denseffect       , wcurr_zcaneffect       , wcurr_loss2atm          &
+               , wcurr_loss2drainage    , wcurr_loss2runoff
             close(unit=86,status='keep')
             !------------------------------------------------------------------------------!
          end if
@@ -1269,11 +1343,8 @@ module budget_utils
    !=======================================================================================!
    !    This subroutine computes the carbon flux terms.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,leaf_growth_resp       &
-                               ,root_growth_resp,sapa_growth_resp,sapb_growth_resp         &
-                               ,barka_growth_resp,barkb_growth_resp,leaf_storage_resp      &
-                               ,root_storage_resp,sapa_storage_resp,sapb_storage_resp      &
-                               ,barka_storage_resp,barkb_storage_resp)
+   subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,storage_resp           &
+                               ,growth_resp)
       use ed_state_vars        , only : sitetype    & ! structure
                                       , patchtype   ! ! structure
       use consts_coms          , only : day_sec     & ! intent(in)
@@ -1286,43 +1357,24 @@ module budget_utils
       real                  , intent(out) :: gpp
       real                  , intent(out) :: leaf_resp
       real                  , intent(out) :: root_resp
-      real                  , intent(out) :: leaf_growth_resp
-      real                  , intent(out) :: root_growth_resp
-      real                  , intent(out) :: sapa_growth_resp
-      real                  , intent(out) :: sapb_growth_resp
-      real                  , intent(out) :: barka_growth_resp
-      real                  , intent(out) :: barkb_growth_resp
-      real                  , intent(out) :: leaf_storage_resp
-      real                  , intent(out) :: root_storage_resp
-      real                  , intent(out) :: sapa_storage_resp
-      real                  , intent(out) :: sapb_storage_resp
-      real                  , intent(out) :: barka_storage_resp
-      real                  , intent(out) :: barkb_storage_resp
+      real                  , intent(out) :: storage_resp
+      real                  , intent(out) :: growth_resp
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer            :: cpatch
       integer                             :: ico
       !------------------------------------------------------------------------------------!
 
-      !----- Initializing some variables. -------------------------------------------------!
+
+      !----- Initialize some variables. ---------------------------------------------------!
       gpp                = 0.0
       leaf_resp          = 0.0
       root_resp          = 0.0
-      leaf_storage_resp  = 0.0
-      root_storage_resp  = 0.0
-      sapa_storage_resp  = 0.0
-      sapb_storage_resp  = 0.0
-      barka_storage_resp = 0.0
-      barkb_storage_resp = 0.0
-      leaf_growth_resp   = 0.0
-      root_growth_resp   = 0.0
-      sapa_growth_resp   = 0.0
-      sapb_growth_resp   = 0.0
-      barka_growth_resp  = 0.0
-      barkb_growth_resp  = 0.0
       cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
-      !     Looping over cohorts.                                                          !
+      !     Loop over cohorts to obtain GPP and metabolic respiration.                     !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
          !----- Add GPP and leaf respiration only for those cohorts with enough leaves. ---!
@@ -1333,48 +1385,14 @@ module budget_utils
          end if
          !----- Root respiration happens even when the LAI is tiny ------------------------!
          root_resp = root_resp + cpatch%root_respiration(ico)
-
-         !---------------------------------------------------------------------------------!
-         !      Structural terms are "intensive", we must convert them from kgC/plant/day  !
-         ! to umol/m2/s.                                                                   !
-         !---------------------------------------------------------------------------------!
-         leaf_growth_resp    = leaf_growth_resp                                            &
-                             + cpatch%leaf_growth_resp   (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         root_growth_resp    = root_growth_resp                                            &
-                             + cpatch%root_growth_resp   (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         sapa_growth_resp    = sapa_growth_resp                                            &
-                             + cpatch%sapa_growth_resp   (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         sapb_growth_resp    = sapb_growth_resp                                            &
-                             + cpatch%sapb_growth_resp   (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         barka_growth_resp   = barka_growth_resp                                           &
-                             + cpatch%barka_growth_resp  (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         barkb_growth_resp   = barkb_growth_resp                                           &
-                             + cpatch%barkb_growth_resp  (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         leaf_storage_resp   = leaf_storage_resp                                           &
-                             + cpatch%leaf_storage_resp  (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         root_storage_resp   = root_storage_resp                                           &
-                             + cpatch%root_storage_resp  (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         sapa_storage_resp   = sapa_storage_resp                                           &
-                             + cpatch%sapa_storage_resp  (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         sapb_storage_resp   = sapb_storage_resp                                           &
-                             + cpatch%sapb_storage_resp  (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         barka_storage_resp  = barka_storage_resp                                          &
-                             + cpatch%barka_storage_resp (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
-         barkb_storage_resp  = barkb_storage_resp                                          &
-                             + cpatch%barkb_storage_resp (ico) * cpatch%nplant(ico)        &
-                             / (day_sec * umol_2_kgC)
       end do
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Convert storage and growth respiration to umol/m2/s. -------------------------!
+      storage_resp = csite%commit_storage_resp(ipa) / (day_sec * umol_2_kgC)
+      growth_resp  = csite%commit_growth_resp (ipa) / (day_sec * umol_2_kgC)
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine sum_plant_cfluxes

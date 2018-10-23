@@ -2592,8 +2592,7 @@ module average_utils
       use ed_max_dims   , only : n_pft         & ! intent(in)
                                , n_age         & ! intent(in)
                                , n_dbh         ! ! intent(in)
-      use ed_misc_coms  , only : writing_long  & ! intent(in)
-                               , dtlsm         ! ! intent(in)
+      use ed_misc_coms  , only : writing_long  ! ! intent(in)
       use consts_coms   , only : umols_2_kgCyr & ! intent(in)
                                , day_sec       ! ! intent(in)
       implicit none
@@ -2607,12 +2606,12 @@ module average_utils
       integer                       :: isi
       integer                       :: ipa
       integer                       :: ico
-      real                          :: dtlsm_o_daysec
+      real                          :: day_seci
       !------------------------------------------------------------------------------------!
 
 
       !----- Find the time scale factor. --------------------------------------------------!
-      dtlsm_o_daysec = dtlsm / day_sec
+      day_seci = 1. / day_sec
       !------------------------------------------------------------------------------------!
 
 
@@ -2626,24 +2625,24 @@ module average_utils
                cpatch => csite%patch(ipa)
 
                !---- Scale decomposition rates. -------------------------------------------!
-               csite%today_fg_C_loss (ipa) = csite%today_fg_C_loss (ipa) * dtlsm_o_daysec
-               csite%today_fs_C_loss (ipa) = csite%today_fs_C_loss (ipa) * dtlsm_o_daysec
-               csite%today_fg_N_loss (ipa) = csite%today_fg_N_loss (ipa) * dtlsm_o_daysec
-               csite%today_fs_N_loss (ipa) = csite%today_fs_N_loss (ipa) * dtlsm_o_daysec
-               csite%today_stg_C_loss(ipa) = csite%today_stg_C_loss(ipa) * dtlsm_o_daysec
-               csite%today_sts_C_loss(ipa) = csite%today_sts_C_loss(ipa) * dtlsm_o_daysec
-               csite%today_stg_L_loss(ipa) = csite%today_stg_L_loss(ipa) * dtlsm_o_daysec
-               csite%today_sts_L_loss(ipa) = csite%today_sts_L_loss(ipa) * dtlsm_o_daysec
-               csite%today_stg_N_loss(ipa) = csite%today_stg_N_loss(ipa) * dtlsm_o_daysec
-               csite%today_sts_N_loss(ipa) = csite%today_sts_N_loss(ipa) * dtlsm_o_daysec
-               csite%today_ms_C_loss (ipa) = csite%today_ms_C_loss (ipa) * dtlsm_o_daysec
-               csite%today_ss_C_loss (ipa) = csite%today_ss_C_loss (ipa) * dtlsm_o_daysec
-               csite%today_ps_C_loss (ipa) = csite%today_ps_C_loss (ipa) * dtlsm_o_daysec
-               csite%today_A_decomp  (ipa) = csite%today_A_decomp  (ipa) * dtlsm_o_daysec
-               csite%today_B_decomp  (ipa) = csite%today_B_decomp  (ipa) * dtlsm_o_daysec
-               csite%today_Af_decomp (ipa) = csite%today_Af_decomp (ipa) * dtlsm_o_daysec
-               csite%today_Bf_decomp (ipa) = csite%today_Bf_decomp (ipa) * dtlsm_o_daysec
-               csite%today_rh        (ipa) = csite%today_rh        (ipa) * dtlsm_o_daysec
+               csite%today_fg_C_loss (ipa) = csite%today_fg_C_loss (ipa) * day_seci
+               csite%today_fs_C_loss (ipa) = csite%today_fs_C_loss (ipa) * day_seci
+               csite%today_fg_N_loss (ipa) = csite%today_fg_N_loss (ipa) * day_seci
+               csite%today_fs_N_loss (ipa) = csite%today_fs_N_loss (ipa) * day_seci
+               csite%today_stg_C_loss(ipa) = csite%today_stg_C_loss(ipa) * day_seci
+               csite%today_sts_C_loss(ipa) = csite%today_sts_C_loss(ipa) * day_seci
+               csite%today_stg_L_loss(ipa) = csite%today_stg_L_loss(ipa) * day_seci
+               csite%today_sts_L_loss(ipa) = csite%today_sts_L_loss(ipa) * day_seci
+               csite%today_stg_N_loss(ipa) = csite%today_stg_N_loss(ipa) * day_seci
+               csite%today_sts_N_loss(ipa) = csite%today_sts_N_loss(ipa) * day_seci
+               csite%today_ms_C_loss (ipa) = csite%today_ms_C_loss (ipa) * day_seci
+               csite%today_ss_C_loss (ipa) = csite%today_ss_C_loss (ipa) * day_seci
+               csite%today_ps_C_loss (ipa) = csite%today_ps_C_loss (ipa) * day_seci
+               csite%today_A_decomp  (ipa) = csite%today_A_decomp  (ipa) * day_seci
+               csite%today_B_decomp  (ipa) = csite%today_B_decomp  (ipa) * day_seci
+               csite%today_Af_decomp (ipa) = csite%today_Af_decomp (ipa) * day_seci
+               csite%today_Bf_decomp (ipa) = csite%today_Bf_decomp (ipa) * day_seci
+               csite%today_rh        (ipa) = csite%today_rh        (ipa) * day_seci
                !---------------------------------------------------------------------------!
 
 
@@ -2663,19 +2662,19 @@ module average_utils
                   !     Normalise the variables used to compute carbon balance.            !
                   !------------------------------------------------------------------------!
                   cpatch%today_gpp          (ico) = cpatch%today_gpp          (ico)        &
-                                                  * dtlsm_o_daysec
+                                                  * day_seci
                   cpatch%today_gpp_pot      (ico) = cpatch%today_gpp_pot      (ico)        &
-                                                  * dtlsm_o_daysec
+                                                  * day_seci
                   cpatch%today_gpp_lightmax (ico) = cpatch%today_gpp_lightmax (ico)        &
-                                                  * dtlsm_o_daysec
+                                                  * day_seci
                   cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico)        &
-                                                  * dtlsm_o_daysec
+                                                  * day_seci
                   cpatch%today_gpp_mlmax    (ico) = cpatch%today_gpp_mlmax    (ico)        &
-                                                  * dtlsm_o_daysec
+                                                  * day_seci
                   cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico)        &
-                                                  * dtlsm_o_daysec
+                                                  * day_seci
                   cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico)        &
-                                                  * dtlsm_o_daysec
+                                                  * day_seci
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
