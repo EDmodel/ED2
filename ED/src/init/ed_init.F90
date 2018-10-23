@@ -1156,7 +1156,7 @@ subroutine read_obstime()
    integer  :: ferr  ! error flag
    integer  :: time_idx
    integer  :: time_hms
-   real     :: sec_2_start, sec_2_end
+   real(kind=8)  :: sec_2_start, sec_2_end
 
    !---------------------------------------------------------------------------------------!
    !----- First thing, let's check whether observation time list file exists.  ------------!
