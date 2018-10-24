@@ -75,6 +75,7 @@ recursive subroutine read_ed_xml_config(filename)
 !  use ed_data
   use ed_misc_coms!, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms, only : rk4min_veg_temp, tiny_offset
+  use budget_utils, only : tol_subday_budget, tol_carbon_budget
   implicit none
   integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival = 0
   logical(4) :: texist = .false.
@@ -942,6 +943,26 @@ recursive subroutine read_ed_xml_config(filename)
      enddo
   endif
 
+  !********  BUDGET
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','budget',ntag)    !get number of pft tags
+  print*,"BUDGET READ FROM FILE ::",ntag
+  if(ntag .ge. 1) then
+     do i=1,ntag
+
+        call libxml2f90__ll_selecttag('DOWN','budget',i)
+        
+        call getConfigREAL  ('tol_subday_budget','budget',i,rval,texist)
+        if(texist) tol_subday_budget = sngloff(rval,tiny_offset) 
+        call getConfigREAL  ('tol_carbon_budget','budget',i,rval,texist)
+        if(texist) tol_carbon_budget = sngloff(rval,tiny_offset) 
+        !----------------------------------------------------------------------------------!
+
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+     enddo
+  endif
+
 
   !********* SOILS
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
@@ -1558,6 +1579,8 @@ subroutine write_ed_xml_config
 !  use ed_data
   use ed_misc_coms !, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms     !, only : rk4min_veg_temp
+  use budget_utils, only : tol_subday_budget & ! intent(in)
+                         , tol_carbon_budget ! ! intent(in)
 
   implicit none
 !  integer :: ival
@@ -1959,6 +1982,12 @@ subroutine write_ed_xml_config
      call putConfigREAL("rlong_min",prec_slope)
      call putConfigREAL8("veg_temp_min",rk4min_veg_temp)
   call libxml2f90_ll_closetag("radiation")
+
+  !************   BUDGET TOLERANCE  *****************
+  call libxml2f90_ll_opentag("budget")
+     call putConfigREAL("tol_subday_budget",tol_subday_budget)
+     call putConfigREAL("tol_carbon_budget",tol_carbon_budget)
+  call libxml2f90_ll_closetag("budget")
 
   !************   SOILS  *****************
   call libxml2f90_ll_opentag("soil")

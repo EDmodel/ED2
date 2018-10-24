@@ -142,8 +142,14 @@ module phenology_driv
       real                                  :: elongf_grow
       real                                  :: bleaf_in
       real                                  :: bstorage_in
+      real                                  :: carbon_miss
       real                                  :: fast_n_drop
       real                                  :: struct_n_drop
+      real                                  :: fgc_in_in
+      real                                  :: stgc_in_in
+      real                                  :: pat_bleaf_in
+      real                                  :: pat_bstorage_in
+      real                                  :: pat_carbon_miss
       !----- Variables used only for debugging purposes. ----------------------------------!
       logical                  , parameter  :: printphen=.false.
       logical, dimension(n_pft), save       :: first_time=.true.
@@ -152,15 +158,33 @@ module phenology_driv
 
       !----- Level to evaluate the soil temperature. --------------------------------------!
       isoil_lev = nzg 
+      !------------------------------------------------------------------------------------!
 
       !----- Calculate daylength for this gridcell. ---------------------------------------!
       daylight = daylength(lat, doy) 
+      !------------------------------------------------------------------------------------!
 
       !----- Loop over patches. -----------------------------------------------------------!
       csite => cpoly%site(isi)
+      !------------------------------------------------------------------------------------!
 
       patchloop: do ipa = 1,csite%npatches
          cpatch => csite%patch(ipa)
+
+
+         !---------------------------------------------------------------------------------!
+         !      Save patch-level litter inputs before growth balive.  We use these vari-   !
+         ! ables to check carbon conservation at the patch level.                          !
+         !---------------------------------------------------------------------------------!
+         fgc_in_in       = csite%fgc_in (ipa)
+         stgc_in_in      = csite%stgc_in(ipa)
+         pat_bleaf_in    = 0.0
+         pat_bstorage_in = 0.0
+         pat_carbon_miss = 0.0
+         !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
          !     Litter inputs (fsc_in, stsc_in and alikes) used to be reset here.  This is  !
@@ -181,12 +205,16 @@ module phenology_driv
             kroot   = cpatch%krdepth(ico)
             
             !----- Save input leaf and storage biomass for when dynamics is disabled. -----!
-            bleaf_in    = cpatch%bleaf(ico)
-            bstorage_in = cpatch%bstorage(ico)
+            bleaf_in        = cpatch%bleaf   (ico)
+            bstorage_in     = cpatch%bstorage(ico)
+            pat_bleaf_in    = pat_bleaf_in    + cpatch%nplant(ico) * cpatch%bleaf   (ico)
+            pat_bstorage_in = pat_bstorage_in + cpatch%nplant(ico) * cpatch%bstorage(ico)
+            !------------------------------------------------------------------------------!
 
 
             !----- Initially, we assume all leaves stay. ----------------------------------!
             cpatch%leaf_drop(ico) = 0.0
+            !------------------------------------------------------------------------------!
 
             !----- Find cohort-specific thresholds. ---------------------------------------!
             select case (iphen_scheme)
@@ -200,8 +228,10 @@ module phenology_driv
                !----- Drop_cold is computed in phenology_thresholds for Botta scheme. -----!
                if (drop_cold) bl_max = 0.0
             end select
-
             !------------------------------------------------------------------------------!
+
+
+
             !------------------------------------------------------------------------------!
             !     Here we decide what to do depending on the phenology habit. There are    !
             ! five different types:                                                        !
@@ -564,6 +594,7 @@ module phenology_driv
             !------------------------------------------------------------------------------!
 
 
+
             !------------------------------------------------------------------------------!
             !     In case vegetation dynamics is turned off, we replace leaf biomass with  !
             ! the equilibrium leaf biomass, whilst we keep the same storage pool as the    !
@@ -616,7 +647,8 @@ module phenology_driv
             call is_resolvable(csite,ipa,ico)
             !------------------------------------------------------------------------------!
 
-            !----- Printing some debugging stuff if the code is set for it. ---------------!
+
+            !----- Print some debugging stuff if the code is set for it. ------------------!
             if (printphen) then
                ipft=cpatch%pft(ico)
                if (first_time(ipft)) then
@@ -631,8 +663,30 @@ module phenology_driv
                    ,cpatch%nplant(ico),cpatch%leaf_drop(ico),cpatch%paw_avg(ico)           &
                    ,cpatch%elongf(ico)
             end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Before we move to the next cohort, we make sure that carbon is being     !
+            ! conserved by this cohort.                                                    !
+            !------------------------------------------------------------------------------!
+            if (veget_dyn_on) then
+               call check_bleaf_cohort(csite,ipa,ico,bleaf_in,bstorage_in                  &
+                                      ,cpoly%green_leaf_factor(ipft,isi),carbon_miss)
+               pat_carbon_miss = pat_carbon_miss + cpatch%nplant(ico) * carbon_miss
+            end if
+            !------------------------------------------------------------------------------!
+
          end do cohortloop
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+
+
       end do patchloop
+      !------------------------------------------------------------------------------------!
       return
    end subroutine update_phenology
    !=======================================================================================!
@@ -744,6 +798,306 @@ module phenology_driv
 
       return
    end subroutine assign_prescribed_phen
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine checks that carbon is conserved at the cohort level.  Minor      !
+   ! truncation errors ma cause slightly negative pools.  In this case, we fix them and    !
+   ! account for the missed carbon source.  Otherwise, we stop any cohort that is          !
+   ! attempting to smuggle or to evade carbon.                                             !
+   !---------------------------------------------------------------------------------------!
+   subroutine check_bleaf_cohort(csite,ipa,ico,bleaf_in,bstorage_in,green_leaf_factor      &
+                                ,carbon_miss)
+      use ed_state_vars  , only : sitetype                 & ! structure
+                                , patchtype                ! ! structure
+      use allometry      , only : size2bl                  ! ! function
+      use budget_utils   , only : tol_carbon_budget        ! ! intent(in)
+      use pft_coms       , only : min_dbh                  & ! intent(in)
+                                , hgt_min                  & ! intent(in)
+                                , phenology                ! ! intent(in)
+      use phenology_coms , only : retained_carbon_fraction & ! intent(in)
+                                , iphen_scheme             ! ! intent(in)
+      use ed_misc_coms   , only : current_time             ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)  , target      :: csite
+      integer         , intent(in)  :: ipa
+      integer         , intent(in)  :: ico
+      real            , intent(in)  :: bleaf_in
+      real            , intent(in)  :: bstorage_in
+      real            , intent(in)  :: green_leaf_factor
+      real            , intent(out) :: carbon_miss
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype) , pointer     :: cpatch
+      integer                       :: ipft
+      real                          :: bleaf_ok_min
+      real                          :: bstorage_ok_min
+      real                          :: btotal_in
+      real                          :: btotal_fn
+      real                          :: delta_btotal
+      real                          :: resid_btotal
+      logical                       :: neg_biomass
+      logical                       :: btotal_violation
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=10), parameter  :: fmti='(a,1x,i14)'
+      character(len=13), parameter  :: fmtf='(a,1x,es14.7)'
+      character(len=27), parameter  :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Handy aliases. ---------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      ipft   =  cpatch%pft (ico)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the minimum acceptable biomass. -----------------------------------------!
+      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bstorage_ok_min  = bleaf_ok_min
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check leaves and storage, to make sure they have sensible numbers.  Tiny        !
+      ! negative stocks will be tolerated because of floating point truncation, but don't  !
+      ! fix anything in case any of the pools is too negative.                             !
+      !------------------------------------------------------------------------------------!
+      neg_biomass    = cpatch%bleaf    (ico) < bleaf_ok_min     .or.                       &
+                       cpatch%bstorage (ico) < bstorage_ok_min
+      if (.not. neg_biomass) then
+         !----- Account for any potential violation of carbon stocks. ---------------------!
+         carbon_miss = - min(cpatch%bleaf   (ico),0.0) - min(cpatch%bstorage (ico),0.0)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Make sure that all pools are non-negative. --------------------------------!
+         cpatch%bleaf    (ico) = max(cpatch%bleaf    (ico),0.0)
+         cpatch%bstorage (ico) = max(cpatch%bstorage (ico),0.0)
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Set missing carbon to zero so the code works with debugging. --------------!
+         carbon_miss = 0.0
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check carbon stocks before and after leaf phenology.                           !
+      !------------------------------------------------------------------------------------!
+      btotal_in         = bleaf_in          + bstorage_in
+      btotal_fn         = cpatch%bleaf(ico) + cpatch%bstorage(ico)
+      delta_btotal      = - cpatch%leaf_drop(ico)
+      resid_btotal      = btotal_fn - btotal_in - delta_btotal - carbon_miss
+      btotal_violation  = abs(resid_btotal) > (tol_carbon_budget * btotal_in)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case we identify carbon conservation issues, print information on screen    !
+      ! and stop the model.                                                                !
+      !------------------------------------------------------------------------------------!
+      if ( neg_biomass .or. btotal_violation ) then
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|       !!!   Cohort Bleaf budget failed   !!!       |'
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
+                                                           ,current_time%month             &
+                                                           ,current_time%date              &
+                                                           ,current_time%time
+         write(unit=*,fmt=fmti )  ' PATCH               : ',ipa
+         write(unit=*,fmt=fmti )  ' COHORT              : ',ico
+         write(unit=*,fmt=fmti )  ' IPFT                : ',ipft
+         write(unit=*,fmt=fmtf )  ' DBH                 : ',cpatch%dbh   (ico)
+         write(unit=*,fmt=fmtf )  ' HITE                : ',cpatch%hite  (ico)
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmti )  ' IPHEN_SCHEME        : ',iphen_scheme
+         write(unit=*,fmt=fmti )  ' PHENOLOGY_STRATEGY  : ',phenology(ipft)
+         write(unit=*,fmt=fmti )  ' PHENOLOGY_STATUS    : ',cpatch%phenology_status(ico)
+         write(unit=*,fmt=fmtf )  ' ELONGF              : ',cpatch%elongf(ico)
+         write(unit=*,fmt=fmtf )  ' GREEN_LEAF_FACTOR   : ',green_leaf_factor
+         write(unit=*,fmt=fmtf )  ' RETAINED_C_FRACTION : ',retained_carbon_fraction
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BLEAF_IN            : ',bleaf_in
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_IN         : ',bstorage_in
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BLEAF_FN            : ',cpatch%bleaf    (ico)
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_FN         : ',cpatch%bstorage (ico)
+         write(unit=*,fmt=fmtf )  ' LEAF_DROP_FN        : ',cpatch%leaf_drop(ico)
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BTOTAL_IN           : ',btotal_in
+         write(unit=*,fmt=fmtf )  ' BTOTAL_FN           : ',btotal_fn
+         write(unit=*,fmt=fmtf )  ' DELTA_BTOTAL        : ',delta_btotal
+         write(unit=*,fmt=fmtf )  ' CARBON_MISS         : ',carbon_miss
+         write(unit=*,fmt=fmtf )  ' RESIDUAL_BTOTAL     : ',resid_btotal
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  ' '
+
+
+         call fatal_error('Budget check has failed, see message above.'                    &
+                         ,'check_bleaf_cohort','phenology_driv.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+      return
+   end subroutine check_bleaf_cohort
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine checks that carbon is conserved at the patch level.  Minor       !
+   ! truncation errors may cause slightly negative pools, which are accounted.  Otherwise, !
+   ! we stop any patch that is attempting to smuggle or to evade carbon.                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine check_bleaf_patch(csite,ipa,fgc_in_in,stgc_in_in,pat_bleaf_in                &
+                               ,pat_bstorage_in,pat_carbon_miss)
+      use ed_state_vars, only : sitetype           & ! structure
+                              , patchtype          ! ! structure
+      use budget_utils , only : tol_carbon_budget  ! ! intent(in)
+      use ed_misc_coms , only : current_time       ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)  , target        :: csite
+      integer         , intent(in)    :: ipa
+      real            , intent(in)    :: fgc_in_in
+      real            , intent(in)    :: stgc_in_in
+      real            , intent(in)    :: pat_bleaf_in
+      real            , intent(in)    :: pat_bstorage_in
+      real            , intent(in)    :: pat_carbon_miss
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype) , pointer       :: cpatch
+      integer                         :: ico
+      integer                         :: ipft
+      real                            :: fgc_in_fn
+      real                            :: stgc_in_fn
+      real                            :: pat_bleaf_fn
+      real                            :: pat_bstorage_fn
+      real                            :: pat_leaf_drop
+      real                            :: pat_biomass_in
+      real                            :: pat_biomass_fn
+      real                            :: pat_btotal_in
+      real                            :: pat_btotal_fn
+      real                            :: soilc_in_in
+      real                            :: soilc_in_fn
+      real                            :: resid_pat_btotal
+      logical                         :: pat_btotal_violation
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=10), parameter :: fmti='(a,1x,i14)'
+      character(len=13), parameter :: fmtf='(a,1x,es14.7)'
+      character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Handy aliases. ---------------------------------------------------------------!
+      cpatch     => csite%patch  (ipa)
+      fgc_in_fn  =  csite%fgc_in (ipa)
+      stgc_in_fn =  csite%stgc_in(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Count current stocks. --------------------------------------------------------!
+      pat_bleaf_fn    = 0.0
+      pat_bstorage_fn = 0.0
+      pat_leaf_drop   = 0.0
+      do ico=1,cpatch%ncohorts
+         ipft            = cpatch%pft(ico)
+         pat_bleaf_fn    = pat_bleaf_fn    + cpatch%nplant(ico) * cpatch%bleaf    (ico)
+         pat_bstorage_fn = pat_bstorage_fn + cpatch%nplant(ico) * cpatch%bstorage (ico)
+         pat_leaf_drop   = pat_leaf_drop   + cpatch%nplant(ico) * cpatch%leaf_drop(ico)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Summary of the carbon stocks. -----------------------------------------------!
+      pat_biomass_in = pat_bleaf_in + pat_bstorage_in
+      pat_biomass_fn = pat_bleaf_fn + pat_bstorage_fn
+      soilc_in_in    = fgc_in_in    + stgc_in_in
+      soilc_in_fn    = fgc_in_fn    + stgc_in_fn
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check carbon stocks before and after active tissue growth.  Yield is positive  !
+      ! in the residual calculation because it is a committed permanent loss of carbon     !
+      ! (shipped off-site).                                                                !
+      !------------------------------------------------------------------------------------!
+      pat_btotal_in        = pat_biomass_in + soilc_in_in
+      pat_btotal_fn        = pat_biomass_fn + soilc_in_fn
+      resid_pat_btotal     = pat_btotal_fn  - pat_btotal_in - pat_carbon_miss
+      pat_btotal_violation = abs(resid_pat_btotal) > (tol_carbon_budget * pat_btotal_in)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case we identify carbon conservation issues, print information on screen    !
+      ! and stop the model.                                                                !
+      !------------------------------------------------------------------------------------!
+      if ( pat_btotal_violation ) then
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|        !!!   Patch Bleaf budget failed   !!!       |'
+         write(unit=*,fmt='(a)')  '|----------------------------------------------------|'
+         write(unit=*,fmt=fmtt )  ' TIME                : ',current_time%year              &
+                                                           ,current_time%month             &
+                                                           ,current_time%date              &
+                                                           ,current_time%time
+         write(unit=*,fmt=fmti )  ' PATCH               : ',ipa
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BLEAF_IN            : ',pat_bleaf_in
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_IN         : ',pat_bstorage_in
+         write(unit=*,fmt=fmtf )  ' FGC_IN_IN           : ',fgc_in_in
+         write(unit=*,fmt=fmtf )  ' STGC_IN_IN          : ',stgc_in_in
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BLEAF_FN            : ',pat_bleaf_fn
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_FN         : ',pat_bstorage_fn
+         write(unit=*,fmt=fmtf )  ' FGC_IN_FN           : ',fgc_in_fn
+         write(unit=*,fmt=fmtf )  ' STGC_IN_FN          : ',stgc_in_fn
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BIOMASS_IN          : ',pat_biomass_in
+         write(unit=*,fmt=fmtf )  ' SOILC_IN_IN         : ',soilc_in_in
+         write(unit=*,fmt=fmtf )  ' BIOMASS_FN          : ',pat_biomass_fn
+         write(unit=*,fmt=fmtf )  ' SOILC_IN_FN         : ',soilc_in_fn
+         write(unit=*,fmt=fmtf )  ' LEAF_DROP           : ',pat_leaf_drop
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' BTOTAL_IN           : ',pat_btotal_in
+         write(unit=*,fmt=fmtf )  ' BTOTAL_FN           : ',pat_btotal_fn
+         write(unit=*,fmt=fmtf )  ' CARBON_MISS         : ',pat_carbon_miss
+         write(unit=*,fmt=fmtf )  ' RESIDUAL_BTOTAL     : ',resid_pat_btotal
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  '|====================================================|'
+         write(unit=*,fmt='(a)')  ' '
+
+
+         call fatal_error('Budget check has failed, see message above.'                    &
+                         ,'check_bleaf_patch','phenology_driv.f90')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+      return
+   end subroutine check_bleaf_patch
    !=======================================================================================!
    !=======================================================================================!
 end module phenology_driv

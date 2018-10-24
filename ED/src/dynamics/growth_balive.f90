@@ -2067,17 +2067,17 @@ module growth_balive
                                  ,bdeada_in,bdeadb_in,metnpp_actual,npp_actual             &
                                  ,growresp_actual,tissue_maintenance,storage_maintenance   &
                                  ,carbon_miss)
-      use ed_state_vars, only : sitetype     & ! structure
-                              , patchtype    ! ! structure
-      use allometry    , only : size2bl      ! ! function
-      use consts_coms  , only : r_tol_trunc  ! ! intent(in)
-      use pft_coms     , only : q            & ! intent(in)
-                              , qsw          & ! intent(in)
-                              , qbark        & ! intent(in)
-                              , agf_bs       & ! intent(in)
-                              , min_dbh      & ! intent(in)
-                              , hgt_min      ! ! intent(in)
-      use ed_misc_coms , only : current_time ! ! intent(in)
+      use ed_state_vars, only : sitetype           & ! structure
+                              , patchtype          ! ! structure
+      use allometry    , only : size2bl            ! ! function
+      use budget_utils , only : tol_carbon_budget  ! ! intent(in)
+      use pft_coms     , only : q                  & ! intent(in)
+                              , qsw                & ! intent(in)
+                              , qbark              & ! intent(in)
+                              , agf_bs             & ! intent(in)
+                              , min_dbh            & ! intent(in)
+                              , hgt_min            ! ! intent(in)
+      use ed_misc_coms , only : current_time       ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)  , target        :: csite
@@ -2129,7 +2129,7 @@ module growth_balive
 
 
       !----- Find the minimum acceptable biomass. -----------------------------------------!
-      bleaf_ok_min     = - r_tol_trunc * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
       broot_ok_min     = q(ipft) * bleaf_ok_min
       bsapwooda_ok_min =     agf_bs(ipft)  * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min
       bsapwoodb_ok_min = (1.-agf_bs(ipft)) * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min
@@ -2184,7 +2184,7 @@ module growth_balive
                         + cpatch%bdeadb(ico) + cpatch%bstorage(ico)
       delta_btotal      = npp_actual      - tissue_maintenance - storage_maintenance
       resid_btotal      = btotal_fn - btotal_in - delta_btotal - carbon_miss
-      btotal_violation  = abs(resid_btotal) > (r_tol_trunc * btotal_in)
+      btotal_violation  = abs(resid_btotal) > (tol_carbon_budget * btotal_in)
       !------------------------------------------------------------------------------------!
 
 
@@ -2275,10 +2275,10 @@ module growth_balive
                                 ,pat_balive_in,pat_bdead_in,pat_bstorage_in                &
                                 ,pat_metnpp_actual,pat_npp_actual                          &
                                 ,pat_tissue_maintenance,pat_carbon_miss)
-      use ed_state_vars, only : sitetype     & ! structure
-                              , patchtype    ! ! structure
-      use consts_coms  , only : r_tol_trunc  ! ! intent(in)
-      use ed_misc_coms , only : current_time ! ! intent(in)
+      use ed_state_vars, only : sitetype           & ! structure
+                              , patchtype          ! ! structure
+      use budget_utils , only : tol_carbon_budget  ! ! intent(in)
+      use ed_misc_coms , only : current_time       ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)  , target        :: csite
@@ -2361,7 +2361,7 @@ module growth_balive
       pat_btotal_fn        = pat_biomass_fn + soilc_in_fn
       resid_pat_btotal     = pat_btotal_fn - pat_btotal_in                                 &
                            + pat_storage_maintenance - pat_npp_actual - pat_carbon_miss
-      pat_btotal_violation = abs(resid_pat_btotal) > (r_tol_trunc * pat_btotal_in)
+      pat_btotal_violation = abs(resid_pat_btotal) > (tol_carbon_budget * pat_btotal_in)
       !------------------------------------------------------------------------------------!
 
 

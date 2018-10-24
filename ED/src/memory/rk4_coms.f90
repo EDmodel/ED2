@@ -654,15 +654,6 @@ module rk4_coms
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Tolerance for Energy, Water, CO2 and Carbon budgets (performed every photo-      !
-   ! synthesis step).  Note that toler_budget is single precision.                         !
-   !---------------------------------------------------------------------------------------!
-   real(kind=4) :: toler_budget
-   !---------------------------------------------------------------------------------------!
-
-
-
    !----- Constants used in rk4_derivs ----------------------------------------------------!
    logical      :: supersat_ok    ! It is fine for evaporation and transpiration to
                                   !    occur even if this causes the canopy air to 

@@ -1187,12 +1187,12 @@ module soil_respiration
                                 ,sts_C_loss,ms_C_input,ms_C_loss,ss_C_input,ss_C_loss      &
                                 ,ps_C_input,ps_C_loss)
 
-      use ed_state_vars, only : sitetype      ! ! structure
-      use ed_misc_coms , only : current_time  ! ! intent(in)
-      use consts_coms  , only : r_tol_trunc   & ! intent(in)
-                              , umol_2_kgC    & ! intent(in)
-                              , onethird      & ! intent(in)
-                              , day_sec       ! ! intent(in)
+      use ed_state_vars, only : sitetype          ! ! structure
+      use ed_misc_coms , only : current_time      ! ! intent(in)
+      use budget_utils , only : tol_carbon_budget ! ! intent(in)
+      use consts_coms  , only : umol_2_kgC        & ! intent(in)
+                              , onethird          & ! intent(in)
+                              , day_sec           ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)   , target     :: csite
@@ -1272,13 +1272,13 @@ module soil_respiration
 
 
       !----- Find the minimum acceptable soil C stock. ------------------------------------!
-      fgc_ok_min  = - r_tol_trunc * max( soil_C_min, fast_grnd_C_in       )
-      fsc_ok_min  = - r_tol_trunc * max( soil_C_min, fast_soil_C_in       )
-      stgc_ok_min = - r_tol_trunc * max( soil_C_min, structural_grnd_C_in )
-      stsc_ok_min = - r_tol_trunc * max( soil_C_min, structural_soil_C_in )
-      msc_ok_min  = - r_tol_trunc * max( soil_C_min, microbial_soil_C_in  )
-      ssc_ok_min  = - r_tol_trunc * max( soil_C_min, slow_soil_C_in       )
-      psc_ok_min  = - r_tol_trunc * max( soil_C_min, passive_soil_C_in    )
+      fgc_ok_min  = - tol_carbon_budget * max( soil_C_min, fast_grnd_C_in       )
+      fsc_ok_min  = - tol_carbon_budget * max( soil_C_min, fast_soil_C_in       )
+      stgc_ok_min = - tol_carbon_budget * max( soil_C_min, structural_grnd_C_in )
+      stsc_ok_min = - tol_carbon_budget * max( soil_C_min, structural_soil_C_in )
+      msc_ok_min  = - tol_carbon_budget * max( soil_C_min, microbial_soil_C_in  )
+      ssc_ok_min  = - tol_carbon_budget * max( soil_C_min, slow_soil_C_in       )
+      psc_ok_min  = - tol_carbon_budget * max( soil_C_min, passive_soil_C_in    )
       !------------------------------------------------------------------------------------!
 
 
@@ -1370,7 +1370,7 @@ module soil_respiration
       nettrans_rh     = fg_C_loss + fs_C_loss + stg_C_loss + sts_C_loss + ms_C_loss        &
                       + ss_C_loss + ps_C_loss - ms_C_input - ss_C_input - ps_C_input
       net_C_loss      = onethird * (today_rh + fracloss_rh + nettrans_rh)
-      toler_rh        = max(rh_min,net_C_loss) * r_tol_trunc
+      toler_rh        = max(rh_min,net_C_loss) * tol_carbon_budget
       rh_violation(1) = abs(today_rh    - fracloss_rh) > toler_rh
       rh_violation(2) = abs(today_rh    - nettrans_rh) > toler_rh
       rh_violation(3) = abs(fracloss_rh - nettrans_rh) > toler_rh
@@ -1382,7 +1382,7 @@ module soil_respiration
       !------------------------------------------------------------------------------------!
       delta_soil_C     = net_C_input - net_C_loss
       resid_soil_C     = soil_C_final - soil_C_initial - delta_soil_C - carbon_miss
-      toler_soil_C     = r_tol_trunc * max(soil_C_initial,soil_C_min)
+      toler_soil_C     = tol_carbon_budget * max(soil_C_initial,soil_C_min)
       soil_C_violation = abs(resid_soil_C) > toler_soil_C
       !------------------------------------------------------------------------------------!
 

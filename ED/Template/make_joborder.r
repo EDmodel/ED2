@@ -165,14 +165,14 @@ default = list( run           = "unnamed"
               , iphysiol      = 3
               , vmfact.c3     = 1.00
               , vmfact.c4     = 1.00
-              , mphoto.trc3   = 9.0
+              , mphoto.trc3   = 8.0
               , mphoto.tec3   = 7.2
               , mphoto.c4     = 4.0
               , bphoto.blc3   = 10000.
               , bphoto.nlc3   = 1000.
               , bphoto.c4     = 10000.
-              , kw.grass      = 900.
-              , kw.tree       = 600.
+              , kw.grass      = 75.
+              , kw.tree       = 50.
               , gamma.c3      = 0.015
               , gamma.c4      = 0.025
               , d0.grass      = 0.016
@@ -188,7 +188,7 @@ default = list( run           = "unnamed"
               , lwidth.nltree = 0.05
               , q10.c3        = 2.21
               , q10.c4        = 2.21
-              , h2o.limit     = 2
+              , h2o.limit     = 3
               , imort.scheme  = 1
               , ddmort.const  = 0.8
               , cbr.scheme    = 0
@@ -219,8 +219,8 @@ default = list( run           = "unnamed"
               , lreflect.nir  = 0.400
               , orient.tree   = +0.100
               , orient.grass  = -0.300
-              , clump.tree    = 0.75
-              , clump.grass   = 0.75
+              , clump.tree    = 0.80
+              , clump.grass   = 0.80
               , igoutput      = 0
               , ivegtdyn      = 1
               , iplastic      = 2
@@ -233,7 +233,7 @@ default = list( run           = "unnamed"
               , integ.scheme  = 1
               , nsub.euler    = 50
               , irepro        = 3
-              , treefall      = 0.0125
+              , treefall      = 0.0140
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
               , sl.scale      = 0

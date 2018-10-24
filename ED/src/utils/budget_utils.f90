@@ -5,6 +5,26 @@
 !------------------------------------------------------------------------------------------!
 module budget_utils
 
+   implicit none
+
+
+   !---------------------------------------------------------------------------------------!
+   !      This variable has the tolerance for sub-daily checks of energy, water, CO2 and   !
+   ! carbon conservation, which are performed every photosynthesis step.                   !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) :: tol_subday_budget
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      This variable has the tolerance for long-term carbon checks (phenology, growth   !
+   ! of living and structural tissues, reproduction, and decomposition).  This tolerance   !
+   ! is normally stricter than the sub-daily because the changes are relatively small.     !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) :: tol_carbon_budget
+   !---------------------------------------------------------------------------------------!
+
+
    !=======================================================================================!
    !=======================================================================================!
 
@@ -187,8 +207,7 @@ module budget_utils
    subroutine reset_cbudget_committed(csite,ipa,flush_to_zero)
       use ed_state_vars, only : sitetype       & ! structure
                               , patchtype      ! ! structured
-      use consts_coms  , only : kgCday_2_umols & ! intent(in)
-                              , r_tol_trunc    ! ! intent(in)
+      use consts_coms  , only : kgCday_2_umols ! ! intent(in)
       use ed_misc_coms , only : current_time ! ! intent(in)
       implicit none
 
@@ -236,7 +255,7 @@ module budget_utils
          today_leaf_resp     = today_leaf_resp     / kgCday_2_umols
          today_root_resp     = today_root_resp     / kgCday_2_umols
          today_het_resp      = csite%today_rh(ipa) / kgCday_2_umols
-         toler_committed     = r_tol_trunc                                                 &
+         toler_committed     = tol_subday_budget                                           &
                              * max(today_gpp,today_leaf_resp,today_root_resp,today_het_resp)
          resid_committed     = csite%cbudget_committed(ipa) - today_gpp                    &
                              + today_leaf_resp + today_root_resp + today_het_resp
@@ -504,8 +523,7 @@ module budget_utils
                               , rdry               & ! intent(in)
                               , mmdryi             & ! intent(in)
                               , epim1              ! ! intent(in)
-      use rk4_coms     , only : toler_budget       & ! intent(in)
-                              , print_budget       & ! intent(in)
+      use rk4_coms     , only : print_budget       & ! intent(in)
                               , budget_pref        & ! intent(in)
                               , checkbudget        ! ! intent(in)
       use therm_lib    , only : tq2enthalpy        ! ! function
@@ -910,14 +928,14 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       if (checkbudget) then
          !----- Look for violation of conservation in all quantities. ---------------------!
-         co2budget_tolerance = toler_budget * ( abs(co2budget_finalstorage)                &
-                                              + abs(co2budget_deltastorage) )
-         cbudget_tolerance   = toler_budget * ( abs(cbudget_finalstorage  )                &
-                                              + abs(cbudget_deltastorage  ) )
-         ebudget_tolerance   = toler_budget * ( abs(ebudget_finalstorage  )                &
-                                              + abs(ebudget_deltastorage  ) )
-         wbudget_tolerance   = toler_budget * ( abs(wbudget_finalstorage  )                &
-                                              + abs(wbudget_deltastorage  ) )
+         co2budget_tolerance = tol_subday_budget * ( abs(co2budget_finalstorage)           &
+                                                   + abs(co2budget_deltastorage) )
+         cbudget_tolerance   = tol_subday_budget * ( abs(cbudget_finalstorage  )           &
+                                                   + abs(cbudget_deltastorage  ) )
+         ebudget_tolerance   = tol_subday_budget * ( abs(ebudget_finalstorage  )           &
+                                                   + abs(ebudget_deltastorage  ) )
+         wbudget_tolerance   = tol_subday_budget * ( abs(wbudget_finalstorage  )           &
+                                                   + abs(wbudget_deltastorage  ) )
          !---------------------------------------------------------------------------------!
 
 
@@ -947,7 +965,7 @@ module budget_utils
 
 
          !---------------------------------------------------------------------------------!
-         !       Report all the budget terms in case any of the budget checks have failed. !in case it failed. ---------------!
+         !       Report all the budget terms in case any of the budget checks have failed. !
          !---------------------------------------------------------------------------------!
          if (.not. budget_fine) then
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
@@ -972,7 +990,7 @@ module budget_utils
             write (unit=*,fmt=fmtl ) ' CARBON_FINE       : ',carbon_fine
             write (unit=*,fmt=fmtl ) ' ENTHALPY_FINE     : ',enthalpy_fine
             write (unit=*,fmt=fmtl ) ' WATER_FINE        : ',water_fine
-            write (unit=*,fmt=fmtf ) ' REL_TOLERANCE     : ',toler_budget
+            write (unit=*,fmt=fmtf ) ' REL_TOLERANCE     : ',tol_subday_budget
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '  CO2 Budget'

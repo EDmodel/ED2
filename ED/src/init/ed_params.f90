@@ -6320,12 +6320,13 @@ subroutine init_dt_thermo_params()
                              , r_tol_trunc            ! ! intent(in)
    use detailed_coms  , only : idetailed              ! ! intent(in)
    use pft_coms       , only : is_conifer             ! ! intent(in)
+   use budget_utils   , only : tol_subday_budget      & ! intent(in)
+                             , tol_carbon_budget      ! ! intent(in)
    use rk4_coms       , only : rk4_tolerance          & ! intent(in)
                              , maxstp                 & ! intent(out)
                              , rk4eps                 & ! intent(out)
                              , rk4eps2                & ! intent(out)
                              , rk4epsi                & ! intent(out)
-                             , toler_budget           & ! intent(out)
                              , hmin                   & ! intent(out)
                              , print_diags            & ! intent(out)
                              , checkbudget            & ! intent(out)
@@ -6410,11 +6411,12 @@ subroutine init_dt_thermo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Tolerance for fast-scale budget.  We set the tolerance as a function of time     !
-   ! step because estimates of unaccounted effects (e.g. density effect) lose accuracy.    !
-   ! We also impose a maximum tolerance to be the RK4.                                     !
+   !      Tolerances.  For the sub-daily step, the default is to use the same tolerance    !
+   ! used for Runge-Kutta.  For the long-term carbon dynamics, we use a stricter           !
+   ! tolerance, by default 10 times the truncation tolerance (about 1e-4).                !
    !---------------------------------------------------------------------------------------!
-   toler_budget = max(r_tol_trunc,min(rk4_tolerance, dtlsm * r_tol_trunc / 10.0 ))
+   tol_subday_budget = rk4_tolerance
+   tol_carbon_budget = 10. * r_tol_trunc
    !---------------------------------------------------------------------------------------!
 
 

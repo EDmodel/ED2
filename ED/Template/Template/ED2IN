@@ -1642,7 +1642,7 @@ $ED_NL
    NL%IPHENYSF = 2003
    NL%IPHENYF1 = 1992
    NL%IPHENYFF = 2003
-   NL%PHENPATH   = 'myinpdata/phenology/phenology'
+   NL%PHENPATH   = 'myinpmain/phenology/phenology'
    !---------------------------------------------------------------------------------------!
 
 

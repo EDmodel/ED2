@@ -1152,15 +1152,15 @@ module structural_growth
                                   ,bsapwoodb_in,bbarka_in,bbarkb_in,balive_in,bstorage_in  &
                                   ,bdeada_in,bdeadb_in,f_bseeds,f_growth,f_bdeada,f_bdeadb &
                                   ,f_bstorage,carbon_miss)
-      use ed_state_vars, only : sitetype     & ! structure
-                              , patchtype    ! ! structure
-      use allometry    , only : size2bl      & ! function
-                              , size2bd      ! ! function
-      use consts_coms  , only : r_tol_trunc  ! ! intent(in)
-      use pft_coms     , only : agf_bs       & ! intent(in)
-                              , min_dbh      & ! intent(in)
-                              , hgt_min      ! ! intent(in)
-      use ed_misc_coms , only : current_time ! ! intent(in)
+      use ed_state_vars, only : sitetype          & ! structure
+                              , patchtype         ! ! structure
+      use allometry    , only : size2bl           & ! function
+                              , size2bd           ! ! function
+      use budget_utils , only : tol_carbon_budget ! ! intent(in)
+      use pft_coms     , only : agf_bs            & ! intent(in)
+                              , min_dbh           & ! intent(in)
+                              , hgt_min           ! ! intent(in)
+      use ed_misc_coms , only : current_time      ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)  , target        :: csite
@@ -1210,8 +1210,8 @@ module structural_growth
 
 
       !----- Find the minimum acceptable biomass. -----------------------------------------!
-      bleaf_ok_min     = - r_tol_trunc * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
-      bdead_ok_min     = - r_tol_trunc * size2bd(min_dbh(ipft),hgt_min(ipft),ipft)
+      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bdead_ok_min     = - tol_carbon_budget * size2bd(min_dbh(ipft),hgt_min(ipft),ipft)
       bdeada_ok_min    =     agf_bs(ipft)  * bdead_ok_min
       bdeadb_ok_min    = (1.-agf_bs(ipft)) * bdead_ok_min
       bstorage_ok_min  = bleaf_ok_min
@@ -1229,8 +1229,8 @@ module structural_growth
                        cpatch%bstorage (ico) < bstorage_ok_min
       if (.not. neg_biomass) then
          !----- Account for any potential violation of carbon stocks. ---------------------!
-         carbon_miss = min(cpatch%bdeada   (ico),0.0) - min(cpatch%bdeadb   (ico),0.0)     &
-                     - min(cpatch%bstorage (ico),0.0)
+         carbon_miss = - min(cpatch%bdeada   (ico),0.0) - min(cpatch%bdeadb   (ico),0.0)   &
+                       - min(cpatch%bstorage (ico),0.0)
          !---------------------------------------------------------------------------------!
 
 
@@ -1256,7 +1256,7 @@ module structural_growth
                         + cpatch%bdeadb(ico) + cpatch%bstorage(ico)
       delta_btotal      = f_bseeds * bstorage_in
       resid_btotal      = btotal_fn - btotal_in + delta_btotal - carbon_miss
-      btotal_violation  = abs(resid_btotal) > (r_tol_trunc * btotal_in)
+      btotal_violation  = abs(resid_btotal) > (tol_carbon_budget * btotal_in)
       !------------------------------------------------------------------------------------!
 
 
@@ -1346,7 +1346,7 @@ module structural_growth
                                  ,pat_carbon_miss,pat_mortality)
       use ed_state_vars, only : sitetype           & ! structure
                               , patchtype          ! ! structure
-      use consts_coms  , only : r_tol_trunc        ! ! intent(in)
+      use budget_utils , only : tol_carbon_budget  ! ! intent(in)
       use ed_misc_coms , only : current_time       ! ! intent(in)
       use pft_coms     , only : seedling_mortality ! ! intent(in)
       implicit none
@@ -1436,7 +1436,7 @@ module structural_growth
       pat_btotal_fn        = pat_biomass_fn + soilc_in_fn
       resid_pat_btotal     = pat_btotal_fn + pat_bseeds_fn + pat_byield_fn - pat_btotal_in &
                            - pat_carbon_miss
-      pat_btotal_violation = abs(resid_pat_btotal) > (r_tol_trunc * pat_btotal_in)
+      pat_btotal_violation = abs(resid_pat_btotal) > (tol_carbon_budget * pat_btotal_in)
       !------------------------------------------------------------------------------------!
 
 

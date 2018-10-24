@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 here=$(pwd)
 moi=$(whoami)
-diskthere="/n/moorcroftfs2"
+diskthere=""
 joborder="${here}/joborder.txt"
 
 #----- Find the output path (both local and remote paths will be cleaned). ----------------#
@@ -13,11 +13,17 @@ do
    dirhere=$(dirname ${dirhere})
 done
 diskhere=${dirhere}
+if [ "x${diskthere}" == "x" ]
+then
+   diskthere=${diskhere}
+   there=${here}
+else
+   there=$(echo ${here} | sed s@${diskhere}@${diskthere}@g)
+fi
 echo "-------------------------------------------------------------------------------"
 echo " - Simulation control on disk: ${diskhere}"
 echo " - Output on disk:             ${diskthere}"
 echo "-------------------------------------------------------------------------------"
-there=$(echo ${here} | sed s@${diskhere}@${diskthere}@g)
 #------------------------------------------------------------------------------------------#
 
 
