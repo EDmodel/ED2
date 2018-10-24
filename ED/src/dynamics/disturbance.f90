@@ -1933,6 +1933,23 @@ module disturbance
                                             * area_fac
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Committed carbon emission pools must be included in the disturbed patch, to    !
+      ! ensure that carbon is conserved.                                                   !
+      !------------------------------------------------------------------------------------!
+      csite%cbudget_committed          (np) = csite%cbudget_committed          (np)        &
+                                            + csite%cbudget_committed          (cp)        &
+                                            * area_fac
+      csite%commit_storage_resp        (np) = csite%commit_storage_resp        (np)        &
+                                            + csite%commit_storage_resp        (cp)        &
+                                            * area_fac
+      csite%commit_growth_resp         (np) = csite%commit_growth_resp         (np)        &
+                                            + csite%commit_growth_resp         (cp)        &
+                                            * area_fac
+      !------------------------------------------------------------------------------------!
+
       !----- Reproduction array. ----------------------------------------------------------!
       do k=1,n_pft
          csite%repro                 (k,np) = csite%repro                    (k,np)        &

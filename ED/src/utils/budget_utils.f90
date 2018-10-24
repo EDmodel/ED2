@@ -138,8 +138,12 @@ module budget_utils
       !------------------------------------------------------------------------------------!
 
 
-      !----- Committed carbon may not be zero (e.g. newly disturbed patch). ---------------!
-      call reset_cbudget_committed(csite,ipa,.true.)
+      !------------------------------------------------------------------------------------!
+      !     Initialise the committed carbon pool.  In case this is a newly disturbed       !
+      ! patch, it can skip the test but it must be initialised with the committed          !
+      ! emissions.                                                                         !
+      !------------------------------------------------------------------------------------!
+      call reset_cbudget_committed(csite,ipa,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -204,7 +208,7 @@ module budget_utils
    ! on and after the metabolic NPP and heterotrophic respiration are accounted.  In case  !
    ! it is not zero, then stop the run, because carbon is not being conserved.             !
    !---------------------------------------------------------------------------------------!
-   subroutine reset_cbudget_committed(csite,ipa,flush_to_zero)
+   subroutine reset_cbudget_committed(csite,ipa,check_budget)
       use ed_state_vars, only : sitetype       & ! structure
                               , patchtype      ! ! structured
       use consts_coms  , only : kgCday_2_umols ! ! intent(in)
@@ -214,7 +218,7 @@ module budget_utils
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)   , target     :: csite
       integer          , intent(in) :: ipa
-      logical          , intent(in) :: flush_to_zero
+      logical          , intent(in) :: check_budget
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)  , pointer    :: cpatch
       integer                       :: ico
@@ -239,9 +243,15 @@ module budget_utils
 
       !------------------------------------------------------------------------------------!
       !     Before we flush the committed carbon to zero, we check that we are not         !
-      ! violating carbon conservation.                                                     !
+      ! violating carbon conservation.  We skip this check in case this is a simulation    !
+      ! without dynamic vegetation (we cannot guarantee carbon conservation in this case,  !
+      ! as carbon stocks are not updated in response to non-zero NEP.  We also skip the    !
+      ! check when the patch is just created.  In both cases, we still initialise the      !
+      ! committed carbon, and in case we are not checking conservation of the committed    !
+      ! carbon, we must also update the initial storage to avoid crashes in the next sub-  !
+      ! daily time step.                                                                   !
       !------------------------------------------------------------------------------------!
-      if (flush_to_zero) then
+      if (check_budget) then
          !----- Make sure we are conserving carbon. ---------------------------------------!
          today_gpp          = 0.
          today_leaf_resp    = 0.
@@ -274,6 +284,8 @@ module budget_utils
                                                              ,current_time%date            &
                                                              ,current_time%time
             write(unit=*,fmt=fmti )  ' PATCH              : ',ipa
+            write(unit=*,fmt=fmti )  ' DIST_TYPE          : ',csite%dist_type(ipa)
+            write(unit=*,fmt=fmtf )  ' AGE                : ',csite%age      (ipa)
             write(unit=*,fmt='(a)')  ' -------------------------------------------------- '
             write(unit=*,fmt=fmtf )  ' COMMITTED_CARBON   : ',csite%cbudget_committed(ipa)
             write(unit=*,fmt=fmtf )  ' GPP                : ',today_gpp
@@ -289,10 +301,6 @@ module budget_utils
 
             call fatal_error('Budget check has failed, see message above.'                 &
                             ,'reset_cbudget_committed','budget_utils.f90')
-         else
-            !----- No carbon leak, reset the committed pool. ------------------------------!
-            csite%cbudget_committed(ipa) = 0.0
-            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -301,9 +309,6 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     Start committed pool over in case this is the initialisation or in case this   !
-      ! simulation has vegetation dynamics.                                                !
-      !                                                                                    !
       !     The committed pool exists because carbon fluxes in ecosystem dynamics are not  !
       ! updated every thermodynamics time step, so the carbon lost by the ecosystem        !
       ! (excluding canopy air space) is only transferred to the canopy air space during    !
@@ -319,9 +324,21 @@ module budget_utils
       ! for the fact that carbon storage does not change in spite of the NEP not being     !
       ! zero.                                                                              !
       !------------------------------------------------------------------------------------!
-      csite%cbudget_committed(ipa) = csite%cbudget_committed  (ipa)                        &
-                                   + csite%commit_storage_resp(ipa)                        &
+      csite%cbudget_committed(ipa) = csite%commit_storage_resp(ipa)                        &
                                    + csite%commit_growth_resp (ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case we are not checking the conservation of the committed carbon, we must  !
+      ! update the total storage, to avoid false alarms.  We cannot conserve carbon in the !
+      ! long term when vegetation dynamics is disabled, because carbon stocks do not       !
+      ! change even when NEP is non zero.                                                  !
+      !------------------------------------------------------------------------------------!
+      if (.not. check_budget) then
+         csite%cbudget_initialstorage(ipa) = compute_carbon_storage(csite,ipa)
+      end if
       !------------------------------------------------------------------------------------!
 
       return
