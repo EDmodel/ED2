@@ -49,8 +49,7 @@ module structural_growth
       use stable_cohorts      , only : is_resolvable               ! ! subroutine
       use update_derived_utils, only : update_cohort_derived_props & ! subroutine
                                      , update_vital_rates          ! ! subroutine
-      use allometry           , only : size2bl                     & ! function
-                                     , expand_bevery               ! ! subroutine
+      use allometry           , only : size2bl                     ! ! function
       use consts_coms         , only : yr_sec                      & ! intent(in)
                                      , almost_zero                 ! ! intent(in)
       implicit none
@@ -134,18 +133,6 @@ module structural_growth
       real                          :: b_bstruct
       real                          :: a_bstorage
       real                          :: b_bstorage
-      real                          :: dbh_aim
-      real                          :: hite_aim
-      real                          :: bleaf_aim
-      real                          :: broot_aim
-      real                          :: bsapwooda_aim
-      real                          :: bsapwoodb_aim
-      real                          :: bbarka_aim
-      real                          :: bbarkb_aim
-      real                          :: balive_aim
-      real                          :: bdeada_aim
-      real                          :: bdeadb_aim
-      real                          :: bevery_aim
       real                          :: maxh !< maximum patch height
       real                          :: mort_litter
       real                          :: bseeds_mort_litter
@@ -398,37 +385,12 @@ module structural_growth
                   ! to allometry during the upcoming month (so respiration can be          !
                   ! properly accounted for).                                               !
                   !------------------------------------------------------------------------!
-                  if (f_growth > almost_zero) then
-                     select case (iallom)
-                     case (3)
-                        bevery_aim     = bevery_in + f_growth * cpatch%bstorage(ico)
-                        call expand_bevery(cpatch%pft(ico),bevery_aim,dbh_aim,hite_aim     &
-                                          ,bleaf_aim,broot_aim,bsapwooda_aim,bsapwoodb_aim &
-                                          ,bbarka_aim,bbarkb_aim,balive_aim,bdeada_aim     &
-                                          ,bdeadb_aim)
-                        if (bevery_aim > bevery_in .and. bdeada_aim > bdeada_in) then
-                           f_bdeada    = f_growth * ( bdeada_aim - bdeada_in )             &
-                                                  / ( bevery_aim - bevery_in )
-                        else
-                           f_bdeada    = 0.0
-                        end if
-                        if (bevery_aim > bevery_in .and. bdeadb_aim > bdeadb_in) then
-                           f_bdeadb    = f_growth * ( bdeadb_aim - bdeadb_in )             &
-                                                  / ( bevery_aim - bevery_in )
-                        else
-                           f_bdeadb    = 0.0
-                        end if
-                        f_bstorage     = f_bstorage + f_growth - f_bdeada - f_bdeadb
-                     case default
-                        f_bdeada       = f_growth * agf_bs(ipft)
-                        f_bdeadb       = f_growth * (1.0 - agf_bs(ipft))
-                     end select
-                  else
-                     f_bstorage  = f_bstorage + f_growth
-                     f_growth    = 0.
-                     f_bdeada    = 0.
-                     f_bdeadb    = 0.
-                  end if
+                  call bdead_structural_allocation(cpatch%pft(ico),cpatch%bstorage(ico)    &
+                                                  ,bleaf_in,broot_in,bsapwooda_in          &
+                                                  ,bsapwoodb_in,bbarka_in,bbarkb_in        &
+                                                  ,bdeada_in,bdeadb_in,bevery_in           &
+                                                  ,f_bstorage,f_growth,f_bdeada,f_bdeadb)
+                  !------------------------------------------------------------------------!
                   cpatch%bdeada(ico) = cpatch%bdeada(ico) + f_bdeada * cpatch%bstorage(ico)
                   cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + f_bdeadb * cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
@@ -840,10 +802,6 @@ module structural_growth
                !---------------------------------------------------------------------------!
 
 
-               !----- Age the patch if this is not agriculture. ---------------------------!
-               if (csite%dist_type(ipa) /= 1) csite%age(ipa) = csite%age(ipa) + 1.0/12.0
-               !---------------------------------------------------------------------------!
-
 
                !---------------------------------------------------------------------------!
                !     Make sure that the patch did not try to smuggle or evade carbon.      !
@@ -1143,6 +1101,151 @@ module structural_growth
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This sub-routine calculates the fraction of carbon that should be allocated to    !
+   ! heartwood (bdeada and bdeadb), based on the growth allocation and the optimal size of !
+   ! the enlarged plant.  When the fraction allocated to sapwood is reasonable, structural !
+   ! growth causes the tree to have a large debt for the following month to go back to     !
+   ! allometry, and GPP alone may not be sufficient to make the trees with compatible      !
+   ! balive within one month.  When new allometry is used, f_growth becomes the fraction   !
+   ! of allocation to grow all tissues, and only a fraction of f_growth goes to bdead.     !
+   ! The remaining stays in bstorage and can be used to bring the cohort back to allometry !
+   ! during the upcoming month (so respiration can be properly accounted for).             !
+   !---------------------------------------------------------------------------------------!
+   subroutine bdead_structural_allocation(ipft,bstorage_in,bleaf_in,broot_in,bsapwooda_in  &
+                                         ,bsapwoodb_in,bbarka_in,bbarkb_in,bdeada_in       &
+                                         ,bdeadb_in,bevery_in,f_bstorage,f_growth,f_bdeada &
+                                         ,f_bdeadb)
+      use ed_misc_coms        , only : iallom        ! ! intent(in)
+      use allometry           , only : expand_bevery ! ! subroutine
+      use consts_coms         , only : almost_zero   & ! intent(in)
+                                     , r_tol_trunc   ! ! intent(in)
+      use pft_coms            , only : agf_bs        ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      integer, intent(in)    :: ipft
+      real   , intent(in)    :: bstorage_in
+      real   , intent(in)    :: bleaf_in
+      real   , intent(in)    :: broot_in
+      real   , intent(in)    :: bsapwooda_in
+      real   , intent(in)    :: bsapwoodb_in
+      real   , intent(in)    :: bbarka_in
+      real   , intent(in)    :: bbarkb_in
+      real   , intent(in)    :: bdeada_in
+      real   , intent(in)    :: bdeadb_in
+      real   , intent(in)    :: bevery_in
+      real   , intent(inout) :: f_bstorage
+      real   , intent(inout) :: f_growth
+      real   , intent(out)   :: f_bdeada
+      real   , intent(out)   :: f_bdeadb
+      !----- Local variables. -------------------------------------------------------------!
+      real                   :: dbh_aim
+      real                   :: hite_aim
+      real                   :: bleaf_aim
+      real                   :: broot_aim
+      real                   :: bsapwooda_aim
+      real                   :: bsapwoodb_aim
+      real                   :: bbarka_aim
+      real                   :: bbarkb_aim
+      real                   :: balive_aim
+      real                   :: bdeada_aim
+      real                   :: bdeadb_aim
+      real                   :: bevery_aim
+      real                   :: tr_bleaf
+      real                   :: tr_broot
+      real                   :: tr_bsapwooda
+      real                   :: tr_bsapwoodb
+      real                   :: tr_bbarka
+      real                   :: tr_bbarkb
+      real                   :: tr_bdeada
+      real                   :: tr_bdeadb
+      real                   :: tr_every
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Plant is not supposed to go to growth, or there is so little storage that it   !
+      ! is not worth growing.  Skip growing and instead wait until storage accumulates.    !
+      !------------------------------------------------------------------------------------!
+      if (f_growth <= almost_zero .or. (bstorage_in < (r_tol_trunc * bevery_in)) ) then
+         f_bstorage = f_bstorage + f_growth
+         f_growth   = 0.
+         f_bdeada   = 0.
+         f_bdeadb   = 0.
+         return
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Allocation will depend on the allometry (so it does not affect other people's !
+      ! simulations).                                                                      !
+      !------------------------------------------------------------------------------------!
+      select case (iallom)
+      case (3)
+         !----- Find the new biomass with the storage inputs. -----------------------------!
+         bevery_aim = bevery_in + f_growth * bstorage_in
+         call expand_bevery(ipft,bevery_aim,dbh_aim,hite_aim,bleaf_aim,broot_aim           &
+                           ,bsapwooda_aim,bsapwoodb_aim,bbarka_aim,bbarkb_aim,balive_aim   &
+                           ,bdeada_aim,bdeadb_aim)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Find the potential transfer rates.  It is possible that some of the        !
+         ! tissues are already at the ideal or even exceeding the target biomass (e.g. in  !
+         ! case of extremely low storage availability).  In this case, we only account and !
+         ! scale allocation with positive increments.                                      !
+         !---------------------------------------------------------------------------------!
+         tr_bleaf     = max( 0.0, bleaf_aim     - bleaf_in     )
+         tr_broot     = max( 0.0, broot_aim     - broot_in     )
+         tr_bsapwooda = max( 0.0, bsapwooda_aim - bsapwooda_in )
+         tr_bsapwoodb = max( 0.0, bsapwoodb_aim - bsapwoodb_in )
+         tr_bbarka    = max( 0.0, bbarka_aim    - bbarka_in    )
+         tr_bbarkb    = max( 0.0, bbarkb_aim    - bbarkb_in    )
+         tr_bdeada    = max( 0.0, bdeada_aim    - bdeada_in    )
+         tr_bdeadb    = max( 0.0, bdeadb_aim    - bdeadb_in    )
+         tr_every     = tr_bleaf  + tr_broot  + tr_bsapwooda + tr_bsapwoodb                &
+                      + tr_bbarka + tr_bbarkb + tr_bdeada    + tr_bdeadb
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Make sure growth is going to be non-negligible.  If not, wait until storage  !
+         ! has more to offer.                                                              !
+         !---------------------------------------------------------------------------------!
+         if ( tr_every < (r_tol_trunc * bevery_in) ) then
+            f_bstorage = f_bstorage + f_growth
+            f_bdeada   = 0.0
+            f_bdeadb   = 0.0
+            f_growth   = 0.0
+         else
+            f_bdeada   = f_growth * tr_bdeada / tr_every
+            f_bdeadb   = f_growth * tr_bdeadb / tr_every
+            f_bstorage = f_bstorage + f_growth - f_bdeada - f_bdeadb
+         end if
+         !---------------------------------------------------------------------------------!
+      case default
+         !----- Allocate growth proportionally to the above/below ground fractions. -------!
+         f_bdeada      = f_growth * agf_bs(ipft)
+         f_bdeadb      = f_growth * (1.0 - agf_bs(ipft))
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end subroutine bdead_structural_allocation
+   !=======================================================================================!
+   !=======================================================================================!
+   
+   
+   !=======================================================================================!
+   !=======================================================================================!
    !     This sub-routine checks that carbon is conserved at the cohort level.  Minor      !
    ! truncation errors ma cause slightly negative pools.  In this case, we fix them and    !
    ! account for the missed carbon source.  Otherwise, we stop any cohort that is          !
@@ -1209,12 +1312,23 @@ module structural_growth
       !------------------------------------------------------------------------------------!
 
 
-      !----- Find the minimum acceptable biomass. -----------------------------------------!
-      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
-      bdead_ok_min     = - tol_carbon_budget * size2bd(min_dbh(ipft),hgt_min(ipft),ipft)
+      !----- First, find the minimum possible scale for each pool. ------------------------!
+      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bdead_ok_min     = size2bd(min_dbh(ipft),hgt_min(ipft),ipft)
       bdeada_ok_min    =     agf_bs(ipft)  * bdead_ok_min
       bdeadb_ok_min    = (1.-agf_bs(ipft)) * bdead_ok_min
       bstorage_ok_min  = bleaf_ok_min
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Then, if possible, set the minimum acceptable deviation based on the input, to !
+      ! avoid false alarms due to truncation errors when the pool is much greater than the !
+      ! minimum size but loses all its stocks.                                             !
+      !------------------------------------------------------------------------------------!
+      bdeada_ok_min    = - tol_carbon_budget * max(bdeada_in   , bdeada_ok_min   )
+      bdeadb_ok_min    = - tol_carbon_budget * max(bdeadb_in   , bdeadb_ok_min   )
+      bstorage_ok_min  = - tol_carbon_budget * max(bstorage_in , bstorage_ok_min )
       !------------------------------------------------------------------------------------!
 
 
@@ -1304,10 +1418,10 @@ module structural_growth
          write(unit=*,fmt=fmtf )  ' BBARKA_FN           : ',cpatch%bbarka   (ico)
          write(unit=*,fmt=fmtf )  ' BBARKB_FN           : ',cpatch%bbarkb   (ico)
          write(unit=*,fmt=fmtf )  ' BDEADA_FN           : ',cpatch%bdeada   (ico)
+         write(unit=*,fmt=fmtf )  ' BDEADB_FN           : ',cpatch%bdeadb   (ico)
          write(unit=*,fmt=fmtf )  ' BSEEDS_FN           : ',cpatch%bseeds   (ico)
          write(unit=*,fmt=fmtf )  ' BYIELD_FN           : ',cpatch%byield   (ico)
          write(unit=*,fmt=fmtf )  ' BSTORAGE_FN         : ',cpatch%bstorage (ico)
-         write(unit=*,fmt=fmtf )  ' BALIVE_FN           : ',cpatch%balive   (ico)
          write(unit=*,fmt=fmtf )  ' BALIVE_FN           : ',cpatch%balive   (ico)
          write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
          write(unit=*,fmt=fmtf )  ' BTOTAL_IN           : ',btotal_in

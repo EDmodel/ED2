@@ -2128,14 +2128,29 @@ module growth_balive
       !------------------------------------------------------------------------------------!
 
 
-      !----- Find the minimum acceptable biomass. -----------------------------------------!
-      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      !----- First, find the minimum possible scale for each pool. ------------------------!
+      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
       broot_ok_min     = q(ipft) * bleaf_ok_min
       bsapwooda_ok_min =     agf_bs(ipft)  * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min
       bsapwoodb_ok_min = (1.-agf_bs(ipft)) * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min
       bbarka_ok_min    =     agf_bs(ipft)  * qbark(ipft) * cpatch%hite(ico) * bleaf_ok_min
       bbarkb_ok_min    = (1.-agf_bs(ipft)) * qbark(ipft) * cpatch%hite(ico) * bleaf_ok_min
       bstorage_ok_min  = bleaf_ok_min
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Then, if possible, set the minimum acceptable deviation based on the input, to !
+      ! avoid false alarms due to truncation errors when the pool is much greater than the !
+      ! minimum size but loses all its stocks.                                             !
+      !------------------------------------------------------------------------------------!
+      bleaf_ok_min     = - tol_carbon_budget * max(bleaf_in    , bleaf_ok_min    )
+      broot_ok_min     = - tol_carbon_budget * max(broot_in    , broot_ok_min    )
+      bsapwooda_ok_min = - tol_carbon_budget * max(bsapwooda_in, bsapwooda_ok_min)
+      bsapwoodb_ok_min = - tol_carbon_budget * max(bsapwoodb_in, bsapwoodb_ok_min)
+      bbarka_ok_min    = - tol_carbon_budget * max(bbarka_in   , bbarka_ok_min   )
+      bbarkb_ok_min    = - tol_carbon_budget * max(bbarkb_in   , bbarkb_ok_min   )
+      bstorage_ok_min  = - tol_carbon_budget * max(bstorage_in , bstorage_ok_min )
       !------------------------------------------------------------------------------------!
 
 

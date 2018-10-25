@@ -64,7 +64,6 @@ module disturbance
       use consts_coms         , only : lnexp_max                  & ! intent(in)
                                      , tiny_num                   & ! intent(in)
                                      , huge_num                   ! ! intent(in)
-      use budget_utils        , only : initial_patch_budget       ! ! sub-routine
       use forestry            , only : find_lambda_harvest        ! ! sub-routine
       use detailed_coms       , only : idetailed                  ! ! intent(in)
       use update_derived_utils, only : update_patch_thermo_props  & ! subroutine
@@ -880,9 +879,7 @@ module disturbance
                   !----- Update soil temperature, liquid fraction, etc. -------------------!
                   call new_patch_sfc_props(csite,onsp+new_lu,nzg,nzs                       &
                                           ,cpoly%ntext_soil(:,isi))
-                  !----- Initialise budget variables for the new patch. -------------------!
-                  call initial_patch_budget(csite,cpoly%lsl(isi),onsp+new_lu)
-                  !----- Update AGB, basal area. ------------------------------------------!
+                 !----- Update AGB, basal area. ------------------------------------------!
                   call update_site_derived_props(cpoly,1,isi)
                   !------------------------------------------------------------------------!
 
@@ -1939,9 +1936,6 @@ module disturbance
       !     Committed carbon emission pools must be included in the disturbed patch, to    !
       ! ensure that carbon is conserved.                                                   !
       !------------------------------------------------------------------------------------!
-      csite%cbudget_committed          (np) = csite%cbudget_committed          (np)        &
-                                            + csite%cbudget_committed          (cp)        &
-                                            * area_fac
       csite%commit_storage_resp        (np) = csite%commit_storage_resp        (np)        &
                                             + csite%commit_storage_resp        (cp)        &
                                             * area_fac
@@ -1949,6 +1943,8 @@ module disturbance
                                             + csite%commit_growth_resp         (cp)        &
                                             * area_fac
       !------------------------------------------------------------------------------------!
+
+
 
       !----- Reproduction array. ----------------------------------------------------------!
       do k=1,n_pft

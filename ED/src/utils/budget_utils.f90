@@ -35,25 +35,29 @@ module budget_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine initialises all the budget variables.  This is called only once, !
-   ! at the beginning of the simulation, after all variables have been initialised.        !
+   !     This sub-routine initialises all the budget variables.  This is called at the     !
+   ! beginning of the simulation, after all variables have been initialised, for all       !
+   ! patches.  This subroutine is then called every year after the vegetation dynamics,    !
+   ! but only for recent patches.                                                          !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_init_budget(cgrid)
-     
+   subroutine ed_init_budget(cgrid,initial)
       use ed_state_vars, only : edtype       & ! structure
                               , polygontype  & ! structure
                               , sitetype     ! ! structure
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
-      type(edtype)     , target    :: cgrid
+      type(edtype)     , target     :: cgrid
+      logical          , intent(in) :: initial
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype), pointer   :: cpoly
-      type(sitetype)   , pointer   :: csite
-      integer                      :: ipy
-      integer                      :: isi
-      integer                      :: lsl
-      integer                      :: ipa
+      type(polygontype), pointer    :: cpoly
+      type(sitetype)   , pointer    :: csite
+      integer                       :: ipy
+      integer                       :: isi
+      integer                       :: lsl
+      integer                       :: ipa
+      !----- Local constants. -------------------------------------------------------------!
+      real             , parameter  :: age_min = 1.0 / 24.0
       !------------------------------------------------------------------------------------!
 
 
@@ -66,8 +70,15 @@ module budget_utils
             csite => cpoly%site(isi)
             lsl   =  cpoly%lsl (isi)
             patchloop: do ipa=1,csite%npatches
-               !---- Reset patch budget variables. ----------------------------------------!
-               call initial_patch_budget(csite,lsl,ipa)
+               !---------------------------------------------------------------------------!
+               !     Reset patch budget variables, but first check whether this is         !
+               ! the initialisation step, or if the patch has age zero (just created).     !
+               !---------------------------------------------------------------------------!
+               if (initial .or. (csite%age(ipa) < age_min)) then
+                  !---- Reset patch budget variables. -------------------------------------!
+                  call initial_patch_budget(csite,lsl,ipa)
+                  !------------------------------------------------------------------------!
+               end if
                !---------------------------------------------------------------------------!
             end do patchloop
          end do siteloop
@@ -158,41 +169,6 @@ module budget_utils
 
       return
    end subroutine initial_patch_budget
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This subroutine should be used for testing only.  It resets the storage terms.    !
-   !---------------------------------------------------------------------------------------!
-   subroutine storage_patch_budget(csite,lsl,ipa)
-      use ed_state_vars, only : sitetype ! ! intent(in)
-      implicit none
-
-      !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)   , target     :: csite
-      integer          , intent(in) :: lsl
-      integer          , intent(in) :: ipa
-      !----- Local variables. -------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Compute current storage terms. -----------------------------------------------!
-      csite%co2budget_initialstorage(ipa) = compute_co2_storage     (csite,ipa)
-      csite%cbudget_initialstorage  (ipa) = compute_carbon_storage  (csite,ipa)
-      csite%wbudget_initialstorage  (ipa) = compute_water_storage   (csite,lsl,ipa)
-      csite%ebudget_initialstorage  (ipa) = compute_enthalpy_storage(csite,lsl,ipa)
-      !------------------------------------------------------------------------------------!
-
-
-
-      return
-   end subroutine storage_patch_budget
    !=======================================================================================!
    !=======================================================================================!
 

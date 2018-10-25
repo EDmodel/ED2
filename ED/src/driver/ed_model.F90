@@ -227,7 +227,7 @@ subroutine ed_model()
    !      Last, we initialise the budget variables.                                        !
    !---------------------------------------------------------------------------------------!
    do ifm=1,ngrids
-      call ed_init_budget(edgrid_g(ifm))
+      call ed_init_budget(edgrid_g(ifm),.true.)
    end do
    !---------------------------------------------------------------------------------------!
 

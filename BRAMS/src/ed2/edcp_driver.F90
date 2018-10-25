@@ -286,7 +286,7 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Initialise budget variables...'
    do ifm=1,ngrids
-      call ed_init_budget(edgrid_g(ifm))
+      call ed_init_budget(edgrid_g(ifm),.true.)
    end do
    !---------------------------------------------------------------------------------------!
 
