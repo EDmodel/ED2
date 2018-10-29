@@ -5902,7 +5902,13 @@ module fuse_fiss_utils
                                      , uint2tl                       & ! subroutine
                                      , idealdenssh                   & ! function
                                      , press2exner                   & ! function
-                                     , extheta2temp                  ! ! function
+                                     , exner2press                   & ! function
+                                     , extemp2theta                  & ! function
+                                     , extheta2temp                  & ! function
+                                     , tq2enthalpy                   & ! function
+                                     , hq2temp                       & ! function
+                                     , thetaeiv                      & ! function
+                                     , vpdefil                       ! ! function
       use ed_misc_coms        , only : writing_long                  & ! intent(in)
                                      , writing_eorq                  & ! intent(in)
                                      , writing_dcyc                  & ! intent(in)
@@ -5937,10 +5943,24 @@ module fuse_fiss_utils
       integer                              :: t                 ! Counter for time of day
       integer                              :: ndc               ! # of cohorts - donp patch
       integer                              :: nrc               ! # of cohorts - recp patch
-      real                                 :: can_exner         ! Exner function - CAS
+      real                                 :: xmean_can_exner   ! Exner function - CAS
       real                                 :: newarea           ! new patch area
       real                                 :: newareai          ! 1./(new patch area)
       real                                 :: area_scale        ! Cohort rescaling factor.
+      !----- The following variables are for conserving canopy air space. -----------------!
+      real  :: can_enthalpy_recp !< Specific enthalpy  (receptor)               [     J/kg]
+      real  :: can_enthalpy_donp !< Specific enthalpy  (donor)                  [     J/kg]
+      real  :: can_rvap_recp     !< Water mixing ratio (receptor)               [    kg/kg]
+      real  :: can_exner_recp    !< Exner function     (receptor)               [   J/kg/K]
+      real  :: can_exner_donp    !< Exner function     (donor)                  [   J/kg/K]
+      real  :: cb_enthalpy_recp  !< Total enthalpy     (receptor)               [     J/m2]
+      real  :: cb_enthalpy_donp  !< Total enthalpy     (donor)                  [     J/m2]
+      real  :: cb_mass_recp      !< Total water mass   (receptor)               [kg_air/m2]
+      real  :: cb_mass_donp      !< Total water mass   (donor)                  [kg_air/m2]
+      real  :: cb_water_recp     !< Total water mass   (receptor)               [kg_h2o/m2]
+      real  :: cb_water_donp     !< Total water mass   (donor)                  [kg_h2o/m2]
+      real  :: cb_co2_recp       !< Total CO2 mass     (receptor)               [kg_co2/m2]
+      real  :: cb_co2_donp       !< Total CO2 mass     (donor)                  [kg_co2/m2]
       !------------------------------------------------------------------------------------!
      
       !------------------------------------------------------------------------------------!
@@ -6055,38 +6075,6 @@ module fuse_fiss_utils
                                      ( csite%sum_chd(donp)            * csite%area(donp)   &
                                      + csite%sum_chd(recp)            * csite%area(recp) )
 
-      csite%can_co2(recp)            = newareai *                                          &
-                                     ( csite%can_co2(donp)            * csite%area(donp)   &
-                                     + csite%can_co2(recp)            * csite%area(recp) )
-
-      csite%can_theta(recp)          = newareai *                                          &
-                                     ( csite%can_theta(donp)          * csite%area(donp)   &
-                                     + csite%can_theta(recp)          * csite%area(recp) )
-
-      csite%can_temp_pv(recp)        = newareai *                                          &
-                                     ( csite%can_temp_pv(donp)        * csite%area(donp)   &
-                                     + csite%can_temp_pv(recp)        * csite%area(recp) )
-
-      csite%can_theiv(recp)          = newareai *                                          &
-                                     ( csite%can_theiv(donp)          * csite%area(donp)   &
-                                     + csite%can_theiv(recp)          * csite%area(recp) )
-
-      csite%can_vpdef(recp)          = newareai *                                          &
-                                     ( csite%can_vpdef(donp)          * csite%area(donp)   &
-                                     + csite%can_vpdef(recp)          * csite%area(recp) )
-
-      csite%can_prss(recp)           = newareai *                                          &
-                                     ( csite%can_prss(donp)           * csite%area(donp)   &
-                                     + csite%can_prss(recp)           * csite%area(recp) )
-
-      csite%can_shv(recp)            = newareai *                                          &
-                                     ( csite%can_shv(donp)            * csite%area(donp)   &
-                                     + csite%can_shv(recp)            * csite%area(recp) )
-
-      csite%can_depth(recp)          = newareai *                                          &
-                                     ( csite%can_depth(donp)          * csite%area(donp)   &
-                                     + csite%can_depth(recp)          * csite%area(recp) )
-
       csite%ggbare(recp)             = newareai *                                          &
                                      ( csite%ggbare(donp)             * csite%area(donp)   &
                                      + csite%ggbare(recp)             * csite%area(recp) )
@@ -6114,8 +6102,82 @@ module fuse_fiss_utils
       csite%cstar (recp)             = newareai *                                          &
                                      ( csite%cstar (donp)             * csite%area(donp)   &
                                      + csite%cstar (recp)             * csite%area(recp) )
+      !------------------------------------------------------------------------------------!
 
-      
+
+
+      !------------------------------------------------------------------------------------!
+      !      Fusion of canopy air space must ensure mass and enthalpy conservation.        !
+      ! Total mass [kg/m2] is rho*z.  We assume that the canopy depth of the fused patch   !
+      ! is going to be the weighted average (in case it is slightly different, we correct  !
+      ! it later in the subroutine).                                                       !
+      !                                                                                    !
+      !    For the time being this is only applied to the instantaneous (state) variables  !
+      ! because these are the ones that are used in the budget assessment sub-routines.    !
+      ! The ?mean variables are for diagnostics only; even though they could go with the   !
+      ! same approach, we use the simpler fusion for the time being.                       !
+      !------------------------------------------------------------------------------------!
+      !------ Find the specific enthalpy of receptor and donor patch [J/kg]. --------------!
+      can_enthalpy_recp = tq2enthalpy(csite%can_temp(recp),csite%can_shv (recp),.true.)
+      can_enthalpy_donp = tq2enthalpy(csite%can_temp(donp),csite%can_shv (donp),.true.)
+      !------ The fused pressure is derived from fusion of Exner function. ----------------!
+      can_exner_recp    = press2exner(csite%can_prss(recp))
+      can_exner_donp    = press2exner(csite%can_prss(donp))
+      !------ Find the total canopy air space mass [kg_air/m2]. ---------------------------!
+      cb_mass_recp      = csite%can_rhos(recp) * csite%can_depth(recp)
+      cb_mass_donp      = csite%can_rhos(donp) * csite%can_depth(donp)
+      !------ Find the bulk enthalpy of receptor and donor patch [J/m2]. ------------------!
+      cb_enthalpy_recp  = cb_mass_recp * can_enthalpy_recp
+      cb_enthalpy_donp  = cb_mass_donp * can_enthalpy_donp
+      !------ Find the total water mass [kg_h2o/m2]. --------------------------------------!
+      cb_water_recp     = cb_mass_recp * csite%can_shv(recp)
+      cb_water_donp     = cb_mass_donp * csite%can_shv(donp)
+      !------ Find the total CO2 mass [kg_co2/m2]. ----------------------------------------!
+      cb_co2_recp       = cb_mass_recp * csite%can_co2(recp)
+      cb_co2_donp       = cb_mass_donp * csite%can_co2(donp)
+      !------ Find the total properties (X/m2) of the fused patch. ------------------------!
+      cb_enthalpy_recp         = newareai * ( cb_enthalpy_donp      * csite%area(donp)     &
+                                            + cb_enthalpy_recp      * csite%area(recp) )
+      cb_mass_recp             = newareai * ( cb_mass_donp          * csite%area(donp)     &
+                                            + cb_mass_recp          * csite%area(recp) )
+      cb_water_recp            = newareai * ( cb_water_donp         * csite%area(donp)     &
+                                            + cb_water_recp         * csite%area(recp) )
+      cb_co2_recp              = newareai * ( cb_co2_donp           * csite%area(donp)     &
+                                            + cb_co2_recp           * csite%area(recp) )
+      !------ Find the fused canopy depth using the regular weighting average. ------------!
+      csite%can_depth  (recp)  = newareai * ( csite%can_depth(donp) * csite%area(donp)     &
+                                            + csite%can_depth(recp) * csite%area(recp) )
+      !------ Find the fused Exner function using the regular weighting average. ----------!
+      can_exner_recp           = newareai * ( can_exner_donp    * csite%area(donp)         &
+                                            + can_exner_recp    * csite%area(recp) )
+      !------ Find air density and the specific properties. -------------------------------!
+      csite%can_rhos    (recp) = cb_mass_recp     / csite%can_depth(recp)
+      can_enthalpy_recp        = cb_enthalpy_recp / cb_mass_recp
+      csite%can_shv     (recp) = cb_water_recp    / cb_mass_recp
+      csite%can_co2     (recp) = cb_co2_recp      / cb_mass_recp
+      !------ Water mixing ratio (used by can_theiv). -------------------------------------!
+      can_rvap_recp            = csite%can_shv(recp) / (1.0 - csite%can_shv(recp))
+      csite%can_prss    (recp) = exner2press(can_exner_recp)
+      !------ Find temperature from enthalpy, then find potential temperature. ------------!
+      csite%can_temp    (recp) = hq2temp(can_enthalpy_recp,csite%can_shv(recp),.true.)
+      csite%can_theta   (recp) = extemp2theta(can_exner_recp,csite%can_temp(recp))
+      csite%can_theiv   (recp) = thetaeiv( csite%can_theta(recp), csite%can_prss (recp)    &
+                                         , csite%can_temp (recp), can_rvap_recp            &
+                                         , can_rvap_recp        )
+      !------ Update vapour pressure deficit. ---------------------------------------------!
+      csite%can_vpdef   (recp) = vpdefil( csite%can_prss(recp), csite%can_temp(recp)       &
+                                        , csite%can_shv (recp), .true.               )
+      !------------------------------------------------------------------------------------!
+      !      Previous temperature likely needs to be done differently for a truly          !
+      ! conserving model, however it does not directly affect the current state.  Leaving  !
+      ! the simple approach for now.                                                       !
+      !------------------------------------------------------------------------------------!
+      csite%can_temp_pv (recp) = newareai * ( csite%can_temp_pv(donp) * csite%area(donp)   &
+                                            + csite%can_temp_pv(recp) * csite%area(recp) )
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !    There is no guarantee that there will be a minimum amount of mass in the tempo- !
       ! rary layer, nor is there any reason for both patches to have the same number of    !
@@ -6174,8 +6236,8 @@ module fuse_fiss_utils
          csite%sfcwater_energy(1,recp) = 0.
       end if
       !------------------------------------------------------------------------------------!
-      ! 4. Converting energy back to J/kg;                                                 !
-      ! 5. Finding temperature and liquid water fraction;                                  !
+      ! 4. Convert energy back to J/kg;                                                    !
+      ! 5. Find temperature and liquid water fraction;                                     !
       !    (Both are done in new_patch_sfc_props).                                         !
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -6733,13 +6795,15 @@ module fuse_fiss_utils
                                                  *   newareai
          !---------------------------------------------------------------------------------!
 
-        
+
+
          !---------------------------------------------------------------------------------!
          !      Now we find the derived properties for the canopy air space.               !
          !---------------------------------------------------------------------------------!
 
-         can_exner                   = press2exner (csite%fmean_can_prss(recp))
-         csite%fmean_can_temp (recp) = extheta2temp(can_exner,csite%fmean_can_theta (recp))
+         xmean_can_exner             = press2exner (csite%fmean_can_prss(recp))
+         csite%fmean_can_temp (recp) = extheta2temp( xmean_can_exner                       &
+                                                   , csite%fmean_can_theta (recp)          )
          csite%fmean_can_rhos (recp) = idealdenssh ( csite%fmean_can_prss  (recp)          &
                                                    , csite%fmean_can_temp  (recp)          &
                                                    , csite%fmean_can_shv   (recp)          )
@@ -7119,9 +7183,9 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
             !      Now we find the derived properties for the canopy air space.            !
             !------------------------------------------------------------------------------!
-            can_exner                   = press2exner (csite%dmean_can_prss(recp))
-            csite%dmean_can_temp (recp) =                                                  &
-                                        extheta2temp(can_exner,csite%dmean_can_theta(recp))
+            xmean_can_exner             = press2exner (csite%dmean_can_prss(recp))
+            csite%dmean_can_temp (recp) = extheta2temp( xmean_can_exner                    &
+                                                      , csite%dmean_can_theta(recp)        )
             csite%dmean_can_rhos (recp) = idealdenssh ( csite%dmean_can_prss  (recp)       &
                                                       , csite%dmean_can_temp  (recp)       &
                                                       , csite%dmean_can_shv   (recp)       )
@@ -7734,9 +7798,9 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
             !      Now we find the derived properties for the canopy air space.            !
             !------------------------------------------------------------------------------!
-            can_exner                   = press2exner (csite%mmean_can_prss(recp))
-            csite%mmean_can_temp (recp) =                                                  &
-                                        extheta2temp(can_exner,csite%mmean_can_theta(recp))
+            xmean_can_exner             = press2exner (csite%mmean_can_prss(recp))
+            csite%mmean_can_temp (recp) = extheta2temp( xmean_can_exner                    &
+                                                      , csite%mmean_can_theta (recp)       )
             csite%mmean_can_rhos (recp) = idealdenssh ( csite%mmean_can_prss  (recp)       &
                                                       , csite%mmean_can_temp  (recp)       &
                                                       , csite%mmean_can_shv   (recp)       )
@@ -8248,9 +8312,9 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                !      Now we find the derived properties for the canopy air space.         !
                !---------------------------------------------------------------------------!
-               can_exner                     = press2exner (csite%qmean_can_prss(t,recp))
-               csite%qmean_can_temp (t,recp) = extheta2temp( can_exner                     &
-                                                           , csite%qmean_can_theta(t,recp))
+               xmean_can_exner               = press2exner ( csite%qmean_can_prss (t,recp) )
+               csite%qmean_can_temp (t,recp) = extheta2temp( xmean_can_exner               &
+                                                           , csite%qmean_can_theta(t,recp) )
                csite%qmean_can_rhos (t,recp) = idealdenssh ( csite%qmean_can_prss (t,recp) &
                                                            , csite%qmean_can_temp (t,recp) &
                                                            , csite%qmean_can_shv  (t,recp) )
@@ -8395,10 +8459,12 @@ module fuse_fiss_utils
       ! + csite%snowfac(recp)                                                              !
       ! + csite%opencan_frac(recp)                                                         !
       !                                                                                    !
-      !     We do not update the canopy air space depth effect, because the effect is      !
-      ! already accounted for in the fusion above.                                         !
+      !     Even though the canopy air space depth effect is fused, there may be an        !
+      ! additional residual effect after cohort fusion/fission/termination.  Just to be    !
+      ! safe, we also account for these changes.  The only time we do not check it is      !
+      ! during initialisation.                                                             !
       !------------------------------------------------------------------------------------!
-      call update_patch_derived_props(csite,recp,.false.)
+      call update_patch_derived_props(csite,recp,.not. fuse_initial)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
