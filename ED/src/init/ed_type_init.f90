@@ -2537,4 +2537,67 @@ module ed_type_init
    end subroutine new_patch_sfc_props
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine initialises the viable flag of all cohorts.  This must be done    !
+   ! after most of the initialisation but before the first time step.  When RUNTYPE is     !
+   ! HISTORY, this variable is not initialised (it cannot be read from history files as it !
+   ! is a Boolean variable, and it is never initialised through init_ed_cohort_vars, which !
+   ! likely causes all cohorts to be considered not viable.                                !
+   !---------------------------------------------------------------------------------------!
+   subroutine ed_init_viable(cgrid)
+      use ed_state_vars, only : edtype         & ! structure
+                              , polygontype    & ! structure
+                              , sitetype       & ! structure
+                              , patchtype      ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target  :: cgrid
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer :: cpoly
+      type(sitetype)   , pointer :: csite
+      type(patchtype)  , pointer :: cpatch
+      integer                    :: ipy
+      integer                    :: isi
+      integer                    :: ipa
+      integer                    :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Loop over polygons, sites, patches, and cohorts, and make them all viable.    !
+      !------------------------------------------------------------------------------------!
+      polyloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+
+         siteloop: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+            patchloop: do ipa = 1,csite%npatches
+               cpatch => csite%patch(ipa)
+
+               cohortloop: do ico = 1,cpatch%ncohorts
+                  cpatch%is_viable(ico) = .true.
+               end do cohortloop
+               !---------------------------------------------------------------------------!
+            end do patchloop
+            !------------------------------------------------------------------------------!
+         end do siteloop
+         !---------------------------------------------------------------------------------!
+      end do polyloop
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end subroutine ed_init_viable
+   !=======================================================================================!
+   !=======================================================================================!
 end module ed_type_init
+!==========================================================================================!
+!==========================================================================================!

@@ -83,6 +83,7 @@ subroutine ed_init_atm()
    integer                        :: ping
    real                           :: site_area_i
    real                           :: poly_area_i
+   real                           :: poly_agb
    real                           :: poly_lai
    real                           :: poly_nplant
    real                           :: elim_nplant
@@ -244,10 +245,26 @@ subroutine ed_init_atm()
                   !------------------------------------------------------------------------!
                   cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                   !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Set the logical flag for viable cohort to true.  In case this is a !
+                  ! history initialisation, subroutine init_ed_cohorts_vars is not called, !
+                  ! and the variable is never properly initialised, and likely set to      !
+                  ! .false. by default, which causes all cohorts to disappear.             !
+                  !------------------------------------------------------------------------!
+                  cpatch%is_viable(ico) = .true.
+                  !------------------------------------------------------------------------!
                end do cohortloop1
+               !---------------------------------------------------------------------------!
             end do patchloop1
+            !------------------------------------------------------------------------------!
          end do siteloop1
+         !---------------------------------------------------------------------------------!
       end do polyloop1
+      !------------------------------------------------------------------------------------!
+
+
 
 
       !------------------------------------------------------------------------------------!
@@ -484,6 +501,7 @@ subroutine ed_init_atm()
             ncohorts     = 0
             npatches     = 0
             poly_lai     = 0.0
+            poly_agb     = 0.0
             poly_nplant  = 0.0
 
             cpoly => cgrid%polygon(ipy)
@@ -511,6 +529,9 @@ subroutine ed_init_atm()
 
                   cohortloop3: do ico = 1,cpatch%ncohorts
                      ncohorts=ncohorts+1
+                     poly_agb    = poly_agb + cpatch%nplant(ico) * cpatch%agb(ico)         &
+                                            * csite%area(ipa) * cpoly%area(isi)            &
+                                            * site_area_i * poly_area_i
                      poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)            &
                                             * cpoly%area(isi) * site_area_i * poly_area_i
                      poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)      &
@@ -521,9 +542,9 @@ subroutine ed_init_atm()
             end do siteloop3
 
             write(unit = *                                                                 &
-                 ,fmt  = '(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i6,1x))')  &
+                 ,fmt  = '(2(a,1x,i6,1x),3(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i6,1x))')  &
                      'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)  &
-                    ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                           &
+                    ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai,'Avg. AGB:',poly_agb      &
                     ,'NPatches:',npatches,'NCohorts:',ncohorts
          end do polyloop3
          !---------------------------------------------------------------------------------!

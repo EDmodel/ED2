@@ -2395,6 +2395,10 @@ module growth_balive
                                                            ,current_time%date              &
                                                            ,current_time%time
          write(unit=*,fmt=fmti )  ' PATCH               : ',ipa
+         write(unit=*,fmt=fmti )  ' DIST_TYPE           : ',csite%dist_type(ipa)
+         write(unit=*,fmt=fmti )  ' NCOHORTS            : ',cpatch%ncohorts
+         write(unit=*,fmt=fmtf )  ' AGE                 : ',csite%age(ipa)
+         write(unit=*,fmt=fmtf )  ' VEG_HEIGHT          : ',csite%veg_height(ipa)
          write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
          write(unit=*,fmt=fmtf )  ' BALIVE_IN           : ',pat_balive_in
          write(unit=*,fmt=fmtf )  ' BDEAD_IN            : ',pat_bdead_in

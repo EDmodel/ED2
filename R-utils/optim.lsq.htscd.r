@@ -225,21 +225,27 @@ optim.lsq.htscd <<- function( lsq.formula
                                            , lsq.first    = lsq.first
                                            , err.method   = "hess"
                                            , optim.method = optim.method
+                                           , is.debug     = is.debug
                                            )#end optim.lsq.htscd
-         data$sigma       = sqrt(zero$residuals^2)
-         data$yres        = zero$residuals
-         data$yhat        = zero$fitted
-         s1.formula       = as.formula(paste(c("sigma",as.character(sig.formula)),collapse=" "))
+         sdata            = data
+         sdata$sigma      = sqrt(as.numeric(c(unlist(zero$residuals)))^2)
+         sdata$ssyres     = as.numeric(c(unlist(zero$residuals)))
+         sdata$ssyhat     = as.numeric(c(unlist(zero$fitted   )))
+         s1st.formula     = paste(c("sigma",as.character(sig.formula)),collapse=" ")
+         s1st.formula     = gsub(pattern="yres",replacement="ssyres",x=s1st.formula)
+         s1st.formula     = gsub(pattern="yhat",replacement="ssyhat",x=s1st.formula)
+         s1st.formula     = as.formula(s1st.formula)
          sig.first        = modifyList( x   = list(sigma0=mean(zero$sigma))
                                       , val = sig.first
                                       )#end modifyList
-         sig.fit          = optim.lsq.htscd( lsq.formula = s1.formula
+         sig.fit          = optim.lsq.htscd( lsq.formula = s1st.formula
                                            , sig.formula = NULL
-                                           , data        = data
+                                           , data        = sdata
                                            , se.data     = NULL
                                            , lsq.first   = sig.first
                                            , err.method  = "hess"
                                            , optim.method = optim.method
+                                           , is.debug     = is.debug
                                            )#end optim.lsq.htscd
          sig.first        = coefficients(sig.fit)
          names(sig.first) = gsub(pattern="^lsq\\.",replacement="",x=names(sig.first))

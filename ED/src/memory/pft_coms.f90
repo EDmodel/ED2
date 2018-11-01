@@ -536,10 +536,22 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Bs_large
    !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
    real   , dimension(n_pft)    :: b2Bs_large
+   !----- stem-DBH allometry intercept.  All PFTs. ----------------------------------------!
+   real   , dimension(n_pft)    :: d1DBH_small
+   !----- stem-DBH allometry slope (dimensionless).  All PFTs. ----------------------------!
+   real   , dimension(n_pft)    :: d2DBH_small
+   !----- stem-DBH allometry intercept for large DBH cohorts. -----------------------------!
+   real   , dimension(n_pft)    :: d1DBH_large
+   !----- stem-DBH allometry slope for large DBH cohorts. ---------------------------------!
+   real   , dimension(n_pft)    :: d2DBH_large
    !----- DBH-leaf allometry intercept. All PFTs. -----------------------------------------!
    real   , dimension(n_pft)    :: b1Bl
    !----- DBH-leaf allometry slope. All PFTs. ---------------------------------------------!
    real   , dimension(n_pft)    :: b2Bl
+   !----- Leaf-DBH allometry intercept. All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: l1DBH
+   !----- Leaf-DBH allometry slope. All PFTs. ---------------------------------------------!
+   real   , dimension(n_pft)    :: l2DBH
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!

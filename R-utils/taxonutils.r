@@ -2627,9 +2627,9 @@ find.trait <<- function( datum
                   smp.country   = t.country  [smp.idx]
                   smp.continent = t.continent[smp.idx]
                }else{
-                  smp.trait     = weighted.mean(x=t.value    ,w=t.weight,na.rm=TRUE)
-                  smp.country   = weighted.mean(x=t.country  ,w=t.weight,na.rm=TRUE)
-                  smp.continent = weighted.mean(x=t.continent,w=t.weight,na.rm=TRUE)
+                  smp.trait     = weighted.mean     (x=t.value    ,w=t.weight,na.rm=TRUE)
+                  smp.country   = weighted.commonest(x=t.country  ,w=t.weight,na.rm=TRUE)
+                  smp.continent = weighted.commonest(x=t.continent,w=t.weight,na.rm=TRUE)
                }#end if (fsample)
                #---------------------------------------------------------------------------#
 
@@ -2749,9 +2749,9 @@ find.trait <<- function( datum
                smp.country   = t.country  [smp.idx]
                smp.continent = t.continent[smp.idx]
             }else{
-               smp.trait     = weighted.mean(x=t.value    ,w=t.weight,na.rm=TRUE)
-               smp.country   = weighted.mean(x=t.country  ,w=t.weight,na.rm=TRUE)
-               smp.continent = weighted.mean(x=t.continent,w=t.weight,na.rm=TRUE)
+               smp.trait     = weighted.mean     (x=t.value    ,w=t.weight,na.rm=TRUE)
+               smp.country   = weighted.commonest(x=t.country  ,w=t.weight,na.rm=TRUE)
+               smp.continent = weighted.commonest(x=t.continent,w=t.weight,na.rm=TRUE)
             }#end if (fsample)
             #------------------------------------------------------------------------------#
 
@@ -2839,9 +2839,9 @@ find.trait <<- function( datum
          smp.country   = t.country  [smp.idx]
          smp.continent = t.continent[smp.idx]
       }else{
-         smp.trait     = weighted.mean(x=t.value    ,w=t.weight,na.rm=TRUE)
-         smp.country   = weighted.mean(x=t.country  ,w=t.weight,na.rm=TRUE)
-         smp.continent = weighted.mean(x=t.continent,w=t.weight,na.rm=TRUE)
+         smp.trait     = weighted.mean     (x=t.value    ,w=t.weight,na.rm=TRUE)
+         smp.country   = weighted.commonest(x=t.country  ,w=t.weight,na.rm=TRUE)
+         smp.continent = weighted.commonest(x=t.continent,w=t.weight,na.rm=TRUE)
       }#end if (fsample)
       #------------------------------------------------------------------------------------#
 

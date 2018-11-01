@@ -610,7 +610,7 @@ module ed_init_history
       call hdf_getslab_r(cgrid%cbudget_removedstorage  (ipy:ipy)                           &
                         ,'CBUDGET_REMOVEDSTORAGE_PY ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cgrid%nbudget_initialstorage  (ipy:ipy)                           &
-                        ,'NBUDGET_INITIALSTORAGE '   ,dsetrank,iparallel,.true. ,foundvar)
+                        ,'NBUDGET_INITIALSTORAGE_PY ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cgrid%Cleaf_grow              (ipy:ipy)                           &
                         ,'CLEAF_GROW '               ,dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%Croot_grow              (ipy:ipy)                           &

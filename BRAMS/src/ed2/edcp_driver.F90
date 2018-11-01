@@ -42,7 +42,8 @@ subroutine ed_coup_driver()
                                    , zero_ed_mmean_vars    ! ! sub-routine
    use hrzshade_utils       , only : init_cci_variables    ! ! subroutine
    use canopy_radiation_coms, only : ihrzrad               ! ! intent(in)
-   use budget_utils         , only : ed_init_budget        ! ! intent(in)
+   use budget_utils         , only : ed_init_budget        ! ! sub-routine
+   use ed_type_init         , only : ed_init_viable        ! ! sub-routine
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -282,11 +283,15 @@ subroutine ed_coup_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Last, we initialise the budget variables.                                        !
+   !      Last, we initialise the budget variables and set all cohorts to be viable.  In   !
+   ! case this is a history initialisation, subroutine init_ed_cohorts_vars is not called, !
+   ! and the variable is never properly initialised, and likely set to .false. by default, !
+   ! which causes all cohorts to disappear.                                                !
    !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Initialise budget variables...'
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Initialise budget and viable...'
    do ifm=1,ngrids
       call ed_init_budget(edgrid_g(ifm),.true.)
+      call ed_init_viable(edgrid_g(ifm))
    end do
    !---------------------------------------------------------------------------------------!
 

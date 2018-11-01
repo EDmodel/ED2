@@ -88,6 +88,7 @@ subroutine ed_model()
    use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
    use budget_utils        , only : ed_init_budget              ! ! intent(in)
    use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
+   use ed_type_init        , only : ed_init_viable              ! ! sub-routine
    implicit none
    !----- Common blocks. ------------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -224,10 +225,14 @@ subroutine ed_model()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Last, we initialise the budget variables.                                        !
+   !      Last, we initialise the budget variables and set all cohorts to be viable.  In   !
+   ! case this is a history initialisation, subroutine init_ed_cohorts_vars is not called, !
+   ! and the variable is never properly initialised, and likely set to .false. by default, !
+   ! which causes all cohorts to disappear.                                                !
    !---------------------------------------------------------------------------------------!
    do ifm=1,ngrids
       call ed_init_budget(edgrid_g(ifm),.true.)
+      call ed_init_viable(edgrid_g(ifm))
    end do
    !---------------------------------------------------------------------------------------!
 

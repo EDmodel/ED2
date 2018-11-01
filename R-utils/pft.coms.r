@@ -243,6 +243,21 @@ if ("iallom" %in% ls()){
 
 
 #------------------------------------------------------------------------------------------#
+#    These variables define the set of traits to use                                       #
+# 0 - ED-2.1, mostly based on Reich et al. (1997), with a few updates using Wright et al.  #
+#     (2004)                                                                               #
+# 1 - Mostly TRY database, with additional data from NGEE-Tropics, RAINFOR, and GLOPNET.   #
+#------------------------------------------------------------------------------------------#
+if ("iecon" %in% ls()){
+   iecon <<- iecon
+}else{
+   iecon <<- 1
+}#end if
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
 #     Factors for leaf:sapwood biomass ratio.  The original ED-1 number is incorrect, and  #
 # we keep it incorrect unless the PFT is tropical and allometry is set to 4, in which case #
 # we combine the pipe model with the data from Calvo-Alvarado et al. (2008) (and shape     #
@@ -334,16 +349,31 @@ if (iallom %in% c(0,1)){
    #---------------------------------------------------------------------------------------#
 }else if (iallom %in% c(3)){
    #---------------------------------------------------------------------------------------#
-   #     Allometric equation based on the fitted curve by Feldpausch et al. (2012) for     #
-   # South America.                                                                        #
+   #     Allometric equation based on the fitted curve using the Sustainable Landscapes    #
+   # data set (L16) and the size- and site-dependent stratified sampling and aggregation   #
+   # (J17).  This relationship is fitted using Standardised Major Axis (SMA) so the same   #
+   # parameters can be used for y=f(x) and x=f(y).  This is particularly useful when       #
+   # initialising the model with airborne lidar data.  Because it would be extremely       #
+   # cumbersome to derive a SMA-based regression based on Weibull function, we use a log-  #
+   # linear relationship.  The maximum height is based on the 99% quantile of all trees    #
+   # measured by the SL team.                                                              #
    #                                                                                       #
-   # Feldpausch, T. R., et al. 2012.  Tree height integrated into pantropical forest       #
-   #    biomass estimates.  Biogeosciences, 9, 3381-3403. doi:10.5194/bg-9-3381-2012.      #
+   # References:                                                                           #
+   #                                                                                       #
+   # Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,            #
+   #    van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for          #
+   #    integrating remote sensing imagery into forest monitoring programmes.              #
+   #    Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).                    #
+   #                                                                                       #
+   # Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,         #
+   #    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability       #
+   #    across intact and degraded forests in the Brazilian Amazon.  Global Biogeochem.    #
+   #    Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16).                          #
    #---------------------------------------------------------------------------------------#
-   hgt.ref.trop = 42.574 # 47.173
-   b1Ht.trop    = 0.0482 # 0.044037
-   b2Ht.trop    = 0.8307 # 0.80248
-   hgt.max.trop = 40.0   # 37.5
+   hgt.ref.trop = NA_real_ #   49.574   # 42.574
+   b1Ht.trop    = 1.139963 #   0.0400   # 0.0482
+   b2Ht.trop    = 0.564899 #   0.8136   # 0.8307
+   hgt.max.trop = 46.0     #     43.0   # 40.0
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
@@ -354,24 +384,32 @@ if (iallom %in% c(0,1)){
 #------------------------------------------------------------------------------------------#
 #   Coefficients for leaf and structural biomass (iallom = 3).  For adult individuals,     #
 # we use the pantropical allometric equation from C14 that estimates AGB and the leaf      #
-# biomass from L83.  The allometric equation from L83 was slightly modified to account for #
-# variations of SLA amongst PFTs.                                                          #
+# biomass from an allometric equation derived from F15 data (tropical forest, wild         #
+# flowering trees only), and the size- and site-dependent stratified sampling and          #
+# aggregation (J17).  Total individual leaf area was fitted, so to get biomass we must     #
+# divide by SLA.  The C2B term is added here but is removed when the coefficients are set. #
 #                                                                                          #
 #  References:                                                                             #
 #                                                                                          #
-#   Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau. La         #
-#      phytomasse epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen.,     #
-#      4(3), 237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089 (L83)       #
+#   Chave, J, Rejou-Mechain M, Burquez A, Chidumayo E, Colgan MS, Delitti WB, Duque A,     #
+#      Eid T, Fearnside PM, Goodman RC et al. 2014. Improved allometric models to estimate #
+#      the aboveground biomass of tropical trees. Glob. Change Biol., 20(10), 3177-3190.   #
+#      doi:10.1111/gcb.12629 (C14).                                                        #
 #                                                                                          #
-#   Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to estimate  #
-#      the aboveground biomass of tropical trees. Glob. Change Biol., 20(10), 3177-3190,   #
-#      Oct 2014. doi:10.1111/gcb.12629 (C14).                                              #
+#   Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A, Aiba M,     #
+#      Ando M, Anten N, Aspinwall MJ. 2015. BAAD: a biomass and allometry database for     #
+#      woody plants. Ecology, 96 (5):1445-1445. doi:10.1890/14-1889.1 (F16).               #
+#                                                                                          #
+#   Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,             #
+#      van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for           #
+#      integrating remote sensing imagery into forest monitoring programmes.               #
+#      Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).                     #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-c14l83.bl.xx  = c(0.09747026,0.7587000)
-c14l83.bs.tf  = c(0.08204475,0.9814422)
-c14l83.bs.sv  = c(0.08013971,0.9818603)
-c14l83.bs.gr  = c(1.e-5,1.0) * c14l83.bl.xx
+c14f15.bl.xx  = c(0.46769540,0.6410495) # c(0.09747026,0.7587000)
+c14f15.bs.tf  = c(0.06080334,1.0044785) # c(0.08204475,0.9814422)
+c14f15.bs.sv  = c(0.05602791,1.0093501) # c(0.08013971,0.9818603)
+c14f15.bs.gr  = c(1.e-5,1.0) * c14f15.bl.xx
 SLA.ref       = 17.419
 rho.ref       = 0.610
 #------------------------------------------------------------------------------------------#
@@ -390,23 +428,29 @@ pft01 = list( name               = "C4 grass"
             , grass              = TRUE
             , liana              = FALSE
             , pathway            = 4
-            , rho                = if(iallom==3){0.08}else{0.20}
-            , SLA                = if(iallom==3){NA_real_}else{22.7}
+            , rho                = if(iecon == 1){0.08}else{0.20}
+            , SLA                = if(iecon == 1){NA_real_}else{22.7}
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , vm0                = if(iallom==3){NA_real_}else{12.500}
-            , mort3              = if(iallom==3){0.124}else{0.066}
+            , vm0                = if(iecon == 1){NA_real_}else{12.500}
+            , mort3              = if(iecon == 1){0.124}else{0.066}
             , leaf.turnover.rate = 2.0
-            , root.turnover.rate = NA
+            , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.99
@@ -423,23 +467,29 @@ pft02 = list( name               = "Early tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.450}else{0.53}
+            , rho                = if(iecon == 1){0.450}else{0.53}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , vm0                = if(iallom==3){NA_real_}else{18.75}
+            , vm0                = if(iecon == 1){NA_real_}else{18.75}
             , mort3              = NA_real_
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{1.0}
+            , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1.0}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -456,23 +506,29 @@ pft03 = list( name               = "Mid tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.615}else{0.71}
+            , rho                = if(iecon == 1){0.615}else{0.71}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , vm0                = if(iallom==3){NA_real_}else{12.50}
+            , vm0                = if(iecon == 1){NA_real_}else{12.50}
             , mort3              = NA_real_
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{0.5}
+            , leaf.turnover.rate = if(iecon == 1){NA_real_}else{0.5}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -489,23 +545,29 @@ pft04 = list( name               = "Late tropical"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.790}else{0.90}
+            , rho                = if(iecon == 1){0.790}else{0.90}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , vm0                = if(iallom==3){NA_real_}else{6.25}
+            , vm0                = if(iecon == 1){NA_real_}else{6.25}
             , mort3              = NA_real_
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{1./3.}
+            , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1./3.}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -527,7 +589,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , leaf.turnover.rate = 2.0
-            , root.turnover.rate = NA
+            , root.turnover.rate = NA_real_
             , vm0                = 18.3
             , mort3              = 0.066
             , hgt.ref            = 0.0
@@ -539,6 +601,12 @@ pft05 = list( name               = "Temperate C3 Grass"
             , b2Bs.small         = 1.0
             , b1Bs.large         = 1.e-5
             , b2Bs.large         = 1.0
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.99
@@ -555,7 +623,7 @@ pft06 = list( name               = "North Pine"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = NA
+            , rho                = NA_real_
             , SLA                = 6.0
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -572,6 +640,12 @@ pft06 = list( name               = "North Pine"
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
             , b2Bs.large         = 2.238
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -588,7 +662,7 @@ pft07 = list( name               = "South Pine"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = NA
+            , rho                = NA_real_
             , SLA                = 9.0
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -605,6 +679,12 @@ pft07 = list( name               = "South Pine"
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
             , b2Bs.large         = 2.238
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -621,7 +701,7 @@ pft08 = list( name               = "Late conifer"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = NA
+            , rho                = NA_real_
             , SLA                = 10.0
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -638,6 +718,12 @@ pft08 = list( name               = "Late conifer"
             , b2Bs.small         = 2.1536
             , b1Bs.large         = 0.1617
             , b2Bs.large         = 2.1536
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -654,7 +740,7 @@ pft09 = list( name               = "Early hardwood"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = NA
+            , rho                = NA_real_
             , SLA                = 30.0
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -671,6 +757,12 @@ pft09 = list( name               = "Early hardwood"
             , b2Bs.small         = 2.95954
             , b1Bs.large         = 0.02648
             , b2Bs.large         = 2.95954
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -687,7 +779,7 @@ pft10 = list( name               = "Mid hardwood"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = NA
+            , rho                = NA_real_
             , SLA                = 24.2
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -704,6 +796,12 @@ pft10 = list( name               = "Mid hardwood"
             , b2Bs.small         = 2.4572
             , b1Bs.large         = 0.1617
             , b2Bs.large         = 2.4572
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -720,7 +818,7 @@ pft11 = list( name               = "Late hardwood"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = NA
+            , rho                = NA_real_
             , SLA                = 60.0
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
@@ -737,6 +835,12 @@ pft11 = list( name               = "Late hardwood"
             , b2Bs.small         = 2.2518
             , b1Bs.large         = 0.235
             , b2Bs.large         = 2.2518
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -753,23 +857,29 @@ pft12 = list( name               = "Early savannah"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.461}else{0.53}
+            , rho                = if(iecon == 1){0.461}else{0.53}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , vm0                = if(iallom==3){NA_real_}else{18.75}
+            , vm0                = if(iecon == 1){NA_real_}else{18.75}
             , mort3              = NA_real_
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{1.0}
+            , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1.0}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -786,23 +896,29 @@ pft13 = list( name               = "Mid savannah"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.612}else{0.71}
+            , rho                = if(iecon == 1){0.612}else{0.71}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , vm0                = if(iallom==3){NA_real_}else{12.50}
+            , vm0                = if(iecon == 1){NA_real_}else{12.50}
             , mort3              = NA_real_
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{0.5}
+            , leaf.turnover.rate = if(iecon == 1){NA_real_}else{0.5}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -819,23 +935,29 @@ pft14 = list( name               = "Late Savannah"
             , grass              = FALSE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.756}else{0.90}
+            , rho                = if(iecon == 1){0.756}else{0.90}
             , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
-            , vm0                = if(iallom==3){NA_real_}else{6.25}
+            , vm0                = if(iecon == 1){NA_real_}else{6.25}
             , mort3              = NA_real_
-            , leaf.turnover.rate = if(iallom==3){NA_real_}else{1./3.}
+            , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1./3.}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -857,18 +979,24 @@ pft15 = list( name               = "Araucaria"
             , c2n.leaf           = 86.29189
             , leaf.width         = NA_real_
             , leaf.turnover.rate = 0.04160842
-            , root.turnover.rate = NA
+            , root.turnover.rate = NA_real_
             , vm0                = 15.625
             , mort3              = 0.001111
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -885,23 +1013,29 @@ pft16 = list( name               = "C3 grass"
             , grass              = TRUE
             , liana              = FALSE
             , pathway            = 3
-            , rho                = if(iallom==3){0.08}else{0.20}
-            , SLA                = if(iallom==3){NA_real_}else{22.7}
+            , rho                = if(iecon == 1){0.08}else{0.20}
+            , SLA                = if(iecon == 1){NA_real_}else{22.7}
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , leaf.turnover.rate = 2.0
-            , root.turnover.rate = NA
-            , vm0                = if(iallom==3){NA_real_}else{18.75}
-            , mort3              = if(iallom==3){0.124}else{0.066}
+            , root.turnover.rate = NA_real_
+            , vm0                = if(iecon == 1){NA_real_}else{18.75}
+            , mort3              = if(iecon == 1){0.124}else{0.066}
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.99
@@ -919,22 +1053,28 @@ pft17 = list( name               = "Liana"
             , liana              = TRUE
             , pathway            = 3
             , rho                = 0.59
-            , SLA                = NA
+            , SLA                = NA_real_
             , c2n.leaf           = NA_real_
             , leaf.width         = NA_real_
             , leaf.turnover.rate = 1.27
-            , root.turnover.rate = NA
+            , root.turnover.rate = NA_real_
             , vm0                = 9.09
             , mort3              = 0.06311576
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
+            , b1Bl               = NA_real_
+            , b2Bl               = NA_real_
+            , b1Bs.small         = NA_real_
+            , b2Bs.small         = NA_real_
+            , b1Bs.large         = NA_real_
+            , b2Bs.large         = NA_real_
+            , d1DBH.small        = NA_real_
+            , d2DBH.small        = NA_real_
+            , d1DBH.large        = NA_real_
+            , d2DBH.large        = NA_real_
+            , l1DBH              = NA_real_
+            , l2DBH              = NA_real_
             , b1Ca               = 2.490154
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
@@ -1004,15 +1144,15 @@ pft$vm0 = ifelse( test = pft$pathway == 4
 #    doi:10.1111/j.1461-0248.2009.01285.x (C09).                                           #
 #------------------------------------------------------------------------------------------#
 bltree  = pft$tropical & (! pft$conifer) & (! pft$liana) & (! pft$grass)
-ltor.s0 = ifelse( test = rep(iallom,npft+1) == 3
+ltor.s0 = ifelse( test = rep(iecon,npft+1) == 1
                 , yes  = 2.2349
                 , no   = NA_real_
                 )#end ifelse
-ltor.s1 = ifelse( test = rep(iallom,npft+1) == 3
+ltor.s1 = ifelse( test = rep(iecon,npft+1) == 1
                 , yes  = -3.98423
                 , no   = NA_real_
                 )#end ifelse
-sla.s0  = ifelse( test = rep(iallom,npft+1) == 3
+sla.s0  = ifelse( test = rep(iecon,npft+1) == 1
                 , yes  = ifelse( test = pft$grass
                                , yes  = 15.15900
                                , no   = 21.66777
@@ -1022,7 +1162,7 @@ sla.s0  = ifelse( test = rep(iallom,npft+1) == 3
                                , no   = exp(log(.1*C2B) + 2.4 * log(10.) - 0.46 * log(12.))
                                )#end if
                 )#end ifelse
-sla.s1  = ifelse( test = rep(iallom,npft+1) == 3
+sla.s1  = ifelse( test = rep(iecon,npft+1) == 1
                 , yes  = ifelse( test = pft$grass
                                , yes  = 0.8637294
                                , no   = 0.4314902
@@ -1032,22 +1172,22 @@ sla.s1  = ifelse( test = rep(iallom,npft+1) == 3
                                , no   = 0.46
                                )#end if
                 )#end ifelse
-vm0.s0  = ifelse( test = pft$grass & iallom == 3
+vm0.s0  = ifelse( test = pft$grass & iecon == 1
                 , yes  = ifelse( test = pft$pathway == 4
                                , yes  = 51.6/vm.q10.c4
                                , no   = 78.2/vm.q10.c3
                                )#end ifelse
-                , no   = ifelse( test = bltree & iallom == 3
+                , no   = ifelse( test = bltree & iecon == 1
                                , yes  = 7.82655 / vm.q10.c3
                                , no   = NA_real_
                                )#end ifelse
                 )#end ltor.s0
-vm0.s1  = ifelse( test = pft$grass & iallom == 3
+vm0.s1  = ifelse( test = pft$grass & iecon == 1
                 , yes  = ifelse( test = pft$pathway == 4
                                , yes  = 0.0
                                , no   = 0.0
                                )#end ifelse
-                , no   = ifelse( test = bltree & iallom == 3
+                , no   = ifelse( test = bltree & iecon == 1
                                , yes  = 1.56402 - 1.0 # -1 is to convert to area based.
                                , no   = NA_real_
                                )#end ifelse
@@ -1060,11 +1200,11 @@ vm0.ref = ifelse( test = pft$tropical | pft$grass
                                )#end mapply
                 )#end ifelse
 #---- Tree and grasses had almost the same curve for SLA and C:N ratio. Fit one curve. ----#
-c2nl.s0                = ifelse( test = (pft$grass | bltree) & iallom == 3
+c2nl.s0                = ifelse( test = (pft$grass | bltree) & iecon == 1
                                , yes  = 337.959
                                , no   = 1000./ ( 0.11289 + 0.129470 * vm0.ref )
                                )#end ltor.s0
-c2nl.s1                = ifelse( test = (pft$grass | bltree) & iallom == 3
+c2nl.s1                = ifelse( test = (pft$grass | bltree) & iecon == 1
                                , yes  = -0.834527
                                , no   = -1.0
                                )#end ltor.s0
@@ -1094,9 +1234,9 @@ pft$vm0                = ifelse( test = is.finite(pft$vm0)
                                )#end ifelse
 pft$root.turnover.rate = ifelse( test = is.finite(pft$root.turnover.rate)
                                , yes  = pft$root.turnover.rate
-                               , no   = ifelse(iallom==3,0.9,1.0) * pft$leaf.turnover.rate
+                               , no   = ifelse(iecon == 1,0.9,1.0) * pft$leaf.turnover.rate
                                )#end ifelse
-pft$bark.turnover.rate = ifelse( test = bltree & iallom == 3, yes = 0.4,no = 0.0)
+pft$bark.turnover.rate = ifelse( test = bltree & iecon == 1, yes = 0.4,no = 0.0)
 #------------------------------------------------------------------------------------------#
 
 
@@ -1107,11 +1247,11 @@ pft$bark.turnover.rate = ifelse( test = bltree & iallom == 3, yes = 0.4,no = 0.0
 
 pft$mort3  = ifelse( test = is.finite(pft$mort3)
                    , yes  = pft$mort3
-                   , no   = if (iallom == 3){
+                   , no   = if (iecon == 1){
                                exp(-0.396-5.20*pft$rho) - 1/126.
                             }else{
                                0.15 * (1. - pft$rho/0.9)
-                            }#end if (iallom == 3)
+                            }#end if (iecon == 1)
                    )#end ifelse
 #------------------------------------------------------------------------------------------#
 
@@ -1391,7 +1531,7 @@ pft$tpm0           = ifelse( test = pft$pathway == 4
 #     Define minimum and maximum height based on life form and allometry.                  #
 #------------------------------------------------------------------------------------------#
 pft$hgt.min = ifelse( test = pft$tropical
-                    , yes  = ifelse(test=pft$grass,yes=0.50,no=1.30           )
+                    , yes  = ifelse(test=pft$grass,yes=0.50,no=0.50           )
                     , no   = ifelse(test=pft$grass,yes=0.15,no=0.2+pft$hgt.ref)
                     )#end ifelse
 pft$hgt.max = ifelse( test = pft$tropical
@@ -1577,10 +1717,10 @@ pft$dbh.min   = rep(NA,times=npft+1)
 pft$dbh.crit  = rep(NA,times=npft+1)
 for (ipft in sequence(npft+1)){
    if (pft$tropical[ipft]){
-      if (iallom %in% c(0,1)){
+      if (iallom %in% c(0,1,3)){
          pft$dbh.min  [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit [ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
-      }else if (iallom %in% c(2,3)){
+      }else if (iallom %in% c(2)){
          pft$dbh.min [ipft] = ( log(   pft$hgt.ref[ipft]
                                    / ( pft$hgt.ref[ipft] - pft$hgt.min[ipft]) )
                               / pft$b1Ht[ipft] ) ^ (1.0 / pft$b2Ht[ipft])
@@ -1658,15 +1798,15 @@ for (ipft in sequence(npft+1)){
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(3)){
          if (pft$grass[ipft]){
-            c14l83.bs.xx = c14l83.bs.gr
+            c14f15.bs.xx = c14f15.bs.gr
          }else if (pft$savannah[ipft]){
-            c14l83.bs.xx = c14l83.bs.sv
+            c14f15.bs.xx = c14f15.bs.sv
          }else{
-            c14l83.bs.xx = c14l83.bs.tf
+            c14f15.bs.xx = c14f15.bs.tf
          }#end if (pft$grass[ipft])
          #---- Based on Chave/Lescure based allometry, with single coefficients. ----------#
-         pft$b1Bs.small[ipft] = c14l83.bs.xx[1] * pft$rho[ipft]^c14l83.bs.xx[2]
-         pft$b2Bs.small[ipft] = c14l83.bs.xx[2]
+         pft$b1Bs.small[ipft] = c14f15.bs.xx[1] * pft$rho[ipft]^c14f15.bs.xx[2]
+         pft$b2Bs.small[ipft] = c14f15.bs.xx[2]
          pft$b1Bs.large[ipft] = pft$b1Bs.small[ipft]
          pft$b2Bs.large[ipft] = pft$b2Bs.small[ipft]
          #---------------------------------------------------------------------------------#
@@ -1772,8 +1912,8 @@ for (ipft in sequence(npft+1)){
          #    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).                     #
          #                                                                                 #
          #---------------------------------------------------------------------------------#
-         pft$b1Bl[ipft] = c14l83.bl.xx[1] / pft$SLA[ipft] 
-         pft$b2Bl[ipft] = c14l83.bl.xx[2]
+         pft$b1Bl[ipft] = c14f15.bl.xx[1] / pft$SLA[ipft] 
+         pft$b2Bl[ipft] = c14f15.bl.xx[2]
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1845,26 +1985,67 @@ if (iallom %in% c(0)){
    pft$b1Rd  [sequence(npft+1)] = -1.1140580
    pft$b2Rd  [sequence(npft+1)] =  0.4223014
    #---------------------------------------------------------------------------------------#
-}else if (iallom %in% 3){
-   #---------------------------------------------------------------------------------------#
-   #     Allometry loosely based on Brum et al. (2018).  Attempts to implement their       #
-   # actual functions were unsucessful because the rooting depth for small- and medium-    #
-   # sized trees were extremely shallow, causing significant drought stress not captured   #
-   # by GPP estimated from towers.  We use their end points for small and large trees, and #
-   # apply a log-linear interpolation as a function of size.  This may be updated in the   #
-   # future to leverage from more isotopic data.                                           #
-   #---------------------------------------------------------------------------------------#
+}else if (iallom %in% c(3)){
+   #----- Experimental allometry combining Xu's data from Panama and Brum et al. (2018). --#
    pft$b1Rd = ifelse( test = pft$tropical & (! pft$liana)
-                    , yes  = ifelse(test=pft$grass,yes=-1.877408,no=-0.3152709)
+                    , yes  = ifelse(test=pft$grass,yes=-2.572,no=-0.947)
                     , no   = -1.1140580
                     )#end ifelse
    pft$b2Rd = ifelse( test = pft$tropical & (! pft$liana)
-                    , yes  = ifelse(test=pft$grass,yes=0.7334514,no=0.2777185)
-                    , no   =  0.4223014
+                    , yes  = ifelse(test=pft$grass,yes=0.246,no=0.148)
+                    , no   = 0.4223014
                     )#end ifelse
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
+
+
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#     BDead -> DBH parameters.  These are calculated a posteriori because they are just    #
+# the inverse of size->BDead allometry.                                                    #
+#------------------------------------------------------------------------------------------#
+pft$d2DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                        , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bs.small )
+                        , no   = 1.  / pft$b2Bs.small
+                        )#end ifelse
+pft$d1DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                        , yes  = ( C2B / ( pft$b1Bs.small * exp(pft$b1Ht*pft$b2Bs.small) ) )
+                               ^ pft$d2DBH.small
+                        , no   = ( C2B / pft$b1Bs.small ) ^ pft$d2DBH.small
+                        )#end ifelse
+pft$d2DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                        , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bs.large )
+                        , no   = 1.  / pft$b2Bs.large
+                        )#end ifelse
+pft$d1DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                        , yes  = ( C2B / ( pft$b1Bs.large * exp(pft$b1Ht*pft$b2Bs.large) ) )
+                               ^ pft$d2DBH.large
+                        , no   = ( C2B / pft$b1Bs.large ) ^ pft$d2DBH.large
+                        )#end ifelse
+pft$l2DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                        , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bl )
+                        , no   = 1.  / pft$b2Bl
+                        )#end ifelse
+pft$l1DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                        , yes  = ( C2B / ( pft$b1Bs * exp(pft$b1Ht*pft$b2Bl) ) )
+                               ^ pft$l2DBH
+                        , no   = ( C2B / pft$b1Bl ) ^ pft$l2DBH
+                        )#end ifelse
+pft$bdead.crit  = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                        , yes  = pft$b1Bs.small / C2B
+                               * ( pft$dbh.crit * pft$dbh.crit * pft$hgt.max)
+                               ^ pft$b2Bs.small
+                        , no   = pft$b1Bs.small / C2B * pft$dbh.crit ^ pft$b2Bs.small
+                        )#end ifelse
+#------------------------------------------------------------------------------------------#
+
+
+
+
 
 
 #------------------------------------------------------------------------------------------#
@@ -1918,8 +2099,8 @@ pft$b1WAI = ifelse( test = pft$grass
                   , yes  = 0.0
                   , no   = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
                                  , yes  = ifelse( test = pft$conifer
-                                                , yes  = 0.01757882
-                                                , no   = 0.00594221
+                                                , yes  = 0.01148449
+                                                , no   = 0.00378399
                                                 )#end ifelse
                                  , no   = ifelse( test = pft$conifer
                                                 , yes  = 0.0553 * 0.5
@@ -1931,8 +2112,8 @@ pft$b2WAI = ifelse( test = pft$grass
                   , yes  = 0.0
                   , no   = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
                                  , yes  = ifelse( test = pft$conifer
-                                                , yes  = 0.71986449
-                                                , no   = 0.76275995
+                                                , yes  = 0.77075160
+                                                , no   = 0.81667933
                                                 )#end ifelse
                                  , no   = ifelse( test = pft$conifer
                                                 , yes  = 1.9769

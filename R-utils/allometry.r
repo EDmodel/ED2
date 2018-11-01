@@ -8,8 +8,8 @@ h2dbh <<- function(h,ipft){
      zpft = ipft
    }#end if
 
-   tropo = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn = pft$tropical[zpft] & iallom %in% c(2,3)
+   tropo = pft$tropical[zpft] & iallom %in% c(0,1,3)
+   tropn = pft$tropical[zpft] & iallom %in% c(2)
    tempe = ! pft$tropical[zpft]
 
 
@@ -54,8 +54,8 @@ dbh2h <<- function(dbh,ipft,use.crit=TRUE){
       dbhuse = dbh
    }#end if (use.crit)
 
-   tropo         = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
+   tropo         = pft$tropical[zpft] & iallom %in% c(0,1,3)
+   tropn         = pft$tropical[zpft] & iallom %in% c(2)
    tempe         = ! pft$tropical[zpft]
 
    hgt.ref = pft$hgt.ref[zpft]
@@ -450,6 +450,9 @@ size2rd <<- function(hgt,dbh,ipft){
    }#end if
 
 
+   #----- Bound dbh with critical DBH to cap root growth. ---------------------------------#
+   dbhuse = pmin(dbh,pft$dbh.crit[zpft])
+   #---------------------------------------------------------------------------------------#
 
 
    if (iallom %in% c(0)){
@@ -464,6 +467,21 @@ size2rd <<- function(hgt,dbh,ipft){
       # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.              #
       #------------------------------------------------------------------------------------#
       rd = pft$b1Rd[zpft] * hgt ^ pft$b2Rd[zpft]
+      #------------------------------------------------------------------------------------#
+   }else if (iallom %in% 3){
+      #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). -------#
+      size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft])
+                       , yes  = dbhuse * dbhuse * hgt
+                       , no   = dbhuse
+                       )#end ifelse
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     For tropical trees and grasses, use Xiangtao's allometry based on root         #
+      # excavation data in Panama, otherwise use the same coefficients as iallom=2.        #
+      #------------------------------------------------------------------------------------#
+      rd = pft$b1Rd[zpft] * size ^ pft$b2Rd[zpft]
       #------------------------------------------------------------------------------------#
    }else{
       #------------------------------------------------------------------------------------#

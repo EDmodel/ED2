@@ -103,6 +103,27 @@ fi
 
 
 
+#------------------------------------------------------------------------------------------#
+#     Find the extention of the compressed file.                                           #
+#------------------------------------------------------------------------------------------#
+case ${bzip2} in
+*gzip*) 
+   ezip="gz"
+   ;;
+*bzip2*)
+   ezip="bz2"
+   ;;
+*compress*)
+   ezip="Z"
+   ;;
+*)
+   echo " Compressing tool (${bzip2}) is not recognised."
+   exit 1
+   ;;
+esac
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
@@ -323,6 +344,12 @@ do
          rasters=$(/bin/ls -1 ${gfilout}_raster_isi001_????-01.txt | head -${head})
          for rst in ${rasters}
          do
+            zipped="${rst}.${ezip}"
+            if [[ -s ${rst} ]] && [[ -f ${zipped} ]]
+            then
+               echo " - Remove previously compressed file ($(basename ${zipped}))."
+               /bin/rm -f ${zipped}
+            fi
             echo -n "    - Compress: $(basename ${rst})..."
             ${bzip2} ${rst}
             echo " Compressed!"
@@ -340,6 +367,12 @@ do
          ptables=$(/bin/ls -1 ${gfilout}_ptable_isi001_????-01.txt | head -${head})
          for ptb in ${ptables}
          do
+            zipped="${ptb}.${ezip}"
+            if [[ -s ${ptb} ]] && [[ -f ${zipped} ]]
+            then
+               echo " - Remove previously compressed file ($(basename ${zipped}))."
+               /bin/rm -f ${zipped}
+            fi
             echo -n "    - Compress: $(basename ${ptb})..."
             ${bzip2} ${ptb}
             echo " Compressed!"
@@ -443,6 +476,12 @@ do
                qfile=${ffilout}-Q-${yyyy}-${mm}-00-000000-g01.h5
                if [ -s ${qfile} ]
                then
+                  zipped="${qfile}.${ezip}"
+                  if [[ -f ${zipped} ]]
+                  then
+                     echo " - Remove previously compressed file ($(basename ${zipped}))."
+                     /bin/rm -f ${zipped}
+                  fi
                   echo -n "   - Compress file: $(basename ${qfile})..."
                   ${bzip2} ${qfile} 2> /dev/null
                   echo "Zipped!"
@@ -481,6 +520,13 @@ do
                         ifile=${ffilout}-I-${yyyy}-${mm}-${dd}-${hh}0000-g01.h5
                         if [ -s ${ifile} ]
                         then
+                           zipped="${ifile}.${ezip}"
+                           basezip=$(basename ${zipped})
+                           if [[ -f ${zipped} ]]
+                           then
+                              echo " - Remove previously compressed file (${basezip})."
+                              /bin/rm -f ${zipped}
+                           fi
                            echo -n "     * Compress file: $(basename ${ifile})..."
                            ${bzip2} ${ifile} 2> /dev/null
                            echo "Zipped!"

@@ -2197,7 +2197,7 @@ subroutine init_ed_misc_coms
    ! based on delta 18O (true) following Brum et al. (2018); or the direct size-rooting    !
    ! depth function (false).  Note that both approaches ultimately depend on size.         !
    !---------------------------------------------------------------------------------------!
-   use_efrd_trtree = .true.
+   use_efrd_trtree = .false.
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2384,7 +2384,7 @@ subroutine init_pft_alloc_params()
    real                      :: eta_c_f16
    real                      :: asal_bar
    real                      :: hgt_max_trop
-   real, dimension(2)        :: c14l83_bs_xx
+   real, dimension(2)        :: c14f15_bs_xx
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
    real                  , parameter :: b1          =   1.047
@@ -2426,24 +2426,33 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !   Coefficients for leaf and structural biomass (iallom = 3).  For adult individuals,  !
    ! we use the pantropical allometric equation from C14 that estimates AGB and the leaf   !
-   ! biomass from L83.  The leaf allometry coefficient was adjusted to be dependent upon   !
-   ! SLA.                                                                                  !
+   ! biomass from an allometric equation derived from F15 data (tropical forest, wild      !
+   ! flowering trees only), and the size- and site-dependent stratified sampling and       !
+   ! aggregation (J17).  Total individual leaf area was fitted, so to get biomass we must  !
+   ! divide by SLA.  The C2B term is added here but is removed when the coefficients are   !
+   ! set.                                                                                  !
    !                                                                                       !
    !  References:                                                                          !
    !                                                                                       !
-   !   Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau. La      !
-   !      phytomasse epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen.,  !
-   !      4(3), 237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089 (L83)    !
-   !                                                                                       !
-   !   Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to        !
+   !   Chave, J, Rejou-Mechain M, Burquez A, Chidumayo E, Colgan MS, Delitti WB, Duque A,  !
+   !      Eid T, Fearnside PM, Goodman RC et al. 2014. Improved allometric models to       !
    !      estimate the aboveground biomass of tropical trees. Glob. Change Biol., 20(10),  !
-   !      3177-3190, Oct 2014. doi:10.1111/gcb.12629 (C14).                                !
+   !      3177-3190. doi:10.1111/gcb.12629 (C14).                                          !
+   !                                                                                       !
+   !   Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A, Aiba M,  !
+   !      Ando M, Anten N, Aspinwall MJ. 2015. BAAD: a biomass and allometry database for  !
+   !      woody plants. Ecology, 96 (5):1445-1445. doi:10.1890/14-1889.1 (F16).            !
+   !                                                                                       !
+   !   Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,          !
+   !      van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for        !
+   !      integrating remote sensing imagery into forest monitoring programmes.            !
+   !      Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).                  !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   real, dimension(2)    , parameter :: c14l83_bl_xx  = (/ 0.09747026,0.7587000 /)
-   real, dimension(2)    , parameter :: c14l83_bs_tf  = (/ 0.08204475,0.9814422 /)
-   real, dimension(2)    , parameter :: c14l83_bs_sv  = (/ 0.08013971,0.9818603 /)
-   real, dimension(2)    , parameter :: c14l83_bs_gr  = (/ 1.0e-5, 1.0 /) * c14l83_bl_xx
+   real, dimension(2)    , parameter :: c14f15_bl_xx  = (/ 0.46769540,0.6410495 /)
+   real, dimension(2)    , parameter :: c14f15_bs_tf  = (/ 0.06080334,1.0044785 /)
+   real, dimension(2)    , parameter :: c14f15_bs_sv  = (/ 0.05602791,1.0093501 /)
+   real, dimension(2)    , parameter :: c14f15_bs_gr  = (/ 1.0e-5, 1.0 /) * c14f15_bl_xx
    real                  , parameter :: SLA_ref       = 17.419
    real                  , parameter :: rho_ref       = 0.610
    !---------------------------------------------------------------------------------------!
@@ -2963,15 +2972,33 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
         case (3)
             !------------------------------------------------------------------------------!
-            ! Allometric equation based on the fitted curve by F12 for South America.      !
+            !     Allometric equation based on the fitted curve using the Sustainable      !
+            ! Landscapes data set (L16) and the size- and site-dependent stratified        !
+            ! sampling and aggregation (J17).  This relationship is fitted using           !
+            ! Standardised Major Axis (SMA) so the same parameters can be used for         !
+            ! y=f(x) and x=f(y).  This is particularly useful when initialising the model  !
+            ! with airborne lidar data.  Because it would be extremely cumbersome to       !
+            ! derive a SMA-based regression based on Weibull function, we use a log-linear !
+            ! relationship.  The maximum height is based on the 99% quantile of all trees  !
+            ! measured by the SL team.                                                     !
             !                                                                              !
-            ! Feldpausch, T. R., et al. 2012.  Tree height integrated into pantropical     !
-            !    forest biomass estimates.  Biogeosciences, 9, 3381-3403.                  !
-            !    doi:10.5194/bg-9-3381-2012 (F12).                                         !
+            ! References:                                                                  !
+            !                                                                              !
+            ! Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,   !
+            !    van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for !
+            !    integrating remote sensing imagery into forest monitoring programmes.     !
+            !    Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).           !
+            !                                                                              !
+            ! Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A,           !
+            !    Saatchi S, Nogueira EM, Batistella M , Morton DC. 2016. Aboveground       !
+            !    biomass variability across intact and degraded forests in the Brazilian   !
+            !    Amazon.  Global Biogeochem. Cycles, 30(11):1639-1660.                     !
+            !    doi:10.1002/2016GB005465 (L16).                                           !
             !------------------------------------------------------------------------------!
-            b1Ht   (ipft) = 0.0482
-            b2Ht   (ipft) = 0.8307
-            hgt_ref(ipft) = 42.574
+            b1Ht   (ipft) = 1.139963
+            b2Ht   (ipft) = 0.564899
+            !----- hgt_ref is not used. ---------------------------------------------------!
+            hgt_ref(ipft) = 0.0
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3027,7 +3054,12 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (3)
-      hgt_max_trop = 40.0
+      !------------------------------------------------------------------------------------!
+      !    This value corresponds to the 99% quantile of all trees measured by the         !
+      ! Sustainable Landscapes.                                                            !
+      !------------------------------------------------------------------------------------!
+      hgt_max_trop = 46.0
+      !------------------------------------------------------------------------------------!
    case default
       hgt_max_trop = 35.0
    end select
@@ -3259,24 +3291,25 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
          case (3)
             !------------------------------------------------------------------------------!
-            !    Allometry based on L83, with further correction to make leaf biomass of   !
-            !    seedlings viable -- seedling biomass taken as the average of seedlings    !
-            !    from moist forests (M09), assuming seedling height = 20cm.                !
+            !    Allometry based on the BAAD data based (F15).  We only used leaves from   !
+            ! wild tropical, flowering trees, and applied a stratified sample by DBH class !
+            ! and location and cross-validation, following (J17).                          !
             !                                                                              !
             ! References:                                                                  !
             !                                                                              !
-            ! Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau.  !
-            !    La phytomasse epigee d'une foret dense en Guyane Francaise.               !
-            !    Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                               !
-            !    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).                  !
+            ! Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,   !
+            !    van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for !
+            !    integrating remote sensing imagery into forest monitoring programmes.     !
+            !    Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).           !
             !                                                                              !
-            !   Markesteijn, L. and L. Poorter. Seedling root morphology and biomass       !
-            !      allocation of 62 tropical tree species in relation to drought- and      !
-            !      shade-tolerance. J. Ecol., 97(2), 311-325, 2009.                        !
-            !      doi:10.1111/j.1365-2745.2008.01466.x (M09).                             !
+            ! Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A,           !
+            !    Saatchi S, Nogueira EM, Batistella M , Morton DC. 2016. Aboveground       !
+            !    biomass variability across intact and degraded forests in the Brazilian   !
+            !    Amazon.  Global Biogeochem. Cycles, 30(11):1639-1660.                     !
+            !    doi:10.1002/2016GB005465 (L16).                                           !
             !------------------------------------------------------------------------------!
-            b1Bl(ipft) = c14l83_bl_xx(1) / SLA(ipft)
-            b2Bl(ipft) = c14l83_bl_xx(2)
+            b1Bl(ipft) = c14f15_bl_xx(1) / SLA(ipft)
+            b2Bl(ipft) = c14f15_bl_xx(2)
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3352,7 +3385,7 @@ subroutine init_pft_alloc_params()
          ! a= 0.13745 and b=2.69373 .                                                      !
          !                                                                                 !
          ! MLO -- qsw is not zero for lianas, so you may be overestimating total AGB in    !
-         !        ED-2, because bdead = agb - bleaf - bsapwooda - agf_bs * bbark.          !
+         !        ED-2, because bdeada = agb - bleaf - bsapwooda - bbarka.                 !
          !---------------------------------------------------------------------------------!
          b1Bs_small(ipft)  = 0.2749
          b1Bs_large(ipft)  = b1Bs_small(ipft)
@@ -3399,14 +3432,14 @@ subroutine init_pft_alloc_params()
             !    Biol., 20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.                 !
             !------------------------------------------------------------------------------!
             if (is_grass(ipft)) then
-               c14l83_bs_xx = c14l83_bs_gr
+               c14f15_bs_xx = c14f15_bs_gr
             elseif (is_savannah(ipft)) then
-               c14l83_bs_xx = c14l83_bs_sv
+               c14f15_bs_xx = c14f15_bs_sv
             else
-               c14l83_bs_xx = c14l83_bs_tf
+               c14f15_bs_xx = c14f15_bs_tf
             end if
-            b1Bs_small(ipft) = c14l83_bs_xx(1) * rho(ipft) ** c14l83_bs_xx(2)
-            b2Bs_small(ipft) = c14l83_bs_xx(2)
+            b1Bs_small(ipft) = c14f15_bs_xx(1) * rho(ipft) ** c14f15_bs_xx(2)
+            b2Bs_small(ipft) = c14f15_bs_xx(2)
             b1Bs_large(ipft) = b1Bs_small(ipft)
             b2Bs_large(ipft) = b2Bs_small(ipft)
             !------------------------------------------------------------------------------!
@@ -3535,12 +3568,12 @@ subroutine init_pft_alloc_params()
       ! allometry 2 but using DBH*DBH*Height as predictor for consistency.                 !
       !------------------------------------------------------------------------------------!
       b1WAI(:) = merge( 0.0                                                                &
-                      , merge( merge(0.01757882,0.00594221,is_conifer(:))                  &
+                      , merge( merge(0.01148449,0.00378399,is_conifer(:))                  &
                              , merge(0.0553*0.5,0.0192*0.5,is_conifer(:))                  &
                              , is_tropical(:) .and. (.not. is_liana(:) )  )                &
                       , is_grass(:)                                       )
       b2WAI(:) = merge( 1.0                                                                &
-                      , merge( merge(0.71986449,0.76275995,is_conifer(:))                  &
+                      , merge( merge(0.77075160,0.81667933,is_conifer(:))                  &
                              , merge(    1.9769,    2.0947,is_conifer(:))                  &
                              , is_tropical(:) .and. (.not. is_liana(:) )  )                &
                       , is_grass(:)                                       )
@@ -3632,26 +3665,25 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
    case (3)
       !------------------------------------------------------------------------------------!
-      !    For tropical trees, use the allometric model loosely based on B18:  we used     !
-      ! their data to define extreme points and made a simple log-linear interpolation as  !
-      ! a function of size (dbh*dbh*hgt).  We apply a similar functional form for tropical !
-      ! grasses. We use the same coefficients and functional form as iallom=2 for          !
-      ! non-tropical plants and for tropical lianas.  An alternative method for tropical   !
-      ! trees that follows B18 more closely is also available, check b?d18O and b?Efrd     !
-      ! parameters, and flag use_efrd_trtree.                                              !
+      !    Test allometry, similar to 2, but based on D*D*H.  The curve loosely fits B18   !
+      ! for large trees, and Xiangtao's fit based on unpublished data from excavation in   !
+      ! Panama (mostly small trees).  This is not a full, formal optimisation because the  !
+      ! data from Panama were not available and the data from B18 is indirect, so there is !
+      ! plenty of room for improvement.  The curve is exactly the same as iallom=2 for     !
+      ! non-tropical trees.                                                                !
       !                                                                                    !
-      ! Reference:                                                                         !
+      ! References:                                                                        !
       !                                                                                    !
-      ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,     !
-      !    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018.    !
-      !    Hydrological niche segregation defines forest structure and drought             !
-      !    tolerance strategies in a seasonal Amazonian forest. J. Ecol., in press.        !
-      !    doi:10.1111/1365-2745.13022 (B18).                                              !
+      ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF,              !
+      !    Penha D, Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L,              !
+      !    Oliveira RS, 2018.  Hydrological niche segregation defines forest               !
+      !    structure and drought tolerance strategies in a seasonal Amazonian              !
+      !    forest. J. Ecol., in press. doi:10.1111/1365-2745.13022 (B18).                  !
       !------------------------------------------------------------------------------------!
-      b1Rd(:) = merge( merge(-1.877408,-0.3152709,is_grass(:))                             &
+      b1Rd(:) = merge( merge(-2.572,-0.947,is_grass(:))                                    &
                      , -1.1140580                                                          &
                      , is_tropical(:) .and. (.not. is_liana(:)) )
-      b2Rd(:) = merge( merge(0.7334514,0.2777185,is_grass(:))                              &
+      b2Rd(:) = merge( merge(0.246,0.148,is_grass(:))                                      &
                      , +0.4223014                                                          &
                      , is_tropical(:) .and. (.not. is_liana(:)) )
       !------------------------------------------------------------------------------------!
@@ -6805,6 +6837,7 @@ subroutine init_derived_params_after_xml()
                                    , seed_rain                 & ! intent(in)
                                    , f_labile_leaf             & ! intent(in)
                                    , f_labile_stem             & ! intent(in)
+                                   , C2B                       & ! intent(in)
                                    , hgt_max                   & ! intent(inout)
                                    , repro_min_h               & ! intent(inout)
                                    , dbh_crit                  & ! intent(inout)
@@ -6837,6 +6870,12 @@ subroutine init_derived_params_after_xml()
                                    , rrf_hor                   & ! intent(inout)
                                    , rrf_q10                   & ! intent(inout)
                                    , bleaf_crit                & ! intent(inout)
+                                   , d1DBH_small               & ! intent(out)
+                                   , d2DBH_small               & ! intent(out)
+                                   , d1DBH_large               & ! intent(out)
+                                   , d2DBH_large               & ! intent(out)
+                                   , l1DBH                     & ! intent(out)
+                                   , l2DBH                     & ! intent(out)
                                    , balive_crit               & ! intent(out)
                                    , one_plant_c               & ! intent(out)
                                    , min_recruit_size          & ! intent(out)
@@ -7016,7 +7055,7 @@ subroutine init_derived_params_after_xml()
    ! tropical trees (IALLOM=2 or IALLOM=3).                                                !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
-   case (2,3)
+   case (2)
       where(is_tropical(:) .and. (hgt_max(:) >= 0.99 * hgt_ref(:)))
          hgt_max(:) = 0.99 * hgt_ref(:)
       end where
@@ -7083,6 +7122,53 @@ subroutine init_derived_params_after_xml()
                          * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hgt_max(ipft) )
       bevery_crit (ipft) = balive_crit(ipft) + bdead_crit(ipft)
       !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the stem-DBH and leaf-DBH parameters.  These are based on the inverse of  !
+      ! the size2bd and size2bl functions, and to be consistent, they cannot be            !
+      ! initialised through XML.                                                           !
+      !------------------------------------------------------------------------------------!
+      if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft)) ) then
+         !---------------------------------------------------------------------------------!
+         !    Incorporate both heartwood and height allometric equations to derive DBH.    !
+         !---------------------------------------------------------------------------------!
+         d2DBH_small(ipft) = 1.  / ( ( 2. + b2Ht(ipft) ) * b2Bs_small(ipft) )
+         d1DBH_small(ipft) = ( C2B                                                         &
+                             / (b1Bs_small(ipft) * exp(b1Ht(ipft) * b2Bs_small(ipft)) ) )  &
+                             ** d2DBH_small(ipft)
+         d2DBH_large(ipft) = 1.  / ( ( 2. + b2Ht(ipft) ) * b2Bs_large(ipft) )
+         d1DBH_large(ipft) = ( C2B                                                         &
+                             / (b1Bs_large(ipft) * exp(b1Ht(ipft) * b2Bs_large(ipft)) ) )  &
+                             ** d2DBH_large(ipft)
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Inverse of the leaf biomass function. ------------------------------------!
+         l2DBH(ipft) = 1.  / ( ( 2. + b2Ht(ipft) ) * b2Bl(ipft) )
+         l1DBH(ipft) = ( C2B / (b1Bl(ipft) * exp(b1Ht(ipft) * b2Bl(ipft)) ) ) ** l2DBH(ipft)
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Bdead is not a direct function of height, simple inversion is sufficient.   !
+         !---------------------------------------------------------------------------------!
+         d2DBH_small(ipft)  = 1.0  / b2Bs_small(ipft)
+         d1DBH_small(ipft)  = (C2B / b1Bs_small(ipft)) ** d2DBH_small(ipft)
+         d2DBH_large(ipft)  = 1.0  / b2Bs_large(ipft)
+         d1DBH_large(ipft)  = (C2B / b1Bs_large(ipft)) ** d2DBH_large(ipft)
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Inverse of the leaf biomass function. ------------------------------------!
+         l2DBH(ipft)  =   1.0 / b2Bl(ipft)
+         l1DBH(ipft)  = ( C2B / b1Bl(ipft) ) ** l2DBH(ipft)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
 
 
@@ -7554,7 +7640,6 @@ subroutine init_derived_params_after_xml()
 
 
 
-
    !---------------------------------------------------------------------------------------!
    !     Find carboxylation rate at 25 degC.                                               !
    !---------------------------------------------------------------------------------------!
@@ -7827,31 +7912,35 @@ subroutine init_derived_params_after_xml()
    !----- Print allometric coefficients. --------------------------------------------------!
    if (print_zero_table) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(46(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
-                                     ,'     CONIFER','    SAVANNAH','       LIANA'         &
-                                     ,'         RHO','        B1HT','        B2HT'         &
-                                     ,'     HGT_REF','        B1BL','        B2BL'         &
-                                     ,'  B1BS_SMALL','  B2BS_SMALL','  B1BS_LARGE'         &
-                                     ,'  B2BS_LARGE','        B1CA','        B2CA'         &
-                                     ,'       B1WAI','       B2WAI','        B1RD'         &
-                                     ,'        B2RD','        B1XS','        B1XB'         &
-                                     ,'     HGT_MIN','     HGT_MAX','     MIN_DBH'         &
-                                     ,'    DBH_CRIT',' DBH_BIGLEAF','  BDEAD_CRIT'         &
-                                     ,'  BLEAF_CRIT',' BALIVE_CRIT',' BEVERY_CRIT'         &
-                                     ,'   INIT_DENS','         SLA','F_BSTOR_INIT'         &
-                                     ,'           Q','         QSW','       QBARK'         &
-                                     ,'       QRHOB','    d18O_REF','     B1_D18O'         &
-                                     ,'     B2_D18O','     B1_EFRD','     B2_EFRD'         &
-                                     ,' INIT_LAIMAX'
+      write(unit=18,fmt='(52(1x,a))') '          PFT','     TROPICAL','        GRASS'      &
+                                     ,'      CONIFER','     SAVANNAH','        LIANA'      &
+                                     ,'          RHO','         B1HT','         B2HT'      &
+                                     ,'      HGT_REF','         B1BL','         B2BL'      &
+                                     ,'   B1BS_SMALL','   B2BS_SMALL','   B1BS_LARGE'      &
+                                     ,'   B2BS_LARGE','  D1DBH_SMALL','  D2DBH_SMALL'      &
+                                     ,'  D1DBH_LARGE','  D2DBH_LARGE','        L1DBH'      &
+                                     ,'        L2DBH','         B1CA','         B2CA'      &
+                                     ,'        B1WAI','        B2WAI','         B1RD'      &
+                                     ,'         B2RD','         B1XS','         B1XB'      &
+                                     ,'      HGT_MIN','      HGT_MAX','      MIN_DBH'      &
+                                     ,'     DBH_CRIT','  DBH_BIGLEAF','   BDEAD_CRIT'      &
+                                     ,'   BLEAF_CRIT','  BALIVE_CRIT','  BEVERY_CRIT'      &
+                                     ,'    INIT_DENS','          SLA',' F_BSTOR_INIT'      &
+                                     ,'            Q','          QSW','        QBARK'      &
+                                     ,'        QRHOB','     d18O_REF','      B1_D18O'      &
+                                     ,'      B2_D18O','      B1_EFRD','      B2_EFRD'      &
+                                     ,'  INIT_LAIMAX'
 
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,5(12x,l1),39(1x,f12.6),1(1x,es12.5))')                 &
+         write (unit=18,fmt='(9x,i5,5(13x,l1),45(1x,f13.6),1(1x,es13.6))')                 &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),rho(ipft),b1Ht(ipft),b2Ht(ipft)   &
                        ,hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)               &
-                       ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
-                       ,b2Ca(ipft),b1WAI(ipft),b2WAI(ipft),b1Rd(ipft),b2Rd(ipft)           &
-                       ,b1Xs(ipft),b1Xb(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)    &
+                       ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft)                 &
+                       ,d1DBH_small(ipft),d2DBH_small(ipft),d1DBH_large(ipft)              &
+                       ,d2DBH_large(ipft),l1DBH(ipft),l2DBH(ipft),b1Ca(ipft),b2Ca(ipft)    &
+                       ,b1WAI(ipft),b2WAI(ipft),b1Rd(ipft),b2Rd(ipft),b1Xs(ipft)           &
+                       ,b1Xb(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
                        ,dbh_crit(ipft),dbh_bigleaf(ipft),bdead_crit(ipft),bleaf_crit(ipft) &
                        ,balive_crit(ipft),bevery_crit(ipft),init_density(ipft),sla(ipft)   &
                        ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)    &
