@@ -72,6 +72,8 @@ image.map <<- function( x
                       , interp.xyz       = FALSE
                       , interp.method    = c("interp","raster","kriging")
                       , same.mesh        = FALSE
+                      , mar.main         = NULL
+                      , mar.key          = NULL
                       , nx.interp        = NA
                       , ny.interp        = NA
                       , useRaster        = TRUE
@@ -123,6 +125,44 @@ image.map <<- function( x
    }else{
       npanels = length(x)
    }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Make sure mar.main can be defined for each panel.                                 #
+   #---------------------------------------------------------------------------------------#
+   if (! is.null(mar.main)){
+      #----- Make sure mar.main has a reasonable format. ----------------------------------#
+      if (is.vector(mar.main)){
+         mar.main=replicate(n=npanels,list(mar.main))
+      }else if(is.list(mar.main)){
+         #----- Make sure the list has a reasonable number of entries. --------------------#
+         if (length(mar.main) == 1){
+            mar.main=rep(mar.main,times=npanels)
+         }else if (length(mar.main) != npanels){
+            cat0(" Number of panels: ",npanels)
+            cat0(" Number of elements in list \"mar.main\": ",length(mar.main))
+            stop(" Either provide a single mar.main or provide ",npanels," list entries.")
+         }#end if (length(mar.main) == 1)
+         #---------------------------------------------------------------------------------#
+      }else if (is.matrix(mar.main)){
+         #----- Make sure the matrix has a reasonable number of rows. ---------------------#
+         if (nrow(mar.main) == 1){
+            mar.main = replicate(n=npanels,list(mar.main[1,]))
+         }else if (nrow(mar.main) == npanels){
+            mar.main = split(x=mar.main,f=row(mar.main))
+         }else{
+            cat0(" Number of panels: ",npanels)
+            cat0(" Number of rows in ,matrix \"mar.main\": ",nrow(mar.main))
+            stop(" Matrix \"mar.main\" must have either a single or ",npanels," rows.")
+         }#end if (nrow(mar.main) == 1)
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- No idea of what to do. ----------------------------------------------------#
+         stop(" Variable \"mar.main\" must be a vector, a list, or a matrix.")
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if (! is.null(mar.main))
    #---------------------------------------------------------------------------------------#
 
 
@@ -303,7 +343,9 @@ image.map <<- function( x
    #=======================================================================================#
    #      Second plot: the key scale.                                                      #
    #---------------------------------------------------------------------------------------#
-      if (key.vertical){
+      if (! is.null(mar.key)){
+         par(mar = mar.key)
+      }else if (key.vertical){
          par(mar = lo.panel$mar.key)
       }else{
          par(mar = c(2.1,4.6,1.6,2.1))
@@ -377,7 +419,6 @@ image.map <<- function( x
 
 
 
-
    #=======================================================================================#
    #=======================================================================================#
    #      Now we plot the other panels.                                                    #
@@ -389,13 +430,21 @@ image.map <<- function( x
          right   = TRUE
          top     = TRUE
          bottom  = TRUE
-         mar.now = lo.panel$mar0
+         if (! is.null(mar.main)){
+            mar.now = mar.main[[p]]
+         }else{
+            mar.now = lo.panel$mar0
+         }#end if(! is.null(mar.key))
       }else{
          left    = lo.panel$left  [p]
          right   = lo.panel$right [p]
          top     = lo.panel$top   [p]
          bottom  = lo.panel$bottom[p]
-         mar.now = lo.panel$mar   [p,]
+         if (! is.null(mar.main)){
+            mar.now = mar.main[[p]]
+         }else{
+            mar.now = lo.panel$mar   [p,]
+         }#end if
       }#end if
       #------------------------------------------------------------------------------------#
       plog = ""

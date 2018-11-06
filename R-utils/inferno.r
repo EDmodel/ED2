@@ -1,10 +1,10 @@
 #------------------------------------------------------------------------------------------#
-#   Function that re-creates QGIS "magma" colour scheme.                                   #
+#   Function that re-creates QGIS "inferno" colour scheme.                                 #
 #------------------------------------------------------------------------------------------#
-magma <<- function(n,sat=1.00){
-   rrr   = c(   0,  26,  74, 121, 170, 217, 247, 254, 253, 252)*sat #- Red ----------------#
-   ggg   = c(   0,  16,  16,  34,  51,  70, 114, 170, 226, 253)*sat #- Green --------------#
-   bbb   = c(   4,  66, 121, 130, 125, 107,  92, 116, 163, 191)*sat #- Blue ---------------#
+inferno <<- function(n,sat=1.00){
+   rrr   = c(  16,  40, 102, 161, 214, 248, 252, 252)*sat #- Red --------------------------#
+   ggg   = c(   0,   6,  12,  38,  71, 125, 194, 255)*sat #- Green ------------------------#
+   bbb   = c(  42,  85, 112,  99,  61,   0,   0, 159)*sat #- Blue -------------------------#
    pivot = round(seq(from=1,to=n,by=(n-1)/(length(rrr)-1)),digits=0)
 
    red   = pmax(0,pmin(255,as.integer(spline(x=pivot,y=rrr,n=n)$y)))
@@ -20,10 +20,10 @@ magma <<- function(n,sat=1.00){
 
 
 #------------------------------------------------------------------------------------------#
-#   Function that re-creates QGIS "magma" colour scheme, but in inverse order.             #
+#   Function that re-creates QGIS "inferno" colour scheme, but in inverse order.           #
 #------------------------------------------------------------------------------------------#
-imagma <<- function(n,sat=1.00){
-   mycolsch = rev(magma(n,sat=sat))
+iinferno <<- function(n,sat=1.00){
+   mycolsch = rev(inferno(n,sat=sat))
    return(mycolsch)
 }#end function iatlas
 #------------------------------------------------------------------------------------------#
