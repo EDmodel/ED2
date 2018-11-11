@@ -26,7 +26,10 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    use disturb_coms         , only : ianth_disturb              & ! intent(in)
                                    , lutime                     & ! intent(in)
                                    , min_patch_area             & ! intent(in)
-                                   , min_harvest_biomass        ! ! intent(in)
+                                   , min_harvest_biomass        & ! intent(in)
+                                   , plantation_rotation        & ! intent(in)
+                                   , mature_harvest_age         ! ! intent(in)
+!                                    , min_oldgrowth              ! ! intent(in) ! New; need to add
    use fuse_fiss_utils      , only : terminate_patches          ! ! subroutine
    use ed_max_dims          , only : n_pft                      & ! intent(in)
                                    , n_dbh                      ! ! intent(in)
@@ -49,6 +52,9 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    real                                          :: secondary_harvest_target
    real                                          :: site_harvest_target
    real                                          :: site_harvestable_agb
+!       real                                          :: site_hvmax_btimber
+!       real                                          :: site_hvpot_btimber
+   
    real                                          :: area_mature_primary
    real                                          :: hvagb_mature_primary
    real                                          :: area_mature_secondary
@@ -59,6 +65,9 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    real                                          :: lambda_mature_secondary
    real                                          :: lambda_mature_plantation
    real                                          :: harvest_deficit
+!    real, dimension(onsp)                         :: pat_hvmax_btimber
+!    real, dimension(onsp)                         :: pat_hvpot_btimber
+
    !----- Local constants. ----------------------------------------------------------------!
    logical                       , parameter     :: print_detail = .false.
    !---------------------------------------------------------------------------------------!

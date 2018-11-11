@@ -46,6 +46,7 @@ module disturbance_utils
       use ed_misc_coms , only : current_time              & ! intent(in)
                               , ibigleaf                  ! ! intent(in)
       use disturb_coms , only : min_patch_area            & ! intent(in)
+                              , treefall_hite_threshold   & ! intent(in) ! Added from Marcos 
                               , mature_harvest_age        & ! intent(in)
                               , plantation_year           & ! intent(in)
                               , plantation_rotation       & ! intent(in)
@@ -139,9 +140,9 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       !      nnsp_ble stands for the new number of site patches for big leaf.  Each site   !
       ! may have additional mypfts, except if land use is 1 (cropland/pasture) or 2        !
-      ! (forest plantation), in which case only one PFT is allowed.                        !
+      ! (forest plantation), or 8 (cropland), in which case only one PFT is allowed.       !
       !------------------------------------------------------------------------------------!
-      nnsp_ble = 2 + (n_dist_types - 2) * mypfts
+      nnsp_ble = 3 + (n_dist_types - 3) * mypfts
       !------------------------------------------------------------------------------------!
 
 
@@ -1535,7 +1536,7 @@ module disturbance_utils
                   cpoly%secondary_harvest_target(isi) = 0.0
                   !------------------------------------------------------------------------!
 
-               else
+               else ! if landuse(12) > 0
 
                   !------------------------------------------------------------------------!
                   !     Logging based on target biomass, leave the disturbance rates as    !
@@ -1595,7 +1596,7 @@ module disturbance_utils
                   cpoly%secondary_harvest_target  (isi) = 0.0
                   !------------------------------------------------------------------------!
 
-            end select ! End ianth=1
+            end select ! End ianth select
             !------------------------------------------------------------------------------!
 
          end do siteloop
