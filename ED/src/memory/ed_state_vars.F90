@@ -1030,6 +1030,10 @@ module ed_state_vars
       !!4.  Fire.\n
       !!5.  Forest regrowth.\n
       !!6.  Logged forest.\n
+      ! ! MARCOS -- Not Implemented
+      ! !!7.  Skid trails and roads.\n
+      ! !!8.  Croplands.\n
+
 
       real , pointer,dimension(:) :: fast_soil_C 
       !<Soil carbon concentration, fast pool (kg/m2)
@@ -2047,6 +2051,24 @@ module ed_state_vars
       real,pointer, dimension(:,:,:) :: agb_cut           !<kgC/m2/yr
 
 
+! 
+!       ! MARCOS (not implemented)
+!       !------------------------------------------------------------------------------------!
+!       !      Crop and logging output.                                                      !
+!       !------------------------------------------------------------------------------------!
+!       real, pointer, dimension(:,:) :: crop_yield
+!       !< Crop yield (specifically, seeds), kgC/m2, one value for each month.
+! 
+!       real, pointer, dimension(:) :: crop_harvest
+!       !< Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics.
+! 
+!       real, pointer, dimension(:) :: logging_harvest
+!       !< Logging harvest (timber), kgC/m2, patch dynamics.
+! 
+!       real, pointer, dimension(:) :: combusted_fuel
+!       !< Carbon lost through combustion of fuels, kgC/m2, patch dynamics.
+!       !------------------------------------------------------------------------------------!
+
       real,pointer,dimension(:) :: cosaoi
 
       !----- Length of day light, used to average light levels properly. -------------------!
@@ -2055,6 +2077,8 @@ module ed_state_vars
       
       !-----  Light-phenology variable.
       real, pointer, dimension(:) :: rad_avg
+
+
 
       !====================================================================================!
       !====================================================================================!
