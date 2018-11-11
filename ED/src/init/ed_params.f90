@@ -148,12 +148,12 @@ subroutine load_ed_ecosystem_params()
    !      Warn the user in case the PFT choice for agriculture or forest plantation was    !
    ! inconsistent.                                                                         !
    !---------------------------------------------------------------------------------------!
-   if (count(include_pft_ag) == 0 .and. ianth_disturb == 1) then
+   if (count(include_pft_ag) == 0 .and. ianth_disturb >= 1) then
       call warning ('PFT defined in agri_stock is not included in include_these_pft,'//    &
          ' your croplands will be barren and not very profitable...'            &
          ,'load_ecosystem_params','ed_params.f90')
    end if
-   if (count(include_pft_fp) == 0 .and. ianth_disturb == 1) then
+   if (count(include_pft_fp) == 0 .and. ianth_disturb >= 1) then
       call warning ('PFT defined in plantation_stock is not listed in include_these_pft,'//&
          ' your forest plantation will be barren and not very profitable ...'   &
          ,'load_ecosystem_params','ed_params.f90')

@@ -513,7 +513,7 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            if (plantation(ipa) == 0 .and. ianth_disturb == 0) then
                               csite%dist_type(ipa) = 5
-                           else if (plantation(ipa) == 0 .and. ianth_disturb == 1) then
+                           else if (plantation(ipa) == 0 .and. ianth_disturb >= 1) then
                               csite%dist_type(ipa) = 6
                            else
                               csite%dist_type(ipa) = 2
@@ -1127,7 +1127,7 @@ subroutine read_ed21_history_unstruct
       slat_rscl(:) =  100.
       nlat_rscl(:) = -100.
       inquire(file=trim(lu_rescale_file(igr)),exist=exists)
-      rescale_glob = ianth_disturb == 1 .and. exists
+      rescale_glob = ianth_disturb >= 1 .and. exists
       nrescale = 0
       if (rescale_glob) then
          open (unit=13,file=trim(lu_rescale_file(igr)),status='old',action='read')
@@ -1147,7 +1147,7 @@ subroutine read_ed21_history_unstruct
          end do readrescale
          rescale_glob = nrescale > 0
          close (unit=13,status='keep')
-      elseif (ianth_disturb == 1 .and. len_trim(lu_rescale_file(igr)) > 0) then
+      elseif (ianth_disturb >= 1 .and. len_trim(lu_rescale_file(igr)) > 0) then
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
          write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
          write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -1675,7 +1675,7 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            if (plantation(ipa) == 0 .and. ianth_disturb == 0) then
                               csite%dist_type(ipa) = 5
-                           else if (plantation(ipa) == 0 .and. ianth_disturb == 1) then
+                           else if (plantation(ipa) == 0 .and. ianth_disturb >= 1) then
                               csite%dist_type(ipa) = 6
                            else
                               csite%dist_type(ipa) = 2
@@ -2324,7 +2324,7 @@ subroutine read_ed21_polyclone
       slat_rscl(:) =  100.
       nlat_rscl(:) = -100.
       inquire(file=trim(lu_rescale_file(igr)),exist=exists)
-      rescale_glob = ianth_disturb == 1 .and. exists
+      rescale_glob = ianth_disturb >= 1 .and. exists
       nrescale = 0
       if (rescale_glob) then
          open (unit=13,file=trim(lu_rescale_file(igr)),status='old',action='read')
@@ -2344,7 +2344,7 @@ subroutine read_ed21_polyclone
          end do readrescale
          rescale_glob = nrescale > 0
          close (unit=13,status='keep')
-      elseif (ianth_disturb == 1 .and. len_trim(lu_rescale_file(igr)) > 0) then
+      elseif (ianth_disturb >= 1 .and. len_trim(lu_rescale_file(igr)) > 0) then
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
          write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
          write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -2811,7 +2811,7 @@ subroutine read_ed21_polyclone
                               !---------------------------------------------------------------!
                               if (plantation(ipa) == 0 .and. ianth_disturb == 0) then
                                  csite%dist_type(ipa) = 5
-                              else if (plantation(ipa) == 0 .and. ianth_disturb == 1) then
+                              else if (plantation(ipa) == 0 .and. ianth_disturb >= 1) then
                                  csite%dist_type(ipa) = 6
                               else
                                  csite%dist_type(ipa) = 2

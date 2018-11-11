@@ -116,7 +116,7 @@ subroutine landuse_init
       !------------------------------------------------------------------------------------!
       !     Find the list of disturbance rate files.                                       !
       !------------------------------------------------------------------------------------!
-      if (ianth_disturb == 1) then
+      if (ianth_disturb >= 1) then
          call ed_filelist(full_list,lu_database(igr),nflist)
          call ed1_fileinfo('.lu',nflist,full_list,nfllu,lu_list,llon_list,llat_list)
       end if
@@ -153,7 +153,7 @@ subroutine landuse_init
             cpoly%plantation(:) = 0
             !------------------------------------------------------------------------------!
             
-         case (1)
+         case (1,2)
 
             !------------------------------------------------------------------------------!
             !     Comput the distance between the current polygon and all the files.       !

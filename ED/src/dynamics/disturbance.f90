@@ -222,7 +222,7 @@ module disturbance_utils
 
             !------------------------------------------------------------------------------!
             !      Find the area to be harvested when biomass targets have been            !
-            ! established.                                                                 !
+            ! established.  Returns zero if ianth != 1                                     !
             !------------------------------------------------------------------------------!
             call find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
             !------------------------------------------------------------------------------!
