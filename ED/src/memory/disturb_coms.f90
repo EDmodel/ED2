@@ -60,8 +60,11 @@ module disturb_coms
    real :: fire_parameter
 
    !---------------------------------------------------------------------------------------!
-   !     Anthropogenic disturbance.  1 means that anthropogenic disturbances will be       !
-   ! included, whereas 0 means that it won't.                                              !
+   !     Anthropogenic disturbance.                                                        !
+   ! 0. No anthropogenic disturbance                                                       !
+   ! 1. Anthropogenic disturbances; harvest based on biomass                               !
+   ! 2. Anthropogenic disturbances; forest harvest base don land area                      !
+   ! 3. Marcos' single-site scheme (not implemented)                                       !
    !---------------------------------------------------------------------------------------!
    integer :: ianth_disturb
    !---------------------------------------------------------------------------------------!

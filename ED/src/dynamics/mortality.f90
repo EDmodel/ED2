@@ -109,7 +109,7 @@ module mortality
    ! disturbance.                                                                          !
    !---------------------------------------------------------------------------------------!
    subroutine disturbance_mortality(csite,ipa,disturbance_rate,new_lu,dist_path            &
-                                   ,mindbh_harvest)
+                                   ,mindbh_harvest,harvprob)
       use ed_state_vars, only : sitetype  & ! structure
                               , patchtype ! ! structure
       use ed_max_dims  , only : n_pft     ! ! intent(in)
@@ -121,6 +121,7 @@ module mortality
       integer                          , intent(in) :: new_lu
       integer                          , intent(in) :: dist_path
       real           , dimension(n_pft), intent(in) :: mindbh_harvest
+      real           , dimension(n_pft), intent(in) :: harvprob
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)                  , pointer    :: cpatch
       integer                                       :: ico
@@ -129,7 +130,7 @@ module mortality
 
       cpatch => csite%patch(ipa)
       do ico=1,cpatch%ncohorts
-         f_survival = survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)
+         f_survival = survivorship(new_lu,dist_path,mindbh_harvest,harvprob,cpatch,ico)
          cpatch%mort_rate(5,ico) = cpatch%mort_rate(5,ico)                                 &
                                  - log( f_survival                                         &
                                       + (1.0 - f_survival) * exp(- disturbance_rate) )
@@ -159,13 +160,15 @@ module mortality
    !  -- mindbh_harvest: minimum DBH for harvesting (selective logging and forest          !
    !        plantantions).  If the tree DBH is greater than mindbh_harvest, the tree may   !
    !        be harvested, otherwise it may be damaged by logging but not harvested.        !
+   !  -- harvprob: the probability of harvest for a trees meeting mindbh (ianth=2)         !
    !  -- cpatch: current patch.                                                            !
    !  -- ico: index for current cohort.                                                    !
    !---------------------------------------------------------------------------------------!
-   real function survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)
+   real function survivorship(new_lu,dist_path,mindbh_harvest,harvprob,cpatch,ico)
       use ed_state_vars, only : patchtype                ! ! structure
       use disturb_coms , only : treefall_hite_threshold  & ! intent(in)
-                              , fire_hite_threshold      ! ! intent(in)
+                              , fire_hite_threshold      & ! intent(in)
+                              , ianth_disturb            ! ! intent(in)
       use pft_coms     , only : treefall_s_ltht          & ! intent(in)
                               , treefall_s_gtht          & ! intent(in)
                               , fire_s_ltht              & ! intent(in)
@@ -176,6 +179,7 @@ module mortality
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)                 , target     :: cpatch
       real          , dimension(n_pft), intent(in) :: mindbh_harvest
+      real          , dimension(n_pft), intent(in) :: harvprob
       integer                         , intent(in) :: ico
       integer                         , intent(in) :: new_lu
       integer                         , intent(in) :: dist_path
@@ -280,7 +284,11 @@ module mortality
          ! applied.                                                                        !
          !---------------------------------------------------------------------------------!
          if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
-            survivorship = 0.0
+            if (ianth_disturb == 2) then
+            	survivorship = 1 - harvprob(ipft)
+            else 
+            	survivorship = 0.0
+            end if 
          else
             survivorship = treefall_s_ltht(ipft)
          end if

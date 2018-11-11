@@ -311,6 +311,7 @@ subroutine landuse_init
                   if ( clutime%landuse(14) > 0. ) then
                      clutime%landuse(14) = lu_area_i * clutime%landuse(14) 
                   end if
+                  ! Note: These two columns aren't really used right now
                   clutime%landuse(16) = lu_area_i * clutime%landuse(16)
                   clutime%landuse(18) = lu_area_i * clutime%landuse(18)
                end do
