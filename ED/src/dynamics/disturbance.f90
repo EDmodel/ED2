@@ -700,10 +700,10 @@ module disturbance_utils
                         !----- Logging. ---------------------------------------------------!
                         if (mature_primary) then
                            mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
-                           harvprob      (1:n_pft) = cpoly%harvprob_primary(1:n_pft,isi)
+                           harvprob      (1:n_pft) = cpoly%probharv_primary(1:n_pft,isi)
                         else if (mature_secondary) then
                            mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
-                           harvprob      (1:n_pft) = cpoly%harvprob_secondary(1:n_pft,isi)
+                           harvprob      (1:n_pft) = cpoly%probharv_secondary(1:n_pft,isi)
                         end if
                         !------------------------------------------------------------------!
                      end select
