@@ -1366,6 +1366,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("dhist","include.fire")
          na     = c(      6,            15)
          nz     = c(      8,            16)
+      }else if (lenici == 17 && grepl(pattern="iphen",x=ici)){
+         nparms = 1
+         param  = c("iphen")
+         na     = c(     15)
+         nz     = c(     17)
       }else if (lenici == 17){
          nparms = 2
          param  = c("met.forcing","isoil.text")
@@ -1625,7 +1630,7 @@ poitmp[[u]] = list( short           = "allpahuayo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1646,7 +1651,7 @@ poitmp[[u]] = list( short           = "alta_floresta"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -1667,7 +1672,7 @@ poitmp[[u]] = list( short           = "andiroba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = +2
@@ -1688,7 +1693,7 @@ poitmp[[u]] = list( short           = "angra_dos_reis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1709,7 +1714,7 @@ poitmp[[u]] = list( short           = "araguaiana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -1730,7 +1735,7 @@ poitmp[[u]] = list( short           = "araracuara"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1751,7 +1756,7 @@ poitmp[[u]] = list( short           = "asuncion"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -1793,7 +1798,7 @@ poitmp[[u]] = list( short           = "barro_colorado"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1814,7 +1819,7 @@ poitmp[[u]] = list( short           = "belem"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1835,7 +1840,7 @@ poitmp[[u]] = list( short           = "belo_horizonte"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -1856,7 +1861,7 @@ poitmp[[u]] = list( short           = "belterra"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1877,7 +1882,7 @@ poitmp[[u]] = list( short           = "benjamin_constant"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1898,7 +1903,7 @@ poitmp[[u]] = list( short           = "blumenau"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -1919,7 +1924,7 @@ poitmp[[u]] = list( short           = "boa_vista"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -1940,7 +1945,7 @@ poitmp[[u]] = list( short           = "bogota"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -1961,7 +1966,7 @@ poitmp[[u]] = list( short           = "bom_jesus"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -1982,7 +1987,7 @@ poitmp[[u]] = list( short           = "bonal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = +2
@@ -2024,9 +2029,9 @@ poitmp[[u]] = list( short           = "bridgetown"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
-                  , yeara           = 1974
-                  , yearz           = 2017
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2045,7 +2050,7 @@ poitmp[[u]] = list( short           = "cabo_frio"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2066,7 +2071,7 @@ poitmp[[u]] = list( short           = "cacoal_grande"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2108,7 +2113,7 @@ poitmp[[u]] = list( short           = "cajazeiras"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2129,7 +2134,7 @@ poitmp[[u]] = list( short           = "calabozo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2171,7 +2176,7 @@ poitmp[[u]] = list( short           = "canarana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2192,7 +2197,7 @@ poitmp[[u]] = list( short           = "carajas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2213,7 +2218,7 @@ poitmp[[u]] = list( short           = "cardoso"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2234,7 +2239,7 @@ poitmp[[u]] = list( short           = "carolina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2255,7 +2260,7 @@ poitmp[[u]] = list( short           = "cauaxi"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = +2
@@ -2276,7 +2281,7 @@ poitmp[[u]] = list( short           = "cauaxi_und"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = +2
@@ -2297,7 +2302,7 @@ poitmp[[u]] = list( short           = "cauaxi_ril"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = +2
@@ -2339,7 +2344,7 @@ poitmp[[u]] = list( short           = "cayenne"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2360,9 +2365,9 @@ poitmp[[u]] = list( short           = "chaiten"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
-                  , yeara           = 1974
-                  , yearz           = 2017
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2381,7 +2386,7 @@ poitmp[[u]] = list( short           = "ciudad_bolivar"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2402,7 +2407,7 @@ poitmp[[u]] = list( short           = "ciudad_guayana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2423,7 +2428,7 @@ poitmp[[u]] = list( short           = "cochabamba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2465,7 +2470,7 @@ poitmp[[u]] = list( short           = "curacao"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2486,7 +2491,7 @@ poitmp[[u]] = list( short           = "curitiba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2507,7 +2512,7 @@ poitmp[[u]] = list( short           = "curua_una"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2528,7 +2533,7 @@ poitmp[[u]] = list( short           = "cruzeiro_do_sul"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2549,7 +2554,7 @@ poitmp[[u]] = list( short           = "diamantino"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2591,7 +2596,7 @@ poitmp[[u]] = list( short           = "dourados"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2612,7 +2617,7 @@ poitmp[[u]] = list( short           = "ducke"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2633,7 +2638,7 @@ poitmp[[u]] = list( short           = "east_belterra"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2654,7 +2659,7 @@ poitmp[[u]] = list( short           = "east_feliz_natal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2675,7 +2680,7 @@ poitmp[[u]] = list( short           = "east_sao_felix"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2696,7 +2701,7 @@ poitmp[[u]] = list( short           = "el_triunfo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2717,7 +2722,7 @@ poitmp[[u]] = list( short           = "el_zafire"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2738,7 +2743,7 @@ poitmp[[u]] = list( short           = "emas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2759,7 +2764,7 @@ poitmp[[u]] = list( short           = "erechim"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2780,7 +2785,7 @@ poitmp[[u]] = list( short           = "eunapolis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2822,7 +2827,7 @@ poitmp[[u]] = list( short           = "feliz_natal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2843,7 +2848,7 @@ poitmp[[u]] = list( short           = "floriano"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2864,7 +2869,7 @@ poitmp[[u]] = list( short           = "fortaleza"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2885,7 +2890,7 @@ poitmp[[u]] = list( short           = "guarana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2927,7 +2932,7 @@ poitmp[[u]] = list( short           = "humaita"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2948,7 +2953,7 @@ poitmp[[u]] = list( short           = "iguape"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -2969,7 +2974,7 @@ poitmp[[u]] = list( short           = "imperatriz"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -2990,7 +2995,7 @@ poitmp[[u]] = list( short           = "iquique"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3011,7 +3016,7 @@ poitmp[[u]] = list( short           = "iquitos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3032,7 +3037,7 @@ poitmp[[u]] = list( short           = "itabaiana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3053,7 +3058,7 @@ poitmp[[u]] = list( short           = "itapeva"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3074,7 +3079,7 @@ poitmp[[u]] = list( short           = "itirapina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3095,7 +3100,7 @@ poitmp[[u]] = list( short           = "jacareacanga"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3116,7 +3121,7 @@ poitmp[[u]] = list( short           = "jamaraqua"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3137,7 +3142,7 @@ poitmp[[u]] = list( short           = "jamari"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3158,7 +3163,7 @@ poitmp[[u]] = list( short           = "jiparana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3179,7 +3184,7 @@ poitmp[[u]] = list( short           = "joao_pessoa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3221,7 +3226,7 @@ poitmp[[u]] = list( short           = "kenia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3242,7 +3247,7 @@ poitmp[[u]] = list( short           = "las_gaviotas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3263,7 +3268,7 @@ poitmp[[u]] = list( short           = "la_esmeralda"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3284,7 +3289,7 @@ poitmp[[u]] = list( short           = "la_lorena"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3305,7 +3310,7 @@ poitmp[[u]] = list( short           = "la_planada"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3326,7 +3331,7 @@ poitmp[[u]] = list( short           = "la_selva"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3347,7 +3352,7 @@ poitmp[[u]] = list( short           = "labrea"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3368,7 +3373,7 @@ poitmp[[u]] = list( short           = "lencois"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3389,7 +3394,7 @@ poitmp[[u]] = list( short           = "leticia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3410,7 +3415,7 @@ poitmp[[u]] = list( short           = "lima"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3431,7 +3436,7 @@ poitmp[[u]] = list( short           = "linden"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3452,7 +3457,7 @@ poitmp[[u]] = list( short           = "llochegua"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3473,7 +3478,7 @@ poitmp[[u]] = list( short           = "macapa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3494,9 +3499,9 @@ poitmp[[u]] = list( short           = "malalcahuello"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
-                  , yeara           = 1974
-                  , yearz           = 2017
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3515,7 +3520,7 @@ poitmp[[u]] = list( short           = "manaus"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3557,7 +3562,7 @@ poitmp[[u]] = list( short           = "manaus_bdffp"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3578,7 +3583,7 @@ poitmp[[u]] = list( short           = "manicore"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3599,7 +3604,7 @@ poitmp[[u]] = list( short           = "maracay"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3620,7 +3625,7 @@ poitmp[[u]] = list( short           = "maringa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3641,7 +3646,7 @@ poitmp[[u]] = list( short           = "mariscal_estigarribia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3662,7 +3667,7 @@ poitmp[[u]] = list( short           = "maracarume"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3683,7 +3688,7 @@ poitmp[[u]] = list( short           = "montes_claros"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3704,7 +3709,7 @@ poitmp[[u]] = list( short           = "mojui_dos_campos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3746,9 +3751,9 @@ poitmp[[u]] = list( short           = "neuquen"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
-                  , yeara           = 1974
-                  , yearz           = 2017
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3788,7 +3793,7 @@ poitmp[[u]] = list( short           = "oeiras"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3809,7 +3814,7 @@ poitmp[[u]] = list( short           = "palmas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3830,7 +3835,7 @@ poitmp[[u]] = list( short           = "panama"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3851,7 +3856,7 @@ poitmp[[u]] = list( short           = "paramaribo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -3893,7 +3898,7 @@ poitmp[[u]] = list( short           = "neonita"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = +2
@@ -3977,7 +3982,7 @@ poitmp[[u]] = list( short           = "piura"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -3998,7 +4003,7 @@ poitmp[[u]] = list( short           = "port_of_spain"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4019,7 +4024,7 @@ poitmp[[u]] = list( short           = "porto_de_moz"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4040,7 +4045,7 @@ poitmp[[u]] = list( short           = "porto_velho"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4061,7 +4066,7 @@ poitmp[[u]] = list( short           = "pucallpa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4082,7 +4087,7 @@ poitmp[[u]] = list( short           = "puerto_suarez"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4103,7 +4108,7 @@ poitmp[[u]] = list( short           = "quibdo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4145,7 +4150,7 @@ poitmp[[u]] = list( short           = "recife"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4166,7 +4171,7 @@ poitmp[[u]] = list( short           = "redencao"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4187,7 +4192,7 @@ poitmp[[u]] = list( short           = "ribeirao_preto"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4208,7 +4213,7 @@ poitmp[[u]] = list( short           = "rio_branco"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4229,7 +4234,7 @@ poitmp[[u]] = list( short           = "riohacha"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4250,7 +4255,7 @@ poitmp[[u]] = list( short           = "salta"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4271,7 +4276,7 @@ poitmp[[u]] = list( short           = "salvador"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4292,7 +4297,7 @@ poitmp[[u]] = list( short           = "san_andres"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4313,7 +4318,7 @@ poitmp[[u]] = list( short           = "san_antonio_del_tachira"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4334,7 +4339,7 @@ poitmp[[u]] = list( short           = "san_jose"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4355,7 +4360,7 @@ poitmp[[u]] = list( short           = "san_fernando_de_apure"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4376,7 +4381,7 @@ poitmp[[u]] = list( short           = "san_pedro"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4397,7 +4402,7 @@ poitmp[[u]] = list( short           = "sao_carlos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4418,7 +4423,7 @@ poitmp[[u]] = list( short           = "sao_felix_araguaia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4439,7 +4444,7 @@ poitmp[[u]] = list( short           = "sao_felix_xingu"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4460,7 +4465,7 @@ poitmp[[u]] = list( short           = "sao_gabriel"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4481,7 +4486,7 @@ poitmp[[u]] = list( short           = "sao_jorge"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4502,7 +4507,7 @@ poitmp[[u]] = list( short           = "sao_luis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4544,7 +4549,7 @@ poitmp[[u]] = list( short           = "santa_fe"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4565,7 +4570,7 @@ poitmp[[u]] = list( short           = "santarem"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4649,7 +4654,7 @@ poitmp[[u]] = list( short           = "santarem_km117"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4670,7 +4675,7 @@ poitmp[[u]] = list( short           = "saraca-taquera"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4691,7 +4696,7 @@ poitmp[[u]] = list( short           = "serra_do_navio"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4712,7 +4717,7 @@ poitmp[[u]] = list( short           = "sinop"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4733,7 +4738,7 @@ poitmp[[u]] = list( short           = "sobral"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4775,7 +4780,7 @@ poitmp[[u]] = list( short           = "tabatinga"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4796,7 +4801,7 @@ poitmp[[u]] = list( short           = "talisma"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4817,10 +4822,31 @@ poitmp[[u]] = list( short           = "tambopata"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "tanguro"     
+                  , longname        = "Fazenda Tanguro, MT"
+                  , iata            = "tan"
+                  , lon             = -52.409
+                  , lat             = -13.081
+                  , alt             = 349.
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.664
+                  , clay            = 0.246
+                  , depth           = "I"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Tanguro"
+                  , yeara           = 2008
+                  , yearz           = 2018
+                  , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "tanguro"     
@@ -4901,7 +4927,7 @@ poitmp[[u]] = list( short           = "tarauaca"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4922,7 +4948,7 @@ poitmp[[u]] = list( short           = "tefe"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -4943,7 +4969,7 @@ poitmp[[u]] = list( short           = "teresina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4964,7 +4990,7 @@ poitmp[[u]] = list( short           = "tirios"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -4985,9 +5011,9 @@ poitmp[[u]] = list( short           = "tolhuin"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
-                  , yeara           = 1974
-                  , yearz           = 2017
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -5006,7 +5032,7 @@ poitmp[[u]] = list( short           = "tome-acu"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -5048,7 +5074,7 @@ poitmp[[u]] = list( short           = "vina_del_mar"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -5069,7 +5095,7 @@ poitmp[[u]] = list( short           = "vila_franca"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -5090,7 +5116,7 @@ poitmp[[u]] = list( short           = "vilhena"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -5111,7 +5137,7 @@ poitmp[[u]] = list( short           = "vitoria"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -5132,7 +5158,7 @@ poitmp[[u]] = list( short           = "west_feliz_natal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -5153,7 +5179,7 @@ poitmp[[u]] = list( short           = "west_sao_felix"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1
@@ -5174,7 +5200,7 @@ poitmp[[u]] = list( short           = "xingu"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = 2
@@ -5195,7 +5221,7 @@ poitmp[[u]] = list( short           = "yasuni"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "WFDEI_CRUP"
+                  , met.driver      = "MERRA2_MSWEP2"
                   , yeara           = 1974
                   , yearz           = 2017
                   , iphen           = -1

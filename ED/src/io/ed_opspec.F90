@@ -2039,13 +2039,22 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (decomp_scheme < 0 .or. decomp_scheme > 2) then
+   select case (decomp_scheme)
+   case (0,1,2,5)
+      continue
+   case (3,4)
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid DECOMP_SCHEME, it must be between 0 and 2. Yours is set to'   &
+                    'Invalid DECOMP_SCHEME, options 3 and 4 are not implemented yet.'      &
                     ,decomp_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   end if
+   case default
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid DECOMP_SCHEME, it must be 0, 1, 2 and 5. Yours is set to'     &
+                    ,decomp_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end select
 
    if (include_fire < 0 .or. include_fire > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &

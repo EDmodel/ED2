@@ -785,10 +785,60 @@ do
    case ${iscenario} in
    default)
       case ${metdriver} in
+      ERAINT_CHIRPS)
+         #----- ERA-Interim (CHIRPS precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_CHIRPS"
+         ;;
+      ERAINT_MSWEP2)
+         #----- ERA-Interim (MSWEP2 precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_MSWEP2"
+         ;;
+      ERAINT_NATIVE)
+         #----- ERA-Interim (native precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_NATIVE"
+         ;;
+      MERRA2_CHIRPS)
+         #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_CHIRPS"
+         ;;
+      MERRA2_MSWEP2)
+         #----- MERRA2 (MSWEP2 precipitation). --------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_MSWEP2"
+         ;;
+      MERRA2_NATIVE)
+         #----- MERRA-2 (native precipitation). -------------------------------------------#
+         scentype="MERRA2"
+         iscenario="MERRA2_SOUTHAM_NATIVE"
+         ;;
+      PGMF3_CHIRPS)
+         #----- PGMF-3 (CHIRPS precipitation). --------------------------------------------#
+         scentype="PGMF3"
+         iscenario="PGMF3_SOUTHAM_CHIRPS"
+         ;;
+      PGMF3_MSWEP2)
+         #----- PGMF-3 (CHIRPS precipitation). --------------------------------------------#
+         scentype="PGMF3"
+         iscenario="PGMF3_SOUTHAM_MSWEP2"
+         ;;
+      PGMF3_NATIVE)
+         #----- PGMF-3 (native precipitation). --------------------------------------------#
+         scentype="PGMF3"
+         iscenario="PGMF3_SOUTHAM_NATIVE"
+         ;;
       Sheffield)
          #----- Sheffield. ----------------------------------------------------------------#
          scentype="sheffield"
          iscenario="sheffield"
+         ;;
+      WFDEI_CHIRPS)
+         #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
+         scentype="WFDEI"
+         iscenario="WFDEI_SOUTHAM_CHIRPS"
          ;;
       WFDEI_CRUP)
          #----- WFDEI (CRU Precipitation). ------------------------------------------------#
@@ -800,40 +850,10 @@ do
          scentype="WFDEI"
          iscenario="WFDEI_SOUTHAM_GPCC"
          ;;
-      WFDEI_CHIRPS)
-         #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
+      WFDEI_MSWEP2)
+         #----- WFDEI (MSWEP2 Precipitation). ---------------------------------------------#
          scentype="WFDEI"
-         iscenario="WFDEI_SOUTHAM_CHIRPS"
-         ;;
-      ERAINT_NATIVE)
-         #----- ERA-Interim (native precipitation). ---------------------------------------#
-         scentype="ERA_Interim"
-         iscenario="ERAINT_SOUTHAM_NATIVE"
-         ;;
-      ERAINT_CHIRPS)
-         #----- ERA-Interim (as is). ------------------------------------------------------#
-         scentype="ERA_Interim"
-         iscenario="ERAINT_SOUTHAM_CHIRPS"
-         ;;
-      MERRA2_NATIVE)
-         #----- MERRA-2 (native precipitation). -------------------------------------------#
-         scentype="MERRA2"
-         iscenario="MERRA2_SOUTHAM_NATIVE"
-         ;;
-      MERRA2_CHIRPS)
-         #----- MERRA2 (CHIRPS precipitation). --------------------------------------------#
-         scentype="MERRA2"
-         iscenario="MERRA2_SOUTHAM_CHIRPS"
-         ;;
-      PGMF3_NATIVE)
-         #----- PGMF-3 (native precipitation). --------------------------------------------#
-         scentype="PGMF3"
-         iscenario="PGMF3_SOUTHAM_NATIVE"
-         ;;
-      PGMF3_CHIRPS)
-         #----- PGMF-3 (CHIRPS precipitation). --------------------------------------------#
-         scentype="PGMF3"
-         iscenario="PGMF3_SOUTHAM_CHIRPS"
+         iscenario="WFDEI_SOUTHAM_MSWEP2"
          ;;
       *)
          #----- Tower data. ---------------------------------------------------------------#
@@ -880,10 +900,10 @@ do
    #---------------------------------------------------------------------------------------#
    #----- Find out which scenario to use. -------------------------------------------------#
    fullscen="${metmain}/met_driver/${scentype}/${iscenario}"
-   #------------------------------------------------------------------------------------#
-   #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
-   # dataset, otherwise the site-level tower data is used.                              #
-   #------------------------------------------------------------------------------------#
+   #---------------------------------------------------------------------------------------#
+   #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP    #
+   # dataset, otherwise the site-level tower data is used.                                 #
+   #---------------------------------------------------------------------------------------#
    case ${metdriver} in
    Bananal)
       metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
@@ -903,16 +923,22 @@ do
       metcycf=2003
       imetavg=1
       ;;
+   ERAINT_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2017
+      imetavg=2
+      ;;
    ERAINT_NATIVE)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2017
       imetavg=2
       ;;
-   ERAINT_CHIRPS)
+   ERAINT_MSWEP2)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
-      metcyc1=1981
-      metcycf=2017
+      metcyc1=1979
+      metcycf=2016
       imetavg=2
       ;;
    Fazenda_Nossa_Senhora)
@@ -933,15 +959,21 @@ do
       metcycf=2006
       imetavg=1
       ;;
-   MERRA2_NATIVE)
-      metdriverdb="${fullscen}/${iscenario}_HEADER"
-      metcyc1=1980
-      metcycf=2017
-      imetavg=3
-      ;;
    MERRA2_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
+      metcycf=2017
+      imetavg=3
+      ;;
+   MERRA2_MSWEP2)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1980
+      metcycf=2016
+      imetavg=3
+      ;;
+   MERRA2_NATIVE)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1980
       metcycf=2017
       imetavg=3
       ;;
@@ -969,15 +1001,21 @@ do
       metcycf=2012
       imetavg=1
       ;;
-   PGMF3_CRUP)
+   PGMF3_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2016
+      imetavg=3
+      ;;
+   PGMF3_MSWEP2)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2016
       imetavg=3
       ;;
-   PGMF3_CHIRPS)
+   PGMF3_NATIVE)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
-      metcyc1=1981
+      metcyc1=1979
       metcycf=2016
       imetavg=3
       ;;
@@ -1023,6 +1061,12 @@ do
       metcycf=2010
       imetavg=1
       ;;
+   WFDEI_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2016
+      imetavg=1
+      ;;
    WFDEI_CRUP)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
@@ -1035,9 +1079,9 @@ do
       metcycf=2016
       imetavg=1
       ;;
-   WFDEI_CHIRPS)
+   WFDEI_MSWEP2)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
-      metcyc1=1981
+      metcyc1=1979
       metcycf=2016
       imetavg=1
       ;;

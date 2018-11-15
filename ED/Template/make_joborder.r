@@ -180,7 +180,7 @@ default = list( run           = "unnamed"
               , alpha.c3      = 0.080
               , alpha.c4      = 0.040
               , klowco2       = round(0.7/39 * 1.e6)
-              , decomp.scheme = 2
+              , decomp.scheme = 5
               , rrffact       = 1.000
               , growthresp    = 0.300
               , lwidth.grass  = 0.05
@@ -233,7 +233,7 @@ default = list( run           = "unnamed"
               , integ.scheme  = 1
               , nsub.euler    = 50
               , irepro        = 3
-              , treefall      = 0.0140
+              , treefall      = 0.0100
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
               , sl.scale      = 0

@@ -275,6 +275,9 @@ end subroutine load_ed_ecosystem_params
 
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine initialises parameters associated with necromass and soil C (and     !
+! soil N) dynamics.                                                                        !
+!------------------------------------------------------------------------------------------!
 subroutine init_decomp_params()
    use soil_coms   , only : slz                         ! ! intent(in)
    use grid_coms   , only : nzg                         ! ! intent(in)
@@ -318,7 +321,10 @@ subroutine init_decomp_params()
                           , agf_fsc                     & ! intent(out)
                           , agf_stsc                    & ! intent(out)
                           , f0_msc                      & ! intent(out)
-                          , f0_psc                      ! ! intent(out)
+                          , f0_psc                      & ! intent(out)
+                          , nbg_nlim_fsc                & ! intent(out)
+                          , nbg_nlim_stsc               & ! intent(out)
+                          , nbg_nlim_ssc                ! ! intent(out)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -340,20 +346,20 @@ subroutine init_decomp_params()
    !      Fraction of decay that is lost as CO2.                                            !
    !---------------------------------------------------------------------------------------!
    select case (decomp_scheme)
-   case (0,1)
-      r_fsc           = 1.0
-      r_stsc          = 0.3
-      r_msc_int       = 0.0
-      r_msc_slp       = 0.0
-      r_ssc           = 1.0
-      r_psc           = 1.0
-   case (2)
+   case (5)
       r_fsc           = 0.55
       r_stsc          = 0.50
       r_msc_int       = 0.60
       r_msc_slp       = 0.17
       r_ssc           = 0.55
       r_psc           = 0.55
+   case default
+      r_fsc           = 1.0
+      r_stsc          = 0.3
+      r_msc_int       = 0.0
+      r_msc_slp       = 0.0
+      r_ssc           = 1.0
+      r_psc           = 1.0
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -379,6 +385,14 @@ subroutine init_decomp_params()
       decay_rate_psc  =   0.0 / yr_day    ! Inexistent.  Passive is not solved here.
       !------------------------------------------------------------------------------------!
    case (2)
+      !----- Update rate for slow (so slow is slower than fast...). -----------------------!
+      decay_rate_fsc  =  11.0 / yr_day    ! former K2
+      decay_rate_stsc =   4.5 / yr_day    ! former K1
+      decay_rate_msc  =   0.0 / yr_day    ! Inexistent.  Microbes are not solved here.
+      decay_rate_ssc  =   0.2 / yr_day    ! former K3
+      decay_rate_psc  =   0.0 / yr_day    ! Inexistent.  Passive is not solved here.
+      !------------------------------------------------------------------------------------!
+   case (5)
       !------------------------------------------------------------------------------------!
       !    CENTURY model, closer to the implementation by B98.  Note that the original ED2 !
       ! has fewer carbon pools, and the names do not exactly match B98 to be consistent    !
@@ -386,7 +400,7 @@ subroutine init_decomp_params()
       ! translation.                                                                       !
       !                                                                                    !
       !      |----------------------+---------------------------+--------------------|     !
-      !      |  B98                 |    DECOMP_SCHEME = 0      | DECOMP_SCHEME = 2  |     !
+      !      |  B98                 |    DECOMP_SCHEME = 0      | DECOMP_SCHEME = 5  |     !
       !      |----------------------+---------------------------+--------------------|     !
       !      | Metabolic Litter     | Fast                      | Fast               |     !
       !      | Structural Litter    | Structural                | Structural         |     !
@@ -421,11 +435,11 @@ subroutine init_decomp_params()
       !    Accessed on 9 Aug 2018 (M96).                                                   !
       !                                                                                    !
       !------------------------------------------------------------------------------------!
-      decay_rate_fsc  =  16.7  / yr_day
-      decay_rate_stsc =  4.4   / yr_day
+      decay_rate_fsc  =  16.7         / yr_day
+      decay_rate_stsc =  4.4          / yr_day
       decay_rate_msc  =  0.85 * 6.65  / yr_day
       decay_rate_ssc  =  0.85 * 0.2   / yr_day
-      decay_rate_psc  =  0.014 / yr_day 
+      decay_rate_psc  =  0.014        / yr_day 
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -458,23 +472,39 @@ subroutine init_decomp_params()
    !      Parameters used for the ED-1.0/CENTURY based functions of temperature and soil   !
    ! moisture.                                                                             !
    !---------------------------------------------------------------------------------------!
-   rh_decay_low   = 0.24
-   rh_decay_high  = 0.60
-   rh_low_temp    = 18.0 + t00
-   rh_high_temp   = 45.0 + t00
-   rh_decay_dry   = 15.0 ! 18.0
-   rh_decay_wet   = 30.0 ! 36.0
-   rh_dry_smoist  = 0.30 ! 0.36
-   rh_wet_smoist  = 0.85 ! 0.96
+   select case (decomp_scheme)
+   case (5)
+      rh_decay_low   = 0.24
+      rh_decay_high  = 0.60
+      rh_low_temp    = 18.0 + t00
+      rh_high_temp   = 45.0 + t00
+      rh_decay_dry   = 15.0 ! 18.0
+      rh_decay_wet   = 30.0 ! 36.0
+      rh_dry_smoist  = 0.30 ! 0.36
+      rh_wet_smoist  = 0.85 ! 0.96
+   case default ! For back-compatibility with ED-2.2.
+      rh_decay_low   = 0.24
+      rh_decay_high  = 0.60
+      rh_low_temp    = 18.0 + t00
+      rh_high_temp   = 45.0 + t00
+      rh_decay_dry   = 12.0 ! 18.0
+      rh_decay_wet   = 36.0 ! 36.0
+      rh_dry_smoist  = 0.48 ! 0.36
+      rh_wet_smoist  = 0.98 ! 0.96
+   end select
    !---------------------------------------------------------------------------------------!
 
 
    !----- Determine the top layer to consider for heterotrophic respiration. --------------!
    select case (decomp_scheme)
-      case (0,1)
-         rh_active_depth = slz(nzg)
-         k_rh_active     = nzg
+   case (2,5)
+      !---- Use the shallowest between the intended soil carbon and the total soil depth. -!
+      select case (decomp_scheme)
       case (2)
+         !---- Use 20cm for back-compatibility with ED-2.2. -------------------------------!
+         rh_active_depth = -0.20
+         !---------------------------------------------------------------------------------!
+      case (5)
          !---------------------------------------------------------------------------------!
          !     To be consistent with most measurements, we set the active soil layer to    !
          ! the top 30 cm.  This is somewhat deeper than the implicit depth in the CENTURY  !
@@ -482,11 +512,16 @@ subroutine init_decomp_params()
          ! soil.                                                                           !
          !---------------------------------------------------------------------------------!
          rh_active_depth = -0.30
-         k_rh_loop: do k_rh_active=nzg-1,1,-1
-            if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
-         end do k_rh_loop
-         k_rh_active = k_rh_active + 1
          !---------------------------------------------------------------------------------!
+      end select
+      k_rh_loop: do k_rh_active=nzg-1,1,-1
+         if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
+      end do k_rh_loop
+      k_rh_active = k_rh_active + 1
+      !------------------------------------------------------------------------------------!
+   case default
+      rh_active_depth = slz(nzg)
+      k_rh_active     = nzg
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -507,7 +542,7 @@ subroutine init_decomp_params()
    !---------------------------------------------------------------------------------------!
    !     These variables define the partition of SOM into microbial, passive, and          !
    ! humified.  These fractions are used only during initialisation (NBG or PSS/CSS files) !
-   ! and only when DECOMP_SCHEME is 2.  In this case, the fraction of soil C that is       !
+   ! and only when DECOMP_SCHEME is 5.  In this case, the fraction of soil C that is       !
    ! humified ("slow") will be 1.0 - f_msc - f_psc.   The default fractions are based on   !
    ! the CENTURY manual, but can be changed through XML.                                   !
    !                                                                                       !
@@ -516,6 +551,18 @@ subroutine init_decomp_params()
    !---------------------------------------------------------------------------------------!
    f0_msc   = 0.03
    f0_psc   = 0.35
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to initialise soil carbon pools for near bare ground simulations when  !
+   ! N limitation is turned on.  These used to be hardcoded in ed_nbg_init.f90, and hard-  !
+   ! coded parameters are deprecated.                                                      !
+   !---------------------------------------------------------------------------------------!
+   nbg_nlim_fsc  = 0.2
+   nbg_nlim_stsc = 10.0 ! Isn't this too high for NBG?
+   nbg_nlim_ssc  = 0.01
    !---------------------------------------------------------------------------------------!
 
    return

@@ -502,8 +502,7 @@ module budget_utils
    subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad          &
                             ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage           &
                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff       &
-                            ,site_area,cbudget_nep,old_can_enthalpy,old_can_shv            &
-                            ,old_can_co2,old_can_rhos,old_can_prss)
+                            ,site_area,cbudget_nep,old_can_rhos,old_can_prss)
       use ed_state_vars, only : sitetype           & ! structure
                               , patchtype          ! ! structure
       use ed_max_dims  , only : str_len            ! ! intent(in)
@@ -522,92 +521,90 @@ module budget_utils
       use therm_lib    , only : tq2enthalpy        ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)                          , target        :: csite
-      real                                    , intent(inout) :: pcpg
-      real                                    , intent(inout) :: qpcpg
-      real                                    , intent(inout) :: co2curr_loss2atm
-      real                                    , intent(inout) :: ecurr_netrad
-      real                                    , intent(inout) :: ecurr_loss2atm
-      real                                    , intent(inout) :: ecurr_loss2drainage
-      real                                    , intent(inout) :: ecurr_loss2runoff
-      real                                    , intent(inout) :: wcurr_loss2atm
-      real                                    , intent(inout) :: wcurr_loss2drainage
-      real                                    , intent(inout) :: wcurr_loss2runoff
-      integer                                 , intent(in)    :: lsl
-      integer                                 , intent(in)    :: ipa
-      real                                    , intent(in)    :: site_area
-      real                                    , intent(inout) :: cbudget_nep
-      real                                    , intent(in)    :: old_can_enthalpy
-      real                                    , intent(in)    :: old_can_shv
-      real                                    , intent(in)    :: old_can_co2
-      real                                    , intent(in)    :: old_can_rhos
-      real                                    , intent(in)    :: old_can_prss
+      type(sitetype)        , target        :: csite
+      real                  , intent(inout) :: pcpg
+      real                  , intent(inout) :: qpcpg
+      real                  , intent(inout) :: co2curr_loss2atm
+      real                  , intent(inout) :: ecurr_netrad
+      real                  , intent(inout) :: ecurr_loss2atm
+      real                  , intent(inout) :: ecurr_loss2drainage
+      real                  , intent(inout) :: ecurr_loss2runoff
+      real                  , intent(inout) :: wcurr_loss2atm
+      real                  , intent(inout) :: wcurr_loss2drainage
+      real                  , intent(inout) :: wcurr_loss2runoff
+      integer               , intent(in)    :: lsl
+      integer               , intent(in)    :: ipa
+      real                  , intent(in)    :: site_area
+      real                  , intent(inout) :: cbudget_nep
+      real                  , intent(in)    :: old_can_rhos
+      real                  , intent(in)    :: old_can_prss
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)                         , pointer       :: cpatch
-      character(len=str_len)                                  :: budget_fout
-      real                                                    :: co2budget_initialstorage
-      real                                                    :: co2budget_finalstorage
-      real                                                    :: co2budget_deltastorage
-      real                                                    :: co2budget_tolerance
-      real                                                    :: co2curr_gpp
-      real                                                    :: co2curr_leafresp
-      real                                                    :: co2curr_rootresp
-      real                                                    :: co2curr_storageresp
-      real                                                    :: co2curr_growthresp
-      real                                                    :: co2curr_hetresp
-      real                                                    :: co2curr_nep
-      real                                                    :: co2curr_denseffect
-      real                                                    :: co2curr_zcaneffect
-      real                                                    :: co2curr_residual
-      real                                                    :: cbudget_initialstorage
-      real                                                    :: cbudget_committed
-      real                                                    :: cbudget_finalstorage
-      real                                                    :: cbudget_deltastorage
-      real                                                    :: cbudget_tolerance
-      real                                                    :: ccurr_loss2atm
-      real                                                    :: ccurr_denseffect
-      real                                                    :: ccurr_zcaneffect
-      real                                                    :: ccurr_loss2yield
-      real                                                    :: ccurr_seedrain
-      real                                                    :: ccurr_residual
-      real                                                    :: ebudget_initialstorage
-      real                                                    :: ebudget_finalstorage
-      real                                                    :: ebudget_deltastorage
-      real                                                    :: ebudget_tolerance
-      real                                                    :: ecurr_precipgain
-      real                                                    :: ecurr_denseffect
-      real                                                    :: ecurr_prsseffect
-      real                                                    :: ecurr_hcapeffect
-      real                                                    :: ecurr_zcaneffect
-      real                                                    :: ecurr_residual
-      real                                                    :: wbudget_initialstorage
-      real                                                    :: wbudget_finalstorage
-      real                                                    :: wbudget_deltastorage
-      real                                                    :: wbudget_tolerance
-      real                                                    :: wcurr_precipgain
-      real                                                    :: wcurr_denseffect
-      real                                                    :: wcurr_zcaneffect
-      real                                                    :: wcurr_residual
-      real                                                    :: curr_can_enthalpy
-      real                                                    :: gpp
-      real                                                    :: leaf_resp
-      real                                                    :: root_resp
-      real                                                    :: storage_resp
-      real                                                    :: growth_resp
-      real                                                    :: co2_factor
-      real                                                    :: crb_factor
-      real                                                    :: ent_factor
-      real                                                    :: h2o_factor
-      real                                                    :: patch_lai
-      real                                                    :: patch_wai
-      integer                                                 :: jpa
-      integer                                                 :: ico
-      logical                                                 :: isthere
-      logical                                                 :: budget_fine
-      logical                                                 :: co2_fine
-      logical                                                 :: carbon_fine
-      logical                                                 :: enthalpy_fine
-      logical                                                 :: water_fine
+      type(patchtype)       , pointer       :: cpatch
+      character(len=str_len)                :: budget_fout
+      real                                  :: co2budget_initialstorage
+      real                                  :: co2budget_finalstorage
+      real                                  :: co2budget_deltastorage
+      real                                  :: co2budget_tolerance
+      real                                  :: co2curr_gpp
+      real                                  :: co2curr_leafresp
+      real                                  :: co2curr_rootresp
+      real                                  :: co2curr_storageresp
+      real                                  :: co2curr_growthresp
+      real                                  :: co2curr_hetresp
+      real                                  :: co2curr_nee
+      real                                  :: co2curr_nep
+      real                                  :: co2curr_denseffect
+      real                                  :: co2curr_zcaneffect
+      real                                  :: co2curr_residual
+      real                                  :: cbudget_initialstorage
+      real                                  :: cbudget_committed
+      real                                  :: cbudget_finalstorage
+      real                                  :: cbudget_deltastorage
+      real                                  :: cbudget_tolerance
+      real                                  :: ccurr_loss2atm
+      real                                  :: ccurr_denseffect
+      real                                  :: ccurr_zcaneffect
+      real                                  :: ccurr_loss2yield
+      real                                  :: ccurr_seedrain
+      real                                  :: ccurr_residual
+      real                                  :: ebudget_initialstorage
+      real                                  :: ebudget_finalstorage
+      real                                  :: ebudget_deltastorage
+      real                                  :: ebudget_tolerance
+      real                                  :: ecurr_precipgain
+      real                                  :: ecurr_denseffect
+      real                                  :: ecurr_prsseffect
+      real                                  :: ecurr_hcapeffect
+      real                                  :: ecurr_zcaneffect
+      real                                  :: ecurr_residual
+      real                                  :: wbudget_initialstorage
+      real                                  :: wbudget_finalstorage
+      real                                  :: wbudget_deltastorage
+      real                                  :: wbudget_tolerance
+      real                                  :: wcurr_precipgain
+      real                                  :: wcurr_denseffect
+      real                                  :: wcurr_zcaneffect
+      real                                  :: wcurr_residual
+      real                                  :: curr_can_enthalpy
+      real                                  :: gpp
+      real                                  :: leaf_resp
+      real                                  :: root_resp
+      real                                  :: storage_resp
+      real                                  :: growth_resp
+      real                                  :: co2_factor
+      real                                  :: crb_factor
+      real                                  :: ent_factor
+      real                                  :: h2o_factor
+      real                                  :: patch_lai
+      real                                  :: patch_wai
+      integer                               :: jpa
+      integer                               :: ico
+      logical                               :: isthere
+      logical                               :: budget_fine
+      logical                               :: co2_fine
+      logical                               :: carbon_fine
+      logical                               :: enthalpy_fine
+      logical                               :: water_fine
       !----- Local constants. -------------------------------------------------------------!
       character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
       character(len= 9)     , parameter     :: fmti='(a,1x,i7)'
@@ -681,18 +678,50 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !     Compute the density and pressure effects.  We seek the conservation of the     !
       ! extensive properties [X/m2], but the canopy air space solves the intensive         !
-      ! quantities instead [X/mol or X/kg].  Because density is not constant within the    !
-      ! time step, and during the integration we solve the intensive form for the canopy   !
-      ! air space, we must subtract the density effect from the residual.  The derivation  !
-      ! is shown below.  The storage term is what we aim at, but in reality we solve the   !
-      ! equations after the >>>.                                                           !
+      ! quantities instead [X/mol or X/kg].  In reality density should change every time   !
+      ! step, but solving the extensive properties would require solving a non-linear      !
+      ! system of five equations and five unknowns (specific enthalpy, specific humidity,  !
+      ! CO2 mixing ratio, temperature and air density).  We estimate the error             !
+      ! attributable to this simplification by accounting for the change in density at     !
+      ! the end of the time step (the density effect).                                     !
       !                                                                                    !
-      !  dM              d(rho*z*m)                         dm                     d(rho)  !
-      ! ---- = I - L -> ------------ = I - L >>> rho * z * ---- = I - L - m * z * -------- !
-      !  dt                  dt                             dt                       dt    !
+      !     For any given intensive property x [X/kg] and associated extensive property    !
+      ! X = rho * z * x [X/m2], the density effect (X_denseff) is the difference           !
+      ! between what we should have solved and what we solve.                              !
       !                                                                                    !
-      ! where M is the extensive property, I is the input flux, L is the loss flux, z is   !
-      ! the canopy air space depth, and rho is the canopy air space density.               !
+      !             /--------------------------------------------------------\             !
+      !             | What we solve:          | What we should solve:        |             !
+      !             |-------------------------+------------------------------|             !
+      !             |            dx           |  dX      d(rho*z*x)          |             !
+      !             | rho * z * ---- = I - L  | ---- =  ------------ = I - L |             !
+      !             |            dt           |  dt          dt              |             !
+      !             \--------------------------------------------------------/             !
+      !                                                                                    !
+      ! where I is the input flux, L is the loss flux, z is the canopy air space depth,    !
+      ! and rho is the canopy air space density.  To estimate the density effect, we       !
+      ! calculate the change in density at the end of the time step:                       !
+      !                                                                                    !
+      ! X_denseffect = (rho_f - rho_i) * z * x_f / delta_t                                 !
+      !                                                                                    !
+      ! but note that this is an estimate: the actual value would can only be known if we  !
+      ! solve the extensive quantity.                                                      !
+      !------------------------------------------------------------------------------------!
+      !------ CO2. ------------------------------------------------------------------------!
+      co2curr_denseffect  = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)               &
+                                           ,csite%can_co2(ipa),csite%can_depth(ipa),mmdryi)
+      !------ Carbon.  Derive it from CO2. ------------------------------------------------!
+      ccurr_denseffect    = co2curr_denseffect * umol_2_kgC
+      !------ Water. ----------------------------------------------------------------------!
+      wcurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)               &
+                                           ,csite%can_shv(ipa),csite%can_depth(ipa),1.)
+      !------ Enthalpy.  ------------------------------------------------------------------!
+      curr_can_enthalpy   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
+      ecurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)               &
+                                           ,curr_can_enthalpy,csite%can_depth(ipa),1.0)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
       !    For the specific case of enthalpy, we also compute the pressure effect between  !
       ! time steps.  We cannot guarantee conservation of enthalpy when we update pressure, !
       ! because of the first law of thermodynamics (the way to address this would be to    !
@@ -700,28 +729,13 @@ module budget_utils
       ! Enthalpy is preserved within one time step, once pressure is updated and remains   !
       ! constant.                                                                          !
       !                                                                                    !
-      !   dH         dp                     dh             dp             d(rho)           !
-      !  ---- - V * ---- = Q >>> rho * z * ---- = Q + z * ---- - m * z * --------          !
-      !   dt         dt                     dt             dt               dt             !
+      !   dH             dp                                                                !
+      !  ---- = Q + z * ----                                                               !
+      !   dt             dt                                                                !
       !                                                                                    !
-      ! where p is the canopy air space pressure, Q is the net heat exchange, V is the     !
-      ! volume of the canopy air space.                                                    !
+      ! where p is the canopy air space pressure, Q is the net heat exchange, z is the     !
+      ! volume per unit area (aka depth) of the canopy air space.                          !
       !------------------------------------------------------------------------------------!
-      !------ CO2.  Density effect only. --------------------------------------------------!
-      co2curr_denseffect  = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)               &
-                                           ,old_can_co2,csite%can_co2(ipa)                 &
-                                           ,csite%can_depth(ipa),mmdryi)
-      !------ Carbon.  Density effect only. -----------------------------------------------!
-      ccurr_denseffect    = co2curr_denseffect * umol_2_kgC
-      !------ Water. Density effect only. -------------------------------------------------!
-      wcurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)               &
-                                           ,old_can_shv,csite%can_shv(ipa)                 &
-                                           ,csite%can_depth(ipa),1.)
-      !------ Enthalpy.  Density and pressure effects. ------------------------------------!
-      curr_can_enthalpy   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
-      ecurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)               &
-                                           ,old_can_enthalpy, curr_can_enthalpy            &
-                                           ,csite%can_depth(ipa),1.0)
       ecurr_prsseffect    = csite%can_depth(ipa) * (csite%can_prss(ipa) - old_can_prss)
       !------------------------------------------------------------------------------------!
 
@@ -758,18 +772,18 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
-      !      Compute the NEP contribution to changes CO2 storage.  NEP is also used for    !
+      !      Compute the NEE contribution to changes CO2 storage.  NEP is used for         !
       ! long-term, stand-scale budget tracking of carbon pools excluding canopy air space, !
       ! and for the CO2-only budget.  For the short-term, patch-scale total carbon budget  !
-      ! we use the loss 2 atmosphere instead, because we also account for carbon storage   !
+      ! we use the loss to atmosphere instead, because we also account for carbon storage  !
       ! in the canopy air space.                                                           !
       !------------------------------------------------------------------------------------!
-      co2curr_nep         = co2curr_gpp - co2curr_leafresp - co2curr_rootresp              &
-                          - co2curr_storageresp - co2curr_growthresp - co2curr_hetresp
-      cbudget_nep         = cbudget_nep + site_area * csite%area(ipa) * co2curr_nep        &
-                                        * umol_2_kgC
+      co2curr_nee    = co2curr_leafresp    + co2curr_rootresp    + co2curr_storageresp     &
+                     + co2curr_growthresp  + co2curr_hetresp     - co2curr_gpp
+      co2curr_nep    = - co2curr_nee
+      cbudget_nep    = cbudget_nep + site_area * csite%area(ipa) * co2curr_nep * umol_2_kgC
       !----- Leverage the CO2 budget loss term to find the carbon equivalent. -------------!
-      ccurr_loss2atm      = co2curr_loss2atm * umol_2_kgC
+      ccurr_loss2atm = co2curr_loss2atm * umol_2_kgC
       !------------------------------------------------------------------------------------!
 
 
@@ -815,22 +829,22 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !----- 1. Canopy CO2. ---------------------------------------------------------------!
       co2curr_residual = co2budget_deltastorage                                            &
-                       - ( - co2curr_nep      - co2curr_loss2atm   )                       &
-                       - ( co2curr_denseffect + co2curr_zcaneffect )
+                       - ( co2curr_nee        - co2curr_loss2atm                           &
+                         + co2curr_denseffect + co2curr_zcaneffect )
       !----- 2. Carbon. -------------------------------------------------------------------!
       ccurr_residual   = cbudget_deltastorage                                              &
-                       - ( ccurr_seedrain   - ccurr_loss2atm   - ccurr_loss2yield )        &
-                       - ( ccurr_denseffect + ccurr_zcaneffect )
+                       - ( ccurr_seedrain   - ccurr_loss2atm   - ccurr_loss2yield          &
+                         + ccurr_denseffect + ccurr_zcaneffect )
       !----- 3. Energy. -------------------------------------------------------------------!
       ecurr_residual   = ebudget_deltastorage                                              &
                        - ( ecurr_precipgain    - ecurr_loss2atm   - ecurr_loss2drainage    &
-                         - ecurr_loss2runoff   + ecurr_netrad     + ecurr_prsseffect    )  &
-                       - ( ecurr_denseffect    + ecurr_hcapeffect    + ecurr_zcaneffect )
+                         - ecurr_loss2runoff   + ecurr_netrad     + ecurr_prsseffect       &
+                         + ecurr_denseffect    + ecurr_hcapeffect + ecurr_zcaneffect    )
       !----- 4. Water. --------------------------------------------------------------------!
       wcurr_residual   = wbudget_deltastorage                                              &
                        - ( wcurr_precipgain    - wcurr_loss2atm                            &
-                         - wcurr_loss2drainage - wcurr_loss2runoff )                       &
-                       - ( wcurr_denseffect    + wcurr_zcaneffect  )
+                         - wcurr_loss2drainage - wcurr_loss2runoff                         &
+                         + wcurr_denseffect    + wcurr_zcaneffect  )
       !------------------------------------------------------------------------------------!
 
 
@@ -852,39 +866,39 @@ module budget_utils
       !    Integrate the terms that are part of the budget.                                !
       !------------------------------------------------------------------------------------!
       !----- 1. Carbon dioxide. -----------------------------------------------------------!
-      csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)       + gpp       *dtlsm
-      csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                       &
+      csite%co2budget_gpp        (ipa) = csite%co2budget_gpp(ipa)       + gpp       *dtlsm
+      csite%co2budget_plresp     (ipa) = csite%co2budget_plresp(ipa)                       &
                                        + ( leaf_resp          + root_resp                  &
                                          + storage_resp       + growth_resp        )       &
                                        * dtlsm
-      csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                           &
+      csite%co2budget_rh         (ipa) = csite%co2budget_rh(ipa)                           &
                                        + csite%rh(ipa) * dtlsm
-      csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa)                   &
+      csite%co2budget_denseffect (ipa) = csite%co2budget_denseffect(ipa)                   &
                                        + co2curr_denseffect
-      csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)                     &
+      csite%co2budget_loss2atm   (ipa) = csite%co2budget_loss2atm(ipa)                     &
                                        + co2curr_loss2atm
       !----- 2. Carbon. -------------------------------------------------------------------!
-      csite%cbudget_denseffect(ipa)    = csite%cbudget_denseffect(ipa)                     &
+      csite%cbudget_denseffect   (ipa) = csite%cbudget_denseffect(ipa)                     &
                                        + ccurr_denseffect
-      csite%cbudget_loss2atm(ipa)      = csite%cbudget_loss2atm(ipa)                       &
+      csite%cbudget_loss2atm     (ipa) = csite%cbudget_loss2atm(ipa)                       &
                                        + ccurr_loss2atm
       !----- 3. Energy. -------------------------------------------------------------------!
-      csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)   + ecurr_precipgain
-      csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)       + ecurr_netrad
-      csite%ebudget_prsseffect(ipa)    = csite%ebudget_prsseffect(ipa)   + ecurr_prsseffect
-      csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)   + ecurr_denseffect
-      csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)     + ecurr_loss2atm
+      csite%ebudget_precipgain   (ipa) = csite%ebudget_precipgain(ipa)   + ecurr_precipgain
+      csite%ebudget_netrad       (ipa) = csite%ebudget_netrad    (ipa)   + ecurr_netrad
+      csite%ebudget_prsseffect   (ipa) = csite%ebudget_prsseffect(ipa)   + ecurr_prsseffect
+      csite%ebudget_denseffect   (ipa) = csite%ebudget_denseffect(ipa)   + ecurr_denseffect
+      csite%ebudget_loss2atm     (ipa) = csite%ebudget_loss2atm  (ipa)   + ecurr_loss2atm
       csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa)                  &
                                        + ecurr_loss2drainage
-      csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)                    &
+      csite%ebudget_loss2runoff  (ipa) = csite%ebudget_loss2runoff(ipa)                    &
                                        + ecurr_loss2runoff
       !----- 4. Water. --------------------------------------------------------------------!
-      csite%wbudget_precipgain(ipa)    = csite%wbudget_precipgain(ipa) + wcurr_precipgain
-      csite%wbudget_denseffect(ipa)    = csite%wbudget_denseffect(ipa) + wcurr_denseffect
-      csite%wbudget_loss2atm(ipa)      = csite%wbudget_loss2atm(ipa)   + wcurr_loss2atm
+      csite%wbudget_precipgain   (ipa) = csite%wbudget_precipgain(ipa) + wcurr_precipgain
+      csite%wbudget_denseffect   (ipa) = csite%wbudget_denseffect(ipa) + wcurr_denseffect
+      csite%wbudget_loss2atm     (ipa) = csite%wbudget_loss2atm  (ipa) + wcurr_loss2atm
       csite%wbudget_loss2drainage(ipa) = csite%wbudget_loss2drainage(ipa)                  &
                                        + wcurr_loss2drainage
-      csite%wbudget_loss2runoff(ipa)   = csite%wbudget_loss2runoff(ipa)                    &
+      csite%wbudget_loss2runoff  (ipa) = csite%wbudget_loss2runoff(ipa)                    &
                                        + wcurr_loss2runoff
       !------------------------------------------------------------------------------------!
 
@@ -1205,14 +1219,14 @@ module budget_utils
       do k = 1, csite%nlev_sfcwater(ipa)
          compute_water_storage = compute_water_storage + csite%sfcwater_mass(k,ipa)
       end do
-      !----- 3. Add the water vapour floating in the canopy air space. --------------------!
+      !----- 3. Add the water vapour in the canopy air space. -----------------------------!
       compute_water_storage = compute_water_storage                                        &
                             + csite%can_shv(ipa) * csite%can_depth(ipa)                    &
                             * csite%can_rhos(ipa)
       !----- 4. Add the water on the leaf and wood surfaces. ------------------------------!
       do ico = 1,cpatch%ncohorts
-         compute_water_storage = compute_water_storage + cpatch%leaf_water(ico)
-         compute_water_storage = compute_water_storage + cpatch%wood_water(ico)
+         compute_water_storage = compute_water_storage + cpatch%leaf_water(ico)            &
+                                                       + cpatch%wood_water(ico)
       end do
 
       return
@@ -1245,7 +1259,6 @@ module budget_utils
 
       cpatch => csite%patch(ipa)
 
-      compute_netrad = 0.0
       !----- 1. Add the ground components -------------------------------------------------!
       compute_netrad = csite%rshort_g(ipa) + csite%rlong_g(ipa) + csite%rlong_s(ipa)
       !----- 2. Add the shortwave radiation that reaches each snow/water layer ------------!
@@ -1254,8 +1267,8 @@ module budget_utils
       end do
       !----- 3. Add the radiation components that is absorbed by leaves and branches. -----!
       do ico = 1,cpatch%ncohorts
-         compute_netrad = compute_netrad + cpatch%rshort_l(ico) + cpatch%rlong_l(ico)
-         compute_netrad = compute_netrad + cpatch%rshort_w(ico) + cpatch%rlong_w(ico)
+         compute_netrad = compute_netrad + cpatch%rshort_l(ico) + cpatch%rlong_l(ico)      &
+                                         + cpatch%rshort_w(ico) + cpatch%rlong_w(ico)
       end do
       return
    end function compute_netrad
@@ -1356,11 +1369,10 @@ module budget_utils
    !---------------------------------------------------------------------------------------!
    subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,storage_resp           &
                                ,growth_resp)
-      use ed_state_vars        , only : sitetype    & ! structure
-                                      , patchtype   ! ! structure
-      use consts_coms          , only : day_sec     & ! intent(in)
-                                      , umol_2_kgC  ! ! intent(in)
-      use ed_max_dims          , only : n_dbh       ! ! intent(in)
+      use ed_state_vars        , only : sitetype        & ! structure
+                                      , patchtype       ! ! structure
+      use consts_coms          , only : kgCday_2_umols  ! ! intent(in)
+      use ed_max_dims          , only : n_dbh           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target      :: csite
@@ -1371,7 +1383,7 @@ module budget_utils
       real                  , intent(out) :: storage_resp
       real                  , intent(out) :: growth_resp
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype), pointer            :: cpatch
+      type(patchtype)       , pointer     :: cpatch
       integer                             :: ico
       !------------------------------------------------------------------------------------!
 
@@ -1401,8 +1413,8 @@ module budget_utils
 
 
       !----- Convert storage and growth respiration to umol/m2/s. -------------------------!
-      storage_resp = csite%commit_storage_resp(ipa) / (day_sec * umol_2_kgC)
-      growth_resp  = csite%commit_growth_resp (ipa) / (day_sec * umol_2_kgC)
+      storage_resp = csite%commit_storage_resp(ipa) * kgCday_2_umols
+      growth_resp  = csite%commit_growth_resp (ipa) * kgCday_2_umols
       !------------------------------------------------------------------------------------!
 
       return
@@ -1526,20 +1538,28 @@ module budget_utils
    !     This function computes the change of the integrated value of a given property in  !
    ! the canopy air space due to change in density.                                        !
    !---------------------------------------------------------------------------------------!
-   real function ddens_dt_effect(old_rhos,new_rhos,old_prop,new_prop,can_depth,multi)
+   real function ddens_dt_effect(old_rhos,new_rhos,new_prop,can_depth,multi)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real, intent(in) :: old_rhos   ! Density before time integration
       real, intent(in) :: new_rhos   ! Density after time integration
-      real, intent(in) :: old_prop   ! Property before time integration
       real, intent(in) :: new_prop   ! Property after time integration
       real, intent(in) :: can_depth  ! Canopy depth
       real, intent(in) :: multi      ! Some scaling constant that may be needed.
       !------------------------------------------------------------------------------------!
-      ddens_dt_effect = multi * can_depth * 0.5 * (old_prop + new_prop)                    &
-                      * (new_rhos - old_rhos)
+
+
+      !------------------------------------------------------------------------------------!
+      !     We use the new value of the property because density is updated the property   !
+      ! has been updated.                                                                  !
+      !------------------------------------------------------------------------------------!
+      ddens_dt_effect = multi * can_depth * new_prop * (new_rhos - old_rhos)
+      !------------------------------------------------------------------------------------!
+
       return
    end function ddens_dt_effect
    !=======================================================================================!
    !=======================================================================================!
 end module budget_utils
+!==========================================================================================!
+!==========================================================================================!

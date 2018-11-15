@@ -695,7 +695,7 @@ do
       then
          #------ One meteorological cycle.  Check the type of meteorological driver. ------#
          case ${metdriver} in
-         Sheffield|WFDEI*)
+         Sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
             thisyeara=${metcyca}
             thisyearz=${metcycz}
             ;;

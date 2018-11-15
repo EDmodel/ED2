@@ -75,6 +75,7 @@ module growth_balive
       integer                          :: ipft
       integer                          :: phenstatus_in
       integer                          :: krdepth_in
+      integer                          :: xfer_case
       real                             :: metnpp_actual
       real                             :: metnpp_pot
       real                             :: metnpp_lightmax
@@ -314,7 +315,7 @@ module growth_balive
                                   ,cpoly%green_leaf_factor(ipft,isi),gr_tfact0             &
                                   ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbarka   &
                                   ,tr_bbarkb,tr_bstorage,carbon_debt,flushing,balive_aim   &
-                                  ,carbon_miss)
+                                  ,carbon_miss,xfer_case)
 
                   call apply_c_xfers(cpatch,ico,npp_actual,tr_bleaf,tr_broot               &
                                     ,tr_bsapwooda,tr_bsapwoodb,tr_bbarka,tr_bbarkb         &
@@ -513,9 +514,9 @@ module growth_balive
                      call check_balive_cohort(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in &
                                              ,bsapwoodb_in,bbarka_in,bbarkb_in,balive_in   &
                                              ,bstorage_in,bdeada_in,bdeadb_in              &
-                                             ,metnpp_actual,npp_actual,growresp_actual     &
-                                             ,tissue_maintenance,storage_maintenance       &
-                                             ,carbon_miss)
+                                             ,phenstatus_in,metnpp_actual,npp_actual       &
+                                             ,growresp_actual,tissue_maintenance           &
+                                             ,storage_maintenance,carbon_miss,xfer_case)
                   end if
                   !------------------------------------------------------------------------!
                end do cohortloop
@@ -767,10 +768,10 @@ module growth_balive
          !---------------------------------------------------------------------------------!
          if (cpatch%balive(ico) >= tiny_num) then
             stor_mco_o_balive              = storage_maintenance / cpatch%balive   (ico)
-            cpatch%leaf_storage_resp(ico)  = stor_mco_o_balive   * cpatch%bleaf    (ico)
-            cpatch%root_storage_resp(ico)  = stor_mco_o_balive   * cpatch%broot    (ico)
-            cpatch%sapa_storage_resp(ico)  = stor_mco_o_balive   * cpatch%bsapwooda(ico)
-            cpatch%sapb_storage_resp(ico)  = stor_mco_o_balive   * cpatch%bsapwoodb(ico)
+            cpatch%leaf_storage_resp (ico) = stor_mco_o_balive   * cpatch%bleaf    (ico)
+            cpatch%root_storage_resp (ico) = stor_mco_o_balive   * cpatch%broot    (ico)
+            cpatch%sapa_storage_resp (ico) = stor_mco_o_balive   * cpatch%bsapwooda(ico)
+            cpatch%sapb_storage_resp (ico) = stor_mco_o_balive   * cpatch%bsapwoodb(ico)
             cpatch%barka_storage_resp(ico) = stor_mco_o_balive   * cpatch%bbarka   (ico)
             cpatch%barkb_storage_resp(ico) = stor_mco_o_balive   * cpatch%bbarkb   (ico)
          else
@@ -1150,7 +1151,8 @@ module growth_balive
    !---------------------------------------------------------------------------------------!
    subroutine get_c_xfers(csite,ipa,ico,npp_actual,green_leaf_factor,gr_tfact0             &
                          ,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb,tr_bbarka,tr_bbarkb  &
-                         ,tr_bstorage,carbon_debt,flushing,balive_aim,carbon_miss)
+                         ,tr_bstorage,carbon_debt,flushing,balive_aim,carbon_miss          &
+                         ,xfer_case)
       use ed_state_vars , only : sitetype     & ! structure
                                , patchtype    ! ! structure
       use pft_coms      , only : q            & ! intent(in)
@@ -1183,6 +1185,7 @@ module growth_balive
       logical        , intent(out)   :: flushing          !< Flag for leaf flush
       real           , intent(out)   :: balive_aim        !< Desired cohort balive value
       real           , intent(inout) :: carbon_miss       !< Carbon from unaccounted source
+      integer        , intent(out)   :: xfer_case         !< Transfer case (for debugging)
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype), pointer       :: cpatch
       integer                        :: ipft
@@ -1326,7 +1329,9 @@ module growth_balive
             delta_bbarka    = max (0.0, bbarka_aim    - cpatch%bbarka   (ico))
             delta_bbarkb    = max (0.0, bbarkb_aim    - cpatch%bbarkb   (ico))
             !------------------------------------------------------------------------------!
-            
+
+
+
             !------------------------------------------------------------------------------!
             ! MLO: Find correction factors for growth.  Rationale: the original approach   !
             !      will try to fix allometry in the first day of the month, to catch up    !
@@ -1388,9 +1393,9 @@ module growth_balive
             !------------------------------------------------------------------------------!
 
 
-            !---- Total transfer. ---------------------------------------------------------!
-            delta_btotal    = delta_bleaf + delta_broot + delta_bsapwooda                  &
-                            + delta_bsapwoodb + delta_bbarka + delta_bbarkb
+            !---- Total sought transfer. --------------------------------------------------!
+            delta_btotal    = delta_bleaf     + delta_broot     + delta_bsapwooda          &
+                            + delta_bsapwoodb + delta_bbarka    + delta_bbarkb
             !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
@@ -1406,6 +1411,7 @@ module growth_balive
                tr_bsapwoodb = delta_bsapwoodb  * f_total
                tr_bbarka    = delta_bbarka     * f_total
                tr_bbarkb    = delta_bbarkb     * f_total
+               xfer_case    = 2
             else
                tr_bleaf     = 0.
                tr_broot     = 0.
@@ -1413,11 +1419,15 @@ module growth_balive
                tr_bsapwoodb = 0.
                tr_bbarka    = 0.
                tr_bbarkb    = 0.
+               xfer_case    = 1
             end if
             !------------------------------------------------------------------------------!
 
-            tr_bstorage = npp_actual   - tr_bleaf  - tr_broot  - tr_bsapwooda              &
-                        - tr_bsapwoodb - tr_bbarka - tr_bbarkb
+
+            !----- Change in storage is NPP minus transfer to other tissues. --------------!
+            tr_bstorage = npp_actual   - tr_bleaf     - tr_broot     - tr_bsapwooda        &
+                        - tr_bsapwoodb - tr_bbarka    - tr_bbarkb
+            !------------------------------------------------------------------------------!
          case default
             !------------------------------------------------------------------------------!
             !     Put carbon gain into storage.  If we're not actively dropping leaves or  !
@@ -1425,6 +1435,7 @@ module growth_balive
             ! month.                                                                       !
             !------------------------------------------------------------------------------!
             tr_bstorage  = npp_actual
+            xfer_case    = 0
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -1448,6 +1459,7 @@ module growth_balive
                !------ Storage loss will make up the carbon debt. -------------------------!
                tr_bstorage = -1.0 * carbon_debt
                carbon_debt =  0.0
+               xfer_case   = -1
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
@@ -1475,6 +1487,7 @@ module growth_balive
                   tr_bbarka    = -1.0 * carbon_debt * f_bbarka
                   tr_bbarkb    = -1.0 * carbon_debt * f_bbarkb
                   carbon_debt  = 0.0
+                  xfer_case    = -2
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -1487,6 +1500,7 @@ module growth_balive
                   tr_broot     = -1.0 * cpatch%broot    (ico)
                   tr_bbarka    = -1.0 * cpatch%bbarka   (ico)
                   tr_bbarkb    = -1.0 * cpatch%bbarkb   (ico)
+                  xfer_case    = -90
                   !------------------------------------------------------------------------!
 
 
@@ -1530,6 +1544,7 @@ module growth_balive
                tr_bbarka    = -1.0 * carbon_debt * f_bbarka
                tr_bbarkb    = -1.0 * carbon_debt * f_bbarkb
                carbon_debt  = 0.0
+               xfer_case    = -11
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
@@ -1550,6 +1565,7 @@ module growth_balive
                   !----- Enough carbon in storage, take all carbon needed from there. -----!
                   tr_bstorage = -1.0 * carbon_debt
                   carbon_debt =  0.0
+                  xfer_case    = -12
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -1559,6 +1575,7 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   tr_bstorage = -1.0*cpatch%bstorage(ico)
                   carbon_debt = carbon_debt - cpatch%bstorage(ico)
+                  xfer_case   = -92
                   !------------------------------------------------------------------------!
 
 
@@ -1617,6 +1634,7 @@ module growth_balive
                !     Report the missing carbon.                                            !
                !---------------------------------------------------------------------------!
                carbon_miss = carbon_miss + carbon_debt
+               xfer_case   = -99
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -2064,9 +2082,9 @@ module growth_balive
    !---------------------------------------------------------------------------------------!
    subroutine check_balive_cohort(csite,ipa,ico,bleaf_in,broot_in,bsapwooda_in             &
                                  ,bsapwoodb_in,bbarka_in,bbarkb_in,balive_in,bstorage_in   &
-                                 ,bdeada_in,bdeadb_in,metnpp_actual,npp_actual             &
-                                 ,growresp_actual,tissue_maintenance,storage_maintenance   &
-                                 ,carbon_miss)
+                                 ,bdeada_in,bdeadb_in,phenstatus_in,metnpp_actual          &
+                                 ,npp_actual,growresp_actual,tissue_maintenance            &
+                                 ,storage_maintenance,carbon_miss,xfer_case)
       use ed_state_vars, only : sitetype           & ! structure
                               , patchtype          ! ! structure
       use allometry    , only : size2bl            ! ! function
@@ -2083,6 +2101,8 @@ module growth_balive
       type(sitetype)  , target        :: csite
       integer         , intent(in)    :: ipa
       integer         , intent(in)    :: ico
+      integer         , intent(in)    :: phenstatus_in
+      integer         , intent(in)    :: xfer_case
       real            , intent(in)    :: bleaf_in
       real            , intent(in)    :: broot_in
       real            , intent(in)    :: bsapwooda_in
@@ -2113,10 +2133,12 @@ module growth_balive
       real                         :: btotal_fn
       real                         :: delta_btotal
       real                         :: resid_btotal
+      real                         :: bstorage_ref
       logical                      :: neg_biomass
       logical                      :: btotal_violation
       !----- Local constants. -------------------------------------------------------------!
       character(len=10), parameter :: fmti='(a,1x,i14)'
+      character(len=09), parameter :: fmtl='(a,1x,l1)'
       character(len=13), parameter :: fmtf='(a,1x,es14.7)'
       character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
       !------------------------------------------------------------------------------------!
@@ -2138,11 +2160,24 @@ module growth_balive
       bstorage_ok_min  = bleaf_ok_min
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !     Because the changes may be more closely related with thedaily NPP than with    !
+      ! the initial storage pool when storage is almost zero but NPP is not, we combine    !
+      ! storage and absolute NPP as the reference scale for storage, to avoid false alarms !
+      ! of unacceptable negative biomass when storage is nearly zero.                      !
+      !------------------------------------------------------------------------------------!
+      bstorage_ref = bstorage_in + abs(npp_actual)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     Then, if possible, set the minimum acceptable deviation based on the input, to !
       ! avoid false alarms due to truncation errors when the pool is much greater than the !
-      ! minimum size but loses all its stocks.                                             !
+      ! minimum size but loses all its stocks.   Storage does not follow a stable          !
+      ! allometric relationship.  Because the changes may be more closely related with the !
+      ! daily NPP than with the initial storage pool when storage is almost zero but NPP   !
+      ! is not, we make sure that to scale the tolerance in such way that does not create  !
+      ! false alarms.                                                                      !
       !------------------------------------------------------------------------------------!
       bleaf_ok_min     = - tol_carbon_budget * max(bleaf_in    , bleaf_ok_min    )
       broot_ok_min     = - tol_carbon_budget * max(broot_in    , broot_ok_min    )
@@ -2150,7 +2185,7 @@ module growth_balive
       bsapwoodb_ok_min = - tol_carbon_budget * max(bsapwoodb_in, bsapwoodb_ok_min)
       bbarka_ok_min    = - tol_carbon_budget * max(bbarka_in   , bbarka_ok_min   )
       bbarkb_ok_min    = - tol_carbon_budget * max(bbarkb_in   , bbarkb_ok_min   )
-      bstorage_ok_min  = - tol_carbon_budget * max(bstorage_in , bstorage_ok_min )
+      bstorage_ok_min  = - tol_carbon_budget * max(bstorage_ref, bstorage_ok_min )
       !------------------------------------------------------------------------------------!
 
 
@@ -2222,7 +2257,10 @@ module growth_balive
          write(unit=*,fmt=fmti )  ' IPFT                : ',ipft
          write(unit=*,fmt=fmtf )  ' DBH                 : ',cpatch%dbh(ico)
          write(unit=*,fmt=fmtf )  ' HITE                : ',cpatch%hite(ico)
+         write(unit=*,fmt=fmtl )  ' NEG_BIOMASS         : ',neg_biomass
+         write(unit=*,fmt=fmtl )  ' BTOTAL_VIOLATION    : ',btotal_violation
          write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmti )  ' PHENSTATUS_IN       : ',phenstatus_in
          write(unit=*,fmt=fmtf )  ' BLEAF_IN            : ',bleaf_in
          write(unit=*,fmt=fmtf )  ' BROOT_IN            : ',broot_in
          write(unit=*,fmt=fmtf )  ' BSAPWOODA_IN        : ',bsapwooda_in
@@ -2234,17 +2272,28 @@ module growth_balive
          write(unit=*,fmt=fmtf )  ' BALIVE_IN           : ',balive_in
          write(unit=*,fmt=fmtf )  ' BSTORAGE_IN         : ',bstorage_in
          write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
-         write(unit=*,fmt=fmtf )  ' BLEAF_FN            : ',cpatch%bleaf    (ico)
-         write(unit=*,fmt=fmtf )  ' BROOT_FN            : ',cpatch%broot    (ico)
-         write(unit=*,fmt=fmtf )  ' BSAPWOODA_FN        : ',cpatch%bsapwooda(ico)
-         write(unit=*,fmt=fmtf )  ' BSAPWOODB_FN        : ',cpatch%bsapwoodb(ico)
-         write(unit=*,fmt=fmtf )  ' BBARKA_FN           : ',cpatch%bbarka   (ico)
-         write(unit=*,fmt=fmtf )  ' BBARKB_FN           : ',cpatch%bbarkb   (ico)
-         write(unit=*,fmt=fmtf )  ' BDEADA_FN           : ',cpatch%bdeada   (ico)
-         write(unit=*,fmt=fmtf )  ' BDEADB_FN           : ',cpatch%bdeadb   (ico)
-         write(unit=*,fmt=fmtf )  ' BSTORAGE_FN         : ',cpatch%bstorage (ico)
-         write(unit=*,fmt=fmtf )  ' BALIVE_FN           : ',cpatch%balive   (ico)
+         write(unit=*,fmt=fmti )  ' PHENSTATUS_FN       : ',cpatch%phenology_status(ico)
+         write(unit=*,fmt=fmtf )  ' BLEAF_FN            : ',cpatch%bleaf           (ico)
+         write(unit=*,fmt=fmtf )  ' BROOT_FN            : ',cpatch%broot           (ico)
+         write(unit=*,fmt=fmtf )  ' BSAPWOODA_FN        : ',cpatch%bsapwooda       (ico)
+         write(unit=*,fmt=fmtf )  ' BSAPWOODB_FN        : ',cpatch%bsapwoodb       (ico)
+         write(unit=*,fmt=fmtf )  ' BBARKA_FN           : ',cpatch%bbarka          (ico)
+         write(unit=*,fmt=fmtf )  ' BBARKB_FN           : ',cpatch%bbarkb          (ico)
+         write(unit=*,fmt=fmtf )  ' BDEADA_FN           : ',cpatch%bdeada          (ico)
+         write(unit=*,fmt=fmtf )  ' BDEADB_FN           : ',cpatch%bdeadb          (ico)
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_FN         : ',cpatch%bstorage        (ico)
+         write(unit=*,fmt=fmtf )  ' BALIVE_FN           : ',cpatch%balive          (ico)
          write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmtf )  ' TOL_CARBON_BUDGET   : ',tol_carbon_budget
+         write(unit=*,fmt=fmtf )  ' BLEAF_OK_MIN        : ',bleaf_ok_min
+         write(unit=*,fmt=fmtf )  ' BROOT_OK_MIN        : ',broot_ok_min
+         write(unit=*,fmt=fmtf )  ' BSAPWOODA_OK_MIN    : ',bsapwooda_ok_min
+         write(unit=*,fmt=fmtf )  ' BSAPWOODB_OK_MIN    : ',bsapwoodb_ok_min
+         write(unit=*,fmt=fmtf )  ' BBARKA_OK_MIN       : ',bbarka_ok_min
+         write(unit=*,fmt=fmtf )  ' BBARKB_OK_MIN       : ',bbarkb_ok_min
+         write(unit=*,fmt=fmtf )  ' BSTORAGE_OK_MIN     : ',bstorage_ok_min
+         write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
+         write(unit=*,fmt=fmti )  ' XFER_CASE           : ',xfer_case
          write(unit=*,fmt=fmtf )  ' METABOLIC_NPP       : ',metnpp_actual
          write(unit=*,fmt=fmtf )  ' NPP                 : ',npp_actual
          write(unit=*,fmt=fmtf )  ' GROWTH_RESPIRATION  : ',growresp_actual

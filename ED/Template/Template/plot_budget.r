@@ -94,13 +94,13 @@ n           = 0
 budget      = list()
 n           = n + 1
 budget[[n]] = list( vnam    = c("co2.nee.rel","co2.eddy.flux.rel","co2.veg.dyn.rel"
-                               ,"co2.dstorage.rel","co2.residual.rel")
-                  , desc    = c("NEE","Eddy flux","Capacity change","Storage change"
-                               ,"Residual")
-                  , colour  = c("#811F9E","#1BA2F7","#107C92","#CB003D","grey50")
-                  , lty     = c("longdash","dashed","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"co2.dens.eff.rel","co2.dstorage.rel","co2.residual.rel")
+                  , desc    = c("NEE","Eddy flux","Capacity change","Density effect"
+                               ,"Storage change","Residual")
+                  , colour  = c("#811F9E","#1BA2F7","#107C92","#97E47D","#CB003D","grey50")
+                  , lty     = c("longdash","dashed","twodash","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "co2.rel"
                   , theme   = "Accumulated Carbon dioxide (relative)"
@@ -114,13 +114,13 @@ budget[[n]] = list( vnam    = c("co2.nee.rel","co2.eddy.flux.rel","co2.veg.dyn.r
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("crb.eddy.flux.rel","crb.veg.dyn.rel","crb.netseed.rel"
-                               ,"crb.dstorage.rel","crb.residual.rel")
+                               ,"crb.dens.eff.rel","crb.dstorage.rel","crb.residual.rel")
                   , desc    = c("Eddy flux","Capacity change","Net seed flux"
-                               ,"Storage change","Residual")
-                  , colour  = c("#1BA2F7","#107C92","#F87856","#CB003D","grey50")
-                  , lty     = c("dashed","twodash","dotted","dotdash","solid")
-                  , lwd     = c(3.0,3.0,4.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"Density effect","Storage change","Residual")
+                  , colour  = c("#1BA2F7","#107C92","#F87856","#97E47D","#CB003D","grey50")
+                  , lty     = c("dashed","twodash","dotted","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "crb.rel"
                   , theme   = "Accumulated Carbon (relative)"
@@ -135,15 +135,16 @@ budget[[n]] = list( vnam    = c("crb.eddy.flux.rel","crb.veg.dyn.rel","crb.netse
 n           = n + 1
 budget[[n]] = list( vnam    = c("ent.precip.rel","ent.netrad.rel","ent.prss.eff.rel"
                                ,"ent.eddy.flux.rel","ent.runoff.rel","ent.veg.dyn.rel"
-                               ,"ent.dstorage.rel","ent.residual.rel")
+                               ,"ent.dens.eff.rel","ent.dstorage.rel","ent.residual.rel")
                   , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                               ,"Total runoff","Capacity change","Storage change","Residual")
-                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7"
-                               ,"#811F9E","#107C92","#CB003D","grey50")
-                  , lty     = c("dotdash","dashed","longdash","dashed"
-                               ,"dotted","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,3.0,3.0,4.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"Total runoff","Capacity change","Density effect"
+                               ,"Storage change","Residual")
+                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7","#811F9E"
+                               ,"#107C92","#97E47D","#CB003D","grey50")
+                  , lty     = c("dotdash","dashed","longdash","dashed","dotted"
+                               ,"twodash","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,4.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "ent.rel"
                   , theme   = "Accumulated enthalpy (relative)"
@@ -157,13 +158,16 @@ budget[[n]] = list( vnam    = c("ent.precip.rel","ent.netrad.rel","ent.prss.eff.
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("h2o.precip.rel","h2o.eddy.flux.rel","h2o.runoff.rel"
-                               ,"h2o.veg.dyn.rel","h2o.dstorage.rel","h2o.residual.rel")
-                  , desc    = c("Rainfall","Eddy flux","Total runoff"
-                               ,"Capacity change","Storage change","Residual")
-                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92","#CB003D","grey50")
-                  , lty     = c("dotdash","dashed","dotted","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"h2o.veg.dyn.rel","h2o.dens.eff.rel","h2o.dstorage.rel"
+                               ,"h2o.residual.rel")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff","Capacity change"
+                               ,"Density effect","Storage change","Residual")
+                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92"
+                               ,"#97E47D","#CB003D","grey50")
+                  , lty     = c("dotdash","dashed","dotted","twodash","longdash"
+                               ,"dotdash","solid")
+                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "h2o.rel"
                   , theme   = "Accumulated water (relative)"
@@ -177,13 +181,13 @@ budget[[n]] = list( vnam    = c("h2o.precip.rel","h2o.eddy.flux.rel","h2o.runoff
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("co2.nee.cum","co2.eddy.flux.cum","co2.veg.dyn.cum"
-                               ,"co2.dstorage.cum","co2.residual.cum")
-                  , desc    = c("NEE","Eddy flux","Capacity change","Storage change"
-                               ,"Residual")
-                  , colour  = c("#811F9E","#1BA2F7","#107C92","#CB003D","grey50")
-                  , lty     = c("longdash","dashed","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"co2.dens.eff.cum","co2.dstorage.cum","co2.residual.cum")
+                  , desc    = c("NEE","Eddy flux","Capacity change","Density effect"
+                               ,"Storage change","Residual")
+                  , colour  = c("#811F9E","#1BA2F7","#107C92","#97E47D","#CB003D","grey50")
+                  , lty     = c("longdash","dashed","twodash","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "co2.cum"
                   , theme   = "Accumulated Carbon dioxide"
@@ -197,13 +201,13 @@ budget[[n]] = list( vnam    = c("co2.nee.cum","co2.eddy.flux.cum","co2.veg.dyn.c
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("crb.eddy.flux.cum","crb.veg.dyn.cum","crb.netseed.cum"
-                               ,"crb.dstorage.cum","crb.residual.cum")
+                               ,"crb.dens.eff.cum","crb.dstorage.cum","crb.residual.cum")
                   , desc    = c("Eddy flux","Capacity change","Net seed flux"
-                               ,"Storage change","Residual")
-                  , colour  = c("#1BA2F7","#107C92","#F87856","#CB003D","grey50")
-                  , lty     = c("dashed","twodash","dotted","dotdash","solid")
-                  , lwd     = c(3.0,3.0,4.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"Density effect","Storage change","Residual")
+                  , colour  = c("#1BA2F7","#107C92","#F87856","#97E47D","#CB003D","grey50")
+                  , lty     = c("dashed","twodash","dotted","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "crb.cum"
                   , theme   = "Accumulated Carbon"
@@ -218,16 +222,16 @@ budget[[n]] = list( vnam    = c("crb.eddy.flux.cum","crb.veg.dyn.cum","crb.netse
 n           = n + 1
 budget[[n]] = list( vnam    = c("ent.precip.cum","ent.netrad.cum","ent.prss.eff.cum"
                                ,"ent.eddy.flux.cum","ent.runoff.cum","ent.veg.dyn.cum"
-                               ,"ent.dstorage.cum","ent.residual.cum")
+                               ,"ent.dens.eff.cum","ent.dstorage.cum","ent.residual.cum")
                   , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                               ,"Total runoff","Capacity change","Storage change"
-                               ,"Residual")
-                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7"
-                               ,"#811F9E","#107C92","#CB003D","grey50")
-                  , lty     = c("dotdash","dashed","longdash","dashed"
-                               ,"dotted","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,3.0,3.0,4.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"Total runoff","Capacity change","Density effect"
+                               ,"Storage change","Residual")
+                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7","#811F9E"
+                               ,"#107C92","#97E47D","#CB003D","grey50")
+                  , lty     = c("dotdash","dashed","longdash","dashed","dotted"
+                               ,"twodash","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,4.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "ent.cum"
                   , theme   = "Accumulated enthalpy"
@@ -241,13 +245,16 @@ budget[[n]] = list( vnam    = c("ent.precip.cum","ent.netrad.cum","ent.prss.eff.
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("h2o.precip.cum","h2o.eddy.flux.cum","h2o.runoff.cum"
-                               ,"h2o.veg.dyn.cum","h2o.dstorage.cum","h2o.residual.cum")
-                  , desc    = c("Rainfall","Eddy flux","Total runoff"
-                               ,"Capacity change","Storage change","Residual")
-                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92","#CB003D","grey50")
-                  , lty     = c("dotdash","dashed","dotted","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"h2o.veg.dyn.cum","h2o.dens.eff.cum","h2o.dstorage.cum"
+                               ,"h2o.residual.cum")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff","Capacity change"
+                               ,"Density effect","Storage change","Residual")
+                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92"
+                               ,"#97E47D","#CB003D","grey50")
+                  , lty     = c("dotdash","dashed","dotted","twodash","longdash"
+                               ,"dotdash","solid")
+                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "h2o.cum"
                   , theme   = "Accumulated water"
@@ -261,13 +268,13 @@ budget[[n]] = list( vnam    = c("h2o.precip.cum","h2o.eddy.flux.cum","h2o.runoff
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("co2.nee","co2.eddy.flux","co2.veg.dyn"
-                               ,"co2.dstorage","co2.residual")
-                  , desc    = c("NEE","Eddy flux","Capacity change","Storage change"
-                               ,"Residual")
-                  , colour  = c("#811F9E","#1BA2F7","#107C92","#CB003D","grey50")
-                  , lty     = c("longdash","dashed","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"co2.dens.eff","co2.dstorage","co2.residual")
+                  , desc    = c("NEE","Eddy flux","Capacity change","Density effect"
+                               ,"Storage change","Residual")
+                  , colour  = c("#811F9E","#1BA2F7","#107C92","#97E47D","#CB003D","grey50")
+                  , lty     = c("longdash","dashed","twodash","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "co2.avg"
                   , theme   = "Carbon dioxide budget"
@@ -275,19 +282,19 @@ budget[[n]] = list( vnam    = c("co2.nee","co2.eddy.flux","co2.veg.dyn"
                   , mult    = "1.0"
                   , cbrt    = FALSE
                   , ylim    = NA # c(-100,100)
-                  , average = FALSE
+                  , average = TRUE
                   , poly    = TRUE
                   , plt     = TRUE
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("crb.eddy.flux","crb.veg.dyn","crb.netseed"
-                               ,"crb.dstorage","crb.residual")
+                               ,"crb.dens.eff","crb.dstorage","crb.residual")
                   , desc    = c("Eddy flux","Capacity change","Net seed flux"
-                               ,"Storage change","Residual")
-                  , colour  = c("#1BA2F7","#107C92","#F87856","#CB003D","grey50")
-                  , lty     = c("dashed","twodash","dotted","dotdash","solid")
-                  , lwd     = c(3.0,3.0,4.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"Density effect","Storage change","Residual")
+                  , colour  = c("#1BA2F7","#107C92","#F87856","#97E47D","#CB003D","grey50")
+                  , lty     = c("dashed","twodash","dotted","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "crb.avg"
                   , theme   = "Carbon budget"
@@ -295,23 +302,23 @@ budget[[n]] = list( vnam    = c("crb.eddy.flux","crb.veg.dyn","crb.netseed"
                   , mult    = "day.sec"
                   , cbrt    = FALSE
                   , ylim    = NA # c(-0.01,0.01)
-                  , average = FALSE
+                  , average = TRUE
                   , poly    = TRUE
                   , plt     = TRUE
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("ent.precip","ent.netrad","ent.prss.eff"
                                ,"ent.eddy.flux","ent.runoff","ent.veg.dyn"
-                               ,"ent.dstorage","ent.residual")
+                               ,"ent.dens.eff","ent.dstorage","ent.residual")
                   , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                               ,"Total runoff","Capacity change","Storage change"
-                               ,"Residual")
-                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7"
-                               ,"#811F9E","#107C92","#CB003D","grey50")
-                  , lty     = c("dotdash","dashed","longdash","dashed"
-                               ,"dotted","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,3.0,3.0,4.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"Total runoff","Capacity change","Density effect"
+                               ,"Storage change","Residual")
+                  , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7","#811F9E"
+                               ,"#107C92","#97E47D","#CB003D","grey50")
+                  , lty     = c("dotdash","dashed","longdash","dashed","dotted"
+                               ,"twodash","longdash","dotdash","solid")
+                  , lwd     = c(3.0,3.0,3.0,3.0,4.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "ent.avg"
                   , theme   = "Enthalpy budget"
@@ -325,13 +332,16 @@ budget[[n]] = list( vnam    = c("ent.precip","ent.netrad","ent.prss.eff"
                   )#end list
 n           = n + 1
 budget[[n]] = list( vnam    = c("h2o.precip","h2o.eddy.flux","h2o.runoff"
-                               ,"h2o.veg.dyn","h2o.dstorage","h2o.residual")
-                  , desc    = c("Rainfall","Eddy flux","Total runoff"
-                               ,"Capacity change","Storage change","Residual")
-                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92","#CB003D","grey50")
-                  , lty     = c("dotdash","dashed","dotted","twodash","dotdash","solid")
-                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
-                  , range   = c(TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
+                               ,"h2o.veg.dyn","h2o.dens.eff","h2o.dstorage"
+                               ,"h2o.residual")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff","Capacity change"
+                               ,"Density effect","Storage change","Residual")
+                  , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92"
+                               ,"#97E47D","#CB003D","grey50")
+                  , lty     = c("dotdash","dashed","dotted","twodash","longdash"
+                               ,"dotdash","solid")
+                  , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0,3.0)
+                  , range   = c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE)
                   , type    = ptype
                   , prefix  = "h2o.avg"
                   , theme   = "Water budget"
@@ -582,22 +592,18 @@ for (place in myplaces){
       cpatch$co2.eddy.flux = - cpatch$co2.loss2atm
       cpatch$co2.nee       = - cpatch$co2.nep
       cpatch$co2.veg.dyn   =   cpatch$co2.zcan.eff
-      cpatch$co2.residual  =   cpatch$co2.residual + cpatch$co2.dens.eff
       #----- Carbon. ----------------------------------------------------------------------#
       cpatch$crb.eddy.flux = - cpatch$crb.loss2atm
       cpatch$crb.veg.dyn   =   cpatch$crb.zcan.eff
       cpatch$crb.netseed   =   cpatch$crb.seedrain - cpatch$crb.loss2yield
-      cpatch$crb.residual  =   cpatch$crb.residual + cpatch$crb.dens.eff
       #----- Enthalpy. --------------------------------------------------------------------#
       cpatch$ent.eddy.flux = - cpatch$ent.loss2atm
       cpatch$ent.runoff    = - cpatch$ent.runoff   - cpatch$ent.drainage
       cpatch$ent.veg.dyn   =   cpatch$ent.zcan.eff + cpatch$ent.hcap.eff
-      cpatch$ent.residual  =   cpatch$ent.residual + cpatch$ent.dens.eff
       #----- Water. -----------------------------------------------------------------------#
       cpatch$h2o.eddy.flux = - cpatch$h2o.loss2atm
       cpatch$h2o.runoff    = - cpatch$h2o.runoff   - cpatch$h2o.drainage
       cpatch$h2o.veg.dyn   =   cpatch$h2o.zcan.eff
-      cpatch$h2o.residual  =   cpatch$h2o.residual + cpatch$h2o.dens.eff
       #------------------------------------------------------------------------------------#
 
 
@@ -619,12 +625,14 @@ for (place in myplaces){
       cpatch$co2.nee.cum       = cumsum( cpatch$co2.nee       * dtime )
       cpatch$co2.eddy.flux.cum = cumsum( cpatch$co2.eddy.flux * dtime )
       cpatch$co2.veg.dyn.cum   = cumsum( cpatch$co2.veg.dyn   * dtime )
+      cpatch$co2.dens.eff.cum  = cumsum( cpatch$co2.dens.eff  * dtime )
       cpatch$co2.residual.cum  = cumsum( cpatch$co2.residual  * dtime )
       #----- Cumulative terms for all carbon budget. --------------------------------------#
       cpatch$crb.dstorage.cum  = cumsum( cpatch$crb.dstorage  * dtime )
       cpatch$crb.eddy.flux.cum = cumsum( cpatch$crb.eddy.flux * dtime )
       cpatch$crb.veg.dyn.cum   = cumsum( cpatch$crb.veg.dyn   * dtime )
       cpatch$crb.netseed.cum   = cumsum( cpatch$crb.netseed   * dtime )
+      cpatch$crb.dens.eff.cum  = cumsum( cpatch$crb.dens.eff  * dtime )
       cpatch$crb.residual.cum  = cumsum( cpatch$crb.residual  * dtime )
       #----- Cumulative terms for all enthalpy budget. ------------------------------------#
       cpatch$ent.dstorage.cum  = cumsum( cpatch$ent.dstorage  * dtime )
@@ -634,6 +642,7 @@ for (place in myplaces){
       cpatch$ent.eddy.flux.cum = cumsum( cpatch$ent.eddy.flux * dtime )
       cpatch$ent.runoff.cum    = cumsum( cpatch$ent.runoff    * dtime )
       cpatch$ent.veg.dyn.cum   = cumsum( cpatch$ent.veg.dyn   * dtime )
+      cpatch$ent.dens.eff.cum  = cumsum( cpatch$ent.dens.eff  * dtime )
       cpatch$ent.residual.cum  = cumsum( cpatch$ent.residual  * dtime )
       #----- Cumulative terms for all water budget. ---------------------------------------#
       cpatch$h2o.dstorage.cum  = cumsum( cpatch$h2o.dstorage  * dtime )
@@ -641,6 +650,7 @@ for (place in myplaces){
       cpatch$h2o.eddy.flux.cum = cumsum( cpatch$h2o.eddy.flux * dtime )
       cpatch$h2o.runoff.cum    = cumsum( cpatch$h2o.runoff    * dtime )
       cpatch$h2o.veg.dyn.cum   = cumsum( cpatch$h2o.veg.dyn   * dtime )
+      cpatch$h2o.dens.eff.cum  = cumsum( cpatch$h2o.dens.eff  * dtime )
       cpatch$h2o.residual.cum  = cumsum( cpatch$h2o.residual  * dtime )
       #------------------------------------------------------------------------------------#
 
@@ -654,12 +664,14 @@ for (place in myplaces){
       cpatch$co2.nee.rel       = 100. * cpatch$co2.nee.cum       / co2.scale
       cpatch$co2.eddy.flux.rel = 100. * cpatch$co2.eddy.flux.cum / co2.scale
       cpatch$co2.veg.dyn.rel   = 100. * cpatch$co2.veg.dyn.cum   / co2.scale
+      cpatch$co2.dens.eff.rel  = 100. * cpatch$co2.dens.eff.cum  / co2.scale
       cpatch$co2.residual.rel  = 100. * cpatch$co2.residual.cum  / co2.scale
       #----- Cumulative terms for all carbon budget. --------------------------------------#
       cpatch$crb.dstorage.rel  = 100. * cpatch$crb.dstorage.cum  / crb.scale
       cpatch$crb.eddy.flux.rel = 100. * cpatch$crb.eddy.flux.cum / crb.scale
       cpatch$crb.veg.dyn.rel   = 100. * cpatch$crb.veg.dyn.cum   / crb.scale
       cpatch$crb.netseed.rel   = 100. * cpatch$crb.netseed.cum   / crb.scale
+      cpatch$crb.dens.eff.rel  = 100. * cpatch$crb.dens.eff.cum  / crb.scale
       cpatch$crb.residual.rel  = 100. * cpatch$crb.residual.cum  / crb.scale
       #----- Cumulative terms for all enthalpy budget. ------------------------------------#
       cpatch$ent.dstorage.rel  = 100. * cpatch$ent.dstorage.cum  / ent.scale
@@ -669,6 +681,7 @@ for (place in myplaces){
       cpatch$ent.eddy.flux.rel = 100. * cpatch$ent.eddy.flux.cum / ent.scale
       cpatch$ent.runoff.rel    = 100. * cpatch$ent.runoff.cum    / ent.scale
       cpatch$ent.veg.dyn.rel   = 100. * cpatch$ent.veg.dyn.cum   / ent.scale
+      cpatch$ent.dens.eff.rel  = 100. * cpatch$ent.dens.eff.cum  / ent.scale
       cpatch$ent.residual.rel  = 100. * cpatch$ent.residual.cum  / ent.scale
       #----- Cumulative terms for all water budget. ---------------------------------------#
       cpatch$h2o.dstorage.rel  = 100. * cpatch$h2o.dstorage.cum  / h2o.scale
@@ -676,6 +689,7 @@ for (place in myplaces){
       cpatch$h2o.eddy.flux.rel = 100. * cpatch$h2o.eddy.flux.cum / h2o.scale
       cpatch$h2o.runoff.rel    = 100. * cpatch$h2o.runoff.cum    / h2o.scale
       cpatch$h2o.veg.dyn.rel   = 100. * cpatch$h2o.veg.dyn.cum   / h2o.scale
+      cpatch$h2o.dens.eff.rel  = 100. * cpatch$h2o.dens.eff.cum  / h2o.scale
       cpatch$h2o.residual.rel  = 100. * cpatch$h2o.residual.cum  / h2o.scale
       #------------------------------------------------------------------------------------#
 

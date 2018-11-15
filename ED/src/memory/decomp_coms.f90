@@ -30,12 +30,20 @@ Module decomp_coms
    !                  1.  Similar to option 0, except that temperature is solved using     !
    !                      the Lloyd and Taylor (1994) model.                               !
    !                      [[option 1 requires parameters to be set in xml]]                !
-   !                  2.  Based on Bolker et al. (1998) CENTURY model.  Five necromass     !
+   !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
+   !                      reaches a maximum at around 38C (using the default parameters),  !
+   !                      then quickly falls to zero at around 50C.  It applies a similar  !
+   !                      function for soil moisture, which allows higher decomposition    !
+   !                      rates when it is close to the optimal, plumetting when it is     !
+   !                      almost saturated.                                                !
+   !                  3.  Similar to option 0. Uses empirical moisture limit equation from !
+   !                      Moyano et al., 2012, Biogeosciences.                             !
+   !                  4.  Similar to option 1. Uses empirical moisture limit equation from !
+   !                      Moyano et al., 2012, Biogeosciences.                             !
+   !                  5.  Based on Bolker et al. (1998) CENTURY model.  Five necromass     !
    !                      pools (litter aka fast, structural, microbial,                   !
    !                      humified aka slow, and passive).  Temperature and moisture       !
-   !                      functions are similar to Bolker et al. (1998) and ED-1.0, except !
-   !                      that the curves were refitted to make them continuous and        !
-   !                      differentiable.                                                  !
+   !                      functions are the same as 2.                                     !
    !---------------------------------------------------------------------------------------!
    integer :: decomp_scheme
    !---------------------------------------------------------------------------------------!
@@ -175,6 +183,15 @@ Module decomp_coms
    real :: f0_msc
    real :: f0_psc
    real :: f0_ssc
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to initialise soil carbon pools for near bare ground simulations when  !
+   ! N limitation is turned on.                                                            !
+   !---------------------------------------------------------------------------------------!
+   real :: nbg_nlim_fsc
+   real :: nbg_nlim_stsc
+   real :: nbg_nlim_ssc
    !---------------------------------------------------------------------------------------!
 
 

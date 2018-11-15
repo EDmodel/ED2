@@ -402,7 +402,7 @@ module soil_respiration
       !      Decide the respiration factors based on the method.                           !
       !------------------------------------------------------------------------------------!
       select case (decomp_scheme)
-      case (2)
+      case (5)
          !---------------------------------------------------------------------------------!
          !     Five-pool CENTURY model.  We solve transfer between soil pools, so they     !
          ! can all have sub-unity fractions that go to heterotrophic respiration.          !
@@ -609,7 +609,7 @@ module soil_respiration
             !------------------------------------------------------------------------------!
             nsoil = cpoly%ntext_soil(nzg,isi)
             select case (decomp_scheme)
-            case (2)
+            case (5)
                !---------------------------------------------------------------------------!
                !     Five-pool CENTURY model.  We solve transfer between soil pools, so    !
                ! they can all have sub-unity fractions that go to heterotrophic            !
@@ -768,7 +768,7 @@ module soil_respiration
                ! decomposition scheme.                                                     !
                !---------------------------------------------------------------------------!
                select case (decomp_scheme)
-               case (2)
+               case (5)
                   !------------------------------------------------------------------------!
                   !    Find ratio of decayed structural carbon that goes to microbial and  !
                   ! humified (slow) carbon.                                                !
@@ -1106,7 +1106,7 @@ module soil_respiration
          lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
          temperature_limitation = min( 1.0, resp_temperature_increase * exp(lnexplloyd) )
          !---------------------------------------------------------------------------------!
-      case (2)
+      case (2,5)
          !---------------------------------------------------------------------------------!
          !      Similar to the original ED-1.0 formulation, which is based on the CENTURY  !
          ! model.  The change in the functional form is to avoid power of negative         !
@@ -1139,7 +1139,7 @@ module soil_respiration
             water_limitation = exp((resp_opt_water - rel_soil_moist) * resp_water_above_opt)
          end if
          !---------------------------------------------------------------------------------!
-      case (2)
+      case (2,5)
          !----- Dry soil limitation. ------------------------------------------------------!
          lnexpdry         = rh_decay_dry * (rh_dry_smoist - rel_soil_moist)
          lnexpdry         = max(lnexp_min,min(lnexp_max,lnexpdry))

@@ -886,7 +886,6 @@ module rk4_derivs
       real(kind=8)                 :: sigmaw            !
       real(kind=8)                 :: wflxlc            ! Leaf sfc -> canopy water flux
       real(kind=8)                 :: wflxwc            ! Wood sfc -> canopy water flux
-      real(kind=8)                 :: cflxgc            ! Ground -> canopy carbon flux
       real(kind=8)                 :: wshed             ! Water shed from leaves
       real(kind=8)                 :: qwshed            ! Internal energy of water shed
       real(kind=8)                 :: dwshed            ! Depth of water shed
@@ -899,8 +898,7 @@ module rk4_derivs
       real(kind=8)                 :: hflxwc_tot        ! Total wood -> CAS heat flux
       real(kind=8)                 :: transp_tot        ! Total transpiration (water)
       real(kind=8)                 :: qtransp_tot       ! Total transpiration (energy)
-      real(kind=8)                 :: cflxvc_tot        ! Total AG veg -> CAS CO2 flux
-      real(kind=8)                 :: cflxsc_tot        ! Total soil -> CAS CO2 flux
+      real(kind=8)                 :: nee_tot           ! Total NEE (source > 0; sink < 0)
       real(kind=8)                 :: wflxlc_tot        ! Leaf -> CAS evaporation (water)
       real(kind=8)                 :: wflxwc_tot        ! Wood -> CAS evaporation (water)
       real(kind=8)                 :: qwflxlc_tot       ! Leaf -> CAS evaporation (energy)
@@ -1218,29 +1216,23 @@ module rk4_derivs
 
 
       !------------------------------------------------------------------------------------!
-      !    Heterotrophic respiration is a patch-level variable, so we initialise the total !
-      ! vegetation to canopy carbon flux with the total heterotrophic respiration due to   !
-      ! the coarse woody debris, and remove that from the ground to canopy carbon flux to  !
-      ! avoid double counting.                                                             !
+      !    Initialise nee_tot with the patch-level variables (heterotrophic respiration    !
+      ! commited growth and storage respiration).                                          !
       !------------------------------------------------------------------------------------!
-      cflxvc_tot = initp%commit_storage_resp + initp%commit_growth_resp
-      cflxsc_tot = initp%fsc_rh + initp%stsc_rh + initp%msc_rh + initp%ssc_rh + initp%psc_rh
-      cflxgc     = initp%fgc_rh + initp%stgc_rh
+      nee_tot    = initp%fgc_rh              + initp%fsc_rh                                &
+                 + initp%stgc_rh             + initp%stsc_rh                               &
+                 + initp%msc_rh              + initp%ssc_rh                                &
+                 + initp%psc_rh                                                            &
+                 + initp%commit_storage_resp + initp%commit_growth_resp
       !------------------------------------------------------------------------------------!
 
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft = cpatch%pft(ico)
 
-         cflxsc_tot = cflxsc_tot + initp%root_resp         (ico)
-
          !---------------------------------------------------------------------------------!
-         !    Add the respiration terms according to their "source".                       !
-         ! Ground        -> CAS : surface litter and woody debris.                         !
-         ! Soil          -> CAS : soil Carbon, fine root and coarse root respiration.      !
-         ! AG Vegetation -> CAS : wood respiration (AG sapwood and bark).                  !
+         !    Subtract the metabolic NPP of this cohort from patch-level NEE.              !
          !---------------------------------------------------------------------------------!
-         cflxvc_tot = cflxvc_tot + initp%leaf_resp         (ico)                           &
-                                 - initp%gpp               (ico)
+         nee_tot = nee_tot - (initp%gpp(ico) - initp%leaf_resp(ico) - initp%root_resp(ico))
          !---------------------------------------------------------------------------------!
 
 
@@ -1258,9 +1250,10 @@ module rk4_derivs
          !---------------------------------------------------------------------------------!
          if (initp%leaf_resolvable(ico)) then
 
-            !------ Defining some shortcuts to indices ------------------------------------!
+            !------ Define some shortcuts to indices --------------------------------------!
             ipft  = cpatch%pft(ico)
             kroot = cpatch%krdepth(ico)
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -1866,8 +1859,7 @@ module rk4_derivs
                             + wflxlc_tot  + wflxwc_tot  + transp_tot                       &
                             + wflxac                                  )                    &
                           * rk4aux(ibuff)%wcapcani
-      dinitp%can_co2      = ( cflxgc      + cflxvc_tot  + cflxsc_tot                       &
-                            + cflxac                                  )                    &
+      dinitp%can_co2      = ( nee_tot     + cflxac                    )                    &
                           * rk4aux(ibuff)%ccapcani
       !------------------------------------------------------------------------------------!
 
@@ -1875,7 +1867,7 @@ module rk4_derivs
       if (.false.) then
       !if (is_hybrid) then
 
-         a = ( cflxgc + cflxvc_tot + cflxsc_tot                                            &
+         a = ( nee_tot                                                                     &
              + initp%can_rhos*initp%ggbare*mmdryi8*rk4site%atm_co2)                        &
              * rk4aux(ibuff)%ccapcani
 
@@ -1891,8 +1883,7 @@ module rk4_derivs
                 * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +                      &
                    c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
 
-         dinitp%can_co2 = ( cflxgc + cflxvc_tot + cflxsc_tot + cflxac)                     &
-                        * rk4aux(ibuff)%ccapcani
+         dinitp%can_co2 = ( nee_tot + cflxac) * rk4aux(ibuff)%ccapcani
 
       end if
       !------------------------------------------------------------------------------------!
@@ -1916,8 +1907,7 @@ module rk4_derivs
 
 
          dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy
-         dinitp%avg_carbon_st    = cflxgc     + cflxvc_tot                                 &
-                                 + cflxsc_tot + cflxac          ! Carbon storage flux
+         dinitp%avg_carbon_st    = nee_tot + cflxac             ! Carbon storage flux
          dinitp%avg_sensible_ac  = hflxac                       ! Sens. heat,  Atmo->Canopy
          dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
@@ -1947,8 +1937,7 @@ module rk4_derivs
          dinitp%co2budget_loss2atm = - cflxac
          dinitp%ebudget_loss2atm   = - eflxac
          dinitp%wbudget_loss2atm   = - wflxac
-         dinitp%co2budget_storage  = dinitp%co2budget_storage                              &
-                                   + cflxgc + cflxvc_tot + cflxsc_tot + cflxac
+         dinitp%co2budget_storage  = dinitp%co2budget_storage + nee_tot + cflxac
          dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
          dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad      &
                                    + rk4site%qpcpg - dinitp%ebudget_loss2atm

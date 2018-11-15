@@ -24,7 +24,6 @@ module heun_driver
       use ed_misc_coms          , only : current_time               & ! intent(in)
                                        , dtlsm                      ! ! intent(in)
       use ed_max_dims           , only : n_dbh                      ! ! intent(in)
-      use therm_lib             , only : tq2enthalpy                ! ! function
       use budget_utils          , only : update_cbudget_committed   & ! function
                                        , compute_budget             ! ! function
       use soil_respiration      , only : soil_respiration_driver    ! ! function
@@ -63,11 +62,7 @@ module heun_driver
       real                                   :: ecurr_loss2drainage
       real                                   :: wcurr_loss2runoff
       real                                   :: ecurr_loss2runoff
-      real                                   :: old_can_enthalpy
-      real                                   :: old_can_shv
-      real                                   :: old_can_co2
       real                                   :: old_can_rhos
-      real                                   :: old_can_temp
       real                                   :: old_can_prss
       real                                   :: patch_vels
       integer                                :: ibuff
@@ -117,11 +112,10 @@ module heun_driver
             !        of threads is less than the number of patches.                        !
             !------------------------------------------------------------------------------!
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
-            !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_co2            &
-            !$OMP ,old_can_rhos,old_can_temp,old_can_prss,old_can_enthalpy,old_can_shv     &
-            !$OMP ,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm             &
-            !$OMP ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff               &
-            !$OMP ,ecurr_loss2runoff,nsteps)
+            !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_rhos           &
+            !$OMP ,old_can_prss,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm                 &
+            !$OMP ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage                &
+            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
             threadloop: do ibuff=1,nthreads
                !------ Update pointers. ---------------------------------------------------!
                initp => integration_buff(ibuff)%initp
@@ -175,23 +169,8 @@ module heun_driver
 
 
                   !----- Save the previous thermodynamic state. ---------------------------!
-                  old_can_shv      = csite%can_shv  (ipa)
-                  old_can_co2      = csite%can_co2  (ipa)
                   old_can_rhos     = csite%can_rhos (ipa)
-                  old_can_temp     = csite%can_temp (ipa)
                   old_can_prss     = csite%can_prss (ipa)
-                  old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa)    &
-                                                ,.true.)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !    Update roughness and canopy depth.                                  !
-                  !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
-                                                ,cpoly%ntext_soil(:,isi))
-                  call update_patch_derived_props(csite,ipa,.false.)
                   !------------------------------------------------------------------------!
 
 
@@ -270,6 +249,17 @@ module heun_driver
 
 
 
+                  !------------------------------------------------------------------------!
+                  !    Update roughness and canopy depth.  This should be done after the   !
+                  ! integration.                                                           !
+                  !------------------------------------------------------------------------!
+                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
+                                                ,cpoly%ntext_soil(:,isi))
+                  call update_patch_derived_props(csite,ipa,.false.)
+                  !------------------------------------------------------------------------!
+
+
+
 
                   !------------------------------------------------------------------------!
                   !     Compute the residuals.                                             !
@@ -279,8 +269,7 @@ module heun_driver
                                      ,co2curr_loss2atm,wcurr_loss2drainage                 &
                                      ,ecurr_loss2drainage,wcurr_loss2runoff                &
                                      ,ecurr_loss2runoff,cpoly%area(isi)                    &
-                                     ,cgrid%cbudget_nep(ipy),old_can_enthalpy              &
-                                     ,old_can_shv,old_can_co2,old_can_rhos,old_can_prss)
+                                     ,cgrid%cbudget_nep(ipy),old_can_rhos,old_can_prss)
                   !------------------------------------------------------------------------!
                end do taskloop
                !---------------------------------------------------------------------------!

@@ -36,7 +36,10 @@ module ed_nbg_init
                                 , c2n_slow            & ! intent(in)
                                 , f0_msc              & ! intent(in)
                                 , f0_ssc              & ! intent(in)
-                                , f0_psc              ! ! intent(in)
+                                , f0_psc              & ! intent(in)
+                                , nbg_nlim_fsc        & ! intent(in)
+                                , nbg_nlim_stsc       & ! intent(in)
+                                , nbg_nlim_ssc        ! ! intent(in)
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
@@ -88,20 +91,20 @@ module ed_nbg_init
                csite%structural_soil_N (1) = 0.0
                csite%mineralized_soil_N(1) = 0.0
             case (1)
-               csite%fast_grnd_C        (1) =        agf_fsc   * 0.2
-               csite%fast_soil_C        (1) = (1.0 - agf_fsc)  * 0.2
-               csite%structural_grnd_C  (1) =        agf_stsc  * 0.2
-               csite%structural_soil_C  (1) = (1.0 - agf_stsc) * 0.2
+               csite%fast_grnd_C        (1) =        agf_fsc   * nbg_nlim_fsc
+               csite%fast_soil_C        (1) = (1.0 - agf_fsc)  * nbg_nlim_fsc
+               csite%structural_grnd_C  (1) =        agf_stsc  * nbg_nlim_stsc
+               csite%structural_soil_C  (1) = (1.0 - agf_stsc) * nbg_nlim_stsc
                csite%structural_grnd_L  (1) = csite%structural_grnd_C(1)
                csite%structural_soil_L  (1) = csite%structural_soil_C(1)
                select case (decomp_scheme)
-               case (2)
-                  csite%microbial_soil_C(1) = f0_msc * 5.0
-                  csite%slow_soil_C     (1) = f0_ssc * 5.0
-                  csite%passive_soil_C  (1) = f0_psc * 5.0
+               case (5)
+                  csite%microbial_soil_C(1) = f0_msc * nbg_nlim_ssc
+                  csite%slow_soil_C     (1) = f0_ssc * nbg_nlim_ssc
+                  csite%passive_soil_C  (1) = f0_psc * nbg_nlim_ssc
                case default
                   csite%microbial_soil_C(1) = 0.0
-                  csite%slow_soil_C     (1) = 1.0
+                  csite%slow_soil_C     (1) = nbg_nlim_ssc
                   csite%passive_soil_C  (1) = 0.0
                end select
                csite%fast_grnd_N       (1) = csite%fast_grnd_C       (1)   / c2n_fast_0
@@ -624,7 +627,10 @@ module ed_nbg_init
                                     , c2n_slow            & ! intent(in)
                                     , f0_msc              & ! intent(in)
                                     , f0_ssc              & ! intent(in)
-                                    , f0_psc              ! ! intent(in)
+                                    , f0_psc              & ! intent(in)
+                                    , nbg_nlim_fsc        & ! intent(in)
+                                    , nbg_nlim_stsc       & ! intent(in)
+                                    , nbg_nlim_ssc        ! ! intent(in)
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
@@ -697,20 +703,20 @@ module ed_nbg_init
                   csite%structural_soil_N (ipa) = 0.0
                   csite%mineralized_soil_N(ipa) = 0.0
                case (1)
-                  csite%fast_grnd_C        (ipa) =        agf_fsc   * 0.2
-                  csite%fast_soil_C        (ipa) = (1.0 - agf_fsc)  * 0.2
-                  csite%structural_grnd_C  (ipa) =        agf_stsc  * 0.2
-                  csite%structural_soil_C  (ipa) = (1.0 - agf_stsc) * 0.2
+                  csite%fast_grnd_C        (ipa) =        agf_fsc   * nbg_nlim_fsc
+                  csite%fast_soil_C        (ipa) = (1.0 - agf_fsc)  * nbg_nlim_fsc
+                  csite%structural_grnd_C  (ipa) =        agf_stsc  * nbg_nlim_stsc
+                  csite%structural_soil_C  (ipa) = (1.0 - agf_stsc) * nbg_nlim_stsc
                   csite%structural_grnd_L  (ipa) = csite%structural_grnd_C(ipa)
                   csite%structural_soil_L  (ipa) = csite%structural_soil_C(ipa)
                   select case (decomp_scheme)
-                  case (2)
-                     csite%microbial_soil_C(ipa) = f0_msc * 5.0
-                     csite%slow_soil_C     (ipa) = f0_ssc * 5.0
-                     csite%passive_soil_C  (ipa) = f0_psc * 5.0
+                  case (5)
+                     csite%microbial_soil_C(ipa) = f0_msc * nbg_nlim_ssc
+                     csite%slow_soil_C     (ipa) = f0_ssc * nbg_nlim_ssc
+                     csite%passive_soil_C  (ipa) = f0_psc * nbg_nlim_ssc
                   case default
                      csite%microbial_soil_C(ipa) = 0.0
-                     csite%slow_soil_C     (ipa) = 1.0
+                     csite%slow_soil_C     (ipa) = nbg_nlim_ssc
                      csite%passive_soil_C  (ipa) = 0.0
                   end select
                   csite%fast_grnd_N       (ipa) = csite%fast_grnd_C       (ipa)            &

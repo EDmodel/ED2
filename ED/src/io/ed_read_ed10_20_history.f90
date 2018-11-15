@@ -302,7 +302,7 @@ subroutine read_ed10_ed20_history_file
                   stsc  (ip) = sngloff(dstsc      ,min_ok  )
                   stsl  (ip) = sngloff(dstsl      ,min_ok  )
                   select case (decomp_scheme)
-                  case (2)
+                  case (5)
                      ssc(ip) = sngloff(dssc+dpsc  ,min_ok  )
                   case default
                      ssc(ip) = sngloff(dssc       ,min_ok  )
@@ -518,7 +518,7 @@ subroutine read_ed10_ed20_history_file
                      !     Check decomposition scheme before assigning microbial carbon.   !
                      !---------------------------------------------------------------------!
                      select case (decomp_scheme)
-                     case (2)
+                     case (5)
                         csite%microbial_soil_C(ip2) = f0_msc * ssc(ip)
                         csite%slow_soil_C     (ip2) = f0_ssc * ssc(ip)
                         csite%passive_soil_C  (ip2) = f0_psc * ssc(ip)
@@ -621,7 +621,7 @@ subroutine read_ed10_ed20_history_file
                   !     Check decomposition scheme before assigning microbial carbon.      !
                   !------------------------------------------------------------------------!
                   select case (decomp_scheme)
-                  case (2)
+                  case (5)
                      csite%microbial_soil_C(ip) = f0_msc * ssc(ip)
                      csite%slow_soil_C     (ip) = f0_ssc * ssc(ip)
                      csite%passive_soil_C  (ip) = f0_psc * ssc(ip)
