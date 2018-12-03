@@ -2149,6 +2149,8 @@ subroutine init_pft_mort_params()
                           , seedling_mortality         & ! intent(out)
                           , treefall_s_gtht            & ! intent(out)
                           , treefall_s_ltht            & ! intent(out)
+                          , elephant_s_gtdbh           & ! intent(out)
+                          , elephant_s_ltdbh           & ! intent(out)
                           , fire_s_gtht                & ! intent(out)
                           , fire_s_ltht                & ! intent(out)
                           , plant_min_temp             & ! intent(out)
@@ -2389,12 +2391,12 @@ subroutine init_pft_mort_params()
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Treefall survivorship fraction.                                                  !
-   !---------------------------------------------------------------------------------------!
-   !----- Trees taller than treefall_hite_threshold. --------------------------------------!
+   !----------------------------------------------------------------------------------!
+   !      Treefall survivorship fraction.                                             !
+   !----------------------------------------------------------------------------------!
+   !----- Trees taller than treefall_hite_threshold. ---------------------------------!
    treefall_s_gtht(1:17)    = 0.0
-   !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
+   !----- Trees shorter than treefall_hite_threshold. --------------------------------!
    treefall_s_ltht(1)       = 0.25
    treefall_s_ltht(2:4)     = 0.10
    treefall_s_ltht(5)       = 0.25
@@ -2402,8 +2404,16 @@ subroutine init_pft_mort_params()
    treefall_s_ltht(12:15)   = 0.25
    treefall_s_ltht(16)      = 0.25
    treefall_s_ltht(17)      = 0.10
-   !---------------------------------------------------------------------------------------!
+   !----------------------------------------------------------------------------------!
 
+   !----------------------------------------------------------------------------------!
+   !   fabio Elephant survivorship fraction.                                          !
+   !----------------------------------------------------------------------------------!
+   !----- Trees with dbh less than 10 --------------------------------!
+   elephant_s_ltdbh(1:17)    = 0.0
+   !----- Trees with dbh between 10 and 30 ---------------------------------!
+   elephant_s_gtdbh(1:17)    = 0.0
+   !----------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -3864,6 +3874,7 @@ end subroutine init_pft_derived_params
 subroutine init_disturb_params
 
    use disturb_coms , only : treefall_hite_threshold  & ! intent(out)
+                           , elephant_disturbance_rate & ! intent(out)
                            , fire_hite_threshold      & ! intent(out)
                            , forestry_on              & ! intent(out)
                            , agriculture_on           & ! intent(out)
@@ -3884,6 +3895,9 @@ subroutine init_disturb_params
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    treefall_hite_threshold = 10.0 
+
+   ! Initialize the elephant disturbance rate to 0 = turned off
+   elephant_disturbance_rate = 0
 
    !----- Cut-off for fire survivorship (bush fires versus canopy fire). ------------------!
    fire_hite_threshold     = 5.0
