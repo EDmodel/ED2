@@ -938,7 +938,7 @@ subroutine read_ed10_ed20_history_file
                nsitepat                = nsitepat + 1
             end do
 
-            !cpoly%patch_count(isi) = nsitepat
+           ! cpoly%patch_count(isi) = nsitepat
          end do
       end do polyloop
 

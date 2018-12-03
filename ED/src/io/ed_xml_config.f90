@@ -401,7 +401,7 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
            if(texist) seedling_mortality(myPFT) = real(rval)
 	   
-	   call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
+	         call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_s_gtht','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
@@ -409,6 +409,12 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) treefall_s_ltht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_s_ltht','pft',i,rval,texist)
            if(texist) treefall_s_ltht(myPFT) = real(rval)
+           
+           !fabio elephant survivorship
+           call getConfigREAL  ('elephant_s_gtdbh','pft',i,rval,texist)
+           if(texist) elephant_s_gtdbh(myPFT) = real(rval)
+           call getConfigREAL  ('elephant_s_ltdbh','pft',i,rval,texist)
+           if(texist) elephant_s_ltdbh(myPFT) = real(rval)
 
            call getConfigREAL  ('fire_s_gtht','pft',i,rval,texist)
            if(texist) fire_s_gtht(myPFT) = real(rval)
@@ -952,6 +958,11 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('treefall_disturbance_rate','disturbance',i,rval,texist)
         if(texist) treefall_disturbance_rate = real(rval)
         
+        !! fabio Elephant disturbance rate
+        call getConfigREAL  ('elephant_disturbance_rate','disturbance',i,rval,texist)
+        if(texist) elephant_disturbance_rate = real(rval)
+
+
         call getConfigREAL  ('Time2Canopy','disturbance',i,rval,texist)
         if(texist) Time2Canopy = real(rval)
         
@@ -1423,6 +1434,10 @@ subroutine write_ed_xml_config
 
         call putConfigREAL("treefall_s_gtht",treefall_s_gtht(i))
         call putConfigREAL("treefall_s_ltht",treefall_s_ltht(i))
+        
+        !fabio elephant survivorship
+        call putConfigREAL("elephant_s_gtdbh",elephant_s_gtdbh(i))
+        call putConfigREAL("elephant_s_ltdbh",elephant_s_ltdbh(i))
 
         call putConfigREAL("fire_s_gtht",fire_s_gtht(i))
         call putConfigREAL("fire_s_ltht",fire_s_ltht(i))
@@ -1639,8 +1654,10 @@ subroutine write_ed_xml_config
      call putConfigREAL("min_new_patch_area",min_patch_area)
      call putConfigREAL("min_patch_area",min_patch_area)
      call putConfigINT("ianth_disturb",ianth_disturb)
-     ! --- Treefall
+     ! --- Treefall 
      call putConfigREAL("treefall_disturbance_rate",treefall_disturbance_rate)
+     ! --- Fabio elephant disturbance rate
+     call putConfigREAL("elephant_disturbance_rate",elephant_disturbance_rate)
      call putConfigREAL("Time2Canopy",Time2Canopy)
      call putConfigREAL("treefall_hite_threshold",treefall_hite_threshold)
      ! --- Forestry

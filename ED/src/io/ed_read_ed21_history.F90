@@ -420,8 +420,8 @@ subroutine read_ed21_history_file
                                  , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%TCI        (is:is), 'TCI '                        &
                                  , dsetrank, iparallel, .true.,foundvar)
-               ! call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
-               !                   , dsetrank, iparallel, .true.,foundvar)
+               !call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
+               !                  , dsetrank, iparallel, .true.,foundvar)
 
                !----- Load 2D dataset. ----------------------------------------------------!
                dsetrank     = 2_8
@@ -967,7 +967,7 @@ subroutine read_ed21_history_unstruct
    real                  , dimension(  :)         , allocatable :: tpoly_slope
    real                  , dimension(  :)         , allocatable :: tpoly_aspect
    real                  , dimension(  :)         , allocatable :: tpoly_TCI
-   !integer               , dimension(  :)         , allocatable :: tpoly_patch_count
+  ! integer               , dimension(  :)         , allocatable :: tpoly_patch_count
    integer               , dimension(  :)         , allocatable :: tpoly_lsl
    integer               , dimension(:,:)         , allocatable :: tpoly_ntext_soil
    integer                                                      :: year
@@ -1519,8 +1519,8 @@ subroutine read_ed21_history_unstruct
                                     , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_TCI        (is:is)     , 'TCI '                &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  ! call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
-                  !                   , dsetrank, iparallel, .true.,foundvar)
+                  !call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
+                  !                  , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_i( tpoly_lsl        (is:is)     ,'LSL '                 &
                                     , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
@@ -2722,7 +2722,7 @@ subroutine read_ed21_polyclone
                   
 
                   call hdf_getslab_r(cpoly%area(is:is),'AREA_SI ',dsetrank,iparallel,.true.,foundvar)
-                  !call hdf_getslab_r(cpoly%patch_area(is:is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%patch_area(is:is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%elevation(is:is),'ELEVATION ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%slope(is:is),'SLOPE ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%aspect(is:is),'ASPECT ',dsetrank,iparallel,.true.,foundvar)
