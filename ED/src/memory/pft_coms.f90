@@ -348,10 +348,23 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: treefall_s_ltht
 
-   !---------------------------------------------------------------------------------------!
-   !     Survivorship fraction for trees with heights greater than fire_hite_threshold     !
-   ! (see disturbance_coms.f90).                                                           !
-   !---------------------------------------------------------------------------------------!
+   !-----------------------------------------------------------------------------!
+   ! fabio    Survivorship fraction for trees with dbh between 10 and 30cm !
+   ! (see disturbance_coms.f90).                                                !
+   !----------------------------------------------------------------------------!
+   real, dimension(n_pft) :: elephant_s_gtdbh
+
+   !--------------------------------------------------------------------------!
+   ! fabio    Survivorship fraction for trees with dbh less than 10cm dbh    !
+   !(see disturbance_coms.f90).                                           !
+   !---------------------------------------------------------------------!
+   real, dimension(n_pft) :: elephant_s_ltdbh
+
+
+   !---------------------------------------------------------------------
+   !     Survivorship fraction for trees with heights greater than fire_hite_threshold  !
+   ! (see disturbance_coms.f90).                                                        !
+   !---------------------------------------------------------------------!
    real, dimension(n_pft) :: fire_s_gtht
 
    !---------------------------------------------------------------------------------------!

@@ -178,9 +178,11 @@ module ed_max_dims
    ! 3 -- Tree fall.                                                                       !
    ! 4 -- Fire.                                                                            !
    ! 5 -- Forest regrowth.                                                                 !
-   ! 6 -- Logged forest.                                                                   !
+   ! 6 -- Logged forest.
+   ! 7 -- Elephants                                                                   !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_dist_types = 6
+   !fabio
+   integer, parameter :: n_dist_types = 7
    !---------------------------------------------------------------------------------------!
 
 
@@ -191,12 +193,16 @@ module ed_max_dims
    ! 1. Ageing, PFT-dependent but otherwise constant;                                      !
    ! 2. Negative carbon balance;                                                           !
    ! 3. Treefall mortality;                                                                !
-   ! 4. Mortality due to cold weather.                                                     !
-   ! 5. Disturbance mortality.  This is not directly applied to the cohort population,     !
+   ! 4. Mortality due to cold weather.  
+   ! #fabio
+   ! 5. Elephants mortality                                                   !
+   ! 6. Disturbance mortality.  This is not directly applied to the cohort population,     !
    !    because this mortality is associated with the creation of a new patch, but it is   !
-   !    saved here for posterior analysis.                                                 !
+   !    saved here for posterior analysis. 
+   ! 
+   !                                                  !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_mort = 5
+   integer, parameter :: n_mort = 6
    !---------------------------------------------------------------------------------------!
 
 

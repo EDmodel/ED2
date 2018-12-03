@@ -1661,7 +1661,7 @@ module ed_state_vars
       ! BASIC INFO
       !------------------------------------------------------------------------------------!
       real,pointer,dimension(:) :: area       ! Relative area occupied by the site
-      !real,pointer,dimension(:) :: patch_area ! Un-normalized sum of patch areas
+      real,pointer,dimension(:) :: patch_area ! Un-normalized sum of patch areas
       real,pointer,dimension(:) :: elevation  ! mean site elevation (meters)
       real,pointer,dimension(:) :: slope      ! mean site slope (degrees)
       real,pointer,dimension(:) :: aspect     ! mean site aspect (degrees)
@@ -3793,7 +3793,7 @@ module ed_state_vars
       allocate(cpoly%sitenum                       (                          nsites))
       allocate(cpoly%met                           (                          nsites))
       allocate(cpoly%area                          (                          nsites))
-      !allocate(cpoly%patch_area                    (                          nsites))
+      allocate(cpoly%patch_area                    (                          nsites))
       allocate(cpoly%elevation                     (                          nsites))
       allocate(cpoly%slope                         (                          nsites))
       allocate(cpoly%aspect                        (                          nsites))
@@ -5655,7 +5655,7 @@ module ed_state_vars
       nullify(cpoly%sitenum                    )
       nullify(cpoly%met                        )
       nullify(cpoly%area                       )
-      !nullify(cpoly%patch_area                 )
+      nullify(cpoly%patch_area                 )
       nullify(cpoly%elevation                  )
       nullify(cpoly%slope                      )
       nullify(cpoly%aspect                     )
@@ -7452,7 +7452,7 @@ module ed_state_vars
       if(associated(cpoly%sitenum               )) deallocate(cpoly%sitenum               )
       if(associated(cpoly%met                   )) deallocate(cpoly%met                   )
       if(associated(cpoly%area                  )) deallocate(cpoly%area                  )
-      !if(associated(cpoly%patch_area            )) deallocate(cpoly%patch_area            )
+      if(associated(cpoly%patch_area            )) deallocate(cpoly%patch_area            )
       if(associated(cpoly%elevation             )) deallocate(cpoly%elevation             )
       if(associated(cpoly%slope                 )) deallocate(cpoly%slope                 )
       if(associated(cpoly%aspect                )) deallocate(cpoly%aspect                )
@@ -18731,12 +18731,12 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      ! if (associated(cpoly%patch_area)) then
-      !    nvar=nvar+1
-      !      call vtable_edio_r(npts,cpoly%patch_area,nvar,igr,init,cpoly%siglob_id, &
-      !      var_len,var_len_global,max_ptrs,'PATCH_AREA:21:hist:year') 
-      !    call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      ! end if
+      if (associated(cpoly%patch_area)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpoly%patch_area,nvar,igr,init,cpoly%siglob_id, &
+           var_len,var_len_global,max_ptrs,'PATCH_AREA:21:hist:year') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
 
       if (associated(cpoly%elevation)) then
          nvar=nvar+1

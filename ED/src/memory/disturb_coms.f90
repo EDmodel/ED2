@@ -77,6 +77,15 @@ module disturb_coms
    real :: treefall_disturbance_rate
    !---------------------------------------------------------------------------------------!
 
+   !-------------------------------------
+   !fabio 
+   !elephant disturbance rate, first guess calculate from 14% of trees estimate given
+   !by Wing&Buss 1970, so 14% of tree = 14% of the total area because most area is 
+   !occupied by small trees since elephants don't disturb large trees which are rare
+   real :: elephant_disturbance_rate
+
+   !----------------------------------------
+
 
 
    !---------------------------------------------------------------------------------------!
