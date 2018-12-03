@@ -886,7 +886,10 @@ subroutine seed_dispersal(cpoly,late_spring)
    real                          :: bseed_maygo ! Seedling biomass that may go  [   kgC/m2]
    !---------------------------------------------------------------------------------------!
 
-
+   !fabio
+      !write (*,*) "pft 2,3,4"
+      !write (*,5) nonlocal_dispersal(2:4)
+      !5 FORMAT(F30.25)  
 
    !---------------------------------------------------------------------------------------!
    !     Here we decide how to disperse seeds based on the reproduction scheme.            !
@@ -913,7 +916,8 @@ subroutine seed_dispersal(cpoly,late_spring)
 
                !----- Define an alias for PFT. --------------------------------------------!
                donpft = donpatch%pft(donco)
-
+                                             
+ 
                !---------------------------------------------------------------------------!
                !    Find the biomass of survivor seedlings.  Units: kgC/m2                 !
                !---------------------------------------------------------------------------!

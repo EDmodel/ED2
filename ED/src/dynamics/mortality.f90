@@ -42,7 +42,9 @@ module mortality
 
 
       !----- Assume happy end, all plants survive... --------------------------------------!
-      cpatch%mort_rate(1:4,ico) = 0.0
+      !fabio
+      !cpatch%mort_rate(1:4,ico) = 0.0
+      cpatch%mort_rate(1:5,ico) = 0.0
       ipft = cpatch%pft(ico)
 
       !------------------------------------------------------------------------------------!
@@ -84,6 +86,26 @@ module mortality
       cpatch%mort_rate(4,ico) = frost_mort(ipft) * temp_dep
       !------------------------------------------------------------------------------------!
 
+      !fabio ------------------------------------------------------------------------------------!
+      ! 5.  elephant, size-dependent mortality.                                  !
+      !------------------------------------------------------------------------------------!
+      ! if (cpatch%dbh(ico) <= 20) then
+      !    if (cpatch%dbh(ico) >= 0.1 .and. cpatch%dbh(ico) < 1) then
+      !       cpatch%mort_rate(5,ico) = 0.01
+      !       else if (cpatch%dbh(ico) >= 1 .and. cpatch%dbh(ico) < 2.5) then
+      !          cpatch%mort_rate(5,ico) = 0.015
+      !       else if (cpatch%dbh(ico) >= 2.5 .and. cpatch%dbh(ico) < 5) then
+      !          cpatch%mort_rate(5,ico) = 0.02
+      !       else if (cpatch%dbh(ico) >= 5 .and. cpatch%dbh(ico) < 10) then
+      !          cpatch%mort_rate(5,ico) = 0.01
+      !       else if (cpatch%dbh(ico) >= 10 .and. cpatch%dbh(ico) <= 20) then
+      !          cpatch%mort_rate(5,ico) = 0.005
+      !    end if
+      ! else
+         cpatch%mort_rate(5,ico) = 0
+
+      !end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -131,10 +153,17 @@ module mortality
       cpatch => csite%patch(ipa)
       do ico=1,cpatch%ncohorts
          f_survival = survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)
-         cpatch%mort_rate(5,ico) = cpatch%mort_rate(5,ico)                                 &
+      !fabio
+      !  cpatch%mort_rate(5,ico) = cpatch%mort_rate(5,ico)                                 &
+      
+         cpatch%mort_rate(6,ico) = cpatch%mort_rate(6,ico)                                 &
                                  - log( f_survival                                         &
                                       + (1.0 - f_survival) * exp(- disturbance_rate) )
-      end do
+      
+       !fabio print
+       !print *,"cohort dbh", cpatch%dbh(ico),"survivorship",f_survival
+       !print *,"disturbance rate",disturbance_rate,"dist type",new_lu
+        end do
       return
    end subroutine disturbance_mortality
    !=======================================================================================!
@@ -154,7 +183,8 @@ module mortality
    !     3. Tree fall.                                                                     !
    !     4. Fire.                                                                          !
    !     5. Forest regrowth.                                                               !
-   !     6. Logged forest.                                                                 !
+   !     6. Logged forest.
+   !     7. Elephants                                                                 !
    !  -- dist_path: the pathway for the disturbance.  The flags depend on new_lu.  See     !
    !        comments at the select case (new_lu) block for additional details.             !
    !  -- mindbh_harvest: minimum DBH for harvesting (selective logging and forest          !
@@ -169,6 +199,8 @@ module mortality
                               , fire_hite_threshold      ! ! intent(in)
       use pft_coms     , only : treefall_s_ltht          & ! intent(in)
                               , treefall_s_gtht          & ! intent(in)
+                              , elephant_s_ltdbh         & ! intent(in)
+                              , elephant_s_gtdbh         & ! intent(in)
                               , fire_s_ltht              & ! intent(in)
                               , fire_s_gtht              ! ! intent(in)
       use ed_max_dims  , only : n_pft                    ! ! intent(in)
@@ -286,6 +318,19 @@ module mortality
             survivorship = treefall_s_ltht(ipft)
          end if
          !---------------------------------------------------------------------------------!
+
+         !mortality due to elephants, we use three class sizes, <10dbh >10dbh&<30dbh and =>30
+
+       case (7)
+         if (cpatch%dbh(ico) > 30) then
+            survivorship = 1.0
+         else if (cpatch%dbh(ico) < 10) then
+               survivorship = elephant_s_ltdbh(ipft) 
+               else if (cpatch%dbh(ico) >= 10 .and. cpatch%dbh(ico) < 30) then
+                  survivorship = elephant_s_gtdbh(ipft)
+               
+         end if
+
       end select
       !------------------------------------------------------------------------------------!
 

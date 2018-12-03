@@ -49,8 +49,7 @@ module disturbance_utils
                               , plantation_year           & ! intent(in)
                               , plantation_rotation       & ! intent(in)
                               , ianth_disturb             & ! intent(in)
-                              , time2canopy               & ! intent(in)
-                              , treefall_disturbance_rate ! ! intent(in)
+                              , time2canopy               ! ! intent(in)
       use ed_max_dims  , only : n_dist_types              & ! intent(in)
                               , n_pft                     & ! intent(in)
                               , n_dbh                     ! ! intent(in)
@@ -325,7 +324,9 @@ module disturbance_utils
             resetdist: do ipa=1,onsp
                cpatch => csite%patch(ipa)
                do ico=1,cpatch%ncohorts
-                  cpatch%mort_rate(5,ico) = 0.0
+                  !fabio
+                  !cpatch%mort_rate(5,ico) = 0.0
+                  cpatch%mort_rate(6,ico) = 0.0
                end do
             end do resetdist
             !------------------------------------------------------------------------------!
@@ -414,6 +415,11 @@ module disturbance_utils
                      disturbed       = ( mature_primary .or. mature_secondary ) .and.      &
                                        ( .not. is_plantation )
                      disturbed       = disturbed .or. biomass_harvest
+                     !---------------------------------------------------------------------!
+                  case (7)
+                     !----- Elephants      ---------------------------------------------!
+                     biomass_harvest = .false.
+                     disturbed       = old_lu /= 1 .and. old_lu /= 2
                      !---------------------------------------------------------------------!
                   end select
                   !------------------------------------------------------------------------!
@@ -1243,6 +1249,7 @@ module disturbance_utils
                               , sitetype                  & ! structure
                               , patchtype                 ! ! structure
       use disturb_coms , only : treefall_disturbance_rate & ! intent(in)
+                              , elephant_disturbance_rate & ! intent(in)
                               , lutime                    & ! structure
                               , ianth_disturb             & ! intent(in)
                               , include_fire              & ! intent(in)
@@ -1307,7 +1314,8 @@ module disturbance_utils
             !  3.  Tree fall                                                               !
             !  4.  Burnt                                                                   !
             !  5.  Abandoned                                                               !
-            !  6.  Logged                                                                  !
+            !  6.  Logged
+            !  7.  Elephants                                                                  !
             !------------------------------------------------------------------------------!
             cpoly%disturbance_rates(:,:,isi) = 0.0
             !------------------------------------------------------------------------------!
@@ -1346,6 +1354,8 @@ module disturbance_utils
             cpoly%disturbance_rates(3,4,isi) = treefall_disturbance_rate
             cpoly%disturbance_rates(3,5,isi) = treefall_disturbance_rate
             cpoly%disturbance_rates(3,6,isi) = treefall_disturbance_rate
+            !fabio
+            cpoly%disturbance_rates(3,7,isi) = treefall_disturbance_rate
             !------------------------------------------------------------------------------!
 
 
@@ -1358,18 +1368,21 @@ module disturbance_utils
             cpoly%disturbance_rates(4,4,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,5,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,6,isi) = fire_disturbance_rate
+            !fabio
+            cpoly%disturbance_rates(4,7,isi) = fire_disturbance_rate
             !------------------------------------------------------------------------------!
 
-
-
             !------------------------------------------------------------------------------!
-            !      Disturbance that creates new "burnt patches".  Only non-cultivated      !
+            !      Disturbance that creates new "elephant patches".  Only non-cultivated  !
             ! lands may suffer this disturbance.                                           !
             !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(4,3:6,isi) = fire_disturbance_rate
+            cpoly%disturbance_rates(7,3,isi) = elephant_disturbance_rate
+            cpoly%disturbance_rates(7,4,isi) = elephant_disturbance_rate
+            cpoly%disturbance_rates(7,5,isi) = elephant_disturbance_rate
+            cpoly%disturbance_rates(7,6,isi) = elephant_disturbance_rate
+            cpoly%disturbance_rates(7,7,isi) = elephant_disturbance_rate
+            !fabio
             !------------------------------------------------------------------------------!
-
-
 
             !------------------------------------------------------------------------------!
             !      Check for anthropogenic disturbance rates.  We no longer need  to check !
@@ -1411,12 +1424,16 @@ module disturbance_utils
             cpoly%disturbance_rates(1,4,isi) = clutime%landuse(7) + clutime%landuse(9)
             cpoly%disturbance_rates(1,5,isi) = clutime%landuse(7) + clutime%landuse(9)
             cpoly%disturbance_rates(1,6,isi) = clutime%landuse(7) + clutime%landuse(9)
+            !fabio
+            cpoly%disturbance_rates(1,7,isi) = clutime%landuse(7) + clutime%landuse(9)
             !------------------------------------------------------------------------------!
 
 
 
             !----- Primary forest to agriculture (3 => 1). --------------------------------!
             cpoly%disturbance_rates(1,3,isi) = clutime%landuse(4) + clutime%landuse(5)
+            !fabio
+            cpoly%disturbance_rates(1,7,isi) = clutime%landuse(4) + clutime%landuse(5)
             !------------------------------------------------------------------------------!
 
 
@@ -1556,6 +1573,8 @@ module disturbance_utils
                   cpoly%disturbance_rates     (2,4,isi) = clutime%landuse(11)
                   cpoly%disturbance_rates     (2,5,isi) = clutime%landuse(11)
                   cpoly%disturbance_rates     (2,6,isi) = clutime%landuse(11)
+                  !fabio
+                  cpoly%disturbance_rates     (2,7,isi) = clutime%landuse(11)
                   cpoly%primary_harvest_target    (isi) = 0.0
                   !------------------------------------------------------------------------!
                elseif (clutime%landuse(14) <= 0.) then
@@ -1566,6 +1585,8 @@ module disturbance_utils
                   cpoly%disturbance_rates     (6,3,isi) = clutime%landuse(11)
                   cpoly%disturbance_rates     (6,4,isi) = clutime%landuse(11)
                   cpoly%disturbance_rates     (6,5,isi) = clutime%landuse(11)
+                  !fabio
+                  cpoly%disturbance_rates     (6,7,isi) = clutime%landuse(11)
                   cpoly%primary_harvest_target    (isi) = 0.0
                   !------------------------------------------------------------------------!
                else
@@ -2933,7 +2954,9 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
 
             !----- Make mortality rate due to disturbance zero to avoid double counting. --!
-            tpatch%mort_rate(5,nco) = 0.0
+            !fabio
+            !tpatch%mort_rate(5,nco) = 0.0
+            tpatch%mort_rate(6,nco) = 0.0
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -3026,7 +3049,8 @@ module disturbance_utils
          select case(new_lu)
          case (1,2,6)
             loss_fraction = agf_bs(ipft)
-         case (3,4,5)
+         !fabio added case for 7
+         case (3,4,5,7)
             loss_fraction = 0.
          end select
          !---------------------------------------------------------------------------------!
