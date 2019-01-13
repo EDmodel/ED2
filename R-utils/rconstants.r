@@ -135,8 +135,8 @@ dkin.visc  <<- 0.007        # Temperature dependency slop                       
 #------------------------------------------------------------------------------------------#
 rdry    <<- rmol/mmdry       # Gas constant for dry air (Ra)                    [   J/kg/K]
 rdryi   <<- mmdry/rmol       # 1./Gas constant for dry air (Ra)                 [   kg K/J]
-cpdry   <<- 1004.            # Specific heat at constant pressure               [   J/kg/K]
-cvdry   <<- 717.             # Specific heat at constant volume                 [   J/kg/K]
+cpdry   <<- 3.5 * rdry       # Specific heat at constant pressure               [   J/kg/K]
+cvdry   <<- 2.5 * rdry       # Specific heat at constant volume                 [   J/kg/K]
 cpog    <<- cpdry /grav      # cp/g                                             [      m/K]
 rocp    <<- rdry / cpdry     # Ra/cp                                            [     ----]
 cpor    <<- cpdry / rdry     # Cp/Ra                                            [     ----]

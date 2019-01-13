@@ -16,6 +16,7 @@ violins <<- function( x
                     , lwd        = 1
                     , rectCol    = "black"
                     , colMed     = "white"
+                    , bgMed      = colMed
                     , pchMed     = 19
                     , add        = FALSE
                     , wex        = 1
@@ -40,6 +41,19 @@ violins <<- function( x
    base      = replicate(n=nx,list())
    height    = replicate(n=nx,list())
    baserange = NULL
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Make sure the violin settings can vary. -----------------------------------------#
+   seqx    = sequence(nx)
+   col     = rep(x=col    ,times=nx)[seqx]
+   border  = rep(x=border ,times=nx)[seqx]
+   lty     = rep(x=lty    ,times=nx)[seqx]
+   lwd     = rep(x=lwd    ,times=nx)[seqx]
+   rectCol = rep(x=rectCol,times=nx)[seqx]
+   colMed  = rep(x=colMed ,times=nx)[seqx]
+   pchMed  = rep(x=pchMed ,times=nx)[seqx]
    #---------------------------------------------------------------------------------------#
 
 
@@ -154,10 +168,11 @@ violins <<- function( x
 
 
 
+
    #---------------------------------------------------------------------------------------#
    #     Go through the list elements.                                                     #
    #---------------------------------------------------------------------------------------#
-   for (i in sequence(nx)){
+   for (i in seqx){
       #----- Polygon coordinates. ---------------------------------------------------------#
       poly.height = c(at[i] - height[[i]],rev(at[i] + height[[i]]))
       poly.base   = c(base[[i]],rev(base[[i]]))
@@ -166,38 +181,50 @@ violins <<- function( x
 
       if (horizontal){
          #----- Plot violin. --------------------------------------------------------------#
-         epolygon(x=poly.base,y=poly.height,col=col,border=border,lty=lty,lwd=lwd)
+         epolygon( x      = poly.base
+                 , y      = poly.height
+                 , col    = col   [i]
+                 , border = border[i]
+                 , lty    = lty   [i]
+                 , lwd    = lwd   [i]
+                 )#end epolygon
          #---------------------------------------------------------------------------------#
 
 
          #----- Plot box-and-whisker plot. ------------------------------------------------#
          if (drawRect){
-             lines (x=c(x.lower[i], x.upper[i]),y=at[c(i,i)],lwd = lwd,lty = lty)
+             lines (x=c(x.lower[i], x.upper[i]),y=at[c(i,i)],lwd=lwd[i],lty=lty[i])
              rect  ( xleft   = x.q250[i]
                    , ybottom = at[i] - boxwidth/2
                    , xright  = x.q750[i]
                    , ytop    = at[i] + boxwidth/2
                    , col     = rectCol
                    )#end rect
-             points(x=x.q500[i],y=at[i],pch=pchMed,col=colMed)
+             points(x=x.q500[i],y=at[i],pch=pchMed[i],col=colMed[i],bg=bgMed[i])
          }#end if (drawRect)
          #---------------------------------------------------------------------------------#
       }else{
          #----- Plot violin. --------------------------------------------------------------#
-         epolygon(x=poly.height,y=poly.base,col=col,border=border,lty=lty,lwd=lwd)
+         epolygon( x      = poly.height
+                 , y      = poly.base
+                 , col    = col   [i]
+                 , border = border[i]
+                 , lty    = lty   [i]
+                 , lwd    = lwd   [i]
+                 )#end epolygon
          #---------------------------------------------------------------------------------#
 
 
          #----- Plot box-and-whisker plot. ------------------------------------------------#
          if (drawRect){
-             lines (x=at[c(i,i)],y=c(x.lower[i],x.upper[i]),lwd=lwd,lty=lty)
+             lines (x=at[c(i,i)],y=c(x.lower[i],x.upper[i]),lwd=lwd[i],lty=lty[i])
              rect  ( xleft   = at[i] - boxwidth/2
                    , ybottom = x.q250[i]
                    , xright  = at[i] + boxwidth/2
                    , ytop    = x.q750[i]
                    , col     = rectCol
                    )#end rect
-             points(x=at[i],y=x.q500[i],pch=pchMed,col=colMed)
+             points(x=at[i],y=x.q500[i],pch=pchMed[i],col=colMed[i],bg=bgMed[i])
          }#end if (drawRect)
          #---------------------------------------------------------------------------------#
       }#end if (horizontal)

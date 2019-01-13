@@ -321,7 +321,8 @@ if (idbh.type == 1){
    dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                         , c(classdbh[-1],classdbh[ndbh]),"cm"
                         )#end paste0
-   dbhcols    <<- c("#811F9E","#1BA2F7","#2BD2DB","#CCCA3D","#F87856",all.colour)
+#   dbhcols    <<- c("#811F9E","#1BA2F7","#2BD2DB","#CCCA3D","#F87856",all.colour)
+   dbhcols    <<- c("#10002A","#3F046B","#A12663","#F87D00","#FCC200",all.colour)
    dbhltys    <<- c("twodash","dashed","longdash","dotdash","twodash","solid")
 }else if (idbh.type == 5){
    ndbh       <<-  8

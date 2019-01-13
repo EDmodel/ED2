@@ -415,9 +415,13 @@ if (is.null(lonlat)){
                       , collapse = "_"
                       )#end apply
       runname  = runname[! forbidden]
-      metname  = ifelse(is.tower,"t","s")
+      if (all(is.tower) || all(! is.tower)){
+         metname  = "t" 
+      }else{
+         metname  = ifelse(is.tower,"t","s")
+      }#end if (all(is.tower) || all(! is.tower))
    }#end if
-   joborder$run      = paste(metname,runname,sep="")
+   joborder$run      = paste0(metname,runname)
    #---------------------------------------------------------------------------------------#
 }else{
    #---------------------------------------------------------------------------------------#

@@ -1367,10 +1367,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(      6,            15)
          nz     = c(      8,            16)
       }else if (lenici == 17 && grepl(pattern="iphen",x=ici)){
-         nparms = 1
-         param  = c("iphen")
-         na     = c(     15)
-         nz     = c(     17)
+         nparms = 2
+         param  = c("dhist","iphen.scheme")
+         na     = c(      6,            15)
+         nz     = c(      8,            17)
       }else if (lenici == 17){
          nparms = 2
          param  = c("met.forcing","isoil.text")
@@ -4828,7 +4828,7 @@ poitmp[[u]] = list( short           = "tambopata"
                   , iphen           = 2
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "tanguro"     
+poitmp[[u]] = list( short           = "tanguro_sl"     
                   , longname        = "Fazenda Tanguro, MT"
                   , iata            = "tan"
                   , lon             = -52.409
@@ -4849,8 +4849,8 @@ poitmp[[u]] = list( short           = "tanguro"
                   , iphen           = -1
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "tanguro"     
-                  , longname        = "Fazenda Tanguro, MT"
+poitmp[[u]] = list( short           = "tanguro_ctrl"     
+                  , longname        = "Tanguro (Intact), MT"
                   , iata            = "tb0"
                   , lon             = -52.409
                   , lat             = -13.081
@@ -4864,7 +4864,28 @@ poitmp[[u]] = list( short           = "tanguro"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Tanguro"
+                  , met.driver      = "Tanguro_Ctrl"
+                  , yeara           = 2008
+                  , yearz           = 2018
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "tanguro_burn"
+                  , longname        = "Tanguro (Burnt), MT"
+                  , iata            = "tbx"
+                  , lon             = -52.387
+                  , lat             = -13.079
+                  , alt             = 349.
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.664
+                  , clay            = 0.246
+                  , depth           = "I"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Tanguro_Burn"
                   , yeara           = 2008
                   , yearz           = 2018
                   , iphen           = -1

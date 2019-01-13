@@ -95,7 +95,7 @@ budget      = list()
 n           = n + 1
 budget[[n]] = list( vnam    = c("co2.nee.rel","co2.eddy.flux.rel","co2.veg.dyn.rel"
                                ,"co2.dens.eff.rel","co2.dstorage.rel","co2.residual.rel")
-                  , desc    = c("NEE","Eddy flux","Capacity change","Density effect"
+                  , desc    = c("NEE","Eddy flux","CAS depth change","Density change"
                                ,"Storage change","Residual")
                   , colour  = c("#811F9E","#1BA2F7","#107C92","#97E47D","#CB003D","grey50")
                   , lty     = c("longdash","dashed","twodash","longdash","dotdash","solid")
@@ -115,8 +115,8 @@ budget[[n]] = list( vnam    = c("co2.nee.rel","co2.eddy.flux.rel","co2.veg.dyn.r
 n           = n + 1
 budget[[n]] = list( vnam    = c("crb.eddy.flux.rel","crb.veg.dyn.rel","crb.netseed.rel"
                                ,"crb.dens.eff.rel","crb.dstorage.rel","crb.residual.rel")
-                  , desc    = c("Eddy flux","Capacity change","Net seed flux"
-                               ,"Density effect","Storage change","Residual")
+                  , desc    = c("Eddy flux","CAS depth change","Net seed flux"
+                               ,"Density change","Storage change","Residual")
                   , colour  = c("#1BA2F7","#107C92","#F87856","#97E47D","#CB003D","grey50")
                   , lty     = c("dashed","twodash","dotted","longdash","dotdash","solid")
                   , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
@@ -136,8 +136,8 @@ n           = n + 1
 budget[[n]] = list( vnam    = c("ent.precip.rel","ent.netrad.rel","ent.prss.eff.rel"
                                ,"ent.eddy.flux.rel","ent.runoff.rel","ent.veg.dyn.rel"
                                ,"ent.dens.eff.rel","ent.dstorage.rel","ent.residual.rel")
-                  , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                               ,"Total runoff","Capacity change","Density effect"
+                  , desc    = c("Rainfall","Net Radiation","Pressure change","Eddy flux"
+                               ,"Total runoff","CAS depth/Veg HCap change","Density change"
                                ,"Storage change","Residual")
                   , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7","#811F9E"
                                ,"#107C92","#97E47D","#CB003D","grey50")
@@ -160,8 +160,8 @@ n           = n + 1
 budget[[n]] = list( vnam    = c("h2o.precip.rel","h2o.eddy.flux.rel","h2o.runoff.rel"
                                ,"h2o.veg.dyn.rel","h2o.dens.eff.rel","h2o.dstorage.rel"
                                ,"h2o.residual.rel")
-                  , desc    = c("Rainfall","Eddy flux","Total runoff","Capacity change"
-                               ,"Density effect","Storage change","Residual")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff","CAS depth change"
+                               ,"Density change","Storage change","Residual")
                   , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92"
                                ,"#97E47D","#CB003D","grey50")
                   , lty     = c("dotdash","dashed","dotted","twodash","longdash"
@@ -182,7 +182,7 @@ budget[[n]] = list( vnam    = c("h2o.precip.rel","h2o.eddy.flux.rel","h2o.runoff
 n           = n + 1
 budget[[n]] = list( vnam    = c("co2.nee.cum","co2.eddy.flux.cum","co2.veg.dyn.cum"
                                ,"co2.dens.eff.cum","co2.dstorage.cum","co2.residual.cum")
-                  , desc    = c("NEE","Eddy flux","Capacity change","Density effect"
+                  , desc    = c("NEE","Eddy flux","CAS depth change","Density change"
                                ,"Storage change","Residual")
                   , colour  = c("#811F9E","#1BA2F7","#107C92","#97E47D","#CB003D","grey50")
                   , lty     = c("longdash","dashed","twodash","longdash","dotdash","solid")
@@ -202,8 +202,8 @@ budget[[n]] = list( vnam    = c("co2.nee.cum","co2.eddy.flux.cum","co2.veg.dyn.c
 n           = n + 1
 budget[[n]] = list( vnam    = c("crb.eddy.flux.cum","crb.veg.dyn.cum","crb.netseed.cum"
                                ,"crb.dens.eff.cum","crb.dstorage.cum","crb.residual.cum")
-                  , desc    = c("Eddy flux","Capacity change","Net seed flux"
-                               ,"Density effect","Storage change","Residual")
+                  , desc    = c("Eddy flux","CAS depth change","Net seed flux"
+                               ,"Density change","Storage change","Residual")
                   , colour  = c("#1BA2F7","#107C92","#F87856","#97E47D","#CB003D","grey50")
                   , lty     = c("dashed","twodash","dotted","longdash","dotdash","solid")
                   , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
@@ -223,8 +223,8 @@ n           = n + 1
 budget[[n]] = list( vnam    = c("ent.precip.cum","ent.netrad.cum","ent.prss.eff.cum"
                                ,"ent.eddy.flux.cum","ent.runoff.cum","ent.veg.dyn.cum"
                                ,"ent.dens.eff.cum","ent.dstorage.cum","ent.residual.cum")
-                  , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                               ,"Total runoff","Capacity change","Density effect"
+                  , desc    = c("Rainfall","Net Radiation","Pressure change","Eddy flux"
+                               ,"Total runoff","CAS depth/Veg HCap change","Density change"
                                ,"Storage change","Residual")
                   , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7","#811F9E"
                                ,"#107C92","#97E47D","#CB003D","grey50")
@@ -247,8 +247,8 @@ n           = n + 1
 budget[[n]] = list( vnam    = c("h2o.precip.cum","h2o.eddy.flux.cum","h2o.runoff.cum"
                                ,"h2o.veg.dyn.cum","h2o.dens.eff.cum","h2o.dstorage.cum"
                                ,"h2o.residual.cum")
-                  , desc    = c("Rainfall","Eddy flux","Total runoff","Capacity change"
-                               ,"Density effect","Storage change","Residual")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff","CAS depth change"
+                               ,"Density change","Storage change","Residual")
                   , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92"
                                ,"#97E47D","#CB003D","grey50")
                   , lty     = c("dotdash","dashed","dotted","twodash","longdash"
@@ -269,7 +269,7 @@ budget[[n]] = list( vnam    = c("h2o.precip.cum","h2o.eddy.flux.cum","h2o.runoff
 n           = n + 1
 budget[[n]] = list( vnam    = c("co2.nee","co2.eddy.flux","co2.veg.dyn"
                                ,"co2.dens.eff","co2.dstorage","co2.residual")
-                  , desc    = c("NEE","Eddy flux","Capacity change","Density effect"
+                  , desc    = c("NEE","Eddy flux","CAS depth change","Density change"
                                ,"Storage change","Residual")
                   , colour  = c("#811F9E","#1BA2F7","#107C92","#97E47D","#CB003D","grey50")
                   , lty     = c("longdash","dashed","twodash","longdash","dotdash","solid")
@@ -289,8 +289,8 @@ budget[[n]] = list( vnam    = c("co2.nee","co2.eddy.flux","co2.veg.dyn"
 n           = n + 1
 budget[[n]] = list( vnam    = c("crb.eddy.flux","crb.veg.dyn","crb.netseed"
                                ,"crb.dens.eff","crb.dstorage","crb.residual")
-                  , desc    = c("Eddy flux","Capacity change","Net seed flux"
-                               ,"Density effect","Storage change","Residual")
+                  , desc    = c("Eddy flux","CAS depth change","Net seed flux"
+                               ,"Density change","Storage change","Residual")
                   , colour  = c("#1BA2F7","#107C92","#F87856","#97E47D","#CB003D","grey50")
                   , lty     = c("dashed","twodash","dotted","longdash","dotdash","solid")
                   , lwd     = c(3.0,3.0,4.0,3.0,3.0,3.0)
@@ -310,8 +310,8 @@ n           = n + 1
 budget[[n]] = list( vnam    = c("ent.precip","ent.netrad","ent.prss.eff"
                                ,"ent.eddy.flux","ent.runoff","ent.veg.dyn"
                                ,"ent.dens.eff","ent.dstorage","ent.residual")
-                  , desc    = c("Rainfall","Net Radiation","Pressure effect","Eddy flux"
-                               ,"Total runoff","Capacity change","Density effect"
+                  , desc    = c("Rainfall","Net Radiation","Pressure change","Eddy flux"
+                               ,"Total runoff","CAS depth/Veg HCap change","Density change"
                                ,"Storage change","Residual")
                   , colour  = c("#2BD2DB","#F87856","#CCCA3D","#1BA2F7","#811F9E"
                                ,"#107C92","#97E47D","#CB003D","grey50")
@@ -334,8 +334,8 @@ n           = n + 1
 budget[[n]] = list( vnam    = c("h2o.precip","h2o.eddy.flux","h2o.runoff"
                                ,"h2o.veg.dyn","h2o.dens.eff","h2o.dstorage"
                                ,"h2o.residual")
-                  , desc    = c("Rainfall","Eddy flux","Total runoff","Capacity change"
-                               ,"Density effect","Storage change","Residual")
+                  , desc    = c("Rainfall","Eddy flux","Total runoff","CAS depth change"
+                               ,"Density change","Storage change","Residual")
                   , colour  = c("#2BD2DB","#1BA2F7","#811F9E","#107C92"
                                ,"#97E47D","#CB003D","grey50")
                   , lty     = c("dotdash","dashed","dotted","twodash","longdash"
@@ -785,7 +785,7 @@ for (place in myplaces){
 
 
             #------------------------------------------------------------------------------#
-            #      Decide whether to apply cubic root for plotting.                        #
+            #      Decide whether to apply cube root for plotting.                         #
             #------------------------------------------------------------------------------#
             if (y.cbrt){
                budget.use = data.frame(sapply(X=budget.summ[,vnames,drop=FALSE],FUN=cbrt))
@@ -858,8 +858,8 @@ for (place in myplaces){
                      , col    = lcolours
                      , lty    = if (same.lty){lty.all}else{llty}
                      , lwd    = if (same.lty){lwd.all}else{llwd}
-                     , ncol   = 2
-                     , cex    = 0.8 * cex.ptsz
+                     , ncol   = 1
+                     , cex    = 0.50 * cex.ptsz
                      , xpd    = TRUE
                      , bty    = "n"
                      )#end legend
@@ -946,8 +946,8 @@ for (place in myplaces){
                      , border  = lcolours
                      , angle   = langle
                      , density = ldensity
-                     , ncol    = 2
-                     , cex     = 0.8 * cex.ptsz
+                     , ncol    = 1
+                     , cex     = 0.50 * cex.ptsz
                      , xpd     = TRUE
                      , bty     = "n"
                      )#end legend

@@ -38,7 +38,7 @@ axis.rt <<- function( side
 
    #----- Get the list of default arguments to be passed to axis (excluding ...). ---------#
    defarg          = as.list(match.call(expand.dots=FALSE))
-   axisarg         = names(formals(axis))
+   axisarg         = c(names(formals(axis)),"las")
    axisarg         = axisarg[! axisarg %in% "..."]
    defarg          = defarg[axisarg]
    defarg          = lapply(X=defarg,FUN=eval)
@@ -78,7 +78,27 @@ axis.rt <<- function( side
       defarg$las = NULL
       #------------------------------------------------------------------------------------#
 
-      
+
+      #------------------------------------------------------------------------------------#
+      #     Set the horizontal and vertical adjustment in case they are not set.           #
+      #------------------------------------------------------------------------------------#
+      if (is.na(hadj)){
+         if (las %in% 5){
+            hadj = if (side %in% c(1,2)){1.0}else{0.0}
+         }else{
+            hadj = if (side %in% c(2,3)){1.0}else{0.0}
+         }#end if (las %in% 5)
+      }#end if (is.na(hadj))
+      if (is.na(padj)){
+         if (las %in% 5){
+            padj = if (side %in% c(1,2)){1.0}else{0.0}
+         }else{
+            padj = if (side %in% c(1,4)){1.0}else{0.0}
+         }#end if (las %in% 5)
+      }#end if (is.na(hadj))
+      #------------------------------------------------------------------------------------#
+
+
       #------ In case "at" is NULL, find where to place the tick marks. -------------------#
       if (is.null(at)){
          if (side %in% c(1,3)){
@@ -114,20 +134,18 @@ axis.rt <<- function( side
       if (side == 1){
          x   = at
          y   = rep(par.orig$usr[3]-off*diff(par.orig$usr[3:4]),times=length(x))
-         adj = if(las == 5){ c(1.0,1.0) }else{ c(0.0,1.0)}
       }else if (side == 2){
          y   = at
          x   = rep(par.orig$usr[1]-off*diff(par.orig$usr[1:2]),times=length(y))
-         adj = if(las == 5){ c(1.0,1.0) }else{ c(1.0,0.0)}
       }else if (side == 3){
          x   = at
          y   = rep(par.orig$usr[4]+off*diff(par.orig$usr[3:4]),times=length(x))
-         adj = if(las == 5){ c(0.0,0.0) }else{ c(1.0,0.0)}
       }else if (side == 4){
          y   = at
          x   = rep(par.orig$usr[2]+off*diff(par.orig$usr[1:2]),times=length(y))
-         adj = if(las == 5){ c(0.0,0.0) }else{ c(0.0,1.0)}
       }#end if
+      #----- Set adjsutment to add text. --------------------------------------------------#
+      adj = c(hadj,padj)
       #----- If the other axis is in log scale, par$usr must be adjusted. -----------------#
       if (side %in% c(1,3) && par.orig$ylog) y = 10^y
       if (side %in% c(2,4) && par.orig$xlog) x = 10^x

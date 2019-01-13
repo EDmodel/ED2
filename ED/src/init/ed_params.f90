@@ -2529,7 +2529,8 @@ subroutine init_pft_alloc_params()
          rho(ipft) = 0.46
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
          rho(ipft) = 0.52 ! From TRY
-      elseif (.not. is_tropical(ipft)) then ! Mid-latitude PFTs, currently not used
+      elseif ((.not. is_tropical(ipft)) .and. (.not. is_grass(ipft))) then
+         ! Mid-latitude PFTs, currently not used
          rho(ipft) = 0.00
       else
          !----- Tropical broadleaf trees.  These must be defined individually. ------------!
@@ -2539,11 +2540,13 @@ subroutine init_pft_alloc_params()
             !     Test: use TRY+GLOPNET data base and cluster analysis to define PFTs.     !
             !------------------------------------------------------------------------------!
             select case (ipft)
-            case ( 2,12) ! Early-successional tropical/savannah.
+            case ( 1, 5,16) ! Grasses
+               rho(ipft) = 0.080
+            case (    2,12) ! Early-successional tropical/savannah.
                rho(ipft) = 0.450
-            case ( 3,13) ! Mid-successional tropical/savannah.
+            case (    3,13) ! Mid-successional tropical/savannah.
                rho(ipft) = 0.615
-            case ( 4,14) ! Late-successional tropical/savannah.
+            case (    4,14) ! Late-successional tropical/savannah.
                rho(ipft) = 0.790
             case default ! Just in case some PFT was forgotten, use global average
                rho(ipft) = rho_ref
@@ -2551,11 +2554,13 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
          case default
             select case (ipft)
-            case (2,12)  ! Early-successional tropical/savannah.
+            case ( 1, 5,16) ! Grasses
+               rho(ipft) = 0.20
+            case (    2,12)  ! Early-successional tropical/savannah.
                rho(ipft) = 0.53 ! 0.40
-            case (3,13)  ! Mid-successional tropical/savannah.
+            case (    3,13)  ! Mid-successional tropical/savannah.
                rho(ipft) = 0.71 ! 0.60
-            case (4,14)  ! Late-successional tropical/savannah.
+            case (    4,14)  ! Late-successional tropical/savannah.
                rho(ipft) = 0.90 ! 0.87
             case default ! Just in case some PFT was forgotten, use global average
                rho(ipft) = rho_ref
@@ -5926,10 +5931,12 @@ subroutine init_can_air_params()
 
    !---------------------------------------------------------------------------------------!
    !  Gamma and nu are the parameters that close equation 10 in Massman and Weil (1999).   !
-   !  VERY IMPORTANT: If you mess with gamma, you must recompute nu!                       !
    !---------------------------------------------------------------------------------------!
    gamma_mw99 = (/2.4, 1.9, 1.25/)
-   nu_mw99    = (/0.3024,3.4414,36.1476/)
+   nu_mw99(1) = 1.0 / sqrt(sum(gamma_mw99(:)*gamma_mw99(:)))
+   nu_mw99(2) = ( 1.0 - 3. * (nu_mw99(1)*gamma_mw99(3)) * (nu_mw99(1)*gamma_mw99(3)) )     &
+              / ( 6.0 * nu_mw99(1) * nu_mw99(1) * nu_mw99(1) )
+   nu_mw99(3) = 1.0 / ( nu_mw99(1) * nu_mw99(1) * nu_mw99(1) )
    !---------------------------------------------------------------------------------------!
 
 

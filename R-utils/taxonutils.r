@@ -1217,692 +1217,103 @@ scientific.lookup.LSE <<- function(datum,lookup.path){
 #     experimental area in the Tapajos National Forest.  Boletim de Pesquisa Florestal,    #
 #     n. 10/11, p.38--110.                                                                 #
 #------------------------------------------------------------------------------------------#
-scientific.lookup.tnf <<- function(datum){
-   n.datum = nrow(datum)
-
-   #----- Look-up table, feel free to add more trees here. --------------------------------#
-   tnf        = list()
-   tnf[[  1]] = list( common     = "abiu"                      
-                    , scientific = "Pouteria reticulata"             
-                    )#end list
-   tnf[[  2]] = list( common     = "abiu branco"               
-                    , scientific = "Pradosia ptychandra"             
-                    )#end list
-   tnf[[  3]] = list( common     = "abiu cutite"               
-                    , scientific = "Pouteria macrophylla"            
-                    )#end list
-   tnf[[  4]] = list( common     = "abiu cutite folha verde"   
-                    , scientific = "Pouteria venosa"                 
-                    )#end list
-   tnf[[  5]] = list( common     = "abiu vermelho"             
-                    , scientific = "Pouteria torta"                  
-                    )#end list
-   tnf[[  6]] = list( common     = "abiu-casca-grossa"         
-                    , scientific = "Pouteria bilocularis"            
-                    )#end list
-   tnf[[  7]] = list( common     = "abiu-mangabinha"           
-                    , scientific = "Micropholis egensis"             
-                    )#end list
-   tnf[[  8]] = list( common     = "abiurana"                  
-                    , scientific = "Pouteria torta"                  
-                    )#end list
-   tnf[[  9]] = list( common     = "abiurana vermelha"         
-                    , scientific = "Pouteria torta"                  
-                    )#end list
-   tnf[[ 10]] = list( common     = "acariquara"                
-                    , scientific = "Minquartia guianensis"           
-                    )#end list
-   tnf[[ 11]] = list( common     = "acoita-cavalo"             
-                    , scientific = "Lueheopsis duckeana"             
-                    )#end list
-   tnf[[ 12]] = list( common     = "amapa"                     
-                    , scientific = "Brosimum"                        
-                    )#end list
-   tnf[[ 13]] = list( common     = "amapa amargoso"            
-                    , scientific = "Brosimum guianense"              
-                    )#end list
-   tnf[[ 14]] = list( common     = "amapa doce"                
-                    , scientific = "Brosimum parinarioides"          
-                    )#end list
-   tnf[[ 15]] = list( common     = "amapai"                    
-                    , scientific = "Brosimum lactescens"             
-                    )#end list
-   tnf[[ 16]] = list( common     = "amaparana"                 
-                    , scientific = "Thyrsodium spruceanum"           
-                    )#end list
-   tnf[[ 17]] = list( common     = "amarelao"                  
-                    , scientific = "Apuleia leiocarpa"               
-                    )#end list
-   tnf[[ 18]] = list( common     = "anani"                     
-                    , scientific = "Symphonia globulifera"           
-                    )#end list
-   tnf[[ 19]] = list( common     = "andiroba"                  
-                    , scientific = "Carapa guianensis"               
-                    )#end list
-   tnf[[ 20]] = list( common     = "andirobarana"              
-                    , scientific = "Guarea macrophylla"              
-                    )#end list
-   tnf[[ 21]] = list( common     = "angelim da mata"           
-                    , scientific = "Hymenolobium excelsum"           
-                    )#end list
-   tnf[[ 22]] = list( common     = "angelim rajado"            
-                    , scientific = "Zygia racemosa"                  
-                    )#end list
-   tnf[[ 23]] = list( common     = "angelim vermelho"          
-                    , scientific = "Hymenolobium"                    
-                    )#end list
-   tnf[[ 24]] = list( common     = "apui"                      
-                    , scientific = "Ficus broadwayi"                 
-                    )#end list
-   tnf[[ 25]] = list( common     = "araca da mata"             
-                    , scientific = "Eugenia patrisii"                
-                    )#end list
-   tnf[[ 26]] = list( common     = "araracanga"                
-                    , scientific = "Aspidosperma eteanum"            
-                    )#end list
-   tnf[[ 27]] = list( common     = "araticum"                  
-                    , scientific = "Annona densicoma"                
-                    )#end list
-   tnf[[ 28]] = list( common     = "aroeira"                   
-                    , scientific = "Astronium lecointei"             
-                    )#end list
-   tnf[[ 29]] = list( common     = "axixa"                     
-                    , scientific = "Sterculia speciosa"              
-                    )#end list
-   tnf[[ 30]] = list( common     = "bacaba"                    
-                    , scientific = "Oenocarpus"                      
-                    )#end list
-   tnf[[ 31]] = list( common     = "bacuri da mata"            
-                    , scientific = "Garcinia madruno"                
-                    )#end list
-   tnf[[ 32]] = list( common     = "breu"                      
-                    , scientific = "Protium apiculatum"              
-                    )#end list
-   tnf[[ 33]] = list( common     = "breu folha grande"         
-                    , scientific = "Protium"                         
-                    )#end list
-   tnf[[ 34]] = list( common     = "breu manga"                
-                    , scientific = "Tetragastris altissima"          
-                    )#end list
-   tnf[[ 35]] = list( common     = "breu sucuruba"             
-                    , scientific = "Trattinnickia rhoifolia"         
-                    )#end list
-   tnf[[ 36]] = list( common     = "breu vermelho"             
-                    , scientific = "Protium tenuifolium"             
-                    )#end list
-   tnf[[ 37]] = list( common     = "cabeca-de-urubu"           
-                    , scientific = "Duroia macrophylla"              
-                    )#end list
-   tnf[[ 38]] = list( common     = "cacau da mata"             
-                    , scientific = "Theobroma speciosum"             
-                    )#end list
-   tnf[[ 39]] = list( common     = "caferana"                  
-                    , scientific = "Coussarea albescens"             
-                    )#end list
-   tnf[[ 40]] = list( common     = "caju da mata"              
-                    , scientific = "Anacardium"                      
-                    )#end list
-   tnf[[ 41]] = list( common     = "canela"                    
-                    , scientific = "Ocotea acutangula"               
-                    )#end list
-   tnf[[ 42]] = list( common     = "canela-de-jacamim"         
-                    , scientific = "Rinorea flavescens"              
-                    )#end list
-   tnf[[ 43]] = list( common     = "canela-de-velho"           
-                    , scientific = "Rinorea macrocarpa"              
-                    )#end list
-   tnf[[ 44]] = list( common     = "caneleira"                 
-                    , scientific = "Casearia javitensis"             
-                    )#end list
-   tnf[[ 45]] = list( common     = "caneleira folha peluda"    
-                    , scientific = "Casearia commersoniana"          
-                    )#end list
-   tnf[[ 46]] = list( common     = "caneleira vermelha"        
-                    , scientific = "Matayba purgans"                 
-                    )#end list
-   tnf[[ 47]] = list( common     = "capitiu"                   
-                    , scientific = "Siparuna cristata"               
-                    )#end list
-   tnf[[ 48]] = list( common     = "caqui"                     
-                    , scientific = "Diospyros vestita"               
-                    )#end list
-   tnf[[ 49]] = list( common     = "carapanauba"               
-                    , scientific = "Aspidosperma oblongum"           
-                    )#end list
-   tnf[[ 50]] = list( common     = "carapanauba amarela"       
-                    , scientific = "Aspidosperma auriculatum"        
-                    )#end list
-   tnf[[ 51]] = list( common     = "castanha-do-para"          
-                    , scientific = "Bertholletia excelsa"            
-                    )#end list
-   tnf[[ 52]] = list( common     = "castanha-sapucaia"         
-                    , scientific = "Lecythis pisonis"                
-                    )#end list
-   tnf[[ 53]] = list( common     = "cedro"                     
-                    , scientific = "Cedrela odorata"                 
-                    )#end list
-   tnf[[ 54]] = list( common     = "chichua"                   
-                    , scientific = "Maytenus pruinosa"               
-                    )#end list
-   tnf[[ 55]] = list( common     = "cipo"                      
-                    , scientific = unk.liana.scientific                       
-                    )#end list
-   tnf[[ 56]] = list( common     = "cocao"                     
-                    , scientific = "Poecilanthe effusa"              
-                    )#end list
-   tnf[[ 57]] = list( common     = "copaiba"                   
-                    , scientific = "Copaifera reticulata"            
-                    )#end list
-   tnf[[ 58]] = list( common     = "coracao-de-negro"          
-                    , scientific = "Chamaecrista xinguensis"         
-                    )#end list
-   tnf[[ 59]] = list( common     = "cuiarana"                  
-                    , scientific = "Buchenavia grandis"              
-                    )#end list
-   tnf[[ 60]] = list( common     = "cumaru"                    
-                    , scientific = "Dipteryx odorata"                
-                    )#end list
-   tnf[[ 61]] = list( common     = "cumarui"                   
-                    , scientific = "Prunus myrtifolia"               
-                    )#end list
-   tnf[[ 62]] = list( common     = "cumate preto"              
-                    , scientific = "Calyptranthes lucida"            
-                    )#end list
-   tnf[[ 63]] = list( common     = "cunario"                   
-                    , scientific = "Connarus perrottetii"            
-                    )#end list
-   tnf[[ 64]] = list( common     = "embauba"                   
-                    , scientific = "Cecropia"                        
-                    )#end list
-   tnf[[ 65]] = list( common     = "embauba branca"            
-                    , scientific = "Cecropia distachya"              
-                    )#end list
-   tnf[[ 66]] = list( common     = "embauba vermelha"          
-                    , scientific = "Cecropia sciadophylla"           
-                    )#end list
-   tnf[[ 67]] = list( common     = "embaubarana"               
-                    , scientific = "Pourouma guianensis"             
-                    )#end list
-   tnf[[ 68]] = list( common     = "envira"                    
-                    , scientific = "Xylopia"                         
-                    )#end list
-   tnf[[ 69]] = list( common     = "envira branca"             
-                    , scientific = "Guatteria amazonica"             
-                    )#end list
-   tnf[[ 70]] = list( common     = "envira-cana"               
-                    , scientific = "Xylopia nitida"                  
-                    )#end list
-   tnf[[ 71]] = list( common     = "envira preta"              
-                    , scientific = "Guatteria poeppigiana"           
-                    )#end list
-   tnf[[ 72]] = list( common     = "envira-surucucu"           
-                    , scientific = "Duguetia echinophora"            
-                    )#end list
-   tnf[[ 73]] = list( common     = "envira vermelha"           
-                    , scientific = "Xylopia ochrantha"               
-                    )#end list
-   tnf[[ 74]] = list( common     = "escorrega-macaco"          
-                    , scientific = "Capirona decorticans"            
-                    )#end list
-   tnf[[ 75]] = list( common     = "farinha seca"              
-                    , scientific = "Ampelocera edentula"             
-                    )#end list
-   tnf[[ 76]] = list( common     = "fava"                      
-                    , scientific = "Abarema jupunba"                 
-                    )#end list
-   tnf[[ 77]] = list( common     = "fava amargosa"             
-                    , scientific = "Vataireopsis speciosa"           
-                    )#end list
-   tnf[[ 78]] = list( common     = "fava-bolota"               
-                    , scientific = "Parkia pendula"                  
-                    )#end list
-   tnf[[ 79]] = list( common     = "fava da rosca"             
-                    , scientific = "Enterolobium schomburgkii"       
-                    )#end list
-   tnf[[ 80]] = list( common     = "fava folha fina"           
-                    , scientific = "Pseudopiptadenia psilostachy"    
-                    )#end list
-   tnf[[ 81]] = list( common     = "fava-mapuxiqui"            
-                    , scientific = "Albizia pedicellaris"            
-                    )#end list
-   tnf[[ 82]] = list( common     = "fava-saboeiro"             
-                    , scientific = "Abarema"                         
-                    )#end list
-   tnf[[ 83]] = list( common     = "fava-timbauba"             
-                    , scientific = "Enterolobium maximum"            
-                    )#end list
-   tnf[[ 84]] = list( common     = "fava-arara-tucupi"         
-                    , scientific = "Parkia multijuga"                
-                    )#end list
-   tnf[[ 85]] = list( common     = "fava-barbatimao"           
-                    , scientific = "Stryphnodendron pulcherrimum"    
-                    )#end list
-   tnf[[ 86]] = list( common     = "fava-saboeiro"             
-                    , scientific = "Abarema"                         
-                    )#end list
-   tnf[[ 87]] = list( common     = "freijo"                    
-                    , scientific = "Cordia exaltata"                 
-                    )#end list
-   tnf[[ 88]] = list( common     = "freijo branco"             
-                    , scientific = "Cordia bicolor"                  
-                    )#end list
-   tnf[[ 89]] = list( common     = "freijorana"                
-                    , scientific = "Cordia"                          
-                    )#end list
-   tnf[[ 90]] = list( common     = "geniparana"                
-                    , scientific = "Gustavia poeppigiana"            
-                    )#end list
-   tnf[[ 91]] = list( common     = "ginja"                     
-                    , scientific = "Eugenia omissa"                  
-                    )#end list
-   tnf[[ 92]] = list( common     = "goiabarana"                
-                    , scientific = "Eugenia omissa"                  
-                    )#end list
-   tnf[[ 93]] = list( common     = "goiabinha"                 
-                    , scientific = "Myrciaria tenella"               
-                    )#end list
-   tnf[[ 94]] = list( common     = "gombeira"                  
-                    , scientific = "Swartzia laurifolia"             
-                    )#end list
-   tnf[[ 95]] = list( common     = "gombeira folha peluda"     
-                    , scientific = "Swartzia laxiflora"              
-                    )#end list
-   tnf[[ 96]] = list( common     = "gombeira vermelha"         
-                    , scientific = "Swartzia laurifolia"             
-                    )#end list
-   tnf[[ 97]] = list( common     = "guariuba"                  
-                    , scientific = "Clarisia racemosa"               
-                    )#end list
-   tnf[[ 98]] = list( common     = "inajarana"                 
-                    , scientific = "Quararibea guianensis"           
-                    )#end list
-   tnf[[ 99]] = list( common     = "inga"                      
-                    , scientific = "Inga macrophylla"                
-                    )#end list
-   tnf[[100]] = list( common     = "inga branco"               
-                    , scientific = "Inga alba"                       
-                    )#end list
-   tnf[[101]] = list( common     = "inga vermelho"             
-                    , scientific = "Inga alba"                       
-                    )#end list
-   tnf[[102]] = list( common     = "inga xixica"               
-                    , scientific = "Inga"                            
-                    )#end list
-   tnf[[103]] = list( common     = "itauba amarela"            
-                    , scientific = "Mezilaurus itauba"               
-                    )#end list
-   tnf[[104]] = list( common     = "itaubarana"                
-                    , scientific = "Casearia"                        
-                    )#end list
-   tnf[[105]] = list( common     = "amapa amargoso"                    
-                    , scientific = "Brosimum guianense"              
-                    )#end list
-   tnf[[106]] = list( common     = "jarana"                    
-                    , scientific = "Lecythis lurida"                 
-                    )#end list
-   tnf[[107]] = list( common     = "jatauba"                   
-                    , scientific = "Matayba purgans"                 
-                    )#end list
-   tnf[[108]] = list( common     = "joao-mole"                 
-                    , scientific = "Guapira venosa"                  
-                    )#end list
-   tnf[[109]] = list( common     = "joao-mole grande"          
-                    , scientific = "Neea"                            
-                    )#end list
-   tnf[[110]] = list( common     = "jutai-pororoca"            
-                    , scientific = "Dialium guianense"               
-                    )#end list
-   tnf[[111]] = list( common     = "jutai-acu"                 
-                    , scientific = "Hymenaea courbaril"              
-                    )#end list
-   tnf[[112]] = list( common     = "jutai-mirim"               
-                    , scientific = "Hymenaea parvifolia"             
-                    )#end list
-   tnf[[113]] = list( common     = "jutaiarana"                
-                    , scientific = "Swartzia arborescens"            
-                    )#end list
-   tnf[[114]] = list( common     = "lacre-da-mata"             
-                    , scientific = "Vismia"                          
-                    )#end list
-   tnf[[115]] = list( common     = "lacre vermelho"            
-                    , scientific = "Vismia latifolia"                
-                    )#end list
-   tnf[[116]] = list( common     = "louro"                     
-                    , scientific = "Nectandra pulverulenta"          
-                    )#end list
-   tnf[[117]] = list( common     = "louro-abacate"             
-                    , scientific = "Ocotea glomerata"                
-                    )#end list
-   tnf[[118]] = list( common     = "louro amarelo"             
-                    , scientific = "Licaria brasiliensis"            
-                    )#end list
-   tnf[[119]] = list( common     = "louro mole"                
-                    , scientific = "Nectandra pulverulenta"          
-                    )#end list
-   tnf[[120]] = list( common     = "louro preto"               
-                    , scientific = "Nectandra reticulata"            
-                    )#end list
-   tnf[[121]] = list( common     = "louro vermelho"            
-                    , scientific = "Ocotea cuprea"                   
-                    )#end list
-   tnf[[122]] = list( common     = "macacauba"                 
-                    , scientific = "Platymiscium trinitatis"         
-                    )#end list
-   tnf[[123]] = list( common     = "macaranduba"               
-                    , scientific = "Manilkara huberi"                
-                    )#end list
-   tnf[[124]] = list( common     = "macucu"                    
-                    , scientific = "Licania heteromorpha"            
-                    )#end list
-   tnf[[125]] = list( common     = "mamorana"                  
-                    , scientific = "Eriotheca globosa"               
-                    )#end list
-   tnf[[126]] = list( common     = "mandioqueira ariana"       
-                    , scientific = "Qualea grandiflora"              
-                    )#end list
-   tnf[[127]] = list( common     = "mandioqueira rosa"         
-                    , scientific = "Qualea dinizii"                  
-                    )#end list
-   tnf[[128]] = list( common     = "maparana"                  
-                    , scientific = "Drypetes variabilis"             
-                    )#end list
-   tnf[[129]] = list( common     = "marupa"                    
-                    , scientific = "Simarouba amara"                 
-                    )#end list
-   tnf[[130]] = list( common     = "mata-calado"               
-                    , scientific = "Lacistema aggregatum"            
-                    )#end list
-   tnf[[131]] = list( common     = "matamata"                  
-                    , scientific = "Lecythis holcogyne"              
-                    )#end list
-   tnf[[132]] = list( common     = "matamata branco"           
-                    , scientific = "Eschweilera pedicellata"         
-                    )#end list
-   tnf[[133]] = list( common     = "matamata jarani"           
-                    , scientific = "Lecythis holcogyne"              
-                    )#end list
-   tnf[[134]] = list( common     = "matamata preto"            
-                    , scientific = "Eschweilera coriacea"            
-                    )#end list
-   tnf[[135]] = list( common     = "matamata vermelho"         
-                    , scientific = "Eschweilera bracteosa"           
-                    )#end list
-   tnf[[136]] = list( common     = "melancieira"               
-                    , scientific = "Alexa grandiflora"               
-                    )#end list
-   tnf[[137]] = list( common     = "mirindiba doce"            
-                    , scientific = "Glycydendron amazonicum"         
-                    )#end list
-   tnf[[138]] = list( common     = "morototo"                  
-                    , scientific = "Schefflera morototoni"           
-                    )#end list
-   tnf[[139]] = list( common     = "muiauba"                   
-                    , scientific = "Mouriri nigra"                   
-                    )#end list
-   tnf[[140]] = list( common     = "muiracatiara"              
-                    , scientific = "Astronium lecointei"             
-                    )#end list
-   tnf[[141]] = list( common     = "muirapinima"               
-                    , scientific = "Maquira calophylla"              
-                    )#end list
-   tnf[[142]] = list( common     = "muirarema"                 
-                    , scientific = "Trichilia micrantha"             
-                    )#end list
-   tnf[[143]] = list( common     = "muiratinga"                
-                    , scientific = "Maquira guianensis"              
-                    )#end list
-   tnf[[144]] = list( common     = "muiratinga folha larga"    
-                    , scientific = "Maquira sclerophylla"            
-                    )#end list
-   tnf[[145]] = list( common     = "muiratinga folha lisa"     
-                    , scientific = "Maquira sclerophylla"            
-                    )#end list
-   tnf[[146]] = list( common     = "muiratinga folha longa"    
-                    , scientific = "Maquira sclerophylla"            
-                    )#end list
-   tnf[[147]] = list( common     = "muiratinga folha peluda"   
-                    , scientific = "Perebea mollis"                  
-                    )#end list
-   tnf[[148]] = list( common     = "muirauba"                  
-                    , scientific = "Mouriri brachyanthera"           
-                    )#end list
-   tnf[[149]] = list( common     = "murta"                     
-                    , scientific = "Myrcia fallax"                   
-                    )#end list
-   tnf[[150]] = list( common     = "muruci-da-mata"            
-                    , scientific = "Byrsonima arthropoda"            
-                    )#end list
-   tnf[[151]] = list( common     = "murure"                    
-                    , scientific = "Brosimum acutifolium"            
-                    )#end list
-   tnf[[152]] = list( common     = "mututi"                    
-                    , scientific = "Pterocarpus rohrii"              
-                    )#end list
-   tnf[[153]] = list( common     = "muuba"                     
-                    , scientific = "Bellucia grossularioides"        
-                    )#end list
-   tnf[[154]] = list( common     = "pama"                      
-                    , scientific = "Pseudolmedia macrophylla"        
-                    )#end list
-   tnf[[155]] = list( common     = "papa-terra"                 
-                    , scientific = "Miconia ruficalyx"               
-                    )#end list
-   tnf[[156]] = list( common     = "papa-terra amarelo"         
-                    , scientific = "Miconia lepidota"                
-                    )#end list
-   tnf[[157]] = list( common     = "papa-terra folha peluda"    
-                    , scientific = "Miconia phanerostila"            
-                    )#end list
-   tnf[[158]] = list( common     = "parapara"                  
-                    , scientific = "Jacaranda copaia"                
-                    )#end list
-   tnf[[159]] = list( common     = "passarinheira"             
-                    , scientific = "Casearia ulmifolia"              
-                    )#end list
-   tnf[[160]] = list( common     = "pata-de-vaca"              
-                    , scientific = "Bauhinia"                        
-                    )#end list
-   tnf[[161]] = list( common     = "papo-de-mutum"             
-                    , scientific = "Lacunaria crenata"               
-                    )#end list
-   tnf[[162]] = list( common     = "pau-cobra"                 
-                    , scientific = "Salacia impressifolia"           
-                    )#end list
-   tnf[[163]] = list( common     = "pau-de-arco amarelo"       
-                    , scientific = "Handroanthus serratifolius"           
-                    )#end list
-   tnf[[164]] = list( common     = "pau-de-colher"             
-                    , scientific = "Lacmellea aculeata"              
-                    )#end list
-   tnf[[165]] = list( common     = "pau-de-remo"               
-                    , scientific = "Chimarrhis turbinata"            
-                    )#end list
-   tnf[[166]] = list( common     = "pau-jacare"                
-                    , scientific = "Laetia procera"                  
-                    )#end list
-   tnf[[167]] = list( common     = "pau-para-tudo"             
-                    , scientific = "Swartzia recurva"                
-                    )#end list
-   tnf[[168]] = list( common     = "pente-de-macaco"           
-                    , scientific = "Apeiba glabra"                   
-                    )#end list
-   tnf[[169]] = list( common     = "molongo"            
-                    , scientific = "Ambelania acida"                 
-                    )#end list
-   tnf[[170]] = list( common     = "piquia"                    
-                    , scientific = "Caryocar villosum"               
-                    )#end list
-   tnf[[171]] = list( common     = "pitomba"                   
-                    , scientific = "Talisia retusa"                  
-                    )#end list
-   tnf[[172]] = list( common     = "quariquarana"              
-                    , scientific = "Rinorea"                         
-                    )#end list
-   tnf[[173]] = list( common     = "quaruba"                   
-                    , scientific = "Vochysia"                        
-                    )#end list
-   tnf[[174]] = list( common     = "quaruba rosa"              
-                    , scientific = "Vochysia surinamensis"           
-                    )#end list
-   tnf[[175]] = list( common     = "quaruba verdadeira"        
-                    , scientific = "Vochysia maxima"                 
-                    )#end list
-   tnf[[176]] = list( common     = "quarubarana"               
-                    , scientific = "Erisma uncinatum"                
-                    )#end list
-   tnf[[177]] = list( common     = "quinarana"                 
-                    , scientific = "Geissospermum laeve"             
-                    )#end list
-   tnf[[178]] = list( common     = "saboeira"                  
-                    , scientific = "Abarema jupunba"                 
-                    )#end list
-   tnf[[179]] = list( common     = "sucupira amarela"          
-                    , scientific = "Bowdichia nitida"                
-                    )#end list
-   tnf[[180]] = list( common     = "sucupira preta"            
-                    , scientific = "Diplotropis triloba"             
-                    )#end list
-   tnf[[181]] = list( common     = "tachi"                     
-                    , scientific = "Tachigali"                       
-                    )#end list
-   tnf[[182]] = list( common     = "tachi branco"              
-                    , scientific = "Tachigali alba"                  
-                    )#end list
-   tnf[[183]] = list( common     = "tachi preto"               
-                    , scientific = "Tachigali myrmecophila"          
-                    )#end list
-   tnf[[184]] = list( common     = "tachi preto folha grauda"  
-                    , scientific = "Tachigali myrmecophila"          
-                    )#end list
-   tnf[[185]] = list( common     = "tachi preto folha miuda"   
-                    , scientific = "Tachigali paniculata"            
-                    )#end list
-   tnf[[186]] = list( common     = "tachi vermelho"            
-                    , scientific = "Tachigali chrysophylla"          
-                    )#end list
-   tnf[[187]] = list( common     = "taperebarana"              
-                    , scientific = "Heisteria laxiflora"             
-                    )#end list
-   tnf[[188]] = list( common     = "taruma"                    
-                    , scientific = "Vitex triflora"                  
-                    )#end list
-   tnf[[189]] = list( common     = "tatajuba"                  
-                    , scientific = "Bagassa guianensis"              
-                    )#end list
-   tnf[[190]] = list( common     = "tatapiririca"              
-                    , scientific = "Tapirira guianensis"             
-                    )#end list
-   tnf[[191]] = list( common     = "tatapiririca folha peluda" 
-                    , scientific = "Tapirira obtusa"                 
-                    )#end list
-   tnf[[192]] = list( common     = "tatapiririca vermelha"     
-                    , scientific = "Tapirira guianensis"             
-                    )#end list
-   tnf[[193]] = list( common     = "tauari"                    
-                    , scientific = "Couratari stellata"              
-                    )#end list
-   tnf[[194]] = list( common     = "tento"                     
-                    , scientific = "Simaba polyphylla"               
-                    )#end list
-   tnf[[195]] = list( common     = "tento folha grauda"        
-                    , scientific = "Ormosia paraensis"               
-                    )#end list
-   tnf[[196]] = list( common     = "tento folha miuda"         
-                    , scientific = "Abarema mataybifolia"            
-                    )#end list
-   tnf[[197]] = list( common     = "tento preto"               
-                    , scientific = "Abarema mataybifolia"            
-                    )#end list
-   tnf[[198]] = list( common     = "tres folhas"               
-                    , scientific = "Allophylus punctatus"            
-                    )#end list
-   tnf[[199]] = list( common     = "ucuuba"                    
-                    , scientific = "Virola"                          
-                    )#end list
-   tnf[[200]] = list( common     = "ucuuba folha peluda"       
-                    , scientific = "Virola crebrinervia"             
-                    )#end list
-   tnf[[201]] = list( common     = "ucuuba vermelha"           
-                    , scientific = "Virola elongata"                 
-                    )#end list
-   tnf[[202]] = list( common     = "ucuuba terra-firme"        
-                    , scientific = "Virola michelii"                 
-                    )#end list
-   tnf[[203]] = list( common     = "ucuubarana"                
-                    , scientific = "Iryanthera sagotiana"            
-                    )#end list
-   tnf[[204]] = list( common     = "uruazeiro"                 
-                    , scientific = "Cordia exaltata"                 
-                    )#end list
-   tnf[[205]] = list( common     = "urucurana"                 
-                    , scientific = "Aparisthmium cordatum"           
-                    )#end list
-   tnf[[206]] = list( common     = "uxi"                       
-                    , scientific = "Endopleura"                      
-                    )#end list
-   tnf[[207]] = list( common     = "uxi liso"                  
-                    , scientific = "Endopleura uchi"                 
-                    )#end list
-   tnf[[208]] = list( common     = "verdinho"                  
-                    , scientific = "Ilex petiolaris"                 
-                    )#end list
-   tnf[[209]] = list( common     = "cipo"                  
-                    , scientific = unk.liana.scientific               
-                    )#end list
+scientific.lookup.TNF <<- function(datum,lookup.path){
+   #----- Append columns in case they don't exist. ----------------------------------------#
+   if (! "scientific"    %in% names(datum)){
+      datum$scientific    = rep(NA_character_, nrow(datum))
+   }#end if (! "scientific"    %in% names(datum))
+   if (! "genus"         %in% names(datum)){
+      datum$genus         = rep(NA_character_, nrow(datum)) 
+   }#end if (! "scientific"    %in% names(datum))
+   if (! "gf.scientific" %in% names(datum)){
+      datum$gf.scientific = rep(0, nrow(datum))
+   }#end if (! "gf.scientific" %in% names(datum))
    #---------------------------------------------------------------------------------------#
 
 
-
-   #----- Convert the TNF list into a data frame. -----------------------------------------#
-   tnf = data.frame( apply( X      = t(sapply(X = tnf , FUN = c))
-                          , MARGIN = c(1,2)
-                          , FUN    = unlist
-                          )#end apply
-                   , stringsAsFactors = FALSE
-                   )#end data.frame
+   #----- Read in the look-up table. ------------------------------------------------------#
+   lookup.file        = file.path(lookup.path,"TNF_taxon_lookup.csv")
+   look.up            = read.csv(file=lookup.file,stringsAsFactors=FALSE)
+   look.up$common     = tolower(trim(look.up$common    ))
+   look.up$scientific = trim(look.up$scientific)
+   look.up$family     = trim(look.up$family    )
    #---------------------------------------------------------------------------------------#
-
-   browser()
-
-   #---------------------------------------------------------------------------------------#
-   #     Create an output data frame with the scientific names.  The default "no-name"     #
-   # data does not count as gap-filling.                                                   #
-   #---------------------------------------------------------------------------------------#
-   out            = data.frame( common           = rep(unknown.common    ,times=n.datum)
-                              , scientific       = rep(unknown.scientific,times=n.datum)
-                              , stringsAsFactors = FALSE
-                              )#end data.frame
-   idx            = match(datum$common,tnf$common)
-   ok             = ! is.na(idx)
-   out[ok,]       = tnf[idx[ok],]
-   out$gfflg      = as.numeric(! out$common %in% c(unk.liana.common,unknown.common))
+        
+        
+        
+   #----- Break into genus and species. ---------------------------------------------------#
+   gs.list                  = sapply(X = tolower(look.up$scientific),FUN=strsplit,split=" ")
+   gs.length                = sapply(X = gs.list, FUN = length)
+   gs.mat                   = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                                   , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                                   )#end cbind
+   g                        = capwords(gs.mat[,1],strict=TRUE)
+   s                        = tolower(gs.mat[,2])
+   g.s                      = paste(g,s,sep=" ")
+   g.s[is.na(g) & is.na(s)] = NA_character_
+   look.up$scientific       = g.s
+   look.up$genus            = g
    #---------------------------------------------------------------------------------------#
    
+   
+   
+   #----- Trim the common names, and simplify/replace some names. -------------------------#
+   datum$common                      = tolower(trim(datum$common))
+   datum$common[is.na(datum$common)] = unknown.common
+   #---------------------------------------------------------------------------------------#
+        
+        
+       
+   #----- Find all unique common names. ---------------------------------------------------#
+   unique.common = unique(datum$common)
+   n.common      = length(unique.common)
+   notfound      = NULL
+   for (n in sequence(n.common)){
+      #----- Find the trees that have the same common name as this one. -------------------#
+      cat0(" - ",n,"/",n.common," -- ",unique.common[n])
+      w.dat  = which(datum$common %in% unique.common[n])
+      n.dat  = length(w.dat)
+      #------------------------------------------------------------------------------------#
+      
+      
+      #----- Find the trees in the look-up table with the same common name. ---------------#
+      w.look = which(look.up$common %in% unique.common[n])
+      n.look = length(w.look)
+      #------------------------------------------------------------------------------------#
+      
+      
+      
+      #------------------------------------------------------------------------------------#
+      #      Check how many trees have the same common name in the look-up table.          #
+      #------------------------------------------------------------------------------------#
+      if (n.look >= 1){
+         #---------------------------------------------------------------------------------#
+         #   In case only one scientific name has been matched, this will allocate the     #
+         # same scientific name for all selected individuals, otherwise this will randomly #
+         # attribute the scientific names.                                                 #
+         #---------------------------------------------------------------------------------#
+         w.look                     = lit.sample(x=w.look,size=n.dat,replace=TRUE)
+         #---------------------------------------------------------------------------------#
 
-   #---------------------------------------------------------------------------------------#
-   #      Copy data to the main data frame.                                                #
-   #---------------------------------------------------------------------------------------#
-   sel = is.na(datum$scientific)
-   datum$common       [sel] = out$common    [sel]
-   datum$scientific   [sel] = out$scientific[sel]
-   datum$gf.scientific[sel] = out$gfflg     [sel]
-   #---------------------------------------------------------------------------------------#
 
-
+         #----- Only one.  Use it. --------------------------------------------------------#
+         datum$scientific   [w.dat] = look.up$scientific[w.look]
+         datum$genus        [w.dat] = look.up$genus     [w.look]
+         datum$gf.scientific[w.dat] = 1
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Not found in the data base, warn the user. --------------------------------#
+         notfound                   = c(notfound,unique.common[n])
+         datum$scientific   [w.dat] = unknown.scientific
+         datum$genus        [w.dat] = unknown.genus
+         datum$gf.scientific[w.dat] = 0
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for
    #---------------------------------------------------------------------------------------#
-   #     Put NA to species if only genus is known.                                         #
-   #---------------------------------------------------------------------------------------#
-   gs.list          = sapply(X = tolower(datum$scientific),FUN=strsplit,split=" ")
-   gs.length        = sapply(X = gs.list, FUN = length)
-   gs.mat           = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
-                           , mapply(FUN="[",gs.list,MoreArgs=list(2))
-                           )#end cbind
-   datum$genus      = capwords(gs.mat[,1],strict=TRUE)
-   datum$scientific = paste(datum$genus,tolower (gs.mat[,2]),sep=" ")
-   #---------------------------------------------------------------------------------------#
-
    return(datum)
-}#end if
+}#end function scientific.lookup.TNF
 #==========================================================================================#
 #==========================================================================================#
 

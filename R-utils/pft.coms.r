@@ -1602,6 +1602,7 @@ pft$c.bark.dry   = pft$c.wood.dry
 pft$brf.wd       = ifelse(pft$grass,0.0,0.16)
 for (ipft in sequence(npft+1)){
    usedef = with(pft,grass[ipft] || liana[ipft] || conifer[ipft] || (! tropical[ipft]))
+   usedef = usedef || (iecon == 0)
    if (usedef){
       #----- Default values. --------------------------------------------------------------#
       pft$qrhob       [ipft] = 0.49/0.61
@@ -1609,7 +1610,7 @@ for (ipft in sequence(npft+1)){
       pft$qwatdry.bark[ipft] = 0.7
       #------------------------------------------------------------------------------------#
    }else{
-      #----- Default values. --------------------------------------------------------------#
+      #----- Wood-density dependent values. -----------------------------------------------#
       pft$qrhob       [ipft] = exp(0.6966550 - 1.602123 * pft$rho[ipft])
       pft$qwatdry.wood[ipft] = exp(1.5018230 - 3.137476 * pft$rho[ipft])
       pft$qwatdry.bark[ipft] = exp(1.9892840 - 3.174365 * pft$rho[ipft])
