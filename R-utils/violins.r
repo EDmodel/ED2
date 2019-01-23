@@ -6,7 +6,7 @@
 #------------------------------------------------------------------------------------------#
 violins <<- function( x
                     , at         = seq_along(x)
-                    , names      = if(is.null(names(x))){seq_along(x)}else{names(x)}
+                    , xnames     = if(is.null(names(x))){seq_along(x)}else{names(x)}
                     , box.range  = 1.5
                     , ylim       = NULL
                     , horizontal = FALSE
@@ -74,41 +74,41 @@ violins <<- function( x
    #---------------------------------------------------------------------------------------#
    #     Go through each list element, and estimate the density function.                  #
    #---------------------------------------------------------------------------------------#
-   for (i in sequence(nx)){
+   for (ix in seqx){
        #----- Load data, remove missing values in case na.rm is TRUE. ---------------------#
-       xnow = x[[i]]
+       xnow = x[[ix]]
        if (na.rm) xnow = xnow[! is.na(xnow)]
        #-----------------------------------------------------------------------------------#
 
 
        #----- Find the boxplot limits. ----------------------------------------------------#
-       x.min     = min(xnow)
-       x.max     = max(xnow)
-       x.q250[i] = quantile(xnow, 0.25)
-       x.q750[i] = quantile(xnow, 0.75)
-       x.q500[i] = median(xnow)
-       x.iqd     = x.q750[i] - x.q250[i]
-       x.upper[i] = min(x.q750[i] + box.range * x.iqd, x.max)
-       x.lower[i] = max(x.q250[i] - box.range * x.iqd, x.min)
+       x.min       = min(xnow)
+       x.max       = max(xnow)
+       x.q250[ix]  = quantile(xnow, 0.25)
+       x.q750[ix]  = quantile(xnow, 0.75)
+       x.q500[ix]  = median(xnow)
+       x.iqd       = x.q750[ix] - x.q250[ix]
+       x.upper[ix] = min(x.q750[ix] + box.range * x.iqd, x.max)
+       x.lower[ix] = max(x.q250[ix] - box.range * x.iqd, x.min)
        #-----------------------------------------------------------------------------------#
 
 
        #----- Estimate kernel density, keep only values within range. ---------------------#
-       densout     = density.safe(xnow,from=from,to=to,n=n,...)
-       keep        = densout$x %wr% c(x.min-0.5*dbase,x.max+0.5*dbase)
-       base  [[i]] = densout$x[keep]
-       height[[i]] = densout$y[keep]
-       if (any(is.finite(height[[i]]))){
-          x.width[i] = max(height[[i]],na.rm=TRUE)
+       densout      = density.safe(xnow,from=from,to=to,n=n,...)
+       keep         = densout$x %wr% c(x.min-0.5*dbase,x.max+0.5*dbase)
+       base  [[ix]] = densout$x[keep]
+       height[[ix]] = densout$y[keep]
+       if (any(is.finite(height[[ix]]))){
+          x.width[ix] = max(height[[ix]],na.rm=TRUE)
        }else{
-          x.width[i] = NA
+          x.width[ix] = NA_real_
        }#end if
        #-----------------------------------------------------------------------------------#
 
        #----- Update candidate limit. -----------------------------------------------------#
-       baserange   = range(c(baserange,base[[i]]),finite=TRUE)
+       baserange   = range(c(baserange,base[[ix]]),finite=TRUE)
        #-----------------------------------------------------------------------------------#
-   }#end for (i in sequence(nx))
+   }#end for (ix in seqx)
    #---------------------------------------------------------------------------------------#
 
 
@@ -157,11 +157,11 @@ violins <<- function( x
       if (horizontal){
          plot.window(xlim=ylim,ylim=xlim,log=ifelse(plog,"x",""))
          axis(1)
-         axis(2,at=at,labels=names)
+         axis(2,at=at,labels=xnames)
       }else{
          plot.window(xlim=xlim,ylim=ylim,log=ifelse(plog,"y",""))
          axis(1)
-         axis(2,at=at,labels=names)
+         axis(2,at=at,labels=xnames)
       }#end if (horizontal)
    }#end if (! add)
    #---------------------------------------------------------------------------------------#
@@ -172,10 +172,11 @@ violins <<- function( x
    #---------------------------------------------------------------------------------------#
    #     Go through the list elements.                                                     #
    #---------------------------------------------------------------------------------------#
-   for (i in seqx){
+   for (ix in seqx){
+
       #----- Polygon coordinates. ---------------------------------------------------------#
-      poly.height = c(at[i] - height[[i]],rev(at[i] + height[[i]]))
-      poly.base   = c(base[[i]],rev(base[[i]]))
+      poly.height = c(at[ix] - height[[ix]],rev(at[ix] + height[[ix]]))
+      poly.base   = c(base[[ix]],rev(base[[ix]]))
       #------------------------------------------------------------------------------------#
 
 
@@ -183,53 +184,53 @@ violins <<- function( x
          #----- Plot violin. --------------------------------------------------------------#
          epolygon( x      = poly.base
                  , y      = poly.height
-                 , col    = col   [i]
-                 , border = border[i]
-                 , lty    = lty   [i]
-                 , lwd    = lwd   [i]
+                 , col    = col   [ix]
+                 , border = border[ix]
+                 , lty    = lty   [ix]
+                 , lwd    = lwd   [ix]
                  )#end epolygon
          #---------------------------------------------------------------------------------#
 
 
          #----- Plot box-and-whisker plot. ------------------------------------------------#
          if (drawRect){
-             lines (x=c(x.lower[i], x.upper[i]),y=at[c(i,i)],lwd=lwd[i],lty=lty[i])
-             rect  ( xleft   = x.q250[i]
-                   , ybottom = at[i] - boxwidth/2
-                   , xright  = x.q750[i]
-                   , ytop    = at[i] + boxwidth/2
+             lines (x=c(x.lower[ix], x.upper[ix]),y=at[c(ix,ix)],lwd=lwd[ix],lty=lty[ix])
+             rect  ( xleft   = x.q250[ix]
+                   , ybottom = at[ix] - boxwidth/2
+                   , xright  = x.q750[ix]
+                   , ytop    = at[ix] + boxwidth/2
                    , col     = rectCol
                    )#end rect
-             points(x=x.q500[i],y=at[i],pch=pchMed[i],col=colMed[i],bg=bgMed[i])
+             points(x=x.q500[ix],y=at[ix],pch=pchMed[ix],col=colMed[ix],bg=bgMed[ix])
          }#end if (drawRect)
          #---------------------------------------------------------------------------------#
       }else{
          #----- Plot violin. --------------------------------------------------------------#
          epolygon( x      = poly.height
                  , y      = poly.base
-                 , col    = col   [i]
-                 , border = border[i]
-                 , lty    = lty   [i]
-                 , lwd    = lwd   [i]
+                 , col    = col   [ix]
+                 , border = border[ix]
+                 , lty    = lty   [ix]
+                 , lwd    = lwd   [ix]
                  )#end epolygon
          #---------------------------------------------------------------------------------#
 
 
          #----- Plot box-and-whisker plot. ------------------------------------------------#
          if (drawRect){
-             lines (x=at[c(i,i)],y=c(x.lower[i],x.upper[i]),lwd=lwd[i],lty=lty[i])
-             rect  ( xleft   = at[i] - boxwidth/2
-                   , ybottom = x.q250[i]
-                   , xright  = at[i] + boxwidth/2
-                   , ytop    = x.q750[i]
+             lines (x=at[c(ix,ix)],y=c(x.lower[ix],x.upper[ix]),lwd=lwd[ix],lty=lty[ix])
+             rect  ( xleft   = at[ix] - boxwidth/2
+                   , ybottom = x.q250[ix]
+                   , xright  = at[ix] + boxwidth/2
+                   , ytop    = x.q750[ix]
                    , col     = rectCol
                    )#end rect
-             points(x=at[i],y=x.q500[i],pch=pchMed[i],col=colMed[i],bg=bgMed[i])
+             points(x=at[ix],y=x.q500[ix],pch=pchMed[ix],col=colMed[ix],bg=bgMed[ix])
          }#end if (drawRect)
          #---------------------------------------------------------------------------------#
       }#end if (horizontal)
       #------------------------------------------------------------------------------------#
-   }#end for (i in sequence(n))
+   }#end for (ix in seqx)
    #---------------------------------------------------------------------------------------#
 
 

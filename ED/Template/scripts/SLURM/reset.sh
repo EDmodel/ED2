@@ -7,7 +7,7 @@ joborder="${here}/joborder.txt"
 desc=$(basename ${here})
 
 #----- Executable name. -------------------------------------------------------------------#
-execname="ed_2.1-opt"
+execname="ed_2.2-opt"
 execsrc="${HOME}/EDBRAMS/ED/build"
 #------------------------------------------------------------------------------------------#
 

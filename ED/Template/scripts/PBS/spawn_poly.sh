@@ -63,7 +63,7 @@ timeh="0000"  # Hour
 #----- Default tolerance. -----------------------------------------------------------------#
 toldef="0.01"
 #----- Executable names. ------------------------------------------------------------------#
-execname="ed_2.1-opt"             # Normal executable, for most queues
+execname="ed_2.2-opt"             # Normal executable, for most queues
 #----- Initialisation scripts. ------------------------------------------------------------#
 initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #----- Settings for this group of polygons. -----------------------------------------------#

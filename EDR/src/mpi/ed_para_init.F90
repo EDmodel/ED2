@@ -174,7 +174,10 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    use ed_work_vars, only : work_e         ! ! structure
    use soil_coms   , only : veg_database   & ! intent(in)
                           , soil_database  & ! intent(in)
+                          , soildepth_db   & ! intent(in)
                           , isoilflg       & ! intent(in)
+                          , isoildepthflg  & ! intent(in)
+                          , layer_index    & ! intent(in)
                           , nslcon         & ! intent(in)
                           , isoilcol       ! ! intent(in)
    use mem_polygons, only : n_poi          & ! intent(in)
@@ -196,8 +199,10 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    integer, dimension(:,:), allocatable :: leaf_class_list
    integer, dimension(:,:), allocatable :: ntext_soil_list
    integer, dimension(:,:), allocatable :: ncol_soil_list
+   integer, dimension(:,:), allocatable :: depth_soil_list
    real   , dimension(:,:), allocatable :: ipcent_land
    real   , dimension(:,:), allocatable :: ipcent_soil
+   real   , dimension(:,:), allocatable :: ipcent_depth
    integer                              :: ipy
    integer                              :: i
    integer                              :: j
@@ -206,6 +211,8 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    integer                              :: iloff
    integer                              :: iroff
    integer                              :: itext
+   integer                              :: ilat_bin
+   integer                              :: ilon_bin
    real                                 :: maxwork
    !---------------------------------------------------------------------------------------!
 
@@ -217,8 +224,10 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    allocate(leaf_class_list(maxsite,npoly))
    allocate(ntext_soil_list(maxsite,npoly))
    allocate(ncol_soil_list (maxsite,npoly))
+   allocate(depth_soil_list(maxsite,npoly))
    allocate(ipcent_land    (maxsite,npoly))
    allocate(ipcent_soil    (maxsite,npoly))
+   allocate(ipcent_depth   (maxsite,npoly))
    !---------------------------------------------------------------------------------------!
 
 
@@ -343,8 +352,7 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    !---------------------------------------------------------------------------------------!
    write(unit=*,fmt=*) ' => Generating the land/sea mask.'
    if (is_poi) then
-      ipcent_land    (:,:) = 0.
-      ipcent_land    (1,:) = 1.
+      ipcent_land    (:,:) = 1.
       leaf_class_list(:,:) = 6
    else
       call leaf_database(trim(veg_database(ifm)),maxsite,npoly,'leaf_class'                &
@@ -370,6 +378,38 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
       !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Either read or assign the soil depth from ED2IN.  Currently only one depth per    !
+   ! polygon is allowed; in the future, we may want to update this to account for both     !
+   ! texture and depth.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   select case (isoildepthflg)
+   case (0,1)
+      !------------------------------------------------------------------------------------!
+      !   Use the default depth (either constant or the ED-1.0 style).                     !
+      !------------------------------------------------------------------------------------!
+      do ipy=1,npoly
+         ilat_bin               = min(180,int(90.0 - lat_list(1,ipy)) + 1)
+         ilon_bin               = int(180.0 + lon_list(1,ipy)) + 1
+         depth_soil_list(:,ipy) = layer_index(ilat_bin,ilon_bin) 
+      end do
+      ipcent_depth(:,:) = 0.
+      ipcent_depth(1,:) = 1.
+      !------------------------------------------------------------------------------------!
+   case (2)
+      !----- Soil depth is provided in HDF5 format. ---------------------------------------!
+      call leaf_database(trim(soildepth_db),maxsite,npoly,'soil_depth'                     &
+                        ,lat_list,lon_list,depth_soil_list,ipcent_depth)
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !      For the time being, soil colour is constant.  Only if results look promising we  !
@@ -399,7 +439,8 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
                work_e(ifm)%soilfrac(itext,i,j) = ipcent_soil(itext,ipy)
                work_e(ifm)%ntext   (itext,i,j) = ntext_soil_list (itext,ipy)
             end do
-            work_e(ifm)%nscol            (i,j) = ncol_soil_list(1,ipy)
+            work_e(ifm)%lsl              (i,j) = depth_soil_list(1,ipy)
+            work_e(ifm)%nscol            (i,j) = ncol_soil_list (1,ipy)
 
             maxwork = max(maxwork,work_e(ifm)%work(i,j))
 
@@ -407,6 +448,7 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
             !----- Making this grid point 100% water --------------------------------------!
             work_e(ifm)%landfrac  (i,j) = 0.
             work_e(ifm)%work      (i,j) = epsilon(0.0)
+            work_e(ifm)%lsl       (i,j) = 0
             work_e(ifm)%nscol     (i,j) = 0
             work_e(ifm)%ntext   (:,i,j) = 0
             work_e(ifm)%soilfrac(:,i,j) = 0.
@@ -432,8 +474,10 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    deallocate(leaf_class_list)
    deallocate(ntext_soil_list)
    deallocate(ncol_soil_list )
+   deallocate(depth_soil_list)
    deallocate(ipcent_land    )
    deallocate(ipcent_soil    )
+   deallocate(ipcent_depth   )
    !---------------------------------------------------------------------------------------!
 
    return
@@ -507,6 +551,7 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
             work_v(ifm)%work    (poly) = work_e(ifm)%work(i,j)
             work_v(ifm)%xid     (poly) = i
             work_v(ifm)%yid     (poly) = j
+            work_v(ifm)%lsl     (poly) = work_e(ifm)%lsl  (i,j)
             work_v(ifm)%nscol   (poly) = work_e(ifm)%nscol(i,j)
 
             do itext=1,maxsite
