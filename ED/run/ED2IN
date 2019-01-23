@@ -770,7 +770,7 @@ $ED_NL
    !      limitation case (C3), and use the Michaelis-Mentel coefficients along with other !
    !      parameters from von Caemmerer (2000).                                            !
    !---------------------------------------------------------------------------------------!
-   NL%IPHYSIOL = 3
+   NL%IPHYSIOL = 2
    !---------------------------------------------------------------------------------------!
 
 
@@ -833,7 +833,7 @@ $ED_NL
    !    biomass , and growth happens daily. With this option, grasses are evergreen        !
    !    regardless of IPHEN_SCHEME.                                                        !
    !---------------------------------------------------------------------------------------!
-   NL%IGRASS          = 0
+   NL%IGRASS          = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -927,7 +927,7 @@ $ED_NL
    ! CROWN_MOD -- Specifies how tree crowns are represent in the canopy radiation model,   !
    !              and in the turbulence scheme depending on ICANTURB.                      !
    !              0.  (ED-2.2 default)  Flat-top, infinitesimally thin crowns.             !
-   !              1.  (<i>Under development</i>) Finite radius mixing model (Dietze).      !
+   !              1.  (Under development) Finite radius mixing model (Dietze).             !
    !                  This is only implemented for direct radiation with ICANRAD=0.        !
    !---------------------------------------------------------------------------------------!
    NL%CROWN_MOD       = 0
@@ -1047,7 +1047,7 @@ $ED_NL
    !      pools (litter aka fast, structural, microbial, humified aka slow, and passive).  !
    !      Temperature and moisture functions are the same as 2.                            !
    !---------------------------------------------------------------------------------------!
-   NL%DECOMP_SCHEME   = 5
+   NL%DECOMP_SCHEME   = 2
    !---------------------------------------------------------------------------------------!
 
 
@@ -1141,8 +1141,8 @@ $ED_NL
    !                                                                                       ! 
    !---------------------------------------------------------------------------------------!
    NL%IDDMORT_SCHEME  = 1
-   NL%DDMORT_CONST    = 0.8
    NL%CBR_SCHEME      = 0
+   NL%DDMORT_CONST    = 0.8
    !---------------------------------------------------------------------------------------!
 
 
@@ -1250,7 +1250,8 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    ! N_PLANT_LIM -- This controls whether plant photosynthesis can be limited by nitrogen. !
    !                0.  No limitation                                                      !
-   !                1.  ED-2.1 nitrogen limitation model.                                  !
+   !                1.  Activate nitrogen limitation model.  As of ED-2.2, this option has !
+   !                    not been thoroughly tested in the tropics.                         !
    !---------------------------------------------------------------------------------------!
    NL%N_PLANT_LIM     = 0
    !---------------------------------------------------------------------------------------!
@@ -1400,7 +1401,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    ! ISFCLYRM -- Similarity theory model.  The model that computes u*, T*, etc...          !
    ! 1.  (Legacy) BRAMS default, based on Louis (1979, Boundary-Layer Meteorol.).  It uses !
-   !     empirical relations to estimate the flux based on the bulk Richardson number      !
+   !     empirical relations to estimate the flux based on the bulk Richardson number.     !
    !                                                                                       !
    !       All models below use an interative method to find z/L, and the only change      !
    !  is the functional form of the psi functions.                                         !
