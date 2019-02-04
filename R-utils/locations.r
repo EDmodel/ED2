@@ -986,6 +986,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c("openmp","serial")
                                        , names  = c("OpenMP","Serial")
                                        )#end list
+   flagvar[["version"  ]]        = list( descr  = "ED version"
+                                       , numeric = FALSE
+                                       , values = c("ed20","ed21","ed22")
+                                       , names  = c("ED-2.0.12","ED-2.1","ED-2.2")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1271,6 +1276,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("dhist")
          na     = c(      6)
          nz     = c(      8)
+      }else if (lenici == 9 && grepl(pattern="_ed2",x=ici)){
+         nparms = 1
+         param  = c("version")
+         na     = c(      6)
+         nz     = c(      9)
       }else if (lenici == 10){
          nparms = 1
          param  = c("nzs")

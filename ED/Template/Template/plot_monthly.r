@@ -30,7 +30,7 @@ reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
 nyears.long    = 15           # Runs longer than this are considered long runs.
-n.density      = 256          # Number of density points
+n.density      = 512          # Number of density points
 #------------------------------------------------------------------------------------------#
 
 
@@ -218,7 +218,7 @@ for (place in myplaces){
    #      Make the RData file name, then we check whether we must read the files again     #
    # or use the stored RData.                                                              #
    #---------------------------------------------------------------------------------------#
-   path.data  = file.path(here,place,"rdata_month")
+   path.data  = file.path(here,place,"2019_rdata_month")
    if (! file.exists(path.data)) dir.create(path.data)
    ed22.rdata  = file.path(path.data,paste0(place,".RData"))
    ed22.status = file.path(path.data,paste0("status_",place,".txt"))
@@ -405,7 +405,7 @@ for (place in myplaces){
    # srnonm1 is the square root of 1 / (1 - 1/N)                                           #
    #     Find the standard deviation.                                                      #
    #---------------------------------------------------------------------------------------#
-   cat ("    - Finding the monthly means...","\n")
+   cat0("    - Find the monthly means.")
 
    srnorm1 = sqrt(1./(1. - 1. / datum$montable))
    srnorm1[!is.finite(srnorm1)] = 0.
@@ -453,7 +453,7 @@ for (place in myplaces){
    #      Here we find the Mean diurnal cycle for each month, then compute the standard    #
    # deviation, similar to the monthly mean.                                               #
    #---------------------------------------------------------------------------------------#
-   cat ("    - Aggregating the monthly mean of the diurnal cycle...","\n")
+   cat0("    - Aggregate the monthly mean of the diurnal cycle.")
    umean              = list()
    usdev              = list()
    for (vname in names(qmean)){
@@ -527,20 +527,28 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Find the patch density function for all patch-level data.                        #
    #---------------------------------------------------------------------------------------#
-   cat ("    - Finding the distribution function of patch properties...","\n")
+   cat0("    - Find the distribution function of patch properties.")
    patchpdf = list()
    for (pp in sequence(nplotpatch)){
+      #----- Get settings for the current variable. ---------------------------------------#
       this        = plotpatch[[pp]]
       vname       = this$vnam
       col.scheme  = get(this$col.scheme)(n=ncolsfc)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Retrieve patch values, and find monthly means. -------------------------------#
       emean.area  = patch$area
       emean.vname = patch[[vname]]
-      mmean.area  = tapply(X=emean.area ,INDEX=mfac,FUN=unlist)
-      mmean.vname = tapply(X=emean.vname,INDEX=mfac,FUN=unlist)
+      #------------------------------------------------------------------------------------#
+
+
 
       #----- Find the range for which we find the density function. -----------------------#
-      low.vname   = min(unlist(emean.vname),na.rm=TRUE)
-      high.vname  = max(unlist(emean.vname),na.rm=TRUE)
+      espan.vname = pretty.xylim(u=c(unlist(emean.vname)),fracexp=c(-0.04,0.04))
+      elwr.vname  = espan.vname[1]
+      eupr.vname  = espan.vname[2]
       #------------------------------------------------------------------------------------#
 
 
@@ -549,12 +557,7 @@ for (place in myplaces){
       edfun.now   = mapply( FUN      = density.safe
                           , x        = emean.vname
                           , weights  = emean.area
-                          , MoreArgs = list(n=n.density,from=low.vname,to=high.vname)
-                          )#end mapply
-      mdfun.now   = mapply( FUN      = density.safe
-                          , x        = mmean.vname
-                          , weights  = mmean.area
-                          , MoreArgs = list(n=n.density,from=low.vname,to=high.vname)
+                          , MoreArgs = list(n=n.density,from=elwr.vname,to=eupr.vname)
                           )#end mapply
       #------------------------------------------------------------------------------------#
 
@@ -564,7 +567,7 @@ for (place in myplaces){
       #----- Save the density function. ---------------------------------------------------#
       edfun        = list()
       edfun$x      = chron(datum$when)
-      edfun$y      = seq(from=low.vname,to=high.vname,length.out=n.density)
+      edfun$y      = seq(from=elwr.vname,to=eupr.vname,length.out=n.density)
       edfun$z      = t(sapply(X=edfun.now["y",],FUN=cbind))
       #------------------------------------------------------------------------------------#
 
@@ -573,45 +576,45 @@ for (place in myplaces){
 
       #----- Save the density function. ---------------------------------------------------#
       mdfun        = list()
-      mdfun$x      = montmont
-      mdfun$y      = seq(from=low.vname,to=high.vname,length.out=n.density)
-      mdfun$z      = t(sapply(X=mdfun.now["y",],FUN=cbind))
+      mdfun$x      = sort(unique(nummonths(edfun$x)))
+      mdfun$y      = edfun$y
+      mdfun$z      = qapply(X=edfun$z,DIM=1,INDEX=nummonths(edfun$x),FUN=mean,na.rm=TRUE)
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Remove tiny values (even with log scale values can be very hard to see. ------#
-      bye         = is.finite(edfun$z) & edfun$z < 1.e-6 * max(unlist(edfun$z),na.rm=TRUE)
-      edfun$z[bye] = NA
+      bye          = ! ( edfun$z %>=% 1.e-4 * max(unlist(edfun$z),na.rm=TRUE) )
+      edfun$z[bye] = NA_real_
       #------------------------------------------------------------------------------------#
 
 
       #----- Remove tiny values (even with log scale values can be very hard to see. ------#
-      bye         = is.finite(mdfun$z) & mdfun$z < 1.e-6 * max(unlist(mdfun$z),na.rm=TRUE)
-      mdfun$z[bye] = NA
+      bye          = ! ( mdfun$z %>=% 1.e-4 * max(unlist(mdfun$z),na.rm=TRUE) )
+      mdfun$z[bye] = NA_real_
       #------------------------------------------------------------------------------------#
       patchpdf[[vname]] = list(edensity=edfun,mdensity=mdfun)
-   }#end for 
+   }#end for (pp in sequence(nplotpatch))
    #---------------------------------------------------------------------------------------#
 
 
 
 
    #----- Find which PFTs, land uses and transitions we need to consider ------------------#
-   pftave  = apply( X      = szpft$agb[,ndbh+1,]
-                  , MARGIN = 2
-                  , FUN    = mean
-                  , na.rm  = TRUE
-                  )#end apply
-   luave   = apply( X      = lu$agb 
-                  , MARGIN = 2
-                  , FUN    = mean
-                  , na.rm  = TRUE
-                  )#end apply
-   distave = apply(X=lu$dist,MARGIN=c(2,3),FUN=mean)
-   selpft  = is.finite(pftave ) & pftave  > 0.
-   sellu   = is.finite(luave  ) & luave   > 0.
-   seldist = is.finite(distave) & distave > 0.
+   pftave    = apply( X      = szpft$agb[,ndbh+1,]
+                    , MARGIN = 2
+                    , FUN    = mean
+                    , na.rm  = TRUE
+                    )#end apply
+   luave     = apply( X      = lu$agb 
+                    , MARGIN = 2
+                    , FUN    = mean
+                    , na.rm  = TRUE
+                    )#end apply
+   distave   = apply(X=lu$dist,MARGIN=c(2,3),FUN=mean)
+   selpft    = pftave  %>% 0.
+   sellu     = luave   %>% 0.
+   seldist   = distave %>% 0.
    n.selpft  = sum(selpft )
    n.sellu   = sum(sellu  )
    n.seldist = sum(seldist)
@@ -626,7 +629,7 @@ for (place in myplaces){
    #=======================================================================================#
    #      Plotting section begins here...                                                  #
    #---------------------------------------------------------------------------------------#
-   cat ("    - Plotting figures...","\n")
+   cat0("    - Plot figures.")
    #---------------------------------------------------------------------------------------#
 
 
@@ -2778,7 +2781,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the PDF of patch-level properties as a function of time.                       #
    #---------------------------------------------------------------------------------------#
-   cat ("      * Time series of PDF of properties by patch...","\n")
+   cat0("      * Time series of PDF of properties by patch.")
    for (v in sequence(nplotpatch)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -2794,6 +2797,16 @@ for (place in myplaces){
       plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
                              && any(is.finite(this$y),na.rm=TRUE) 
                              && any(is.finite(this$z),na.rm=TRUE) )
+
+
+      #----- Select polygon average. ------------------------------------------------------#
+      if (vnam %in% names(emean)){
+         thisemean  = emean[[vnam]]
+      }else{
+         thisemean  = rep(NA_real_,times=datum$when)
+      }#end if (vnam %in% names(emean))
+      #------------------------------------------------------------------------------------#
+
 
       #------------------------------------------------------------------------------------#
       #     Find levels, and expand PDF scale in case it is a constant.                    #
@@ -2816,6 +2829,53 @@ for (place in myplaces){
          cat0("      + PDF plot of ",description,".")
 
 
+         #----- Limits for y axis. --------------------------------------------------------#
+         ylimit  = pretty.xylim(u=this$y,fracexp=c(-0.04,0.04))
+         yat     = pretty(ylimit)
+         ylabels = sprintf("%g",yat)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Set annotation. -----------------------------------------------------------#
+         zlimit  = pretty.xylim(u=vlevs,is.log=plog)
+         if (plog){
+            zat  = pretty.log(zlimit)
+            zlwr = zlimit[1] * (zlimit[2]/zlimit[1]) ^ sqrt(.Machine$double.eps)
+            zupr = zlimit[2] * (zlimit[1]/zlimit[2]) ^ sqrt(.Machine$double.eps)
+         }else{
+            zlwr = zlimit[1] + sqrt(.Machine$double.eps) * diff(zlimit)
+            zupr = zlimit[2] - sqrt(.Machine$double.eps) * diff(zlimit)
+            zat  = pretty(zlimit)
+         }#end if (plog)
+         zlabels = sprintf("%g",zat)
+         this$z  = pmax(zlwr,pmin(zupr,this$z)) + 0. * this$z
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Set annotation. -----------------------------------------------------------#
+         letitre = paste0("Density function of ",description," \ ",lieu)
+         lex     = "Time"
+         ley     = desc.unit(desc=description,unit=unit)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Commands to plot after. ---------------------------------------------------#
+         plot.after = list( abline = list( v   = whenplot8$levels
+                                         , h   = yat
+                                         , col = if(fcgrid){grid.colour}else{"transparent"}
+                                         , lty = if(fcgrid){"dotted"   }else{"blank"      }
+                                         )#end abline
+                          , lines  = list( x   = datum$when
+                                         , y   = thisemean
+                                         , col = "grey16"
+                                         , lwd = 2.0
+                                         )#end lines
+                          )#end list 
+         #---------------------------------------------------------------------------------#
+
+
+
          #----- Loop over formats. --------------------------------------------------------#
          for (o in sequence(nout)){
             fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
@@ -2826,42 +2886,48 @@ for (place in myplaces){
                                , depth   = depth
                                )#end open.plot
 
-            letitre = paste0("Density function of ",description," \ ",lieu)
-            lex     = "Time"
-            ley     = desc.unit(desc=description,unit=unit)
-
 
             #------------------------------------------------------------------------------#
             #     Plot the PDF distribution.                                               #
             #------------------------------------------------------------------------------#
             par(par.user)
-            sombreado( x              = this$x
-                     , y              = this$y
-                     , z              = this$z
-                     , levels         = vlevs
-                     , colour.palette = get(vcscheme)
-                     , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
-                     , key.title      = title(main="Density",cex.main=0.8)
-                     , key.log        = plog 
-                     , useRaster      = TRUE
-                     , plot.axes      = {  axis( side   = 1
-                                               , at     = whenplot8$levels
-                                               , labels = whenplot8$labels
-                                               , padj   = whenplot8$padj
-                                               )#end axis
-                                           axis( side   = 2
-                                               , at     = pretty(this$y)
-                                               , labels = NULL
-                                               )#end axis
-                                           if (fcgrid){
-                                              abline( v   = whenplot8$levels
-                                                    , h   = pretty(this$y)
-                                                    , col = grid.colour
-                                                    , lty = "dotted"
-                                                    )#end abline
-                                           }#end if fcgrid
-                                        }#end plot.axes
-                     )#end sombreado
+            gridded.plot( x                = as.numeric(this$x)
+                        , y                = this$y
+                        , z                = this$z
+                        , ylim             = ylimit
+                        , levels           = vlevs
+                        , colour.palette   = get(vcscheme)
+                        , main.title       = list( main     = letitre
+                                                 , xlab     = lex
+                                                 , ylab     = ley
+                                                 , cex.main = 0.7
+                                                 )#end list
+                        , key.title        = list( main     = "Density"
+                                                 , cex.main = 0.8
+                                                 )#end list
+                        , key.log          = plog 
+                        , useRaster        = FALSE
+                        , na.col           = "black"
+                        , x.axis.options   = list( side   = 1
+                                                 , las    = 1
+                                                 , at     = whenplot8$levels
+                                                 , labels = whenplot8$labels
+                                                 , padj   = whenplot8$padj
+                                                 )#end list
+                        , y.axis.options   = list( side   = 2
+                                                 , las    = 1
+                                                 , at     = yat
+                                                 , labels = ylabels
+                                                 )#end list
+                        , key.axis.options = list( side   = 4
+                                                 , las    = 1
+                                                 , at     = zat
+                                                 , labels = zlabels
+                                                 )#end list
+                        , plot.after       = plot.after
+                        , mar              = c(4.1,4.6,2.1,0.6)
+                        , mar.key          = c(4.1,0.6,2.1,4.1)
+                        )#end gridded.plot
             #------------------------------------------------------------------------------#
 
 
@@ -2884,7 +2950,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the PDF of patch-level properties as a function of time.                       #
    #---------------------------------------------------------------------------------------#
-   cat ("      * Monthly PDF of properties by patch...","\n")
+   cat0("      * Monthly PDF of properties by patch.")
    for (v in sequence(nplotpatch)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -2901,6 +2967,27 @@ for (place in myplaces){
                              && any(is.finite(this$y),na.rm=TRUE) 
                              && any(is.finite(this$z),na.rm=TRUE) )
 
+
+      #----- Select polygon average. ------------------------------------------------------#
+      if (vnam %in% names(mmean)){
+         thismmean  = mmean[[vnam]]
+      }else{
+         thismmean  = rep(NA_real_,times=this$x)
+      }#end if (vnam %in% names(emean))
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find levels, and expand PDF scale in case it is a constant.                    #
+      #------------------------------------------------------------------------------------#
+      if (plog){
+         vlevs = sort(unique(pretty.log(this$z,n=ncolsfc,forcelog=TRUE)))
+      }else{
+         vlevs = sort(unique(pretty(this$z,n=ncolsfc)))
+      }#end if
+      if (length(vlevs) == 1) vlevs = pretty.xylim(u=vlevs,fracexp=0.0,is.log=plog)
+      #------------------------------------------------------------------------------------#
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -2912,8 +2999,57 @@ for (place in myplaces){
 
 
          #----- Find the month tick marks. ------------------------------------------------#
+         monlim = c(0.5,12.5)
          monat  = sequence(12)
          monlab = c("J","F","M","A","M","J","J","A","S","O","N","D")
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Limits for y axis. --------------------------------------------------------#
+         ylimit  = pretty.xylim(u=this$y,fracexp=c(-0.04,0.04))
+         yat     = pretty(ylimit)
+         ylabels = sprintf("%g",yat)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Set annotation. -----------------------------------------------------------#
+         zlimit  = pretty.xylim(u=vlevs,is.log=plog)
+         if (plog){
+            zat  = pretty.log(zlimit)
+            zlwr = zlimit[1] * (zlimit[2]/zlimit[1]) ^ sqrt(.Machine$double.eps)
+            zupr = zlimit[2] * (zlimit[1]/zlimit[2]) ^ sqrt(.Machine$double.eps)
+         }else{
+            zlwr = zlimit[1] + sqrt(.Machine$double.eps) * diff(zlimit)
+            zupr = zlimit[2] - sqrt(.Machine$double.eps) * diff(zlimit)
+            zat  = pretty(zlimit)
+         }#end if (plog)
+         zlabels = sprintf("%g",zat)
+         this$z  = pmax(zlwr,pmin(zupr,this$z)) + 0. * this$z
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Set annotation. -----------------------------------------------------------#
+         letitre = paste0("Density function of ",description," \ ",lieu)
+         lex     = "Month"
+         ley     = desc.unit(desc=description,unit=unit)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Commands to plot after. ---------------------------------------------------#
+         plot.after = list( abline = list( v    = monat
+                                         , h    = yat
+                                         , col  = if(fcgrid){grid.colour}else{"transparent"}
+                                         , lty  = if(fcgrid){"dotted"   }else{"blank"      }
+                                         )#end abline
+                          , lines  = list( x    = this$x
+                                         , y    = thismmean
+                                         , col  = "grey16"
+                                         , lwd  = 2.0
+                                         , type = "o"
+                                         , pch  = 16
+                                         )#end lines
+                          )#end list 
          #---------------------------------------------------------------------------------#
 
 
@@ -2927,41 +3063,46 @@ for (place in myplaces){
                                , depth   = depth
                                )#end open.plot
 
-            letitre = paste0("Density function of ",description," \ ",lieu)
-            lex     = "Months"
-            ley     = desc.unit(desc=description,unit=unit)
-
 
             #------------------------------------------------------------------------------#
             #     Plot the PDF distribution.                                               #
             #------------------------------------------------------------------------------#
             par(par.user)
-            sombreado( x              = this$x
-                     , y              = this$y
-                     , z              = this$z
-                     , nlevels        = ncolsfc
-                     , colour.palette = get(vcscheme)
-                     , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
-                     , key.title      = title(main="Density",cex.main=0.8)
-                     , key.log        = plog 
-                     , useRaster      = TRUE
-                     , plot.axes      = {  axis( side   = 1
-                                               , at     = monat
-                                               , labels = monlab
-                                               )#end axis
-                                           axis( side   = 2
-                                               , at     = pretty(this$y)
-                                               , labels = NULL
-                                               )#end axis
-                                           if (fcgrid){
-                                              abline( v   = monat
-                                                    , h   = pretty(this$y)
-                                                    , col = grid.colour
-                                                    , lty = "dotted"
-                                                    )#end abline
-                                           }#end if fcgrid
-                                        }#end plot.axes
-                     )#end sombreado
+            gridded.plot( x                = this$x
+                        , y                = this$y
+                        , z                = this$z
+                        , xlim             = monlim
+                        , ylim             = ylimit
+                        , levels           = vlevs
+                        , colour.palette   = get(vcscheme)
+                        , main.title       = list( main     = letitre
+                                                 , xlab     = lex
+                                                 , ylab     = ley
+                                                 , cex.main = 0.7
+                                                 )#end list
+                        , key.title        = list(main="Density",cex.main=0.8)
+                        , key.log          = plog 
+                        , useRaster        = TRUE
+                        , na.col           = "black"
+                        , x.axis.options   = list( side   = 1
+                                                 , las    = 1
+                                                 , at     = monat
+                                                 , labels = monlab
+                                                 )#end list
+                        , y.axis.options   = list( side   = 2
+                                                 , las    = 1
+                                                 , at     = yat
+                                                 , labels = ylabels
+                                                 )#end list
+                        , key.axis.options = list( side   = 4
+                                                 , las    = 1
+                                                 , at     = zat
+                                                 , labels = zlabels
+                                                 )#end list
+                        , plot.after       = plot.after
+                        , mar              = c(4.1,4.6,2.1,0.6)
+                        , mar.key          = c(4.1,0.6,2.1,4.1)
+                        )#end gridded.plot
             #------------------------------------------------------------------------------#
 
 
@@ -3288,8 +3429,8 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #   Plot annotation.                                                        #
                #---------------------------------------------------------------------------#
-               letitre = paste(description," - ",lieu,
-                               "\n Time :",mlist[mm],"/",thisyear,sep=" ")
+               letitre = paste0(description," - ",lieu,
+                               "\n Time :",month.abb[mm],"/",thisyear)
                lexlab  = desc.unit(desc="Gap age",unit=untab$yr)
                leylab  = desc.unit(desc="DBH",unit=untab$cm)
                lezlab  = desc.unit(desc=description,unit=unit)
