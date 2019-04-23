@@ -673,7 +673,7 @@ subroutine init_can_rad_params()
    leaf_reflect_nir(12:13) = 5.77d-1
    leaf_reflect_nir(14:15) = dble(lreflect_nir)
    leaf_reflect_nir(16)    = dble(lreflect_nir)
-   leaf_reflect_nir(17)    = dble(lreflect_vis)
+   leaf_reflect_nir(17)    = dble(lreflect_nir)
    !---------------------------------------------------------------------------------------!
 
 
