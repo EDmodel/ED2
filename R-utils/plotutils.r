@@ -17,6 +17,12 @@ open.plot <<- function( fichier
                       , ...
                       ){
 
+   #----- Make outform case insensitive. --------------------------------------------------#
+   outform = tolower(outform)
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Fichier must be provided unless we are plotting on screen. ----------------------#
    if (missing(fichier) && (! outform %in% c("x11","quartz","windows"))){
       stop("Output file (\"fichier\") must be provided when plotting on file!")

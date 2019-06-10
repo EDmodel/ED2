@@ -1056,6 +1056,173 @@ agb.SL <<- function( dbh
 
 
 
+
+#==========================================================================================#
+#==========================================================================================#
+#     Leaf area allometry that is used by ED2 and Sustainable Landscapes.  Results are     #
+# always in m2/plant.                                                                      #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Falster, D. S. et al. 2015:   BAAD: a biomass and allometry database for woody plants,   #
+#     Ecology, 96(5), 1445-1445, doi:10.1890/14-1889.1.                                    #
+#                                                                                          #
+# Input:                                                                                   #
+# ---------------------------------------------------------------------------------------- #
+# dbh        --- Diameter at breast height [cm]                                            #
+# height     --- Height [m]                                                                #
+# dead       --- Life status:                                                              #
+#                TRUE  - plant is dead                                                     #
+#                FALSE - plant is alive                                                    #
+#                In case dead = NULL, all plants are assumed to be alive.                  #
+# eps.dbh    --- Relative uncertainty for DBH [1 means 100%]                               #
+# eps.height --- Relative uncertainty for height [1 means 100%]                            #
+# out.err    --- Output error in addition to the estimates of biomass/necromass?           #
+# ---------------------------------------------------------------------------------------- #
+#
+#
+#
+# ---------------------------------------------------------------------------------------- #
+# Output:
+# ---------------------------------------------------------------------------------------- #
+# - In case out.err is FALSE, the function returns a vector with biomass for each entry.   #
+# - In case out.err is TRUE, the output is a data frame with the following vectors         #
+#   with the same length as the entries:                                                   #
+#   * la      -- leaf area                                   [kgC]                         #
+#   * ae.la   -- uncertainty in leaf area due to allometry   [kgC, not relative]           #
+#   * me.la   -- uncertainty in leaf area due to measurement [kgC, not relative]           #
+#   * lnla    -- log(leaf area), used for error propagation.                               #
+#   * sd.lnla -- standard error of log-leaf area                                           #
+#------------------------------------------------------------------------------------------#
+la.SL <<- function( dbh
+                  , height
+                  , type       = NULL
+                  , dead       = NULL
+                  , eps.dbh    = 0.02
+                  , eps.height = 0.167
+                  , out.err    = FALSE
+                  ){
+   #---------------------------------------------------------------------------------------#
+   #     "type" and "dead" may not be present, in which case we use dummy values.          #
+   #---------------------------------------------------------------------------------------#
+   if (is.null(type)) type = rep(  "O",times=length(dbh))
+   if (is.null(dead)) dead = rep(FALSE,times=length(dbh))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Make sure all terms have the same length.                                         #
+   #---------------------------------------------------------------------------------------#
+   lens = unique(c(length(dbh),length(height),length(type),length(dead)))
+   if ( length(lens) != 1 ){
+      cat0("-----------------------------------------------------------")
+      cat0("   Variables don't have the same length."                   )
+      cat0("   DBH    = ",length(dbh)                                   )
+      cat0("   HEIGHT = ",length(height)                                )
+      cat0("   TYPE   = ",length(type)                                  )
+      cat0("   DEAD   = ",length(dead)                                  )
+      cat0("-----------------------------------------------------------")
+      stop(" Incorrect input data.")
+   }else{
+      fine.dbh    = is.numeric  (dbh)    || all(is.na(dbh   ))
+      fine.height = is.numeric  (height) || all(is.na(height))
+      fine.type   = is.character(type)   || all(is.na(type  ))
+      fine.dead   = is.logical  (dead)   || all(is.na(dead  ))
+      if (! all(c(fine.dbh,fine.height,fine.type,fine.dead))){
+         cat0("-----------------------------------------------------------")
+         cat0("   Not all variables have the correct type."                )
+         cat0("   DBH    (numeric)   = ",fine.dbh                          )
+         cat0("   HEIGHT (numeric)   = ",fine.height                       )
+         cat0("   TYPE   (character) = ",fine.type                         )
+         cat0("   DEAD   (logical)   = ",fine.dead                         )
+         cat0("-----------------------------------------------------------")
+         stop(" Incorrect data types.")
+      }#end if (! all(c(fine.dbh,fine.height,fine.type,fine.dead)))
+   }#end if ( length(lens) != 1)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Initialise the output. ----------------------------------------------------------#
+   la = NA_real_ * dbh
+   #---------------------------------------------------------------------------------------#
+   
+   #---------------------------------------------------------------------------------------#
+   #     Currently we do not account for life form.                                        #
+   #---------------------------------------------------------------------------------------#
+   dead  = type %in% "O" & dead
+   alive = ! dead
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Leaf Area by type.                                                                #
+   #---------------------------------------------------------------------------------------#
+   #----- Living tree: BAAD-based allometry (Falster et al. 2015 for data). ---------------#
+   la [alive] = 0.23203288 * ( dbh[alive] * dbh[alive] * height[alive] ) ^ 0.6410495
+   #----- Dead trees: zero. ---------------------------------------------------------------#
+   la [dead ] = 0. * dbh[dead]
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Check whether to estimate associated errors (measurement and allometry),         #
+   # following:                                                                            #
+   #                                                                                       #
+   #   Chave, J., and co-authors, 2004: Error propagation and scaling for tropical forest  #
+   #      biomass estimates. Phil. Trans. R. Soc. Lond. B., 359, 409-420.                  #
+   #      doi:10.1098/rstb.2003.1425                                                       #
+   #---------------------------------------------------------------------------------------#
+   if (out.err){
+      #------------------------------------------------------------------------------------#
+      #       Find error associated with allometry.                                        #
+      #------------------------------------------------------------------------------------#
+      ae.la        = NA_real_ * la
+      #----- Living tree: Heteroscedastic fit. --------------------------------------------#
+      ae.la[alive] = 0.3968523 * la[alive] ^ 1.2708833
+      #----- Standing dead: currently zero uncertainty as they are dead (no leaves). ------#
+      ae.la[dead ] = 0.0
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #       Find error associated with measurements.                                     #
+      #------------------------------------------------------------------------------------#
+      me.la   = NA_real_ * la
+      eps.dh  = sqrt( cov(x=dbh[alive],y=height[alive])
+                    / ( mean(dbh[alive])*mean(height[alive]) )
+                    )#end sqrt
+      #----- Living tree: BAAD allometry. -------------------------------------------------#
+      me.la[alive] = la[alive] * sqrt( ( 2.0 * 0.6410495 * eps.dbh    )^2
+                                     + (       0.6410495 * eps.height )^2
+                                     + 2.0 * (2.0 * 0.6410495) * 0.6410495 
+                                     * eps.dh * eps.dh
+                                     )#end sqrt
+      #----- Standing dead: assumed the same as living trees. -----------------------------#
+      me.la[dead ] = la[dead ] * 0.0
+      #------------------------------------------------------------------------------------#
+
+      #------------------------------------------------------------------------------------#
+      #      Combine estimates and errors in a data frame.                                 #
+      #------------------------------------------------------------------------------------#
+      ans = data.frame( la = la, ae.la = ae.la, me.la = me.la)
+      #------------------------------------------------------------------------------------#
+
+   }else{
+      #----- No error needed.  Return estimate only. --------------------------------------#
+      ans = la
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function la.SL
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
 #==========================================================================================#
 #==========================================================================================#
 #     Volume allometry: this is literally the biomass equation above divided by wood       #

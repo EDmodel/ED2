@@ -3,11 +3,12 @@
 #     This function returns the cloud metrics from a point cloud.                          #
 #------------------------------------------------------------------------------------------#
 cloud.metrics <<- function( x
-                          , zmah.stats = TRUE
-                          , z1st.stats = TRUE
-                          , zveg.stats = TRUE
-                          , zvfr.stats = TRUE
-                          , last.stats = TRUE 
+                          , is.ztch    = FALSE
+                          , zmah.stats = ! is.ztch
+                          , z1st.stats = ! is.ztch
+                          , zveg.stats = ! is.ztch
+                          , zvfr.stats = ! is.ztch
+                          , last.stats = ! is.ztch
                           , probs      = c(0.01,0.05,0.10,0.25,0.50,0.75,0.90,0.95,0.99)
                           , zbreaks    = c(1.0,2.5,5.0,7.5,10.0,15.0,20.0,25.0,30.0)
                           , n.dens     = 256
@@ -24,6 +25,32 @@ cloud.metrics <<- function( x
                           , min.pts    = 500
                           , summ.only  = FALSE
                           ){
+
+
+   #---- Make sure that ZTCH metrics won't calculate other metrics. -----------------------#
+   if (is.ztch & zmah.stats){
+      warning("\"zmah.stats\" cannot be computed when is.ztch is TRUE.")
+      zmah.stats = FALSE
+   }#end if (is.ztch & zmah.stats)
+   if (is.ztch & z1st.stats){
+      warning("\"z1st.stats\" cannot be computed when is.ztch is TRUE.")
+      z1st.stats = FALSE
+   }#end if (is.ztch & z1st.stats)
+   if (is.ztch & zveg.stats){
+      warning("\"zveg.stats\" cannot be computed when is.ztch is TRUE.")
+      zveg.stats = FALSE
+   }#end if (is.ztch & zveg.stats)
+   if (is.ztch & zvfr.stats){
+      warning("\"zvfr.stats\" cannot be computed when is.ztch is TRUE.")
+      zvfr.stats = FALSE
+   }#end if (is.ztch & zvfr.stats)
+   if (is.ztch & last.stats){
+      warning("\"last.stats\" cannot be computed when is.ztch is TRUE.")
+      last.stats = FALSE
+   }#end if (is.ztch & last.stats)
+   #---------------------------------------------------------------------------------------#
+
+
 
    #----- Remove missing values. ----------------------------------------------------------#
    z     = x$z
@@ -65,6 +92,7 @@ cloud.metrics <<- function( x
 
       #----- Call the cloud metrics for the dummy point cloud. ----------------------------#
       ans        = cloud.metrics( x          = dummy
+                                , is.ztch    = is.ztch
                                 , zmah.stats = zmah.stats
                                 , z1st.stats = z1st.stats
                                 , zveg.stats = zveg.stats
@@ -95,7 +123,11 @@ cloud.metrics <<- function( x
       if (mat.out){
          ans[1,]           = nz
       }else{
-         ans["elev.count"] = nz
+         if (is.ztch){
+            ans["ztch.count"] = nz
+         }else{
+            ans["elev.count"] = nz
+         }#end if (is.ztch)
          if (zmah.stats) ans["zmah.count"] = nz
          if (z1st.stats) ans["z1st.count"] = nz
          if (zveg.stats) ans["zveg.count"] = nz
@@ -110,15 +142,15 @@ cloud.metrics <<- function( x
 
    #----- Find the general metrics. -------------------------------------------------------#
    if (summ.only){
-      every = .Int.summary.metrics( z     = z
-                                  , ptc   = ptc
-                                  , pref  = "elev"
-                                  , probs = probs
+      every = .Int.summary.metrics( z       = z
+                                  , ptc     = ptc
+                                  , pref    = if(is.ztch){"ztch"}else{"elev"}
+                                  , probs   = probs
                                   )#end .Int.cloud.metrics
    }else{
       every = .Int.cloud.metrics( z       = z
                                 , ptc     = ptc
-                                , pref    = "elev"
+                                , pref    = if(is.ztch){"ztch"}else{"elev"}
                                 , probs   = probs
                                 , zbreaks = zbreaks
                                 , n.dens  = n.dens
@@ -152,10 +184,10 @@ cloud.metrics <<- function( x
 
       #----- Find the Mac-Arthurn Horn metrics. -------------------------------------------#
       if (summ.only){
-         mah = .Int.summary.metrics( z     = zmah
-                                   , ptc   = ptcmah
-                                   , pref  = "zmah"
-                                   , probs = probs
+         mah = .Int.summary.metrics( z       = zmah
+                                   , ptc     = ptcmah
+                                   , pref    = "zmah"
+                                   , probs   = probs
                                    )#end .Int.cloud.metrics
       }else{
          mah = .Int.cloud.metrics( z       = zmah
@@ -405,7 +437,13 @@ cloud.metrics <<- function( x
 
 
    #----- Return the answer as a vector or a matrix, depending on the user's choice. ------#
-   if (mat.out){
+   if (mat.out && is.ztch){
+      ans = matrix( data     = every
+                  , nrow     = length(every)
+                  , ncol     = 1
+                  , dimnames = dimnames(names(every),"ztch")
+                  )#end matrix
+   }else if (mat.out){
       ans = cbind( elev = every
                  , zmah = mah
                  , z1st = first
@@ -489,9 +527,11 @@ cloud.metrics <<- function( x
 
 
    #----- Labels for mode probability. ----------------------------------------------------#
-   plist = c("prob","pmah","p1st","pveg","pvfr","plast")
-   zlist = c("elev","zmah","z1st","zveg","zvfr","last" )
-   pmode = plist[match(pref,zlist)]
+   plist = c("prob","pmah","p1st","pveg","pvfr","plast","ptch")
+   zlist = c("elev","zmah","z1st","zveg","zvfr","last" ,"ztch")
+   imode = match(pref,zlist)
+   zmode = zlist[imode]
+   pmode = plist[imode]
    #---------------------------------------------------------------------------------------#
 
 
@@ -641,7 +681,7 @@ cloud.metrics <<- function( x
 
 
    #----- Fix the names. ------------------------------------------------------------------#
-   names(ans) = gsub(pattern="elev",replacement=pref ,x=names(ans))
+   names(ans) = gsub(pattern="elev",replacement=zmode,x=names(ans))
    names(ans) = gsub(pattern="prob",replacement=pmode,x=names(ans))
    #---------------------------------------------------------------------------------------#
 

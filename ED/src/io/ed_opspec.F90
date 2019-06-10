@@ -1879,17 +1879,17 @@ end do
       ifaterr = ifaterr +1
    end if
   
-  if (kw_grass < 15. .or. kw_grass > 15000.) then
+  if (kw_grass < .15 .or. kw_grass > 15000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid KW_GRASS, it must be between 15 and 15000.  Yours is set to'  &
+                    'Invalid KW_GRASS, it must be between .15 and 15000.  Yours is set to' &
                     ,kw_grass,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    
-  if (kw_tree < 15. .or. kw_tree > 15000.) then
+  if (kw_tree < .15 .or. kw_tree > 15000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid KW_TREE, it must be between 15 and 15000.  Yours is set to'   &
+                    'Invalid KW_TREE, it must be between .15 and 15000.  Yours is set to'  &
                     ,kw_tree,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

@@ -285,152 +285,6 @@ source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 
 
-
-
-
-#------------------------------------------------------------------------------------------#
-#     Eddy flux comparisons.                                                               #
-#------------------------------------------------------------------------------------------#
-compvar       = list()
-compvar[[ 1]] = list( vnam       = "hflxca"
-                    , desc       = "Sensible heat flux"
-                    , unit       = untab$wom2
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("orange1","chocolate4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 2]] = list( vnam       = "wflxca"
-                    , desc       = "Water vapour flux"
-                    , unit       = untab$kgwom2oday
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("deepskyblue","royalblue4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 3]] = list( vnam       = "cflxca"
-                    , desc       = "Carbon dioxide flux"
-                    , unit       = untab$umolcom2os
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("chartreuse2","darkgreen")
-                    , leg.corner = "bottomright"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 4]] = list( vnam       = "cflxst"
-                    , desc       = "Carbon dioxide storage"
-                    , unit       = untab$umolcom2os
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("lightgoldenrod3","darkorange1")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 5]] = list( vnam       = "gpp"
-                    , desc       = "Gross primary productivity"
-                    , unit       = untab$kgcom2oyr
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("green3","darkgreen")
-                    , leg.corner = "topleft"
-                    , sunvar     = TRUE
-                    )#end list
-compvar[[ 6]] = list( vnam       = "reco"
-                    , desc       = "Ecosystem respiration"
-                    , unit       = untab$kgcom2oyr
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("yellow3","peru")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 7]] = list( vnam       = "nep"
-                    , desc       = "Net ecosystem productivity"
-                    , unit       = untab$kgcom2oyr
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("olivedrab2","darkolivegreen4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 8]] = list( vnam       = "nee"
-                    , desc       = "Net ecosystem exchange"
-                    , unit       = untab$umolcom2os
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("chartreuse","chartreuse4")
-                    , leg.corner = "bottomright"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 9]] = list( vnam       = "ustar"
-                    , desc       = "Friction velocity"
-                    , unit       = untab$mos
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("mediumpurple1","purple4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[10]] = list( vnam       = "rlongup"
-                    , desc       = "Outgoing longwave radiation"
-                    , unit       = untab$wom2
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("gold","orangered")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[11]] = list( vnam       = "rnet"
-                    , desc       = "Net radiation"
-                    , unit       = untab$wom2
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("gold","orangered")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[12]] = list( vnam       = "albedo"
-                    , desc       = "Albedo"
-                    , unit       = untab$empty
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("orange1","chocolate4")
-                    , leg.corner = "topleft"
-                    , sunvar     = TRUE
-                    )#end list
-compvar[[13]] = list( vnam       = "parup"
-                    , desc       = "Outgoing PAR"
-                    , unit       = untab$umolom2os
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("chartreuse","chartreuse4")
-                    , leg.corner = "topleft"
-                    , sunvar     = TRUE
-                    )#end list
-compvar[[14]] = list( vnam       = "rshortup"
-                    , desc       = "Outgoing SW"
-                    , unit       = untab$wom2
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("deepskyblue","royalblue3")
-                    , leg.corner = "topleft"
-                    , sunvar     = TRUE
-                    )#end list
-compvar[[15]] = list( vnam       = "can.tmp"
-                    , desc       = "CAS temperature"
-                    , unit       = untab$degc
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("gold","orangered")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[16]] = list( vnam       = "can.shv"
-                    , desc       = "CAS specific humidity"
-                    , unit       = untab$gwokg
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("deepskyblue","royalblue3")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[17]] = list( vnam       = "can.co2"
-                    , desc       = "CAS CO2"
-                    , unit       = untab$umolcomol
-                    , col.obser  = c(grey.bg,grey.fg)
-                    , col.model  = c("chartreuse","chartreuse4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-#------------------------------------------------------------------------------------------#
-
-
 #----- Set how many formats we must output. -----------------------------------------------#
 outform = tolower(outform)
 nout = length(outform)
@@ -438,25 +292,21 @@ nout = length(outform)
 
 
 #----- Set how many variables we will compare. --------------------------------------------#
+compvar  = list.2.data.frame(compvar)
 ncompvar = length(compvar)
-#------------------------------------------------------------------------------------------#
-
-
-#----- Avoid unecessary and extremely annoying beeps. -------------------------------------#
-options(locatorBell=FALSE)
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obser.file = paste(srcdir,"LBA_MIP.nogapfill.RData",sep="/")
+obser.file = file.path(srcdir,"LBA_MIP.nogapfill.RData")
 load(file=obser.file)
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Load census data. ------------------------------------------------------------------#
-census.file = paste(srcdir,"LBA_MIP.census_summ.RData",sep="/")
+census.file = file.path(srcdir,"LBA_MIP.census_summ.RData")
 load(file=census.file)
 #------------------------------------------------------------------------------------------#
 
@@ -482,8 +332,8 @@ for (place in myplaces){
    thispoi   = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
                         ,monthbeg=monthbeg)
    inpref    = thispoi$pathin
-   outmain   = paste(outroot,place,sep="/")
-   outpref   = paste(outmain,"eval_ed",sep="/")
+   outmain   = file.path(outroot,place)
+   outpref   = file.path(outmain,"eval_ed")
    lieu      = thispoi$lieu
    lon       = thispoi$lon
    lat       = thispoi$lat
@@ -497,18 +347,18 @@ for (place in myplaces){
    eft.yearz = poilist$yearz[match(iata,poilist$iata)]-1
 
    #----- Find the observations for this particular site. ---------------------------------#
-   if (iata == "mao" | iata == "bdf"){
+   if (iata %in% c("mao","bdf")){
       obs.name = "obs.m34"
-   }else if(iata == "stm"){
+   }else if(iata %in% "stm"){
       obs.name = "obs.s67"
-   }else if(iata == "rao"){
+   }else if(iata %in% "rao"){
       obs.name = "obs.pdg"
-   }else if(iata == "jpr"){
+   }else if(iata %in% "jpr"){
       obs.name = "obs.fns"
-   }else if(iata == "btr"){
+   }else if(iata %in% "btr"){
       obs.name = "obs.s77"
    }else{
-      obs.name = paste("obs.",iata,sep="")
+      obs.name = paste0("obs.",iata)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -523,7 +373,7 @@ for (place in myplaces){
 
 
       #----- Print a banner to entretain the user. ----------------------------------------#
-      cat(" + Evaluating model for ",lieu,"...","\n")
+      cat0(" + Evaluate model for ",lieu,".")
 
       #----- Get the observed variables. --------------------------------------------------#
       obser  = get(obs.name)
@@ -567,17 +417,17 @@ for (place in myplaces){
       #      Make the RData file name, then we check whether we must read the files again  #
       # or use the stored RData.                                                           #
       #------------------------------------------------------------------------------------#
-      path.data  = paste(here,place,"rdata_hour",sep="/")
+      path.data  = file.path(here,place,"rdata_hour")
       if (! file.exists(path.data)) dir.create(path.data)
-      ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
+      ed22.rdata = file.path(path.data,paste0(place,".RData"))
       if (reload.data && file.exists(ed22.rdata)){
          #----- Load the modelled dataset. ------------------------------------------------#
-         cat("   - Loading previous session...","\n")
+         cat0("   - Load previous session.")
          load(ed22.rdata)
          if ((! "eddy.complete" %in% ls()) && "complete" %in% ls()) eddy.complete = complete
          if ((! "eddy.tresume"  %in% ls()) && "tresume"  %in% ls()) eddy.tresume  = tresume
       }else{
-         cat("   - Starting new session...","\n")
+         cat0("   - Start new session.")
          eddy.tresume    = 1
          eddy.complete   = FALSE
       }#end if
@@ -603,7 +453,7 @@ for (place in myplaces){
       #     In case we must extend the list...                                             #
       #------------------------------------------------------------------------------------#
       if (eddy.extend){
-         cat("   - Observed met driver became longer, extend model structure...","\n")
+         cat0("   - Observed met driver became longer, extend model structure.")
          partial           = model
          npartial          = length(partial$when)
          rm(model)
@@ -651,14 +501,14 @@ for (place in myplaces){
          #     Sanity check.                                                               #
          #---------------------------------------------------------------------------------#
          if (length(model$atm.tmp) != length(obser$atm.temp)){
-            cat(" Mismatch in lengths!!!","\n")
-            cat(" Length (obser):   ",length(obser$atm.temp),"\n")
-            cat(" Length (model):   ",length(model$atm.tmp ),"\n")
-            cat(" Length (partial): ",length(partial$when)  ,"\n")
-            cat(" Length (na.pad):  ",length(na.pad)        ,"\n")
-            cat(" TRESUME:          ",eddy.tresume          ,"\n")
-            cat(" NTIMES:           ",ntimes                ,"\n")
-            stop("Structures should match, check your code...")
+            cat0(" Mismatch in lengths!!!")
+            cat0(" Length (obser):   ",length(obser$atm.temp),".")
+            cat0(" Length (model):   ",length(model$atm.tmp ),".")
+            cat0(" Length (partial): ",length(partial$when)  ,".")
+            cat0(" Length (na.pad):  ",length(na.pad)        ,".")
+            cat0(" TRESUME:          ",eddy.tresume          ,".")
+            cat0(" NTIMES:           ",ntimes                ,".")
+            stop("Structures should match, check your code.")
          }else{
             rm(partial,na.pad)
          }#end if
@@ -679,7 +529,7 @@ for (place in myplaces){
          last.cday   = "00"
          last.cmonth = sprintf("%4.4i",numyears (obser$when[eddy.tresume]))
          last.cyear  = sprintf("%4.4i",numyears (obser$when[eddy.tresume]))
-         cat("   - Reading in files...","\n")
+         cat0("   - Read in files.")
 
          loop.times = seq(from=eddy.tresume,to=ntimes,by=1)
          for (tt in loop.times){
@@ -695,10 +545,10 @@ for (place in myplaces){
             #      Read the data in case the file exists.  In case it doesn't, save what   #
             # has been already read and quit.                                              #
             #------------------------------------------------------------------------------#
-            h5file       = paste(inpref,"-I-",cyear,"-",cmonth,"-",cday,"-",chour,cminu
-                                ,"00-g01.h5",sep="")
-            h5file.bz2   = paste(h5file,"bz2",sep=".")
-            h5file.gz    = paste(h5file,"gz" ,sep=".")
+            h5file       = paste0(inpref,"-I-",cyear,"-",cmonth,"-",cday,"-",chour,cminu
+                                 ,"00-g01.h5")
+            h5file.bz2   = paste0(h5file,".bz2")
+            h5file.gz    = paste0(h5file,".gz" )
             if (file.exists(h5file)){
                myinst    = hdf5load(file=h5file,load=FALSE,verbosity=0,tidy=TRUE)
 
@@ -716,11 +566,11 @@ for (place in myplaces){
             }else{
                eddy.complete = FALSE
                eddy.tresume  = tt
-               cat("   - Simulation not ready yet.  Saving partial ED-2.2 data to "
-                  ,basename(ed22.rdata),"...","\n")
+               cat0("   - Simulation not ready yet.  Save partial ED-2.2 data to "
+                   ,basename(ed22.rdata),".")
                save( list = c("model","eddy.complete","eddy.tresume")
                    , file = ed22.rdata)
-               cat("Quitting","\n")
+               cat0("Quit.")
                q("no")
             }#end if
             #------------------------------------------------------------------------------#
@@ -799,7 +649,7 @@ for (place in myplaces){
 
 
 
-            if (last.cday != cday) cat("     * ",basename(h5file),"...","\n")
+            if (last.cday != cday) cat0("     * ",basename(h5file),".")
             last.cday   = cday
             #------------------------------------------------------------------------------#
             model$atm.tmp    [tt ] =   myinst$FMEAN.ATM.TEMP.PY       - t00
@@ -820,11 +670,7 @@ for (place in myplaces){
             model$cflxca     [tt ] = - myinst$FMEAN.CARBON.AC.PY 
             model$cflxst     [tt ] = + myinst$FMEAN.CARBON.ST.PY
             model$gpp        [tt ] =   myinst$FMEAN.GPP.PY
-            model$reco       [tt ] = ( myinst$FMEAN.LEAF.RESP.PY
-                                     + myinst$FMEAN.ROOT.RESP.PY
-                                     + myinst$FMEAN.GROWTH.RESP.PY    * corr.growth.storage
-                                     + myinst$FMEAN.STORAGE.RESP.PY   * corr.growth.storage
-                                     + myinst$FMEAN.VLEAF.RESP.PY     * corr.growth.storage
+            model$reco       [tt ] = ( myinst$FMEAN.PLRESP.PY
                                      + myinst$FMEAN.RH.PY           )
             model$nep        [tt ] =  model$gpp[tt] - model$reco[tt]
             model$nee        [tt ] = ( myinst$FMEAN.CARBON.ST.PY 
@@ -842,16 +688,16 @@ for (place in myplaces){
             if (tt == ntimes){
                eddy.complete = TRUE
                eddy.tresume  = ntimes+1
-               cat("   - Saving full ED-2.2 data to ",basename(ed22.rdata),"...","\n")
+               cat0("   - Save full ED-2.2 data to ",basename(ed22.rdata),".")
                save( list = c("model","eddy.complete","eddy.tresume")
                    , file = ed22.rdata)
             }else if (last.cyear != cyear){
                eddy.complete = FALSE
                eddy.tresume  = tt+1
-               cat("   - Saving partial ED-2.2 data to ",basename(ed22.rdata),"...","\n")
+               cat("   - Save partial ED-2.2 data to ",basename(ed22.rdata),".")
                save( list = c("model","eddy.complete","eddy.tresume")
                    , file = ed22.rdata)
-               cat("Quitting","\n")
+               cat0("Quit.")
                q("no")
             }#end if
 
@@ -865,10 +711,10 @@ for (place in myplaces){
       #----- Create the directories in case they don't exist. -----------------------------#
       if (! file.exists(outmain)) dir.create(outmain)
       if (! file.exists(outpref)) dir.create(outpref)
-      outboxmain = paste(outpref,"boxplot",sep="/")
-      outpdfmain = paste(outpref,"pdfplot",sep="/")
-      outqqpmain = paste(outpref,"qqplot" ,sep="/")
-      outlight   = paste(outpref,"light"  ,sep="/")
+      outboxmain = file.path(outpref,"boxplot")
+      outpdfmain = file.path(outpref,"pdfplot")
+      outqqpmain = file.path(outpref,"qqplot" )
+      outlight   = file.path(outpref,"light"  )
       if (! file.exists(outboxmain)) dir.create(outboxmain)
       if (! file.exists(outpdfmain)) dir.create(outpdfmain)
       if (! file.exists(outqqpmain)) dir.create(outqqpmain)
@@ -884,7 +730,7 @@ for (place in myplaces){
       ndiel     = length(mydiel)
       hr.end    = seq(from=hourblock.len,to=day.hr,by=hourblock.len) %% day.hr
       hr.beg    = (hr.end - hourblock.len + 1) %% day.hr
-      diel.list = paste(sprintf("%2.2i",hr.beg),sprintf("%2.2i",hr.end),sep="-")
+      diel.list = paste0(sprintf("%2.2i",hr.beg),"-",sprintf("%2.2i",hr.end))
       dl.name   = diel.list[mydiel]
       #------------------------------------------------------------------------------------#
 
@@ -893,8 +739,8 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       #       Compare the light response curve.                                            #
       #------------------------------------------------------------------------------------#
-      cat("   - Comparing the light response curve...","\n")
-      for (s in 1:nseasons){
+      cat0("   - Compare the light response curve.")
+      for (s in sequence(nseasons)){
          #---------------------------------------------------------------------------------#
          #     Select the data points for which we have observations, then fit the light   #
          # response curve to both observed and modelled GPP.                               #
@@ -967,41 +813,42 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Find the X and Y limits.                                                 #
             #------------------------------------------------------------------------------#
-            xlimit = range(c(obser.data$par,model.data$par),na.rm=TRUE)
-            ylimit = range(c(obser.data$gpp,model.data$gpp),na.rm=TRUE)
+            xlimit  = pretty.xylim(u=c(obser.data$par,model.data$par))
+            xat     = pretty(xlimit)
+            xlabels = sprintf("%g",xat)
+            ylimit  = pretty.xylim(u=c(obser.data$gpp,model.data$gpp))
+            yat     = pretty(ylimit)
+            ylabels = sprintf("%g",yat)
             #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Set up the title and axes labels.                                        #
+            #------------------------------------------------------------------------------#
+            letitre = paste0(lieu,"\n Polygon-level light response curve - ",season.full[s])
+            lex     = desc.unit( desc = "Photosynthetically Active Radiation"
+                               , unit = untab$umolom2os
+                               )#end desc.unit
+            ley     = desc.unit( desc = "Gross Primary Productivity"
+                               , unit = untab$umolcom2os
+                               )#end desc.unit
+            #---------------------------------------------------------------------------#
 
 
             #------------------------------------------------------------------------------#
             #     Plot the predicted curves and scatter plot.                              #
             #------------------------------------------------------------------------------#
-            for (o in 1:nout){
+            for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
-               fichier = paste(outlight,"/gpp_light","-",season.label[s],"-",suffix,"."
-                              ,outform[o],sep="")
-               if (outform[o] == "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
-                  png(filename=fichier,width=size$width*depth
-                     ,height=size$height*depth,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
-                  pdf(file=fichier,onefile=FALSE
-                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
-               }#end if
-               #---------------------------------------------------------------------------#
-
-
-
-               #---------------------------------------------------------------------------#
-               #     Set up the title and axes labels.                                     #
-               #---------------------------------------------------------------------------#
-               letitre = paste(lieu,"\n Polygon-level light response curve - "
-                                   ,season.full[s],sep="")
-               lex     = paste("Photosynthetically Active Radiation [umol/m2/s]")
-               ley     = paste("Gross Primary Productivity [umol/m2/s]")
+               fichier = paste0("gpp_light","-",season.label[s],"-",suffix,".",outform[o])
+               fichier = file.path(outlight,fichier)
+               dummy   = open.plot( fichier = fichier
+                                  , outform = outform[o]
+                                  , size    = size
+                                  , ptsz    = ptsz
+                                  , depth   = depth
+                                  )#end open.plot
                #---------------------------------------------------------------------------#
 
 
@@ -1010,24 +857,32 @@ for (place in myplaces){
                #     Open an empty plotting area.                                          #
                #---------------------------------------------------------------------------#
                par(par.user)
-               plot(x=obser.data$par,y=obser.data$gpp,type="n",main=letitre
-                   ,xlab=lex,ylab=ley,cex.main=cex.main,ylim=ylimit)
-               grid(col=grid.colour,lty="solid")
+               par(mar=c(4.1,4.6,2.1,1.1))
+               plot.new()
+               plot.window(xlim=xlimit,ylim=ylimit)
+               axis(side=1,las=1,at=xat,labels=xlabels)
+               axis(side=2,las=1,at=yat,labels=ylabels)
+               title(main=letitre,cex.main=cex.main)
+               title(xlab=lex,ylab=ley)
                #----- Add the observations. -----------------------------------------------#
-               points(x=obser.data$par,y=obser.data$gpp,pch=16,col=grey.bg)
-               points(x=model.data$par,y=model.data$gpp,pch=16,col="chartreuse")
+               points(x=obser.data$par,y=obser.data$gpp,pch=16,col=alpha("#404040",0.40))
+               points(x=model.data$par,y=model.data$gpp,pch=16,col=alpha("#0E6E81",0.40))
                #----- Add the density functions. ------------------------------------------#
-               lines(x=obser.data$par,y=obser.pred,lwd=3.0,col=grey.fg)
-               lines(x=model.data$par,y=model.pred,lwd=3.0,col="chartreuse4")
+               lines(x=obser.data$par,y=obser.pred,lwd=3.0,col="#404040")
+               lines(x=model.data$par,y=model.pred,lwd=3.0,col="#0E6E81")
                #----- Add the legend. -----------------------------------------------------#
                legend( x      = "topleft"
-                     , bg     = background
+                     , bg     = "transparent"
                      , inset  = 0.01
-                     , legend = c("Observation","Fit - Observation","Model","Fit - Model")
+                     , legend = c("Tower","Fit - Tower","ED-2.2","Fit - ED-2.2")
                      , pch    = c(16,NA,16,NA)
-                     , lwd    = c(NA, 3,NA, 3)
-                     , col    = c(grey.bg,grey.fg,"chartreuse","chartreuse4")
-                     , cex    = 1.0)
+                     , lwd    = 3
+                     , lty    = c("blank","solid","blank","solid")
+                     , col    = c(alpha("#404040",c(0.40,1.0)),alpha("#0E6E81",c(0.40,1.00)))
+                     , cex    = 1.0
+                     , bty    = "n"
+                     )#end legend
+               box()
                #---------------------------------------------------------------------------#
 
 
@@ -1035,12 +890,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Close the plotting device.                                            #
                #---------------------------------------------------------------------------#
-               if (outform[o] == "x11"){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
+               dummy = close.plot(outform=outform[o])
                #---------------------------------------------------------------------------#
             }#end for
             #------------------------------------------------------------------------------#
@@ -1055,31 +905,28 @@ for (place in myplaces){
       #     Loop over all variables, and hours blocks, and all seasons to determine the    #
       # distribution of the data.                                                          #
       #------------------------------------------------------------------------------------#
-      cat("   - Comparing season and diurnal distributions...","\n")
+      cat0("   - Compare season and diurnal distributions.")
       dist.comp = list()
-      for (cc in 1:ncompvar){
-
-         this.comp  = compvar[[cc]]
-         this.vnam  = this.comp$vnam
-         this.meas  = paste("measured",this.vnam,sep=".")
-         this.desc  = this.comp$desc
-         this.unit  = this.comp$unit
-         col.obser  = this.comp$col.obser
-         col.model  = this.comp$col.model
-         leg.corner = this.comp$leg.corner
-         sunvar     = this.comp$sunvar
+      for (cc in sequence(ncompvar)){
+         #----- Handy aliases. ------------------------------------------------------------#
+         this.vnam  = compvar$vnam      [cc]
+         this.desc  = compvar$desc      [cc]
+         this.unit  = compvar$unit      [cc]
+         col.obser  = compvar$col.obser [cc]
+         col.model  = compvar$col.model [cc]
+         leg.corner = compvar$leg.corner[cc]
+         sunvar     = compvar$sunvar    [cc]
+         col.obser  = alpha(col.obser,c(0.40,1.00))
+         col.model  = alpha(col.model,c(0.40,1.00))
+         this.meas  = paste0("measured.",this.vnam)
+         #---------------------------------------------------------------------------------#
 
          #---------------------------------------------------------------------------------#
          #     Grab the variables that we are going to use now.                            #
          #---------------------------------------------------------------------------------#
-         cat("     * ",this.desc,"...","\n")
-         if (this.vnam %in% names(obser)){
-            this.obser    = obser[[this.vnam]]
-            this.measured = obser[[this.meas]]
-         }else{
-            this.obser    = rep(NA   ,times=length(obser$when))
-            this.measured = rep(FALSE,times=length(obser$when))
-         }#end if
+         cat0("     * ",this.desc,".")
+         this.obser    = obser[[this.vnam]]
+         this.measured = obser[[this.meas]]
          this.model    = model[[this.vnam]]
          #---------------------------------------------------------------------------------#
 
@@ -1128,9 +975,9 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #      Check whether the variable directories exist.  If not, create them.        #
          #---------------------------------------------------------------------------------#
-         outboxvar = paste(outboxmain,this.vnam,sep="/")
-         outpdfvar = paste(outpdfmain,this.vnam,sep="/")
-         outqqpvar = paste(outqqpmain,this.vnam,sep="/")
+         outboxvar = file.path(outboxmain,this.vnam)
+         outpdfvar = file.path(outpdfmain,this.vnam)
+         outqqpvar = file.path(outqqpmain,this.vnam)
          if (! file.exists(outboxvar)) dir.create(outboxvar)
          if (! file.exists(outpdfvar)) dir.create(outpdfvar)
          if (! file.exists(outqqpvar)) dir.create(outqqpvar)
@@ -1141,11 +988,11 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Season block.                                                               #
          #---------------------------------------------------------------------------------#
-         for (s in 1:nseasons){
+         for (s in sequence(nseasons)){
             #------------------------------------------------------------------------------#
             #     Select the season.                                                       #
             #------------------------------------------------------------------------------#
-            cat("       # Season: ",season.full[s],"...","\n")
+            cat0("       # Season: ",season.full[s],".")
             sel.season = obser$yr.idx == s | s == nseasons
             #------------------------------------------------------------------------------#
 
@@ -1161,30 +1008,30 @@ for (place in myplaces){
                #     Select the period of the day to plot.                                 #
                #---------------------------------------------------------------------------#
                if (d <= ndiel){
-                  cat("         ~ Hour: ",dl.name[d]," UTC...","\n")
+                  cat0("         ~ Hour: ",dl.name[d]," UTC.")
                   sel.diel   = obser$hr.idx == mydiel   [d]
-                  diel.label = paste("hr",dl.name[d],sep="_")
-                  diel.desc  = paste("Hours: ",dl.name[d]," UTC",sep="")
+                  diel.label = paste0("hr_"    ,dl.name[d])
+                  diel.desc  = paste0("Hours: ",dl.name[d]," UTC")
                }else if (d == ndiel+1){
-                  cat("         ~ Night time...","\n")
+                  cat0("         ~ Night time.")
                   sel.diel   = obser$nighttime
-                  diel.label = paste("night")
-                  diel.desc  = paste("Nighttime",sep="")
+                  diel.label = "night"
+                  diel.desc  = "Nighttime"
                }else if (d == ndiel+2){
-                  cat("         ~ Sunrise/sunset time...","\n")
+                  cat0("         ~ Sunrise/sunset time.")
                   sel.diel   = obser$riseset
-                  diel.label = paste("riseset")
-                  diel.desc  = paste("Sunrise/sunset time",sep="")
+                  diel.label = "riseset"
+                  diel.desc  = "Sunrise/sunset time"
                }else if (d == ndiel+3){
-                  cat("         ~ Day time...","\n")
+                  cat0("         ~ Day time.")
                   sel.diel   = obser$highsun
-                  diel.label = paste("day")
-                  diel.desc  = paste("Daytime",sep="")
+                  diel.label = "day"
+                  diel.desc  = "Daytime"
                }else if (d == ndiel+4){
-                  cat("         ~ 24 hours...","\n")
+                  cat0("         ~ 24 hours.")
                   sel.diel   = rep(TRUE,times=length(obser$hr.idx))
-                  diel.label = paste("allhrs")
-                  diel.desc  = paste("All hours",sep="")
+                  diel.label = "allhrs"
+                  diel.desc  = "All hours"
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -1216,8 +1063,8 @@ for (place in myplaces){
                # or night time plot.                                                       #
                #---------------------------------------------------------------------------#
                if (d <= ndiel){
-                  o.bp.name = paste("Obs.",dl.name[d],sep=" ")
-                  m.bp.name = paste("ED22",dl.name[d],sep=" ")
+                  o.bp.name = paste0("Tower ",dl.name[d])
+                  m.bp.name = paste0("ED22 " ,dl.name[d])
                   bp.list[[o.bp.name]] = this.obser[sel]
                   bp.list[[m.bp.name]] = this.model[sel]
                }#end if
@@ -1233,7 +1080,7 @@ for (place in myplaces){
 
                   #----- Find and plot the distribution function for this hour. -----------#
                   sd.obser = sd(this.obser[sel],na.rm=TRUE)
-                  if (is.finite(sd.obser) && sd.obser > 1.0e-6){
+                  if (sd.obser %>% 1.0e-6){
                      #----- Find the residuals. -------------------------------------------#
                      this.resid          = this.obser - this.model
                      comp$residuals[sel] = this.resid[sel]
@@ -1278,8 +1125,10 @@ for (place in myplaces){
                      # amount of interpolation if we go with the empirical density         #
                      # function.                                                           #
                      #---------------------------------------------------------------------#
-                     qlimit     = range(c(this.obser[sel],this.model[sel]))
-                     quant      = seq(from=qlimit[1],to=qlimit[2],length.out=n.quant)
+                     qlimit  = pretty.xylim(u=c(this.obser[sel],this.model[sel]))
+                     quant   = seq(from=qlimit[1],to=qlimit[2],length.out=n.quant)
+                     qat     = pretty(qlimit)
+                     qlabels = sprintf("%g",qat)
                      #---------------------------------------------------------------------#
 
 
@@ -1287,13 +1136,13 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                      #      Find the distribution curves for model and observations.       #
                      #---------------------------------------------------------------------#
-                     if ( use.distrib == "sn"){
+                     if ( use.distrib %in% "sn"){
                         dfunc.obser = dsn(x=quant,dp=c(o.location,o.scale,o.shape))
                         dfunc.model = dsn(x=quant,dp=c(m.location,m.scale,m.shape))
-                     }else if (use.distrib == "norm"){
+                     }else if (use.distrib %in% "norm"){
                         dfunc.obser = dnorm(x=quant,mean=o.mean,sd=o.sdev)
                         dfunc.model = dnorm(x=quant,mean=m.mean,sd=m.sdev)
-                     }else if (use.distrib == "edf"){
+                     }else if (use.distrib %in% "edf"){
                         dfunc.obser = density( x    = this.obser[sel], n  = n.quant
                                              , from = qlimit[1]      , to = qlimit[2])$y
                         dfunc.model = density( x    = this.model[sel], n  = n.quant
@@ -1362,11 +1211,13 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                      #      Find the range of observations/modelled variables.             #
                      #---------------------------------------------------------------------#
-                     xbreaks     = pretty(qlimit,n=20)
-                     freq.obser  = hist(this.obser[sel],breaks=xbreaks,plot=FALSE)$density
-                     freq.model  = hist(this.model[sel],breaks=xbreaks,plot=FALSE)$density
-                     yrange      = c(dfunc.obser,dfunc.model,freq.obser,freq.model)
-                     ylimit      = pretty.xylim(u=yrange,fracexp=scalleg,is.log=FALSE)
+                     xbreaks    = pretty(qlimit,n=20)
+                     freq.obser = hist(this.obser[sel],breaks=xbreaks,plot=FALSE)$density
+                     freq.model = hist(this.model[sel],breaks=xbreaks,plot=FALSE)$density
+                     yrange     = c(dfunc.obser,dfunc.model,freq.obser,freq.model)
+                     ylimit     = pretty.xylim(u=yrange,fracexp=scalleg,is.log=FALSE)
+                     yat        = pretty(ylimit)
+                     ylabels    = sprintf("%g",yat)
                      #---------------------------------------------------------------------#
 
 
@@ -1385,37 +1236,30 @@ for (place in myplaces){
 
 
                      #---------------------------------------------------------------------#
+                     #     Set up the title and axes labels.                               #
+                     #---------------------------------------------------------------------#
+                     letitre = paste(lieu,"\n",this.desc," - ",season.full[s]
+                                    ," - ",diel.desc,sep="")
+                     lex     = desc.unit(desc=this.desc,unit=untab[[this.unit]])
+                     ley     = desc.unit(desc="Density function",unit=untab$empty)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
                      #     Plot the histograms and density curves.                         #
                      #---------------------------------------------------------------------#
-                     for (o in 1:nout){
+                     for (o in sequence(nout)){
                         #----- Make the file name. ----------------------------------------#
-                        fichier = paste(outpdfvar,"/histcomp_",this.vnam,"-"
-                                       ,season.label[s],"-",diel.label,"-",suffix,"."
-                                       ,outform[o],sep="")
-                        if (outform[o] == "x11"){
-                           X11(width=size$width,height=size$height,pointsize=ptsz)
-                        }else if(outform[o] == "png"){
-                           png(filename=fichier,width=size$width*depth
-                              ,height=size$height*depth,pointsize=ptsz,res=depth)
-                        }else if(outform[o] == "eps"){
-                           postscript(file=fichier,width=size$width,height=size$height
-                                     ,pointsize=ptsz,paper=size$paper)
-                        }else if(outform[o] == "pdf"){
-                           pdf(file=fichier,onefile=FALSE
-                              ,width=size$width,height=size$height,pointsize=ptsz
-                              ,paper=size$paper)
-                        }#end if
-                        #------------------------------------------------------------------#
-
-
-
-                        #------------------------------------------------------------------#
-                        #     Set up the title and axes labels.                            #
-                        #------------------------------------------------------------------#
-                        letitre = paste(lieu,"\n",this.desc," - ",season.full[s]
-                                       ," - ",diel.desc,sep="")
-                        lex     = desc.unit(desc=this.desc,unit=this.unit)
-                        ley     = "Density function [ ]"
+                        fichier = paste0("histcomp_",this.vnam,"-",season.label[s],"-"
+                                        ,diel.label,"-",suffix,".",outform[o])
+                        fichier = file.path(outpdfvar,fichier)
+                        dummy   = open.plot( fichier = fichier
+                                           , outform = outform[o]
+                                           , size    = size
+                                           , ptsz    = ptsz
+                                           , depth   = depth
+                                           )#end open.plot
                         #------------------------------------------------------------------#
 
 
@@ -1424,9 +1268,13 @@ for (place in myplaces){
                         #     Open an empty plotting area.                                 #
                         #------------------------------------------------------------------#
                         par(par.user)
-                        plot(x=quant,y=dfunc.obser,type="n",main=letitre,xlab=lex,ylab=ley
-                            ,cex.main=cex.main,ylim=ylimit)
-                        grid(col=grid.colour,lty="solid")
+                        par(mar=c(4.1,4.6,2.1,1.1))
+                        plot.new()
+                        plot.window(xlim=qlimit,ylim=ylimit)
+                        axis(side=1,las=1,at=qat,labels=qlabels)
+                        axis(side=2,las=1,at=yat,labels=ylabels)
+                        title(main=letitre,cex.main=cex.main)
+                        title(xlab=xlab,ylab=ylab)
                         #------------------------------------------------------------------#
 
 
@@ -1444,12 +1292,20 @@ for (place in myplaces){
                         lines(x=quant,y=dfunc.obser,lwd=3.0,col=col.obser[2])
                         lines(x=quant,y=dfunc.model,lwd=3.0,col=col.model[2])
                         #----- Add the legend. --------------------------------------------#
-                        legend(x="topleft",inset=0.01,legend=c("Observation","Model")
-                              ,fill  =c(col.obser[2],col.model[2])
-                              ,border=c(col.obser[2],col.model[2])
-                              ,angle =c(-45,45),density=30
-                              ,lwd=2.0,col=c(col.obser[2],col.model[2]),bg=background
-                              ,cex=1.0)
+                        legend( x       = "topleft"
+                              , inset   = 0.01
+                              , legend  = c("Tower","ED-2.2")
+                              , fill    = c(col.obser[2],col.model[2])
+                              , border  = c(col.obser[2],col.model[2])
+                              , angle   = c(-45,45)
+                              , density = 30
+                              , lwd     = 2.0
+                              , col     = c(col.obser[2],col.model[2])
+                              , bg      = "transparent"
+                              , bty     = "n"
+                              , cex     = 1.0
+                              )#end legend
+                        box()
                         #------------------------------------------------------------------#
 
 
@@ -1457,14 +1313,9 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         #     Close the plotting device.                                   #
                         #------------------------------------------------------------------#
-                        if (outform[o] == "x11"){
-                           locator(n=1)
-                           dev.off()
-                        }else{
-                           dev.off()
-                        }#end if
+                        dummy = close.plot(outform=outform[o])
                         #------------------------------------------------------------------#
-                     }#end for (o in 1:nout)
+                     }#end for (o in sequence(nout))
                      #---------------------------------------------------------------------#
 
 
@@ -1473,9 +1324,21 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                      #     Organise the quantiles for plotting.                            #
                      #---------------------------------------------------------------------#
-                     qq     = qqplot(x=this.obser[sel],y=this.model[sel],plot.it=FALSE)
-                     xlimit = range(qq$x)
-                     ylimit = range(qq$y)
+                     qq       = qqplot(x=this.obser[sel],y=this.model[sel],plot.it=FALSE)
+                     xylimit  = pretty.xylim(c(qq$x,qq$y))
+                     xyat     = pretty(xylimit)
+                     xylabels = sprintf("%g",xyat)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Set up the title and axes labels.                               #
+                     #---------------------------------------------------------------------#
+                     letitre = paste0(lieu,"\n","QQ Plot for ",this.desc
+                                     ," - ",season.full[s]," - ",diel.desc)
+                     lex     = desc.unit(desc="Tower" ,unit=untab[[this.unit]])
+                     ley     = desc.unit(desc="ED-2.2",unit=untab[[this.unit]])
                      #---------------------------------------------------------------------#
 
 
@@ -1483,34 +1346,17 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                      #     Plot the QQ-Plot of the distributions.                          #
                      #---------------------------------------------------------------------#
-                     for (o in 1:nout){
+                     for (o in sequence(nout)){
                         #----- Make the file name. ----------------------------------------#
-                        fichier = paste(outqqpvar,"/qqplot_",this.vnam,"-",season.label[s]
-                                       ,"-",diel.label,"-",suffix,".",outform[o],sep="")
-                        if (outform[o] == "x11"){
-                           X11(width=size$width,height=size$height,pointsize=ptsz)
-                        }else if(outform[o] == "png"){
-                           png(filename=fichier,width=size$width*depth
-                              ,height=size$height*depth,pointsize=ptsz,res=depth)
-                        }else if(outform[o] == "eps"){
-                           postscript(file=fichier,width=size$width,height=size$height
-                                     ,pointsize=ptsz,paper=size$paper)
-                        }else if(outform[o] == "pdf"){
-                           pdf(file=fichier,onefile=FALSE
-                              ,width=size$width,height=size$height,pointsize=ptsz
-                              ,paper=size$paper)
-                        }#end if
-                        #------------------------------------------------------------------#
-
-
-
-                        #------------------------------------------------------------------#
-                        #     Set up the title and axes labels.                            #
-                        #------------------------------------------------------------------#
-                        letitre = paste(lieu,"\n","QQ Plot for ",this.desc
-                                       ," - ",season.full[s]," - ",diel.desc,sep="")
-                        lex     = desc.unit(desc="Observed",unit=this.unit)
-                        ley     = desc.unit(desc="Model"   ,unit=this.unit)
+                        fichier = paste0("qqplot_",this.vnam,"-",season.label[s]
+                                       ,"-",diel.label,"-",suffix,".",outform[o])
+                        fichier = file.path(outqqpvar,fichier)
+                        dummy   = open.plot( fichier = fichier
+                                           , outform = outform[o]
+                                           , size    = size
+                                           , ptsz    = ptsz
+                                           , depth   = depth
+                                           )#end open.plot
                         #------------------------------------------------------------------#
 
 
@@ -1519,11 +1365,14 @@ for (place in myplaces){
                         #     Open an empty plotting area.                                 #
                         #------------------------------------------------------------------#
                         par(par.user)
-                        plot(x=xlimit,y=ylimit,type="n",main=letitre,xlab=lex,ylab=ley
-                            ,cex.main=cex.main)
-                        grid(col=grid.colour,lty="solid")
-                        lines(x=qq$y,y=qq$y,type="l",col=col.obser[2],lwd=3.0)
+                        par(mar=c(4.1,4.6,2.1,1.1))
+                        plot.new()
+                        plot.window(xlim=xylimit,ylim=xylimit)
+                        axis(side=1,las=1,at=xyat,labels=xylabels)
+                        axis(side=2,las=1,at=xyat,labels=xylabels)
+                        lines (x=qq$y,y=qq$y,type="l",col=col.obser[2],lwd=3.0)
                         points(x=qq$x,y=qq$y,type="p",pch=16,cex=0.8,col=col.model[1])
+                        box()
                         #------------------------------------------------------------------#
 
 
@@ -1531,24 +1380,15 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         #     Close the plotting device.                                   #
                         #------------------------------------------------------------------#
-                        if (outform[o] == "x11"){
-                           locator(n=1)
-                           dev.off()
-                        }else{
-                           dev.off()
-                        }#end if
+                        dummy = close.plot(outform=outform[o])
                         #------------------------------------------------------------------#
-                     }#end for (o in 1:nout)
+                     }#end for (o in sequenece(nout))
                      #---------------------------------------------------------------------#
-
-
-
                   }#end if (sd(this.obser[sel]) >= 1.e-6)
                   #------------------------------------------------------------------------#
                }#end if (any(sel))
                #---------------------------------------------------------------------------#
-
-            }#end for (d in 1:(ndiel+4))
+            }#end for (d in sequence(ndiel+4))
             #------------------------------------------------------------------------------#
 
 
@@ -1557,41 +1397,47 @@ for (place in myplaces){
             #     Make the box plot comparing observations with model.                     #
             #------------------------------------------------------------------------------#
             if (length(bp.list) > 0){
-               for (o in 1:nout){
+               #----- Set axis annotation. ------------------------------------------------#
+               xlimit  = c(0,2*ndiel)
+               xat     = seq(from=1.5,to=2*ndiel-0.5,by=2)
+               xgrid   = seq(from=0.5,to=2*ndiel+0.5,by=2)
+               xlabels = dl.name
+               ylimit  = pretty.xylim(u=bp.list,fracexp=scalleg,is.log=FALSE)
+               yat     = pretty(ylimit)
+               ylabels = sprintf("%g",yat)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Set colours for background. -----------------------------------------#
+               bpcolour = rep(c(col.obser[1],col.model[1]),times=ndiel)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Set up the title and axes labels. -----------------------------------#
+               letitre = paste0(lieu,"\n",this.desc," - ",season.full[s])
+               lex     = desc.unit( desc = paste0(hourblock.len,"-hour period")
+                                  , unit = untab$gmt
+                                  )#end desc.unit
+               ley     = desc.unit(desc=this.desc,unit=untab[[this.unit]])
+               #------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #    Plot box plots.                                                        #
+               #---------------------------------------------------------------------------#
+               for (o in sequence(nout)){
                   #----- Make the file name. ----------------------------------------------#
-                  fichier = paste(outboxvar,"/bpcomp_",this.vnam,"-",season.label[s]
-                                           ,"-",suffix,".",outform[o],sep="")
-                  if (outform[o] == "x11"){
-                     X11(width=size$width,height=size$height,pointsize=ptsz)
-                  }else if(outform[o] == "png"){
-                     png(filename=fichier,width=size$width*depth,height=size$height*depth
-                        ,pointsize=ptsz,res=depth)
-                  }else if(outform[o] == "eps"){
-                     postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=size$paper)
-                  }else if(outform[o] == "pdf"){
-                     pdf(file=fichier,onefile=FALSE
-                        ,width=size$width,height=size$height,pointsize=ptsz
-                        ,paper=size$paper)
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-                  #----- Set up some plot defaults. ---------------------------------------#
-                  xlimit   = c(0,2*ndiel)
-                  ylimit   = pretty.xylim(u=bp.list,fracexp=scalleg,is.log=FALSE)
-                  bpcolour = rep(c(col.obser[1],col.model[1]),times=ndiel)
-                  xat      = seq(from=1.5,to=2*ndiel-0.5,by=2)
-                  xgrid    = seq(from=0.5,to=2*ndiel+0.5,by=2)
-                  #------------------------------------------------------------------------#
-
-
-
-                  #----- Set up the title and axes labels. --------------------------------#
-                  letitre = paste(lieu,"\n",this.desc," - ",season.full[s],sep="")
-                  lex     = desc.unit( desc = paste(hourblock.len,"-hour period",sep="")
-                                     , unit = untab$gmt)
-                  ley     = desc.unit(desc=this.desc,unit=this.unit)
+                  fichier = paste0("bpcomp_",this.vnam,"-",season.label[s]
+                                  ,"-",suffix,".",outform[o])
+                  fichier = file.path(outboxvar,fichier)
+                  dummy   = open.plot( fichier = fichier
+                                     , outform = outform[o]
+                                     , size    = size
+                                     , ptsz    = ptsz
+                                     , depth   = depth
+                                     )#end open.plot
                   #------------------------------------------------------------------------#
 
 
@@ -1599,24 +1445,30 @@ for (place in myplaces){
 
                   #----- Plot the box plot. -----------------------------------------------#
                   par(par.user)
-                  plot(x=xlimit,y=ylimit,type="n",main=letitre,xlab=lex,ylab=ley
-                      ,cex.main=cex.main,xaxt="n")
+                  par(mar=c(4.1,4.6,2.1,1.1))
+                  plot.new()
+                  plot.window(xlim=xlimit,ylim=ylimit)
                   axis(side=1,at=xat,labels=dl.name)
-                  abline(h=axTicks(side=2),v=xgrid,col=grid.colour,lty="solid")
+                  axis(side=2,at=yat,labels=ylabels)
+                  title(main=letitre,cex.main=cex.main)
+                  title(xlab=lex,ylab=ley)
+                  abline(v=xgrid,col=grid.colour,lty="solid")
                   boxplot(x=bp.list,col=bpcolour,notch=TRUE,add=TRUE,show.names=FALSE)
-                  legend(x=leg.corner,inset=0.01,legend=c("Observation","Model")
-                        ,bg=background,fill=c(col.obser[1],col.model[1]))
+                  legend( x      = leg.corner
+                        , inset  = 0.01
+                        , legend = c("Tower","ED-2.2")
+                        , bg     = "transparent"
+                        , fill   = c(col.obser[1],col.model[1])
+                        )#end legend
+                  box()
                   #------------------------------------------------------------------------#
+
+
 
                   #------------------------------------------------------------------------#
                   #     Close the plot device.                                             #
                   #------------------------------------------------------------------------#
-                  if (outform[o] == "x11"){
-                     locator(n=1)
-                     dev.off()
-                  }else{
-                     dev.off()
-                  }#end if
+                  dummy = close.plot(outform=outform[o])
                   #------------------------------------------------------------------------#
                }#end for outform
             #------------------------------------------------------------------------------#
@@ -1629,16 +1481,21 @@ for (place in myplaces){
          #----- Save the comparison list for this variable. -------------------------------#
          dist.comp[[this.vnam]] = comp
          #---------------------------------------------------------------------------------#
-      }#end for (c in 1:ncompvar)
+      }#end for (cc in sequence(ncompvar))
       #------------------------------------------------------------------------------------#
    }#end if (obs.name %in% ls())
    #---------------------------------------------------------------------------------------#
 
-   dum = write(x = "Finished",file=paste(here,place,"eval_load_complete.txt",sep="/"))
 
-   stat.rdata = paste(path.data,paste("comp-",place,".RData",sep=""),sep="/")
-   cat(" + Saving statistics on model comparison to ",basename(stat.rdata),"...","\n") 
+   #----- Write output. -------------------------------------------------------------------#
+   dum = write( x    = "Finished"
+              , file = file.path(here,place,"eval_load_complete.txt")
+              )#end write
+
+   stat.rdata = file.path(path.data,paste0("comp-",place,".RData"))
+   cat0(" + Save statistics on model comparison to ",basename(stat.rdata),".") 
    dum        = save(dist.comp,file=stat.rdata)
+   #---------------------------------------------------------------------------------------#
 }#end for places
 #------------------------------------------------------------------------------------------#
 

@@ -30,7 +30,7 @@ reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
 nyears.long    = 15           # Runs longer than this are considered long runs.
-n.density      = 512          # Number of density points
+n.density      = 2048         # Number of density points
 #------------------------------------------------------------------------------------------#
 
 
@@ -102,6 +102,12 @@ corr.growth.storage = mycorrection # Correction factor to be applied to growth a
 iallom              = myallom      # Allometry to use
 #------------------------------------------------------------------------------------------#
 
+
+#------ Lower and upper bounds for variability of monthly means. --------------------------#
+iuse = 1
+plwr = c(0.025,0.050,pnorm(q=-1.0,mean=0,sd=1.0))[iuse]
+pupr = c(0.975,0.950,pnorm(q=+1.0,mean=0,sd=1.0))[iuse]
+#------------------------------------------------------------------------------------------#
 
 
 #==========================================================================================#
@@ -218,7 +224,7 @@ for (place in myplaces){
    #      Make the RData file name, then we check whether we must read the files again     #
    # or use the stored RData.                                                              #
    #---------------------------------------------------------------------------------------#
-   path.data  = file.path(here,place,"2019_rdata_month")
+   path.data  = file.path(here,place,"rdata_month")
    if (! file.exists(path.data)) dir.create(path.data)
    ed22.rdata  = file.path(path.data,paste0(place,".RData"))
    ed22.status = file.path(path.data,paste0("status_",place,".txt"))
@@ -412,6 +418,8 @@ for (place in myplaces){
 
    mmean = list()
    msdev = list()
+   mqlwr = list()
+   mqupr = list()
    for (vname in names(emean)){
       if (vname %in% names(emsqu)){
          has.emsqu = any(is.finite(emsqu[[vname]]))
@@ -424,23 +432,97 @@ for (place in myplaces){
       # the mean sum of squares is available or not.                                       #
       #------------------------------------------------------------------------------------#
       if (vname %in% c("soil.temp","soil.water","soil.mstpot","soil.extracted")){
-         mmean[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=mean, na.rm=TRUE)
-         msdev[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=sd  , na.rm=TRUE)
+         mmean[[vname]] = qapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , DIM   = 1
+                                , FUN   = mean
+                                , na.rm = TRUE
+                                )#end qapply
+         msdev[[vname]] = qapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , DIM   = 1
+                                , FUN   = sd
+                                , na.rm = TRUE
+                                )#end qapply
+         mqlwr[[vname]] = qapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , DIM   = 1
+                                , FUN   = quantile
+                                , probs = plwr
+                                , names = FALSE
+                                , na.rm = TRUE
+                                )#end qapply
+         mqupr[[vname]] = qapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , DIM   = 1
+                                , FUN   = quantile
+                                , probs = pupr
+                                , names = FALSE
+                                , na.rm = TRUE
+                                )#end qapply
       }else if (has.emsqu){
-         mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
-         mmsqu          = tapply(X=emsqu[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
+         mmean[[vname]] = tapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , FUN   = mean
+                                , na.rm = TRUE
+                                )#end tapply
+         mmsqu          = tapply( X     = emsqu[[vname]]
+                                , INDEX = mfac
+                                , FUN   = mean
+                                , na.rm = TRUE
+                                )#end tapply
+         mqlwr[[vname]] = tapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , FUN   = quantile
+                                , probs = plwr
+                                , names = FALSE
+                                , na.rm = TRUE
+                                )#end tapply
+         mqupr[[vname]] = tapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , FUN   = quantile
+                                , probs = pupr
+                                , names = FALSE
+                                , na.rm = TRUE
+                                )#end tapply
          msdev[[vname]] = sqrt  ( mmsqu - mmean[[vname]]^ 2 ) * srnorm1
       }else{
-         mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
-         msdev[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=sd  , na.rm=TRUE)
+         mmean[[vname]] = tapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , FUN   = mean
+                                , na.rm = TRUE
+                                )#end tapply
+         msdev[[vname]] = tapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , FUN   = sd
+                                , na.rm = TRUE
+                                )#end tapply
+         mqlwr[[vname]] = tapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , FUN   = quantile
+                                , probs = plwr
+                                , names = FALSE
+                                , na.rm = TRUE
+                                )#end tapply
+         mqupr[[vname]] = tapply( X     = emean[[vname]]
+                                , INDEX = mfac
+                                , FUN   = quantile
+                                , probs = pupr
+                                , names = FALSE
+                                , na.rm = TRUE
+                                )#end tapply
       }#end if
       #------------------------------------------------------------------------------------#
 
 
       #----- Fix the bad data. ------------------------------------------------------------#
       bad.mmean = ! is.finite(mmean[[vname]])
+      bad.mqlwr = ! is.finite(mqlwr[[vname]])
+      bad.mqupr = ! is.finite(mqupr[[vname]])
       bad.msdev = ! is.finite(msdev[[vname]])
-      mmean[[vname]][bad.mmean] = NA
+      mmean[[vname]][bad.mmean] = NA_real_
+      mqlwr[[vname]][bad.mqlwr] = NA_real_
+      mqupr[[vname]][bad.mqupr] = NA_real_
       msdev[[vname]][bad.msdev] = 0.
       #------------------------------------------------------------------------------------#
    }#end for
@@ -476,7 +558,7 @@ for (place in myplaces){
       #----- Fix the bad data. ------------------------------------------------------------#
       bad.umean = ! is.finite(umean[[vname]])
       bad.usdev = ! is.finite(usdev[[vname]])
-      umean[[vname]][bad.umean] = NA
+      umean[[vname]][bad.umean] = NA_real_
       usdev[[vname]][bad.usdev] = 0.
       #------------------------------------------------------------------------------------#
    }#end for
@@ -501,7 +583,7 @@ for (place in myplaces){
    # at any given time.                                                                    #
    #---------------------------------------------------------------------------------------#
    empty = is.na(szpft$nplant) | szpft$nplant == 0
-   for (vname in names(szpft)) szpft[[vname]][empty] = NA
+   for (vname in names(szpft)) szpft[[vname]][empty] = NA_real_
    #---------------------------------------------------------------------------------------#
 
 
@@ -533,6 +615,8 @@ for (place in myplaces){
       #----- Get settings for the current variable. ---------------------------------------#
       this        = plotpatch[[pp]]
       vname       = this$vnam
+      vmin        = this$vmin
+      vmax        = this$vmax
       col.scheme  = get(this$col.scheme)(n=ncolsfc)
       #------------------------------------------------------------------------------------#
 
@@ -546,7 +630,7 @@ for (place in myplaces){
 
 
       #----- Find the range for which we find the density function. -----------------------#
-      espan.vname = pretty.xylim(u=c(unlist(emean.vname)),fracexp=c(-0.04,0.04))
+      espan.vname = pretty.xylim(u=c(unlist(emean.vname,vmin,vmax)),fracexp=c(-1/6,1/6))
       elwr.vname  = espan.vname[1]
       eupr.vname  = espan.vname[2]
       #------------------------------------------------------------------------------------#
@@ -557,43 +641,75 @@ for (place in myplaces){
       edfun.now   = mapply( FUN      = density.safe
                           , x        = emean.vname
                           , weights  = emean.area
-                          , MoreArgs = list(n=n.density,from=elwr.vname,to=eupr.vname)
+                          , MoreArgs = list( n      = n.density
+                                           , from   = elwr.vname
+                                           , to     = eupr.vname
+                                           , kernel = "rectangular"
+                                           , xmin   = vmin
+                                           , xmax   = vmax
+                                           )#end list
                           )#end mapply
       #------------------------------------------------------------------------------------#
 
 
 
-
       #----- Save the density function. ---------------------------------------------------#
-      edfun        = list()
-      edfun$x      = chron(datum$when)
-      edfun$y      = seq(from=elwr.vname,to=eupr.vname,length.out=n.density)
-      edfun$z      = t(sapply(X=edfun.now["y",],FUN=cbind))
+      edfun    = list()
+      edfun$x  = chron(datum$when)
+      edfun$y  = seq(from=elwr.vname,to=eupr.vname,length.out=n.density)
+      edfun$z0 = t(sapply(X=edfun.now["y",],FUN=cbind))
+      dy       = mean(diff(edfun$y))
+      edfun$c  = t(apply(X=edfun$z0*dy,MARGIN=1,FUN=cumsum))
+      keep     = edfun$c %wr% c(plwr,pupr)
+      edfun$z  = 0.*edfun$z0 + ifelse(test=keep,yes=edfun$z0,no=NA_real_)
       #------------------------------------------------------------------------------------#
 
 
 
 
       #----- Save the density function. ---------------------------------------------------#
-      mdfun        = list()
-      mdfun$x      = sort(unique(nummonths(edfun$x)))
-      mdfun$y      = edfun$y
-      mdfun$z      = qapply(X=edfun$z,DIM=1,INDEX=nummonths(edfun$x),FUN=mean,na.rm=TRUE)
+      mdfun    = list()
+      mdfun$x  = sort(unique(nummonths(edfun$x)))
+      mdfun$y  = edfun$y
+      mdfun$z0 = qapply(X=edfun$z0,DIM=1,INDEX=nummonths(edfun$x),FUN=mean,na.rm=TRUE)
+      dy       = mean(diff(mdfun$y))
+      mdfun$c  = t(apply(X=mdfun$z0*dy,MARGIN=1,FUN=cumsum))
+      keep     = mdfun$c %wr% c(plwr,pupr)
+      mdfun$z  = 0.*mdfun$z0 + ifelse(test=keep,yes=mdfun$z0,no=NA_real_)
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Remove tiny values (even with log scale values can be very hard to see. ------#
-      bye          = ! ( edfun$z %>=% 1.e-4 * max(unlist(edfun$z),na.rm=TRUE) )
-      edfun$z[bye] = NA_real_
+      zlwr         = 1.e-4 * max(unlist(edfun$z),na.rm=TRUE)
+      edfun$z      = 0.*edfun$z + pmax(zlwr,edfun$z,na.rm=FALSE)
       #------------------------------------------------------------------------------------#
 
 
       #----- Remove tiny values (even with log scale values can be very hard to see. ------#
-      bye          = ! ( mdfun$z %>=% 1.e-4 * max(unlist(mdfun$z),na.rm=TRUE) )
-      mdfun$z[bye] = NA_real_
+      zlwr         = 1.e-4 * max(unlist(mdfun$z),na.rm=TRUE)
+      mdfun$z      = 0.*mdfun$z + pmax(zlwr,mdfun$z,na.rm=FALSE)
       #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Keep only the data in the range between vmin and vmax. -----------------------#
+      ykeep    = edfun$y %wr% c(vmin,vmax)
+      edfun$y  = edfun$y [ykeep]
+      edfun$z0 = edfun$z0[,ykeep,drop=FALSE]
+      edfun$z  = edfun$z [,ykeep,drop=FALSE]
+      edfun$c  = edfun$c [,ykeep,drop=FALSE]
+      mdfun$y  = mdfun$y [ykeep]
+      mdfun$z0 = mdfun$z0[,ykeep,drop=FALSE]
+      mdfun$z  = mdfun$z [,ykeep,drop=FALSE]
+      mdfun$c  = mdfun$c [,ykeep,drop=FALSE]
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Save PDF functions for later. ------------------------------------------------#
       patchpdf[[vname]] = list(edensity=edfun,mdensity=mdfun)
+      #------------------------------------------------------------------------------------#
    }#end for (pp in sequence(nplotpatch))
    #---------------------------------------------------------------------------------------#
 
@@ -2974,6 +3090,16 @@ for (place in myplaces){
       }else{
          thismmean  = rep(NA_real_,times=this$x)
       }#end if (vnam %in% names(emean))
+      if (vnam %in% names(mqlwr)){
+         thismqlwr  = mqlwr[[vnam]]
+      }else{
+         thismqlwr  = rep(NA_real_,times=this$x)
+      }#end if (vnam %in% names(eqlwr))
+      if (vnam %in% names(mqupr)){
+         thismqupr  = mqupr[[vnam]]
+      }else{
+         thismqupr  = rep(NA_real_,times=this$x)
+      }#end if (vnam %in% names(equpr))
       #------------------------------------------------------------------------------------#
 
 
@@ -3006,7 +3132,9 @@ for (place in myplaces){
 
 
          #----- Limits for y axis. --------------------------------------------------------#
-         ylimit  = pretty.xylim(u=this$y,fracexp=c(-0.04,0.04))
+         ylimit  = pretty.xylim( u       = c(this$y,thismmean,thismqlwr,thismqupr)
+                               , fracexp = c(-0.04,0.04)
+                               )#end pretty.xylim
          yat     = pretty(ylimit)
          ylabels = sprintf("%g",yat)
          #---------------------------------------------------------------------------------#
@@ -3042,13 +3170,16 @@ for (place in myplaces){
                                          , col  = if(fcgrid){grid.colour}else{"transparent"}
                                          , lty  = if(fcgrid){"dotted"   }else{"blank"      }
                                          )#end abline
-                          , lines  = list( x    = this$x
-                                         , y    = thismmean
-                                         , col  = "grey16"
-                                         , lwd  = 2.0
-                                         , type = "o"
-                                         , pch  = 16
-                                         )#end lines
+                          , error.bar  = list( x     = this$x
+                                             , y     = thismmean
+                                             , ylow  = thismqlwr
+                                             , yhigh = thismqupr
+                                             , col   = "grey16"
+                                             , lwd   = 2.0
+                                             , type  = "o"
+                                             , pch   = 16
+                                             , add   = TRUE
+                                             )#end lines
                           )#end list 
          #---------------------------------------------------------------------------------#
 
@@ -3481,7 +3612,7 @@ for (place in myplaces){
                   #------------------------------------------------------------------------#
                   #     Plot the 3-D plot.                                                 #
                   #------------------------------------------------------------------------#
-                  par(mar=c(1.1,1.1,4.1,1.1))
+                  par(mar=c(1.1,2.1,4.1,1.1))
                   pout = perspx( x         = xfloor
                                , y         = yfloor
                                , z         = zfloor

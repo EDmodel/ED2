@@ -305,7 +305,7 @@ module update_derived_utils
       !     necessary for plant hydraulic calculations, which uses the water fluxes from   !
       !     'Last Timestep'.  For now we only update psi_open and psi_closed, which will   !
       !     be used in plant_hydro_driver. We will leave A_open and A_closed unchanged     !
-      !     because growth of the day has already happen at this time point in the model.  !
+      !     because growth of the day has already happened at this point in the model.     !
       !------------------------------------------------------------------------------------!
       sla_scaler             = cpatch%sla(ico) / new_sla
       cpatch%sla       (ico) = new_sla

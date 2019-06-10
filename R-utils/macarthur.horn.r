@@ -29,12 +29,15 @@ macarthur.horn <<- function( pt.cloud
                            , zo            = 0.
                            , nz            = 512
                            , rvorg         = NA_real_
-                           , sigma.t       = 1e-8
+                           , sigma.z       = 5. * zh / (nz-1)
                            , Gmu           = 0.5
                            , tall.at.zh    = FALSE
                            , use.intensity = FALSE
-                           , wfsim         = FALSE
-                           , zair          = 850.
+                           , wfsim         = TRUE
+                           , trunc0        = sqrt(.Machine$double.eps)
+                           , zpad          = 2*ceiling(sigma.z*sqrt(log(1./trunc0)))
+                           , show.profiles = FALSE
+                           , ...
                            ){
 
 
@@ -49,7 +52,7 @@ macarthur.horn <<- function( pt.cloud
            zo  %>=% 0                                                              &&
            ( is.na(rvorg) || rvorg %>% 0 )                                         &&
            ( is.logical(tall.at.zh)      )                                         &&
-           ( (sigma.t %>% 0) || (! wfsim) )                                        &&
+           ( (sigma.z %>% 0) || (! wfsim) )                                        &&
            Gmu %>%0
          ) ){
       cat0("------------------------------------------------------------------")
@@ -60,7 +63,7 @@ macarthur.horn <<- function( pt.cloud
       cat0(" NZ         = ",nz                                                 )
       cat0(" RVORG      = ",rvorg                                              )
       cat0(" TALL.AT.ZH = ",tall.at.zh                                         )
-      cat0(" SIGMA.T    = ",sigma.t                                            )
+      cat0(" SIGMA.Z    = ",sigma.z                                            )
       cat0(" Gmu        = ",Gmu                                                )
       cat0(" "                                                                 )
       cat0(" Please check the following:"                                      )
@@ -68,7 +71,7 @@ macarthur.horn <<- function( pt.cloud
       cat0(" NZ must be positive."                                             )
       cat0(" RVORG must be positive or NA."                                    )
       cat0(" TALL.AT.ZH must be logical."                                      )
-      cat0(" SIGMA.T must be positive when simulating waveform."               )
+      cat0(" SIGMA.Z must be positive when simulating waveform."               )
       cat0(" Gmu must be positive."                                            )
       cat0(" "                                                                 )
       cat0("------------------------------------------------------------------")
@@ -126,18 +129,34 @@ macarthur.horn <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
    }else{
       #----- Invalid object for a point cloud. --------------------------------------------#
-      stop("Object pt.cloud must be a data frame, a list, or a matrix...")
+      stop("Object pt.cloud must be a data frame, a list, or a matrix.")
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
 
 
 
-   #----- Find the height breaks in case none has been given. -----------------------------#
-   zmid    = seq(from=0,to=zh,length.out=nz)
-   deltaz  = mean(diff(zmid))
-   zbreaks = seq(from=0-0.5*deltaz,to=zh+0.5*deltaz,length.out=nz+1)
+   #----- Find the height bin levels and width. -------------------------------------------#
+   zmid     = seq(from=0,to=zh,length.out=nz)
+   deltaz   = mean(diff(zmid))
    #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     For the waveform simulation, we must some pad to ensure that the beam source is   #
+   # entirely within the height domain, and that we have layers that go below ground to    #
+   # fully characterize the energy.  These layers will be removed for the final output.    #
+   #---------------------------------------------------------------------------------------#
+   zpad       = deltaz + seq(from=0,to=zpad,by=deltaz)
+   npad       = length(zpad)
+   zlwr       = 0. - rev(zpad)
+   zupr       = zh + zpad
+   zconv      = c(zlwr,zmid,zupr)
+   nzconv     = length(zconv)
+   zbreaks    = c(zconv-0.5*deltaz,max(zconv)+0.5*deltaz)
+   #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -177,6 +196,25 @@ macarthur.horn <<- function( pt.cloud
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #       In case no ground return exists, add one point with minimal intensity and       #
+   # near the ground.                                                                      #
+   #---------------------------------------------------------------------------------------#
+   if (nrow(gnd.cloud) == 0){
+      idx                      = which.min(veg.cloud$z)
+      gnd.cloud                = veg.cloud[idx,]
+      gnd.cloud$x              = mean(veg.cloud$x)
+      gnd.cloud$y              = mean(veg.cloud$y)
+      gnd.cloud$z              = 0.01
+      gnd.cloud$intensity      = min(veg.cloud$intensity)
+      gnd.cloud$retn.number    = min(veg.cloud$retn.number)
+      gnd.cloud$number.retn.gp = commonest(veg.cloud$number.retn.gp)
+      gnd.cloud$pt.class       = 2
+      gnd.cloud$gpstime        = max(veg.cloud$gpstime)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #    Decide how to determine the vertical profile.                                      #
@@ -187,60 +225,108 @@ macarthur.horn <<- function( pt.cloud
       # contribute proportionally to their intensity (i.e. assume footprint to be square   #
       # as opposed to Gaussian).                                                           #
       #------------------------------------------------------------------------------------#
-      zcut    = as.integer(cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE))
-      wh      = rep(0,times=nz)
-      aux     = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
-      idx     = as.numeric(names(aux))
-      wh[idx] = aux
-      wh[1]   = sum(gnd.cloud$intensity)
+      #----- Vegetation returns. ----------------------------------------------------------#
+      veg.zcut    = as.integer(cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE))
+      veg.wh      = rep(0,times=nzconv)
+      aux         = tapply(X=veg.cloud$intensity,INDEX=veg.zcut,FUN=sum)
+      idx         = as.numeric(names(aux))
+      veg.wh[idx] = aux
+      #----- Ground returns. --------------------------------------------------------------#
+      gnd.zcut    = as.integer(cut(x=gnd.cloud$z,breaks=zbreaks,right=FALSE))
+      gnd.wh      = rep(0,times=nzconv)
+      aux         = tapply(X=gnd.cloud$intensity,INDEX=gnd.zcut,FUN=sum)
+      idx         = as.numeric(names(aux))
+      gnd.wh[idx] = aux
+      #----- Total returns (for debugging only). ------------------------------------------#
+      tot.wh      = veg.wh + gnd.wh
       #------------------------------------------------------------------------------------#
 
 
 
-      #----- Find the vertical distribution of emitted pulses. ----------------------------#
-      tt      = 2 * (zh-zmid) / clight
-      wv      = exp(-2 * tt^2 / sigma.t^2)
       #------------------------------------------------------------------------------------#
+      #     Find the vertical distribution of emitted pulses (same for vegetation and      #
+      # ground returns.  We use for loop to reduce memory burden for really large chunks.  #
+      #------------------------------------------------------------------------------------#
+      Rvlyr = mapply( FUN = find.waveform
+                    , z   = zconv
+                    , MoreArgs = list( zi      = zconv
+                                     , wh      = veg.wh
+                                     , sigma.z = sigma.z
+                                     )#end list
+                    )#end mapply
+      Rglyr = mapply( FUN = find.waveform
+                    , z   = zconv
+                    , MoreArgs = list( zi      = zconv
+                                     , wh      = gnd.wh
+                                     , sigma.z = sigma.z
+                                     )#end list
+                    )#end mapply
 
 
-      #----- Run the convolution. ---------------------------------------------------------#
-      Rvlyr = rev(convolve(rev(wh),rev(wv)))
-      Rvlyr = pmax(0,Rvlyr) + 0. * Rvlyr
+      #----- Obtain the cumulative energy for the MacArthur-Horn correction. --------------#
       Rv    = rev(cumsum(rev(Rvlyr)))
       Rv0   = sum(Rvlyr)
-      Rg    = Rvlyr[1]
+      Rg    = sum(Rglyr)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Plot curves to debug.                                                          #
+      #------------------------------------------------------------------------------------#
+      if (show.profiles){
+         graphics.off()
+         plot.new()
+         plot.window(xlim=c(0,1),ylim=pretty.xylim(zmid,fracexp=c(-0.1,0.1)))
+         axis(side=1,las=1)
+         axis(side=2,las=2)
+         abline(h=0,col="grey50",lty="dotted",lwd=1.0)
+         lines(x=tot.wh/max(tot.wh),y=zconv,type="l",col="grey30" ,lwd=0.5)
+         lines(x=Rglyr/max(Rglyr)  ,y=zconv,type="l",col="#CB003D",lwd=2.0)
+         lines(x=Rvlyr/max(Rvlyr)  ,y=zconv,type="l",col="#107C92",lwd=2.0)
+         legend( x      = "topright"
+               , inset  = c(0.01,0.20)
+               , legend = c( ifelse(use.intensity,"Intensity sum","Return count")
+                           , "Waveform (ground)"
+                           , "Waveform (vegetation)"
+                           )#end legend
+               , col    = c("grey30"
+                           ,"#CB003D"
+                           ,"#107C92")
+               , lwd    = c(0.5,1.0,2.0,2.0)
+               , cex    = 0.7
+               , bty    = "n"
+               )#end legend
+         box()
+         cat0(" -> Click on the plot for the next plot.")
+         locator(n=1)
+      }#end (show.profiles)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Remove the pads, and keep only the profile in the layers of interest.          #
+      #------------------------------------------------------------------------------------#
+      izero  = which.closest(0.,zconv)
+      ikeep  = seq(from=izero,by=1,length.out=nz)
+      veg.wh = veg.wh[ikeep]
+      gnd.wh = gnd.wh[ikeep]
+      Rvlyr  = Rvlyr [ikeep]
+      Rglyr  = Rglyr [ikeep]
+      Rv     = Rv    [ikeep]
       #------------------------------------------------------------------------------------#
    }else{
 
 
-      #------------------------------------------------------------------------------------#
-      #       In case no ground return exists, add one point with minimal intensity and    #
-      # near the ground.                                                                   #
-      #------------------------------------------------------------------------------------#
-      if (nrow(gnd.cloud) == 0){
-         idx                      = which.min(veg.cloud$z)
-         gnd.cloud                = veg.cloud[idx,]
-         gnd.cloud$x              = mean(veg.cloud$x)
-         gnd.cloud$y              = mean(veg.cloud$y)
-         gnd.cloud$z              = 0.01
-         gnd.cloud$intensity      = min(veg.cloud$intensity)
-         gnd.cloud$retn.number    = min(veg.cloud$retn.number)
-         gnd.cloud$number.retn.gp = commonest(veg.cloud$number.retn.gp)
-         gnd.cloud$pt.class       = 2
-         gnd.cloud$gpstime        = max(veg.cloud$gpstime)
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
 
       #----- Find the total energy returned from each layer. ------------------------------#
-      zcut       = cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE)
-      zcut       = match(zcut,levels(zcut))
-      Rvlyr      = rep(0,times=nz)
-      aux        = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
-      idx        = as.numeric(names(aux))
-      Rvlyr[idx] = aux
-      Rvlyr[1]   = sum(gnd.cloud$intensity)
+      zcut           = cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE)
+      zcut           = match(zcut,levels(zcut))
+      Rvlyr          = rep(0,times=nconv)
+      aux            = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
+      idx            = as.numeric(names(aux))
+      Rvlyr[idx]     = aux
+      Rvlyr[izero-1] = sum(gnd.cloud$intensity)
       #------------------------------------------------------------------------------------#
 
 
@@ -249,8 +335,48 @@ macarthur.horn <<- function( pt.cloud
       Rv0 = sum(veg.cloud$intensity)
       Rg  = sum(gnd.cloud$intensity)
       #------------------------------------------------------------------------------------#
+
+
+
+      #----- Remove the pads, and keep only the profile in the layers of interest. --------#
+      izero = which.closest(0.,zconv)
+      ikeep = seq(from=izero,by=1,length.out=nz)
+      Rvlyr = Rvlyr[ikeep]
+      Rv    = Rv   [ikeep]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Remove the pads, and keep only the profile in the layers of interest.          #
+      #------------------------------------------------------------------------------------#
+      if (show.profiles){
+         graphics.off()
+         plot.new()
+         plot.window(xlim=c(0,1),ylim=range(zmid))
+         axis(side=1,las=1)
+         axis(side=2,las=2)
+         abline(h=0,col="grey50",lty="dotted",lwd=1.0)
+         lines(x=Rvlyr/max(Rvlyr),y=zmid,type="l",col="#8C510A",lwd=2)
+         lines(x=Rv/max(Rv),y=zmid,type="l",col="#7EC4BC",lwd=2)
+         legend( x      = "topright"
+               , inset  = 0.01
+               , legend = c( "Waveform (layer)"
+                           , "Cumulative energy"
+                           )#end legend
+               , col    = c("#8C510A","#7EC4BC")
+               , lwd    = c(2.0,2.0)
+               , cex    = 0.7
+               , bty    = "n"
+               )#end legend
+         box()
+         cat0(" -> Click on the plot for the next plot")
+         locator(n=1)
+      }#end (show.profiles)
+      #------------------------------------------------------------------------------------#
    }#end if(wfsim)
    #---------------------------------------------------------------------------------------#
+
 
 
 
@@ -287,41 +413,65 @@ macarthur.horn <<- function( pt.cloud
 
 
    #---------------------------------------------------------------------------------------#
-   #     Create a pseudo point cloud using the correction by MacArthur and Horn.           #
-   #---------------------------------------------------------------------------------------#
-   if (! all(is.finite(lad))) browser()
-   nzmah = ceiling(3.*Rv0/min(veg.cloud$intensity[veg.cloud$intensity %>% 0]))
-   zmah  = jitter(x= sample(x=zmid,size=nzmah,replace=TRUE,prob=lad),amount=0.5*deltaz)
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Smooth the curve by generating a density function.  This density function         #
-   # becomes the output.                                                                   #
-   #---------------------------------------------------------------------------------------#
-   lpdf   = density.safe(zmah,from=0,to=zh,n=nz)
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
    #     In case rvorg hasn't been provided, scale lad to unity.                           #
    #---------------------------------------------------------------------------------------#
    if (! is.na(rvorg)){
       LAI    = sum(lad * deltaz)
       lad    = lad / LAI
    }#end if
+   if (! all(is.finite(lad))) browser()
    #---------------------------------------------------------------------------------------#
 
 
 
    #---------------------------------------------------------------------------------------#
-   #     Find the total LAI given rvorg.  If rvorg hasn't been provided, then the          #
-   # total LAI will be used as a normalisation factor.                                     #
+   #     Define a waveform-related PDF.                                                    #
    #---------------------------------------------------------------------------------------#
-   pdfsum = sum(lpdf$y * deltaz)
-   lcdf   = rev(cumsum(rev(lpdf$y*deltaz))) / pdfsum
+   if (wfsim){
+      #----- Use the simulated waveform to prescribe the pdf. -----------------------------#
+      Rv.underground = max(0.,Rv0-sum(Rvlyr))
+      x.Rvlyr        = Rvlyr
+      x.Rvlyr[1]     = Rvlyr + Rv.underground
+      pdfsum         = sum(x.Rvlyr*deltaz)
+      lpdf           = data.frame(x=zmid,y=Rvlyr/pdfsum)
+      pdfsum         = sum(lpdf$y * deltaz)
+      lcdf           = rev(cumsum(rev(lpdf$y*deltaz))) / pdfsum
+      #------------------------------------------------------------------------------------#
+
+   }else{
+      #----- Create a pseudo-point cloud with the MH-corrected distribution. --------------#
+      nzmah = ceiling(3.*Rv0/min(veg.cloud$intensity[veg.cloud$intensity %>% 0]))
+      zmah  = jitter(x= sample(x=zmid,size=nzmah,replace=TRUE,prob=lad),amount=0.5*deltaz)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find the waveform Smooth the curve by generating a density function.  This     #
+      # density function becomes the output.                                               #
+      #------------------------------------------------------------------------------------#
+      lpdf   = density.safe(zmah,from=0,to=zh,n=nz,...)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find the cumulative distribution function.  Make sure the CDF goes from 0      #
+      # (top) to 1 (bottom).                                                               #
+      #------------------------------------------------------------------------------------#
+      pdfsum = sum(lpdf$y * deltaz)
+      lcdf   = rev(cumsum(rev(lpdf$y*deltaz))) / pdfsum
+      #------------------------------------------------------------------------------------#
+   }#end if (wfsim)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Select the raw profile. ---------------------------------------------------------#
+   if (wfsim){
+      lraw = veg.wh + gnd.wh
+   }else{
+      lraw = Rvlyr
+   }#end if 
    #---------------------------------------------------------------------------------------#
 
 
@@ -340,10 +490,7 @@ macarthur.horn <<- function( pt.cloud
    gap.mid = gap.mid[keep]
    lpdf    = data.frame(x=lpdf$x[keep],y=lpdf$y[keep])
    lcdf    = lcdf   [keep] / max(lcdf[keep])
-   if (wfsim){
-      wh = wh[keep]
-      wv = wv[keep]
-   }#end if (wfsim)
+   lraw    = lraw   [keep]
    #---------------------------------------------------------------------------------------#
 
 
@@ -356,8 +503,7 @@ macarthur.horn <<- function( pt.cloud
                            , pdf   = lpdf$y
                            , cdf   = lcdf
                            , lad   = lad
-                           , Rvlyr = Rvlyr
-                           , Rv    = Rv
+                           , raw   = lraw
                            , gap   = gap.mid
                            )#end data.frame
                , silent = TRUE
@@ -366,8 +512,67 @@ macarthur.horn <<- function( pt.cloud
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #     Plot curves to debug.                                                             #
+   #---------------------------------------------------------------------------------------#
+   if (show.profiles){
+      lai = rev(cumsum(rev(lad*deltaz)))
+      graphics.off()
+      plot.new()
+      plot.window(xlim=c(0,1),ylim=range(zmid))
+      axis(side=1,las=1)
+      axis(side=2,las=2)
+      abline(h=0,col="grey50",lty="dotted",lwd=1.0)
+      lines(x=Rvlyr/max(Rvlyr),y=zmid,type="l",col="#811F9E",lwd=2)
+      lines(x=lad/max(lad)    ,y=zmid,type="l",col="#1BA2F7",lwd=2)
+      lines(x=lai/max(lai)    ,y=zmid,type="l",col="#107C92",lwd=2)
+      legend( x      = "topright"
+            , inset  = 0.01
+            , legend = c( "Waveform (vegetation)"
+                        , "Leaf area density"
+                        , "Leaf area index"
+                        )#end legend
+            , col    = c("#811F9E","#1BA2F7","#107C92")
+            , lwd    = c(2.0,2.0,2.0)
+            , cex    = 0.7
+            , bty    = "n"
+            )#end legend
+      box()
+      cat0(" -> Click on the plot for the next plot.")
+      locator(n=1)
+   }#end (show.profiles)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Return the answer. --------------------------------------------------------------#
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end function macarthur.horn
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    This function computes the waveform function for any given height.                    #
+#------------------------------------------------------------------------------------------#
+find.waveform <<- function(wh,z,zi,sigma.z){
+   #----- Find the pulse shape along the beam path. ---------------------------------------#
+   wv  = exp(-(z-zi)^2/(2.*sigma.z^2)) / (sigma.z*sqrt(2*pi))
+   #----- Run the convolution and obtain the waveform for each layer. ---------------------#
+   ans = convolve(x=wh,y=wv,type="filter") 
+   #----- Make sure the waveform is not negative. -----------------------------------------#
+   ans = pmax(0,ans) + 0. * ans
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Return the answer. --------------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function find.waveform
 #==========================================================================================#
 #==========================================================================================#

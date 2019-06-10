@@ -57,12 +57,12 @@ curve.features <<- function( x
    im1     = pmax(i-1, 1)
    #----- First derivative. ---------------------------------------------------------------#
    xp      = x[ip1] - x[im1]
-   xp      = ifelse(test=abs(xp) >= toler, yes=xp, no = 0.)
+   xp      = ifelse(test=abs(xp) %>=% toler, yes=xp, no = 0.)
    #----- Second derivative. --------------------------------------------------------------#
    xpp     = x[ip1] - 2.*x[i] + x[im1]
    xpp[1]  = xpp[2]
    xpp[nx] = xpp[nx-1] 
-   xpp     = ifelse(test=abs(xpp) >= toler2, yes=xpp, no = 0.)
+   xpp     = ifelse(test=abs(xpp) %>=% toler2, yes=xpp, no = 0.)
    #---------------------------------------------------------------------------------------#
 
 
@@ -81,6 +81,14 @@ curve.features <<- function( x
    zero    = matrix(data=0.,nrow=soff,ncol=span)
    xp.mat  = t(apply(X=rbind(zero,embed(x=xp ,dimension=span),zero),MARGIN=1,FUN=rev))
    xpp.mat = t(apply(X=rbind(zero,embed(x=xpp,dimension=span),zero),MARGIN=1,FUN=rev))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Fix edges so they can become maxima or minima in case the curve is not zero.     #
+   #---------------------------------------------------------------------------------------#
+   xp.mat  [ 1,] = xp.mat [   2,]
+   xp.mat  [nx,] = xp.mat [nx-1,]
    #---------------------------------------------------------------------------------------#
 
 
@@ -115,6 +123,18 @@ curve.features <<- function( x
                    , iph = xpp.zeroest & xpp.left*xpp.right == -1 & xpp.left*xp.both == -1
                    , ipv = xpp.zeroest & xpp.left*xpp.right == -1 & xpp.left*xp.both == +1
                    )#end data.frame
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Flag edges as inflection points in case their first derivative is not zero. -----#
+   ans$iph[ 1] = ans$max[ 1] || (xp.right[ 1] == -1)
+   ans$iph[nx] = ans$max[nx] || (xp.left [nx] == +1)
+   ans$ipv[ 1] = ans$max[ 1] || (xp.right[ 1] == +1)
+   ans$ipv[nx] = ans$max[nx] || (xp.left [nx] == -1)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Return answer. -----------------------------------------------------------------#
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end curve.features

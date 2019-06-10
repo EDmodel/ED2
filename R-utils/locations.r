@@ -936,10 +936,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c("-","+")
                                        , names  = c("0.05","0.15")
                                        )#end list
-   flagvar[["iunder"]]           = list( descr  = "Initial condition"
+   flagvar[["iszpft"  ]]         = list( descr  = "Initial condition"
                                        , numeric = TRUE
-                                       , values = c(0,1)
-                                       , names  = c("Inventory","Equilibrium")
+                                       , values = c(0,1,2)
+                                       , names  = c("Filled","Inventory","Airborne Lidar")
                                        )#end list
    flagvar[["teff"  ]]           = list( descr  = "Temperature increase"
                                        , numeric = TRUE
@@ -948,13 +948,15 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        )#end list
    flagvar[["dhist" ]]           = list( descr  = "LCLU history"
                                        , numeric = FALSE
-                                       , values = c("int","ril","cl1","cl2","bn1","bn2"
-                                                   ,"bn3","bn6","lb1","lb2","blb"
+                                       , values = c("int","ril","cl1","cl2","lt1"
+                                                   ,"bn1","bn2","bn3","bn6"
+                                                   ,"lb1","lb2","blb"
                                                    ,"sec","sb2","lwr","upr")
                                        , names  = c("Intact"
                                                    ,"Reduced-Impact Logging"
                                                    ,"Conventional Logging"
                                                    ,"Logged twice"
+                                                   ,"Logged and thinned"
                                                    ,"Burned once"
                                                    ,"Burned twice"
                                                    ,"Burned three times"
@@ -1020,11 +1022,21 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.3f"
                                      , off   =    0.0
                                      , mult  =    0.001  )
+   numvar[["d0fact"         ]] = list( descr = "D0 scale factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   =    0.0
+                                     , mult  =    0.001  )
    numvar[["fclump"         ]] = list( descr = "Clumping factor"
                                      , unit  = ""
                                      , fmt   = "%.3f"
                                      , off   =    0.0
                                      , mult  =    0.001  )
+   numvar[["mphoto.trc3"    ]] = list( descr = "Stomatal slope (C3)"
+                                     , unit  = ""
+                                     , fmt   = "%.1f"
+                                     , off   =    0.0
+                                     , mult  =    0.1  )
    numvar[["soil.depth"     ]] = list( descr = "Soil depth"                 
                                      , unit  = "m"                     
                                      , fmt   = "%.1f"          
@@ -1346,6 +1358,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iphysiol")
          na     = c(        14)
          nz     = c(        15)
+      }else if (lenici == 15 && grepl(pattern="icanturb",x=ici)){
+         nparms = 1
+         param  = c("icanturb")
+         na     = c(        14)
+         nz     = c(        15)
       }else if (lenici == 15 && grepl(pattern="h2olimit",x=ici)){
          nparms = 1
          param  = c("h2o.plant.limit")
@@ -1406,6 +1423,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("isas","iage","idiversity")
          na     = c(     6,    14,          20)
          nz     = c(     8,    15,          21)
+      }else if (lenici == 22 && grepl(pattern="iszpft",x=ici)){
+         nparms = 2
+         param  = c("iszpft","iphen.scheme")
+         na     = c(      12,            20)
+         nz     = c(      13,            22)
       }else if (lenici == 22 && grepl(pattern="iallom",x=ici)){
          nparms = 2
          param  = c("iallom","igrass")
@@ -1426,6 +1448,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iustar","icanturb")
          na     = c(      12,        22)
          nz     = c(      13,        23)
+      }else if (lenici == 24 && grepl(pattern="icanturb",x=ici)){
+         nparms = 2
+         param  = c("iphen.scheme","icanturb")
+         na     = c(            11,        23)
+         nz     = c(            13,        24)
       }else if (lenici == 24 && grepl(pattern="ihrzrad",x=ici)){
          nparms = 2
          param  = c("ihrzrad","imetrad")
@@ -1456,11 +1483,21 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iphen.scheme", "isoil.text","treefall")
          na     = c(            11,           20,        25)
          nz     = c(            13,           21,        28)
+      }else if (lenici == 29 && grepl(pattern="d0x",x=ici)){
+         nparms = 3
+         param  = c("iphen.scheme","kwfact","d0fact")
+         na     = c(            11,      18,      26)
+         nz     = c(            13,      21,      29)
       }else if (lenici == 29){
-         nparms = 2
+         nparms = 3
          param  = c("ivegt.dynamics","ihrzrad","leaf.absorb.vis")
          na     = c(             11,        18,               26)
          nz     = c(             12,        19,               29)
+      }else if (lenici == 30 && grepl(pattern="kwx",x=ici)){
+         nparms = 3
+         param  = c("iphen.scheme","kwfact","mphoto.trc3")
+         na     = c(            11,      18,           29)
+         nz     = c(            13,      21,           30)
       }else if (lenici == 30){
          nparms = 3
          param  = c("include.fire","isoil.text","treefall")
@@ -2824,7 +2861,7 @@ poitmp[[u]] = list( short           = "fazendans"
 u           = u + 1
 poitmp[[u]] = list( short           = "feliz_natal"
                   , longname        = "Feliz Natal, MT"
-                  , iata            = "fnz"
+                  , iata            = "fzn"
                   , lon             = -54.692
                   , lat             = -12.146
                   , alt             = 350.
@@ -4854,7 +4891,7 @@ poitmp[[u]] = list( short           = "tanguro_sl"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Tanguro"
-                  , yeara           = 2008
+                  , yeara           = 2009
                   , yearz           = 2018
                   , iphen           = -1
                   )#end list
@@ -4868,14 +4905,14 @@ poitmp[[u]] = list( short           = "tanguro_ctrl"
                   , wmo             = NA
                   , isoilflg        = 2
                   , ntext           = 6
-                  , sand            = 0.664
-                  , clay            = 0.246
+                  , sand            = 0.550
+                  , clay            = 0.430
                   , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Tanguro_Ctrl"
-                  , yeara           = 2008
+                  , yeara           = 2009
                   , yearz           = 2018
                   , iphen           = -1
                   )#end list
@@ -4896,7 +4933,7 @@ poitmp[[u]] = list( short           = "tanguro_burn"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Tanguro_Burn"
-                  , yeara           = 2008
+                  , yeara           = 2009
                   , yearz           = 2018
                   , iphen           = -1
                   )#end list

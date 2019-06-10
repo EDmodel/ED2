@@ -1666,7 +1666,7 @@ pft$c.bark = ( (pft$c.bark.dry + pft$qwatdry.bark * cliq) / (1. + pft$qwatdry.ba
 #                                                                                          #
 # Falster, D. S., R. G. FitzJohn, A. Brannstrom, U. Dieckmann, and M. Westoby.  plant: A   #
 #    package for modelling forest trait ecology and evolution.  Methods Ecol. Evol., 7(2): #
-#    136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F16)                                 #
+#    136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F15)                                 #
 #------------------------------------------------------------------------------------------#
 pft$b1Xs  = 0.315769481
 pft$b1Xb  = 0.
@@ -1900,17 +1900,15 @@ for (ipft in sequence(npft+1)){
          pft$b2Bl[ipft] = nleaf[2]
       }else if(iallom %in% c(3)){
          #---------------------------------------------------------------------------------#
-         #    Leaf allometry, use bleaf:agb ratio from Lescure et al. (1983).              #
+         #    Leaf allometry, use the individual leaf area allometry derived from the BAAD #
+         # data base (F15), scaled by the specific leaf area.                              #
          #                                                                                 #
-         # As a side note, these allometric equations diverge considerably at larger DBH   #
-         # values.                                                                         #
+         # Reference:                                                                      #
          #                                                                                 #
-         # References:                                                                     #
-         #                                                                                 #
-         # Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau.     #
-         #    La phytomasse epigee d'une foret dense en Guyane Francaise.                  #
-         #    Acta Ecol.-Oec. Gen., 4(3), 237--251, 1983.                                  #
-         #    http://www.documentation.ird.fr/hor/fdi:010005089 (L83).                     #
+         # Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A, Aiba #
+         #      M, Ando M, Anten N, Aspinwall MJ. 2015. BAAD: a biomass and allometry      #
+         #      database for woody plants. Ecology, 96 (5):1445-1445.                      #
+         #      doi:10.1890/14-1889.1 (F15).                                               #
          #                                                                                 #
          #---------------------------------------------------------------------------------#
          pft$b1Bl[ipft] = c14f15.bl.xx[1] / pft$SLA[ipft] 
@@ -2032,7 +2030,7 @@ pft$l2DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
                         , no   = 1.  / pft$b2Bl
                         )#end ifelse
 pft$l1DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
-                        , yes  = ( C2B / ( pft$b1Bs * exp(pft$b1Ht*pft$b2Bl) ) )
+                        , yes  = ( C2B / ( pft$b1Bl * exp(pft$b1Ht*pft$b2Bl) ) )
                                ^ pft$l2DBH
                         , no   = ( C2B / pft$b1Bl ) ^ pft$l2DBH
                         )#end ifelse

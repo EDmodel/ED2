@@ -97,8 +97,31 @@ density.safe <<- function( x
    #---------------------------------------------------------------------------------------#
 
 
+
+   #---------------------------------------------------------------------------------------#
+   #     Ensure that the values outside the acceptable range are transferred to the        #
+   # acceptable range.  This is to avoid density to be non-zero in non-physical ranges     #
+   # (for example, negative CO2 concentration).                                            #
+   #---------------------------------------------------------------------------------------#
+   if (is.finite(xmin)){
+      bye         = ans$x %<% xmin
+      xadd        = min(ans$x[! bye],na.rm=TRUE)
+      iadd        = which(ans$x %==% xadd)
+      ans$y[iadd] = ans$y[iadd] + sum(ans$y[bye])
+      ans$y[bye ] = 0.
+   }#end if(is.finite(xmin))
+   if (is.finite(xmax)){
+      bye         = ans$x %>% xmax
+      xadd        = max(ans$x[! bye],na.rm=TRUE)
+      iadd        = which(ans$x %==% xadd)
+      ans$y[iadd] = ans$y[iadd] + sum(ans$y[bye])
+      ans$y[bye ] = 0.
+   }#end if(is.finite(xmax))
+   #---------------------------------------------------------------------------------------#
+
+
    #----- Return NA in case there weren't enough values to determine the KDE. -------------#
-   if (n.x.use == 0) ans$y = ans$y + NA
+   if (n.x.use == 0) ans$y = ans$y + NA_real_
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end function

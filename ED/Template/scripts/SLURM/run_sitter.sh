@@ -729,8 +729,14 @@ do
          metcycf=2008
          imetavg=2
          ;;
-      Tanguro)
-         metdriverdb="${fullscen}/Tanguro/Tanguro_HEADER"
+      Tanguro_Burn)
+         metdriverdb="${fullscen}/Tanguro_Burn/Tanguro_Burn_HEADER"
+         metcyc1=2008
+         metcycf=2017
+         imetavg=1
+         ;;
+      Tanguro_Ctrl)
+         metdriverdb="${fullscen}/Tanguro_Ctrl/Tanguro_Ctrl_HEADER"
          metcyc1=2008
          metcycf=2017
          imetavg=1

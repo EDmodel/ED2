@@ -3,6 +3,8 @@
 here=$(pwd)                           # ! Main path
 myself=$(whoami)                      # ! You
 joborder="${here}/joborder.txt"       # ! File with the job instructions
+#----- POV-Ray include files. -------------------------------------------------------------#
+pov_incs="${HOME}/Util/Modules/povray/3.6/share/povray-3.6/include"
 #----- Outroot is the main output directory. ----------------------------------------------#
 submit="y"       # y -- Submit the script to the queue
                  # l -- Run the script locally
@@ -612,6 +614,10 @@ do
       eftyeara=2006
       eftyearz=2011
       ;;
+   tb0|tbx)
+      eftyeara=2014
+      eftyearz=2017
+      ;;
    hvd)
       eftyeara=1992
       eftyearz=2003
@@ -917,6 +923,7 @@ do
    sed -i s@thispath@${here}@g                 ${scriptnow}
    sed -i s@thatpath@${here}@g                 ${scriptnow}
    sed -i s@thisrscpath@${rscpath}@g           ${scriptnow}
+   sed -i s@thispovincs@${pov_incs}@g          ${scriptnow}
    sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
    sed -i s@thismontha@${thismontha}@g         ${scriptnow}
    sed -i s@thisdatea@${thisdatea}@g           ${scriptnow}

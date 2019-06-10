@@ -19,16 +19,18 @@ here           = "thispath"    # Current directory.
 there          = "thatpath"    # Directory where analyses/history are 
 srcdir         = "thisrscpath" # Source  directory.
 outroot        = "thisoutroot" # Directory for figures
+pov.incs       = "thispovincs" # Path with POV-Ray include files
 #------------------------------------------------------------------------------------------#
 
 
 #----- Time options. ----------------------------------------------------------------------#
-monthbeg       = thismontha   # First month to use
-yearbeg        = thisyeara    # First year to consider
-yearend        = thisyearz    # Maximum year to consider
-reload.data    = TRUE         # Should I reload partially loaded data?
-pov.month      = 5            # Months for POV-Ray plots
-pop.scale      = 1.0          # Scaling factor to REDUCE displayed population.
+monthbeg    = thismontha   # First month to use
+yearbeg     = thisyeara    # First year to consider
+yearend     = thisyearz    # Maximum year to consider
+reload.data = TRUE         # Should I reload partially loaded data?
+pov.month   = 5            # Months for POV-Ray plots
+pop.scale   = 1.0          # Scaling factor to REDUCE displayed population.
+sasmonth    = sequence(12)
 #------------------------------------------------------------------------------------------#
 
 
@@ -40,7 +42,7 @@ myplaces       = c("thispoly")
 
 
 #----- Plot options. ----------------------------------------------------------------------#
-depth          = 96                     # PNG resolution, in pixels per inch
+depth          = 1200                   # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
 ptsz           = 14                     # Font size.
 ibackground    = mybackground           # Background settings (check load_everything.r)
@@ -54,6 +56,7 @@ idbh.type      = myidbhtype   # Type of DBH class
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                               # 3 -- 0-10; 10-35; 35-70; > 70 (cm)
 klight         = myklight     # Weighting factor for maximum carbon balance
+iallom         = myallom      # Allometry
 #------------------------------------------------------------------------------------------#
 
 
@@ -86,7 +89,7 @@ options(locatorBell=FALSE)
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = file.path(srcdir,"LBA_MIP.v9.RData")
+obsrfile = paste(srcdir,"LBA_MIP.v9.RData",sep="/")
 load(file=obsrfile)
 #------------------------------------------------------------------------------------------#
 
@@ -153,7 +156,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    path.data  = paste(here,place,"rdata_month",sep="/")
    if (! file.exists(path.data)) dir.create(path.data)
-   ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
+   ed22.rdata = file.path(path.data,paste0(place,".RData"))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
       cat("   - Loading previous session...","\n")
@@ -355,10 +358,11 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          povplant = rbind(       "//----- The plants. ---------------------------------//"
                          , rbind( paste("plant(", unlist( mapply( FUN = paste
-                                                                , sprintf("%7.2f",dbhco)
-                                                                , sprintf("%2i"  ,pftco)
-                                                                , sprintf("%7.2f",xco  )
-                                                                , sprintf("%7.2f",yco  )
+                                                                , sprintf("%2i"  ,iallom)
+                                                                , sprintf("%7.2f",dbhco )
+                                                                , sprintf("%2i"  ,pftco )
+                                                                , sprintf("%7.2f",xco   )
+                                                                , sprintf("%7.2f",yco   )
                                                                 , MoreArgs = list(sep=",")
                                                                 )#end mapply
                                                         )#end unlist
@@ -460,9 +464,10 @@ for (place in myplaces){
       povopts = paste("-D"
                      ,"-V"
                      ,"+UA"
-                     ,paste("+W",round(size$width*depth ),sep="")
-                     ,paste("+H",round(size$height*depth),sep="")
-                     ,paste("+O",outtemp,sep="")
+                     ,paste0("+L",pov.incs)
+                     ,paste0("+W",round(size$width*depth ))
+                     ,paste0("+H",round(size$height*depth))
+                     ,paste0("+O",outtemp)
                      ,sep = " "
                      )#end paste
       dummy   = system( command       = paste(povray,povopts,povscript,sep=" ")

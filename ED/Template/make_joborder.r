@@ -171,8 +171,8 @@ default = list( run           = "unnamed"
               , bphoto.blc3   = 10000.
               , bphoto.nlc3   = 1000.
               , bphoto.c4     = 10000.
-              , kw.grass      = 75.
-              , kw.tree       = 50.
+              , kw.grass      = 25.
+              , kw.tree       = 20.
               , gamma.c3      = 0.015
               , gamma.c4      = 0.025
               , d0.grass      = 0.016

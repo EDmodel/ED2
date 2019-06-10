@@ -28008,8 +28008,8 @@ module ed_state_vars
       if (associated(cpatch%llspan)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%llspan,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'LLSPAN :41:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+           var_len,var_len_global,max_ptrs,'LLSPAN :41:hist:anal:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf longevity','[month]','icohort') 
       end if
       
       if (associated(cpatch%A_open)) then
@@ -28196,16 +28196,17 @@ module ed_state_vars
 
       if (associated(cpatch%vm_bar)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%vm_bar,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'VM_BAR :41:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call vtable_edio_r(npts,cpatch%vm_bar,nvar,igr,init,cpatch%coglob_id,             &
+               var_len,var_len_global,max_ptrs,'VM_BAR :41:hist:anal:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Maximum carboxylation rate at 15C' &
+                           ,'[umol/m2/s]','icohort') 
       end if
 
       if (associated(cpatch%sla)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%sla,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'SLA :41:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+           var_len,var_len_global,max_ptrs,'SLA :41:hist:anal:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Specific leaf area','[m2_leaf/kgC]','icohort') 
       end if
       !------------------------------------------------------------------------------------!
 

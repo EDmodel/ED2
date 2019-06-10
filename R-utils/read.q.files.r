@@ -295,6 +295,14 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.PASSIVE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
       }#end if (! "COMBUSTED.FUEL.PY" %in% names(mymont))
       #------------------------------------------------------------------------------------#
+      #    Populate SLA with PFT default in case SLA is not in the output.                 #
+      #------------------------------------------------------------------------------------#
+      if (! "SLA" %in% names(mymont)){
+         mymont$SLA    = pft$SLA[mymont$PFT]
+         mymont$LLSPAN = 12. / pft$leaf.turnover.rate[mymont$PFT]
+         mymont$VM.BAR = pft$vm0[mymont$PFT]
+      }#end if (! "SLA" %in% names(mymont))
+      #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
@@ -807,6 +815,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          heightconow       = mymont$HITE
          thbarkconow       = mymont$MMEAN.THBARK.CO
          wood.densconow    = pft$rho[pftconow]
+         slaconow          = mymont$SLA
          agf.bsconow       = pft$agf.bs[pftconow]
          baconow           = mymont$BA.CO
          agbconow          = mymont$AGB.CO
@@ -1478,6 +1487,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          nplantconow         = NA
          heightconow         = NA
          wood.densconow      = NA
+         slaconow            = NA
          baconow             = NA
          agbconow            = NA
          biomassconow        = NA
@@ -1679,45 +1689,47 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
       #     Initialise patch-level properties that are derived from cohort-level.          #
       #------------------------------------------------------------------------------------#
-      patch$lai           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wai           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$agb           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$ba            [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wood.dens     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$can.depth     [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$can.area      [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$sm.stress     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$lai           [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$wai           [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$agb           [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$ba            [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$nplant        [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$wood.dens     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$sla           [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$can.depth     [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$can.area      [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$sm.stress     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
       patch$leaf.temp     [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
-      patch$leaf.water    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.water    [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
       patch$leaf.vpd      [[plab]] = mymont$MMEAN.CAN.VPDEF.PA * 0.01
       patch$wood.temp     [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
-      patch$par.leaf      [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$par.leaf.beam [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$par.leaf.diff [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lpar     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.ltemp    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lwater   [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lvpd     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.sms      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lgbw     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$phap.lgsw     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.gpp      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.gsw      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.par      [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.par.beam [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.par.diff [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$assim.light   [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$assim.rubp    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$assim.co2     [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$gpp           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$npp           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$cba           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$plant.resp    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$hflxlc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$hflxwc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wflxlc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wflxwc        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$transp        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$par.leaf      [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$par.leaf.beam [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$par.leaf.diff [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lpar     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.ltemp    [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lwater   [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lvpd     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.sms      [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lgbw     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$phap.lgsw     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.gpp      [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.gsw      [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.par      [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.par.beam [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.par.diff [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$assim.light   [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$assim.rubp    [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$assim.co2     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$gpp           [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$npp           [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$cba           [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$plant.resp    [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$hflxlc        [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$hflxwc        [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$wflxlc        [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$wflxwc        [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
+      patch$transp        [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
       patch$soil.resp     [[plab]] = mymont$MMEAN.RH.PA
       patch$fast.grnd.c   [[plab]] = mymont$MMEAN.FAST.GRND.C.PA
       patch$fast.soil.c   [[plab]] = mymont$MMEAN.FAST.SOIL.C.PA
@@ -1726,6 +1738,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$microbe.soil.c[[plab]] = mymont$MMEAN.MICROBE.SOIL.C.PA
       patch$passive.soil.c[[plab]] = mymont$MMEAN.PASSIVE.SOIL.C.PA
       patch$slow.soil.c   [[plab]] = mymont$MMEAN.SLOW.SOIL.C.PA
+      patch$soil.temp     [[plab]] = mymont$MMEAN.SOIL.TEMP.PA - t00
+      patch$soil.water    [[plab]] = mymont$MMEAN.SOIL.WATER.PA
+      patch$soil.mstpot   [[plab]] = - mymont$MMEAN.SOIL.MSTPOT.PA * grav * wdnsi
       #------ Mean diurnal cycle. ---------------------------------------------------------#
       zero.qpatch = matrix(data=0., nrow=mymont$NPATCHES.GLOBAL,ncol=mymont$NDCYC)
       na.qpatch   = matrix(data=NA, nrow=mymont$NPATCHES.GLOBAL,ncol=mymont$NDCYC)
@@ -1763,6 +1778,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
 
          #----- Find some auxiliary patch-level properties. -------------------------------#
+         nplant.pa        = tapply( X     = mymont$NPLANT * showconow
+                                  , INDEX = ipaconow
+                                  , FUN   = sum
+                                  )#end tapply
          lai.pa           = tapply( X     = mymont$MMEAN.LAI.CO * showconow
                                   , INDEX = ipaconow
                                   , FUN   = sum
@@ -1921,6 +1940,23 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #---------------------------------------------------------------------------------#
+         #      SLA is found using weighted averages of LMA (leaf area indices are the     #
+         # weights).                                                                       #
+         #---------------------------------------------------------------------------------#
+         sla.pa = mapply( FUN      = weighted.mean
+                        , x        = split(1./slaconow,ipaconow)
+                        , w        = split(laiconow   ,ipaconow)
+                        , na.rm    = TRUE
+                        , SIMPLIFY = TRUE
+                        )#end mapply
+         sla.pa = ifelse(test=leaf.empty,yes=NA_real_,no=1./sla.pa)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+         #---------------------------------------------------------------------------------#
          #      Aggregate variables that must be weighted by LAI.                          #
          #---------------------------------------------------------------------------------#
          leaf.gpp.pa      = mapply( FUN      = weighted.mean
@@ -2057,6 +2093,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          patch$wai          [[plab]][idx     ] = wai.pa
          patch$agb          [[plab]][idx     ] = agb.pa
          patch$ba           [[plab]][idx     ] = ba.pa
+         patch$nplant       [[plab]][idx     ] = nplant.pa
          patch$can.depth    [[plab]][idx     ] = can.depth.pa
          patch$can.area     [[plab]][idx     ] = can.area.pa
          patch$veg.height   [[plab]][idx     ] = veg.height.pa  
@@ -2064,6 +2101,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          patch$veg.rough    [[plab]][idx     ] = veg.rough.pa   
          patch$can.rough    [[plab]][idx     ] = can.rough.pa   
          patch$wood.dens    [[plab]][idx     ] = wood.dens.pa
+         patch$sla          [[plab]][idx     ] = sla.pa
          patch$par.leaf     [[plab]][idx     ] = par.leaf.pa
          patch$par.leaf.beam[[plab]][idx     ] = par.leaf.beam.pa
          patch$par.leaf.diff[[plab]][idx     ] = par.leaf.diff.pa
@@ -2114,6 +2152,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Find some auxiliary patch-level properties. -------------------------------#
+         q.nplant.pa        = qapply( X     = q.nplantconow
+                                    , DIM   = 1
+                                    , INDEX = ipaconow
+                                    , FUN   = sum
+                                    , na.rm = TRUE
+                                    )#end tapply
          q.lai.pa           = qapply( X     = q.laiconow
                                     , DIM   = 1
                                     , INDEX = ipaconow
@@ -2855,6 +2899,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                #---------------------------------------------------------------------------#
 
 
+               #----- SLA: averaged LMA by leaf area index. -------------------------------#
+               szpft$sla          [m,d,p] = weighted.mean( x     = 1./slaconow     [sel]
+                                                         , w     = w.lai           [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$sla          [m,d,p] = ifelse( test = szpft$sla[m,d,p] %>% 0
+                                                  , yes  = 1. / szpft$sla[m,d,p]
+                                                  , no   = NA_real_
+                                                  )#end ifelse
+               #---------------------------------------------------------------------------#
+
+
                #----- Bark thickness: averaged by basal area. -----------------------------#
                szpft$thbark       [m,d,p] = weighted.mean( x     = thbarkconow     [sel]
                                                          , w     = w.basarea       [sel]
@@ -3223,6 +3279,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$acc.dimort      [m] = szpft$acc.dimort     [m,ndbh+1,npft+1]
       emean$acc.recr        [m] = szpft$acc.recr       [m,ndbh+1,npft+1]
       emean$wood.dens       [m] = szpft$wood.dens      [m,ndbh+1,npft+1]
+      emean$sla             [m] = szpft$sla            [m,ndbh+1,npft+1]
       emean$phap.lpar       [m] = szpft$phap.lpar      [m,ndbh+1,npft+1]
       emean$phap.ltemp      [m] = szpft$phap.ltemp     [m,ndbh+1,npft+1]
       emean$phap.lvpd       [m] = szpft$phap.lvpd      [m,ndbh+1,npft+1]

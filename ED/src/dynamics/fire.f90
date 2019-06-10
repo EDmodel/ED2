@@ -114,12 +114,15 @@ module fire
             people_around = .false.
             humanloop: do ipa=1,csite%npatches
                select case (csite%dist_type(ipa))
-               case (3,5)
+               case (3)
                   continue
                case default
                   people_around = .true.
+                  exit humanloop
                end select
             end do humanloop
+            !----- Allow fires to ignite in intact forests. -------------------------------!
+            ! people_around = .true.
             !------------------------------------------------------------------------------!
 
 

@@ -3,7 +3,7 @@
 # ignore output files
 *.o
 *.a
-ED/build/ed_2.1-*
+ED/build/ed_2.?-*
 .nfs*
 
 # ignore backup files

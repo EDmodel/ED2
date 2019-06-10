@@ -2967,6 +2967,8 @@ plotpatch[[n]] = list( vnam       = "nep"
                      , desc       = "Net ecosystem production"
                      , unit       = untab$kgcom2oyr
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2977,6 +2979,8 @@ plotpatch[[n]] = list( vnam       = "het.resp"
                      , desc       = "Heterotrophic respiration"
                      , unit       = untab$kgcom2oyr
                      , col.scheme = "inferno"
+                     , vmin       = 0
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2987,6 +2991,8 @@ plotpatch[[n]] = list( vnam       = "can.temp"
                      , desc       = "CAS temperature"
                      , unit       = untab$degC
                      , col.scheme = "inferno"
+                     , vmin       = -t00
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2997,6 +3003,8 @@ plotpatch[[n]] = list( vnam       = "gnd.temp"
                      , desc       = "Ground temperature"
                      , unit       = untab$degC
                      , col.scheme = "inferno"
+                     , vmin       = -t00
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3007,6 +3015,8 @@ plotpatch[[n]] = list( vnam       = "can.shv"
                      , desc       = "CAS specific humidity"
                      , unit       = untab$gwokg
                      , col.scheme = "inferno"
+                     , vmin       = 0
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3017,6 +3027,8 @@ plotpatch[[n]] = list( vnam       = "gnd.shv"
                      , desc       = "Ground specific humidity"
                      , unit       = untab$gwokg
                      , col.scheme = "inferno"
+                     , vmin       = 0
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3027,6 +3039,8 @@ plotpatch[[n]] = list( vnam       = "can.vpd"
                      , desc       = "CAS vapour pressure deficit"
                      , unit       = untab$hpa
                      , col.scheme = "inferno"
+                     , vmin       = 0
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3037,6 +3051,8 @@ plotpatch[[n]] = list( vnam       = "can.co2"
                      , desc       = "CAS CO2 mixing ratio"
                      , unit       = untab$umolcomol
                      , col.scheme = "inferno"
+                     , vmin       = 0
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3047,6 +3063,8 @@ plotpatch[[n]] = list( vnam       = "can.prss"
                      , desc       = "CAS pressure"
                      , unit       = untab$hpa
                      , col.scheme = "inferno"
+                     , vmin       = 0
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3057,6 +3075,8 @@ plotpatch[[n]] = list( vnam       = "cflxca"
                      , desc       = "CO2 flux (CAS->Atm)"
                      , unit       = untab$umolcom2os
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3067,6 +3087,8 @@ plotpatch[[n]] = list( vnam       = "cflxst"
                      , desc       = "CO2 storage at CAS"
                      , unit       = untab$umolcom2os
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3077,6 +3099,8 @@ plotpatch[[n]] = list( vnam       = "nee"
                      , desc       = "Net ecosystem exchange"
                      , unit       = untab$umolcom2os
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3087,6 +3111,8 @@ plotpatch[[n]] = list( vnam       = "qwflxca"
                      , desc       = "'Latent' heat flux (CAS->Atm)"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3097,6 +3123,8 @@ plotpatch[[n]] = list( vnam       = "hflxca"
                      , desc       = "Sensible heat flux (CAS->Atm)"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3107,6 +3135,8 @@ plotpatch[[n]] = list( vnam       = "hflxgc"
                      , desc       = "Sensible heat flux (Grnd->CAS)"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3117,6 +3147,8 @@ plotpatch[[n]] = list( vnam       = "hflxlc"
                      , desc       = "Sensible heat flux (Leaf->CAS)"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3127,6 +3159,8 @@ plotpatch[[n]] = list( vnam       = "hflxwc"
                      , desc       = "Sensible heat flux (Wood->CAS)"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3137,6 +3171,8 @@ plotpatch[[n]] = list( vnam       = "wflxca"
                      , desc       = "Water flux (CAS->Atm)"
                      , unit       = untab$kgwom2oday
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3147,6 +3183,8 @@ plotpatch[[n]] = list( vnam       = "wflxgc"
                      , desc       = "Water flux (Grnd->CAS)"
                      , unit       = untab$kgwom2oday
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3157,6 +3195,8 @@ plotpatch[[n]] = list( vnam       = "wflxlc"
                      , desc       = "Water flux (Leaf->CAS)"
                      , unit       = untab$kgwom2oday
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3167,6 +3207,8 @@ plotpatch[[n]] = list( vnam       = "wflxwc"
                      , desc       = "Water flux (Wood->CAS)"
                      , unit       = untab$kgwom2oday
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3177,6 +3219,8 @@ plotpatch[[n]] = list( vnam       = "transp"
                      , desc       = "Leaf transpiration"
                      , unit       = untab$kgwom2oday
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3187,6 +3231,8 @@ plotpatch[[n]] = list( vnam       = "ustar"
                      , desc       = "Friction velocity"
                      , unit       = untab$mos
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3197,6 +3243,8 @@ plotpatch[[n]] = list( vnam       = "rshortup"
                      , desc       = "Outgoing SW radiation"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3207,6 +3255,8 @@ plotpatch[[n]] = list( vnam       = "rlongup"
                      , desc       = "Outgoing LW radiation"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3217,6 +3267,8 @@ plotpatch[[n]] = list( vnam       = "parup"
                      , desc       = "Outgoing PAR"
                      , unit       = untab$umolom2os
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3227,6 +3279,8 @@ plotpatch[[n]] = list( vnam       = "rnet"
                      , desc       = "Net radiation at ToC"
                      , unit       = untab$wom2
                      , col.scheme = "inferno"
+                     , vmin       = -Inf
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3237,6 +3291,8 @@ plotpatch[[n]] = list( vnam       = "lai"
                      , desc       = "Leaf area index"
                      , unit       = untab$m2lom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3247,6 +3303,8 @@ plotpatch[[n]] = list( vnam       = "leaf.temp"
                      , desc       = "Leaf temperature"
                      , unit       = untab$degC
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3257,6 +3315,8 @@ plotpatch[[n]] = list( vnam       = "leaf.vpd"
                      , desc       = "Leaf vapour pressure deficit"
                      , unit       = untab$hpa
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3267,6 +3327,8 @@ plotpatch[[n]] = list( vnam       = "wood.temp"
                      , desc       = "Wood temperature"
                      , unit       = untab$degC
                      , col.scheme = "inferno"
+                     , vmin       = -t00
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3277,6 +3339,8 @@ plotpatch[[n]] = list( vnam       = "gpp"
                      , desc       = "Gross primary productivity"
                      , unit       = untab$kgcom2oyr
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3287,6 +3351,8 @@ plotpatch[[n]] = list( vnam       = "npp"
                      , desc       = "Net primary productivity"
                      , unit       = untab$kgcom2oyr
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3297,6 +3363,8 @@ plotpatch[[n]] = list( vnam       = "plant.resp"
                      , desc       = "Plant respiration"
                      , unit       = untab$kgcom2oyr
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3307,6 +3375,8 @@ plotpatch[[n]] = list( vnam       = "reco"
                      , desc       = "Ecosystem respiration"
                      , unit       = untab$kgcom2oyr
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3317,6 +3387,8 @@ plotpatch[[n]] = list( vnam       = "fast.grnd.c"
                      , desc       = "Aboveground litter"
                      , unit       = untab$kgcom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3327,6 +3399,8 @@ plotpatch[[n]] = list( vnam       = "fast.soil.c"
                      , desc       = "Belowground litter"
                      , unit       = untab$kgcom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3337,6 +3411,8 @@ plotpatch[[n]] = list( vnam       = "struct.grnd.c"
                      , desc       = "Aboveground woody debris"
                      , unit       = untab$kgcom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3347,6 +3423,8 @@ plotpatch[[n]] = list( vnam       = "struct.soil.c"
                      , desc       = "Belowground woody debris"
                      , unit       = untab$kgcom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3357,6 +3435,8 @@ plotpatch[[n]] = list( vnam       = "microbe.soil.c"
                      , desc       = "Microbial soil carbon"
                      , unit       = untab$kgcom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3367,6 +3447,8 @@ plotpatch[[n]] = list( vnam       = "slow.soil.c"
                      , desc       = "Humified soil carbon"
                      , unit       = untab$kgcom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -3377,6 +3459,8 @@ plotpatch[[n]] = list( vnam       = "passive.soil.c"
                      , desc       = "Passive soil carbon"
                      , unit       = untab$kgcom2
                      , col.scheme = "inferno"
+                     , vmin       = 0.
+                     , vmax       = Inf
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE

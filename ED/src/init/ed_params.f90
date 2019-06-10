@@ -435,7 +435,7 @@ subroutine init_decomp_params()
       !    Accessed on 9 Aug 2018 (M96).                                                   !
       !                                                                                    !
       !------------------------------------------------------------------------------------!
-      decay_rate_fsc  =  16.7         / yr_day
+      decay_rate_fsc  =  10.0         / yr_day ! 16.7 / yr_day
       decay_rate_stsc =  4.4          / yr_day
       decay_rate_msc  =  0.85 * 6.65  / yr_day
       decay_rate_ssc  =  0.85 * 0.2   / yr_day
@@ -478,10 +478,10 @@ subroutine init_decomp_params()
       rh_decay_high  = 0.60
       rh_low_temp    = 18.0 + t00
       rh_high_temp   = 45.0 + t00
-      rh_decay_dry   = 15.0 ! 18.0
-      rh_decay_wet   = 30.0 ! 36.0
+      rh_decay_dry   = 12.0 ! 18.0
+      rh_decay_wet   = 12.0 ! 36.0
       rh_dry_smoist  = 0.30 ! 0.36
-      rh_wet_smoist  = 0.85 ! 0.96
+      rh_wet_smoist  = 0.90 ! 0.96
    case default ! For back-compatibility with ED-2.2.
       rh_decay_low   = 0.24
       rh_decay_high  = 0.60
@@ -3115,10 +3115,10 @@ subroutine init_pft_alloc_params()
    case default
       hgt_max_trop = 35.0
    end select
-   hgt_min(:) = merge( merge(0.50        ,1.30         ,is_grass(:))                       &
+   hgt_min(:) = merge( merge(0.50        ,0.50         ,is_grass(:))                       &
                      , merge(0.15        ,hgt_ref+0.2  ,is_grass(:))                       &
                      , is_tropical(:)                                )
-   hgt_max(:) = merge( merge(1.30        ,hgt_max_trop ,is_grass(:))                       &
+   hgt_max(:) = merge( merge(1.50        ,hgt_max_trop ,is_grass(:))                       &
                      , merge(0.95*b1Ht(:),0.999*b1Ht(:),is_grass(:))                       &
                      , is_tropical(:)                                )
    !---------------------------------------------------------------------------------------!

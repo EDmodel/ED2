@@ -10,6 +10,8 @@ myself=$(whoami)
 desc=$(basename ${here})
 #----- File containing the list of jobs and their settings: -------------------------------#
 joborder="${here}/joborder.txt"         # ! File with the job instructions
+#----- POV-Ray include files. -------------------------------------------------------------#
+pov_incs="${HOME}/Util/Modules/povray/3.6/share/povray-3.6/include"
 #----- How should the post-processing be handled? -----------------------------------------#
 submit=false     # true -- Try to submit the script to the queue
                  # false -- Prepare script for batch, but don't dispatch job.
@@ -914,6 +916,10 @@ do
       eftyeara=2006
       eftyearz=2011
       ;;
+   tb0|tbx)
+      eftyeara=2014
+      eftyearz=2017
+      ;;
    hvd)
       eftyeara=1992
       eftyearz=2003
@@ -1219,6 +1225,7 @@ do
    sed -i s@thispath@${here}@g                 ${scriptnow}
    sed -i s@thatpath@${here}@g                 ${scriptnow}
    sed -i s@thisrscpath@${rscpath}@g           ${scriptnow}
+   sed -i s@thispovincs@${pov_incs}@g          ${scriptnow}
    sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
    sed -i s@thismontha@${thismontha}@g         ${scriptnow}
    sed -i s@thisdatea@${thisdatea}@g           ${scriptnow}

@@ -978,127 +978,71 @@ do
       ;;
       #------------------------------------------------------------------------------------#
    *)
-      case ${isizepft} in
-      0|1|5)
-         case ${polyiata} in
-         tzi|zmh|nqn)
-            pfts="1,7,8,9,10,11,15,16"
-            pasture=16
-            crop=16
-            plantation=15
-            logging="7,8,9,10,11,15"
-            probharv="1.0,1.0,1.0,1.0,1.0,1.0"
-            dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         hvd|wch|tqh)
-            pfts="6,8,9,10,11,16"
-            pasture=16
-            crop=16
-            plantation=10
-            logging="6,8,9,10,11"
-            probharv="1.0,1.0,1.0,1.0,1.0"
-            dbhharv="0.0,0.0,0.0,0.0,0.0"
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
-            pfts="1,2,3,4,15,16"
-            pasture=1
-            crop=16
-            plantation=15
-            logging="2,3,4,15"
-            probharv="1.0,1.0,1.0,1.0,1.0,1.0"
-            dbhharv="50.,50.,50.,50.,50.,50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         fns*)
-            pfts="1,16"
-            pasture=1
-            crop=1
-            plantation=13
-            logging="13"
-            probharv="1.0"
-            dbhharv="50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         s77*)
-            pfts="1,16"
-            pasture=1
-            crop=16
-            plantation=13
-            logging="13"
-            probharv="1.0"
-            dbhharv="50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         *)
-            pfts="1,2,3,4,16"
-            pasture=1
-            crop=1
-            plantation=13
-            logging="2,3,4"
-            probharv="1.0,1.0,1.0,1.0,1.0"
-            dbhharv="50.,50.,50.,50.,50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         esac
+      case ${polyiata} in
+      tzi|zmh|nqn)
+         pfts="1,7,8,9,10,11,15,16"
+         pasture=16
+         crop=16
+         plantation=15
+         logging="7,8,9,10,11,15"
+         probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+         dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
-      2)
-         case ${polyiata} in
-         tzi|zmh|nqn|hvd|wch|tqh)
-            pfts="10,16"
-            pasture=16
-            crop=16
-            plantation=10
-            logging="10"
-            probharv="1.0"
-            dbhharv="0.0"
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         fns*|s77*)
-            pfts="1"
-            pasture=1
-            crop=1
-            plantation=14
-            logging="14"
-            probharv="1.0"
-            dbhharv="50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         *)
-            pfts="1,14"
-            pasture=1
-            crop=1
-            plantation=14
-            logging="14"
-            probharv="1.0"
-            dbhharv="50."
-            seedharv=0.75
-            storharv=0.00
-            leafharv=0.00
-            ;;
-         esac
+      hvd|wch|tqh)
+         pfts="6,8,9,10,11,16"
+         pasture=16
+         crop=16
+         plantation=10
+         logging="6,8,9,10,11"
+         probharv="1.0,1.0,1.0,1.0,1.0"
+         dbhharv="0.0,0.0,0.0,0.0,0.0"
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
+         ;;
+      asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
+         pfts="1,2,3,4,15,16"
+         pasture=1
+         crop=16
+         plantation=15
+         logging="2,3,4,15"
+         probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+         dbhharv="50.,50.,50.,50.,50.,50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
+         ;;
+      fns*)
+         pfts="1,16"
+         pasture=1
+         crop=1
+         plantation=13
+         logging="13"
+         probharv="1.0"
+         dbhharv="50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
+         ;;
+      s77*)
+         pfts="1,16"
+         pasture=1
+         crop=16
+         plantation=13
+         logging="13"
+         probharv="1.0"
+         dbhharv="50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       *)
          pfts="1,2,3,4,16"
          pasture=1
-         crop=16
+         crop=1
          plantation=13
          logging="2,3,4"
          probharv="1.0,1.0,1.0,1.0,1.0"
@@ -1417,8 +1361,14 @@ do
       metcycf=2008
       imetavg=2
       ;;
-   Tanguro)
-      metdriverdb="${fullscen}/Tanguro/Tanguro_HEADER"
+   Tanguro_Burn)
+      metdriverdb="${fullscen}/Tanguro_Burn/Tanguro_Burn_HEADER"
+      metcyc1=2008
+      metcycf=2017
+      imetavg=1
+      ;;
+   Tanguro_Ctrl)
+      metdriverdb="${fullscen}/Tanguro_Ctrl/Tanguro_Ctrl_HEADER"
       metcyc1=2008
       metcycf=2017
       imetavg=1
@@ -2021,8 +1971,8 @@ do
             thissfilin="${bioinit}/${polyiata}_nounder."
             ;;
          2)
-            #----- Same as default, but with only one grass and one tree. -----------------#
-            thissfilin="${bioinit}/${polyiata}_twopft."
+            #----- ALS initialisation. ----------------------------------------------------#
+            thissfilin="${bioinit}/${polyiata}_alsinit."
             ;;
          *)
             #----- Invalid option. Stop the script. ---------------------------------------#

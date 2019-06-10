@@ -371,7 +371,7 @@ read.las <<- function( lasfile
                                    , what   = "integer"
                                    , size   = 1L
                                    , n      = numberPointRecords
-                                   , signed = FALSE
+                                   , signed = TRUE
                                    , endian = "little"
                                    )#end readBin
       #------------------------------------------------------------------------------------#
