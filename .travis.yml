@@ -8,7 +8,7 @@ before_install:
     - which gfortran
     - which gcc
     - which h5dump
-    - ls /usr/include
+    - ls /usr/include/hdf5/
 
 script:
     - pwd
