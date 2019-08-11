@@ -6497,11 +6497,12 @@ subroutine init_dt_thermo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Tolerances.  For the sub-daily step, the default is to use the same tolerance    !
-   ! used for Runge-Kutta.  For the long-term carbon dynamics, we use a stricter           !
-   ! tolerance, by default 10 times the truncation tolerance (about 1e-4).                !
+   !      Tolerances.  Following Stefan Olin's suggestion on the ED-2.2 model description  !
+   ! paper, we use a stricter tolerance, by default the truncation tolerance (about 1e-5). !
+   ! For carbon, we use 10 times the the values for the energy and water because the       !
+   ! solver uses single-precision.
    !---------------------------------------------------------------------------------------!
-   tol_subday_budget = rk4_tolerance
+   tol_subday_budget = r_tol_trunc
    tol_carbon_budget = 10. * r_tol_trunc
    !---------------------------------------------------------------------------------------!
 

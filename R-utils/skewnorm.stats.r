@@ -6,13 +6,18 @@ sn.version      <<- as.numeric(substring(packageVersion(pkg="sn"),1,1))
 #==========================================================================================#
 #    This function finds all three parameters for skew normal distribution.                #
 #------------------------------------------------------------------------------------------#
-sn.stats <<- function(x,na.rm=FALSE,maxit=9999){
+sn.stats <<- function(x,na.rm=FALSE,method=c("MPLE","MLE"),maxit=9999){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
       stop("Function sn.stats requires package sn (version > 1.0)!")
    }else if (sn.version == 0){
       stop("Function sn.stats requires package sn (version > 1.0)!")
    }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Make sure the method is acceptable. ---------------------------------------------#
+   method = match.arg(method)
    #---------------------------------------------------------------------------------------#
 
 
@@ -34,6 +39,7 @@ sn.stats <<- function(x,na.rm=FALSE,maxit=9999){
    myfit.mle = try( selm( formula = xsel~1
                         , family  = "SN"
                         , data    = data.frame(xsel=xsel)
+                        , method  = method
                         )#end selm
                   , silent = TRUE
                   )#end try

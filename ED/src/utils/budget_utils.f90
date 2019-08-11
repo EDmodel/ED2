@@ -937,7 +937,7 @@ module budget_utils
          !----- Look for violation of conservation in all quantities. ---------------------!
          co2budget_tolerance = tol_subday_budget * ( abs(co2budget_finalstorage)           &
                                                    + abs(co2budget_deltastorage) )
-         cbudget_tolerance   = tol_subday_budget * ( abs(cbudget_finalstorage  )           &
+         cbudget_tolerance   = tol_carbon_budget * ( abs(cbudget_finalstorage  )           &
                                                    + abs(cbudget_deltastorage  ) )
          ebudget_tolerance   = tol_subday_budget * ( abs(ebudget_finalstorage  )           &
                                                    + abs(ebudget_deltastorage  ) )

@@ -128,6 +128,14 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
 
 
       #------------------------------------------------------------------------------------#
+      #     Find the correlation between the model and observations.                       #
+      #------------------------------------------------------------------------------------#
+      cor.pearson  = cor(x=x.obs,y=x.mod,use="pairwise.complete.obs",method="pearson" )
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
       #     Find the coefficient of determination (R2).  If the number of parameters is    #
       # given, then we find the adjusted R^2 (the one that penalises due to the number of  #
       # parameters).  Otherwise we can't correct, so we just compare the sum of the        #
@@ -193,6 +201,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
       mae          = NA_real_
       mse          = NA_real_
       rmse         = NA_real_
+      cor.pearson  = NA_real_
       ss.tot       = NA_real_
       ss.err       = NA_real_
       r.squared    = NA_real_
@@ -233,6 +242,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
                       , mae          = mae
                       , mse          = mse
                       , rmse         = rmse
+                      , cor          = cor.pearson
                       , ss.tot       = ss.tot
                       , ss.err       = ss.err
                       , r.squared    = r.squared
@@ -266,6 +276,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
              , mae          = mae
              , mse          = mse
              , rmse         = rmse
+             , cor          = cor.pearson
              , ss.tot       = ss.tot
              , ss.err       = ss.err
              , r.squared    = r.squared
@@ -290,6 +301,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
                  , mae          = mae
                  , mse          = mse
                  , rmse         = rmse
+                 , cor          = cor.pearson
                  , ss.tot       = ss.tot
                  , ss.err       = ss.err
                  , r.squared    = r.squared

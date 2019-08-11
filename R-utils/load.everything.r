@@ -224,6 +224,7 @@ loaded.package[["agricolae"   ]] = discreet.require(agricolae   )
 loaded.package[["akima"       ]] = discreet.require(akima       )
 loaded.package[["beanplot"    ]] = discreet.require(beanplot    )
 loaded.package[["boot"        ]] = discreet.require(boot        )
+loaded.package[["callr"       ]] = discreet.require(callr       )
 loaded.package[["car"         ]] = discreet.require(car         )
 loaded.package[["caTools"     ]] = discreet.require(caTools     )
 loaded.package[["chron"       ]] = discreet.require(chron       )
@@ -425,10 +426,10 @@ for (if90 in sequence(nall.f90)){
    #----- Check whether dynamic library can be loaded.  In case not, recompile. -----------#
    dummy = try(dyn.load(flib.sx),silent=TRUE)
    if ("try-error" %in% is(dummy)){
-      dummy = file.remove(flib.so)
-      dummy = file.remove(flib.sl)
-      dummy = file.remove(flib.o )
-      dummy = RCMD(cmd="SHLIB",options=fnow,path=srcdir)
+      dummy = if (file.exists(flib.so)){file.remove(flib.so)}else{character(0)}
+      dummy = if (file.exists(flib.sl)){file.remove(flib.sl)}else{character(0)}
+      dummy = if (file.exists(flib.o )){file.remove(flib.o )}else{character(0)}
+      dummy = rcmd(cmd="SHLIB",cmdargs=fnow,libpath=srcdir)
    }#end if ("try-error" %in% is(dummy))
    #---------------------------------------------------------------------------------------#
 }#end for (if90 in sequence(nall.f90))

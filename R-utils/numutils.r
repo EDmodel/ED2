@@ -1045,28 +1045,6 @@ rowWgtMeans <<- function(x,w,...,na.rm=FALSE){
 
 #==========================================================================================#
 #==========================================================================================#
-#     This function normalises a vector.  Results are just the normalised values, mean and #
-# standard deviation are in attributes.                                                    #
-#------------------------------------------------------------------------------------------#
-normalise <<- function(x,mu,sigma){
-   if (missing(mu   )) mu    = mean(x,na.rm = TRUE)
-   if (missing(sigma)) sigma = sd  (x,na.rm = TRUE)
-   nx      = sum(is.finite(x))
-   normal  = (x - mu) / sigma
-   normal  = ifelse(is.finite(normal),normal,NA)
-   attributes(normal) = list(mean = mu, sdev = sigma, n = nx)
-   return(normal)
-}#end normalise
-#==========================================================================================#
-#==========================================================================================#
-
-
-
-
-
-
-#==========================================================================================#
-#==========================================================================================#
 #     This function converts data into percentil (0-100).                                  #
 #------------------------------------------------------------------------------------------#
 percentil <<- function(x,trim=0.0){
@@ -1300,10 +1278,19 @@ n.six.summary     <<- length(six.summary.names)
 #     This function calculates the four moments of the distribution plus the 95% C.I. of   #
 # the mean using t distributioon.                                                          #
 #------------------------------------------------------------------------------------------#
-six.summary <<- function(x,conf=0.95,finite=TRUE,...){
+six.summary <<- function(x,conf=0.95,finite=TRUE,cint.type=c("se","sd","quantile"),...){
    #------ Remove non-finite data in case finite=TRUE. ------------------------------------#
    if (finite) x = x[is.finite(x)]
    nx = length(x)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Decide which type of confidence interval to display (CI on the mean, using t    #
+   # distribution and standard error, or the quantile distribution.                        #
+   #---------------------------------------------------------------------------------------#
+   cint.type = match.arg(cint.type)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1324,8 +1311,22 @@ six.summary <<- function(x,conf=0.95,finite=TRUE,...){
       variance = var (x)
       skewness = skew(x)
       kurtosis = kurt(x)
-      ci.lower = expected + qt(p=0.5*(1.0-conf),df=nx-1) * se(x)
-      ci.upper = expected + qt(p=0.5*(1.0+conf),df=nx-1) * se(x)
+      if (cint.type %in% "se"){
+         #----- Find confidence interval of the average. ----------------------------------#
+         ci.lower = expected + qt(p=0.5*(1.0-conf),df=nx-1) * se(x)
+         ci.upper = expected + qt(p=0.5*(1.0+conf),df=nx-1) * se(x)
+         #---------------------------------------------------------------------------------#
+      }else if (cint.type %in% "sd"){
+         #----- Find range instead of CI, using t distribution. ---------------------------#
+         ci.lower = expected + qt(p=0.5*(1.0-conf),df=nx-1) * sd(x)
+         ci.upper = expected + qt(p=0.5*(1.0+conf),df=nx-1) * sd(x)
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Find the quantiles. -------------------------------------------------------#
+         ci.lower = quantile(x=x,probs=0.5*(1.0-conf),names=FALSE)
+         ci.upper = quantile(x=x,probs=0.5*(1.0+conf),names=FALSE)
+         #---------------------------------------------------------------------------------#
+      }#end if 
       #------------------------------------------------------------------------------------#
 
 

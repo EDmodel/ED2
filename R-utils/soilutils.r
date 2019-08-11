@@ -106,7 +106,7 @@ nstext.polygon <<- nstext.polygon
 #==========================================================================================#
 #     This function finds the soil parameters.                                             #
 #------------------------------------------------------------------------------------------#
-soil.params <<- function(ntext,isoilflg,slxsand,slxclay){
+soil.params <<- function(ntext,isoilflg,slxsand,slxclay,out.dfr=FALSE){
    #----- Define some prescribed fractions. -----------------------------------------------#
    xsand.def = c( 0.920, 0.825, 0.660, 0.200, 0.410, 0.590
                 , 0.100, 0.320, 0.520, 0.060, 0.200, 0.200
@@ -299,6 +299,11 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay){
                       + kclay * mysoil$xclay  * ( 1. - mysoil$slmsts )
                       + kair                  *        mysoil$slmsts   )
    mysoil$thcond3 = 1. - kair
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Select the output format according to the users' choice. ------------------------#
+   if (out.dfr) mysoil = as.data.frame(mysoil,stringsAsFactors=FALSE)
    #---------------------------------------------------------------------------------------#
 
    return(mysoil)

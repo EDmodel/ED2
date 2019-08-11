@@ -456,6 +456,7 @@ pft01 = list( name               = "C4 grass"
             , b1Cl               = 0.99
             , b2Cl               = 1.00
             , veg.hcap.min       = 7.30807E+00
+            , plant.min.temp     = 2.5
             )
 
 pft02 = list( name               = "Early tropical"
@@ -495,6 +496,7 @@ pft02 = list( name               = "Early tropical"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 9.53226E+00
+            , plant.min.temp     = 2.5
             )
 
 pft03 = list( name               = "Mid tropical"
@@ -534,6 +536,7 @@ pft03 = list( name               = "Mid tropical"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 1.46161E+01
+            , plant.min.temp     = 2.5
             )
 
 pft04 = list( name               = "Late tropical"
@@ -573,6 +576,7 @@ pft04 = list( name               = "Late tropical"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 2.43602E+01
+            , plant.min.temp     = 2.5
             )
 
 pft05 = list( name               = "Temperate C3 Grass"
@@ -612,6 +616,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , b1Cl               = 0.99
             , b2Cl               = 1.0
             , veg.hcap.min       = 9.16551E+00
+            , plant.min.temp     = -80
             )
 
 pft06 = list( name               = "North Pine"
@@ -651,6 +656,7 @@ pft06 = list( name               = "North Pine"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 2.34683E-01
+            , plant.min.temp     = -80
             )
 
 pft07 = list( name               = "South Pine"
@@ -690,6 +696,7 @@ pft07 = list( name               = "South Pine"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 2.34683E-01
+            , plant.min.temp     = -10
             )
 
 pft08 = list( name               = "Late conifer"
@@ -729,6 +736,7 @@ pft08 = list( name               = "Late conifer"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 6.80074E-01
+            , plant.min.temp     = -60
             )
 
 pft09 = list( name               = "Early hardwood"
@@ -768,6 +776,7 @@ pft09 = list( name               = "Early hardwood"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 8.95049E-02
+            , plant.min.temp     = -80
             )
 
 pft10 = list( name               = "Mid hardwood"
@@ -807,6 +816,7 @@ pft10 = list( name               = "Mid hardwood"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 7.65271E-01
+            , plant.min.temp     = -20
             )
 
 pft11 = list( name               = "Late hardwood"
@@ -846,6 +856,7 @@ pft11 = list( name               = "Late hardwood"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 1.60601E-01
+            , plant.min.temp     = -20
             )
 
 pft12 = list( name               = "Early savannah"
@@ -885,6 +896,7 @@ pft12 = list( name               = "Early savannah"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 9.53226E+00
+            , plant.min.temp     = 2.5
             )
 
 pft13 = list( name               = "Mid savannah"
@@ -924,6 +936,7 @@ pft13 = list( name               = "Mid savannah"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 9.53226E+00
+            , plant.min.temp     = 2.5
             )
 
 pft14 = list( name               = "Late Savannah"
@@ -963,6 +976,7 @@ pft14 = list( name               = "Late Savannah"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 9.53226E+00
+            , plant.min.temp     = 2.5
             )
 
 pft15 = list( name               = "Araucaria"
@@ -1002,6 +1016,7 @@ pft15 = list( name               = "Araucaria"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 2.19242E+01
+            , plant.min.temp     = -15
             )
 
 pft16 = list( name               = "C3 grass"
@@ -1041,6 +1056,7 @@ pft16 = list( name               = "C3 grass"
             , b1Cl               = 0.99
             , b2Cl               = 1.00
             , veg.hcap.min       = 7.30807E+00
+            , plant.min.temp     = 2.5
             )
 
 pft17 = list( name               = "Liana"
@@ -1080,6 +1096,7 @@ pft17 = list( name               = "Liana"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , veg.hcap.min       = 2.19242E+01
+            , plant.min.temp     = 2.5
             )
 
 #----- PFT 18 has the median wood density and SLA for tropical PFTs. ----------------------#
