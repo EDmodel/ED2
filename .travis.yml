@@ -3,11 +3,11 @@ sudo: required
 
 before_install:
     - sudo apt-get clean && sudo apt-get update
-    - sudo apt-get install gcc gfortran hdf5-tools libopenmpi-dev libhdf5-serial-dev
+    - sudo apt-get install gcc gfortran hdf5-tools libopenmpi-dev libhdf5-dev
     - which gfortran
     - which gcc
     - which h5dump
-    - locate libhdf5_fortran
+    - ls -1 /usr/local/lib
 
 script:
     - pwd
