@@ -26,7 +26,7 @@ BASE=$(ED_ROOT)/build/
 USE_HDF5=1
 HDF5_HOME=/usr
 HDF5_INCS=-I$(HDF5_HOME)/include
-HDF5_LIBS=-lz -L$(HDF5_HOME)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+HDF5_LIBS=-lz -L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
 
 

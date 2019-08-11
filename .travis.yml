@@ -8,7 +8,7 @@ before_install:
     - which gfortran
     - which gcc
     - which h5dump
-    - find /usr -name libhdf5*
+    - ls /usr/include
 
 script:
     - pwd
