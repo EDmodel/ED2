@@ -7,7 +7,7 @@ before_install:
     - which gfortran
     - which gcc
     - which h5dump
-    - ls -1 /usr/local/lib
+    - ls -1 /usr/lib/x86_64-linux-gnu/hdf5/lib
 
 script:
     - pwd
