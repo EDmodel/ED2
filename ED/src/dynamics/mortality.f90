@@ -73,7 +73,6 @@ module mortality
       !------------------------------------------------------------------------------------!
 
 
-
       !------------------------------------------------------------------------------------!
       ! 4.   Mortality due to cold, after:                                                 !
       !      Albani, M.; D. Medvigy; G. C. Hurtt; P. R. Moorcroft, 2006: The contributions !
@@ -86,7 +85,6 @@ module mortality
       !------------------------------------------------------------------------------------!
 
 
-
       !------------------------------------------------------------------------------------!
       ! 5. Disturbance rate mortality.  This is not used by the cohort dynamics, instead   !
       !    this is just to account for the lost density due to the patch creation.  This   !
@@ -96,13 +94,15 @@ module mortality
       !------------------------------------------------------------------------------------!
 
 
-
       !------------------------------------------------------------------------------------!
-      ! 6.   Mortality due to windshear, function of PFT and hite. Has same log function   !
-      ! as wind. mort = A*ln(hite/hite_min)                                                !
+      ! 6.   Mortality due to windshear, function of PFT and hite. Has same vert log funct !
+      ! as wind. mort = A*ln(hite/hite_min) * veg_wind                                     !
       ! EJL                                                                                !
       !------------------------------------------------------------------------------------!
-      cpatch%mort_rate(6,ico) = wind_mort(ipft)*log(cpatch%hite(ico)/hgt_min(ipft))
+      cpatch%mort_rate(6,ico) =max(0., wind_mort(ipft)*log(cpatch%hite(ico)/hgt_min(ipft)) *      &
+                                cpatch%veg_wind(ico) )
+      !write (unit=*,fmt='(a,i6,i6,f10.4,f10.4)') 'Wind mortality components: ico,ipft,    &
+      !    hite, veg_wind', ico, ipft, cpatch%hite(ico), cpatch%veg_wind(ico)
       !------------------------------------------------------------------------------------!
 
 

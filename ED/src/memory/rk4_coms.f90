@@ -11,7 +11,7 @@ module rk4_coms
    use ed_max_dims, only : n_pft   & ! intent(in)
                          , nzgmax  & ! intent(in)
                          , str_len ! ! intent(in)
-
+   use grid_coms , only : nzg
    implicit none
 
    !=======================================================================================!

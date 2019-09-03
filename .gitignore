@@ -159,3 +159,9 @@ ED/build/thermal_sums/*
 ED/build/ED2IN*
 ED/build/allom_param.txt
 ED/build/pft_sizes.txt
+
+#EJL
+ED/run*
+ED/NARR*
+ED/tower_runs
+ED/regional

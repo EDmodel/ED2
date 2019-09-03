@@ -1,0 +1,126 @@
+\hypertarget{namespacegrowth__balive}{
+\section{growth\_\-balive Namespace Reference}
+\label{namespacegrowth__balive}\index{growth\_\-balive@{growth\_\-balive}}
+}
+
+
+Various routines handling plant C and N use given size and allometry.  
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespacegrowth__balive_a7781ae229b2399c90d50858382665ee8}{dbalive\_\-dt} (cgrid, tfact)
+\begin{DoxyCompactList}\small\item\em Updates living biomass. \item\end{DoxyCompactList}\item 
+\hypertarget{namespacegrowth__balive_a15cba39e9b70b8dd6a1e2d0cbdd5cc2e}{
+subroutine {\bfseries dbalive\_\-dt\_\-eq\_\-0} (cgrid, tfact)}
+\label{namespacegrowth__balive_a15cba39e9b70b8dd6a1e2d0cbdd5cc2e}
+
+\item 
+\hypertarget{namespacegrowth__balive_ac2f667372e6f2a5fc7329466cc958a6c}{
+subroutine {\bfseries get\_\-maintenance} (cpatch, ico, tfact, tempk)}
+\label{namespacegrowth__balive_ac2f667372e6f2a5fc7329466cc958a6c}
+
+\item 
+\hypertarget{namespacegrowth__balive_a861b85f31215415551f4a9c03302ff6e}{
+subroutine {\bfseries apply\_\-maintenance} (cpatch, ico, cb\_\-decrement)}
+\label{namespacegrowth__balive_a861b85f31215415551f4a9c03302ff6e}
+
+\item 
+\hypertarget{namespacegrowth__balive_a87bfd5551e51194040df55715abda8e7}{
+subroutine {\bfseries get\_\-daily\_\-C\_\-gain} (cpatch, ico, daily\_\-C\_\-gain)}
+\label{namespacegrowth__balive_a87bfd5551e51194040df55715abda8e7}
+
+\item 
+\hypertarget{namespacegrowth__balive_ac4ca7901eed6321044f171f6f1b8d7d6}{
+subroutine {\bfseries update\_\-cb} (cpatch, ico, cb\_\-decrement)}
+\label{namespacegrowth__balive_ac4ca7901eed6321044f171f6f1b8d7d6}
+
+\item 
+\hypertarget{namespacegrowth__balive_a6c0ddec560e65b6d58be7041bd8dade2}{
+subroutine {\bfseries update\_\-today\_\-npp\_\-vars} (cpatch, ico, tr\_\-bleaf, tr\_\-broot, tr\_\-bsapwooda, tr\_\-bsapwoodb, carbon\_\-balance)}
+\label{namespacegrowth__balive_a6c0ddec560e65b6d58be7041bd8dade2}
+
+\item 
+\hypertarget{namespacegrowth__balive_a8599682ade194a107377a540d7e64c73}{
+subroutine {\bfseries update\_\-nitrogen} (flushing, ipft, carbon\_\-balance, nplant, tr\_\-bleaf, tr\_\-broot, tr\_\-bstorage, nitrogen\_\-uptake, fsn\_\-in)}
+\label{namespacegrowth__balive_a8599682ade194a107377a540d7e64c73}
+
+\item 
+subroutine \hyperlink{namespacegrowth__balive_a4a738e1e648a3932ae0beb2400c9bf78}{get\_\-c\_\-xfers} (csite, ipa, ico, carbon\_\-balance, green\_\-leaf\_\-factor, tr\_\-bleaf, tr\_\-broot, tr\_\-bsapwooda, tr\_\-bsapwoodb, tr\_\-bstorage, carbon\_\-debt, flushing, balive\_\-aim)
+\begin{DoxyCompactList}\small\item\em Calculates plant-\/internal C transfers for growth and maintainance. \item\end{DoxyCompactList}\item 
+\hypertarget{namespacegrowth__balive_a7a91aeb819248834373b9c7d9bafcbde}{
+subroutine {\bfseries apply\_\-c\_\-xfers} (cpatch, ico, carbon\_\-balance, tr\_\-bleaf, tr\_\-broot, tr\_\-bsapwooda, tr\_\-bsapwoodb, tr\_\-bstorage)}
+\label{namespacegrowth__balive_a7a91aeb819248834373b9c7d9bafcbde}
+
+\item 
+\hypertarget{namespacegrowth__balive_af977e6b599dfde9155a3ab3cb7175f16}{
+subroutine {\bfseries plant\_\-maintenance} (cpatch, ico, br, bl, tfact, daily\_\-C\_\-gain, tempk)}
+\label{namespacegrowth__balive_af977e6b599dfde9155a3ab3cb7175f16}
+
+\item 
+\hypertarget{namespacegrowth__balive_a7921154a300d0b56c862c78f641e5d3b}{
+subroutine {\bfseries plant\_\-carbon\_\-balances} (cpatch, ipa, ico, daily\_\-C\_\-gain, carbon\_\-balance, carbon\_\-balance\_\-pot, carbon\_\-balance\_\-lightmax, carbon\_\-balance\_\-moistmax, carbon\_\-balance\_\-mlmax)}
+\label{namespacegrowth__balive_a7921154a300d0b56c862c78f641e5d3b}
+
+\item 
+\hypertarget{namespacegrowth__balive_aade95a53fd0d26aabf864afab17b1889}{
+subroutine {\bfseries alloc\_\-plant\_\-c\_\-balance\_\-grass} (csite, ipa, ico, salloci, carbon\_\-balance, nitrogen\_\-uptake, green\_\-leaf\_\-factor)}
+\label{namespacegrowth__balive_aade95a53fd0d26aabf864afab17b1889}
+
+\item 
+\hypertarget{namespacegrowth__balive_abc5121207b9e02b869996c48e1204381}{
+subroutine {\bfseries alloc\_\-plant\_\-c\_\-balance\_\-eq\_\-0} (csite, ipa, ico, carbon\_\-balance, nitrogen\_\-uptake, green\_\-leaf\_\-factor)}
+\label{namespacegrowth__balive_abc5121207b9e02b869996c48e1204381}
+
+\item 
+\hypertarget{namespacegrowth__balive_acf79474af61cf55cda65a317af916dc8}{
+subroutine {\bfseries potential\_\-N\_\-uptake} (cpatch, ico, carbon\_\-balance\_\-pot, N\_\-uptake\_\-pot, green\_\-leaf\_\-factor)}
+\label{namespacegrowth__balive_acf79474af61cf55cda65a317af916dc8}
+
+\item 
+\hypertarget{namespacegrowth__balive_affc86c9f292d8fa6d67dfe1d0df69337}{
+subroutine {\bfseries litter} (csite, ipa)}
+\label{namespacegrowth__balive_affc86c9f292d8fa6d67dfe1d0df69337}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Various routines handling plant C and N use given size and allometry. Essentially, this file contains dbalive\_\-dt\mbox{[}\_\-eq0\mbox{]} and their libraries of fns. \begin{DoxyAuthor}{Author}
+Translated from ED1 by Ryan Knox and Marcos Longo 
+
+31 Aug 2015 -\/ Big refactoring in commit b8fb585, Daniel Scott 
+\end{DoxyAuthor}
+
+
+\subsection{Function Documentation}
+\hypertarget{namespacegrowth__balive_a7781ae229b2399c90d50858382665ee8}{
+\index{growth\_\-balive@{growth\_\-balive}!dbalive\_\-dt@{dbalive\_\-dt}}
+\index{dbalive\_\-dt@{dbalive\_\-dt}!growth_balive@{growth\_\-balive}}
+\subsubsection[{dbalive\_\-dt}]{\setlength{\rightskip}{0pt plus 5cm}subroutine growth\_\-balive::dbalive\_\-dt (type({\bf edtype}),target {\em cgrid}, \/  real,intent(in) {\em tfact})}}
+\label{namespacegrowth__balive_a7781ae229b2399c90d50858382665ee8}
+
+
+Updates living biomass. Calls a variety of subroutines controlling plant carbon balances, C and N xfers among plant pools, updating of storage and growth respiration, leaf maintenance,and update mortality rates. \begin{DoxyAuthor}{Author}
+Translated from ED1 by Ryan Knox and Marcos Longo 
+
+31 Aug 2015 -\/ Big refactoring in commit b8fb585, Daniel Scott 
+\end{DoxyAuthor}
+\begin{DoxyWarning}{Warning}
+The order of the operations here affect the C/N budgets, so don't change it unless you really know what you are doing. 
+\end{DoxyWarning}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em cgrid}]the ed grid\item[{\em tfact}]\char`\"{}time factor\char`\"{} i.e. call frequency \end{DoxyParams}
+\hypertarget{namespacegrowth__balive_a4a738e1e648a3932ae0beb2400c9bf78}{
+\index{growth\_\-balive@{growth\_\-balive}!get\_\-c\_\-xfers@{get\_\-c\_\-xfers}}
+\index{get\_\-c\_\-xfers@{get\_\-c\_\-xfers}!growth_balive@{growth\_\-balive}}
+\subsubsection[{get\_\-c\_\-xfers}]{\setlength{\rightskip}{0pt plus 5cm}subroutine growth\_\-balive::get\_\-c\_\-xfers (type({\bf sitetype}),target {\em csite}, \/  integer,intent(in) {\em ipa}, \/  integer,intent(in) {\em ico}, \/  real,intent(in) {\em carbon\_\-balance}, \/  real,intent(in) {\em green\_\-leaf\_\-factor}, \/  real,intent(out) {\em tr\_\-bleaf}, \/  real,intent(out) {\em tr\_\-broot}, \/  real,intent(out) {\em tr\_\-bsapwooda}, \/  real,intent(out) {\em tr\_\-bsapwoodb}, \/  real,intent(out) {\em tr\_\-bstorage}, \/  real,intent(out) {\em carbon\_\-debt}, \/  logical,intent(out) {\em flushing}, \/  real,intent(out) {\em balive\_\-aim})}}
+\label{namespacegrowth__balive_a4a738e1e648a3932ae0beb2400c9bf78}
+
+
+Calculates plant-\/internal C transfers for growth and maintainance. Uses phenology, allometry, carbon balance, and current C pool sizes to determine (signed) transfers to leaf, root, sapwooda, sapwoodb, and storage. \begin{DoxyWarning}{Warning}
+The order of the operations here affect the C/N budgets, so don't change it unless you really know what you are doing. 
+\end{DoxyWarning}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em csite}]Current Site\item[{\em ipa}]Loop-\/Current Patch\item[{\em ico}]Loop-\/Current Cohort\item[{\em carbon\_\-balance}]Plant net carbon uptake\item[{\em green\_\-leaf\_\-factor}]Cohort leaf-\/age param.\item[{\em tr\_\-bleaf}]Transfer to leaf C pool\item[{\em tr\_\-broot}]Transfer to root C pool\item[{\em tr\_\-bsapwooda}]Transfer to sapwooda C pool\item[{\em tr\_\-bsapwoodb}]Transfer to sapwoodb C pool\item[{\em tr\_\-bstorage}]Transfer to storage C pool\item[{\em carbon\_\-debt}]Net cohort carbon uptake\item[{\em flushing}]Flag for leaf flush\item[{\em balive\_\-aim}]Desired cohort balive value \end{DoxyParams}

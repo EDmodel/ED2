@@ -12,6 +12,7 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
    use phenology_coms , only : iphen_scheme          ! ! intent(in)
    use ed_misc_coms   , only : current_time          ! ! intent(in)
    use phenology_aux  , only : prescribed_leaf_state & ! subroutine
+                             , prescribed_greenup    & ! subroutine
                              , update_thermal_sums   & ! subroutine
                              , update_turnover       ! ! subroutine
    implicit none
@@ -64,6 +65,14 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
             !----- KIM light-controlled predictive phenology scheme. ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_turnover(cpoly,isi)
+            call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
+
+         case (5)
+            !EJL use MODIS C6 greenup and down values. (20% and 50% greenup and greendown)
+            call prescribed_greenup(cgrid%lat(ipy), current_time%month                     &
+                                      ,current_time%year, doy                              &
+                                      ,cpoly%green_leaf_factor(:,isi)                      &
+                                      ,cpoly%leaf_aging_factor(:,isi),cpoly%phen_pars(isi))
             call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
          end select
       end do
@@ -91,6 +100,7 @@ subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
    use phenology_coms , only : iphen_scheme          ! ! intent(in)
    use ed_misc_coms   , only : current_time          ! ! intent(in)
    use phenology_aux  , only : prescribed_leaf_state & ! subroutine
+                             , prescribed_greenup    & ! subroutine
                              , update_thermal_sums   & ! subroutine
                              , update_turnover       ! ! subroutine
    implicit none
@@ -143,6 +153,15 @@ subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_turnover(cpoly,isi)
             call update_phenology_eq_0(doy,cpoly,isi,cgrid%lat(ipy))
+
+         case (5)
+            !EJL use MODIS C6 greenup and down values. (20% and 50% greenup and greendown)
+            call prescribed_greenup(cgrid%lat(ipy), current_time%month                     &
+                                      ,current_time%year, doy                              &
+                                      ,cpoly%green_leaf_factor(:,isi)                      &
+                                      ,cpoly%leaf_aging_factor(:,isi),cpoly%phen_pars(isi))
+            call update_phenology_eq_0(doy,cpoly,isi,cgrid%lat(ipy))
+
          end select
       end do
    end do
@@ -251,7 +270,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
          !----- Find cohort-specific thresholds. ------------------------------------------!
          select case (iphen_scheme)
-         case (1)
+         case (1,5)
             !----- Get cohort-specific thresholds for prescribed phenology. ---------------!
             call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)                  &
                                        ,cpoly%leaf_aging_factor(ipft,isi),cpatch%dbh(ico)  &
@@ -721,7 +740,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
 
          !----- Find cohort-specific thresholds. ------------------------------------------!
          select case (iphen_scheme)
-         case (1)
+         case (1,5)
             !----- Get cohort-specific thresholds for prescribed phenology. ---------------!
             call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)                  &
                                        ,cpoly%leaf_aging_factor(ipft,isi),cpatch%dbh(ico)  &
@@ -1055,7 +1074,7 @@ subroutine phenology_thresholds(daylight,soil_temp,sum_chd,sum_dgd,drop_cold,lea
    !     Check which phenology scheme to use.                                              !
    !---------------------------------------------------------------------------------------!
    select case (iphen_scheme)
-   case (1)
+   case (1,5)
       !------------------------------------------------------------------------------------!
       !     Prescribed phenology, skip this and fill with the prescribed phenology.        !
       !------------------------------------------------------------------------------------!

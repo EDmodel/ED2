@@ -227,6 +227,13 @@ Module ed_misc_coms
    integer :: icarbdyn ! 1 - push down and pull up preserving ratio of organic pools
                        ! 2 - preferentially push down slow carbon and pull up fast carbon
 
+   !------Namelist option for doing vertically resolved het. resp.   ----------------------!
+   integer :: ivertresp ! 0 - Off, Uses ED2.1 original method of top 20cm T,W 
+                        ! 1 - On, Het resp is vertically resolved
+
+   !------Namelist option for dynamic soil texture ---- -----------------------------------!
+   integer :: isoiltext ! 0 - Off. ED2.1 method, soil texture set at initialization
+                        ! 1 - On. Soil texture dynamically set based on depth of carbon pool
 
    !----- Namelist option for allometry scheme. -------------------------------------------!
    integer :: iallom ! 0 -- Original ED-2.1 allometry

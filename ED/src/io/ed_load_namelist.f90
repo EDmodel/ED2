@@ -205,6 +205,8 @@ subroutine copy_nl(copy_type)
                                    , event_file                & ! intent(out)
                                    , iallom                    & ! intent(out)
                                    , icarbdyn                  & ! intent(out)
+                                   , ivertresp                 & ! intent(out)
+                                   , isoiltext                 & ! intent(out)
                                    , igrass                    & ! intent(out)
                                    , min_site_area             & ! intent(out)
                                    , fast_diagnostics          & ! intent(out)
@@ -335,7 +337,7 @@ subroutine copy_nl(copy_type)
       ied_init_mode             = nl%ied_init_mode
 
       isoilflg                  = nl%isoilflg
-      nslcon                    = nl%nslcon
+      nslcon                    = nl%nslcon(1:nzgmax)
       isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
       slxsand                   = nl%slxsand
@@ -379,6 +381,8 @@ subroutine copy_nl(copy_type)
       iphysiol                  = nl%iphysiol
       iallom                    = nl%iallom
       icarbdyn                  = nl%icarbdyn
+      ivertresp                 = nl%ivertresp
+      isoiltext                 = nl%isoiltext
       igrass                    = nl%igrass
       iphen_scheme              = nl%iphen_scheme
       repro_scheme              = nl%repro_scheme
@@ -660,7 +664,7 @@ subroutine copy_nl(copy_type)
    !---------------------------------------------------------------------------------------!
    if ( any(isoilflg == 2) .and. slxclay > 0. .and. slxsand > 0. .and.                     &
         (slxclay + slxsand) <= 1. ) then
-      nslcon = find_soil_class(slxsand,slxclay)
+      nslcon(:) = find_soil_class(slxsand,slxclay)
    end if
    !---------------------------------------------------------------------------------------!
 

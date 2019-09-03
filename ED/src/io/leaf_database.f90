@@ -9,6 +9,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                          , isoilcol      & ! intent(in)
                          , ed_nstyp      & ! intent(in)
                          , ed_nvtyp      ! ! intent(in)
+   use grid_coms  , only : nzg        ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    character(len=*)                          , intent(in)  :: ofn
@@ -17,7 +18,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    integer                                   , intent(in)  :: nlandsea
    real           , dimension(    3,nlandsea), intent(in)  :: lat
    real           , dimension(    3,nlandsea), intent(in)  :: lon
-   integer        , dimension(nsite,nlandsea), intent(out) :: classout
+   integer , dimension(nsite,nlandsea,nzg), intent(out) :: classout
    real           , dimension(nsite,nlandsea), intent(out) :: pctout
    !----- Variables describing the files. -------------------------------------------------!
    integer                                                 :: nio
@@ -50,6 +51,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    integer        , dimension(:,:)           , allocatable :: nump
    integer        , dimension(:,:,:)         , allocatable :: cnr_ind
    integer(kind=4), dimension(:,:)           , allocatable :: idato
+   integer(kind=4), dimension(:,:,:)         , allocatable :: idato2
    integer        , dimension(4*nlandsea)                  :: cnr_i1
    integer        , dimension(4*nlandsea)                  :: cnr_i2
    integer        , dimension(4*nlandsea)                  :: cnr_j1
@@ -83,6 +85,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    integer                                                 :: ilandsea
    integer                                                 :: dq
    integer                                                 :: ed_nctyp
+   integer                                                 :: z
    !------ External functions. ------------------------------------------------------------!
    integer, external                                       :: find_rank
    !---------------------------------------------------------------------------------------!
@@ -151,6 +154,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    !----- Allocate nump and idato. --------------------------------------------------------!
    allocate (nump    (ifiles,jfiles))
    allocate (idato   (nio,njo))
+   allocate ( idato2 (nio,njo,nzg))
 
    do jfile = 1,jfiles
       do ifile = 1,ifiles
@@ -278,7 +282,12 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                case ('leaf_class')
                   call shdf5_irec_f(ndims,idims,'oge2',ivara=idato)
                case ('soil_text')
-                  call shdf5_irec_f(ndims,idims,'fao',ivara=idato)
+                  ndims = 3
+                  idims(1) = nio
+                  idims(2) = njo
+                  idims(3) = nzg
+                  call shdf5_irec_f(ndims,idims,'fao',ivara=idato2)
+                  idato(:,:)=idato2(:,:,1)
                case ('soil_col')
                   call shdf5_irec_f(ndims,idims,'colour',ivara=idato)
                case default
@@ -294,7 +303,10 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                case ('leaf_class')
                   idato(:,:) = 0
                case ('soil_text')
-                  idato(:,:) = nslcon
+                 do z = 1,nzg 
+                    idato2(:,:,z) = nslcon(z)
+                 end do
+                    idato(:,:) = nslcon(nzg-1)
                case ('soil_col')
                   idato(:,:) = isoilcol
                case default
@@ -380,7 +392,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
          pctout  (:,ilandsea) = 0.
          pctout  (1,ilandsea) = real(sum(class_count(2:ed_nvtyp,ilandsea))) / total_count
          !----- This won't be used, assign any number. ------------------------------------!
-         classout(:,ilandsea) = 6
+         classout(:,ilandsea,:) = 6
       end do
       !------------------------------------------------------------------------------------!
 
@@ -403,7 +415,9 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
             !    Assign the default class as this may be used if soil and land use maps    !
             ! disagree about whether a place is land or water.                             !
             !------------------------------------------------------------------------------!
-            classout(:,ilandsea) = nslcon
+            do z = 1,nzg 
+               classout(:,ilandsea,z) = nslcon(z)
+            end do
             !------------------------------------------------------------------------------!
 
          else
@@ -421,7 +435,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                !----- Itext is the texture type that has rank irank. ----------------------!
                itext = find_rank(irank,ed_nstyp,rankpct)
                
-               classout(irank,ilandsea) = itext
+               classout(irank,ilandsea,:) = itext
                pctout  (irank,ilandsea) = fraction(itext)
             end do
             !------------------------------------------------------------------------------!
@@ -435,6 +449,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    !----- Free memory so it won't leak it. ------------------------------------------------!
    deallocate(nump       )
    deallocate(idato      )
+   deallocate(idato2     )
    deallocate(cnr_ind    )
    deallocate(class_count)
    deallocate(rankpct    )

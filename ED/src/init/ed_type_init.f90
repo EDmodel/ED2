@@ -804,7 +804,7 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    !---------------------------------------------------------------------------------------!
    !    Fast average variables.                                                            !
    !---------------------------------------------------------------------------------------!
-   csite%fmean_rh                        (ipaa:ipaz) = 0.0
+   csite%fmean_rh                  (1:nzl,ipaa:ipaz) = 0.0
    csite%fmean_cwd_rh                    (ipaa:ipaz) = 0.0
    csite%fmean_nep                       (ipaa:ipaz) = 0.0
    csite%fmean_rk4step                   (ipaa:ipaz) = 0.0
@@ -876,12 +876,12 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    !    Daily means.                                                                       !
    !---------------------------------------------------------------------------------------!
    if (writing_long) then
-      csite%dmean_A_decomp               (ipaa:ipaz) = 0.0
-      csite%dmean_Af_decomp              (ipaa:ipaz) = 0.0
+      csite%dmean_A_decomp             (:,ipaa:ipaz) = 0.0
+      csite%dmean_Af_decomp            (:,ipaa:ipaz) = 0.0
       csite%dmean_co2_residual           (ipaa:ipaz) = 0.0
       csite%dmean_energy_residual        (ipaa:ipaz) = 0.0
       csite%dmean_water_residual         (ipaa:ipaz) = 0.0
-      csite%dmean_rh                     (ipaa:ipaz) = 0.0
+      csite%dmean_rh                   (:,ipaa:ipaz) = 0.0
       csite%dmean_cwd_rh                 (ipaa:ipaz) = 0.0
       csite%dmean_nep                    (ipaa:ipaz) = 0.0
       csite%dmean_rk4step                (ipaa:ipaz) = 0.0
@@ -948,7 +948,7 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    !    Monthly means.                                                                     !
    !---------------------------------------------------------------------------------------!
    if (writing_eorq) then
-      csite%mmean_rh                     (ipaa:ipaz) = 0.0
+      csite%mmean_rh                   (:,ipaa:ipaz) = 0.0
       csite%mmean_cwd_rh                 (ipaa:ipaz) = 0.0
       csite%mmean_nep                    (ipaa:ipaz) = 0.0
       csite%mmean_rk4step                (ipaa:ipaz) = 0.0
@@ -1003,8 +1003,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
       csite%mmean_struct_soil_l          (ipaa:ipaz) = 0.0
       csite%mmean_fast_soil_n            (ipaa:ipaz) = 0.0
       csite%mmean_mineral_soil_n         (ipaa:ipaz) = 0.0
-      csite%mmean_A_decomp               (ipaa:ipaz) = 0.0
-      csite%mmean_Af_decomp              (ipaa:ipaz) = 0.0
+      csite%mmean_A_decomp             (:,ipaa:ipaz) = 0.0
+      csite%mmean_Af_decomp            (:,ipaa:ipaz) = 0.0
       csite%mmean_co2_residual           (ipaa:ipaz) = 0.0
       csite%mmean_energy_residual        (ipaa:ipaz) = 0.0
       csite%mmean_water_residual         (ipaa:ipaz) = 0.0
@@ -1555,7 +1555,7 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%fmean_lai                  (ipy) = 0.0
       cgrid%fmean_bdead                (ipy) = 0.0
 
-      cgrid%fmean_rh                   (ipy) = 0.0
+      cgrid%fmean_rh                 (:,ipy) = 0.0
       cgrid%fmean_cwd_rh               (ipy) = 0.0
       cgrid%fmean_nep                  (ipy) = 0.0
       cgrid%fmean_rk4step              (ipy) = 0.0
@@ -1647,8 +1647,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%dmean_nppseeds             (ipy) = 0.0
          cgrid%dmean_nppwood              (ipy) = 0.0
          cgrid%dmean_nppdaily             (ipy) = 0.0
-         cgrid%dmean_A_decomp             (ipy) = 0.0
-         cgrid%dmean_Af_decomp            (ipy) = 0.0
+         cgrid%dmean_A_decomp           (:,ipy) = 0.0
+         cgrid%dmean_Af_decomp          (:,ipy) = 0.0
          cgrid%dmean_co2_residual         (ipy) = 0.0
          cgrid%dmean_energy_residual      (ipy) = 0.0
          cgrid%dmean_water_residual       (ipy) = 0.0
@@ -1707,7 +1707,7 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%dmean_vapor_wc             (ipy) = 0.0
          cgrid%dmean_intercepted_aw       (ipy) = 0.0
          cgrid%dmean_wshed_wg             (ipy) = 0.0
-         cgrid%dmean_rh                   (ipy) = 0.0
+         cgrid%dmean_rh                 (:,ipy) = 0.0
          cgrid%dmean_cwd_rh               (ipy) = 0.0
          cgrid%dmean_nep                  (ipy) = 0.0
          cgrid%dmean_rk4step              (ipy) = 0.0
@@ -1846,7 +1846,7 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%mmean_vapor_wc             (ipy) = 0.0
          cgrid%mmean_intercepted_aw       (ipy) = 0.0
          cgrid%mmean_wshed_wg             (ipy) = 0.0
-         cgrid%mmean_rh                   (ipy) = 0.0
+         cgrid%mmean_rh                 (:,ipy) = 0.0
          cgrid%mmean_cwd_rh               (ipy) = 0.0
          cgrid%mmean_nep                  (ipy) = 0.0
          cgrid%mmean_rk4step              (ipy) = 0.0
@@ -1928,8 +1928,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%mmean_nppseeds             (ipy) = 0.0
          cgrid%mmean_nppwood              (ipy) = 0.0
          cgrid%mmean_nppdaily             (ipy) = 0.0
-         cgrid%mmean_A_decomp             (ipy) = 0.0
-         cgrid%mmean_Af_decomp            (ipy) = 0.0
+         cgrid%mmean_A_decomp           (:,ipy) = 0.0
+         cgrid%mmean_Af_decomp          (:,ipy) = 0.0
          cgrid%mmean_co2_residual         (ipy) = 0.0
          cgrid%mmean_energy_residual      (ipy) = 0.0
          cgrid%mmean_water_residual       (ipy) = 0.0

@@ -1,0 +1,78 @@
+\begin{theindex}
+
+  \item {an\_\discretionary {-}{}{}header::head\_\discretionary {-}{}{}table}, \hyperpage{33}
+
+  \indexspace
+
+  \item {c34constants::carb\_\discretionary {-}{}{}demand\_\discretionary {-}{}{}vars}, \hyperpage{11}
+  \item {c34constants::farq\_\discretionary {-}{}{}consts}, \hyperpage{32}
+  \item {c34constants::metinp\_\discretionary {-}{}{}vars}, \hyperpage{42}
+  \item {c34constants::solution\_\discretionary {-}{}{}vars}, \hyperpage{83}
+  \item {canopy\_\discretionary {-}{}{}layer\_\discretionary {-}{}{}coms::canstrtype}, \hyperpage{10}
+  \item {canopy\_\discretionary {-}{}{}radiation\_\discretionary {-}{}{}coms::radscrtype}, \hyperpage{61}
+
+  \indexspace
+
+  \item {dbalive\_\discretionary {-}{}{}dt}
+    \subitem {growth\_\discretionary {-}{}{}balive}, \hyperpage{6}
+  \item {disturb\_\discretionary {-}{}{}coms::lutime}, \hyperpage{39}
+
+  \indexspace
+
+  \item {ed\_\discretionary {-}{}{}misc\_\discretionary {-}{}{}coms::simtime}, \hyperpage{70}
+  \item {ed\_\discretionary {-}{}{}state\_\discretionary {-}{}{}vars::edtype}, \hyperpage{12}
+  \item {ed\_\discretionary {-}{}{}state\_\discretionary {-}{}{}vars::patchtype}, \hyperpage{48}
+  \item {ed\_\discretionary {-}{}{}state\_\discretionary {-}{}{}vars::polygontype}, \hyperpage{57}
+  \item {ed\_\discretionary {-}{}{}state\_\discretionary {-}{}{}vars::sitetype}, \hyperpage{71}
+  \item {ed\_\discretionary {-}{}{}var\_\discretionary {-}{}{}tables::var\_\discretionary {-}{}{}table}, \hyperpage{84}
+  \item {ed\_\discretionary {-}{}{}var\_\discretionary {-}{}{}tables::var\_\discretionary {-}{}{}table\_\discretionary {-}{}{}vector}, \hyperpage{85}
+  \item {ed\_\discretionary {-}{}{}work\_\discretionary {-}{}{}vars::work\_\discretionary {-}{}{}vars}, \hyperpage{87}
+  \item {ed\_\discretionary {-}{}{}work\_\discretionary {-}{}{}vars::work\_\discretionary {-}{}{}vecs}, \hyperpage{88}
+  \item {ename\_\discretionary {-}{}{}coms::ename\_\discretionary {-}{}{}vars}, \hyperpage{27}
+
+  \indexspace
+
+  \item {get\_\discretionary {-}{}{}c\_\discretionary {-}{}{}xfers}
+    \subitem {growth\_\discretionary {-}{}{}balive}, \hyperpage{6}
+  \item {growth\_\discretionary {-}{}{}balive}, \hyperpage{5}
+    \subitem {dbalive\_\discretionary {-}{}{}dt}, \hyperpage{6}
+    \subitem {get\_\discretionary {-}{}{}c\_\discretionary {-}{}{}xfers}, \hyperpage{6}
+
+  \indexspace
+
+  \item {libxml2f90\_\discretionary {-}{}{}interface\_\discretionary {-}{}{}module::libxml2f90\_\discretionary {-}{}{}\_\discretionary {-}{}{}addid}, \hyperpage{35}
+  \item {libxml2f90\_\discretionary {-}{}{}interface\_\discretionary {-}{}{}module::libxml2f90\_\discretionary {-}{}{}\_\discretionary {-}{}{}getid}, \hyperpage{36}
+  \item {libxml2f90\_\discretionary {-}{}{}interface\_\discretionary {-}{}{}module::libxml2f90\_\discretionary {-}{}{}\_\discretionary {-}{}{}getpid}, \hyperpage{37}
+  \item {libxml2f90\_\discretionary {-}{}{}strings\_\discretionary {-}{}{}module::OPERATOR(+)}, \hyperpage{43}
+  \item {libxml2f90\_\discretionary {-}{}{}strings\_\discretionary {-}{}{}module::OPERATOR(-\/)}, \hyperpage{44}
+  \item {libxml2f90\_\discretionary {-}{}{}strings\_\discretionary {-}{}{}module::OPERATOR(.itos.)}, \hyperpage{45}
+  \item {libxml2f90\_\discretionary {-}{}{}strings\_\discretionary {-}{}{}module::OPERATOR(.rtos.)}, \hyperpage{46}
+  \item {ll\_\discretionary {-}{}{}module::ll\_\discretionary {-}{}{}type}, \hyperpage{38}
+  \item {ll\_\discretionary {-}{}{}module::operator(.xmleq.)}, \hyperpage{47}
+
+  \indexspace
+
+  \item {met\_\discretionary {-}{}{}driver\_\discretionary {-}{}{}coms::met\_\discretionary {-}{}{}driv\_\discretionary {-}{}{}data}, \hyperpage{40}
+  \item {met\_\discretionary {-}{}{}driver\_\discretionary {-}{}{}coms::met\_\discretionary {-}{}{}driv\_\discretionary {-}{}{}state}, \hyperpage{41}
+
+  \indexspace
+
+  \item {pft\_\discretionary {-}{}{}coms::recruittype}, \hyperpage{62}
+  \item {phenology\_\discretionary {-}{}{}coms::prescribed\_\discretionary {-}{}{}phen}, \hyperpage{60}
+
+  \indexspace
+
+  \item {rk4\_\discretionary {-}{}{}coms::bdf2patchtype}, \hyperpage{9}
+  \item {rk4\_\discretionary {-}{}{}coms::integration\_\discretionary {-}{}{}vars}, \hyperpage{34}
+  \item {rk4\_\discretionary {-}{}{}coms::rk4auxtype}, \hyperpage{63}
+  \item {rk4\_\discretionary {-}{}{}coms::rk4patchtype}, \hyperpage{64}
+  \item {rk4\_\discretionary {-}{}{}coms::rk4sitetype}, \hyperpage{69}
+
+  \indexspace
+
+  \item {soil\_\discretionary {-}{}{}coms::soil\_\discretionary {-}{}{}class}, \hyperpage{80}
+  \item {soil\_\discretionary {-}{}{}coms::soil\_\discretionary {-}{}{}class8}, \hyperpage{81}
+  \item {soil\_\discretionary {-}{}{}coms::soilcol\_\discretionary {-}{}{}class}, \hyperpage{82}
+  \item {soil\_\discretionary {-}{}{}coms::veg\_\discretionary {-}{}{}class}, \hyperpage{86}
+
+\end{theindex}

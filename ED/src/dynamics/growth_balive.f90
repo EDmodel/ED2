@@ -56,6 +56,7 @@ module growth_balive
       use budget_utils    , only : update_budget          ! ! sub-routine
       use consts_coms     , only : tiny_num     ! ! intent(in)
       use grid_coms       , only : nzl  ! !intent(in)
+      use ed_node_coms      , only : mynum                ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -309,7 +310,7 @@ module growth_balive
                   ! big-leaf simulations, this is now done at disturbance.f90.             !
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ico,csite%avg_daily_temp(ipa),csite%age(ipa))
-                  dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                  dlnndt   = - (sum(cpatch%mort_rate(1:4,ico)) + cpatch%mort_rate(6,ico))
                   dndt     = dlnndt * cpatch%nplant(ico)
                   !------------------------------------------------------------------------!
 
@@ -617,10 +618,10 @@ module growth_balive
                   call mortality_rates(cpatch,ico,csite%avg_daily_temp(ipa),csite%age(ipa))
                   select case (ibigleaf)
                   case (0)
-                     dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                     dlnndt   = - (sum(cpatch%mort_rate(1:4,ico)) + cpatch%mort_rate(6,ico))
                      dndt     = dlnndt * cpatch%nplant(ico)
                   case (1)
-                     dlnndt   = - sum(cpatch%mort_rate(1:5,ico))
+                     dlnndt   = - sum(cpatch%mort_rate(1:6,ico))
                      dndt     = dlnndt * cpatch%nplant(ico)
                   end select
                   !------------------------------------------------------------------------!

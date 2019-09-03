@@ -192,6 +192,7 @@ subroutine get_work(ifm,nxp,nyp)
                           , grid_type      & ! intent(in)
                           , maxsite        ! ! intent(in)
    use ed_misc_coms, only : min_site_area  ! ! intent(in)
+   use grid_coms ,   only : nzg         ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: ifm
@@ -202,7 +203,7 @@ subroutine get_work(ifm,nxp,nyp)
    real   , dimension(:,:), allocatable :: lat_list
    real   , dimension(:,:), allocatable :: lon_list
    integer, dimension(:,:), allocatable :: leaf_class_list
-   integer, dimension(:,:), allocatable :: ntext_soil_list
+   integer, dimension(:,:,:), allocatable :: ntext_soil_list
    integer, dimension(:,:), allocatable :: ncol_soil_list
    real   , dimension(:,:), allocatable :: ipcent_land
    real   , dimension(:,:), allocatable :: ipcent_soil
@@ -215,6 +216,7 @@ subroutine get_work(ifm,nxp,nyp)
    integer                              :: iloff
    integer                              :: iroff
    integer                              :: itext
+   integer                              :: iz
    real                                 :: maxwork
    !---------------------------------------------------------------------------------------!
 
@@ -224,7 +226,7 @@ subroutine get_work(ifm,nxp,nyp)
    allocate(lat_list       (      3,npoly))
    allocate(lon_list       (      3,npoly))
    allocate(leaf_class_list(maxsite,npoly))
-   allocate(ntext_soil_list(maxsite,npoly))
+   allocate(ntext_soil_list(maxsite,npoly,nzg))
    allocate(ncol_soil_list (maxsite,npoly))
    allocate(ipcent_land    (maxsite,npoly))
    allocate(ipcent_soil    (maxsite,npoly))
@@ -360,7 +362,9 @@ subroutine get_work(ifm,nxp,nyp)
       !   Allow for only one site by making the first site with the default soil type and  !
       ! area 1., and the others with area 0.                                               !
       !------------------------------------------------------------------------------------!
-      ntext_soil_list        (:,:) = nslcon
+      do iz=1,nzg
+        ntext_soil_list        (:,:,iz) = nslcon(iz)
+      end do
       ipcent_soil            (:,:) = 0.
       ipcent_soil            (1,:) = 1.
       !------------------------------------------------------------------------------------!
@@ -394,7 +398,7 @@ subroutine get_work(ifm,nxp,nyp)
                   work_e(ifm)%work(i,j) = work_e(ifm)%work(i,j) + 1.
                end if
                work_e(ifm)%soilfrac(itext,i,j) = ipcent_soil(itext,ipy)
-               work_e(ifm)%ntext   (itext,i,j) = ntext_soil_list (itext,ipy)
+               work_e(ifm)%ntext   (itext,i,j) = ntext_soil_list (itext,ipy,nzg-1)
             end do
             work_e(ifm)%nscol            (i,j) = ncol_soil_list(1,ipy)
 

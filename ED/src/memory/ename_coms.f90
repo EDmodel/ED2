@@ -97,7 +97,7 @@ module ename_coms
       integer                                           :: nzs
       integer                                           :: nzl
       integer               , dimension(maxgrds)        :: isoilflg
-      integer                                           :: nslcon
+      integer               , dimension(nzgmax)         :: nslcon
       integer                                           :: isoilcol
       real                                              :: slxclay
       real                                              :: slxsand
@@ -150,6 +150,8 @@ module ename_coms
       integer                                           :: iphysiol
       integer                                           :: iallom
       integer                                           :: icarbdyn
+      integer                                           :: ivertresp
+      integer                                           :: isoiltext
       integer                                           :: igrass
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
@@ -370,7 +372,7 @@ module ename_coms
       enl%nzs                       = undef_integer
       enl%nzl                       = undef_integer ! EJL
       enl%isoilflg                  = (/ (undef_integer,i=1,maxgrds) /)
-      enl%nslcon                    = undef_integer
+      enl%nslcon                    = (/ ( undef_integer, i=1,nzgmax) /)
       enl%isoilcol                  = undef_integer
       enl%slxclay                   = undef_real
       enl%slxsand                   = undef_real
@@ -421,6 +423,8 @@ module ename_coms
       enl%iphysiol                  = undef_integer
       enl%iallom                    = undef_integer
       enl%icarbdyn                  = undef_integer
+      enl%ivertresp                 = undef_integer
+      enl%isoiltext                 = undef_integer
       enl%igrass                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer

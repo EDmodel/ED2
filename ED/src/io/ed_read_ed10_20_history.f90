@@ -472,12 +472,12 @@ subroutine read_ed10_ed20_history_file
 
                      csite%age               (ip2) = age (ip)
                      csite%area              (ip2) = area(ip)
-!                     csite%fast_soil_C       (:,ip2) = 0.0
-!                     csite%slow_soil_C       (:,ip2) = 0.0
-!                     csite%structural_soil_C (:,ip2) = 0.0
-!                     csite%structural_soil_L (:,ip2) = 0.0
-!                     csite%mineralized_soil_N(:,ip2) = 0.0
-!                     csite%fast_soil_N       (:,ip2) = 0.0
+                     csite%fast_soil_C       (:,ip2) = 0.0
+                     csite%slow_soil_C       (:,ip2) = 0.0
+                     csite%structural_soil_C (:,ip2) = 0.0
+                     csite%structural_soil_L (:,ip2) = 0.0
+                     csite%mineralized_soil_N(:,ip2) = 0.0
+                     csite%fast_soil_N       (:,ip2) = 0.0
                      csite%fast_soil_C       (nzl,ip2) = fsc (ip)
                      csite%slow_soil_C       (nzl,ip2) = ssc (ip)
                      csite%structural_soil_C (nzl,ip2) = stsc(ip)
@@ -555,12 +555,12 @@ subroutine read_ed10_ed20_history_file
 
                   csite%age               (ip) = age (ip)
                   csite%area              (ip) = area(ip)
-!                  csite%fast_soil_C       (:,ip2) = 0.0
-!                  csite%slow_soil_C       (:,ip2) = 0.0
-!                  csite%structural_soil_C (:,ip2) = 0.0
-!                  csite%structural_soil_L (:,ip2) = 0.0
-!                  csite%mineralized_soil_N(:,ip2) = 0.0
-!                  csite%fast_soil_N       (:,ip2) = 0.0
+                  csite%fast_soil_C       (:,ip) = 0.0
+                  csite%slow_soil_C       (:,ip) = 0.0
+                  csite%structural_soil_C (:,ip) = 0.0
+                  csite%structural_soil_L (:,ip) = 0.0
+                  csite%mineralized_soil_N(:,ip) = 0.0
+                  csite%fast_soil_N       (:,ip) = 0.0
                   csite%fast_soil_C       (nzl,ip) = fsc (ip)
                   csite%slow_soil_C       (nzl,ip) = ssc (ip)
                   csite%structural_soil_C (nzl,ip) = stsc(ip)

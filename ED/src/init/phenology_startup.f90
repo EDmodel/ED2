@@ -27,7 +27,7 @@ module phenology_startup
 
       !----- Initialize the Botta et al. scheme. ------------------------------------------!
       select case (iphen_scheme)
-      case (1)
+      case (1,5)
 
          !---------------------------------------------------------------------------------!
          !     Initialize from satellite.  This subroutine gives ALL SITES the             !
@@ -434,10 +434,12 @@ module phenology_startup
       use grid_coms     , only : ngrids                ! ! intent(in)
       use phenology_coms, only : prescribed_phen       & ! structure
                                , phenpath              & ! intent(in)
+                               , iphen_scheme          & ! intent(in)
                                , max_phenology_dist    ! ! intent(in)
       use ed_max_dims   , only : str_len               & ! intent(in)
                                , maxlist               ! ! intent(in)
-      use phenology_aux , only : prescribed_leaf_state ! ! subroutine
+      use phenology_aux , only : prescribed_leaf_state & ! subroutine
+                               , prescribed_greenup    ! ! subroutine
       implicit none
       !----- Local variables. -------------------------------------------------------------!
       type(edtype)                              , pointer   :: cgrid
@@ -549,10 +551,21 @@ module phenology_startup
                
                !----- Initialize green_leaf_factor and leaf_aging_factor. -----------------!
                doy = julday(imontha,idatea,iyeara)
-               call prescribed_leaf_state(cgrid%lat(ipy),imontha,iyeara,doy                &
+
+               select case (iphen_scheme)
+               case (1)
+                 call prescribed_leaf_state(cgrid%lat(ipy),imontha,iyeara,doy              &
                                          ,cpoly%green_leaf_factor(:,isi)                   &
                                          ,cpoly%leaf_aging_factor(:,ipy)                   &
                                          ,cpoly%phen_pars(isi))
+
+               case (5)
+                 call prescribed_greenup(cgrid%lat(ipy),imontha,iyeara,doy                 &
+                                         ,cpoly%green_leaf_factor(:,isi)                   &
+                                         ,cpoly%leaf_aging_factor(:,ipy)                   &
+                                         ,cpoly%phen_pars(isi))
+               end select
+
             end do siteloop
 
             deallocate(phen_temp%years)

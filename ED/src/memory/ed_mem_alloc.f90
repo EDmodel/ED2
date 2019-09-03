@@ -14,7 +14,8 @@ module ed_mem_alloc
       use ed_max_dims         , only : n_pft                   & ! intent(in)
                                      , n_dist_types            & ! intent(in)
                                      , n_dbh                   & ! intent(in)
-                                     , maxgrds                 ! ! intent(in)
+                                     , maxgrds                 & ! intent(in)
+                                     , nzgmax                   
       use ed_mem_grid_dim_defs, only : define_grid_dim_pointer ! ! subroutine
       use ed_state_vars       , only : gdpy                    & ! intent(in)
                                      , edgrid_g                & ! intent(out)

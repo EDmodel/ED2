@@ -54,12 +54,12 @@ subroutine near_bare_ground_init(cgrid)
             csite%fast_soil_N        (:,1) = 0.0
 
          case (1)
-            csite%fast_soil_C        (nzl,1) = 20.0  ! 0.2
-            csite%slow_soil_C        (nzl,1) = 10.0  ! 0.01
-            csite%structural_soil_C  (nzl,1) = 50.0  ! 10.0
+            csite%fast_soil_C        (nzl,1) = 5.0  ! 0.2
+            csite%slow_soil_C        (nzl,1) = 5.0  ! 0.01
+            csite%structural_soil_C  (nzl,1) = 5.0  ! 10.0
             csite%structural_soil_L  (nzl,1) = csite%structural_soil_C (nzl,1)
-            csite%mineralized_soil_N (nzl,1) = 1.0
-            csite%fast_soil_N        (nzl,1) = 1.0
+            csite%mineralized_soil_N (nzl,1) = 0.01
+            csite%fast_soil_N        (nzl,1) = 0.01
 
          end select
          !---------------------------------------------------------------------------------!

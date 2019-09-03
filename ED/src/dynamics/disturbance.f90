@@ -1833,9 +1833,11 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       !     Fast means must be aggregated as well.                                         !
       !------------------------------------------------------------------------------------!
-      csite%fmean_rh             (np) = csite%fmean_rh             (np)                    &
-                                      + csite%fmean_rh             (cp)                    &
+      do k=1,nzg
+        csite%fmean_rh           (k,np) = csite%fmean_rh           (k,np)                  &
+                                      + csite%fmean_rh             (k,cp)                  &
                                       * area_fac
+      end do
       csite%fmean_cwd_rh         (np) = csite%fmean_cwd_rh         (np)                    &
                                       + csite%fmean_cwd_rh         (cp)                    &
                                       * area_fac
@@ -1997,12 +1999,17 @@ module disturbance_utils
       !     Daily means...                                                                 !
       !------------------------------------------------------------------------------------!
       if (writing_long) then
-         csite%dmean_A_decomp       (    np) = csite%dmean_A_decomp       (    np)         &
-                                             + csite%dmean_A_decomp       (    cp)         &
+        do k=1,nzl
+         csite%dmean_A_decomp       (k,  np) = csite%dmean_A_decomp       (k,  np)         &
+                                             + csite%dmean_A_decomp       (k,  cp)         &
                                              * area_fac
-         csite%dmean_Af_decomp      (    np) = csite%dmean_Af_decomp      (    np)         &
-                                             + csite%dmean_Af_decomp      (    cp)         &
+         csite%dmean_Af_decomp      (k,  np) = csite%dmean_Af_decomp      (k,  np)         &
+                                             + csite%dmean_Af_decomp      (k,  cp)         &
                                              * area_fac
+         csite%dmean_rh             (k,  np) = csite%dmean_rh             (k,  np)         &
+                                             + csite%dmean_rh             (k,  cp)         &
+                                             * area_fac
+        end do
          csite%dmean_co2_residual   (    np) = csite%dmean_co2_residual   (    np)         &
                                              + csite%dmean_co2_residual   (    cp)         &
                                              * area_fac
@@ -2011,9 +2018,6 @@ module disturbance_utils
                                              * area_fac
          csite%dmean_water_residual (    np) = csite%dmean_water_residual (    np)         &
                                              + csite%dmean_water_residual (    cp)         &
-                                             * area_fac
-         csite%dmean_rh             (    np) = csite%dmean_rh             (    np)         &
-                                             + csite%dmean_rh             (    cp)         &
                                              * area_fac
          csite%dmean_cwd_rh         (    np) = csite%dmean_cwd_rh         (    np)         &
                                              + csite%dmean_cwd_rh         (    cp)         &
@@ -2220,8 +2224,8 @@ module disturbance_utils
          csite%mmean_water_residual (    np) = csite%mmean_water_residual (    np)         &
                                              + csite%mmean_water_residual (    cp)         &
                                              * area_fac
-         csite%mmean_rh             (    np) = csite%mmean_rh             (    np)         &
-                                             + csite%mmean_rh             (    cp)         &
+         csite%mmean_rh             (  :,np) = csite%mmean_rh             (  :,np)         &
+                                             + csite%mmean_rh             (  :,cp)         &
                                              * area_fac
          csite%mmean_cwd_rh         (    np) = csite%mmean_cwd_rh         (    np)         &
                                              + csite%mmean_cwd_rh         (    cp)         &
@@ -2229,11 +2233,11 @@ module disturbance_utils
          csite%mmean_nep            (    np) = csite%mmean_nep            (    np)         &
                                              + csite%mmean_nep            (    cp)         &
                                              * area_fac
-         csite%mmean_A_decomp       (    np) = csite%mmean_A_decomp       (    np)         &
-                                             + csite%mmean_A_decomp       (    cp)         &
+         csite%mmean_A_decomp       (  :,np) = csite%mmean_A_decomp       (  :,np)         &
+                                             + csite%mmean_A_decomp       (  :,cp)         &
                                              * area_fac
-         csite%mmean_Af_decomp      (    np) = csite%mmean_Af_decomp      (    np)         &
-                                             + csite%mmean_Af_decomp      (    cp)         &
+         csite%mmean_Af_decomp      (  :,np) = csite%mmean_Af_decomp      (  :,np)         &
+                                             + csite%mmean_Af_decomp      (  :,cp)         &
                                              * area_fac
          csite%mmean_rk4step        (    np) = csite%mmean_rk4step        (    np)         &
                                              + csite%mmean_rk4step        (    cp)         &
@@ -2373,11 +2377,11 @@ module disturbance_utils
          csite%mmean_qdrainage      (    np) = csite%mmean_qdrainage      (    np)         &
                                              + csite%mmean_qdrainage      (    cp)         &
                                              * area_fac
-         csite%mmean_A_decomp       (    np) = csite%mmean_A_decomp       (    np)         &
-                                             + csite%mmean_A_decomp       (    cp)         &
+         csite%mmean_A_decomp       (  :,np) = csite%mmean_A_decomp       (  :,np)         &
+                                             + csite%mmean_A_decomp       (  :,cp)         &
                                              * area_fac
-         csite%mmean_Af_decomp      (    np) = csite%mmean_Af_decomp      (    np)         &
-                                             + csite%mmean_Af_decomp      (    cp)         &
+         csite%mmean_Af_decomp      (  :,np) = csite%mmean_Af_decomp      (  :,np)         &
+                                             + csite%mmean_Af_decomp      (  :,cp)         &
                                              * area_fac
          csite%mmean_co2_residual   (    np) = csite%mmean_co2_residual   (    np)         &
                                              + csite%mmean_co2_residual   (    cp)         &

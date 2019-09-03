@@ -19,7 +19,8 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
                            , umols_2_kgCyr            ! ! intent(in)
    use therm_lib    , only : uextcm2tl                ! ! function
    use ed_misc_coms , only : dtlsm                    & ! intent(in)
-                           , frqsum                   ! ! intent(in)
+                           , frqsum                   & ! intent(in)
+                           , ivertresp                ! ! intent(in)
    use grid_coms    , only : nzl
 
    implicit none
@@ -44,8 +45,11 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    real                                       :: sum_soil_soilcp
    real                                       :: avg_soil_temp
    real                                       :: avg_soil_fliq
-   real                                       :: layer_soil_temp
+   real                                       :: layer_soil_energy
    real                                       :: layer_soil_water
+   real                                       :: layer_soil_hcap
+   real                                       :: layer_soil_slmsts
+   real                                       :: layer_soil_soilcp
    !----- External functions. -------------------------------------------------------------!
    real                          , external   :: het_resp_weight
    real                          , external   :: root_resp_norm
@@ -143,19 +147,33 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
 
 
    !EJL This is the section that calculates respiration. Need to do this for
-   !each vertical layer - for now, using soil temperatures. will update in
-   !future
+   !each vertical layer
    do k=1,nzl 
+     nsoil = ntext_soil(k)
+     
+     !---Get values from above, soil energy, heat capacity, moisture, etc. for each layer   !
+     !   instead of for the whole root zone                                                 !
+     layer_soil_hcap = soil(nsoil)%slcpd               * dslz(k)
+     layer_soil_water = csite%soil_water(k,ipa) * wdns * dslz(k)
+     layer_soil_energy = csite%soil_energy(k,ipa)        * dslz(k)
+     layer_soil_slmsts = soil(nsoil)%slmsts       * wdns * dslz(k)
+     layer_soil_soilcp = soil(nsoil)%soilcp       * wdns * dslz(k)
 
      !----- Find the average temperature and the relative soil moisture. -------------------!
-     call uextcm2tl(sum_soil_energy,sum_soil_water,sum_soil_hcap,avg_soil_temp,avg_soil_fliq)
-     layer_soil_temp=csite%soil_tempk(k,ipa)
-     layer_soil_water = csite%soil_water(k,ipa)
-     rel_soil_moist = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )              &
-                                     / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
+     select case (ivertresp)
+       case (0)
+       call uextcm2tl(sum_soil_energy,sum_soil_water,layer_soil_hcap,avg_soil_temp,avg_soil_fliq)
+       case (1)
+       call uextcm2tl(layer_soil_energy,layer_soil_water,layer_soil_hcap,avg_soil_temp,avg_soil_fliq)
+     end select
+
+
+
+     rel_soil_moist = min( 1.0, max(0.0, ( layer_soil_water  - layer_soil_soilcp )              &
+                                     / ( layer_soil_slmsts - layer_soil_soilcp ) ) )
      !--------------------------------------------------------------------------------------!
      !----- Compute soil/temperature modulation of heterotrophic respiration. --------------!
-     csite%A_decomp(k,ipa) = het_resp_weight(layer_soil_temp,rel_soil_moist)
+     csite%A_decomp(k,ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist)
      !--------------------------------------------------------------------------------------!
 
      !----- Compute nitrogen immobilization factor. ----------------------------------------!
@@ -173,7 +191,7 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
      !--------------------------------------------------------------------------------------!
 
      !----- The output is converted to kgC/m2/yr. ------------------------------------------!
-     csite%fmean_rh(ipa) = csite%fmean_rh(ipa)                                              &
+     csite%fmean_rh(k,ipa) = csite%fmean_rh(k,ipa)                                              &
                            + csite%rh(k,ipa) * umols_2_kgCyr * dtlsm_o_frqsum
      csite%fmean_cwd_rh(ipa) = csite%fmean_cwd_rh(ipa)                                      &
                            + csite%cwd_rh(ipa) * umols_2_kgCyr * dtlsm_o_frqsum
@@ -317,7 +335,9 @@ subroutine organic_layer_depth(cgrid)
                            , sitetype      !
    use grid_coms,     only : nzg, nzl      !
    use soil_coms,     only : olz, dolz     ! 
-   use ed_misc_coms,  only : icarbdyn      ! intent(in)  
+   use ed_misc_coms,  only : icarbdyn      & ! intent(in) 
+                           , isoiltext     ! intent(in) 
+   use decomp_coms,   only : organic_soil_texture ! intent(in)
 
    implicit none
    !----- Arguments. ---------------------------------------------------------------------!
@@ -364,7 +384,6 @@ subroutine organic_layer_depth(cgrid)
    slow_c_den = 179. * 0.3278
    struct_c_den = 124. * 0.37  ! no values, so just used mean of lit and hum
 
-
    polygonloop: do ipy = 1,cgrid%npolygons
 
       cpoly => cgrid%polygon(ipy)
@@ -389,13 +408,24 @@ subroutine organic_layer_depth(cgrid)
            ! Find the fill fraction of the layers 
            csite%litter_depth(:,ipa) = 0.0
            do k = 1, nzl
-             if (csite%peat_depth(ipa) > (-1.0 * olz(k))) then 
+!              print*, olz(k), olz(k+1), dolz(k),fillfrac
+               if (csite%peat_depth(ipa) > (-1.0 * olz(k))) then 
                csite%litter_depth(k,ipa) = 1.0
              else if (csite%peat_depth(ipa) < (-1.0*olz(k)) .and. &
                csite%peat_depth(ipa) > (-1.0*olz(k+1))) then 
                csite%litter_depth(k,ipa) = (csite%peat_depth(ipa) + olz(k+1)) / dolz(k)
              endif
              fillfrac=fillfrac+csite%litter_depth(k,ipa)
+
+             select case (isoiltext)
+               case (1)
+                 if (csite%litter_depth(k,ipa) > 0.51) then 
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture
+                 else
+                 cpoly%ntext_soil(k,isi) = cpoly%ntext_soil(1,isi)
+                 end if
+               case (0)
+             end select
            end do
 
 
@@ -419,19 +449,21 @@ subroutine organic_layer_depth(cgrid)
           
            !debugging print statements
 !           print*, 'dolz', dolz
-!           print*, 'carbon pools', oldc1, oldc2, oldc3 
+!           print*, 'patch,carbon pools',ipa, oldc1, oldc2, oldc3 
    
             count=0 
             select case (icarbdyn)
 !!!!!!!!!!!OPTION 1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
              case (1)  
               do while (abs(fillfrac-fillcheck) > 0.01)
-                 if (count > 9) then 
-                     call fatal_error('organic_layer_depth did not converge' &
+                 fillcheck=0.0
+                 if (count > 99) then
+                     print*,'fillfrac,fillcheck ' 
+                     print*,fillfrac,fillcheck
+                     call fatal_error('organic_layer_depth (opt 1) did not converge' &
                      ,'organic_layer_depth','soil_respiration.f90')
                  end if
-                 print*, 'while fillfrac ne fillcheck',fillfrac, fillcheck
-                 fillcheck=0.0
+!                 print*, 'while fillfrac ne fillcheck',fillfrac, fillcheck
                  do k=nzl,2,-1 
                     ld = oldc1(k) / fast_c_den &
                        + oldc2(k) / struct_c_den &
@@ -503,8 +535,11 @@ subroutine organic_layer_depth(cgrid)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OPTION 2!!!!!!!!!!!!!!!!!!!!!!!!
              case (2)
               do while (abs(fillfrac-fillcheck) .gt. 0.01)
-                 if (count > 9) then 
-                    call fatal_error('organic_layer_depth did not converge' &
+                 fillcheck=0.0
+                 if (count > 99) then 
+                    print*,'fillfrac,fillcheck '         
+                    print*,fillfrac,fillcheck
+                    call fatal_error('organic_layer_depth (opt2) did not converge' &
                     ,'organic_layer_depth','soil_respiration.f90')
                  end if
                  do k=nzl,2,-1 
@@ -594,6 +629,8 @@ subroutine organic_layer_depth(cgrid)
                  oldc1(:)=newc1(:)
                  oldc2(:)=newc2(:)
                  oldc3(:)=newc3(:)
+
+                 print*, count, fillcheck, fillfrac
                  count=count+1
               end do ! while loop
  
@@ -759,6 +796,45 @@ subroutine update_C_and_N_pools(cgrid)
    
    return
 end subroutine update_C_and_N_pools
+!==========================================================================================!
+!==========================================================================================!
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the anoxic heterotrophic respiration following Walter and   !
+!  Heinmann (2000) and Ise et al. 2010 (Climate Change and Variability)                    !
+!------------------------------------------------------------------------------------------!
+subroutine anox_resp(csite,ipa,k,Lc)
+
+   use ed_state_vars, only : sitetype        ! ! structure
+   use consts_coms  , only : kgCday_2_umols  ! ! intent(in)
+   use decomp_coms  , only : decay_rate_stsc & ! intent(in)
+                           , decay_rate_fsc  & ! intent(in)
+                           , decay_rate_ssc  & ! intent(in)
+                           , r_fsc           & ! intent(in)
+                           , r_ssc           & ! intent(in)
+                           , r_stsc          & ! intent(in)
+                           , cwd_frac        ! ! intent(in)
+
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(sitetype), target       :: csite
+   integer       , intent(in)   :: ipa
+   integer       , intent(in)   :: k
+   real          , intent(in)   :: Lc
+   !----- Local variables. ----------------------------------------------------------------!
+   real                         :: fast_C_loss
+   real                         :: structural_C_loss
+   real                         :: slow_C_loss
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   ! Production of CH4 fol
+
+
+   return
+end subroutine anoxic_resp
 !==========================================================================================!
 !==========================================================================================!
 

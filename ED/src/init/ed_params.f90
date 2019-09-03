@@ -401,7 +401,7 @@ subroutine init_met_params()
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
-   atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
+   atm_shv_min = 1.e-8    ! That corresponds to a relative humidity of 0.1% at 1000hPa
    atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32�C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [�mol/mol]. ---------------------!
    atm_co2_min = 100.     !
@@ -1764,7 +1764,8 @@ subroutine init_decomp_params()
       , rh_dry_smoist               & ! intent(out)
       , rh_wet_smoist               & ! intent(out)
       , rh_active_depth             & ! intent(out)
-      , k_rh_active                 ! ! intent(out)
+      , k_rh_active                 & ! intent(out)
+      , organic_soil_texture        ! ! intent(out)
 
    resp_opt_water            = 0.8938
    resp_water_below_opt      = 5.0786
@@ -1775,6 +1776,8 @@ subroutine init_decomp_params()
    r_fsc                     = 1.0
    r_stsc                    = 0.3
    r_ssc                     = 1.0
+   organic_soil_texture      = 12
+
    !---------------------------------------------------------------------------------------!
    ! MLO.  After talking to Paul, it seems the decay rate for the slow carbon pool is      !
    !       artificially high for when nitrogen limitation is turned on.  If it is turned   !
@@ -2054,7 +2057,7 @@ subroutine init_pft_mort_params()
    frost_mort(16:17) = 3.0
 
    !EJL - change wind_mort in xmls to include it. default is zero
-   wind_mort(0:17)   = 0.0
+   wind_mort(1:17)   = 0.0
 
    !---------------------------------------------------------------------------------------!
    !     The following variables control the density-dependent mortality rates.            !
@@ -3319,6 +3322,15 @@ subroutine init_pft_leaf_params()
                phenology(12:15) = 4
                phenology(16)    = 4
                phenology(17)    = 3
+            case (5)
+               phenology(1)     = 0
+               phenology(2:4)   = 4
+               phenology(5)     = 0
+               phenology(6:8)   = 0
+               phenology(9:11)  = 2
+               phenology(12:15) = 0
+               phenology(16)    = 0
+               phenology(17)    = 4
          end select
          !------------------------------------------------------------------------------------!
       case (1)
@@ -3355,6 +3367,15 @@ subroutine init_pft_leaf_params()
                phenology(12:15) = 0
                phenology(16)    = 0
                phenology(17)    = 3
+            case (5)
+               phenology(1)     = 0
+               phenology(2:4)   = 4
+               phenology(5)     = 0
+               phenology(6:8)   = 0
+               phenology(9:11)  = 2
+               phenology(12:15) = 0
+               phenology(16)    = 0
+               phenology(17)    = 4
          end select
       !------------------------------------------------------------------------------------!
    end select
@@ -3763,10 +3784,10 @@ subroutine init_disturb_params
    implicit none
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   treefall_hite_threshold = 10.0
+   treefall_hite_threshold = 0.5
 
    !----- Cut-off for fire survivorship (bush fires versus canopy fire). ------------------!
-   fire_hite_threshold     = 5.0
+   fire_hite_threshold     = 0.0
 
    !----- Set to 1 if to do forest harvesting. --------------------------------------------!
    forestry_on = 0

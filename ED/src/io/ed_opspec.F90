@@ -1151,7 +1151,8 @@ end subroutine ed_opspec_times
 !------------------------------------------------------------------------------------------!
 subroutine ed_opspec_misc
    use ed_max_dims           , only : n_pft                        & ! intent(in)
-                                    , str_len                      ! ! intent(in)
+                                    , str_len                      & ! intent(in)
+                                    , nzgmax
    use ed_misc_coms          , only : ifoutput                     & ! intent(in)
                                     , idoutput                     & ! intent(in)
                                     , iqoutput                     & ! intent(in)
@@ -1173,6 +1174,8 @@ subroutine ed_opspec_misc
                                     , growth_resp_scheme           & ! intent(in)
                                     , storage_resp_scheme          & ! intent(in)
                                     , icarbdyn                     & ! intent(in)
+                                    , ivertresp                    & ! intent(in)
+                                    , isoiltext                    & ! intent(in)
                                     , min_site_area                ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
@@ -1200,7 +1203,8 @@ subroutine ed_opspec_misc
                                     , runoff_time                  ! ! intent(in)
    use mem_polygons          , only : maxsite                      & ! intent(in)
                                     , maxpatch                     ! ! intent(in)
-   use grid_coms             , only : ngrids                       ! ! intent(in)
+   use grid_coms             , only : ngrids                       & ! intent(in)
+                                    , nzg
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
@@ -1285,6 +1289,7 @@ subroutine ed_opspec_misc
    integer                :: ifaterr
    integer                :: ifm
    integer                :: ipft
+   integer                :: iz
    logical                :: agri_ok
    logical                :: plantation_ok
    logical                :: patch_detailed
@@ -1462,15 +1467,15 @@ subroutine ed_opspec_misc
       end if
    end do
 #endif
-
-   if (nslcon < 1 .or. nslcon > ed_nstyp) then
+   do iz = 1,nzg
+   if (nslcon(iz) < 1 .or. nslcon(iz) > ed_nstyp) then
       write (reason,fmt='(2(a,1x,i4),a)')                                                  &
              'Invalid NSLCON, it must be between 1 and ',ed_nstyp,'. Yours is set to'      &
-            ,nslcon,'...'
+            ,nslcon(iz),'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-
+   end do
    if (isoilcol < 1 .or. isoilcol > ed_nscol) then
       write (reason,fmt='(2(a,1x,i4),a)')                                                  &
              'Invalid ISOILCOL, it must be between 1 and ',ed_nscol,'. Yours is set to'    &
@@ -1681,6 +1686,22 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (ivertresp < 0 .or. ivertresp > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IVERTRESP, it must be between 0 and 1. Yours is set to'          &
+                    ,ivertresp,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (isoiltext < 0 .or. isoiltext > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISOILTEXT, it must be between 0 and 1. Yours is set to'          &
+                    ,isoiltext,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (igrass < 0 .or. igrass > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IGRASS, it must be between 0 and 1. Yours is set to'          &
@@ -1696,9 +1717,9 @@ end do
    
    end if
 
-   if (iphen_scheme < -1 .or. iphen_scheme > 3) then
+   if (iphen_scheme < -1 .or. iphen_scheme > 5) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
+                    'Invalid IPHEN_SCHEME, it must be between -1 and 5. Yours is set to'   &
                     ,iphen_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

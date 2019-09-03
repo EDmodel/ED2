@@ -105,7 +105,7 @@ module soil_coms
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
    !---------------------------------------------------------------------------------------!
-   integer                                    :: nslcon
+   integer, dimension(nzgmax)                :: nslcon
    !---------------------------------------------------------------------------------------!
 
 
@@ -227,10 +227,10 @@ module soil_coms
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
-   character(len=str_len), dimension(maxgrds) :: veg_database
-   character(len=str_len), dimension(maxgrds) :: soil_database
-   character(len=str_len)                     :: soilstate_db
-   character(len=str_len)                     :: soildepth_db
+   character(len=str_len), dimension(maxgrds)        :: veg_database
+   character(len=str_len), dimension(maxgrds)        :: soil_database
+   character(len=str_len)                            :: soilstate_db
+   character(len=str_len)                            :: soildepth_db
    !---------------------------------------------------------------------------------------!
 
 

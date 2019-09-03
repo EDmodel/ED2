@@ -366,9 +366,11 @@ module average_utils
                !---------------------------------------------------------------------------!
                !     Aggregate the patch-level variables.                                  !
                !---------------------------------------------------------------------------!
-               cgrid%fmean_rh             (ipy) = cgrid%fmean_rh             (ipy)         &
-                                                + csite%fmean_rh             (ipa)         &
+               do k=1,nzg
+                 cgrid%fmean_rh         (k,ipy) = cgrid%fmean_rh             (k,ipy)       &
+                                                + csite%fmean_rh             (k,ipa)       &
                                                 * patch_wgt
+               end do
                cgrid%fmean_cwd_rh         (ipy) = cgrid%fmean_cwd_rh         (ipy)         &
                                                 + csite%fmean_cwd_rh         (ipa)         &
                                                 * patch_wgt
@@ -1183,7 +1185,7 @@ module average_utils
                ! (gross primary productivity and total plant respiration), with hetero-    !
                ! trophic respiration, a patch-level variable.                              !
                !---------------------------------------------------------------------------!
-               csite%fmean_nep(ipa) = pss_npp - csite%fmean_rh(ipa)
+               csite%fmean_nep(ipa) = pss_npp - sum(csite%fmean_rh(:,ipa))
                !---------------------------------------------------------------------------!
 
 
@@ -1312,7 +1314,7 @@ module average_utils
          cgrid%fmean_wshed_wg        (  ipy) = 0.0
          cgrid%fmean_lai             (  ipy) = 0.0         
          cgrid%fmean_bdead           (  ipy) = 0.0         
-         cgrid%fmean_rh              (  ipy) = 0.0
+         cgrid%fmean_rh              (:,ipy) = 0.0
          cgrid%fmean_cwd_rh          (  ipy) = 0.0
          cgrid%fmean_nep             (  ipy) = 0.0
          cgrid%fmean_rk4step         (  ipy) = 0.0
@@ -1440,7 +1442,7 @@ module average_utils
 
 
                !----- Fast average variables. ---------------------------------------------!
-               csite%fmean_rh             (  ipa) = 0.0
+               csite%fmean_rh             (:,ipa) = 0.0
                csite%fmean_cwd_rh         (  ipa) = 0.0
                csite%fmean_nep            (  ipa) = 0.0
                csite%fmean_rk4step        (  ipa) = 0.0
@@ -1816,8 +1818,8 @@ module average_utils
          cgrid%dmean_wshed_wg       (ipy) = cgrid%dmean_wshed_wg       (ipy)               &
                                           + cgrid%fmean_wshed_wg       (ipy)               &
                                           * frqsum_o_daysec
-         cgrid%dmean_rh             (ipy) = cgrid%dmean_rh             (ipy)               &
-                                          + cgrid%fmean_rh             (ipy)               &
+         cgrid%dmean_rh           (:,ipy) = cgrid%dmean_rh           (:,ipy)               &
+                                          + cgrid%fmean_rh           (:,ipy)               &
                                           * frqsum_o_daysec
          cgrid%dmean_cwd_rh         (ipy) = cgrid%dmean_cwd_rh         (ipy)               &
                                           + cgrid%fmean_cwd_rh         (ipy)               &
@@ -2102,8 +2104,8 @@ module average_utils
                csite%dmean_water_residual    (ipa) = csite%dmean_water_residual    (ipa)   &
                                                    + csite%wbudget_residual        (ipa)   &
                                                    * frqsum_o_daysec
-               csite%dmean_rh                (ipa) = csite%dmean_rh                (ipa)   &
-                                                   + csite%fmean_rh                (ipa)   &
+               csite%dmean_rh              (:,ipa) = csite%dmean_rh              (:,ipa)   &
+                                                   + csite%fmean_rh              (:,ipa)   &
                                                    * frqsum_o_daysec
                csite%dmean_cwd_rh            (ipa) = csite%dmean_cwd_rh            (ipa)   &
                                                    + csite%fmean_cwd_rh            (ipa)   &
@@ -2492,13 +2494,12 @@ module average_utils
                do k=1,nzl
                  csite%today_A_decomp (k,ipa) = csite%today_A_decomp(k,ipa)  * dtlsm_o_daysec
                  csite%today_Af_decomp(k,ipa) = csite%today_Af_decomp(k,ipa) * dtlsm_o_daysec
-               end do
                !----- Copy the decomposition terms to the daily mean if they are sought. --!
-               if (writing_long) then
-                  csite%dmean_A_decomp(ipa)  = csite%today_A_decomp(nzl,ipa)
-                  csite%dmean_Af_decomp(ipa) = csite%today_Af_decomp(nzl,ipa)
-               end if
-             
+                if (writing_long) then
+                  csite%dmean_A_decomp(k,ipa)  = csite%today_A_decomp(k,ipa)
+                  csite%dmean_Af_decomp(k,ipa) = csite%today_Af_decomp(k,ipa)
+                end if
+               end do 
                cpatch => csite%patch(ipa)
                
                !----- Included a loop so it won't crash with empty cohorts... -------------!
@@ -2782,12 +2783,14 @@ module average_utils
                cgrid%dmean_albedo_nir     (ipy) = cgrid%dmean_albedo_nir     (ipy)         &
                                                 + csite%dmean_albedo_nir     (ipa)         &
                                                 * patch_wgt
-               cgrid%dmean_A_decomp       (ipy) = cgrid%dmean_A_decomp       (ipy)         &
-                                                + csite%dmean_A_decomp       (ipa)         &
+               do k=1,nzg
+               cgrid%dmean_A_decomp   (k,ipy) = cgrid%dmean_A_decomp       (k,ipy)         &
+                                              + csite%dmean_A_decomp       (k,ipa)         &
                                                 * patch_wgt
-               cgrid%dmean_Af_decomp      (ipy) = cgrid%dmean_Af_decomp      (ipy)         &
-                                                + csite%dmean_Af_decomp      (ipa)         &
+               cgrid%dmean_Af_decomp  (k,ipy) = cgrid%dmean_Af_decomp      (k,ipy)         &
+                                              + csite%dmean_Af_decomp      (k,ipa)         &
                                                 * patch_wgt
+               end do 
                !---------------------------------------------------------------------------!
 
 
@@ -3211,8 +3214,8 @@ module average_utils
          cgrid%dmean_nppseeds           (ipy) = 0.0
          cgrid%dmean_nppwood            (ipy) = 0.0
          cgrid%dmean_nppdaily           (ipy) = 0.0
-         cgrid%dmean_A_decomp           (ipy) = 0.0
-         cgrid%dmean_Af_decomp          (ipy) = 0.0
+         cgrid%dmean_A_decomp         (:,ipy) = 0.0
+         cgrid%dmean_Af_decomp        (:,ipy) = 0.0
          cgrid%dmean_co2_residual       (ipy) = 0.0
          cgrid%dmean_energy_residual    (ipy) = 0.0
          cgrid%dmean_water_residual     (ipy) = 0.0
@@ -3271,7 +3274,7 @@ module average_utils
          cgrid%dmean_vapor_wc           (ipy) = 0.0
          cgrid%dmean_intercepted_aw     (ipy) = 0.0
          cgrid%dmean_wshed_wg           (ipy) = 0.0
-         cgrid%dmean_rh                 (ipy) = 0.0
+         cgrid%dmean_rh               (:,ipy) = 0.0
          cgrid%dmean_cwd_rh             (ipy) = 0.0
          cgrid%dmean_nep                (ipy) = 0.0
          cgrid%dmean_rk4step            (ipy) = 0.0
@@ -3377,12 +3380,12 @@ module average_utils
             patchloop: do ipa=1,csite%npatches
                cpatch => csite%patch(ipa)
 
-               csite%dmean_A_decomp         (ipa) = 0.0
-               csite%dmean_Af_decomp        (ipa) = 0.0
+               csite%dmean_A_decomp       (:,ipa) = 0.0
+               csite%dmean_Af_decomp      (:,ipa) = 0.0
                csite%dmean_co2_residual     (ipa) = 0.0
                csite%dmean_energy_residual  (ipa) = 0.0
                csite%dmean_water_residual   (ipa) = 0.0
-               csite%dmean_rh               (ipa) = 0.0
+               csite%dmean_rh             (:,ipa) = 0.0
                csite%dmean_cwd_rh           (ipa) = 0.0
                csite%dmean_nep              (ipa) = 0.0
                csite%dmean_rk4step          (ipa) = 0.0
@@ -3854,8 +3857,8 @@ module average_utils
          cgrid%mmean_nppdaily         (ipy) = cgrid%mmean_nppdaily         (ipy)           &
                                             + cgrid%dmean_nppdaily         (ipy)           &
                                             * ndaysi
-         cgrid%mmean_rh               (ipy) = cgrid%mmean_rh               (ipy)           &
-                                            + cgrid%dmean_rh               (ipy)           &
+         cgrid%mmean_rh             (:,ipy) = cgrid%mmean_rh             (:,ipy)           &
+                                            + cgrid%dmean_rh             (:,ipy)           &
                                             * ndaysi
          cgrid%mmean_cwd_rh           (ipy) = cgrid%mmean_cwd_rh           (ipy)           &
                                             + cgrid%dmean_cwd_rh           (ipy)           &
@@ -4030,11 +4033,11 @@ module average_utils
          cgrid%mmean_nppdaily         (ipy) = cgrid%mmean_nppdaily         (ipy)           &
                                             + cgrid%dmean_nppdaily         (ipy)           &
                                             * ndaysi
-         cgrid%mmean_A_decomp         (ipy) = cgrid%mmean_A_decomp         (ipy)           &
-                                            + cgrid%dmean_A_decomp         (ipy)           &
+         cgrid%mmean_A_decomp     (:,ipy) = cgrid%mmean_A_decomp         (:,ipy)           &
+                                          + cgrid%dmean_A_decomp         (:,ipy)           &
                                             * ndaysi
-         cgrid%mmean_Af_decomp        (ipy) = cgrid%mmean_Af_decomp        (ipy)           &
-                                            + cgrid%dmean_Af_decomp        (ipy)           &
+         cgrid%mmean_Af_decomp    (:,ipy) = cgrid%mmean_Af_decomp        (:,ipy)           &
+                                          + cgrid%dmean_Af_decomp        (:,ipy)           &
                                             * ndaysi
          cgrid%mmean_co2_residual     (ipy) = cgrid%mmean_co2_residual     (ipy)           &
                                             + cgrid%dmean_co2_residual     (ipy)           &
@@ -4120,7 +4123,7 @@ module average_utils
                                             + isqu_ftz(cgrid%dmean_vapor_wc   (ipy))       &
                                             * ndaysi
          cgrid%mmsqu_rh               (ipy) = cgrid%mmsqu_rh                  (ipy)        &
-                                            + isqu_ftz(cgrid%dmean_rh         (ipy))       &
+                                            + isqu_ftz(sum(cgrid%dmean_rh  (:,ipy)))       &
                                             * ndaysi
          cgrid%mmsqu_cwd_rh           (ipy) = cgrid%mmsqu_cwd_rh              (ipy)        &
                                             + isqu_ftz(cgrid%dmean_cwd_rh     (ipy))       &
@@ -4274,8 +4277,8 @@ module average_utils
                csite%mmean_water_residual   (ipa) = csite%mmean_water_residual   (ipa)     &
                                                   + csite%dmean_water_residual   (ipa)     &
                                                   * ndaysi
-               csite%mmean_rh               (ipa) = csite%mmean_rh               (ipa)     &
-                                                  + csite%dmean_rh               (ipa)     &
+               csite%mmean_rh             (:,ipa) = csite%mmean_rh             (:,ipa)     &
+                                                  + csite%dmean_rh             (:,ipa)     &
                                                   * ndaysi
                csite%mmean_cwd_rh           (ipa) = csite%mmean_cwd_rh           (ipa)     &
                                                   + csite%dmean_cwd_rh           (ipa)     &
@@ -4283,11 +4286,11 @@ module average_utils
                csite%mmean_nep              (ipa) = csite%mmean_nep              (ipa)     &
                                                   + csite%dmean_nep              (ipa)     &
                                                   * ndaysi
-               csite%mmean_A_decomp         (ipa) = csite%mmean_A_decomp         (ipa)     &
-                                                  + csite%dmean_A_decomp         (ipa)     &
+               csite%mmean_A_decomp     (:,ipa) = csite%mmean_A_decomp         (:,ipa)     &
+                                                + csite%dmean_A_decomp         (:,ipa)     &
                                                   * ndaysi
-               csite%mmean_Af_decomp        (ipa) = csite%mmean_Af_decomp        (ipa)     &
-                                                  + csite%dmean_Af_decomp        (ipa)     &
+               csite%mmean_Af_decomp    (:,ipa) = csite%mmean_Af_decomp        (:,ipa)     &
+                                                + csite%dmean_Af_decomp        (:,ipa)     &
                                                   * ndaysi
                csite%mmean_rk4step          (ipa) = csite%mmean_rk4step          (ipa)     &
                                                   + csite%dmean_rk4step          (ipa)     &
@@ -4435,11 +4438,11 @@ module average_utils
                csite%mmean_qdrainage        (ipa) = csite%mmean_qdrainage        (ipa)     &
                                                   + csite%dmean_qdrainage        (ipa)     &
                                                   * ndaysi
-               csite%mmean_A_decomp         (ipa) = csite%mmean_A_decomp         (ipa)     &
-                                                  + csite%dmean_A_decomp         (ipa)     &
+               csite%mmean_A_decomp     (:,ipa) = csite%mmean_A_decomp         (:,ipa)     &
+                                                + csite%dmean_A_decomp         (:,ipa)     &
                                                   * ndaysi
-               csite%mmean_Af_decomp        (ipa) = csite%mmean_Af_decomp        (ipa)     &
-                                                  + csite%dmean_Af_decomp        (ipa)     &
+               csite%mmean_Af_decomp    (:,ipa) = csite%mmean_Af_decomp        (:,ipa)     &
+                                                + csite%dmean_Af_decomp        (:,ipa)     &
                                                   * ndaysi
                csite%mmean_co2_residual     (ipa) = csite%mmean_co2_residual     (ipa)     &
                                                   + csite%dmean_co2_residual     (ipa)     &
@@ -4454,7 +4457,7 @@ module average_utils
                !     Integrate the sum of squares.                                         !
                !---------------------------------------------------------------------------!
                csite%mmsqu_rh               (ipa) = csite%mmsqu_rh                  (ipa)  &
-                                                  + isqu_ftz(csite%dmean_rh         (ipa)) &
+                                                  + isqu_ftz(sum(csite%dmean_rh  (:,ipa))) &
                                                   * ndaysi
                csite%mmsqu_cwd_rh           (ipa) = csite%mmsqu_cwd_rh              (ipa)  &
                                                   + isqu_ftz(csite%dmean_cwd_rh     (ipa)) &
@@ -5252,7 +5255,7 @@ module average_utils
          cgrid%mmean_nppseeds            (ipy) = 0.0 
          cgrid%mmean_nppwood             (ipy) = 0.0 
          cgrid%mmean_nppdaily            (ipy) = 0.0 
-         cgrid%mmean_rh                  (ipy) = 0.0 
+         cgrid%mmean_rh                (:,ipy) = 0.0 
          cgrid%mmean_cwd_rh              (ipy) = 0.0 
          cgrid%mmean_nep                 (ipy) = 0.0 
          cgrid%mmean_rk4step             (ipy) = 0.0 
@@ -5316,8 +5319,8 @@ module average_utils
          cgrid%mmean_nppseeds            (ipy) = 0.0
          cgrid%mmean_nppwood             (ipy) = 0.0
          cgrid%mmean_nppdaily            (ipy) = 0.0
-         cgrid%mmean_A_decomp            (ipy) = 0.0 
-         cgrid%mmean_Af_decomp           (ipy) = 0.0 
+         cgrid%mmean_A_decomp          (:,ipy) = 0.0 
+         cgrid%mmean_Af_decomp         (:,ipy) = 0.0 
          cgrid%mmean_co2_residual        (ipy) = 0.0 
          cgrid%mmean_energy_residual     (ipy) = 0.0 
          cgrid%mmean_water_residual      (ipy) = 0.0 
@@ -5404,11 +5407,11 @@ module average_utils
                csite%mmean_co2_residual     (ipa) = 0.0
                csite%mmean_energy_residual  (ipa) = 0.0
                csite%mmean_water_residual   (ipa) = 0.0
-               csite%mmean_rh               (ipa) = 0.0
+               csite%mmean_rh             (:,ipa) = 0.0
                csite%mmean_cwd_rh           (ipa) = 0.0
                csite%mmean_nep              (ipa) = 0.0
-               csite%mmean_A_decomp         (ipa) = 0.0
-               csite%mmean_Af_decomp        (ipa) = 0.0
+               csite%mmean_A_decomp       (:,ipa) = 0.0
+               csite%mmean_Af_decomp      (:,ipa) = 0.0
                csite%mmean_rk4step          (ipa) = 0.0
                csite%mmean_available_water  (ipa) = 0.0
                csite%mmean_can_theiv        (ipa) = 0.0
@@ -5463,8 +5466,8 @@ module average_utils
                csite%mmean_qthroughfall     (ipa) = 0.0
                csite%mmean_qrunoff          (ipa) = 0.0
                csite%mmean_qdrainage        (ipa) = 0.0
-               csite%mmean_A_decomp         (ipa) = 0.0
-               csite%mmean_Af_decomp        (ipa) = 0.0
+               csite%mmean_A_decomp       (:,ipa) = 0.0
+               csite%mmean_Af_decomp      (:,ipa) = 0.0
                csite%mmean_co2_residual     (ipa) = 0.0
                csite%mmean_energy_residual  (ipa) = 0.0
                csite%mmean_water_residual   (ipa) = 0.0
@@ -5846,7 +5849,7 @@ module average_utils
                                               + cgrid%fmean_wshed_wg           (ipy)       &
                                               * ndaysi
          cgrid%qmean_rh               (t,ipy) = cgrid%qmean_rh               (t,ipy)       &
-                                              + cgrid%fmean_rh                 (ipy)       &
+                                              + sum(cgrid%fmean_rh           (:,ipy))      &
                                               * ndaysi
          cgrid%qmean_cwd_rh           (t,ipy) = cgrid%qmean_cwd_rh           (t,ipy)       &
                                               + cgrid%fmean_cwd_rh             (ipy)       &
@@ -6071,7 +6074,7 @@ module average_utils
                                               + isqu_ftz(cgrid%fmean_vapor_wc     (ipy))   &
                                               * ndaysi
          cgrid%qmsqu_rh               (t,ipy) = cgrid%qmsqu_rh                  (t,ipy)    &
-                                              + isqu_ftz(cgrid%fmean_rh           (ipy))   &
+                                              + isqu_ftz(sum(cgrid%fmean_rh    (:,ipy)))   &
                                               * ndaysi
          cgrid%qmsqu_cwd_rh           (t,ipy) = cgrid%qmsqu_cwd_rh              (t,ipy)    &
                                               + isqu_ftz(cgrid%fmean_cwd_rh       (ipy))   &
@@ -6190,7 +6193,7 @@ module average_utils
                !      Integrate patch-level variables.                                     !
                !---------------------------------------------------------------------------!
                csite%qmean_rh               (t,ipa) = csite%qmean_rh               (t,ipa) &
-                                                    + csite%fmean_rh                 (ipa) &
+                                                    + sum(csite%fmean_rh          (:,ipa)) &
                                                     * ndaysi
                csite%qmean_cwd_rh           (t,ipa) = csite%qmean_cwd_rh           (t,ipa) &
                                                     + csite%fmean_cwd_rh             (ipa) &
@@ -6346,7 +6349,7 @@ module average_utils
                                                     * ndaysi
                !------ Integrate the mean sum of squares. ---------------------------------!
                csite%qmsqu_rh           (t,ipa) = csite%qmsqu_rh                  (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_rh           (ipa)) &
+                                                + isqu_ftz(sum(csite%fmean_rh    (:,ipa))) &
                                                 * ndaysi                                 
                csite%qmsqu_cwd_rh       (t,ipa) = csite%qmsqu_cwd_rh              (t,ipa)  &
                                                 + isqu_ftz(csite%fmean_cwd_rh       (ipa)) &

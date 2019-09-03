@@ -47,6 +47,7 @@ module ed_work_vars
    !=======================================================================================!
    !=======================================================================================!
    subroutine ed_alloc_work(worke,n2,n3,nsite)
+!      use ed_max_dims  , only : nzgmax   & ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type (work_vars), intent(inout) :: worke

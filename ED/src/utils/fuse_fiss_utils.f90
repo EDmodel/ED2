@@ -4362,11 +4362,13 @@ module fuse_fiss_utils
       ! averages will be zero.                                                             !
       !------------------------------------------------------------------------------------!
       if (.not. fuse_initial) then
-         csite%fmean_rh                   (recp) = ( csite%fmean_rh                (recp)  &
+         do k=1,mzl
+           csite%fmean_rh             (k,recp) = ( csite%fmean_rh                (k,recp)  &
                                                    * csite%area                    (recp)  &
-                                                   + csite%fmean_rh                (donp)  &
+                                                   + csite%fmean_rh              (k,donp)  &
                                                    * csite%area                    (donp)) &
                                                  *   newareai
+         end do
          csite%fmean_cwd_rh               (recp) = ( csite%fmean_cwd_rh            (recp)  &
                                                    * csite%area                    (recp)  &
                                                    + csite%fmean_cwd_rh            (donp)  &
@@ -4678,16 +4680,23 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       if (writing_long .and.  (.not. fuse_initial) ) then
         if ( all(csite%dmean_can_prss > 10.0) ) then
-         csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
+        do k=1,mzl
+         csite%dmean_A_decomp       (k,recp) = ( csite%dmean_A_decomp           (k,recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%dmean_A_decomp           (donp)   &
+                                               + csite%dmean_A_decomp           (k,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%dmean_Af_decomp          (recp) = ( csite%dmean_Af_decomp          (recp)   &
+         csite%dmean_Af_decomp      (k,recp) = ( csite%dmean_Af_decomp          (k,recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%dmean_Af_decomp          (donp)   &
+                                               + csite%dmean_Af_decomp          (k,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
+         csite%dmean_rh             (k,recp) = ( csite%dmean_rh                 (k,recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_rh               (k,donp)   &
+                                                 * csite%area                     (donp) ) &
+                                                 * newareai
+        end do
          csite%dmean_co2_residual       (recp) = ( csite%dmean_co2_residual       (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_co2_residual       (donp)   &
@@ -4701,11 +4710,6 @@ module fuse_fiss_utils
          csite%dmean_water_residual     (recp) = ( csite%dmean_water_residual     (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_water_residual     (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-         csite%dmean_rh                 (recp) = ( csite%dmean_rh                 (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%dmean_rh                 (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%dmean_cwd_rh             (recp) = ( csite%dmean_cwd_rh             (recp)   &
@@ -5015,10 +5019,10 @@ module fuse_fiss_utils
          ! the patch level.                                                                !
          !---------------------------------------------------------------------------------!
 
-         csite%mmsqu_rh         (recp) = fuse_msqu( csite%mmean_rh         (recp)          &
+         csite%mmsqu_rh         (recp) = fuse_msqu( sum(csite%mmean_rh     (:,recp))       &
                                                   , csite%mmsqu_rh         (recp)          &
                                                   , csite%area             (recp)          &
-                                                  , csite%mmean_rh         (donp)          &
+                                                  , sum(csite%mmean_rh     (:,donp))       &
                                                   , csite%mmsqu_rh         (donp)          &
                                                   , csite%area             (donp)          &
                                                   , corr_patch, .false.)
@@ -5130,9 +5134,9 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------! 
 
 
-         csite%mmean_rh                 (recp) = ( csite%mmean_rh                 (recp)   &
+         csite%mmean_rh               (:,recp) = ( csite%mmean_rh               (:,recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%mmean_rh                 (donp)   &
+                                                 + csite%mmean_rh               (:,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%mmean_cwd_rh             (recp) = ( csite%mmean_cwd_rh             (recp)   &
@@ -5370,14 +5374,14 @@ module fuse_fiss_utils
                                                  + csite%mmean_mineral_soil_n     (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%mmean_A_decomp           (recp) = ( csite%mmean_A_decomp           (recp)   &
+         csite%mmean_A_decomp       (:,recp) = ( csite%mmean_A_decomp           (:,recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%mmean_A_decomp           (donp)   &
+                                               + csite%mmean_A_decomp           (:,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%mmean_Af_decomp          (recp) = ( csite%mmean_Af_decomp          (recp)   &
+         csite%mmean_Af_decomp      (:,recp) = ( csite%mmean_Af_decomp          (:,recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%mmean_Af_decomp          (donp)   &
+                                               + csite%mmean_Af_decomp          (:,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%mmean_co2_residual       (recp) = ( csite%mmean_co2_residual       (recp)   &

@@ -113,6 +113,10 @@ Module decomp_coms
    !     Fraction of structural pool decomposition going to heterotrophic respiration      !
    !---------------------------------------------------------------------------------------!
    real :: r_ssc
+   !-----------------------
+   !     Organic soil texture to use in peat layers
+   !----------------------
+   real :: organic_soil_texture
    !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of structural pool soil carbon (1/days); this is modulated   !
    ! by Lc.                                                                                !

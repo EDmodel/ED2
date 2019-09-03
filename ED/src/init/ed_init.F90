@@ -64,7 +64,8 @@ subroutine set_site_defprops()
                             , polygontype          & ! structure
                             , allocate_polygontype ! ! subroutine
    use soil_coms     , only : soil                 & ! intent(in)
-                            , slz                  ! ! intent(in)
+                            , slz                  & ! intent(in)
+                            , nslcon
    use mem_polygons  , only : maxsite              ! ! intent(in)
    use ed_misc_coms  , only : min_site_area        ! ! intent(in)
    implicit none 
@@ -149,7 +150,7 @@ subroutine set_site_defprops()
                !     Use the soil type and populate the site-level soil texture.           !
                !---------------------------------------------------------------------------!
                do k=1,nzg
-                  cpoly%ntext_soil(k,isi) = work_v(ifm)%ntext(itext,ipy)
+                  cpoly%ntext_soil(k,isi) = nslcon(k) !work_v(ifm)%ntext(itext,ipy)
                end do
                !---------------------------------------------------------------------------!
 
@@ -236,7 +237,8 @@ end subroutine set_site_defprops
 !------------------------------------------------------------------------------------------!
 subroutine soil_default_fill(cgrid,ifm,ipy)
    
-   use soil_coms     , only : layer_index ! ! intent(in)
+   use soil_coms     , only : layer_index & ! intent(in)
+                            , nslcon 
    use ed_state_vars , only : edtype      & ! structure
                             , polygontype ! ! structure
    use ed_work_vars  , only : work_v      ! ! structure
@@ -272,7 +274,7 @@ subroutine soil_default_fill(cgrid,ifm,ipy)
       !     Use the commonest soil type and populate the site-level soil texture.          !
       !------------------------------------------------------------------------------------!
       do k=1,nzg
-         cpoly%ntext_soil(k,isi) = work_v(ifm)%ntext(1,ipy)
+         cpoly%ntext_soil(k,isi) = nslcon(k) !work_v(ifm)%ntext(1,ipy) EJL
       end do
       !------------------------------------------------------------------------------------!
 
@@ -813,6 +815,7 @@ subroutine print_soil_info(cgrid,ifm)
    integer                            :: isi
    integer                            :: slash
    integer                            :: endstr
+   integer                            :: k
    !---------------------------------------------------------------------------------------!
    
    if (ifm /=1 .or. n_poi /= 1 .or. cgrid%npolygons /= 1) return
@@ -839,9 +842,10 @@ subroutine print_soil_info(cgrid,ifm)
    write (unit=*,fmt='(a,1x,i11)')    '    # of sites                 :',cpoly%nsites
 
    do isi = 1,cpoly%nsites
-      nsoil = cpoly%ntext_soil(nzg,isi)
-      write (unit=*,fmt='(a)')          ' '
       write (unit=*,fmt='(a,1x,i11)')   '    Site :',isi
+    do k = 1,nzg
+      nsoil = cpoly%ntext_soil(k,isi)
+      write (unit=*,fmt='(a,1x,i5)')          '    Level: ',k
       write (unit=*,fmt='(a,1x,i10)')   '      - Type :',nsoil
       write(unit=*,fmt='(a,1x,es12.5)') '      - Clay fraction  =', soil(nsoil)%xclay
       write(unit=*,fmt='(a,1x,es12.5)') '      - Sand fraction  =', soil(nsoil)%xsand
@@ -854,6 +858,7 @@ subroutine print_soil_info(cgrid,ifm)
       write(unit=*,fmt='(a,1x,es12.5)') '      - Field capacity =', soil(nsoil)%sfldcap
       write(unit=*,fmt='(a,1x,es12.5)') '      - Saturation     =', soil(nsoil)%slmsts
       write(unit=*,fmt='(a,1x,es12.5)') '      - Heat capacity  =', soil(nsoil)%slcpd
+    end do
    end do
    write (unit=*,fmt='(a)') '   --------------------------------------------------------'
    write (unit=*,fmt='(a)') ' '
@@ -1078,7 +1083,7 @@ subroutine read_site_file(cgrid,igr)
                      end do
                   else
                      do i=1,nzg
-                        cpoly%ntext_soil(i,isi) = soilclass(1)
+                        cpoly%ntext_soil(i,isi) = soilclass(i)
                      end do
                   end if
                   

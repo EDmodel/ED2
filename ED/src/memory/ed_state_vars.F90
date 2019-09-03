@@ -1437,7 +1437,7 @@ module ed_state_vars
       !   Theta_Eiv -- ice vapour equivalent potential temperature                         !
       !------------------------------------------------------------------------------------!
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rh              !<Heterotr. resp.    [umol/m2/s]
+      real,pointer,dimension(:,:) :: fmean_rh              !<Heterotr. resp.    [umol/m2/s]
       real,pointer,dimension(:)   :: fmean_cwd_rh          !<CWD respiration    [umol/m2/s]
       real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [umol/m2/s]
       !----- State variables. -------------------------------------------------------------!
@@ -1505,8 +1505,8 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_qrunoff      !<Surface runoff        [     W/m2]
       real,pointer,dimension(:)   :: fmean_qdrainage    !<Drainage energy loss  [     W/m2]
       !----- Variables with no sub-daily means. -------------------------------------------!
-      real,pointer,dimension(:) :: dmean_A_decomp         !<Decomposition fact. [       --]
-      real,pointer,dimension(:) :: dmean_Af_decomp        !<A with N immobil.   [       --]
+      real,pointer,dimension(:,:) :: dmean_A_decomp       !<Decomposition fact. [       --]
+      real,pointer,dimension(:,:) :: dmean_Af_decomp      !<A with N immobil.   [       --]
       real,pointer,dimension(:) :: dmean_co2_residual     !<CO2 residual        [  umol/m2]
       real,pointer,dimension(:) :: dmean_energy_residual  !<Enthalpy residual   [     J/m2]
       real,pointer,dimension(:) :: dmean_water_residual   !<Water residual      [    kg/m2]
@@ -1518,7 +1518,7 @@ module ed_state_vars
       real,pointer,dimension(:) :: mmean_fast_soil_n    !<Fast soil nitrogen    [   kgN/m2]
       real,pointer,dimension(:) :: mmean_mineral_soil_n !<Mineralised soil N    [   kgN/m2]
       !----- Daily means.  Units are the same as the "avg" variables. ---------------------!
-      real,pointer,dimension(:)     :: dmean_rh
+      real,pointer,dimension(:,:)   :: dmean_rh
       real,pointer,dimension(:)     :: dmean_cwd_rh
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
@@ -1582,7 +1582,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_qrunoff
       real,pointer,dimension(:)     :: dmean_qdrainage
       !----- Monthly means.  Units are the same as the "avg" variables. --------------------!
-      real,pointer,dimension(:)     :: mmean_rh
+      real,pointer,dimension(:,:)   :: mmean_rh
       real,pointer,dimension(:)     :: mmean_cwd_rh
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
@@ -1645,8 +1645,8 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_qthroughfall
       real,pointer,dimension(:)     :: mmean_qrunoff
       real,pointer,dimension(:)     :: mmean_qdrainage
-      real,pointer,dimension(:)     :: mmean_A_decomp
-      real,pointer,dimension(:)     :: mmean_Af_decomp
+      real,pointer,dimension(:,:)   :: mmean_A_decomp
+      real,pointer,dimension(:,:)   :: mmean_Af_decomp
       real,pointer,dimension(:)     :: mmean_co2_residual
       real,pointer,dimension(:)     :: mmean_energy_residual
       real,pointer,dimension(:)     :: mmean_water_residual
@@ -2434,7 +2434,7 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_intercepted_aw   !<Wood interception   [   kg/m2/s]
       real,pointer,dimension(:) :: fmean_wshed_wg         !<Wood shedding       [   kg/m2/s]
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rh              !<Heterotr. resp.    [ kgC/m2/yr]
+      real,pointer,dimension(:,:) :: fmean_rh              !<Heterotr. resp.    [ kgC/m2/yr]
       real,pointer,dimension(:)   :: fmean_cwd_rh          !<CWD respiration    [ kgC/m2/yr]
       real,pointer,dimension(:)   :: fmean_nep             !<Net Ecosyst. Prod. [ kgC/m2/yr]
       !----- State variables. -------------------------------------------------------------!
@@ -2533,8 +2533,8 @@ module ed_state_vars
       real,pointer,dimension(:) :: dmean_nppseeds         !<Seed NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppwood          !<Wood NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppdaily         !<Daily NPP           [ kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_A_decomp         !<Decomposition fact. [        --]
-      real,pointer,dimension(:) :: dmean_Af_decomp        !<A with N immobil.   [        --]
+      real,pointer,dimension(:,:) :: dmean_A_decomp       !<Decomposition fact. [        --]
+      real,pointer,dimension(:,:) :: dmean_Af_decomp      !<A with N immobil.   [        --]
       real,pointer,dimension(:) :: dmean_co2_residual     !<CO2 residual        [   umol/m2]
       real,pointer,dimension(:) :: dmean_energy_residual  !<Enthalpy residual   [      J/m2]
       real,pointer,dimension(:) :: dmean_water_residual   !<Water residual      [     kg/m2]
@@ -2613,7 +2613,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_vapor_wc
       real,pointer,dimension(:)     :: dmean_intercepted_aw
       real,pointer,dimension(:)     :: dmean_wshed_wg
-      real,pointer,dimension(:)     :: dmean_rh
+      real,pointer,dimension(:,:)   :: dmean_rh
       real,pointer,dimension(:)     :: dmean_cwd_rh
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
@@ -2749,7 +2749,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_vapor_wc
       real,pointer,dimension(:)     :: mmean_intercepted_aw
       real,pointer,dimension(:)     :: mmean_wshed_wg
-      real,pointer,dimension(:)     :: mmean_rh
+      real,pointer,dimension(:,:)   :: mmean_rh
       real,pointer,dimension(:)     :: mmean_cwd_rh
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
@@ -2819,8 +2819,8 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nppseeds   
       real,pointer,dimension(:)     :: mmean_nppwood    
       real,pointer,dimension(:)     :: mmean_nppdaily   
-      real,pointer,dimension(:)     :: mmean_A_decomp
-      real,pointer,dimension(:)     :: mmean_Af_decomp
+      real,pointer,dimension(:,:)   :: mmean_A_decomp
+      real,pointer,dimension(:,:)   :: mmean_Af_decomp
       real,pointer,dimension(:)     :: mmean_co2_residual
       real,pointer,dimension(:)     :: mmean_energy_residual
       real,pointer,dimension(:)     :: mmean_water_residual
@@ -3361,7 +3361,7 @@ module ed_state_vars
       allocate(cgrid%fmean_vapor_wc             (                    npolygons))
       allocate(cgrid%fmean_intercepted_aw       (                    npolygons))
       allocate(cgrid%fmean_wshed_wg             (                    npolygons))
-      allocate(cgrid%fmean_rh                   (                    npolygons))
+      allocate(cgrid%fmean_rh                   (                nzg,npolygons))
       allocate(cgrid%fmean_cwd_rh               (                    npolygons))
       allocate(cgrid%fmean_nep                  (                    npolygons))
       allocate(cgrid%fmean_rk4step              (                    npolygons))
@@ -3460,8 +3460,8 @@ module ed_state_vars
          allocate(cgrid%dmean_nppseeds         (                     npolygons))
          allocate(cgrid%dmean_nppwood          (                     npolygons))
          allocate(cgrid%dmean_nppdaily         (                     npolygons))
-         allocate(cgrid%dmean_A_decomp         (                     npolygons))
-         allocate(cgrid%dmean_Af_decomp        (                     npolygons))
+         allocate(cgrid%dmean_A_decomp         (                 nzg,npolygons))
+         allocate(cgrid%dmean_Af_decomp        (                 nzg,npolygons))
          allocate(cgrid%dmean_co2_residual     (                     npolygons))
          allocate(cgrid%dmean_energy_residual  (                     npolygons))
          allocate(cgrid%dmean_water_residual   (                     npolygons))
@@ -3520,7 +3520,7 @@ module ed_state_vars
          allocate(cgrid%dmean_vapor_wc         (                     npolygons))
          allocate(cgrid%dmean_intercepted_aw   (                     npolygons))
          allocate(cgrid%dmean_wshed_wg         (                     npolygons))
-         allocate(cgrid%dmean_rh               (                     npolygons))
+         allocate(cgrid%dmean_rh               (                 nzg,npolygons))
          allocate(cgrid%dmean_cwd_rh           (                     npolygons))
          allocate(cgrid%dmean_nep              (                     npolygons))
          allocate(cgrid%dmean_rk4step          (                     npolygons))
@@ -3684,7 +3684,7 @@ module ed_state_vars
          allocate(cgrid%mmean_vapor_wc         (                     npolygons)) 
          allocate(cgrid%mmean_intercepted_aw   (                     npolygons)) 
          allocate(cgrid%mmean_wshed_wg         (                     npolygons)) 
-         allocate(cgrid%mmean_rh               (                     npolygons)) 
+         allocate(cgrid%mmean_rh               (                 nzg,npolygons)) 
          allocate(cgrid%mmean_cwd_rh           (                     npolygons)) 
          allocate(cgrid%mmean_nep              (                     npolygons)) 
          allocate(cgrid%mmean_rk4step          (                     npolygons)) 
@@ -3754,8 +3754,8 @@ module ed_state_vars
          allocate(cgrid%mmean_nppseeds         (                     npolygons))
          allocate(cgrid%mmean_nppwood          (                     npolygons))
          allocate(cgrid%mmean_nppdaily         (                     npolygons))
-         allocate(cgrid%mmean_A_decomp         (                     npolygons)) 
-         allocate(cgrid%mmean_Af_decomp        (                     npolygons)) 
+         allocate(cgrid%mmean_A_decomp         (                 nzg,npolygons)) 
+         allocate(cgrid%mmean_Af_decomp        (                 nzg,npolygons)) 
          allocate(cgrid%mmean_co2_residual     (                     npolygons)) 
          allocate(cgrid%mmean_energy_residual  (                     npolygons)) 
          allocate(cgrid%mmean_water_residual   (                     npolygons)) 
@@ -4388,7 +4388,7 @@ module ed_state_vars
       allocate(csite%runoff_rate                   (              npatches))
       allocate(csite%runoff                        (              npatches))
       allocate(csite%qrunoff                       (              npatches))
-      allocate(csite%fmean_rh                      (              npatches))
+      allocate(csite%fmean_rh                      (          nzg,npatches))
       allocate(csite%fmean_cwd_rh                  (              npatches))
       allocate(csite%fmean_nep                     (              npatches))
       allocate(csite%fmean_rk4step                 (              npatches))
@@ -4453,12 +4453,12 @@ module ed_state_vars
       allocate(csite%fmean_qdrainage               (              npatches))
 
       if (writing_long) then
-         allocate(csite%dmean_A_decomp             (              npatches))
-         allocate(csite%dmean_Af_decomp            (              npatches))
+         allocate(csite%dmean_A_decomp             (          nzg,npatches))
+         allocate(csite%dmean_Af_decomp            (          nzg,npatches))
          allocate(csite%dmean_co2_residual         (              npatches))
          allocate(csite%dmean_energy_residual      (              npatches))
          allocate(csite%dmean_water_residual       (              npatches))
-         allocate(csite%dmean_rh                   (              npatches))
+         allocate(csite%dmean_rh                   (          nzg,npatches))
          allocate(csite%dmean_cwd_rh               (              npatches))
          allocate(csite%dmean_nep                  (              npatches))
          allocate(csite%dmean_rk4step              (              npatches))
@@ -4532,11 +4532,11 @@ module ed_state_vars
          allocate(csite%mmean_co2_residual         (              npatches))
          allocate(csite%mmean_energy_residual      (              npatches))
          allocate(csite%mmean_water_residual       (              npatches))
-         allocate(csite%mmean_rh                   (              npatches))
+         allocate(csite%mmean_rh                   (          nzg,npatches))
          allocate(csite%mmean_cwd_rh               (              npatches))
          allocate(csite%mmean_nep                  (              npatches))
-         allocate(csite%mmean_A_decomp             (              npatches))
-         allocate(csite%mmean_Af_decomp            (              npatches))
+         allocate(csite%mmean_A_decomp             (          nzg,npatches))
+         allocate(csite%mmean_Af_decomp            (          nzg,npatches))
          allocate(csite%mmean_rk4step              (              npatches))
          allocate(csite%mmean_available_water      (              npatches))
          allocate(csite%mmean_can_theiv            (              npatches))
@@ -4597,8 +4597,8 @@ module ed_state_vars
          allocate(csite%mmean_qthroughfall         (              npatches))
          allocate(csite%mmean_qrunoff              (              npatches))
          allocate(csite%mmean_qdrainage            (              npatches))
-         allocate(csite%mmean_A_decomp             (              npatches))
-         allocate(csite%mmean_Af_decomp            (              npatches))
+         allocate(csite%mmean_A_decomp             (          nzg,npatches))
+         allocate(csite%mmean_Af_decomp            (          nzg,npatches))
          allocate(csite%mmean_co2_residual         (              npatches))
          allocate(csite%mmean_energy_residual      (              npatches))
          allocate(csite%mmean_water_residual       (              npatches))
@@ -8233,7 +8233,9 @@ module ed_state_vars
          osite%runoff_rate                (opa) = isite%runoff_rate                (ipa)
          osite%runoff                     (opa) = isite%runoff                     (ipa)
          osite%qrunoff                    (opa) = isite%qrunoff                    (ipa)
-         osite%fmean_rh                   (opa) = isite%fmean_rh                   (ipa)
+         do m=1,nzg
+           osite%fmean_rh               (m,opa) = isite%fmean_rh                 (m,ipa)
+         end do
          osite%fmean_cwd_rh               (opa) = isite%fmean_cwd_rh               (ipa)
          osite%fmean_nep                  (opa) = isite%fmean_nep                  (ipa)
          osite%fmean_rk4step              (opa) = isite%fmean_rk4step              (ipa)
@@ -8366,12 +8368,14 @@ module ed_state_vars
          !---------------------------------------------------------------------------------!
          if (writing_long) then
             !----- Scalars. ---------------------------------------------------------------!
-            osite%dmean_A_decomp       (opa) = isite%dmean_A_decomp       (ipa)
-            osite%dmean_Af_decomp      (opa) = isite%dmean_Af_decomp      (ipa)
+            do m=1,nzg
+              osite%dmean_A_decomp   (m,opa) = isite%dmean_A_decomp     (m,ipa)
+              osite%dmean_Af_decomp  (m,opa) = isite%dmean_Af_decomp    (m,ipa)
+              osite%dmean_rh         (m,opa) = isite%dmean_rh           (m,ipa)
+            end do
             osite%dmean_co2_residual   (opa) = isite%dmean_co2_residual   (ipa)
             osite%dmean_energy_residual(opa) = isite%dmean_energy_residual(ipa)
             osite%dmean_water_residual (opa) = isite%dmean_water_residual (ipa)
-            osite%dmean_rh             (opa) = isite%dmean_rh             (ipa)
             osite%dmean_cwd_rh         (opa) = isite%dmean_cwd_rh         (ipa)
             osite%dmean_nep            (opa) = isite%dmean_nep            (ipa)
             osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (ipa)
@@ -8460,11 +8464,13 @@ module ed_state_vars
             osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
             osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
             osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
-            osite%mmean_rh             (opa) = isite%mmean_rh             (ipa)
             osite%mmean_cwd_rh         (opa) = isite%mmean_cwd_rh         (ipa)
             osite%mmean_nep            (opa) = isite%mmean_nep            (ipa)
-            osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
-            osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
+           do m=1,nzg 
+            osite%mmean_A_decomp   (m,opa) = isite%mmean_A_decomp       (m,ipa)
+            osite%mmean_Af_decomp  (m,opa) = isite%mmean_Af_decomp      (m,ipa)
+            osite%mmean_rh         (m,opa) = isite%mmean_rh             (m,ipa)
+           end do
             osite%mmean_rk4step        (opa) = isite%mmean_rk4step        (ipa)
             osite%mmean_available_water(opa) = isite%mmean_available_water(ipa)
             osite%mmean_can_theiv      (opa) = isite%mmean_can_theiv      (ipa)
@@ -8517,8 +8523,10 @@ module ed_state_vars
             osite%mmean_qthroughfall   (opa) = isite%mmean_qthroughfall   (ipa)
             osite%mmean_qrunoff        (opa) = isite%mmean_qrunoff        (ipa)
             osite%mmean_qdrainage      (opa) = isite%mmean_qdrainage      (ipa)
-            osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
-            osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
+            do m=1,nzg
+              osite%mmean_A_decomp   (m,opa) = isite%mmean_A_decomp     (m,ipa)
+              osite%mmean_Af_decomp  (m,opa) = isite%mmean_Af_decomp    (m,ipa)
+            end do
             osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
             osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
             osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
@@ -9017,8 +9025,9 @@ module ed_state_vars
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: m
       !------------------------------------------------------------------------------------!
-
-      osite%fmean_rh                  (1:z) = pack(isite%fmean_rh                  ,lmask)
+      do m=1,nzg
+        osite%fmean_rh              (m,1:z) = pack(isite%fmean_rh             (m,:),lmask)
+      end do
       osite%fmean_cwd_rh              (1:z) = pack(isite%fmean_cwd_rh              ,lmask)
       osite%fmean_nep                 (1:z) = pack(isite%fmean_nep                 ,lmask)
       osite%fmean_rk4step             (1:z) = pack(isite%fmean_rk4step             ,lmask)
@@ -9123,12 +9132,14 @@ module ed_state_vars
 
 
       !----- Scalars. ---------------------------------------------------------------------!
-      osite%dmean_A_decomp       (1:z) = pack(isite%dmean_A_decomp       (:),lmask)
-      osite%dmean_Af_decomp      (1:z) = pack(isite%dmean_Af_decomp      (:),lmask)
+      do m=1,nzg
+        osite%dmean_A_decomp   (m,1:z) = pack(isite%dmean_A_decomp     (m,:),lmask)
+        osite%dmean_Af_decomp  (m,1:z) = pack(isite%dmean_Af_decomp    (m,:),lmask)
+        osite%dmean_rh         (m,1:z) = pack(isite%dmean_rh           (m,:),lmask)
+      end do
       osite%dmean_co2_residual   (1:z) = pack(isite%dmean_co2_residual   (:),lmask)
       osite%dmean_energy_residual(1:z) = pack(isite%dmean_energy_residual(:),lmask)
       osite%dmean_water_residual (1:z) = pack(isite%dmean_water_residual (:),lmask)
-      osite%dmean_rh             (1:z) = pack(isite%dmean_rh             (:),lmask)
       osite%dmean_cwd_rh         (1:z) = pack(isite%dmean_cwd_rh         (:),lmask)
       osite%dmean_nep            (1:z) = pack(isite%dmean_nep            (:),lmask)
       osite%dmean_rk4step        (1:z) = pack(isite%dmean_rk4step        (:),lmask)
@@ -9244,11 +9255,13 @@ module ed_state_vars
       osite%mmean_co2_residual   (1:z) = pack(isite%mmean_co2_residual   (:),lmask)
       osite%mmean_energy_residual(1:z) = pack(isite%mmean_energy_residual(:),lmask)
       osite%mmean_water_residual (1:z) = pack(isite%mmean_water_residual (:),lmask)
-      osite%mmean_rh             (1:z) = pack(isite%mmean_rh             (:),lmask)
       osite%mmean_cwd_rh         (1:z) = pack(isite%mmean_cwd_rh         (:),lmask)
       osite%mmean_nep            (1:z) = pack(isite%mmean_nep            (:),lmask)
-      osite%mmean_A_decomp       (1:z) = pack(isite%mmean_A_decomp       (:),lmask)
-      osite%mmean_Af_decomp      (1:z) = pack(isite%mmean_Af_decomp      (:),lmask)
+      do m=1,nzg
+        osite%mmean_A_decomp   (m,1:z) = pack(isite%mmean_A_decomp     (m,:),lmask)
+        osite%mmean_Af_decomp  (m,1:z) = pack(isite%mmean_Af_decomp    (m,:),lmask)
+        osite%mmean_rh         (m,1:z) = pack(isite%mmean_rh           (m,:),lmask)
+      end do
       osite%mmean_rk4step        (1:z) = pack(isite%mmean_rk4step        (:),lmask)
       osite%mmean_available_water(1:z) = pack(isite%mmean_available_water(:),lmask)
       osite%mmean_can_theiv      (1:z) = pack(isite%mmean_can_theiv      (:),lmask)
@@ -9301,8 +9314,10 @@ module ed_state_vars
       osite%mmean_qthroughfall   (1:z) = pack(isite%mmean_qthroughfall   (:),lmask)
       osite%mmean_qrunoff        (1:z) = pack(isite%mmean_qrunoff        (:),lmask)
       osite%mmean_qdrainage      (1:z) = pack(isite%mmean_qdrainage      (:),lmask)
-      osite%mmean_A_decomp       (1:z) = pack(isite%mmean_A_decomp       (:),lmask)
-      osite%mmean_Af_decomp      (1:z) = pack(isite%mmean_Af_decomp      (:),lmask)
+      do m=1,nzg
+        osite%mmean_A_decomp   (m,1:z) = pack(isite%mmean_A_decomp     (m,:),lmask)
+        osite%mmean_Af_decomp  (m,1:z) = pack(isite%mmean_Af_decomp    (m,:),lmask)
+      end do 
       osite%mmean_co2_residual   (1:z) = pack(isite%mmean_co2_residual   (:),lmask)
       osite%mmean_energy_residual(1:z) = pack(isite%mmean_energy_residual(:),lmask)
       osite%mmean_water_residual (1:z) = pack(isite%mmean_water_residual (:),lmask)
@@ -12515,15 +12530,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Wood shedding'                               &
                            ,'[    kg/m2/s]','(ipoly)'            )
       end if
-      if (associated(cgrid%fmean_rh              )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%fmean_rh                                            &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RH_PY                :11:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Heterotrophic respiration'                   &
-                           ,'[   kg/m2/yr]','(ipoly)'            )
-      end if
+!      if (associated(cgrid%fmean_rh              )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,cgrid%fmean_rh                                            &
+!                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'FMEAN_RH_PY                :11:'//trim(fast_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Sub-daily mean - Heterotrophic respiration'                   &
+!                           ,'[   kg/m2/yr]','(ipoly)'            )
+!      end if
       if (associated(cgrid%fmean_cwd_rh          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_cwd_rh                                        &
@@ -13310,24 +13325,24 @@ module ed_state_vars
                            ,'Daily mean - Net primary productivity - total'                &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%dmean_A_decomp        )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_A_decomp                                      &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_A_DECOMP_PY          :11:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale'                             &
-                           ,'[         --]','(ipoly)'            )
-      end if
-      if (associated(cgrid%dmean_Af_decomp       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_Af_decomp                                     &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_AF_DECOMP_PY         :11:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale with N immobilisation'       &
-                           ,'[         --]','(ipoly)'            )
-      end if
+!      if (associated(cgrid%dmean_A_decomp        )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,cgrid%dmean_A_decomp                                      &
+!                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'DMEAN_A_DECOMP_PY          :11:'//trim(dail_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Daily mean - Decomposition scale'                             &
+!                           ,'[         --]','(ipoly)'            )
+!      end if
+!      if (associated(cgrid%dmean_Af_decomp       )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,cgrid%dmean_Af_decomp                                     &
+!                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'DMEAN_AF_DECOMP_PY         :11:'//trim(dail_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Daily mean - Decomposition scale with N immobilisation'       &
+!                           ,'[         --]','(ipoly)'            )
+!      end if
       if (associated(cgrid%dmean_co2_residual    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_co2_residual                                  &
@@ -13850,15 +13865,15 @@ module ed_state_vars
                            ,'Daily mean - Wood shedding'                                   &
                            ,'[    kg/m2/s]','(ipoly)'            )
       end if
-      if (associated(cgrid%dmean_rh              )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_rh                                            &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RH_PY                :11:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Heterotrophic respiration'                       &
-                           ,'[   kg/m2/yr]','(ipoly)'            )
-      end if
+!      if (associated(cgrid%dmean_rh              )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,cgrid%dmean_rh                                            &
+!                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'DMEAN_RH_PY                :11:'//trim(dail_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Daily mean - Heterotrophic respiration'                       &
+!                           ,'[   kg/m2/yr]','(ipoly)'            )
+!      end if
       if (associated(cgrid%dmean_cwd_rh          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_cwd_rh                                        &
@@ -15042,15 +15057,15 @@ module ed_state_vars
                            ,'Monthly mean - Wood shedding'                                 &
                            ,'[    kg/m2/s]','(ipoly)'            )
       end if
-      if (associated(cgrid%mmean_rh              )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_rh                                            &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RH_PY                :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Heterotrophic respiration'                     &
-                           ,'[   kg/m2/yr]','(ipoly)'            )
-      end if
+!      if (associated(cgrid%mmean_rh              )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,cgrid%mmean_rh                                            &
+!                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'MMEAN_RH_PY                :11:'//trim(eorq_keys))
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Monthly mean - Heterotrophic respiration'                     &
+!                           ,'[   kg/m2/yr]','(ipoly)'            )
+!      end if
       if (associated(cgrid%mmean_cwd_rh          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_cwd_rh                                        &
@@ -15592,24 +15607,24 @@ module ed_state_vars
                            ,'Monthly mean - Net primary productivity - total'              &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%mmean_A_decomp        )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_A_decomp                                      &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_A_DECOMP_PY          :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale'                           &
-                           ,'[         --]','(ipoly)'            )
-      end if
-      if (associated(cgrid%mmean_Af_decomp       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_Af_decomp                                     &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_AF_DECOMP_PY         :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
-                           ,'[         --]','(ipoly)'            )
-      end if
+!      if (associated(cgrid%mmean_A_decomp        )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,cgrid%mmean_A_decomp                                      &
+!                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'MMEAN_A_DECOMP_PY          :11:'//trim(eorq_keys))
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Monthly mean - Decomposition scale'                           &
+!                           ,'[         --]','(ipoly)'            )
+!      end if
+!      if (associated(cgrid%mmean_Af_decomp       )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,cgrid%mmean_Af_decomp                                     &
+!                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'MMEAN_AF_DECOMP_PY         :11:'//trim(eorq_keys))
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
+!                           ,'[         --]','(ipoly)'            )
+!      end if
       if (associated(cgrid%mmean_co2_residual    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_co2_residual                                  &
@@ -17545,6 +17560,70 @@ module ed_state_vars
       ! of points defined by npts.                                                         !
       !------------------------------------------------------------------------------------!
       npts = cgrid%npolygons * nzg
+      !! EJL 11/18
+      if (associated(cgrid%dmean_rh              )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_rh                                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_RH_PY                :12:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Heterotrophic respiration'                       &
+                           ,'[   kg/m2/yr]','(nzg,ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_rh              )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_rh                                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_RH_PY                :12:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Heterotrophic respiration'                   &
+                           ,'[   kg/m2/yr]','(nzg,ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_A_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_A_decomp                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_DECOMP_PY          :12:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Decomposition scale'                             &
+                           ,'[         --]','(nzg,ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_Af_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_Af_decomp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_AF_DECOMP_PY         :12:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Decomposition scale with N immobilisation'       &
+                           ,'[         --]','(nzg,ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_rh              )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_rh                                            &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_RH_PY                :12:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Heterotrophic respiration'                     &
+                           ,'[   kg/m2/yr]','(nzg,ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_A_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_A_decomp                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_DECOMP_PY          :12:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Decomposition scale'                           &
+                           ,'[         --]','(nzg,ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_Af_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_Af_decomp                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_AF_DECOMP_PY         :12:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
+                           ,'[         --]','(nzg,ipoly)'            )
+      end if
       if (associated(cgrid%fmean_soil_energy     )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_soil_energy                                   &
@@ -17639,7 +17718,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_WATER_PY        :12:'//trim(eorq_keys)     )
+                           ,'DMEAN_SOIL_WATER_PY        :12:hist:mont:dcyc:dail')
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil water content'                              &
                            ,'[      m3/m3]','(nzg,ipoly)'        )
@@ -17648,7 +17727,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_TEMP_PY         :12:'//trim(eorq_keys)     )
+                           ,'DMEAN_SOIL_TEMP_PY         :12:hist:mont:dcyc:dail')
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil temperature'                                &
                            ,'[          K]','(nzg,ipoly)'        )
@@ -20571,14 +20650,14 @@ module ed_state_vars
       if (associated(csite%fsc_in)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%fsc_in,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'FSC_IN :31:hist') 
+           var_len,var_len_global,max_ptrs,'FSC_IN :31:hist:anal:dail:mont') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(csite%ssc_in)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ssc_in,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SSC_IN :31:hist') 
+           var_len,var_len_global,max_ptrs,'SSC_IN :31:hist:anal:dail:mont') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -20997,15 +21076,15 @@ module ed_state_vars
       npts = csite%npatches
 
       !------ Averaged properties. --------------------------------------------------------!
-      if (associated(csite%fmean_rh              )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_rh                                            &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RH_PA                :31:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Heterotrophic respiration'                   &
-                           ,'[   kg/m2/yr]','(ipatch)'            )
-      end if
+!      if (associated(csite%fmean_rh              )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,csite%fmean_rh                                            &
+!                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'FMEAN_RH_PA                :31:'//trim(fast_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Sub-daily mean - Heterotrophic respiration'                   &
+!                           ,'[   kg/m2/yr]','(ipatch)'            )
+!      end if
       if (associated(csite%fmean_cwd_rh          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_cwd_rh                                        &
@@ -21538,24 +21617,24 @@ module ed_state_vars
       npts = csite%npatches
 
 
-      if (associated(csite%dmean_A_decomp        )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_A_decomp                                      &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_A_DECOMP_PA          :31:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale'                             &
-                           ,'[         --]','(ipatch)'            )
-      end if
-      if (associated(csite%dmean_Af_decomp       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_Af_decomp                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_AF_DECOMP_PA         :31:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Decomposition scale with N immobilisation'       &
-                           ,'[         --]','(ipatch)'            )
-      end if
+!      if (associated(csite%dmean_A_decomp        )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,csite%dmean_A_decomp                                      &
+!                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'DMEAN_A_DECOMP_PA          :31:'//trim(dail_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Daily mean - Decomposition scale'                             &
+!                           ,'[         --]','(ipatch)'            )
+!      end if
+!      if (associated(csite%dmean_Af_decomp       )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,csite%dmean_Af_decomp                                     &
+!                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'DMEAN_AF_DECOMP_PA         :31:'//trim(dail_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Daily mean - Decomposition scale with N immobilisation'       &
+!                           ,'[         --]','(ipatch)'            )
+!      end if
       if (associated(csite%dmean_co2_residual    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_co2_residual                                  &
@@ -21584,15 +21663,15 @@ module ed_state_vars
                            ,'[      kg/m2]','(ipatch)'            )
       end if
 
-      if (associated(csite%dmean_rh              )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_rh                                            &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RH_PA                :31:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Heterotrophic respiration'                       &
-                           ,'[   kg/m2/yr]','(ipatch)'            )
-      end if
+!      if (associated(csite%dmean_rh              )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,csite%dmean_rh                                            &
+!                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'DMEAN_RH_PA                :31:'//trim(dail_keys)     )
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Daily mean - Heterotrophic respiration'                       &
+!                           ,'[   kg/m2/yr]','(ipatch)'            )
+!      end if
       if (associated(csite%dmean_cwd_rh          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_cwd_rh                                        &
@@ -22134,15 +22213,15 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       npts = csite%npatches
 
-      if (associated(csite%mmean_rh              )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_rh                                            &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RH_PA                :31:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Heterotrophic respiration'                     &
-                           ,'[   kg/m2/yr]','(ipatch)'            )
-      end if
+!      if (associated(csite%mmean_rh              )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,csite%mmean_rh                                            &
+!                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'MMEAN_RH_PA                :31:'//trim(eorq_keys))
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Monthly mean - Heterotrophic respiration'                     &
+!                           ,'[   kg/m2/yr]','(ipatch)'            )
+!      end if
       if (associated(csite%mmean_cwd_rh          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_cwd_rh                                        &
@@ -22675,24 +22754,24 @@ module ed_state_vars
                            ,'Monthly mean - Soil Nitrogen (Mineralised pool)'              &
                            ,'[     kgN/m2]','(ipatch)'            )
       end if
-      if (associated(csite%mmean_A_decomp        )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_A_decomp                                      &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_A_DECOMP_PA          :31:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale'                           &
-                           ,'[         --]','(ipatch)'            )
-      end if
-      if (associated(csite%mmean_Af_decomp       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_Af_decomp                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_AF_DECOMP_PA         :31:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
-                           ,'[         --]','(ipatch)'            )
-      end if
+!      if (associated(csite%mmean_A_decomp        )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,csite%mmean_A_decomp                                      &
+!                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'MMEAN_A_DECOMP_PA          :31:'//trim(eorq_keys))
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Monthly mean - Decomposition scale'                           &
+!                           ,'[         --]','(ipatch)'            )
+!      end if
+!      if (associated(csite%mmean_Af_decomp       )) then
+!         nvar = nvar+1
+!         call vtable_edio_r(npts,csite%mmean_Af_decomp                                     &
+!                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+!                           ,'MMEAN_AF_DECOMP_PA         :31:'//trim(eorq_keys))
+!         call metadata_edio(nvar,igr                                                       &
+!                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
+!                           ,'[         --]','(ipatch)'            )
+!      end if
       if (associated(csite%mmean_co2_residual    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_co2_residual                                  &
@@ -23611,7 +23690,24 @@ module ed_state_vars
       ! types 32 and 320.                                                                  !
       !------------------------------------------------------------------------------------!
       npts = csite%npatches * nzg
-
+      if (associated(csite%dmean_rh              )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_rh                                            &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_RH_PA                :32:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Heterotrophic respiration'                       &
+                           ,'[   kg/m2/yr]','(nzg,ipatch)'            )
+      end if
+      if (associated(csite%fmean_rh              )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_rh                                            &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_RH_PA                :32:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Heterotrophic respiration'                   &
+                           ,'[   kg/m2/yr]','(nzg,ipatch)'            )
+      end if
       if (associated(csite%soil_energy)) then
          nvar=nvar+1
          call vtable_edio_r(npts,csite%soil_energy                                         &
@@ -23655,7 +23751,15 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Instantaneous - Soil liquid water fraction'          &
                            ,'[--]','(nzg,ipatch)') 
       end if
-
+      if (associated(csite%mmean_rh              )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_rh                                            &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_RH_PA                :32:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Heterotrophic respiration'                     &
+                           ,'[   kg/m2/yr]','(nzg,ipatch)'            )
+      end if
       if (associated(csite%rootdense)) then
          nvar=nvar+1
          call vtable_edio_r(npts,csite%rootdense                                           &
@@ -23663,6 +23767,42 @@ module ed_state_vars
                            ,'PATCH_ROOT_DENSITY :32:hist') 
          call metadata_edio(nvar,igr,'Patch level root density with depth'                 &
                            ,'[kg/m3]','(nzg,ipatch)') 
+      end if
+      if (associated(csite%dmean_A_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_A_decomp                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_DECOMP_PA          :32:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Decomposition scale'                             &
+                           ,'[         --]','(nzg,ipatch)'            )
+      end if
+      if (associated(csite%dmean_Af_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_Af_decomp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_AF_DECOMP_PA         :32:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Decomposition scale with N immobilisation'       &
+                           ,'[         --]','(nzg,ipatch)'            )
+      end if
+      if (associated(csite%mmean_A_decomp        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_A_decomp                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_DECOMP_PA          :32:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Decomposition scale'                           &
+                           ,'[         --]','(nzg,ipatch)'            )
+      end if
+      if (associated(csite%mmean_Af_decomp       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_Af_decomp                                     &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_AF_DECOMP_PA         :32:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Decomposition scale with N immobilisation'     &
+                           ,'[         --]','(nzg,ipatch)'            )
       end if
       !------------------------------------------------------------------------------------!
 
@@ -23792,7 +23932,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_soil_water                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_WATER_PA        :32:'//trim(dail_keys)     )
+                           ,'DMEAN_SOIL_WATER_PA        :32:hist:mont:dcyc:dail')
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil water content'                              &
                            ,'[      m3/m3]','(nzg,ipatch)'        )
@@ -23801,7 +23941,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_soil_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_TEMP_PA         :32:'//trim(dail_keys)     )
+                           ,'DMEAN_SOIL_TEMP_PA         :32:hist:mont:dcyc:dail')
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil temperature'                                &
                            ,'[          K]','(nzg,ipatch)'        )

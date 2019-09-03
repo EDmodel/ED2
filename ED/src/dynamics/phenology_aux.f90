@@ -118,6 +118,115 @@ module phenology_aux
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine calculates phenology factors for prescribed phenology schemes.     !
+   !    using MODIS C6 greenup and green down valuse. DOYs given for 20 and 50% greenup    !
+   !    and green down. Currently using linear extrapolation to get elongf, delay, etc.    !
+   !    Following method of above routine (prescribed_leaf_state)                          !
+   !---------------------------------------------------------------------------------------!
+   subroutine prescribed_greenup(lat,imonth,iyear,doy,green_leaf_factor                 &
+                                   ,leaf_aging_factor,phen_pars)
+
+      use phenology_coms , only : iphenys1         & ! intent(in)
+                                , iphenysf         & ! intent(in)
+                                , iphenyf1         & ! intent(in)
+                                , iphenyff         & ! intent(in)
+                                , prescribed_phen  & ! intent(in)
+                                , elongf_min       ! ! intent(in)
+      use ed_max_dims    , only : n_pft            ! ! intent(in)
+      use pft_coms       , only : phenology        ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(prescribed_phen) , intent(in)  :: phen_pars
+      integer               , intent(in)  :: iyear
+      integer               , intent(in)  :: doy
+      real                  , intent(in)  :: lat
+      integer               , intent(in)  :: imonth
+      real, dimension(n_pft), intent(out) :: green_leaf_factor
+      real, dimension(n_pft), intent(out) :: leaf_aging_factor
+      !----- Local variables --------------------------------------------------------------!
+      integer                             :: n_recycle_years
+      integer                             :: my_year
+      real                                :: elongf
+      real                                :: delay
+      real(kind=8)                        :: slope
+      real(kind=8)                        :: offset
+      integer                             :: pft
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     This assumes dropping/flushing based on the day of year and hemisphere.        !
+      ! + Northern Hemisphere: dropping between August 1 and December 31;                  !
+      !                        flushing between January 1 and July 31.                     !
+      ! + Southern Hemisphere: dropping between February 1 and July 31;                    !
+      !                        flushing between August 1 and January 31.                   !
+      !------------------------------------------------------------------------------------!
+      if( (lat >= 0.0 .and. imonth <= 7) .or.                                              &
+          (lat < 0.0  .and. (imonth > 7 .or. imonth == 1)) )then
+
+         !----- Get the year. -------------------------------------------------------------!
+         n_recycle_years = iphenysf - iphenys1 + 1
+
+         if (iyear > iphenysf) then
+            my_year = mod(iyear-iphenys1,n_recycle_years) + 1
+         elseif (iyear < iphenys1) then
+            my_year = n_recycle_years - mod(iphenysf-iyear,n_recycle_years)
+         else
+            my_year = iyear - iphenys1 + 1
+         end if
+
+         !---------------------------------------------------------------------------------!
+         !      Calculate the factors.  Precalc denominator and limit rate in order to     !
+         ! increase numerical stability (MCD 10/23/08).                                    !
+         !---------------------------------------------------------------------------------!
+         slope = (phen_pars%flush_b(my_year) - phen_pars%flush_a(my_year)) / 0.3
+         if (slope < 0) then 
+            slope = slope * (-1.0)
+         end if
+         offset = phen_pars%flush_b(my_year) - slope*0.5
+         elongf = min(0.999, (real(doy)-offset) / slope )
+         elongf = max(elongf, 0.0)
+         delay = elongf
+      else 
+         !---------------------------------------------------------------------------------!
+         !      Leaves turning color.  Get the year.                                       !
+         !---------------------------------------------------------------------------------!
+         n_recycle_years = iphenyff - iphenyf1 + 1
+         if (iyear > iphenyff) then
+            my_year = mod(iyear-iphenyf1,n_recycle_years) + 1
+         elseif (iyear < iphenyf1) then
+            my_year = n_recycle_years - mod(iphenyff-iyear,n_recycle_years)
+         else
+            my_year = iyear - iphenyf1 + 1
+         end if
+         !----- Calculate the factors. ----------------------------------------------------!
+         slope = (phen_pars%color_a(my_year) - phen_pars%color_b(my_year))/0.3
+         offset = phen_pars%color_a(my_year) - slope * 0.5
+         elongf = min(0.999, (real(doy) - offset) / slope)
+         delay  = min(0.999, (real(doy) - offset/1.095) / slope)
+         elongf = max(elongf, 0.0)
+         delay = max(delay, 0.0)
+      end if
+
+      if(elongf < elongf_min) elongf = 0.0
+
+      !----- Load the values for each PFT. ------------------------------------------------!
+      do pft = 1, n_pft
+         select case (phenology(pft))
+         case (2)
+            green_leaf_factor(pft) = elongf
+            leaf_aging_factor(pft) = delay
+         case default
+            green_leaf_factor(pft) = 1.0
+            leaf_aging_factor(pft) = 1.0
+         end select
+      end do
+
+      return
+   end subroutine prescribed_greenup
+   !=======================================================================================!
+   !=======================================================================================!
+
 
 
 
