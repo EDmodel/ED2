@@ -325,7 +325,7 @@ subroutine ed_model()
       select case (unitfast)
       case (0,1) !----- Now both are in seconds -------------------------------------------!
          analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                   &
-                           (ifoutput /= 0 .or. itoutput /=0)
+                           (ifoutput /= 0 .or. itoutput /=0 .or. iooutput /=0)
          dcycle_time     = mod(current_time%time, frqfast) < dtlsm .and. iqoutput /= 0
       case (2)   !----- Months, analysis time is at the new month -------------------------!
          analysis_time   = new_month .and. (ifoutput /= 0 .or. itoutput /=0) .and.         &
