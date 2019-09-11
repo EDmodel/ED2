@@ -1495,6 +1495,7 @@ module disturbance_utils
                                                 + cpoly%prob_harvest_l(ipft,isi)       &
                                                 * weight
                                  sumweight(ilu) = sumweight(ilu) + weight                              	
+                              end if
                            end do cohortloop_02
                            !---------------------------------------------------------------!
                         end if

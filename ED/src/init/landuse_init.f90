@@ -142,8 +142,8 @@ subroutine landuse_init
             do isi = 1,cpoly%nsites
                cpoly%num_landuse_years(isi)                  = 1
                cpoly%mindbh_harvest   (1:n_pft,isi)          = huge_dbh
-               cpoly%prob_havest_g    (1:n_pft,isi)          = 0.
-               cpoly%prob_havest_l    (1:n_pft,isi)          = 0.
+               cpoly%prob_harvest_g    (1:n_pft,isi)          = 0.
+               cpoly%prob_harvest_l    (1:n_pft,isi)          = 0.
                cpoly%clutimes(1,isi)%landuse_year            = iyeara
                cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
             end do

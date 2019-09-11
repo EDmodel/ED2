@@ -131,7 +131,7 @@ module mortality
 
       cpatch => csite%patch(ipa)
       do ico=1,cpatch%ncohorts
-         f_survival = survivorship(new_lu,dist_path,mindbh_harvest,harvprob,cpatch,ico)
+         f_survival = survivorship(new_lu,dist_path,mindbh_harvest,harvprob_g,harvprob_l,cpatch,ico)
          cpatch%mort_rate(5,ico) = cpatch%mort_rate(5,ico)                                 &
                                  - log( f_survival                                         &
                                       + (1.0 - f_survival) * exp(- disturbance_rate) )
