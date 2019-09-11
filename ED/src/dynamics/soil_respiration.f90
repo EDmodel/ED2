@@ -409,7 +409,7 @@ subroutine organic_layer_depth(cgrid)
            csite%litter_depth(:,ipa) = 0.0
            do k = 1, nzl
 !              print*, olz(k), olz(k+1), dolz(k),fillfrac
-               if (csite%peat_depth(ipa) > (-1.0 * olz(k))) then 
+             if (csite%peat_depth(ipa) >= (-1.0 * olz(k))) then 
                csite%litter_depth(k,ipa) = 1.0
              else if (csite%peat_depth(ipa) < (-1.0*olz(k)) .and. &
                csite%peat_depth(ipa) > (-1.0*olz(k+1))) then 
@@ -535,13 +535,13 @@ subroutine organic_layer_depth(cgrid)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OPTION 2!!!!!!!!!!!!!!!!!!!!!!!!
              case (2)
               do while (abs(fillfrac-fillcheck) .gt. 0.01)
-                 fillcheck=0.0
                  if (count > 99) then 
                     print*,'fillfrac,fillcheck '         
                     print*,fillfrac,fillcheck
                     call fatal_error('organic_layer_depth (opt2) did not converge' &
                     ,'organic_layer_depth','soil_respiration.f90')
                  end if
+                 fillcheck=0.0
                  do k=nzl,2,-1 
                     ld = oldc1(k) / fast_c_den &
                        + oldc2(k) / struct_c_den &
@@ -805,7 +805,7 @@ end subroutine update_C_and_N_pools
 !     This subroutine computes the anoxic heterotrophic respiration following Walter and   !
 !  Heinmann (2000) and Ise et al. 2010 (Climate Change and Variability)                    !
 !------------------------------------------------------------------------------------------!
-subroutine anox_resp(csite,ipa,k,Lc)
+subroutine anoxic_resp(csite,ipa,k,Lc)
 
    use ed_state_vars, only : sitetype        ! ! structure
    use consts_coms  , only : kgCday_2_umols  ! ! intent(in)

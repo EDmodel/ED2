@@ -209,6 +209,8 @@ module soil_coms
    real, dimension(nzlmax)                    :: otgoff
    !---------------------------------------------------------------------------------------!
 
+   ! INITCARB - initial carbon stocks (fast, struct, slow)
+   real, dimension(3)                         :: initcarb
 
    !---------------------------------------------------------------------------------------!
    !  EJL -  Litter grid and initial conditions                                            !

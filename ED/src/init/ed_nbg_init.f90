@@ -13,7 +13,7 @@ subroutine near_bare_ground_init(cgrid)
    use ed_misc_coms   , only : ied_init_mode     ! ! intent(in)
    use physiology_coms, only : n_plant_lim       ! ! intent(in)
    use grid_coms      , only : nzl
-
+   use soil_coms      , only : initcarb
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -43,20 +43,21 @@ subroutine near_bare_ground_init(cgrid)
          !     Someone that uses the nitrogen model should check whether this is necessary !
          ! or not.  If nitrogen limitation is off, then we start all carbon and nitrogen   !
          ! pools with zeroes, otherwise we initialise with the former default values.      !
+         ! EJL 9/19 - changing so nitrogen limitation does not affect initial carbon.      !
          !---------------------------------------------------------------------------------!
          select case (n_plant_lim)
          case (0)
-            csite%fast_soil_C        (:,1) = 0.0
-            csite%slow_soil_C        (:,1) = 0.0
-            csite%structural_soil_C  (:,1) = 0.0
-            csite%structural_soil_L  (:,1) = 0.0
-            csite%mineralized_soil_N (:,1) = 0.0
-            csite%fast_soil_N        (:,1) = 0.0
+            csite%fast_soil_C        (nzl,1) = initcarb(1) !0.0
+            csite%slow_soil_C        (nzl,1) = initcarb(3) !0.0
+            csite%structural_soil_C  (nzl,1) = initcarb(2) !0.0
+            csite%structural_soil_L  (nzl,1) = 0.1
+            csite%mineralized_soil_N (nzl,1) = 0.1
+            csite%fast_soil_N        (nzl,1) = 0.1
 
          case (1)
-            csite%fast_soil_C        (nzl,1) = 5.0  ! 0.2
-            csite%slow_soil_C        (nzl,1) = 5.0  ! 0.01
-            csite%structural_soil_C  (nzl,1) = 5.0  ! 10.0
+            csite%fast_soil_C        (nzl,1) = initcarb(1) !5.0  ! 0.2
+            csite%slow_soil_C        (nzl,1) = initcarb(3) !5.0  ! 0.01
+            csite%structural_soil_C  (nzl,1) = initcarb(2) !5.0  ! 10.0
             csite%structural_soil_L  (nzl,1) = csite%structural_soil_C (nzl,1)
             csite%mineralized_soil_N (nzl,1) = 0.01
             csite%fast_soil_N        (nzl,1) = 0.01
@@ -431,6 +432,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
    use grid_coms          , only : nzl
+   use soil_coms          , only : initcarb
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -478,17 +480,17 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
 
             select case (n_plant_lim)
             case (0)
-               csite%fast_soil_C        (:,ipa) = 0.0
-               csite%slow_soil_C        (:,ipa) = 0.0
-               csite%structural_soil_C  (:,ipa) = 0.0
-               csite%structural_soil_L  (:,ipa) = 0.0
-               csite%mineralized_soil_N (:,ipa) = 0.0
-               csite%fast_soil_N        (:,ipa) = 0.0
+               csite%fast_soil_C        (nzl,ipa) = initcarb(1)
+               csite%slow_soil_C        (nzl,ipa) = initcarb(3)
+               csite%structural_soil_C  (nzl,ipa) = initcarb(2)
+               csite%structural_soil_L  (nzl,ipa) = 0.0
+               csite%mineralized_soil_N (nzl,ipa) = 0.0
+               csite%fast_soil_N        (nzl,ipa) = 0.0
 
             case (1)
-               csite%fast_soil_C        (nzl,ipa) = 0.2
-               csite%slow_soil_C        (nzl,ipa) = 0.01
-               csite%structural_soil_C  (nzl,ipa) = 10.0
+               csite%fast_soil_C        (nzl,ipa) = initcarb(1) !0.2
+               csite%slow_soil_C        (nzl,ipa) = initcarb(3) !0.01
+               csite%structural_soil_C  (nzl,ipa) = initcarb(2) !10.0
                csite%structural_soil_L  (nzl,ipa) = csite%structural_soil_C(nzl,1)
                csite%mineralized_soil_N (nzl,ipa) = 1.0
                csite%fast_soil_N        (nzl,ipa) = 1.0
