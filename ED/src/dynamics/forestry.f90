@@ -117,17 +117,9 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
 			 !----- Agriculture.  No timber harvesting here. ----------------------------------!
 			 mindbh_harvest(:) = huge(1.)
 			 !---------------------------------------------------------------------------------!
-		  case (2)
-			 !----- Forest plantation.  Usually all biomass is cleared. -----------------------!
-			 mindbh_harvest(:) = 0.
-			 !---------------------------------------------------------------------------------!
-		  case (4,5,6)
-			 !----- Secondary vegetation. -----------------------------------------------------!
-			 mindbh_harvest(:) = cpoly%mindbh_secondary(:,isi)
-			 !---------------------------------------------------------------------------------!
-		  case (3)
-			 !----- Primary vegetation. -------------------------------------------------------!
-			 mindbh_harvest(:) = cpoly%mindbh_primary  (:,isi)
+		  case (2:6)
+			 !----- Harvesting of some sort.  ALl use same variable now -----------------------!
+			 mindbh_harvest(:) = cpoly%mindbh_harvest(:,isi)
 			 !---------------------------------------------------------------------------------!
 		  end select
 		  !------------------------------------------------------------------------------------!

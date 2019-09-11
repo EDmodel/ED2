@@ -69,10 +69,12 @@ subroutine landuse_init
    integer                                    :: yd_this
    integer                                    :: yd_last
    logical                                    :: inside
-   real                  , dimension(n_pft)   :: mindbh_1ary
-   real                  , dimension(n_pft)   :: harvprob_1ary
-   real                  , dimension(n_pft)   :: mindbh_2ary
-   real                  , dimension(n_pft)   :: harvprob_2ary
+   real                  , dimension(n_pft)   :: mindbh_slog
+   real                  , dimension(n_pft)   :: harvprob_slog_g
+   real                  , dimension(n_pft)   :: harvprob_slog_l
+   real                  , dimension(n_pft)   :: mindbh_fplt
+   real                  , dimension(n_pft)   :: harvprob_fplt_g
+   real                  , dimension(n_pft)   :: harvprob_fplt_l
    real                  , dimension(num_lu_trans) :: landuse_now
    real                                       :: lu_area
    real                                       :: lu_area_i
@@ -139,10 +141,9 @@ subroutine landuse_init
             !----- Set the parameters in a way that no logging/ploughing will happen. -----!
             do isi = 1,cpoly%nsites
                cpoly%num_landuse_years(isi)                  = 1
-               cpoly%mindbh_primary    (1:n_pft,isi)         = huge_dbh
-               cpoly%probharv_primary  (1:n_pft,isi)         = 0.
-               cpoly%mindbh_secondary  (1:n_pft,isi)         = huge_dbh
-               cpoly%probharv_secondary(1:n_pft,isi)         = 0.
+               cpoly%mindbh_harvest   (1:n_pft,isi)          = huge_dbh
+               cpoly%prob_havest_g    (1:n_pft,isi)          = 0.
+               cpoly%prob_havest_l    (1:n_pft,isi)          = 0.
                cpoly%clutimes(1,isi)%landuse_year            = iyeara
                cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
             end do
@@ -182,10 +183,12 @@ subroutine landuse_init
             ! harvesting.  The actual variables will be read in the following block.       !
             !------------------------------------------------------------------------------!
             harvest_pft(1:n_pft)   = -1
-            mindbh_1ary(1:n_pft)   = huge_dbh
-            harvprob_1ary(1:n_pft) = 0.
-            mindbh_2ary(1:n_pft)   = huge_dbh
-            harvprob_2ary(1:n_pft) = 0.
+            mindbh_slog(1:n_pft)   = huge_dbh
+            harvprob_slog_g(1:n_pft) = 0.
+            harvprob_slog_l(1:n_pft) = 0.
+            mindbh_fplt(1:n_pft)   = huge_dbh
+            harvprob_fplt_g(1:n_pft) = 0.
+            harvprob_fplt_l(1:n_pft) = 0.
             
             !----- Initialise plantation patches if plantation information is available. --!
             cpoly%plantation(:) = 0
@@ -239,19 +242,27 @@ subroutine landuse_init
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (mindbh_1ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (mindbh_slog(h)  ,h=1,nharvest)
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (harvprob_1ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (harvprob_slog_g(h)  ,h=1,nharvest)
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (mindbh_2ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (harvprob_slog_l(h)  ,h=1,nharvest)
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (harvprob_2ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (mindbh_fplt(h)      ,h=1,nharvest)
+
+               read (unit=12,fmt=hform)  cdum
+               cdum = cdum(hoff:)
+               read (cdum, fmt=*) (harvprob_fplt_g(h)  ,h=1,nharvest)
+
+               read (unit=12,fmt=hform)  cdum
+               cdum = cdum(hoff:)
+               read (cdum, fmt=*) (harvprob_fplt_l(h)  ,h=1,nharvest)
             else
                !---------------------------------------------------------------------------!
                !     No specific PFT information was given, this is likely to be a case in !
@@ -262,8 +273,8 @@ subroutine landuse_init
                nopftloop: do ipft=1,n_pft
                   h=h+1
                   harvest_pft(h)       = ipft
-                  mindbh_1ary(1:n_pft) = 0.
-                  mindbh_2ary(1:n_pft) = 0.
+                  mindbh_slog(1:n_pft) = 0.
+                  mindbh_fplt(1:n_pft) = 0.
                end do nopftloop
             end if
             read (unit=12,fmt=*) 
@@ -311,23 +322,48 @@ subroutine landuse_init
 
 
                !----- Initialise the PFT-dependent arrays. --------------------------------!
-               cpoly%mindbh_primary    (1:n_pft,isi) = huge_dbh
-               cpoly%probharv_primary  (1:n_pft,isi) = 0.
-               cpoly%mindbh_secondary  (1:n_pft,isi) = huge_dbh
-               cpoly%probharv_secondary(1:n_pft,isi) = 0.
+               cpoly%mindbh_harvest(1:n_pft,isi) = huge_dbh
+               cpoly%prob_harvest_g(1:n_pft,isi) = 0.
+               cpoly%prob_harvest_l(1:n_pft,isi) = 0.
 
-               !----- Fill the arrays with the appropriate PFT. ---------------------------!
-               do ipft=1,n_pft
-                  harvloop: do h=1,nharvest
-                     if (harvest_pft(h) == ipft) then
-                        cpoly%mindbh_primary    (ipft,isi) = mindbh_1ary  (h)
-                        cpoly%probharv_primary  (ipft,isi) = harvprob_1ary(h)
-                        cpoly%mindbh_secondary  (ipft,isi) = mindbh_2ary  (h)
-                        cpoly%probharv_secondary(ipft,isi) = harvprob_2ary(h)
-                        exit harvloop
-                     end if
-                  end do harvloop
-               end do
+			  ! From Marcos
+			  !----- Fill the arrays with the appropriate PFT. ------------------------!
+			  select case(cpoly%plantation(isi))
+			  case (0)
+				 harvloop_slog: do h=1,nharvest
+					ipft = harvest_pft(h)
+					if (ipft >= 1 .and. ipft <= n_pft) then
+					   cpoly%mindbh_harvest(ipft,isi) = mindbh_slog  (h)
+					   cpoly%prob_harvest_g  (ipft,isi) = harvprob_slog_g(h)
+					   cpoly%prob_harvest_l  (ipft,isi) = harvprob_slog_l(h)
+					end if
+				 end do harvloop_slog
+			  case (1)
+				 harvloop_fplt: do h=1,nharvest
+					ipft = harvest_pft(h)
+					if (ipft >= 1 .and. ipft <= n_pft) then
+					   cpoly%mindbh_harvest(ipft,isi) = mindbh_fplt  (h)
+					   cpoly%prob_harvest_g  (ipft,isi) = harvprob_fplt_g(h)
+					   cpoly%prob_harvest_l  (ipft,isi) = harvprob_fplt_l(h)
+					end if
+				 end do harvloop_fplt
+			  end select
+			  !------------------------------------------------------------------------!
+
+! 
+!                ! Original
+!                !----- Fill the arrays with the appropriate PFT. ---------------------------!
+!                do ipft=1,n_pft
+!                   harvloop: do h=1,nharvest
+!                      if (harvest_pft(h) == ipft) then
+!                         cpoly%mindbh_primary    (ipft,isi) = mindbh_slog  (h)
+!                         cpoly%probharv_primary  (ipft,isi) = harvprob_slog(h)
+!                         cpoly%mindbh_secondary  (ipft,isi) = mindbh_fplt  (h)
+!                         cpoly%probharv_secondary(ipft,isi) = harvprob_fplt(h)
+!                         exit harvloop
+!                      end if
+!                   end do harvloop
+!                end do
 
 
                !----- Padding disturbances with zero before first available lu year. ------!
@@ -382,10 +418,9 @@ subroutine landuse_init
                   cpoly%num_landuse_years(isi) = cpoly%num_landuse_years(1)
 
                   !----- PFT-dependent harvest characteristics. ------------------------!
-                  cpoly%mindbh_primary    (:,isi) = cpoly%mindbh_primary    (:,1)
-                  cpoly%probharv_primary  (:,isi) = cpoly%probharv_primary  (:,1)
-                  cpoly%mindbh_secondary  (:,isi) = cpoly%mindbh_secondary  (:,1)
-                  cpoly%probharv_secondary(:,isi) = cpoly%probharv_secondary(:,1)
+                  cpoly%mindbh_harvest(:,isi) = cpoly%mindbh_harvest(:,1)
+                  cpoly%prob_harvest_g(:,isi) = cpoly%prob_harvest_g(:,1)
+                  cpoly%prob_harvest_l(:,isi) = cpoly%prob_harvest_l(:,1)
 
                   !----- Disturbances. ----------------------------------------------------!
                   do iyear = 1,cpoly%num_landuse_years(isi)
@@ -422,10 +457,9 @@ subroutine landuse_init
                !----- Set the parameters in a way that no logging/ploughing will happen. --!
                do isi = 1,cpoly%nsites
                   cpoly%num_landuse_years(isi)                  = 1
-                  cpoly%mindbh_primary    (1:n_pft,isi)         = huge_dbh
-                  cpoly%probharv_primary  (1:n_pft,isi)         = 0.
-                  cpoly%mindbh_secondary  (1:n_pft,isi)         = huge_dbh
-                  cpoly%probharv_secondary(1:n_pft,isi)         = 0.
+                  cpoly%mindbh_harvest(1:n_pft,isi)             = huge_dbh
+                  cpoly%prob_harvest_g(1:n_pft,isi)             = 0.
+                  cpoly%prob_harvest_l(1:n_pft,isi)             = 0.
                   cpoly%clutimes(1,isi)%landuse_year            = iyeara
                   cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
                end do

@@ -109,7 +109,8 @@ module disturbance_utils
       real   , dimension(n_pft,n_dbh)               :: initial_agb
       real   , dimension(n_pft,n_dbh)               :: initial_basal_area
       real   , dimension(n_pft)                     :: mindbh_harvest
-      real   , dimension(n_pft)                     :: harvprob
+      real   , dimension(n_pft)                     :: harvprob_g
+      real   , dimension(n_pft)                     :: harvprob_l
       real                                          :: pot_area_remain
       real                                          :: area_fac
       real                                          :: orig_area
@@ -659,7 +660,8 @@ module disturbance_utils
                      disturbed               = act_area_loss(ipa,new_lu) > tiny_num
                      dist_path               = 0
                      mindbh_harvest(1:n_pft) = huge(1.)
-                     harvprob      (1:n_pft) = 0.       
+                     harvprob_g    (1:n_pft) = 0.       
+                     harvprob_l    (1:n_pft) = 0.       
                      !---------------------------------------------------------------------!
 
 
@@ -699,11 +701,13 @@ module disturbance_utils
                      case (6)
                         !----- Logging. ---------------------------------------------------!
                         if (mature_primary) then
-                           mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
-                           harvprob      (1:n_pft) = cpoly%probharv_primary(1:n_pft,isi)
+                           mindbh_harvest(1:n_pft) = cpoly%mindbh_harvest(1:n_pft,isi)
+                           harvprob_g    (1:n_pft) = cpoly%prob_harvest_g(1:n_pft,isi)
+                           harvprob_l    (1:n_pft) = cpoly%prob_harvest_l(1:n_pft,isi)
                         else if (mature_secondary) then
-                           mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
-                           harvprob      (1:n_pft) = cpoly%probharv_secondary(1:n_pft,isi)
+                           mindbh_harvest(1:n_pft) = cpoly%mindbh_harvest(1:n_pft,isi)
+                           harvprob_g    (1:n_pft) = cpoly%prob_harvest_g(1:n_pft,isi)
+                           harvprob_l    (1:n_pft) = cpoly%prob_harvest_l(1:n_pft,isi)
                         end if
                         !------------------------------------------------------------------!
                      end select
@@ -730,7 +734,7 @@ module disturbance_utils
                         end if
                         !----- Find the mortality associated with disturbance. ------------!
                         call disturbance_mortality(csite,ipa,dist_rate,new_lu              &
-                                                  ,dist_path,mindbh_harvest,harvprob)
+                                                  ,dist_path,mindbh_harvest,harvprob_g,harvprob_l)
                         !------------------------------------------------------------------!
 
 
@@ -748,9 +752,9 @@ module disturbance_utils
                            area_fac = act_area_loss(ipa,new_lu) / csite%area(onsp+new_lu)
                            call increment_patch_vars(csite,onsp+new_lu,ipa,area_fac)
                            call insert_survivors(csite,onsp+new_lu,ipa,new_lu,area_fac     &
-                                                ,dist_path,mindbh_harvest,harvprob)
+                                                ,dist_path,mindbh_harvest,harvprob_g,harvprob_l)
                            call accum_dist_litt(csite,onsp+new_lu,ipa,new_lu,area_fac      &
-                                               ,dist_path,mindbh_harvest,harvprob)
+                                               ,dist_path,mindbh_harvest,harvprob_g,harvprob_l)
                            !---------------------------------------------------------------!
                         case (1)
                            !---------------------------------------------------------------!
@@ -765,9 +769,9 @@ module disturbance_utils
                               area_fac = act_area_loss(ipa,new_lu)/csite%area(onsp+new_lu)
                               call increment_patch_vars(csite,onsp+new_lu,ipa,area_fac)
                               call insert_survivors(csite,onsp+new_lu,ipa,new_lu,area_fac  &
-                                                   ,dist_path,mindbh_harvest,harvprob)
+                                                   ,dist_path,mindbh_harvest,harvprob_g,harvprob_l)
                               call accum_dist_litt(csite,onsp+new_lu,ipa,new_lu,area_fac   &
-                                                  ,dist_path,mindbh_harvest,harvprob)
+                                                  ,dist_path,mindbh_harvest,harvprob_g,harvprob_l)
                               !------------------------------------------------------------!
                            case default
                               !------------------------------------------------------------!
@@ -816,9 +820,9 @@ module disturbance_utils
                                  if (same_pft) then
                                     call increment_patch_vars(csite,npa,ipa,area_fac)
                                     call insert_survivors(csite,npa,ipa,new_lu,area_fac    &
-                                                         ,dist_path,mindbh_harvest,harvprob)
+                                                         ,dist_path,mindbh_harvest,harvprob_g,harvprob_l)
                                     call accum_dist_litt(csite,npa,ipa,new_lu,area_fac     &
-                                                        ,dist_path,mindbh_harvest,harvprob)
+                                                        ,dist_path,mindbh_harvest,harvprob_g,harvprob_l)
                                  end if
                                  !---------------------------------------------------------!
                               end do
@@ -1476,12 +1480,21 @@ module disturbance_utils
                         !------------------------------------------------------------------!
                         if (csite%age(ipa) > plantation_rotation) then
                            cohortloop_02: do ico=1,cpatch%ncohorts
-                              ipft      = cpatch%pft(ico)
-                              weight    = cpatch%nplant(ico) * cpatch%basarea(ico)         &
-                                        * csite%area(ipa)
-                              pharvest (ilu) = pharvest(ilu)                               &
-                                             + cpoly%probharv_secondary(ipft,isi) * weight
-                              sumweight(ilu) = sumweight(ilu) + weight
+                              ipft = cpatch%pft(ico)
+                              if (cpatch%dbh(ico) >= cpoly%mindbh_harvest(ipft,isi)) then
+                                 weight         = cpatch%nplant(ico) * cpatch%basarea(ico) &
+                                                * csite%area(ipa)
+                                 pharvest (ilu) = pharvest(ilu)                               &
+                                                + cpoly%prob_harvest_g(ipft,isi)       &
+                                                * weight
+                                 sumweight(ilu) = sumweight(ilu) + weight
+                              else 
+                                 weight         = cpatch%nplant(ico) * cpatch%basarea(ico) &
+                                                * csite%area(ipa)
+                                 pharvest (ilu) = pharvest(ilu)                               &
+                                                + cpoly%prob_harvest_l(ipft,isi)       &
+                                                * weight
+                                 sumweight(ilu) = sumweight(ilu) + weight                              	
                            end do cohortloop_02
                            !---------------------------------------------------------------!
                         end if
@@ -1494,13 +1507,20 @@ module disturbance_utils
                         if (csite%age(ipa) > mature_harvest_age) then
                            cohortloop_06: do ico=1,cpatch%ncohorts
                               ipft = cpatch%pft(ico)
-                              if (cpatch%dbh(ico) >= cpoly%mindbh_secondary(ipft,isi)) then
+                              if (cpatch%dbh(ico) >= cpoly%mindbh_harvest(ipft,isi)) then
                                  weight         = cpatch%nplant(ico) * cpatch%basarea(ico) &
                                                 * csite%area(ipa)
                                  pharvest (ilu) = pharvest(ilu)                               &
-                                                + cpoly%probharv_secondary(ipft,isi)       &
+                                                + cpoly%prob_harvest_g(ipft,isi)       &
                                                 * weight
                                  sumweight(ilu) = sumweight(ilu) + weight
+                              else 
+                                 weight         = cpatch%nplant(ico) * cpatch%basarea(ico) &
+                                                * csite%area(ipa)
+                                 pharvest (ilu) = pharvest(ilu)                               &
+                                                + cpoly%prob_harvest_l(ipft,isi)       &
+                                                * weight
+                                 sumweight(ilu) = sumweight(ilu) + weight                              	
                               end if
                            end do cohortloop_06
                            !---------------------------------------------------------------!
@@ -2718,7 +2738,7 @@ module disturbance_utils
    !     This subroutine will populate the disturbed patch with the cohorts that were      !
    ! disturbed but did not go extinct.                                                     !
    !---------------------------------------------------------------------------------------!
-   subroutine insert_survivors(csite,np,cp,new_lu,area_fac,dist_path,mindbh_harvest,harvprob)
+   subroutine insert_survivors(csite,np,cp,new_lu,area_fac,dist_path,mindbh_harvest,harvprob_g, harvprob_l)
       use update_derived_props_module
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
@@ -2733,7 +2753,8 @@ module disturbance_utils
       integer                         , intent(in)  :: np
       integer                         , intent(in)  :: cp
       real          , dimension(n_pft), intent(in)  :: mindbh_harvest
-      real          , dimension(n_pft), intent(in)  :: harvprob
+      real          , dimension(n_pft), intent(in)  :: harvprob_g
+      real          , dimension(n_pft), intent(in)  :: harvprob_l
       real                            , intent(in)  :: area_fac
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)                 , pointer     :: cpatch
@@ -2763,7 +2784,7 @@ module disturbance_utils
          mask(:) = .false.
 
          survivalloop: do ico = 1,cpatch%ncohorts
-            survival_fac = survivorship(new_lu,dist_path,mindbh_harvest,harvprob,cpatch,ico) &
+            survival_fac = survivorship(new_lu,dist_path,mindbh_harvest,harvprob_g, harvprob_l,cpatch,ico) &
                          * area_fac
             n_survivors  = cpatch%nplant(ico) * survival_fac
 
@@ -2799,7 +2820,7 @@ module disturbance_utils
 
       cohortloop: do ico = 1,cpatch%ncohorts
 
-         survival_fac = survivorship(new_lu,dist_path,mindbh_harvest,harvprob,cpatch,ico)  &
+         survival_fac = survivorship(new_lu,dist_path,mindbh_harvest,harvprob_g, harvprob_l,cpatch,ico)  &
                       * area_fac
          n_survivors  = cpatch%nplant(ico) * survival_fac
 
@@ -2845,7 +2866,7 @@ module disturbance_utils
    !=======================================================================================!
    !     This subroutine updates the litter pools after a disturbance takes place.         !
    !---------------------------------------------------------------------------------------!
-   subroutine accum_dist_litt(csite,np,cp,new_lu,area_fac,dist_path,mindbh_harvest,harvprob)
+   subroutine accum_dist_litt(csite,np,cp,new_lu,area_fac,dist_path,mindbh_harvest,harvprob_g, harvprob_l)
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    & ! structure
                               , polygontype  ! ! structure
@@ -2864,7 +2885,8 @@ module disturbance_utils
       integer                          , intent(in) :: np
       integer                          , intent(in) :: cp
       real           , dimension(n_pft), intent(in) :: mindbh_harvest
-      real           , dimension(n_pft), intent(in) :: harvprob
+      real           , dimension(n_pft), intent(in) :: harvprob_g
+      real           , dimension(n_pft), intent(in) :: harvprob_l
       integer                          , intent(in) :: new_lu
       real                             , intent(in) :: area_fac
       integer                          , intent(in) :: dist_path
@@ -2912,7 +2934,7 @@ module disturbance_utils
          !---------------------------------------------------------------------------------!
 
          !----- Find survivorship. --------------------------------------------------------!
-         survival_fac  = survivorship(new_lu,dist_path,mindbh_harvest,harvprob,cpatch,ico)
+         survival_fac  = survivorship(new_lu,dist_path,mindbh_harvest,harvprob_g,harvprob_l,cpatch,ico)
          !---------------------------------------------------------------------------------!
 
 

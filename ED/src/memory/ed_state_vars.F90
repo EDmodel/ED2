@@ -1964,12 +1964,10 @@ module ed_state_vars
       type(lutime), pointer,dimension(:,:)  :: clutimes !(luyears,nsites)
       !<The vectorized landuse matrix is allocated in landuse_init.
 
-      real        , pointer, dimension(:,:) :: mindbh_primary
+      real        , pointer, dimension(:,:) :: mindbh_harvest
+      real        , pointer, dimension(:,:) :: prob_harvest_g
+      real        , pointer, dimension(:,:) :: prob_harvest_l
       !<Minimum DBH and probability of being harvest when selective logging happens.
-
-      real        , pointer, dimension(:,:) :: probharv_primary
-      real        , pointer, dimension(:,:) :: mindbh_secondary
-      real        , pointer, dimension(:,:) :: probharv_secondary
       !------------------------------------------------------------------------------------!
 
 
@@ -4055,10 +4053,9 @@ module ed_state_vars
       allocate(cpoly%qrunoff                       (                          nsites))
       allocate(cpoly%min_monthly_temp              (                          nsites))
       allocate(cpoly%num_landuse_years             (                          nsites))
-      allocate(cpoly%mindbh_primary                (                    n_pft,nsites))
-      allocate(cpoly%probharv_primary              (                    n_pft,nsites))
-      allocate(cpoly%mindbh_secondary              (                    n_pft,nsites))
-      allocate(cpoly%probharv_secondary            (                    n_pft,nsites))
+      allocate(cpoly%mindbh_harvest                (                    n_pft,nsites))
+      allocate(cpoly%prob_harvest_g                (                    n_pft,nsites))
+      allocate(cpoly%prob_harvest_l                (                    n_pft,nsites))
       allocate(cpoly%plantation                    (                          nsites))
       allocate(cpoly%agri_stocking_pft             (                          nsites))
       allocate(cpoly%agri_stocking_density         (                          nsites))
@@ -5992,10 +5989,9 @@ module ed_state_vars
       nullify(cpoly%qrunoff                    )
       nullify(cpoly%min_monthly_temp           )
       nullify(cpoly%num_landuse_years          )
-      nullify(cpoly%mindbh_primary             )
-      nullify(cpoly%probharv_primary           )
-      nullify(cpoly%mindbh_secondary           )
-      nullify(cpoly%probharv_secondary         )
+      nullify(cpoly%mindbh_harvest             )
+      nullify(cpoly%prob_harvest_g             )
+      nullify(cpoly%prob_harvest_l             )
       nullify(cpoly%plantation                 )
       nullify(cpoly%agri_stocking_pft          )
       nullify(cpoly%agri_stocking_density      )

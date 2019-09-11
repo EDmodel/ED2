@@ -109,7 +109,7 @@ module mortality
    ! disturbance.                                                                          !
    !---------------------------------------------------------------------------------------!
    subroutine disturbance_mortality(csite,ipa,disturbance_rate,new_lu,dist_path            &
-                                   ,mindbh_harvest,harvprob)
+                                   ,mindbh_harvest,harvprob_g,harvprob_l)
       use ed_state_vars, only : sitetype  & ! structure
                               , patchtype ! ! structure
       use ed_max_dims  , only : n_pft     ! ! intent(in)
@@ -121,7 +121,8 @@ module mortality
       integer                          , intent(in) :: new_lu
       integer                          , intent(in) :: dist_path
       real           , dimension(n_pft), intent(in) :: mindbh_harvest
-      real           , dimension(n_pft), intent(in) :: harvprob
+      real           , dimension(n_pft), intent(in) :: harvprob_g
+      real           , dimension(n_pft), intent(in) :: harvprob_l
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)                  , pointer    :: cpatch
       integer                                       :: ico
@@ -164,7 +165,7 @@ module mortality
    !  -- cpatch: current patch.                                                            !
    !  -- ico: index for current cohort.                                                    !
    !---------------------------------------------------------------------------------------!
-   real function survivorship(new_lu,dist_path,mindbh_harvest,harvprob,cpatch,ico)
+   real function survivorship(new_lu,dist_path,mindbh_harvest,harvprob_g,harvprob_l,cpatch,ico)
       use ed_state_vars, only : patchtype                ! ! structure
       use disturb_coms , only : treefall_hite_threshold  & ! intent(in)
                               , fire_hite_threshold      & ! intent(in)
@@ -179,7 +180,8 @@ module mortality
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)                 , target     :: cpatch
       real          , dimension(n_pft), intent(in) :: mindbh_harvest
-      real          , dimension(n_pft), intent(in) :: harvprob
+      real          , dimension(n_pft), intent(in) :: harvprob_g
+      real          , dimension(n_pft), intent(in) :: harvprob_l
       integer                         , intent(in) :: ico
       integer                         , intent(in) :: new_lu
       integer                         , intent(in) :: dist_path
@@ -277,7 +279,12 @@ module mortality
 
        case (6)
          !---------------------------------------------------------------------------------!
-         !     Logging.  At this point a single pathway exists: cohorts above threshold    !
+         !     Logging.                                                                    !
+         ! NEW: Survivorship = inverse fraction of amount removed above and below the hite !
+         !      threshold.  This allows for understory thinning as a management strategy   !
+         !                                                                                 !
+         !---------------------------------------------------------------------------------!
+         ! OLD: At this point a single pathway exists: cohorts above threshold             !
          ! are completely removed, and small cohorts have the same survivorship as small   !
          ! cohorts at a treefall site.  Both could be re-visited in the future, and        !
          ! different pathways for conventional and reduced-impact logging could be         !
@@ -285,12 +292,13 @@ module mortality
          !---------------------------------------------------------------------------------!
          if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
             if (ianth_disturb == 2) then
-            	survivorship = 1 - harvprob(ipft)
+            	survivorship = 1 - harvprob_g(ipft)
             else 
             	survivorship = 0.0
             end if 
          else
-            survivorship = treefall_s_ltht(ipft)
+            survivorship = harvprob_l(ipft)
+            ! survivorship = treefall_s_ltht(ipft) ! OLD version
          end if
          !---------------------------------------------------------------------------------!
       end select
