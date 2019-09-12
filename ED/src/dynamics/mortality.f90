@@ -293,11 +293,11 @@ module mortality
          if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
             if (ianth_disturb == 2) then
             	survivorship = 1 - harvprob_g(ipft)
-            else 
-            	survivorship = 0.0
-            end if 
+            ! else 
+            !	survivorship = 0.0
+            ! end if 
          else
-            survivorship = harvprob_l(ipft)
+            survivorship = 1 - harvprob_l(ipft)
             ! survivorship = treefall_s_ltht(ipft) ! OLD version
          end if
          !---------------------------------------------------------------------------------!
