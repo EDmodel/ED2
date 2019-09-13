@@ -843,8 +843,7 @@ subroutine print_soil_info(cgrid,ifm)
    write (unit=*,fmt='(a,1x,f11.3)')  '    Latitude                   :',cgrid%lat(ipy)
    write (unit=*,fmt='(a,11x,l1)')    '    Prescribed sand and clay   :',prescribed
    write (unit=*,fmt='(a,1x,i11)')    '    # of sites                 :',cpoly%nsites
-   write (unit=*,fmt='(a,1x,3f7.2)')  '    Inititial Carbon     :',initcarb(1),initcarb(2) &
-                                                                  ,initcarb(3)
+   write (unit=*,fmt='(a,1x,f11.3)')  '    Inititial Carbon           :',initcarb
    write (unit=*,fmt='(a,1x,i11)')    '    isoiltext                  :',ivertresp
    write (unit=*,fmt='(a,1x,i11)')    '    isoiltext                  :',isoiltext
 

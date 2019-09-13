@@ -47,17 +47,17 @@ subroutine near_bare_ground_init(cgrid)
          !---------------------------------------------------------------------------------!
          select case (n_plant_lim)
          case (0)
-            csite%fast_soil_C        (nzl,1) = initcarb(1) !0.0
-            csite%slow_soil_C        (nzl,1) = initcarb(3) !0.0
-            csite%structural_soil_C  (nzl,1) = initcarb(2) !0.0
+            csite%fast_soil_C        (nzl,1) = initcarb*0.11 !0.0
+            csite%slow_soil_C        (nzl,1) = initcarb*0.66 !0.0
+            csite%structural_soil_C  (nzl,1) = initcarb*0.23 !0.0
             csite%structural_soil_L  (nzl,1) = 0.1
             csite%mineralized_soil_N (nzl,1) = 0.1
             csite%fast_soil_N        (nzl,1) = 0.1
 
          case (1)
-            csite%fast_soil_C        (nzl,1) = initcarb(1) !5.0  ! 0.2
-            csite%slow_soil_C        (nzl,1) = initcarb(3) !5.0  ! 0.01
-            csite%structural_soil_C  (nzl,1) = initcarb(2) !5.0  ! 10.0
+            csite%fast_soil_C        (nzl,1) = initcarb*0.11 !5.0  ! 0.2
+            csite%slow_soil_C        (nzl,1) = initcarb*0.66 !5.0  ! 0.01
+            csite%structural_soil_C  (nzl,1) = initcarb*0.23 !5.0  ! 10.0
             csite%structural_soil_L  (nzl,1) = csite%structural_soil_C (nzl,1)
             csite%mineralized_soil_N (nzl,1) = 0.01
             csite%fast_soil_N        (nzl,1) = 0.01
@@ -480,17 +480,17 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
 
             select case (n_plant_lim)
             case (0)
-               csite%fast_soil_C        (nzl,ipa) = initcarb(1)
-               csite%slow_soil_C        (nzl,ipa) = initcarb(3)
-               csite%structural_soil_C  (nzl,ipa) = initcarb(2)
+               csite%fast_soil_C        (nzl,ipa) = initcarb*0.11
+               csite%slow_soil_C        (nzl,ipa) = initcarb*0.66
+               csite%structural_soil_C  (nzl,ipa) = initcarb*0.23
                csite%structural_soil_L  (nzl,ipa) = 0.0
                csite%mineralized_soil_N (nzl,ipa) = 0.0
                csite%fast_soil_N        (nzl,ipa) = 0.0
 
             case (1)
-               csite%fast_soil_C        (nzl,ipa) = initcarb(1) !0.2
-               csite%slow_soil_C        (nzl,ipa) = initcarb(3) !0.01
-               csite%structural_soil_C  (nzl,ipa) = initcarb(2) !10.0
+               csite%fast_soil_C        (nzl,ipa) = initcarb*0.11 !0.2
+               csite%slow_soil_C        (nzl,ipa) = initcarb*0.66 !0.01
+               csite%structural_soil_C  (nzl,ipa) = initcarb*0.23 !10.0
                csite%structural_soil_L  (nzl,ipa) = csite%structural_soil_C(nzl,1)
                csite%mineralized_soil_N (nzl,ipa) = 1.0
                csite%fast_soil_N        (nzl,ipa) = 1.0

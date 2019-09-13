@@ -386,7 +386,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(slxclay,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxsand,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(initcarb,3,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(initcarb,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(slz ,nzgmax,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(stgoff,nzgmax,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -1562,7 +1562,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(slxclay,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(slxsand,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(initcarb,3,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(initcarb,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(slz ,nzgmax,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(stgoff,nzgmax,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

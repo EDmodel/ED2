@@ -210,7 +210,7 @@ module soil_coms
    !---------------------------------------------------------------------------------------!
 
    ! INITCARB - initial carbon stocks (fast, struct, slow)
-   real, dimension(3)                         :: initcarb
+   real                                       :: initcarb
 
    !---------------------------------------------------------------------------------------!
    !  EJL -  Litter grid and initial conditions                                            !

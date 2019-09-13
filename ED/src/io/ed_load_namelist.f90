@@ -346,7 +346,7 @@ subroutine copy_nl(copy_type)
       stgoff(1:nzgmax)          = nl%stgoff(1:nzgmax)
       olmstr(1:nzlmax)          = nl%olmstr(1:nzlmax)
       otgoff(1:nzlmax)          = nl%otgoff(1:nzlmax)
-      initcarb(1:3)             = nl%initcarb(1:3)
+      initcarb                  = nl%initcarb
 
       soil_database             = nl%soil_database
       veg_database              = nl%veg_database

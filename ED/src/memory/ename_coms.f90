@@ -112,7 +112,7 @@ module ename_coms
       real                  , dimension(nzlmax)         :: olz
       real                  , dimension(nzlmax)         :: olmstr
       real                  , dimension(nzlmax)         :: otgoff
-      real                  , dimension(3)              :: initcarb 
+      real                                              :: initcarb 
 
       !----- Input databases. -------------------------------------------------------------!
       character(len=str_len), dimension(maxgrds)        :: soil_database
@@ -387,7 +387,7 @@ module ename_coms
       enl%olz                       = (/ (-undef_real, i=1,nzlmax) /)
       enl%olmstr                    = (/ ( undef_real, i=1,nzlmax) /)
       enl%otgoff                    = (/ ( undef_real, i=1,nzlmax) /)
-      enl%initcarb                  = (/ ( undef_real, i=1,3     ) /)
+      enl%initcarb                  = undef_real
 
 
       enl%soil_database             = (/ (undef_path, i=1,maxgrds) /)
