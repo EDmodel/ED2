@@ -409,17 +409,17 @@ subroutine organic_layer_depth(cgrid)
            csite%litter_depth(:,ipa) = 0.0
            do k = 1, nzl
 !              print*, olz(k), olz(k+1), dolz(k),fillfrac
-             if (csite%peat_depth(ipa) >= (-1.0 * olz(k))) then 
+             if (csite%peat_depth(ipa) .ge. (-1.0 * olz(k))) then 
                csite%litter_depth(k,ipa) = 1.0
-             else if (csite%peat_depth(ipa) < (-1.0*olz(k)) .and. &
-               csite%peat_depth(ipa) > (-1.0*olz(k+1))) then 
+             else if (csite%peat_depth(ipa) .lt. (-1.0*olz(k)) .and. &
+               csite%peat_depth(ipa) .gt. (-1.0*olz(k+1))) then 
                csite%litter_depth(k,ipa) = (csite%peat_depth(ipa) + olz(k+1)) / dolz(k)
              endif
              fillfrac=fillfrac+csite%litter_depth(k,ipa)
 
              select case (isoiltext)
                case (1)
-                 if (csite%litter_depth(k,ipa) > 0.51) then 
+                 if (csite%litter_depth(k,ipa) .gt. 0.51) then 
                    cpoly%ntext_soil(k,isi) = organic_soil_texture
                  else
                  cpoly%ntext_soil(k,isi) = cpoly%ntext_soil(1,isi)
@@ -436,7 +436,8 @@ subroutine organic_layer_depth(cgrid)
            ! pushed down.
            !Option 2) Metabolic carbon gets preferentially moved up while humic
            !then structural gets preferentially moved down. 
-           fillcheck=0.0 ! Zero out a bunch of values and arrays.
+
+            fillcheck=0.0 ! Zero out a bunch of values and arrays.
 !           ld = 0.    
 !           nextld = 0.
 !           extc1=0.
@@ -535,13 +536,13 @@ subroutine organic_layer_depth(cgrid)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OPTION 2!!!!!!!!!!!!!!!!!!!!!!!!
              case (2)
               do while (abs(fillfrac-fillcheck) .gt. 0.01)
-                 if (count > 99) then 
+                 fillcheck=0.0
+                 if (count .gt. 99) then 
                     print*,'fillfrac,fillcheck '         
                     print*,fillfrac,fillcheck
                     call fatal_error('organic_layer_depth (opt2) did not converge' &
                     ,'organic_layer_depth','soil_respiration.f90')
                  end if
-                 fillcheck=0.0
                  do k=nzl,2,-1 
                     ld = oldc1(k) / fast_c_den &
                        + oldc2(k) / struct_c_den &

@@ -120,11 +120,11 @@ subroutine vegetation_dynamics(new_month,new_year)
       !------------------------------------------------------------------------------------!
       call update_C_and_N_pools(cgrid)
       call zero_ed_today_vars(cgrid)
-      select case (ivertresp) 
-        case (0)
-        case (1)
+!      select case (ivertresp) 
+!        case (0)
+!        case (1)
         call organic_layer_depth(cgrid)
-      end select
+!      end select
       !------------------------------------------------------------------------------------!
 
 

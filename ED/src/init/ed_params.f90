@@ -815,7 +815,7 @@ subroutine init_can_rad_params()
    ! day time hours only.                                                                  !
    !---------------------------------------------------------------------------------------!
    rshort_twilight_min = 0.5
-   cosz_min            = cos(89.*pio180) !cos(89.5*pio180)
+   cosz_min            = cos(87.5*pio180) !cos(89.5*pio180)
    cosz_min8           = dble(cosz_min)
    !---------------------------------------------------------------------------------------!
 

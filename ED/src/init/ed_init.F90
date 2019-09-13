@@ -797,9 +797,12 @@ subroutine print_soil_info(cgrid,ifm)
    use soil_coms      , only : isoilflg          & ! intent(in)
                              , soil              & ! intent(in)
                              , slxclay           & ! intent(in)
-                             , slxsand           ! ! intent(in)
+                             , slxsand           & ! intent(in)
+                             , initcarb
    use grid_coms      , only : nzg               ! ! intent(in)
-   use ed_misc_coms   , only : sfilout           ! ! intent(in)
+   use ed_misc_coms   , only : sfilout           & ! intent(in)
+                             , ivertresp         &
+                             , isoiltext         !
    use ed_max_dims    , only : str_len
    implicit none
 
@@ -840,6 +843,10 @@ subroutine print_soil_info(cgrid,ifm)
    write (unit=*,fmt='(a,1x,f11.3)')  '    Latitude                   :',cgrid%lat(ipy)
    write (unit=*,fmt='(a,11x,l1)')    '    Prescribed sand and clay   :',prescribed
    write (unit=*,fmt='(a,1x,i11)')    '    # of sites                 :',cpoly%nsites
+   write (unit=*,fmt='(a,1x,3f7.2)')  '    Inititial Carbon     :',initcarb(1),initcarb(2) &
+                                                                  ,initcarb(3)
+   write (unit=*,fmt='(a,1x,i11)')    '    isoiltext                  :',ivertresp
+   write (unit=*,fmt='(a,1x,i11)')    '    isoiltext                  :',isoiltext
 
    do isi = 1,cpoly%nsites
       write (unit=*,fmt='(a,1x,i11)')   '    Site :',isi
