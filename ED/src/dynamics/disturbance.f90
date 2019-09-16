@@ -1610,11 +1610,12 @@ module disturbance_utils
                   !     Logging based on grid fraction and tree size.  Harvest creates new ! 
                   ! patches and target biomass harvest set to zero.                        !
                   !------------------------------------------------------------------------!
-                  cpoly%disturbance_rates(6,6,isi) = clutime%landuse(13)
-                  cpoly%disturbance_rates(2,2,isi) = clutime%landuse(15)
+                  cpoly%disturbance_rates(6,6,isi) = clutime%landuse(15)
+                  cpoly%disturbance_rates(2,2,isi) = clutime%landuse(13)
                   
                   cpoly%primary_harvest_target    (isi) = 0.0
                   cpoly%secondary_harvest_target  (isi) = 0.0
+                  
                   !------------------------------------------------------------------------!
 
             end select ! End ianth select

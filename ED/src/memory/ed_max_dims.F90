@@ -183,7 +183,7 @@ module ed_max_dims
    ! 7 -- Understory Thin -- Logged forest (skid trail + road).                            !
    ! 8 -- Cropland.                                                                        !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_dist_types = 8 ! Changed from 6 to include understory thin
+   integer, parameter :: n_dist_types = 6 ! Changed from 6 to include understory thin
    !---------------------------------------------------------------------------------------!
 
 
