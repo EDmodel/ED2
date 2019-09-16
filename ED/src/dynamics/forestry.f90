@@ -53,8 +53,7 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    real                                          :: site_harvest_target
    real                                          :: site_harvestable_agb
 !       real                                          :: site_hvmax_btimber
-!       real                                          :: site_hvpot_btimber
-   
+!       real                                          :: site_hvpot_btimber   
    real                                          :: area_mature_primary
    real                                          :: hvagb_mature_primary
    real                                          :: area_mature_secondary
@@ -77,7 +76,68 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    case (0) ! Nothing to do because anthropogenic disturbance is turned off
 	   return
    case (2) ! Harvest is based on size + area
-	   return
+
+	   !----- Link to the current site. -------------------------------------------------------!
+	   csite => cpoly%site(isi)
+	   !---------------------------------------------------------------------------------------!
+
+	   cpoly%primary_harvest_memory  (isi) = 0.0
+	   cpoly%secondary_harvest_memory(isi) = 0.0
+	   
+	   lambda_mature_plantation = cpoly%disturbance_rates(2,2,isi)
+	   lambda_mature_primary = cpoly%disturbance_rates(6,6,isi)
+
+	   !---------------------------------------------------------------------------------------!
+       !      Loop over patches.                                                               ! 
+       !---------------------------------------------------------------------------------------!
+       patch_loop: do ipa=1,onsp
+  
+		  !------------------------------------------------------------------------------------!
+		  !    Find out whether to harvest this patch.                                         !
+		  !------------------------------------------------------------------------------------!
+		  select case (csite%dist_type(ipa))
+		  case (2)
+			 !----- Forest plantation. --------------------------------------------------------!
+			 if ( csite%age(ipa) > plantation_rotation ) then
+				pot_area_harv(ipa) = csite%area(ipa) * lambda_mature_plantation
+			 end if
+			 !---------------------------------------------------------------------------------!
+		  case (6)
+			 !----- Primary/Secondary forest. -------------------------------------------------!
+			 if ( csite%age(ipa) > mature_harvest_age  ) then
+				pot_area_harv(ipa) = csite%area(ipa) * cpoly%disturbance_rates(6,6,isi)
+			 end if
+		  case default
+			 !----- Agriculture.  Do not log. -------------------------------------------------!
+			 continue
+			 !---------------------------------------------------------------------------------!
+		  end select
+		  !------------------------------------------------------------------------------------!
+	   end do patch_loop
+	   !---------------------------------------------------------------------------------------!
+
+	  write (unit=*,fmt='(a)'      )     ' '
+	  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+	  write (unit=*,fmt='(a)'      )     ' FORESTRY.  HARVEST RATES'
+	  write (unit=*,fmt='(a)'      )     ' '
+	  write (unit=*,fmt='(a,1x,i5)')     ' ISI                    = ',isi
+	  write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PRIMARY)    = '                      &
+													  , lambda_mature_primary
+	  write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PLANTATION) = '                      &
+													  , lambda_mature_plantation
+	  write (unit=*,fmt='(a)'          ) ' '
+	  write (unit=*,fmt='(a)'          ) '------------------------------------------------'
+	  write (unit=*,fmt='(5(a,1x))'    ) '  IPA','   LU','         AGE','        AREA'     &
+														,'     HV_AREA'
+	  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+	  do ipa=1,onsp
+		 write (unit=*,fmt='(2(i5,1x),3(f12.7,1x))') ipa,csite%dist_type(ipa)              &
+												   ,csite%age(ipa),csite%area(ipa)         &
+												   ,pot_area_harv(ipa)
+	  end do
+	  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+	  write (unit=*,fmt='(a)'      )     ' '
+
    !---------------------------------------------------------------------------------------!
 
    case (1)
