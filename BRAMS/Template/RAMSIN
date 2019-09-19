@@ -1909,6 +1909,8 @@ $ED2_INFO
    !             of points for the diurnal cycle is 86400 / FRQANL                         !
    ! IYOUTPUT -- Annual output.                                                            !
    ! ITOUTPUT -- Instantaneous fluxes, mostly polygon-level variables, one file per year.  !
+   ! IOOUTPUT -- Observation time output. Equivalent to IFOUTPUT, except only at the       !
+   !             times specified in OBSTIME_DB.                                            !
    ! ISOUTPUT -- restart file, for HISTORY runs.  The time interval between files is       !
    !             determined by FRQHIS                                                      !
    !---------------------------------------------------------------------------------------!
@@ -1918,6 +1920,7 @@ $ED2_INFO
    IQOUTPUT  =  3,
    IYOUTPUT  =  0,
    ITOUTPUT  =  0,
+   IOOUTPUT  =  0,
    ISOUTPUT  =  0,
    !---------------------------------------------------------------------------------------!
 
@@ -2086,8 +2089,8 @@ $ED2_INFO
    !                      growing-degree days, which is used to drive the cold-deciduous   !
    !                      phenology (you must always provide this, even when your PFTs are !
    !                      not cold deciduous).                                             !
-   !  ED_MET_DRIVER_DB -- File containing information for meteorological driver            !
-   !                      instructions (the "header" file).                                !
+   !  OBSTIME_DB       -- File containing times of desired IOOUTPUT                        !
+   !                      Reference file: /ED/run/obstime_template.time                    !
    !  SOILSTATE_DB     -- If ISOILSTATEINIT=1, this variable specifies the full path of    !
    !                      the file that contains soil moisture and temperature             !
    !                      information.                                                     !
@@ -2100,6 +2103,7 @@ $ED2_INFO
    PLANTATION_FILE = '',
    LU_RESCALE_FILE = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/rescale/SA1relative.lu.area-22km-2008.txt',
    THSUMS_DATABASE = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/',
+   OBSTIME_DB      = '', !Reference file: /ED/run/obstime_template.time
    SOILSTATE_DB    = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat',
    SOILDEPTH_DB    = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat',
    !---------------------------------------------------------------------------------------!
@@ -2534,12 +2538,78 @@ $ED2_INFO
    !     where psi is the matric potentital at layer k, z is the layer depth, H it the     !
    !     crown height and psi_fc and psi_wp are the matric potentials at wilting point     !
    !     and field capacity.                                                               !
-   ! 3.  (Beta) Similar to 2, but the water supply directly affects gsw, as opposed to     !
+   ! 3.  (Beta) Use leaf water potential to modify fsw following Powell et al. (2017).     !
+   !     This setting requires PLANT_HYDRO_SCHEME to be non-zero.                          !
+   ! 4.  (Beta) Use leaf water potential to modify the optimization-based stomatal model   !
+   !     following Xu et al. (2016).  This setting requires PLANT_HYDRO_SCHEME to be       !
+   !     non-zero values and set ISTOMATA_SCHEME to 1.                                     !
+   ! 5.  (Beta) Similar to 2, but the water supply directly affects gsw, as opposed to     !
    !     fsw.  This is done by making D0 a function of soil moisture.  Note that this      !
    !     still uses Kw but Kw must be significantly lower, at least for tropical trees     !
-   !     (1/15 - 1/10 of the original).                                                    !
+   !     (1/15 - 1/10 of the original).  This works only with PLANT_HYDRO_SCHEME set to 0. !
    !---------------------------------------------------------------------------------------!
    H2O_PLANT_LIM   = 2,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  PLANT_HYDRO_SCHEME -- Flag to set dynamic plant hydraulics.                          !
+   !  0 - (ED-2.2 default) No dynamic hydraulics (leaf and wood are always saturated).     !
+   !  1 - (Beta) Track plant hydrodynamics using parameters from C16.                      !
+   !  2 - (ED-2.2 alternative) Track plant hydrodynamics using parameters from X16.        !
+   ! -1 - (Beta) Similar to 1 but leaf/wood heat capacity does not change.                 !
+   ! -2 - (Beta) Same as 2 but leaf/wood heat capacity does not change.                    !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Christoffersen BO, Gloor M, Fauset S, Fyllas NM, Galbraith DR, Baker TR, Kruijt B,    !
+   !    Rowland L, Fisher RA, Binks OJ et al. 2016. Linking hydraulic traits to tropical   !
+   !    forest function in a size- structured and trait-driven model (TFS v.1-Hydro).      !
+   !    Geosci. Model Dev., 9: 4227-4255. doi:10.5194/gmd- 9-4227-2016 (C16).              !
+   !                                                                                       !
+   ! Xu X, Medvigy D, Powers JS, Becknell JM , Guan K. 2016. Diversity in plant hydraulic  !
+   !    traits explains seasonal and inter-annual variations of vegetation dynamics in     !
+   !    seasonally dry tropical forests. New Phytol., 212: 80-95. doi:10.1111/nph.14009    !
+   !    (X16).                                                                             !
+   !---------------------------------------------------------------------------------------!
+   PLANT_HYDRO_SCHEME   = 0,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ISTRUCT_GROWTH_SCHEME -- Different methods to perform structural growth.              !
+   ! 0. (ED-2.2 default) Use all bstorage allocation to growth to increase heartwood.      !
+   !    This option will be eventually deprecated, as it creates problems for drought-     !
+   !    deciduous plants and for allometric settings that properly calculate sapwood       !
+   !    (IALLOM = 3).                                                                      !
+   ! 1. (ED-2.2 alternative) Correct the fraction of storage allocated to heartwood, so    !
+   !    storage has sufficient carbon to increment all living tissues in the upcoming      !
+   !    month.  This option will eventually become the default.                            !
+   !---------------------------------------------------------------------------------------!
+   ISTRUCT_GROWTH_SCHEME = 1,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ISTOMATA_SCHEME -- Which stomatal conductance model to use.                           !
+   ! 0. (ED-2.2 default) Leuning (L95) model.                                              !
+   ! 1. (Beta) Katul's optimization-based model (see X16)                                  !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Leuning R. 1995. A critical appraisal of a combined stomatal-photosynthesis model for !
+   !    C3 plants. Plant Cell Environ., 18: 339-355.                                       !
+   !    doi:10.1111/j.1365-3040.1995.tb00370.x (L95).                                      !
+   !                                                                                       !
+   ! Xu X, Medvigy D, Powers JS, Becknell JM , Guan K. 2016. Diversity in plant hydraulic  !
+   !    traits explains seasonal and inter-annual variations of vegetation dynamics in     !
+   !    seasonally dry tropical forests. New Phytol., 212: 80-95. doi:10.1111/nph.14009    !
+   !    (X16).                                                                             !
+   !---------------------------------------------------------------------------------------!
+   ISTOMATA_SCHEME = 0,
    !---------------------------------------------------------------------------------------!
 
 

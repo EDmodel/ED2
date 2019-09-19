@@ -46,6 +46,9 @@ subroutine read_ednl(iunit,filename)
    use physiology_coms      , only : iphysiol                              & ! intent(out)
                                    , quantum_efficiency_t                  & ! intent(out)
                                    , h2o_plant_lim                         & ! intent(out)
+                                   , plant_hydro_scheme                    & ! intent(out)
+                                   , istomata_scheme                       & ! intent(out)
+                                   , istruct_growth_scheme                 & ! intent(out)
                                    , trait_plasticity_scheme               & ! intent(out)
                                    , iddmort_scheme                        & ! intent(out)
                                    , cbr_scheme                            & ! intent(out)
@@ -119,7 +122,9 @@ subroutine read_ednl(iunit,filename)
                                    , iqoutput                              & ! intent(out)
                                    , iyoutput                              & ! intent(out)
                                    , itoutput                              & ! intent(out)
+                                   , iooutput                              & ! intent(out)
                                    , isoutput                              & ! intent(out)
+                                   , obstime_db                            & ! intent(out)
                                    , iadd_site_means                       & ! intent(out)
                                    , iadd_patch_means                      & ! intent(out)
                                    , iadd_cohort_means                     & ! intent(out)
@@ -267,16 +272,18 @@ subroutine read_ednl(iunit,filename)
    logical                      :: op
    !----- Namelist. -----------------------------------------------------------------------!
    namelist /ED2_INFO/  dtlsm,month_yrstep,co2_offset,ifoutput,idoutput,imoutput,iqoutput  &
-                       ,iyoutput,itoutput,isoutput,iadd_site_means,iadd_patch_means        &
-                       ,iadd_cohort_means,attach_metadata,outfast,outstate,ffilout,sfilout &
-                       ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
-                       ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
-                       ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf  &
+                       ,iyoutput,itoutput,iooutput,isoutput,iadd_site_means                &
+                       ,iadd_patch_means,iadd_cohort_means,attach_metadata,outfast         &
+                       ,outstate,ffilout,sfilout,ied_init_mode,edres,sfilin,veg_database   &
+                       ,soil_database,lu_database,plantation_file,lu_rescale_file          &
+                       ,thsums_database,obstime_db,soilstate_db,soildepth_db               &
+                       ,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf               &
                        ,integration_scheme,nsub_euler,rk4_tolerance,ibranch_thermo         &
                        ,iphysiol,iallom,economics_scheme,igrass,iphen_scheme,radint,radslp &
                        ,repro_scheme,lapse_scheme,crown_mod,icanrad,ihrzrad,ltrans_vis     &
                        ,ltrans_nir,lreflect_vis,lreflect_nir,orient_tree,orient_grass      &
                        ,clump_tree,clump_grass,decomp_scheme,h2o_plant_lim                 &
+                       ,plant_hydro_scheme,istomata_scheme,istruct_growth_scheme           &
                        ,trait_plasticity_scheme,iddmort_scheme,cbr_scheme,ddmort_const     &
                        ,vmfact_c3,vmfact_c4,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3  &
                        ,bphoto_nlc3,bphoto_c4,kw_grass,kw_tree,gamma_c3,gamma_c4,d0_grass  &
@@ -381,6 +388,9 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' clump_grass               =',clump_grass
       write (unit=*,fmt=*) ' decomp_scheme             =',decomp_scheme
       write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
+      write (unit=*,fmt=*) ' plant_hydro_scheme        =',plant_hydro_scheme
+      write (unit=*,fmt=*) ' istomata_scheme           =',istomata_scheme
+      write (unit=*,fmt=*) ' istruct_growth_scheme     =',istruct_growth_scheme
       write (unit=*,fmt=*) ' trait_plasticity_scheme   =',trait_plasticity_scheme
       write (unit=*,fmt=*) ' iddmort_scheme            =',iddmort_scheme
       write (unit=*,fmt=*) ' ddmort_const              =',ddmort_const

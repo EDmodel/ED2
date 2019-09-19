@@ -31,31 +31,47 @@ module ed_therm_lib
    !                  for defining different parameterizations of specific heat capacity   !
    !                                                                                       !
    ! Ouputs:                                                                               !
-   ! + LEAF_HCAP    - the leaf heat capacity, in J/m2/K.                                   !
-   ! + WOOD_HCAP    - the wood heat capacity, in J/m2/K.                                   !
+   ! + LEAF_HCAP    - the leaf heat capacity of oven-dry biomass, in J/m2/K.               !
+   ! + WOOD_HCAP    - the wood heat capacity of oven-dry biomass, in J/m2/K.               !
    !                                                                                       !
-   ! These methods follow the ways of Gu et al. 2007, with the only difference that for    !
-   ! non-green biomass we dropped the temperature dependence and assumed T=T3ple, just to  !
-   ! make it simpler.  See the module pft_coms.f90 for a description of the parameters,    !
-   ! and see ed_params.f90 for the setting of these parameters.                            !
+   ! These methods follow the ways of G07, with a few differences.                         !
+   ! 1. For non-green biomass we dropped the temperature dependence and assumed T = 15C,   !
+   !    just to make it simpler.  See the module pft_coms.f90 for a description of the     !
+   !    parameters, and see ed_params.f90 for the setting of these parameters.             !
+   ! 2. We now separate the oven-dry biomass from the internal water.  Because the         !
+   !    internal water can dynamically change when X16 dynamic plant hydraulics, heat      !
+   !    capacity must change as well, and this is more easily done by treating them        !
+   !    separately.                                                                        !
+   ! 3. With dynamic plant hydraulics is active (X16), we ignore changes in internal water !
+   !    affecting the water-wood bonding heat capacity (F10).  This is a simplication to   !
+   !     avoid non-linearities.  We may revisit this at    !
+   !    some point.  When plant hydraulics is not active, this is incorporated in the      !
+   !    oven-dry heat capacity.                                                            !
    !                                                                                       !
-   ! Reference:                                                                            !
+   ! References:                                                                           !
    !                                                                                       !
-   ! Gu, L., T. Meyers, S. G. Pallardy, 2007: Influences of biomass heat and biochemical   !
-   !      energy storages on the land surface fluxes and radiative temperature.            !
-   !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
+   ! Forest Products Laboratory. 2010. Wood handbook -- wood as an engineering material.   !
+   !    General Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI. !
+   !    doi:10.2737/FPL-GTR-190 (F10).                                                     !
+   !                                                                                       !
+   ! Gu L, Meyers T, Pallardy SG, Hanson PJ, Yang B, Heuer M, Hosman KP, Liu Q, Riggs JS,  !
+   !    Sluss D et al. 2007. Influences of biomass heat and biochemical energy storages on !
+   !    the land surface fluxes and radiative temperature. J. Geophys. Res., 112: D02107.  !
+   !    doi:10.1029/2006JD007425 (G07).                                                    !
+   !                                                                                       !
+   ! Xu X, Medvigy D, Powers JS, Becknell JM , Guan K. 2016. Diversity in plant hydraulic  !
+   !    traits explains seasonal and inter-annual variations of vegetation dynamics in     !
+   !    seasonally dry tropical forests. New Phytol., 212: 80-95. doi:10.1111/nph.14009    !
+   !    (X16).                                                                             !
    !---------------------------------------------------------------------------------------!
    subroutine calc_veg_hcap(bleaf,bdeada,bsapwooda,bbarka,nplant,pft,leaf_hcap,wood_hcap)
       use consts_coms          , only : cliq                ! ! intent(in)
       use pft_coms             , only : cleaf               & ! intent(in)
-                                      , cwood               & ! intent(in)
+                                      , csapw               & ! intent(in)
+                                      , cdead               & ! intent(in)
                                       , cbark               & ! intent(in)
-                                      , wat_dry_ratio_leaf  & ! intent(in)
-                                      , wat_dry_ratio_wood  & ! intent(in)
-                                      , wat_dry_ratio_bark  & ! intent(in)
                                       , C2B                 & ! intent(in)
                                       , brf_wd              ! ! intent(in)
-
       use rk4_coms             , only : ibranch_thermo      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -68,9 +84,11 @@ module ed_therm_lib
       real    , intent(out)   :: leaf_hcap     ! Leaf heat capacity             [   J/m2/K]
       real    , intent(out)   :: wood_hcap     ! Wood heat capacity             [   J/m2/K]
       !----- Local variables --------------------------------------------------------------!
-      real                    :: bwoodbr       ! Wood biomass (branches)        [kgC/plant]
+      real                    :: bsapwbr       ! Sapwood biomass (branches)     [kgC/plant]
+      real                    :: bdeadbr       ! Heartwood biomass (branches)   [kgC/plant]
       real                    :: bbarkbr       ! Bark biomass (branches)        [kgC/plant]
       !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !    Here we decide whether we compute the branch heat capacity or not.              !
@@ -78,22 +96,34 @@ module ed_therm_lib
       select case (ibranch_thermo)
       case (0)
          !----- Skip it, the user doesn't want to solve for branches. ---------------------!
-         bwoodbr     = 0.
-         bbarkbr     = 0.
+         bsapwbr = 0.
+         bdeadbr = 0.
+         bbarkbr = 0.
+         !---------------------------------------------------------------------------------!
       case default
-         !----- Find branch/twig specific heat and biomass. -------------------------------!
-         bwoodbr     = brf_wd(pft) * (bsapwooda + bdeada)
-         bbarkbr     = brf_wd(pft) * bbarka
+         !---------------------------------------------------------------------------------!
+         !     Find the branch/twig biomass in wood and in bark.  This is used to find the !
+         ! heat capacity of wood-water and bark-water bonds, following 
+         !---------------------------------------------------------------------------------!
+         bsapwbr = brf_wd(pft) * bsapwooda
+         bdeadbr = brf_wd(pft) * bdeada
+         bbarkbr = brf_wd(pft) * bbarka
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
+
+
       !------------------------------------------------------------------------------------!
       !     The heat capacity is specific heat times the plant density times the leaf/wood !
-      ! biomass.                                                                           !
+      ! biomass (in kg of oven-dry biomass, not carbon).  For tissues with constant        !
+      ! internal water content, specific heat also includes water.  This is always the     !
+      ! case for heartwood and bark, and it is the case for leaf and sapwood when dynamic  !
+      ! plant hydraulics is disabled.                                                      !
       !------------------------------------------------------------------------------------!
-      leaf_hcap = nplant * C2B *   bleaf   * cleaf(pft) * (1. + wat_dry_ratio_leaf(pft))
-      wood_hcap = nplant * C2B * ( bwoodbr * cwood(pft) * (1. + wat_dry_ratio_wood(pft))  &
-                                 + bbarkbr * cbark(pft) * (1. + wat_dry_ratio_bark(pft)) )
+      leaf_hcap = nplant * C2B *   bleaf   * cleaf(pft)
+      wood_hcap = nplant * C2B                                                             &
+                * ( bsapwbr * csapw(pft) + bdeadbr * cdead(pft) + bbarkbr * cbark(pft) )
       !------------------------------------------------------------------------------------!
 
       return
@@ -121,29 +151,39 @@ module ed_therm_lib
    ! we violate the fact that heat capacity is a linear function of mass and this will     !
    ! cause problems during the fusion/splitting process.                                   !
    !                                                                                       !
-   !    The "cweh" mean "consistent water&energy&hcap" assumption                          !
+   !    The "cweh" acronym means "consistent water, energy, and heat-capacity" approach.   !
    !---------------------------------------------------------------------------------------!
-   subroutine update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
-      use ed_state_vars, only : sitetype   & ! structure
-                              , patchtype  ! ! structure
-      use therm_lib    , only : uextcm2tl  & ! subroutine
-                              , cmtl2uext  ! ! function
-      use ed_misc_coms , only : frqsumi    ! ! intent(in)
+   subroutine update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap             &
+                                    ,old_leaf_water_im2,old_wood_water_im2)
+      use ed_state_vars, only : sitetype    & ! structure
+                              , patchtype   ! ! structure
+      use therm_lib    , only : uextcm2tl   & ! subroutine
+                              , cmtl2uext   & ! function
+                              , tq2enthalpy ! ! function
+      use ed_misc_coms , only : frqsumi     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype) , target     :: csite
-      integer        , intent(in) :: ipa
-      integer        , intent(in) :: ico
-      real           , intent(in) :: old_leaf_hcap
-      real           , intent(in) :: old_wood_hcap
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: ipa
+      integer          , intent(in) :: ico
+      real             , intent(in) :: old_leaf_hcap
+      real             , intent(in) :: old_wood_hcap
+      real             , intent(in) :: old_leaf_water_im2
+      real             , intent(in) :: old_wood_water_im2
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype), pointer    :: cpatch
-      real                        :: new_temp
-      real                        :: new_fliq
-      integer                     :: kclosest
-      integer                     :: k
-      real                        :: old_leaf_energy
-      real                        :: old_wood_energy
+      type(patchtype)  , pointer    :: cpatch
+      real                          :: new_temp
+      real                          :: new_fliq
+      integer                       :: kclosest
+      integer                       :: k
+      real                          :: old_leaf_energy
+      real                          :: old_wood_energy
+      real                          :: old_leaf_energy_im2
+      real                          :: old_wood_energy_im2
+      real                          :: new_leaf_energy_im2
+      real                          :: new_wood_energy_im2
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=13), parameter  :: efmt='(a,1x,es12.5)'
       !------------------------------------------------------------------------------------!
 
 
@@ -154,8 +194,12 @@ module ed_therm_lib
       !    Save leaf and wood energy before the update, so we can find the change in       !
       ! energy storage due to change in the storage size (heat capacity).                  !
       !------------------------------------------------------------------------------------!
-      old_leaf_energy = cpatch%leaf_energy(ico)
-      old_wood_energy = cpatch%wood_energy(ico)
+      old_leaf_energy     = cpatch%leaf_energy   (ico)
+      old_wood_energy     = cpatch%wood_energy   (ico)
+      old_leaf_energy_im2 = cpatch%leaf_water_im2(ico)                                     &
+                          * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
+      old_wood_energy_im2 = cpatch%wood_water_im2(ico)                                     &
+                          * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
       !------------------------------------------------------------------------------------!
 
 
@@ -188,15 +232,22 @@ module ed_therm_lib
          ! fraction of water held by leaves, we can recalculate the internal energy by     !
          ! just switching the old heat capacity by the new one.                            !
          !---------------------------------------------------------------------------------!
-         cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap(ico),cpatch%leaf_water(ico)  &
-                                            ,cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico) )
+         cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)                   &
+                                            , cpatch%leaf_water    (ico)                   &
+                                            + cpatch%leaf_water_im2(ico)                   &
+                                            , cpatch%leaf_temp     (ico)                   &
+                                            , cpatch%leaf_fliq     (ico) )
          !---------------------------------------------------------------------------------!
 
 
 
          !----- This is a sanity check, it can be removed if it doesn't crash. ------------!
-         call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)                     &
-                       ,cpatch%leaf_hcap(ico),new_temp,new_fliq)
+         call uextcm2tl( cpatch%leaf_energy   (ico)                                        &
+                       , cpatch%leaf_water    (ico)                                        &
+                       + cpatch%leaf_water_im2(ico)                                        &
+                       , cpatch%leaf_hcap     (ico)                                        &
+                       , new_temp                                                          &
+                       , new_fliq                   )
          !---------------------------------------------------------------------------------!
 
 
@@ -208,13 +259,14 @@ module ed_therm_lib
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             write(unit=*,fmt='(a)') ' LEAF ENERGY CONSERVATION FAILED!:'
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.5)') ' Old temperature:  ',cpatch%leaf_temp(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
-            write(unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_leaf_hcap
-            write(unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%leaf_hcap(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' Old leaf energy:  ',old_leaf_energy
-            write(unit=*,fmt='(a,1x,es12.5)') ' New leaf energy:  ',cpatch%leaf_energy(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' Leaf water:       ',cpatch%leaf_water(ico)
+            write(unit=*,fmt=efmt) ' Old temperature:     ',cpatch%leaf_temp     (ico)
+            write(unit=*,fmt=efmt) ' New temperature:     ',new_temp
+            write(unit=*,fmt=efmt) ' Old heat capacity:   ',old_leaf_hcap
+            write(unit=*,fmt=efmt) ' New heat capacity:   ',cpatch%leaf_hcap     (ico)
+            write(unit=*,fmt=efmt) ' Old leaf energy:     ',old_leaf_energy
+            write(unit=*,fmt=efmt) ' New leaf energy:     ',cpatch%leaf_energy   (ico)
+            write(unit=*,fmt=efmt) ' Leaf surface water:  ',cpatch%leaf_water    (ico)
+            write(unit=*,fmt=efmt) ' Leaf internal water: ',cpatch%leaf_water_im2(ico)
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             call fatal_error('Leaf energy is leaking!!!','update_veg_energy_cweh'          &
                             &,'ed_therm_lib.f90')
@@ -255,15 +307,22 @@ module ed_therm_lib
          ! fraction of water held by leaves, we can recalculate the internal energy by     !
          ! just switching the old heat capacity by the new one.                            !
          !---------------------------------------------------------------------------------!
-         cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap(ico),cpatch%wood_water(ico)  &
-                                            ,cpatch%wood_temp(ico),cpatch%wood_fliq (ico) )
+         cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)                   &
+                                            , cpatch%wood_water    (ico)                   &
+                                            + cpatch%wood_water_im2(ico)                   &
+                                            , cpatch%wood_temp     (ico)                   &
+                                            , cpatch%wood_fliq     (ico) )
          !---------------------------------------------------------------------------------!
 
 
 
          !----- This is a sanity check, it can be removed if it doesn't crash. ------------!
-         call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)                     &
-                       ,cpatch%wood_hcap(ico),new_temp,new_fliq)
+         call uextcm2tl( cpatch%wood_energy   (ico)                                        &
+                       , cpatch%wood_water    (ico)                                        &
+                       + cpatch%wood_water_im2(ico)                                        &
+                       , cpatch%wood_hcap     (ico)                                        &
+                       , new_temp                                                          &
+                       , new_fliq                   )
          !---------------------------------------------------------------------------------!
 
 
@@ -276,13 +335,14 @@ module ed_therm_lib
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             write(unit=*,fmt='(a)') ' WOOD ENERGY CONSERVATION FAILED!:'
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.5)') ' Old temperature:  ',cpatch%wood_temp(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
-            write(unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_wood_hcap
-            write(unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%wood_hcap(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' Old wood energy:  ',old_wood_energy
-            write(unit=*,fmt='(a,1x,es12.5)') ' New wood energy:  ',cpatch%wood_energy(ico)
-            write(unit=*,fmt='(a,1x,es12.5)') ' Wood water:       ',cpatch%wood_water(ico)
+            write(unit=*,fmt=efmt) ' Old temperature:     ',cpatch%wood_temp     (ico)
+            write(unit=*,fmt=efmt) ' New temperature:     ',new_temp
+            write(unit=*,fmt=efmt) ' Old heat capacity:   ',old_wood_hcap
+            write(unit=*,fmt=efmt) ' New heat capacity:   ',cpatch%wood_hcap     (ico)
+            write(unit=*,fmt=efmt) ' Old wood energy:     ',old_wood_energy
+            write(unit=*,fmt=efmt) ' New wood energy:     ',cpatch%wood_energy   (ico)
+            write(unit=*,fmt=efmt) ' Wood surface water:  ',cpatch%wood_water    (ico)
+            write(unit=*,fmt=efmt) ' Wood internal water: ',cpatch%wood_water_im2(ico)
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             call fatal_error('Wood energy is leaking!!!','update_veg_energy_cweh'          &
                             &,'ed_therm_lib.f90')
@@ -297,9 +357,23 @@ module ed_therm_lib
       !    Integrate the "heat capacity effect", i.e. the change in total internal energy  !
       ! in vegetation due to change in vegetation biomass.                                 !
       !------------------------------------------------------------------------------------!
+      new_leaf_energy_im2           = cpatch%leaf_water_im2(ico)                           &
+                                    * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
+      new_wood_energy_im2           = cpatch%wood_water_im2(ico)                           &
+                                    * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
       csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                        &
-                                    + ( cpatch%leaf_energy(ico) - old_leaf_energy          &
-                                      + cpatch%wood_energy(ico) - old_wood_energy )        &
+                                    + ( cpatch%leaf_energy(ico) - new_leaf_energy_im2      &
+                                      - old_leaf_energy         + old_leaf_energy_im2      &
+                                      + cpatch%wood_energy(ico) - new_wood_energy_im2      &
+                                      - old_wood_energy         + old_wood_energy_im2 )    &
+                                    * frqsumi
+      csite%ebudget_wcapeffect(ipa) = csite%ebudget_wcapeffect(ipa)                        &
+                                    + ( new_leaf_energy_im2 - old_leaf_energy_im2          &
+                                      + new_wood_energy_im2 - old_wood_energy_im2 )        &
+                                    * frqsumi
+      csite%wbudget_wcapeffect(ipa) = csite%wbudget_wcapeffect(ipa)                        &
+                                    + ( cpatch%leaf_water_im2(ico) - old_leaf_water_im2    &
+                                      + cpatch%wood_water_im2(ico) - old_wood_water_im2 )  &
                                     * frqsumi
       !------------------------------------------------------------------------------------!
 

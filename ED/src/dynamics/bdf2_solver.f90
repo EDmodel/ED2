@@ -166,12 +166,20 @@ module bdf2_solver
               fliq(ico) = ycurr%leaf_fliq(ico)
               qv(ico)   = ynext%leaf_water(ico)
               dqvdt(ico)= dydt%leaf_water(ico)
-              xv(ico)   = ycurr%leaf_fliq(ico)*cliq8*qv(ico) + &
-                          (1.d0-fliq(ico))*cice8*qv(ico)     + &
-                          ycurr%leaf_hcap(ico)
-              hflx(ico) = ycurr%hflx_lrsti(ico)
+              !--------------------------------------------------------------!
+              ! MLO.  Modified here to account for internal water.  I used   !
+              !       ycurr for internal water to be consistent with former  !
+              !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+              !       right.                                                 !
+              !--------------------------------------------------------------!
+              xv(ico)      = fliq(ico) * cliq8                               &
+                           * ( qv(ico) + ycurr%leaf_water_im2(ico) )         &
+                           + (1.d0-fliq(ico)) * cice8                        &
+                           + ycurr%leaf_hcap(ico)
+              !--------------------------------------------------------------!
+              hflx(ico)    = ycurr%hflx_lrsti(ico)
               resolve(ico) = .true.
-              id_tveg   = id_tveg + 1
+              id_tveg      = id_tveg + 1
            end if
         end do
         
@@ -222,16 +230,24 @@ module bdf2_solver
               hflx(ico) = hflx(ico)+ycurr%hflx_wrsti(ico)
            end if
 
-           ! We use the wood and the leaf heat capacities regardless 
-           ! of their ability to be solved.
-           ! ---------------------------------------------------------
-
-           xv(ico)   = ycurr%leaf_fliq(ico)*cliq8*ynext%leaf_water(ico)        + &
-                       (1.d0-ycurr%leaf_fliq(ico))*cice8*ynext%leaf_water(ico) + &
-                       ycurr%leaf_hcap(ico)                                    + &
-                       ycurr%wood_fliq(ico)*cliq8*ynext%wood_water(ico)        + &
-                       (1.d0-ycurr%wood_fliq(ico))*cice8*ynext%wood_water(ico) + &
-                       ycurr%wood_hcap(ico)
+           !-----------------------------------------------------------------!
+           ! We use the wood and the leaf heat capacities regardless         !
+           ! of their ability to be solved.                                  !
+           !                                                                 !
+           ! MLO.  Modified here to account for internal water.  I used      !
+           !       ycurr for internal water to be consistent with former     !
+           !       call for using ycurr%leaf_hcap.  Not sure if this is      !
+           !       right.                                                    !
+           !-----------------------------------------------------------------!
+           xv(ico)   = ( ycurr%leaf_fliq(ico)        * cliq8                 &
+                       + (1.d0-ycurr%leaf_fliq(ico)) * cice8 )               &
+                     * ( ynext%leaf_water(ico) + ycurr%leaf_water_im2(ico) ) &
+                     + ycurr%leaf_hcap(ico)                                  &
+                     + ( ycurr%wood_fliq(ico)        * cliq8                 &
+                       + (1.d0-ycurr%wood_fliq(ico)) * cice8 )               &
+                     * ( ynext%wood_water(ico) + ycurr%wood_water_im2(ico) ) &
+                     + ycurr%wood_hcap(ico)
+           !-----------------------------------------------------------------!
 
         end do
 
@@ -382,9 +398,17 @@ module bdf2_solver
               fliq(ico) = ycurr%wood_fliq(ico)
               qv(ico)   = ynext%wood_water(ico)
               dqvdt(ico)= dydt%wood_water(ico)
-              xv(ico)   = ycurr%wood_fliq(ico)*cliq8*qv(ico) + &
-                   (1.d0-fliq(ico))*cice8*qv(ico) +          &
-                   ycurr%wood_hcap(ico)
+              !--------------------------------------------------------------!
+              ! MLO.  Modified here to account for internal water.  I used   !
+              !       ycurr for internal water to be consistent with former  !
+              !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+              !       right.                                                 !
+              !--------------------------------------------------------------!
+              xv(ico)   = ( fliq(ico)            * cliq8                     &
+                          + ( 1.d0 - fliq(ico) ) * cice8 )                   &
+                        * ( qv(ico) + ycurr%wood_water_im2(ico) )            &
+                        + ycurr%wood_hcap(ico)
+              !--------------------------------------------------------------!
               hflx(ico) = ycurr%hflx_wrsti(ico)
            end if
         end do
@@ -489,16 +513,34 @@ module bdf2_solver
               id_tveg=id_tveg+1
               ynext%leaf_temp(ico) = Y(id_tveg)
               
-              if(ynext%leaf_temp(ico) < t3ple8) then
+              if (ynext%leaf_temp(ico) < t3ple8) then
+                 !--------------------------------------------------------------!
+                 ! MLO.  Modified here to account for internal water.  I used   !
+                 !       ycurr for internal water to be consistent with former  !
+                 !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+                 !       right.                                                 !
+                 !--------------------------------------------------------------!
                  ynext%leaf_fliq(ico) = 0.d0
-                 ynext%leaf_energy(ico) = &
-                      ynext%leaf_water(ico)*cice8*ynext%leaf_temp(ico) +&
-                      ynext%leaf_temp(ico)*ycurr%leaf_hcap(ico)
+                 ynext%leaf_energy(ico) = ynext%leaf_temp(ico)                  &
+                      * ( ycurr%leaf_hcap(ico)                                  &
+                        + ( ynext%leaf_water(ico) + ycurr%leaf_water_im2(ico) ) &
+                        * cice8 )
+                 !--------------------------------------------------------------!
               else
+                 !--------------------------------------------------------------!
+                 ! MLO.  Modified here to account for internal water.  I used   !
+                 !       ycurr for internal water to be consistent with former  !
+                 !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+                 !       right.                                                 !
+                 !--------------------------------------------------------------!
                  ynext%leaf_fliq(ico) = 1.d0
-                 ynext%leaf_energy(ico) = ynext%leaf_temp(ico)*              &
-                      (ycurr%leaf_hcap(ico)+ynext%leaf_water(ico)*cliq8) - &
-                      ynext%leaf_water(ico)*cliq8*tsupercool_liq8
+                 ynext%leaf_energy(ico) = ynext%leaf_temp(ico)                  &
+                      * ( ycurr%leaf_hcap(ico)                                  &
+                        + ( ynext%leaf_water(ico) + ycurr%leaf_water_im2(ico) ) &
+                        * cliq8 )                                               &
+                      - ( ynext%leaf_water(ico) + ycurr%leaf_water_im2(ico) )   &
+                      * cliq8 * tsupercool_liq8
+                 !--------------------------------------------------------------!
               end if
               
               ! Back calculate the latent and sensible heat fluxes of leaves
@@ -529,15 +571,32 @@ module bdf2_solver
                  ynext%wood_temp(ico) = Y(id_tveg)
                  if(ynext%wood_temp(ico) < t3ple8) then
                     ynext%wood_fliq(ico) = 0.d0
-                    ynext%wood_energy(ico) = &
-                         ynext%wood_water(ico)*cice8*ynext%wood_temp(ico) +&
-                         ynext%wood_temp(ico)*ycurr%wood_hcap(ico)
+                    !--------------------------------------------------------------!
+                    ! MLO.  Modified here to account for internal water.  I used   !
+                    !       ycurr for internal water to be consistent with former  !
+                    !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+                    !       right.                                                 !
+                    !--------------------------------------------------------------!
+                    ynext%wood_energy(ico) = ynext%wood_temp(ico)                  &
+                         * ( ycurr%wood_hcap(ico)                                  &
+                           + ( ynext%wood_water(ico) + ycurr%wood_water_im2(ico) ) &
+                           * cice8 )
+                    !--------------------------------------------------------------!
                  else
                     ynext%wood_fliq(ico) = 1.d0
-                    
-                    ynext%wood_energy(ico) = ynext%wood_temp(ico)*              &
-                         (ycurr%wood_hcap(ico)+ynext%wood_water(ico)*cliq8) - &
-                         ynext%wood_water(ico)*cliq8*tsupercool_liq8
+                    !--------------------------------------------------------------!
+                    ! MLO.  Modified here to account for internal water.  I used   !
+                    !       ycurr for internal water to be consistent with former  !
+                    !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+                    !       right.                                                 !
+                    !--------------------------------------------------------------!
+                    ynext%wood_energy(ico) = ynext%wood_temp(ico)                  &
+                         * ( ycurr%wood_hcap(ico)                                  &
+                           + ( ynext%wood_water(ico) + ycurr%wood_water_im2(ico) ) &
+                           * cliq8 )                                               &
+                         - ( ynext%wood_water(ico) + ycurr%wood_water_im2(ico) )   &
+                         * cliq8 * tsupercool_liq8
+                    !--------------------------------------------------------------!
                  end if
                  
                  ! Back calculate the latent and sensible heat fluxes of wood
@@ -582,13 +641,18 @@ module bdf2_solver
               ynext%leaf_energy(ico) = 0.0
 
               if (ycurr%leaf_resolvable(ico) .or. ycurr%wood_resolvable(ico)) then
-
-                 ynext%leaf_energy(ico) = cmtl2uext8(     &
-                   ycurr%leaf_hcap (ico),              &
-                   ynext%leaf_water(ico),              &
-                   ynext%leaf_temp (ico),              &
-                   ynext%leaf_fliq (ico) )
-                 
+                 !--------------------------------------------------------------!
+                 ! MLO.  Modified here to account for internal water.  I used   !
+                 !       ycurr for internal water to be consistent with former  !
+                 !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+                 !       right.                                                 !
+                 !--------------------------------------------------------------!
+                 ynext%leaf_energy(ico) = cmtl2uext8( ycurr%leaf_hcap     (ico) &
+                                                    , ynext%leaf_water    (ico) &
+                                                    + ycurr%leaf_water_im2(ico) &
+                                                    , ynext%leaf_temp     (ico) &
+                                                    , ynext%leaf_fliq     (ico) )
+                 !--------------------------------------------------------------!
                  ynext%veg_energy(ico)=ynext%leaf_energy(ico)
 
                  qwflxlc = ycurr%wflxlc(ico) * &
@@ -600,11 +664,18 @@ module bdf2_solver
                  qwflxlc_tot = qwflxlc_tot + qwflxlc
                  hflxlc_tot  = hflxlc_tot  + hflxlc
 
-                 ynext%wood_energy(ico) = cmtl2uext8(     &
-                      ycurr%wood_hcap (ico),              &
-                      ynext%wood_water(ico),              &
-                      ynext%wood_temp (ico),              &
-                      ynext%wood_fliq (ico) )   
+                 !--------------------------------------------------------------!
+                 ! MLO.  Modified here to account for internal water.  I used   !
+                 !       ycurr for internal water to be consistent with former  !
+                 !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+                 !       right.                                                 !
+                 !--------------------------------------------------------------!
+                 ynext%wood_energy(ico) = cmtl2uext8( ycurr%wood_hcap     (ico) &
+                                                    , ynext%wood_water    (ico) &
+                                                    + ycurr%wood_water_im2(ico) &
+                                                    , ynext%wood_temp     (ico) &
+                                                    , ynext%wood_fliq     (ico) )
+                 !--------------------------------------------------------------!
 
                  ynext%veg_energy(ico) = ynext%veg_energy(ico)+ &
                       ynext%wood_energy(ico)
@@ -623,8 +694,19 @@ module bdf2_solver
               ! its energy compare?
 
 
-              call uextcm2tl8(ynext%veg_energy(ico),ynext%veg_water(ico)  &
-                   ,ycurr%veg_hcap(ico),veg_temp,fliq(ico))
+              !--------------------------------------------------------------!
+              ! MLO.  Modified here to account for internal water.  I used   !
+              !       ycurr for internal water to be consistent with former  !
+              !       call for using ycurr%leaf_hcap.  Not sure if this is   !
+              !       right.                                                 !
+              !--------------------------------------------------------------!
+              call uextcm2tl8( ynext%veg_energy   (ico)                      &
+                             , ynext%veg_water    (ico)                      &
+                             + ycurr%veg_water_im2(ico)                      &
+                             , ycurr%veg_hcap     (ico)                      &
+                             , veg_temp                                      &
+                             , fliq               (ico) )
+              !--------------------------------------------------------------!
 
               if(abs(veg_temp-ynext%leaf_temp(ico))>1d-10)then
                  print*,"ISSUE IN ENERGY CONSERVATION,BDF2"

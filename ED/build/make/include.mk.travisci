@@ -23,7 +23,6 @@ BASE=$(ED_ROOT)/build/
 # HDF5 libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may   #
 # still be able to compile without HDF5 but the code is not going to run.                  #
 #------------------------------------------------------------------------------------------#
-USE_HDF5=1
 HDF5_HOME=/usr
 HDF5_INCS=-I/usr/include/hdf5/serial
 HDF5_LIBS=-lz -L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5 -lhdf5_fortran -lhdf5_hl

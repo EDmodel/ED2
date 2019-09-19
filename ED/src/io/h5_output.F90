@@ -4,9 +4,7 @@
 ! and the type of output file to be created.  ED's default format is HDF5.                 !
 !------------------------------------------------------------------------------------------!
 subroutine h5_output(vtype)
-#if USE_HDF5
    use hdf5
-#endif
    use ed_var_tables, only : vt_info               & ! intent(in)
                            , var_table             & ! intent(in)
                            , var_table_vector      & ! intent(in)
@@ -1420,6 +1418,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       dsetrank = 2
       globdims(1) = 16_8
       chnkdims(1) = 16_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+
+   case (42)    !(nzg,ncohorts)
+      
+      ! Soil column type
+      dsetrank    = 2
+      globdims(1) = int(nzg,8)
+      chnkdims(1) = int(nzg,8)
       chnkoffs(1) = 0_8
       globdims(2) = int(var_len_global,8)
       chnkdims(2) = int(varlen,8)

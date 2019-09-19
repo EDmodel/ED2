@@ -1068,7 +1068,10 @@ module soil_respiration
                             , rh_decay_dry               & ! intent(in)
                             , rh_decay_wet               & ! intent(in)
                             , rh_dry_smoist              & ! intent(in)
-                            , rh_wet_smoist              ! ! intent(in)
+                            , rh_wet_smoist              & ! intent(in)
+                            , rh_moyano12_a0             & ! intent(in)
+                            , rh_moyano12_a1             & ! intent(in)
+                            , rh_moyano12_a2             ! ! intent(in)
       use consts_coms, only : lnexp_min                  & ! intent(in)
                             , lnexp_max                  ! ! intent(in)
 
@@ -1095,12 +1098,12 @@ module soil_respiration
       !     Find the temperature dependence.                                               !
       !------------------------------------------------------------------------------------!
       select case(decomp_scheme)
-      case (0)
+      case (0,3)
          !----- Use original ED-2.1 exponential temperature dependence. -------------------!
          temperature_limitation = min( 1.0                                                 &
                                      , exp(resp_temperature_increase * (soil_tempk-318.15)))
          !---------------------------------------------------------------------------------!
-      case (1) 
+      case (1,4)
          !----- Use Lloyd and Taylor (1994) temperature dependence. -----------------------!
          lnexplloyd             = rh_lloyd_1 * ( rh_lloyd_2 - 1./(soil_tempk - rh_lloyd_3))
          lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
@@ -1150,6 +1153,18 @@ module soil_respiration
          smwet_fun        = 1.0 + exp(lnexpwet)
          !----- Soil moisture limitation is a combination of both. ------------------------!
          water_limitation = 1.0 / (smdry_fun * smwet_fun)
+         !---------------------------------------------------------------------------------!
+      case (3,4)
+         !---------------------------------------------------------------------------------!
+         !   From Jaclyn Matthes: Empirical equation from meta-analysis in M12.            !
+         !                                                                                 !
+         !  Moyano FE, Vasilyeva N, Bouckaert L, Cook F, Craine J, Curiel Yuste J, Don A,  !
+         !     Epron D, Formanek P, Franzluebbers A et al. 2012. The moisture response of  !
+         !     soil heterotrophic respiration: interaction with soil properties.           !
+         !     Biogeosciences, 9: 1173-1182. doi:10.5194/bg-9-1173-2012 (M12).             !
+         !---------------------------------------------------------------------------------!
+         water_limitation = rh_moyano12_a0 + rh_moyano12_a1 * rel_soil_moist               &
+                          + rh_moyano12_a2 + rel_soil_moist * rel_soil_moist
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

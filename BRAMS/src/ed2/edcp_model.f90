@@ -162,6 +162,8 @@ subroutine ed_coup_model(ifm)
                                   , outfast                     & ! intent(in)
                                   , nrec_fast                   & ! intent(in)
                                   , nrec_state                  ! ! intent(in)
+   use ed_init             , only : remove_obstime              & ! sub-routine
+                                  , is_obstime                  ! ! sub-routine
    use grid_coms           , only : ngrids                      & ! intent(in)
                                   , istp                        & ! intent(in)
                                   , time                        & ! intent(inout)
@@ -184,6 +186,19 @@ subroutine ed_coup_model(ifm)
    use average_utils       , only : update_ed_yearly_vars       & ! sub-routine
                                   , integrate_ed_fmean_met_vars & ! sub-routine
                                   , zero_ed_fmean_vars          ! ! sub-routine
+   use edio                , only : ed_output                   ! ! sub-routine
+   use euler_driver        , only : euler_timestep              ! ! sub-routine
+   use heun_driver         , only : heun_timestep               ! ! sub-routine
+   use hybrid_driver       , only : hybrid_timestep             ! ! sub-routine
+   use lsm_hyd             , only : updateHydroParms            & ! sub-routine
+                                  , calcHydroSubsurface         & ! sub-routine
+                                  , calcHydroSurface            & ! sub-routine
+                                  , writeHydro                  ! ! sub-routine
+   use radiate_driver      , only : canopy_radiation            ! ! sub-routine
+   use rk4_integ_utils     , only : initialize_rk4patches       & ! sub-routine
+                                  , initialize_misc_stepvars    ! ! sub-routine
+   use stable_cohorts      , only : flag_stable_cohorts         ! ! sub-routine
+   use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
    use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -191,6 +206,7 @@ subroutine ed_coup_model(ifm)
    !----- Local variables. ----------------------------------------------------------------!
    type(simtime)                         :: daybefore
    logical                               :: analysis_time
+   logical                               :: observation_time
    logical                               :: new_day
    logical                               :: new_month
    logical                               :: new_year
@@ -206,6 +222,7 @@ subroutine ed_coup_model(ifm)
    integer                               :: ndays
    integer                               :: dbndays
    integer                               :: jfm
+   integer                               :: obstime_idx
    real                                  :: dbndaysi
    real                                  :: gr_tfact0
    !----- External functions. -------------------------------------------------------------!
@@ -231,22 +248,31 @@ subroutine ed_coup_model(ifm)
 
    !----- Run with vegetation dynamics turned on?  ----------------------------------------!
    veget_dyn_on = ivegt_dynamics == 1
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Flagging that this grid has been called.                                          !
    !---------------------------------------------------------------------------------------!
-   calledgrid(ifm) = .true.
+   calledgrid(ifm)     = .true.
 
    istp                = istp + 1
    out_time_fast       = current_time
    out_time_fast%month = -1
+   !---------------------------------------------------------------------------------------!
 
 
-   !----- Updating the cohort status (stable to be solved or unstable). -------------------!
+   !----- Update the cohort status (stable to be solved or unstable). ---------------------!
    call flag_stable_cohorts(edgrid_g(ifm))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Radiation scheme. ---------------------------------------------------------------!
-   call radiate_driver(edgrid_g(ifm))
+   call canopy_radiation(edgrid_g(ifm))
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -269,6 +295,7 @@ subroutine ed_coup_model(ifm)
    case (3)
       call hybrid_timestep(edgrid_g(ifm))
    end select
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -280,7 +307,7 @@ subroutine ed_coup_model(ifm)
       !----- Reset all grids to false for next time step. ---------------------------------!
       calledgrid(1:ngrids) = .false.
    
-      !----- Updating the time. -----------------------------------------------------------!
+      !----- Update the time. ------------------------------------------------------------!
       time = time + dble(dtlsm)
       call update_model_time_dm(current_time, dtlsm)
 
@@ -296,6 +323,7 @@ subroutine ed_coup_model(ifm)
       dail_analy_time = new_day   .and. writing_dail
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       the_end         = mod(time,timmax)       < dble(dtlsm)
+      !------------------------------------------------------------------------------------!
 
       !----- Check whether this is time to write fast analysis output or not. -------------!
       select case (unitfast)
@@ -315,6 +343,30 @@ subroutine ed_coup_model(ifm)
                            mod(real(current_time%year-iyeara),frqfast) == 0.
          dcycle_time     = .false.
       end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Check whether it is an observation time --------------------------------------!
+      if (iooutput == 0 .or. unitfast /= 0) then
+         !------ Observation_time is not used when unitfast /= 0 or iooutput is 0. --------!
+         observation_time = .false. 
+         !---------------------------------------------------------------------------------!
+      else
+         !------ check whether it is the observation time. --------------------------------!
+         call is_obstime(current_time%year,current_time%month,current_time%date            &
+                        ,current_time%time,observation_time,obstime_idx)
+         !---------------------------------------------------------------------------------!
+
+         !------ Get rid of the obstime record if observation_time is true. ---------------!
+         if (observation_time) then
+            call remove_obstime(obstime_idx)
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Check whether this is time to write restart output or not. -------------------!
       select case(unitstate)
@@ -344,15 +396,6 @@ subroutine ed_coup_model(ifm)
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !     Call the model output driver.                                                  !
-      !------------------------------------------------------------------------------------!
-      call ed_output(analysis_time,new_day,new_month,new_year,dail_analy_time              &
-                    ,mont_analy_time,dcyc_analy_time,annual_time,history_time,dcycle_time  &
-                    ,the_end)
-      !------------------------------------------------------------------------------------!
-
-
 
       !------------------------------------------------------------------------------------!
       !     If this is the time to write the output, then send the data back to the LEAF   !
@@ -365,18 +408,6 @@ subroutine ed_coup_model(ifm)
       end if
       !------------------------------------------------------------------------------------!
 
-
-
-      !------------------------------------------------------------------------------------!
-      !      Reset time happens every frqsum. This is to avoid variables to build up when  !
-      ! history and analysis are off.  Put outside ed_output so we have a chance to copy   !
-      ! some of these to BRAMS structures.                                                 !
-      !------------------------------------------------------------------------------------!
-      if (reset_time) then
-         do jfm=1,ngrids
-            call zero_ed_fmean_vars(edgrid_g(jfm))
-         end do
-      end if
 
       !------------------------------------------------------------------------------------!
       !     Check whether this is the beginning of a new simulated day.  Longer-scale      !
@@ -426,27 +457,66 @@ subroutine ed_coup_model(ifm)
             !---- Also, we must re-allocate the cohort-level integration buffer. ----------!
             call initialize_rk4patches(.false.)
          end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Update the yearly variables.                                                  !
+      !------------------------------------------------------------------------------------!
+      if (analysis_time .and. new_year .and. new_day) then
+         do jfm = 1,ngrids
+            call update_ed_yearly_vars(edgrid_g(jfm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Call the model output driver.                                                  !
+      !------------------------------------------------------------------------------------!
+      call ed_output(observation_time,analysis_time,new_day,new_month,new_year             &
+                    ,dail_analy_time,mont_analy_time,dcyc_analy_time,annual_time           &
+                    ,history_time,dcycle_time)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Reset time happens every frqsum. This is to avoid variables to build up when  !
+      ! history and analysis are off.  Put outside ed_output so we have a chance to copy   !
+      ! some of these to BRAMS structures.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (reset_time) then
+         do jfm=1,ngrids
+            call zero_ed_fmean_vars(edgrid_g(jfm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Update the hydrology parameters.                                              !
+      !------------------------------------------------------------------------------------!
       if (new_day .and. new_month) then
          do jfm=1,ngrids
             call updateHydroParms(edgrid_g(jfm))
          end do
       end if
-   
+      !------------------------------------------------------------------------------------!
 
-      if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
-         do jfm = 1,ngrids
-            call update_ed_yearly_vars(edgrid_g(jfm))
-         end do
-      end if
 
       !----- Update lateral hydrology. ----------------------------------------------------!
       call calcHydroSubsurface()
       call calcHydroSurface()
       call writeHydro()
+      !------------------------------------------------------------------------------------!
 
    end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine ed_coup_model

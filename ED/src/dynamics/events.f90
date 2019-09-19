@@ -297,6 +297,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                       , ed_biomass,size2bt,size2xb,ed_balive
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
+  use plant_hydro,     only : rwc2tw,twi2twe                   ! ! sub-routine
   implicit none
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
@@ -307,6 +308,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   real :: old_leaf_hcap
   real :: old_wood_hcap
+  real :: old_leaf_water_im2
+  real :: old_wood_water_im2
   real :: elim_nplant
   real :: elim_lai
   integer :: ifm,ipy,isi,ipa,ico,pft
@@ -429,13 +432,24 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  ! worry, if there is any, it will go down through shedding the next       !
                  ! step.                                                                   !
                  !-------------------------------------------------------------------------!
-                 old_leaf_hcap = cpatch%leaf_hcap(ico)
-                 old_wood_hcap = cpatch%wood_hcap(ico)
+                 old_leaf_hcap      = cpatch%leaf_hcap     (ico)
+                 old_wood_hcap      = cpatch%wood_hcap     (ico)
+                 old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+                 old_wood_water_im2 = cpatch%wood_water_im2(ico)
                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                   &
                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)               &
                                    ,cpatch%nplant(ico),cpatch%pft(ico)                     &
                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-                 call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+                 call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%bleaf(ico)   &
+                            ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)                   &
+                            ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)       &
+                            ,cpatch%dbh(ico),cpatch%pft(ico),cpatch%leaf_water_int(ico)    &
+                            ,cpatch%wood_water_int(ico))
+                 call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)        &
+                             ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                &
+                             ,cpatch%wood_water_im2(ico))
+                 call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap     &
+                                            ,old_leaf_water_im2,old_wood_water_im2)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
                  call is_resolvable(csite,ipa,ico)
@@ -708,6 +722,7 @@ subroutine event_till(rval8)
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
   use therm_lib        , only : cmtl2uext
+  use plant_hydro,     only : rwc2tw, twi2twe       ! ! sub-routine
   implicit none
   real(kind=8),intent(in) :: rval8
 
@@ -831,14 +846,24 @@ subroutine event_till(rval8)
                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)               &
                                    ,cpatch%nplant(ico),cpatch%pft(ico)                     &
                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-                 cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)                &
-                                                    ,cpatch%leaf_water(ico)                &
-                                                    ,cpatch%leaf_temp (ico)                &
-                                                    ,cpatch%leaf_fliq (ico))
-                 cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)                &
-                                                    ,cpatch%wood_water(ico)                &
-                                                    ,cpatch%wood_temp (ico)                &
-                                                    ,cpatch%wood_fliq (ico))
+                 call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                     &
+                            ,cpatch%bleaf(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico) &
+                            ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)       &
+                            ,cpatch%dbh(ico),cpatch%pft(ico),cpatch%leaf_water_int(ico)    &
+                            ,cpatch%wood_water_int(ico))
+                 call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)        &
+                             ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                &
+                             ,cpatch%wood_water_im2(ico))
+                 cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)           &
+                                                    , cpatch%leaf_water    (ico)           &
+                                                    + cpatch%leaf_water_im2(ico)           &
+                                                    , cpatch%leaf_temp     (ico)           &
+                                                    , cpatch%leaf_fliq     (ico) )
+                 cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)           &
+                                                    , cpatch%wood_water    (ico)           &
+                                                    + cpatch%wood_water_im2(ico)           &
+                                                    , cpatch%wood_temp     (ico)           &
+                                                    , cpatch%wood_fliq     (ico) )
                  cpatch%phenology_status(ico) = -2
                  cpatch%elongf(ico)           = 0.0
 

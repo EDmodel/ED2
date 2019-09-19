@@ -51,6 +51,8 @@ module structural_growth
       use allometry           , only : size2bl                     ! ! function
       use consts_coms         , only : yr_sec                      & ! intent(in)
                                      , almost_zero                 ! ! intent(in)
+      use plant_hydro         , only : rwc2tw                      & ! subroutine
+                                     , twi2twe                     ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -139,6 +141,8 @@ module structural_growth
       real                          :: net_stem_N_uptake
       real                          :: old_leaf_hcap
       real                          :: old_wood_hcap
+      real                          :: old_leaf_water_im2
+      real                          :: old_wood_water_im2
       logical          , parameter  :: printout  = .false.
       character(len=17), parameter  :: fracfile  = 'struct_growth.txt'
       !----- Locally saved variables. -----------------------------------------------------!
@@ -292,11 +296,8 @@ module structural_growth
                   !------------------------------------------------------------------------!
                   !    Apply mortality, and do not allow nplant < negligible_nplant (such  !
                   ! a sparse cohort is about to be terminated, anyway).                    !
-                  ! NB: monthly_dndt and monthly_dlnndt will be zero or negative.          !
+                  ! NB: monthly_dlnndt will be zero or negative.                           !
                   !------------------------------------------------------------------------!
-                  cpatch%monthly_dndt  (ico) = max( cpatch%monthly_dndt   (ico)            &
-                                                  , negligible_nplant     (ipft)           &
-                                                  - cpatch%nplant         (ico) )
                   cpatch%monthly_dlnndt(ico) = max( cpatch%monthly_dlnndt (ico)            &
                                                   , log( negligible_nplant(ipft)           &
                                                        / cpatch%nplant    (ico) ) )
@@ -331,12 +332,11 @@ module structural_growth
 
                   !------------------------------------------------------------------------!
                   !     Calculate litter owing to mortality.                               !
-                  ! MLO - Replaced the former accounting using monthly_dndt with the       !
-                  !       actual change in nplant, which is derived from dlnndt.  The      !
-                  !       latter is preferred becuse it linearises the demographic ODE,    !
-                  !       but regardless of the choice, the litter inputs should be        !
-                  !       exactly the same as the gross mortality loss (i.e. the           !
-                  !       actual change in nplant).                                        !
+                  ! MLO - Use the actual change in nplant, which is derived from dlnndt.   !
+                  !       The dlnndt is preferred because it linearises the demographic    !
+                  !       ODE.  The litter inputs should be exactly the same as the gross  !
+                  !       mortality loss (i.e. the actual change in nplant), otherwise     !
+                  !       carbon is not conserved.                                         !
                   !------------------------------------------------------------------------!
                   a_bfast_mort_litter    = a_bfast    * nplant_loss
                   b_bfast_mort_litter    = b_bfast    * nplant_loss
@@ -355,8 +355,7 @@ module structural_growth
                   !------------------------------------------------------------------------!
 
 
-                  !----- Reset monthly_dndt. ----------------------------------------------!
-                  cpatch%monthly_dndt  (ico) = 0.0
+                  !----- Reset monthly mortality rate. ------------------------------------!
                   cpatch%monthly_dlnndt(ico) = 0.0
                   !------------------------------------------------------------------------!
 
@@ -748,13 +747,24 @@ module structural_growth
                   !      as before.  Internal energy is an extensive variable, we just     !
                   !      account for the difference in the heat capacity to update it.     !
                   !------------------------------------------------------------------------!
-                  old_leaf_hcap = cpatch%leaf_hcap(ico)
-                  old_wood_hcap = cpatch%wood_hcap(ico)
+                  old_leaf_hcap      = cpatch%leaf_hcap(ico)
+                  old_wood_hcap      = cpatch%wood_hcap(ico)
+                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                  &
                                     ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
-                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+                  call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                    &
+                             ,cpatch%bleaf(ico),cpatch%bsapwooda(ico)                      &
+                             ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)  &
+                             ,cpatch%broot(ico),cpatch%dbh(ico),cpatch%pft(ico)            &
+                             ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+                  call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
+                              ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
+                              ,cpatch%wood_water_im2(ico))
+                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
+                                             ,old_leaf_water_im2,old_wood_water_im2)
                   call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
 
@@ -962,6 +972,14 @@ module structural_growth
       end if
       !------------------------------------------------------------------------------------!
 
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check size structure to decide how to allocate carbon to growth, reproduction  !
+      ! and storage.                                                                       !
+      !------------------------------------------------------------------------------------!
       select case (ibigleaf)
       case (0)
          !---------------------------------------------------------------------------------!
@@ -1114,11 +1132,11 @@ module structural_growth
                                          ,bsapwoodb_in,bbarka_in,bbarkb_in,bdeada_in       &
                                          ,bdeadb_in,bevery_in,f_bstorage,f_growth,f_bdeada &
                                          ,f_bdeadb)
-      use ed_misc_coms        , only : iallom        ! ! intent(in)
-      use allometry           , only : expand_bevery ! ! subroutine
-      use consts_coms         , only : almost_zero   & ! intent(in)
-                                     , r_tol_trunc   ! ! intent(in)
-      use pft_coms            , only : agf_bs        ! ! intent(in)
+      use physiology_coms, only : istruct_growth_scheme  ! ! intent(in)
+      use allometry      , only : expand_bevery          ! ! subroutine
+      use consts_coms    , only : almost_zero            & ! intent(in)
+                                , r_tol_trunc            ! ! intent(in)
+      use pft_coms       , only : agf_bs                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in)    :: ipft
@@ -1180,11 +1198,12 @@ module structural_growth
 
 
       !------------------------------------------------------------------------------------!
-      !      Allocation will depend on the allometry (so it does not affect other people's !
-      ! simulations).                                                                      !
+      !      Allocation will depend on the structural growth option.  This option decides  !
+      ! whether to allocate all storage available to growth to heartwood (option 0) or to  !
+      ! growth of heartwood and living tissues (option 1).                                 !
       !------------------------------------------------------------------------------------!
-      select case (iallom)
-      case (3)
+      select case (istruct_growth_scheme)
+      case (1)
          !----- Find the new biomass with the storage inputs. -----------------------------!
          bevery_aim = bevery_in + f_growth * bstorage_in
          call expand_bevery(ipft,bevery_aim,dbh_aim,hite_aim,bleaf_aim,broot_aim           &
@@ -1241,8 +1260,11 @@ module structural_growth
    end subroutine bdead_structural_allocation
    !=======================================================================================!
    !=======================================================================================!
-   
-   
+
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !     This sub-routine checks that carbon is conserved at the cohort level.  Minor      !

@@ -13,14 +13,16 @@ subroutine ed_driver()
    use ed_init_history      , only : resume_from_history           ! ! subroutine
    use ed_init              , only : set_polygon_coordinates       & ! subroutine
                                    , sfcdata_ed                    & ! subroutine
-                                   , load_ecosystem_state          ! ! subroutine
+                                   , load_ecosystem_state          & ! subroutine
+                                   , read_obstime                  ! ! subroutine
    use grid_coms            , only : ngrids                        & ! intent(in)
                                    , time                          & ! intent(inout)
                                    , timmax                        ! ! intent(inout)
    use ed_state_vars        , only : allocate_edglobals            & ! sub-routine
                                    , filltab_alltypes              & ! sub-routine
                                    , edgrid_g                      ! ! intent(inout)
-   use ed_misc_coms         , only : runtype                       ! ! intent(in)
+   use ed_misc_coms         , only : runtype                       & ! intent(in)
+                                   , iooutput                      ! ! intent(in)
    use soil_coms            , only : alloc_soilgrid                ! ! sub-routine
    use ed_node_coms         , only : mynum                         & ! intent(in)
                                    , nnodetot                      & ! intent(in)
@@ -244,7 +246,7 @@ subroutine ed_driver()
 #endif
 
    call init_met_drivers()
-   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Read_Met_Drivers_Init...'
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Read_Met_Drivers_Init...'
    call read_met_drivers_init()
 
 
@@ -326,6 +328,30 @@ subroutine ed_driver()
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !      Read obsevation time list if IOOUTPUT is set as non-zero.                        !
+   !                                                                                       !
+   ! MLO --- Whenever reading ASCII files, it is a good idea to apply MPI barriers, to     !
+   !         avoid two nodes accessing the file at the same time (some file systems do not !
+   !         like that).                                                                   !
+   !---------------------------------------------------------------------------------------!
+   if (iooutput /= 0) then
+#if defined(RAMS_MPI)
+        if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,62,MPI_COMM_WORLD         &
+                                     ,MPI_STATUS_IGNORE,ierr)
+#endif
+        if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Load obstime_list...'
+        call read_obstime()
+#if defined(RAMS_MPI)
+        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,62,MPI_COMM_WORLD  &
+                                            ,ierr)
+#endif
+    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !      Get the CPU time and print the banner.                                           !
    !---------------------------------------------------------------------------------------!
@@ -372,6 +398,7 @@ subroutine find_frqsum()
                           , ifoutput        & ! intent(in)
                           , itoutput        & ! intent(in)
                           , imoutput        & ! intent(in)
+                          , iooutput        & ! intent(in)
                           , idoutput        & ! intent(in)
                           , iqoutput        & ! intent(in)
                           , frqstate        & ! intent(in)
@@ -385,8 +412,21 @@ subroutine find_frqsum()
    use consts_coms, only: day_sec
 
    implicit none 
-   if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and.     &
-       iqoutput == 0 .and. itoutput == 0 ) then
+   !----- Local variables. ----------------------------------------------------------------!
+   logical :: fast_output
+   logical :: no_fast_output
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Ancillary logical tests. --------------------------------------------------------!
+   fast_output     = ifoutput /= 0 .or. itoutput /= 0 .or. iooutput /= 0
+   no_fast_output = .not. fast_output
+   !---------------------------------------------------------------------------------------!
+
+
+
+   if ( no_fast_output .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and.   &
+        iqoutput == 0  ) then
       write(unit=*,fmt='(a)') '---------------------------------------------------------'
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -414,24 +454,21 @@ subroutine find_frqsum()
    !     Either no instantaneous output was requested, or the user is outputting it at     !
    ! monthly or yearly scale, force it to be one day.                                      !
    !---------------------------------------------------------------------------------------!
-   elseif ((isoutput == 0  .and. (ifoutput == 0 .and. itoutput == 0)) .or.                 &
-           ((ifoutput == 0 .and. itoutput == 0) .and.                                      &
-             isoutput  > 0 .and. unitstate > 1) .or.                                       &
-           (isoutput == 0 .and.                                                            &
-            (ifoutput > 0 .or. itoutput > 0) .and. unitfast  > 1) .or.                     &
-           ((ifoutput  > 0 .or. itoutput > 0) .and.                                        &
-             isoutput  > 0 .and. unitstate > 1 .and. unitfast > 1)                         &
+   elseif ((isoutput == 0  .and. no_fast_output) .or.                                      &
+           (no_fast_output .and. isoutput  > 0 .and. unitstate > 1) .or.                   &
+           (isoutput == 0 .and. fast_output .and. unitfast  > 1) .or.                      &
+           (isoutput > 0 .and. unitstate > 1 .and. fast_output .and. unitfast > 1)         &
           ) then
       frqsum=day_sec
    !---------------------------------------------------------------------------------------!
    !    Only restarts, and the unit is in seconds, test which frqsum to use.               !
    !---------------------------------------------------------------------------------------!
-   elseif (ifoutput == 0 .and. itoutput == 0 .and. isoutput > 0) then
+   elseif (no_fast_output .and. isoutput > 0) then
       frqsum=min(frqstate,day_sec)
    !---------------------------------------------------------------------------------------!
    !    Only fast analysis, and the unit is in seconds, test which frqsum to use.          !
    !---------------------------------------------------------------------------------------!
-   elseif (isoutput == 0 .and. (ifoutput > 0 .or. itoutput > 0)) then
+   elseif (isoutput == 0 .and. fast_output) then
       frqsum=min(frqfast,day_sec)
    !---------------------------------------------------------------------------------------!
    !    Both are on and both outputs are in seconds or day scales. Choose the minimum      !

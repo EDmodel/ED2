@@ -96,7 +96,8 @@ module rk4_derivs
                                       , patchtype             & ! structure
                                       , polygontype           ! ! structure
       use therm_lib8           , only : tl2uint8              ! ! functions
-      use physiology_coms      , only : h2o_plant_lim         ! ! intent(in)
+      use physiology_coms      , only : h2o_plant_lim         & ! intent(in)
+                                      , plant_hydro_scheme    ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -141,6 +142,7 @@ module rk4_derivs
       real(kind=8)                :: wloss_tot        ! Total water loss amongst cohorts
       real(kind=8)                :: wvlmeloss_tot    ! Total water loss amongst cohorts
       real(kind=8)                :: qloss            ! Energy loss due to transpiration
+      real(kind=8)                :: qloss_tot        ! Total energy loss amongst cohorts
       real(kind=8)                :: qvlmeloss_tot    ! Total energy loss amongst cohorts
       real(kind=8)                :: infilt           ! Surface infiltration rate
       real(kind=8)                :: qinfilt          ! Surface infiltration heat rate
@@ -150,6 +152,7 @@ module rk4_derivs
       real(kind=8)                :: avail_h2o_int_i  ! 1/available water (lyr k1)
       real(kind=8)                :: wloss_tot_k1     ! Total water loss (lyr k1)
       real(kind=8)                :: wloss_tot_k2     ! Total water loss (lyr k2)
+      real(kind=8)                :: uint_water_k1    ! Intensive Internal Energy (lyr k1)
       real(kind=8)                :: uint_water_k2    ! Intensive Internal Energy (lyr k2)
       !------------------------------------------------------------------------------------!
 
@@ -238,8 +241,8 @@ module rk4_derivs
       !------------------------------------------------------------------------------------!
       !     Compute the following variables:                                               !
       !                                                                                    !
- !    ! AVAIL_H2O_LYR       -- the available water factor for this layer          [ kg/m2] !
- !    ! AVAIL_H2O_INT       -- the integral of AVAIL_H2O down to the layer        [ kg/m2] !
+      ! AVAIL_H2O_LYR       -- the available water factor for this layer          [ kg/m2] !
+      ! AVAIL_H2O_INT       -- the integral of AVAIL_H2O down to the layer        [ kg/m2] !
       !                                                                                    !
       ! Both AVAIL_H2O_LYR and AVAIL_H2O_INT depend on the water limitation method.        !
       !------------------------------------------------------------------------------------!
@@ -268,7 +271,7 @@ module rk4_derivs
          end do
          !---------------------------------------------------------------------------------!
 
-      case (2,3)
+      case default
          !---------------------------------------------------------------------------------!
          !     The available water factor is the soil moisture at field capacity minus     !
          ! wilting, scaled by the wilting factor, defined as a function of soil potential. !
@@ -678,107 +681,183 @@ module rk4_derivs
 
 
 
-      !---- Update soil moisture and energy from transpiration/root uptake. ---------------!
-      if (rk4aux(ibuff)%any_resolvable) then
+      !------------------------------------------------------------------------------------!
+      !      Check whether this simulation solves plant hydraulics.                        !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0) ! No plant hydraulics
+         !---- Update soil moisture and energy from transpiration/root uptake. ------------!
+         if (rk4aux(ibuff)%any_resolvable) then
+            !------------------------------------------------------------------------------!
+            !    Loop over extracted water.                                                !
+            !------------------------------------------------------------------------------!
+            k1_transp_loop: do k1 = klsl, mzg
+               !---------------------------------------------------------------------------!
+               !     Transpiration happens only when there is some water left down to this !
+               ! layer.                                                                    !
+               !---------------------------------------------------------------------------!
+               if (rk4aux(ibuff)%avail_h2o_int(k1) < tiny_num8) cycle k1_transp_loop
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !     Find inverse of available water (so we perform division only once).   !
+               !---------------------------------------------------------------------------!
+               avail_h2o_int_i = 1.d0 / rk4aux(ibuff)%avail_h2o_int(k1)
+               !---------------------------------------------------------------------------!
+
+
+               !-------- Integrate the total to be removed from this layer. ---------------!
+               wloss_tot_k1 = 0.d0
+               do ico=1,cpatch%ncohorts
+                  wloss_tot_k1 = wloss_tot_k1 + rk4aux(ibuff)%extracted_water(ico,k1)
+               end do
+               !---------------------------------------------------------------------------!
+
+
+               !----- Inner loop. ---------------------------------------------------------!
+               k2_transp_loop: do k2=k1,mzg
+                  !------------------------------------------------------------------------!
+                  !     Skip calculation if no water is available in this layer.           !
+                  !------------------------------------------------------------------------!
+                  if ( rk4site%ntext_soil(k2)          == 13        .or.                   &
+                       rk4aux(ibuff)%avail_h2o_lyr(k2) <  tiny_num8 ) cycle k2_transp_loop
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !    Find the contribution of layer k2 for the transpiration from        !
+                  ! cohorts that reach layer k1.                                           !
+                  !------------------------------------------------------------------------!
+                  ext_weight = rk4aux(ibuff)%avail_h2o_lyr(k2) * avail_h2o_int_i
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Save internal energy of water in layer k2. -----------------------!
+                  uint_water_k2 = tl2uint8(initp%soil_tempk(k2),1.d0)
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !    Find the loss of water from layer k2 due to cohorts that reach at   !
+                  ! least layer k1.  Here we convert extracted water which is in kg/m2/s   !
+                  ! (tloss) to m3/m3/s (wloss).  Also, find the internal energy loss       !
+                  ! (qwloss) associated with the water loss.  Since plants can extract     !
+                  ! liquid water only, the internal energy is assumed to be entirely in    !
+                  ! liquid phase.  Because the actual conversion from liquid phase to      !
+                  ! vapour happens at the leaf level, the internal energy must stay with   !
+                  ! the leaves so energy is preserved.                                     !
+                  !------------------------------------------------------------------------!
+                  do ico=1,cpatch%ncohorts
+                     !----- Find the soil water loss associated with this cohort. ---------!
+                     wloss         = rk4aux(ibuff)%extracted_water(ico,k1) * ext_weight
+                     qloss         = wloss * uint_water_k2
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !      Add the internal energy to the cohort.  This energy will be    !
+                     ! eventually lost to the canopy air space because of transpiration,   !
+                     ! but we will do it in two steps so we ensure energy is conserved.    !
+                     !---------------------------------------------------------------------!
+                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico)  + qloss
+                     dinitp%veg_energy(ico)  = dinitp%veg_energy(ico)   + qloss
+                     initp%hflx_lrsti(ico) = initp%hflx_lrsti(ico)      + qloss
+                     !---------------------------------------------------------------------!
+                  end do
+                  !------------------------------------------------------------------------!
+
+                  !--------- Derive the total to be removed from tthis layer --------------!
+                  wloss_tot     = wloss_tot_k1 * ext_weight
+                  wloss_tot_k2  = wloss_tot    * dslzi8(k2)
+                  wvlmeloss_tot = wloss_tot_k2 * wdnsi8
+                  qvlmeloss_tot = wloss_tot_k2 * uint_water_k2
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Update derivatives of water, energy, and transpiration. ----------!
+                  dinitp%soil_water   (k2) = dinitp%soil_water(k2)    - wvlmeloss_tot
+                  dinitp%soil_energy  (k2) = dinitp%soil_energy(k2)   - qvlmeloss_tot
+                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wloss_tot
+                  !------------------------------------------------------------------------!
+               end do k2_transp_loop
+               !---------------------------------------------------------------------------!
+            end do k1_transp_loop
+            !------------------------------------------------------------------------------!
+         end if
          !---------------------------------------------------------------------------------!
-         !    Loop over extracted water.                                                   !
+      case default
          !---------------------------------------------------------------------------------!
-         k1_transp_loop: do k1 = klsl, mzg
-            !------------------------------------------------------------------------------!
-            !     Transpiration happens only when there is some water left down to this    !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            if (rk4aux(ibuff)%avail_h2o_int(k1) < tiny_num8) cycle k1_transp_loop
-            !------------------------------------------------------------------------------!
+         !     Track plant hydraulics.  In this case, we must always update soil water and !
+         ! soil energy, even if the cohort is not resolvable.                              !
+         !                                                                                 !
+         !     Leaf and wood internal water are updated outside of the integrator, in      !
+         ! rk4_driver.f90                                                                  !
+         !---------------------------------------------------------------------------------!
+         k1_transh_loop: do k1 = klsl, mzg    ! loop over soil layers
+            wloss_tot      = 0.d0
+            qloss_tot      = 0.d0
+            uint_water_k1  = tl2uint8(initp%soil_tempk(k1),1.d0)
 
             !------------------------------------------------------------------------------!
-            !     Find inverse of available water (so we perform division only once).      !
+            !      Integrate the total to be removed from this layer.  Add water and       !
+            ! internal energy to each cohort, so water and energy are conserved.  The      !
+            ! internal energy should go to wood.                                           !
+            !                                                                              !
+            ! MLO -> XX                                                                    !
+            ! How does this work in case we are solving grasses?  Specifically, new        !
+            ! grasses do not have any wood.                                                !
             !------------------------------------------------------------------------------!
-            avail_h2o_int_i = 1.d0 / rk4aux(ibuff)%avail_h2o_int(k1)
-            !------------------------------------------------------------------------------!
-
-
-            !-------- Integrate the total to be removed from this layer. ------------------!
-            wloss_tot_k1 = 0.d0
             do ico=1,cpatch%ncohorts
-               wloss_tot_k1 = wloss_tot_k1 + rk4aux(ibuff)%extracted_water(ico,k1)
+               !----- Find the soil water loss associated with this cohort. ---------------!
+               wloss = dble(cpatch%wflux_gw_layer(k1,ico))                                 &
+                     * dble(cpatch%nplant(ico))            ! kg/m2g/s
+               qloss = wloss * uint_water_k1               !  J/m2g/s
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Add the water and internal energy to the cohort.  This energy will   !
+               ! be eventually lost to the canopy air space because of transpiration, but  !
+               ! we will do it in two steps so we ensure energy is conserved.              !
+               !---------------------------------------------------------------------------!
+               dinitp%wood_water_im2(ico) = dinitp%wood_water_im2(ico) + wloss
+               dinitp%veg_energy    (ico) = dinitp%veg_energy    (ico) + qloss
+               dinitp%wood_energy   (ico) = dinitp%wood_energy   (ico) + qloss
+               initp%hflx_lrsti     (ico) = initp%hflx_lrsti     (ico) + qloss
+               !---------------------------------------------------------------------------!
+
+
+               !---- Count the total loss from the layer. ---------------------------------!
+               wloss_tot = wloss_tot + wloss
+               qloss_tot = qloss_tot + qloss
+               !---------------------------------------------------------------------------!
             end do
             !------------------------------------------------------------------------------!
 
 
-            !----- Inner loop. ------------------------------------------------------------!
-            k2_transp_loop: do k2=k1,mzg
-               !---------------------------------------------------------------------------!
-               !     Skip calculation if no water is available in this layer.              !
-               !---------------------------------------------------------------------------!
-               if ( rk4site%ntext_soil(k2)          == 13        .or.                      &
-                    rk4aux(ibuff)%avail_h2o_lyr(k2) <  tiny_num8 ) cycle k2_transp_loop
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !    Find the contribution of layer k2 for the transpiration from cohorts   !
-               ! that reach layer k1.                                                      !
-               !---------------------------------------------------------------------------!
-               ext_weight = rk4aux(ibuff)%avail_h2o_lyr(k2) * avail_h2o_int_i
-               !---------------------------------------------------------------------------!
-
-
-               !----- Save internal energy of water in layer k2. --------------------------!
-               uint_water_k2 = tl2uint8(initp%soil_tempk(k2),1.d0)
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !    Find the loss of water from layer k2 due to cohorts that reach at      !
-               ! least layer k1.  Here we convert extracted water which is in kg/m2/s      !
-               ! (tloss) to m3/m3/s (wloss).  Also, find the internal energy loss (qwloss) !
-               ! associated with the water loss.  Since plants can extract liquid water    !
-               ! only, the internal energy is assumed to be entirely in liquid phase.      !
-               ! Because the actual conversion from liquid phase to vapour happens at the  !
-               ! leaf level, the internal energy must stay with the leaves so energy is    !
-               ! preserved.                                                                !
-               !---------------------------------------------------------------------------!
-              do ico=1,cpatch%ncohorts
-                  !----- Find the loss from this cohort. ----------------------------------!
-                  wloss         = rk4aux(ibuff)%extracted_water(ico,k1) * ext_weight
-                  qloss         = wloss * uint_water_k2
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !      Add the internal energy to the cohort.  This energy will be       !
-                  ! eventually lost to the canopy air space because of transpiration,      !
-                  ! but we will do it in two steps so we ensure energy is conserved.       !
-                  !------------------------------------------------------------------------!
-                  dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico)  + qloss
-                  dinitp%veg_energy(ico)  = dinitp%veg_energy(ico)   + qloss
-                  initp%hflx_lrsti(ico) = initp%hflx_lrsti(ico)      + qloss
-                  !------------------------------------------------------------------------!
-               end do
-               !---------------------------------------------------------------------------!
-
-               !--------- Derive the total to be removed from tthis layer -----------------!
-               wloss_tot     = wloss_tot_k1 * ext_weight
-               wloss_tot_k2  = wloss_tot    * dslzi8(k2)
-               wvlmeloss_tot = wloss_tot_k2 * wdnsi8
-               qvlmeloss_tot = wloss_tot_k2 * uint_water_k2
-               !---------------------------------------------------------------------------!
-
-
-               !----- Update derivatives of water, energy, and transpiration. -------------!
-               dinitp%soil_water   (k2) = dinitp%soil_water(k2)    - wvlmeloss_tot
-               dinitp%soil_energy  (k2) = dinitp%soil_energy(k2)   - qvlmeloss_tot
-               dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wloss_tot
-               !---------------------------------------------------------------------------!
-            end do k2_transp_loop
+            !---- Convert ground-wood water flow from kg/m2/s to m3/m3/s. -----------------!
+            wvlmeloss_tot  = wloss_tot * wdnsi8 * dslzi8(k1)
+            qvlmeloss_tot  = qloss_tot          * dslzi8(k1)
             !------------------------------------------------------------------------------!
-         end do k1_transp_loop
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
 
+
+
+            !------------------------------------------------------------------------------!
+            !     Update derivatives of water, energy, and transpiration.  Here notice     !
+            ! that the avg_transloss actually represents total soil water loss due to      !
+            ! plant uptake, not transpiration.                                             !
+            !------------------------------------------------------------------------------!
+            dinitp%soil_water   (k1) = dinitp%soil_water(k1)    - wvlmeloss_tot
+            dinitp%soil_energy  (k1) = dinitp%soil_energy(k1)   - qvlmeloss_tot
+            dinitp%avg_transloss(k1) = dinitp%avg_transloss(k1) - wloss_tot
+            !------------------------------------------------------------------------------!
+         end do k1_transh_loop
+         !---------------------------------------------------------------------------------!
+
+      end select
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine leaftw_derivs
@@ -836,6 +915,8 @@ module rk4_derivs
       use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
       use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
       use budget_utils          , only : compute_netrad       ! ! function
+      use physiology_coms       , only : plant_hydro_scheme   ! ! intent(in)
+      use pft_coms              , only : leaf_psi_min         ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -872,6 +953,7 @@ module rk4_derivs
       integer                      :: kroot             ! Level of the bottom of root is
       real(kind=8)                 :: closedcan_frac    ! total fractional canopy coverage
       real(kind=8)                 :: transp            ! Cohort transpiration
+      real(kind=8)                 :: wflux_wl          ! Wood-leaf water flow (sapflow)
       real(kind=8)                 :: cflxac            ! Atm->canopy carbon flux
       real(kind=8)                 :: wflxac            ! Atm->canopy water flux
       real(kind=8)                 :: hflxac            ! Atm->canopy sensible heat flux
@@ -922,6 +1004,7 @@ module rk4_derivs
       real(kind=8)                 :: qwflxlc           ! Leaf -> CAS evaporation (energy)
       real(kind=8)                 :: qwflxwc           ! Wood -> CAS evaporation (energy)
       real(kind=8)                 :: qtransp           ! Transpiration (energy)
+      real(kind=8)                 :: qwflux_wl         ! Wood-leaf sapflow (energy)
       real(kind=8)                 :: flux_area         ! Area between canopy and plant
       real(kind=8)                 :: a,b,c0            ! Temporary variables for solving
                                                         ! the CO2 ODE
@@ -1356,8 +1439,14 @@ module rk4_derivs
                   ! when the PFT is amphistomatous, in which case it is double-sided.      !
                   ! Compute the water demand from both open closed and open stomata, but   !
                   ! first make sure that there is some water available for transpiration.  !
+                  !     When running plant hydrodynamics, the soil water constraint should !
+                  ! be Turned off. Instead, we use leaf water potential as water avail-    !
+                  ! ability for transpiration.                                             !
                   !------------------------------------------------------------------------!
-                  if (rk4aux(ibuff)%avail_h2o_int(kroot) > 0.d0 ) then
+                  if ( ( plant_hydro_scheme                 == 0    .and.                  &
+                         rk4aux(ibuff)%avail_h2o_int(kroot) >  0.d0              ) .or.    &
+                       ( plant_hydro_scheme                 /= 0    .and.                  &
+                       cpatch%leaf_psi(ico)                 > leaf_psi_min(ipft) ) ) then
                      gleaf_open   = effarea_transp(ipft)                                   &
                                   * initp%leaf_gbw(ico) * initp%gsw_open(ico)              &
                                   / (initp%leaf_gbw(ico) + initp%gsw_open(ico) )
@@ -1830,6 +1919,77 @@ module rk4_derivs
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Solve plant hydraulic derivatives. We always need to update the leaf/wood   !
+         ! internal water when plant_hydro_scheme is non-zero.                             !
+         !---------------------------------------------------------------------------------!
+         select case (plant_hydro_scheme)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !    Plant hydraulics is disabled, water_im2 does not change, set the          !
+            ! derivatives to zero.                                                         !
+            !------------------------------------------------------------------------------!
+            dinitp%leaf_water_im2(ico) = 0.d0
+            dinitp%wood_water_im2(ico) = 0.d0
+            !------------------------------------------------------------------------------!
+         case default
+            !------------------------------------------------------------------------------!
+            !    Plant hydraulics is enabled, update internal water and internal energy.   !
+            !------------------------------------------------------------------------------!
+
+            !----- Update water (soil water uptake is accounted for in leaftw_derivs. -----!
+            if (.not. initp%leaf_resolvable(ico)) transp = 0.d0
+            wflux_wl                   = dble(cpatch%wflux_wl(ico))                        &
+                                       * dble(cpatch%nplant  (ico))
+            dinitp%leaf_water_im2(ico) =   wflux_wl - transp 
+            dinitp%wood_water_im2(ico) = - wflux_wl 
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Update energy.  Decide how to do it based on plant_hydro_scheme.          !
+            !------------------------------------------------------------------------------!
+            select case (plant_hydro_scheme)
+            case (1,2)
+               !---------------------------------------------------------------------------!
+               !    Track changes in energy and heat capacity.  qwflux_wl is the internal  !
+               ! energy flux associated with sapflow.                                      !
+               !---------------------------------------------------------------------------!
+               qwflux_wl               = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
+               dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qwflux_wl
+               dinitp%wood_energy(ico) = dinitp%wood_energy(ico) - qwflux_wl
+               !---------------------------------------------------------------------------!
+            case default
+               !---------------------------------------------------------------------------!
+               !    Do not track changes in heat capacity.  We must force wflux_wl to be   !
+               ! the same as transpiration when calculating energy fluxes.  qwflux_wl is   !
+               ! the internal energy flux associated with sapflow.                         !
+               !---------------------------------------------------------------------------!
+               qwflux_wl               = transp * tl2uint8(initp%wood_temp(ico),1.d0)
+               dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qwflux_wl
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Similarly, we must force wflux_wl to be the same as wflux_gw when     !
+               ! calculating energy fluxes for wood.                                       !
+               !---------------------------------------------------------------------------!
+               qwflux_wl               = dble(cpatch%wflux_gw(ico))                        &
+                                       * dble(cpatch%nplant(ico))                          &
+                                       * tl2uint8(initp%wood_temp(ico),1.d0)
+               dinitp%wood_energy(ico) = dinitp%wood_energy(ico) - qwflux_wl
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+
 
 
          !------ Find the combined leaf + wood derivative. --------------------------------!

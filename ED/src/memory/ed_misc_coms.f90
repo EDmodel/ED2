@@ -1,6 +1,10 @@
-Module ed_misc_coms
+module ed_misc_coms
 
-   use ed_max_dims, only: str_len,maxpvars,str_len_short,maxgrds
+   use ed_max_dims, only : str_len       & ! intent(in)
+                         , maxpvars      & ! intent(in)
+                         , str_len_short & ! intent(in)
+                         , maxgrds       & ! intent(in)
+                         , max_obstime   ! ! intent(in)
 
    implicit none
 
@@ -16,6 +20,18 @@ Module ed_misc_coms
    end type simtime
    type(simtime) :: current_time
    type(simtime) :: end_time
+
+   type obstime
+       integer :: year
+       integer :: month
+       integer :: date
+       integer :: hour
+       integer :: min
+       integer :: sec
+       real    :: time
+   end type obstime
+   type(obstime), dimension(max_obstime) :: obstime_list
+   integer :: obstime_list_len ! total length of the used obstime list
 
    character(len=str_len) :: expnme
    character(len=str_len) :: runtype
@@ -47,6 +63,7 @@ Module ed_misc_coms
    integer :: iyoutput
    integer :: itoutput
    integer :: isoutput
+   integer :: iooutput !Observation time output
    integer :: igoutput
    integer :: iclobber
 
@@ -72,9 +89,10 @@ Module ed_misc_coms
    type(simtime) :: out_time_state
 
    character(len=str_len), dimension(maxgrds) :: sfilin
-   character(len=str_len) ::ffilout 
-   character(len=str_len) ::sfilout
-   character(len=str_len) ::gfilout
+   character(len=str_len)                     :: ffilout
+   character(len=str_len)                     :: sfilout
+   character(len=str_len)                     :: gfilout
+   character(len=str_len)                     :: obstime_db
    integer :: ied_init_mode
    
    character(len=str_len) :: thsums_database

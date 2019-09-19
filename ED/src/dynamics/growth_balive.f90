@@ -56,6 +56,8 @@ module growth_balive
       use stable_cohorts      , only : is_resolvable              ! ! function
       use budget_utils        , only : reset_cbudget_committed    ! ! sub-routine
       use update_derived_utils, only : update_patch_derived_props ! ! sub-routine
+      use plant_hydro         , only : rwc2tw                     & ! sub-routine
+                                     , twi2twe                    ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -120,10 +122,11 @@ module growth_balive
       real                             :: cai_in
       real                             :: ba_in
       real                             :: nitrogen_supply
-      real                             :: dndt
       real                             :: dlnndt
       real                             :: old_leaf_hcap
       real                             :: old_wood_hcap
+      real                             :: old_leaf_water_im2
+      real                             :: old_wood_water_im2
       real                             :: nitrogen_uptake
       real                             :: N_uptake_pot
       real                             :: tr_bleaf
@@ -420,12 +423,9 @@ module growth_balive
                   call mortality_rates(cpatch,ico,csite%avg_daily_temp(ipa),csite%age(ipa) &
                                       ,csite%dist_type(ipa))
                   dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
-                  dndt     = dlnndt * cpatch%nplant(ico)
                   !------------------------------------------------------------------------!
 
-                  !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
-                  cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico)                  &
-                                             + dndt   * year_o_day
+                  !----- Update monthly mortality rates [1/month]. ------------------------!
                   cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico)                  &
                                              + dlnndt * year_o_day
                   !------------------------------------------------------------------------!
@@ -492,13 +492,24 @@ module growth_balive
                   !     It is likely that biomass has changed, therefore, update           !
                   ! vegetation energy and heat capacity.                                   !
                   !------------------------------------------------------------------------!
-                  old_leaf_hcap         = cpatch%leaf_hcap(ico)
-                  old_wood_hcap         = cpatch%wood_hcap(ico)
+                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
+                  old_wood_hcap      = cpatch%wood_hcap     (ico)
+                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdeada(ico)                 &
                                     ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+                  call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                    &
+                             ,cpatch%bleaf(ico),cpatch%bsapwooda(ico)                      &
+                             ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)  &
+                             ,cpatch%broot(ico),cpatch%dbh(ico),cpatch%pft(ico)            &
+                             ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+                  call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
+                              ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
+                              ,cpatch%wood_water_im2(ico))
+                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
+                                             ,old_leaf_water_im2,old_wood_water_im2)
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
@@ -532,12 +543,9 @@ module growth_balive
                !    Terminate and sort cohorts in case we are using the new grass scheme,  !
                ! as height and biomass may change every day.                               !
                !---------------------------------------------------------------------------!
-               if (veget_dyn_on) then
-                  select case (igrass)
-                  case (1)
-                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
-                     call sort_cohorts(cpatch)
-                  end select
+               if (veget_dyn_on .and. (igrass == 1)) then
+                  call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                  call sort_cohorts(cpatch)
                end if
                !---------------------------------------------------------------------------!
 

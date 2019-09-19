@@ -1,5 +1,4 @@
 module hdf5_coms
-#if USE_HDF5
    use hdf5
 
    integer(HID_T) :: dsetid_f,dspaceid_f,fileid_f,prpid_f
@@ -12,6 +11,4 @@ module hdf5_coms
 
    integer(HID_T)  :: datatype_id ! Datatype identifier 
    integer(SIZE_T) :: setsize  ! Datatype size
-#endif
-
 end module hdf5_coms

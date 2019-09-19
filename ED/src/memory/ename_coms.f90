@@ -53,6 +53,7 @@ module ename_coms
       integer                                           :: iqoutput
       integer                                           :: iyoutput
       integer                                           :: itoutput
+      integer                                           :: iooutput
       integer                                           :: isoutput
       integer                                           :: iadd_site_means
       integer                                           :: iadd_patch_means
@@ -119,6 +120,7 @@ module ename_coms
       character(len=str_len)                            :: soilstate_db
       character(len=str_len)                            :: soildepth_db
       character(len=str_len)                            :: ed_met_driver_db
+      character(len=str_len)                            :: obstime_db
 
       !----- ED polygon specification. ----------------------------------------------------!
       integer                                           :: n_poi
@@ -139,6 +141,9 @@ module ename_coms
       integer                                           :: ibigleaf
       integer                                           :: integration_scheme
       integer                                           :: nsub_euler
+      integer                                           :: plant_hydro_scheme
+      integer                                           :: istomata_scheme
+      integer                                           :: istruct_growth_scheme
       integer                                           :: trait_plasticity_scheme
       integer                                           :: growth_resp_scheme
       integer                                           :: storage_resp_scheme
@@ -342,6 +347,7 @@ module ename_coms
       enl%iqoutput                  = undef_integer
       enl%iyoutput                  = undef_integer
       enl%itoutput                  = undef_integer
+      enl%iooutput                  = undef_integer
       enl%isoutput                  = undef_integer
 
       enl%iadd_site_means           = undef_integer
@@ -410,6 +416,7 @@ module ename_coms
       enl%soilstate_db              =     undef_path
       enl%soildepth_db              =     undef_path
       enl%ed_met_driver_db          =     undef_path
+      enl%obstime_db                =     undef_path
 
       enl%n_poi                     = undef_integer
       enl%n_ed_region               = undef_integer
@@ -428,6 +435,9 @@ module ename_coms
       enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
       enl%nsub_euler                = undef_integer
+      enl%plant_hydro_scheme        = undef_integer
+      enl%istomata_scheme           = undef_integer
+      enl%istruct_growth_scheme     = undef_integer
       enl%trait_plasticity_scheme   = undef_integer
       enl%growth_resp_scheme        = undef_integer
       enl%storage_resp_scheme       = undef_integer

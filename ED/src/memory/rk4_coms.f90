@@ -174,6 +174,7 @@ module rk4_coms
       !----- Leaf (cohort-level) variables. -----------------------------------------------!
       real(kind=8), pointer, dimension(:) :: leaf_energy     ! Internal energy  [     J/m2]
       real(kind=8), pointer, dimension(:) :: leaf_water      ! Sfc. water mass  [    kg/m2]
+      real(kind=8), pointer, dimension(:) :: leaf_water_im2  ! Int. water mass  [    kg/m2]
       real(kind=8), pointer, dimension(:) :: leaf_temp       ! Temperature      [        K]
       real(kind=8), pointer, dimension(:) :: leaf_fliq       ! Liquid fraction  [      ---]
       real(kind=8), pointer, dimension(:) :: leaf_hcap       ! Heat capacity    [   J/m2/K]
@@ -195,6 +196,7 @@ module rk4_coms
       !----- Wood (cohort-level) variables. -----------------------------------------------!
       real(kind=8), pointer, dimension(:) :: wood_energy     ! Internal energy  [     J/m2]
       real(kind=8), pointer, dimension(:) :: wood_water      ! Sfc. water mass  [    kg/m2]
+      real(kind=8), pointer, dimension(:) :: wood_water_im2  ! Int. water mass  [    kg/m2]
       real(kind=8), pointer, dimension(:) :: wood_temp       ! Temperature      [        K]
       real(kind=8), pointer, dimension(:) :: wood_fliq       ! Liquid fraction  [      ---]
       real(kind=8), pointer, dimension(:) :: wood_hcap       ! Heat capacity    [   J/m2/K]
@@ -213,7 +215,8 @@ module rk4_coms
 
       !----- Leaf+branchwood (cohort-level) variables. ------------------------------------!
       real(kind=8), pointer, dimension(:) :: veg_energy      ! Internal energy  [     J/m2]
-      real(kind=8), pointer, dimension(:) :: veg_water       ! Sfc. water mass  [    kg/m2]
+      real(kind=8), pointer, dimension(:) :: veg_water       ! Water mass (ext) [    kg/m2]
+      real(kind=8), pointer, dimension(:) :: veg_water_im2   ! Water mass (int) [    kg/m2]
       real(kind=8), pointer, dimension(:) :: veg_hcap        ! Heat capacity    [   J/m2/K]
       logical     , pointer, dimension(:) :: veg_resolvable  ! resolve leaves?  [      T|F]
       !------------------------------------------------------------------------------------!
@@ -234,6 +237,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [umol/m2/s]
       real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [umol/m2/s]
       real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [umol/m2/s]
+      !-----------------------------------------------------------------------------------!
 
 
       !------ Variables used for hybrid stepping -----------------------------------------!
@@ -790,7 +794,7 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 21
+   integer                          , parameter   :: nerrfix = 23
    !---------------------------------------------------------------------------------------!
 
 
@@ -827,35 +831,37 @@ module rk4_coms
    contains
 
 
-     ! ==========================================================
-     ! The next three subroutines are for allocating
-     ! integration memory for the previous time-step's
-     ! leaf, wood and canopy temperature.  This is needed
-     ! only in the BDF2 implicit solver method.
-     ! =========================================================
-
-     subroutine allocate_bdf2_patch(y,maxcohort)
-       
-       implicit none
-       type(bdf2patchtype), target :: y
-       integer :: maxcohort
-       
-       allocate(y%leaf_temp(maxcohort))
-       allocate(y%wood_temp(maxcohort))
-       
-       return
-     end subroutine allocate_bdf2_patch
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine allocates the structure that will hold the temperature values for  !
+   ! the previous time steps.  This is needed only in the BDF2 implicit solver method.     !
+   !---------------------------------------------------------------------------------------!
+   subroutine allocate_bdf2_patch(y,maxcohort)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(bdf2patchtype), target     :: y
+      integer            , intent(in) :: maxcohort
+      !------------------------------------------------------------------------------------!
 
 
-     subroutine deallocate_bdf2_patch(y)
+      !----- Pointers should always be nullified before allocation. -----------------------!
+      call nullify_bdf2_patch(y)
+      !------------------------------------------------------------------------------------!
 
-       implicit none
-       type(bdf2patchtype),target :: y
-       
-       deallocate(y%leaf_temp)
-       deallocate(y%wood_temp)
-       return
-     end subroutine deallocate_bdf2_patch
+
+      allocate(y%leaf_temp(maxcohort))
+      allocate(y%wood_temp(maxcohort))
+
+      call zero_bdf2_patch(y)
+
+      return
+   end subroutine allocate_bdf2_patch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
 
 
    !=======================================================================================!
@@ -910,6 +916,32 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
+   !    This subroutine nullifies the structure that holds the temperature values for      !
+   ! the previous time steps.  This is needed only in the BDF2 implicit solver method.     !
+   !---------------------------------------------------------------------------------------!
+   subroutine nullify_bdf2_patch(y)
+      implicit none
+
+      !----- Arguments. -------------------------------------------------------------------!
+      type(bdf2patchtype),target :: y
+      !------------------------------------------------------------------------------------!
+
+      nullify(y%leaf_temp)
+      nullify(y%wood_temp)
+
+      return
+
+   end subroutine nullify_bdf2_patch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This subroutine will nullify all pointers, to make a safe allocation.             !
    !---------------------------------------------------------------------------------------!
    subroutine nullify_rk4_patch(y)
@@ -950,18 +982,30 @@ module rk4_coms
 
 
 
-  subroutine zero_bdf2_patch(y)
 
-     implicit none
-     type(bdf2patchtype),target :: y
-     
-     y%can_temp  = 0.d0
-     y%leaf_temp = 0.d0
-     y%wood_temp = 0.d0
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine resets the structure that holds the temperature values for the     !
+   ! previous time steps.  This is needed only in the BDF2 implicit solver method.         !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_bdf2_patch(y)
+      implicit none
+      !----- Argument ---------------------------------------------------------------------!
+      type(bdf2patchtype),target :: y
+      !------------------------------------------------------------------------------------!
 
-     return
+      y%can_temp  = 0.d0
+
+      !----- For cohort variables, we must ensure that the pointers are associated. -------!
+      if (associated(y%leaf_temp)) y%leaf_temp = 0.d0
+      if (associated(y%wood_temp)) y%wood_temp = 0.d0
+      !------------------------------------------------------------------------------------!
+
+      return
    end subroutine zero_bdf2_patch
-     
+   !=======================================================================================!
+   !=======================================================================================!
+
 
 
    !=======================================================================================!
@@ -1159,6 +1203,7 @@ module rk4_coms
 
       allocate(y%leaf_energy       (maxcohort))
       allocate(y%leaf_water        (maxcohort))
+      allocate(y%leaf_water_im2    (maxcohort))
       allocate(y%leaf_temp         (maxcohort))
       allocate(y%leaf_fliq         (maxcohort))
       allocate(y%leaf_hcap         (maxcohort))
@@ -1176,6 +1221,7 @@ module rk4_coms
       allocate(y%rlong_l           (maxcohort))
       allocate(y%wood_energy       (maxcohort))
       allocate(y%wood_water        (maxcohort))
+      allocate(y%wood_water_im2    (maxcohort))
       allocate(y%wood_temp         (maxcohort))
       allocate(y%wood_fliq         (maxcohort))
       allocate(y%wood_hcap         (maxcohort))
@@ -1190,6 +1236,7 @@ module rk4_coms
       allocate(y%rlong_w           (maxcohort))
       allocate(y%veg_energy        (maxcohort))
       allocate(y%veg_water         (maxcohort))
+      allocate(y%veg_water_im2     (maxcohort))
       allocate(y%veg_hcap          (maxcohort))
       allocate(y%veg_resolvable    (maxcohort))
       allocate(y%nplant            (maxcohort))
@@ -1245,6 +1292,31 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
+   !    This subroutine deallocates the structure that holds the temperature values for    !
+   ! the previous time steps.  This is needed only in the BDF2 implicit solver method.     !
+   !---------------------------------------------------------------------------------------!
+   subroutine deallocate_bdf2_patch(y)
+      implicit none
+
+      !----- Arguments. -------------------------------------------------------------------!
+      type(bdf2patchtype),target :: y
+      !------------------------------------------------------------------------------------!
+
+      if (associated(y%leaf_temp)) deallocate(y%leaf_temp)
+      if (associated(y%wood_temp)) deallocate(y%wood_temp)
+      return
+
+   end subroutine deallocate_bdf2_patch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !    This subroutine will nullify the cohort pointers for a safe allocation.            !
    !---------------------------------------------------------------------------------------!
    subroutine nullify_rk4_cohort(y)
@@ -1255,6 +1327,7 @@ module rk4_coms
 
       nullify(y%leaf_energy       )
       nullify(y%leaf_water        )
+      nullify(y%leaf_water_im2    )
       nullify(y%leaf_temp         )
       nullify(y%leaf_fliq         )
       nullify(y%leaf_hcap         )
@@ -1272,6 +1345,7 @@ module rk4_coms
       nullify(y%rlong_l           )
       nullify(y%wood_energy       )
       nullify(y%wood_water        )
+      nullify(y%wood_water_im2    )
       nullify(y%wood_temp         )
       nullify(y%wood_fliq         )
       nullify(y%wood_hcap         )
@@ -1286,6 +1360,7 @@ module rk4_coms
       nullify(y%rlong_w           )
       nullify(y%veg_energy        )
       nullify(y%veg_water         )
+      nullify(y%veg_water_im2     )
       nullify(y%veg_hcap          )
       nullify(y%veg_resolvable    )
       nullify(y%nplant            )
@@ -1350,6 +1425,7 @@ module rk4_coms
 
       if (associated(y%leaf_energy       )) y%leaf_energy        = 0.d0
       if (associated(y%leaf_water        )) y%leaf_water         = 0.d0
+      if (associated(y%leaf_water_im2    )) y%leaf_water_im2     = 0.d0
       if (associated(y%leaf_temp         )) y%leaf_temp          = 0.d0
       if (associated(y%leaf_fliq         )) y%leaf_fliq          = 0.d0
       if (associated(y%leaf_hcap         )) y%leaf_hcap          = 0.d0
@@ -1367,6 +1443,7 @@ module rk4_coms
       if (associated(y%rlong_l           )) y%rlong_l            = 0.d0
       if (associated(y%wood_energy       )) y%wood_energy        = 0.d0
       if (associated(y%wood_water        )) y%wood_water         = 0.d0
+      if (associated(y%wood_water_im2    )) y%wood_water_im2     = 0.d0
       if (associated(y%wood_temp         )) y%wood_temp          = 0.d0
       if (associated(y%wood_fliq         )) y%wood_fliq          = 0.d0
       if (associated(y%wood_hcap         )) y%wood_hcap          = 0.d0
@@ -1381,6 +1458,7 @@ module rk4_coms
       if (associated(y%rlong_w           )) y%rlong_w            = 0.d0
       if (associated(y%veg_energy        )) y%veg_energy         = 0.d0
       if (associated(y%veg_water         )) y%veg_water          = 0.d0
+      if (associated(y%veg_water_im2     )) y%veg_water_im2      = 0.d0
       if (associated(y%veg_hcap          )) y%veg_hcap           = 0.d0
       if (associated(y%veg_resolvable    )) y%veg_resolvable     = .false.
       if (associated(y%nplant            )) y%nplant             = 0.d0
@@ -1444,6 +1522,7 @@ module rk4_coms
 
       if (associated(y%leaf_energy       )) deallocate(y%leaf_energy       )
       if (associated(y%leaf_water        )) deallocate(y%leaf_water        )
+      if (associated(y%leaf_water_im2    )) deallocate(y%leaf_water_im2    )
       if (associated(y%leaf_temp         )) deallocate(y%leaf_temp         )
       if (associated(y%leaf_fliq         )) deallocate(y%leaf_fliq         )
       if (associated(y%leaf_hcap         )) deallocate(y%leaf_hcap         )
@@ -1461,6 +1540,7 @@ module rk4_coms
       if (associated(y%rlong_l           )) deallocate(y%rlong_l           )
       if (associated(y%wood_energy       )) deallocate(y%wood_energy       )
       if (associated(y%wood_water        )) deallocate(y%wood_water        )
+      if (associated(y%wood_water_im2    )) deallocate(y%wood_water_im2    )
       if (associated(y%wood_temp         )) deallocate(y%wood_temp         )
       if (associated(y%wood_fliq         )) deallocate(y%wood_fliq         )
       if (associated(y%wood_hcap         )) deallocate(y%wood_hcap         )
@@ -1475,6 +1555,7 @@ module rk4_coms
       if (associated(y%rlong_w           )) deallocate(y%rlong_w           )
       if (associated(y%veg_energy        )) deallocate(y%veg_energy        )
       if (associated(y%veg_water         )) deallocate(y%veg_water         )
+      if (associated(y%veg_water_im2     )) deallocate(y%veg_water_im2     )
       if (associated(y%veg_hcap          )) deallocate(y%veg_hcap          )
       if (associated(y%veg_resolvable    )) deallocate(y%veg_resolvable    )
       if (associated(y%nplant            )) deallocate(y%nplant            )
@@ -1869,9 +1950,9 @@ module rk4_coms
       character(len=13), dimension(nerrfix), parameter :: err_lab_fix = (/                 &
            'CAN_ENTHALPY ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
           ,'CAN_CO2      ','LEAF_WATER   ','LEAF_ENERGY  ','WOOD_WATER   ','WOOD_ENERGY  ' &
-          ,'VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM','EB_NETRAD    ' &
-          ,'EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA','ENB_STORAGE  ' &
-          ,'WATB_STORAGE '/)
+          ,'LEAF_H2O_IM2 ','WOOD_H2O_IM2 ','VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ' &
+          ,'CO2B_LOSS2ATM','EB_NETRAD    ','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ' &
+          ,'WATB_LOSS2DRA','ENB_STORAGE  ','WATB_STORAGE '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc

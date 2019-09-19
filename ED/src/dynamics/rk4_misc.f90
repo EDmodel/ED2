@@ -301,22 +301,26 @@ module rk4_misc
          ! safe values, but the leaves won't be really solved.                             !
          !---------------------------------------------------------------------------------!
          if (targetp%leaf_resolvable(ico)) then
-            targetp%leaf_energy(ico) = dble(cpatch%leaf_energy(ico))
-            targetp%leaf_water (ico) = max(0.d0,dble(cpatch%leaf_water (ico)))
-            targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
+            targetp%leaf_energy   (ico) = dble(cpatch%leaf_energy(ico))
+            targetp%leaf_water    (ico) = max(0.d0,dble(cpatch%leaf_water    (ico)))
+            targetp%leaf_water_im2(ico) = max(0.d0,dble(cpatch%leaf_water_im2(ico)))
+            targetp%leaf_hcap     (ico) = dble(cpatch%leaf_hcap  (ico))
 
-            call uextcm2tl8(targetp%leaf_energy(ico),targetp%leaf_water(ico)               &
+            call uextcm2tl8(targetp%leaf_energy(ico)                                       &
+                           ,targetp%leaf_water (ico) + targetp%leaf_water_im2(ico)         &
                            ,targetp%leaf_hcap(ico),targetp%leaf_temp(ico)                  &
                            ,targetp%leaf_fliq(ico))
          else
-            targetp%leaf_fliq  (ico) = dble(cpatch%leaf_fliq  (ico))
-            targetp%leaf_temp  (ico) = dble(cpatch%leaf_temp  (ico))
-            targetp%leaf_water (ico) = dble(cpatch%leaf_water (ico))
-            targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
-            targetp%leaf_energy(ico) = cmtl2uext8( targetp%leaf_hcap (ico)                 &
-                                                 , targetp%leaf_water(ico)                 &
-                                                 , targetp%leaf_temp (ico)                 &
-                                                 , targetp%leaf_fliq (ico) )
+            targetp%leaf_fliq     (ico) = dble(cpatch%leaf_fliq  (ico))
+            targetp%leaf_temp     (ico) = dble(cpatch%leaf_temp  (ico))
+            targetp%leaf_water    (ico) = max(0.d0,dble(cpatch%leaf_water    (ico)))
+            targetp%leaf_water_im2(ico) = max(0.d0,dble(cpatch%leaf_water_im2(ico)))
+            targetp%leaf_hcap     (ico) = dble(cpatch%leaf_hcap  (ico))
+            targetp%leaf_energy   (ico) = cmtl2uext8( targetp%leaf_hcap     (ico)          &
+                                                    , targetp%leaf_water    (ico)          &
+                                                    + targetp%leaf_water_im2(ico)          &
+                                                    , targetp%leaf_temp     (ico)          &
+                                                    , targetp%leaf_fliq     (ico) )
          end if
          !---------------------------------------------------------------------------------!
 
@@ -328,24 +332,29 @@ module rk4_misc
          ! values, but the wood won't be really solved.                                    !
          !---------------------------------------------------------------------------------!
          if (targetp%wood_resolvable(ico)) then
-            targetp%wood_energy(ico) = dble(cpatch%wood_energy(ico))
-            targetp%wood_water (ico) = max(0.d0,dble(cpatch%wood_water (ico)))
-            targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
+            targetp%wood_energy   (ico) = dble(cpatch%wood_energy(ico))
+            targetp%wood_water    (ico) = max(0.d0,dble(cpatch%wood_water    (ico)))
+            targetp%wood_water_im2(ico) = max(0.d0,dble(cpatch%wood_water_im2(ico)))
+            targetp%wood_hcap     (ico) = dble(cpatch%wood_hcap  (ico))
 
-            call uextcm2tl8(targetp%wood_energy(ico),targetp%wood_water(ico)               &
+            call uextcm2tl8(targetp%wood_energy(ico)                                       &
+                           ,targetp%wood_water (ico) + targetp%wood_water_im2(ico)         &
                            ,targetp%wood_hcap(ico),targetp%wood_temp(ico)                  &
                            ,targetp%wood_fliq(ico))
          else
-            targetp%wood_fliq  (ico) = dble(cpatch%wood_fliq  (ico))
-            targetp%wood_temp  (ico) = dble(cpatch%wood_temp  (ico))
-            targetp%wood_water (ico) = dble(cpatch%wood_water (ico))
-            targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
-            targetp%wood_energy(ico) = cmtl2uext8( targetp%wood_hcap (ico)                 &
-                                                 , targetp%wood_water(ico)                 &
-                                                 , targetp%wood_temp (ico)                 &
-                                                 , targetp%wood_fliq (ico) )
+            targetp%wood_fliq     (ico) = dble(cpatch%wood_fliq  (ico))
+            targetp%wood_temp     (ico) = dble(cpatch%wood_temp  (ico))
+            targetp%wood_water    (ico) = max(0.d0,dble(cpatch%wood_water    (ico)))
+            targetp%wood_water_im2(ico) = max(0.d0,dble(cpatch%wood_water_im2(ico)))
+            targetp%wood_hcap     (ico) = dble(cpatch%wood_hcap  (ico))
+            targetp%wood_energy   (ico) = cmtl2uext8( targetp%wood_hcap     (ico)          &
+                                                    , targetp%wood_water    (ico)          &
+                                                    + targetp%wood_water_im2(ico)          &
+                                                    , targetp%wood_temp     (ico)          &
+                                                    , targetp%wood_fliq     (ico) )
          end if
          !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
@@ -356,6 +365,8 @@ module rk4_misc
                                        targetp%wood_resolvable(ico)
          targetp%veg_energy(ico)     = targetp%leaf_energy(ico) + targetp%wood_energy(ico)
          targetp%veg_water(ico)      = targetp%leaf_water(ico)  + targetp%wood_water(ico)
+         targetp%veg_water_im2(ico)  = targetp%leaf_water_im2(ico)                         &
+                                     + targetp%wood_water_im2(ico)
          targetp%veg_hcap(ico)       = targetp%leaf_hcap(ico)   + targetp%wood_hcap(ico)
          !---------------------------------------------------------------------------------!
 
@@ -981,7 +992,8 @@ module rk4_misc
                   !------------------------------------------------------------------------!
                else
                   !----- Find the temperature and liquid fraction. ------------------------!
-                  call uextcm2tl8(initp%veg_energy(ico),initp%veg_water(ico)               &
+                  call uextcm2tl8(initp%veg_energy(ico)                                    &
+                                 ,initp%veg_water(ico) + initp%veg_water_im2(ico)          &
                                  ,initp%veg_hcap(ico),veg_temp,veg_fliq)
                   !------------------------------------------------------------------------!
 
@@ -1026,14 +1038,16 @@ module rk4_misc
 
 
                      !----- Find lead and wood internal energy. ---------------------------!
-                     initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap (ico)            &
-                                                        , initp%leaf_water(ico)            &
-                                                        , initp%leaf_temp (ico)            &
-                                                        , initp%leaf_fliq (ico) )
-                     initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap (ico)            &
-                                                        , initp%wood_water(ico)            &
-                                                        , initp%wood_temp (ico)            &
-                                                        , initp%wood_fliq (ico) )
+                     initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap     (ico)        &
+                                                        , initp%leaf_water    (ico)        &
+                                                        + initp%leaf_water_im2(ico)        &
+                                                        , initp%leaf_temp     (ico)        &
+                                                        , initp%leaf_fliq     (ico) )
+                     initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap     (ico)        &
+                                                        , initp%wood_water    (ico)        &
+                                                        + initp%wood_water_im2(ico)        &
+                                                        , initp%wood_temp     (ico)        &
+                                                        , initp%wood_fliq     (ico) )
 
                      !---------------------------------------------------------------------!
 
@@ -1068,15 +1082,17 @@ module rk4_misc
                   initp%leaf_fliq(ico) = 0.d0
                   initp%wood_fliq(ico) = 0.d0
                end if
-               initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap (ico)                  &
-                                                  , initp%leaf_water(ico)                  &
-                                                  , initp%leaf_temp (ico)                  &
-                                                  , initp%leaf_fliq (ico) )
+               initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap     (ico)              &
+                                                  , initp%leaf_water    (ico)              &
+                                                  + initp%leaf_water_im2(ico)              &
+                                                  , initp%leaf_temp     (ico)              &
+                                                  , initp%leaf_fliq     (ico) )
 
-               initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap (ico)                  &
-                                                  , initp%wood_water(ico)                  &
-                                                  , initp%wood_temp (ico)                  &
-                                                  , initp%wood_fliq (ico) )
+               initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap     (ico)              &
+                                                  , initp%wood_water    (ico)              &
+                                                  + initp%wood_water_im2(ico)              &
+                                                  , initp%wood_temp     (ico)              &
+                                                  , initp%wood_fliq     (ico) )
                initp%veg_energy(ico)  = initp%leaf_energy(ico) + initp%wood_energy(ico)
                !---------------------------------------------------------------------------!
 
@@ -1114,7 +1130,8 @@ module rk4_misc
                   ok_leaf = .false.
                   cycle leafloop
                else
-                  call uextcm2tl8(initp%leaf_energy(ico),initp%leaf_water(ico)             &
+                  call uextcm2tl8(initp%leaf_energy(ico)                                   &
+                                 ,initp%leaf_water(ico) + initp%leaf_water_im2(ico)        &
                                  ,initp%leaf_hcap(ico),initp%leaf_temp(ico)                &
                                  ,initp%leaf_fliq(ico))
                   if (initp%leaf_temp(ico) < rk4min_veg_temp .or.                          &
@@ -1138,10 +1155,11 @@ module rk4_misc
                !---------------------------------------------------------------------------!
                initp%leaf_temp(ico)   = initp%can_temp
                initp%leaf_water(ico)  = 0.d0
-               initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap (ico)                  &
-                                                  , initp%leaf_water(ico)                  &
-                                                  , initp%leaf_temp (ico)                  &
-                                                  , initp%leaf_fliq (ico) )
+               initp%leaf_energy(ico) = cmtl2uext8( initp%leaf_hcap     (ico)              &
+                                                  , initp%leaf_water    (ico)              &
+                                                  + initp%leaf_water_im2(ico)              &
+                                                  , initp%leaf_temp     (ico)              &
+                                                  , initp%leaf_fliq     (ico) )
 
                if (initp%leaf_temp(ico) == t3ple8) then
                   initp%leaf_fliq(ico) = 5.d-1
@@ -1190,7 +1208,8 @@ module rk4_misc
                   ok_wood = .false.
                   cycle woodloop
                else
-                  call uextcm2tl8(initp%wood_energy(ico),initp%wood_water(ico)             &
+                  call uextcm2tl8(initp%wood_energy(ico)                                   &
+                                 ,initp%wood_water(ico)+initp%wood_water_im2(ico)          &
                                  ,initp%wood_hcap(ico),initp%wood_temp(ico)                &
                                  ,initp%wood_fliq(ico))
                   if (initp%wood_temp(ico) < rk4min_veg_temp .or.                          &
@@ -1208,10 +1227,11 @@ module rk4_misc
                !---------------------------------------------------------------------------!
                initp%wood_temp(ico)   = initp%can_temp
                initp%wood_water(ico)  = 0.d0
-               initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap (ico)                  &
-                                                  , initp%wood_water(ico)                  &
-                                                  , initp%wood_temp (ico)                  &
-                                                  , initp%wood_fliq (ico) )
+               initp%wood_energy(ico) = cmtl2uext8( initp%wood_hcap     (ico)              &
+                                                  , initp%wood_water    (ico)              &
+                                                  + initp%wood_water_im2(ico)              &
+                                                  , initp%wood_temp     (ico)              &
+                                                  , initp%wood_fliq     (ico) )
 
                if (initp%wood_temp(ico) == t3ple8) then
                   initp%wood_fliq(ico) = 5.d-1
@@ -2859,7 +2879,8 @@ module rk4_misc
             ! this happens as loss of internal energy (shedding) or latent heat (fast      !
             ! dew/boiling).                                                                !
             !------------------------------------------------------------------------------!
-            call uextcm2tl8(initp%leaf_energy(ico),initp%leaf_water(ico)                   &
+            call uextcm2tl8(initp%leaf_energy(ico)                                         &
+                           ,initp%leaf_water(ico) + initp%leaf_water_im2(ico)              &
                            ,initp%leaf_hcap(ico),initp%leaf_temp(ico),initp%leaf_fliq(ico))
             old_leaf_energy = initp%leaf_energy(ico)
             old_leaf_water  = initp%leaf_water (ico)
@@ -2967,8 +2988,9 @@ module rk4_misc
             ! this happens as loss of internal energy (shedding) or latent heat (fast      !
             ! dew/boiling).                                                                !
             !------------------------------------------------------------------------------!
-            call uextcm2tl8(initp%wood_energy(ico),initp%wood_water(ico)                   &
-                           ,initp%wood_hcap(ico),initp%wood_temp(ico),initp%wood_fliq(ico))
+            call uextcm2tl8(initp%wood_energy(ico)                                         &
+                           ,initp%wood_water(ico)+initp%wood_water_im2(ico)                &
+                           ,initp%wood_hcap(ico),initp%wood_temp(ico),initp%wood_fliq(ico) )
             old_wood_energy = initp%wood_energy(ico)
             old_wood_water  = initp%wood_water (ico)
             old_wood_temp   = initp%wood_temp  (ico)
@@ -3125,6 +3147,7 @@ module rk4_misc
                                        , checkbudget        ! ! intent(in)
       use ed_state_vars         , only : patchtype          ! ! Structure
       use grid_coms             , only : nzg                ! ! intent(in)
+      use physiology_coms       , only : plant_hydro_scheme ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -3322,6 +3345,53 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !      Plant internal water.  Print these only if plant hydraulics is enabled.       !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+         !----- Skip error calculation -- plant hydraulics is disabled. -------------------!
+         continue
+         !---------------------------------------------------------------------------------!
+      case default
+         write(unit=*,fmt='(80a)') ('-',k=1,80)
+         write(unit=*,fmt='(a)'  ) 
+         write(unit=*,fmt='(80a)') ('-',k=1,80)
+         write(unit=*,fmt='(a)'      ) ' Wood/Leaf WATER_IM2  (only the resolvable ones):'
+         write(unit=*,fmt='(9(a,1x))')         'Name            ','   PFT','         LAI'  &
+                                            ,'         WAI','         TAI','   Max.Error'  &
+                                            ,'   Abs.Error','       Scale','Problem(T|F)'
+         do ico = 1,cpatch%ncohorts
+            if (y%leaf_resolvable(ico)) then
+               errmax       = max( errmax                                                  &
+                                 , abs(yerr%leaf_water_im2(ico)/yscal%leaf_water_im2(ico)))
+               troublemaker = large_error( yerr%leaf_water_im2 (ico)                       &
+                                         , yscal%leaf_water_im2(ico) )
+               write(unit=*,fmt=cohfmt) 'LEAF_WATER_IM2:'                                  &
+                                       ,cpatch%pft(ico),y%lai(ico),y%wai(ico)              &
+                                       ,y%tai(ico),errmax                                  &
+                                       ,yerr%leaf_water_im2(ico)                           &
+                                       ,yscal%leaf_water_im2(ico),troublemaker
+            end if
+
+            if (y%wood_resolvable(ico)) then
+               errmax       = max( errmax                                                  &
+                                 , abs(yerr%wood_water_im2(ico)/yscal%wood_water_im2(ico)))
+               troublemaker = large_error( yerr%wood_water_im2 (ico)                       &
+                                         , yscal%wood_water_im2(ico) )
+               write(unit=*,fmt=cohfmt) 'WOOD_WATER_IM2:'                                  &
+                                       ,cpatch%pft(ico),y%lai(ico),y%wai(ico)              &
+                                       ,y%tai(ico),errmax                                  &
+                                       ,yerr%wood_water_im2(ico)                           &
+                                       ,yscal%wood_water_im2(ico),troublemaker
+            end if
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
 
 
       !------------------------------------------------------------------------------------!
@@ -3484,19 +3554,19 @@ module rk4_misc
       write (unit=*,fmt='(80a)') ('-',k=1,80)
       write (unit=*,fmt='(a)'  ) 'Leaf information (only the resolvable ones shown): '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),11(a12,1x))')                                           &
+      write (unit=*,fmt='(2(a7,1x),12(a12,1x))')                                           &
             '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH'               &
                                ,'      BDEADA','      BDEADB','       BLEAF'               &
-                               ,' LEAF_ENERGY','  LEAF_WATER','   LEAF_HCAP'               &
-                               ,'   LEAF_TEMP','   LEAF_FLIQ'
+                               ,' LEAF_ENERGY','  LEAF_WATER','LEAF_H2O_IM2'               &
+                               ,'   LEAF_HCAP','   LEAF_TEMP','   LEAF_FLIQ'
       do ico = 1,cpatch%ncohorts
          if (cpatch%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),11(es12.4,1x))')                                   &
+            write(unit=*,fmt='(2(i7,1x),12(es12.4,1x))')                                   &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
                  ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdeada(ico)    &
                  ,cpatch%bdeadb(ico),cpatch%bleaf(ico),cpatch%leaf_energy(ico)             &
-                 ,cpatch%leaf_water(ico),cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)       &
-                 ,cpatch%leaf_fliq(ico)
+                 ,cpatch%leaf_water(ico),cpatch%leaf_water_im2(ico),cpatch%leaf_hcap(ico)  &
+                 ,cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico)
          end if
       end do
       write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                            &
@@ -3780,15 +3850,17 @@ module rk4_misc
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                            &
+      write (unit=*,fmt='(2(a7,1x),10(a12,1x))')                                           &
          '    PFT','KRDEPTH','         LAI','         WAI','         TAI',' LEAF_ENERGY'   &
-             ,'  LEAF_WATER','   LEAF_HCAP','   LEAF_TEMP','   LEAF_FLIQ','    LINT_SHV'
+             ,'  LEAF_WATER','   LEAF_HCAP','LEAF_H2O_IM2','   LEAF_TEMP','   LEAF_FLIQ'   &
+             ,'    LINT_SHV'
       do ico = 1,cpatch%ncohorts
          if (y%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))')                                    &
+            write(unit=*,fmt='(2(i7,1x),10(es12.4,1x))')                                   &
                    cpatch%pft(ico), cpatch%krdepth(ico)                                    &
                   ,y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_energy(ico),y%leaf_water(ico)   &
-                  ,y%leaf_hcap(ico),y%leaf_temp(ico),y%leaf_fliq(ico),y%lint_shv(ico)
+                  ,y%leaf_water_im2(ico),y%leaf_hcap(ico),y%leaf_temp(ico)                 &
+                  ,y%leaf_fliq(ico),y%lint_shv(ico)
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3850,15 +3922,15 @@ module rk4_misc
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                            &
+      write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                            &
          '    PFT','KRDEPTH','         LAI','         WAI','         TAI',' WOOD_ENERGY'   &
-             ,'  WOOD_WATER','   WOOD_HCAP','   WOOD_TEMP','   WOOD_FLIQ'
+             ,'  WOOD_WATER','WOOD_H2O_IM2','   WOOD_HCAP','   WOOD_TEMP','   WOOD_FLIQ'
       do ico = 1,cpatch%ncohorts
          if (y%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))')                                    &
+            write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))')                                    &
                    cpatch%pft(ico), cpatch%krdepth(ico)                                    &
                   ,y%lai(ico),y%wai(ico),y%tai(ico),y%wood_energy(ico),y%wood_water(ico)   &
-                  ,y%wood_hcap(ico),y%wood_temp(ico),y%wood_fliq(ico)
+                  ,y%wood_water_im2(ico),y%wood_hcap(ico),y%wood_temp(ico),y%wood_fliq(ico)
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -4020,8 +4092,10 @@ module rk4_misc
       logical                            :: isthere
       real(kind=8)                       :: sum_leaf_energy
       real(kind=8)                       :: sum_leaf_water
+      real(kind=8)                       :: sum_leaf_water_im2
       real(kind=8)                       :: sum_leaf_hcap
       real(kind=8)                       :: sum_wood_energy
+      real(kind=8)                       :: sum_wood_water_im2
       real(kind=8)                       :: sum_wood_water
       real(kind=8)                       :: sum_wood_hcap
       real(kind=8)                       :: sum_gpp
@@ -4045,7 +4119,7 @@ module rk4_misc
       character(len=10), parameter :: phfmt='(90(a,1x))'
       character(len=48), parameter ::                                                      &
                                    pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),80(es13.6,1x))'
-      character(len=10), parameter :: chfmt='(54(a,1x))'
+      character(len=10), parameter :: chfmt='(56(a,1x))'
       character(len=48), parameter ::                                                      &
                                    cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),46(es13.6,1x))'
       !------------------------------------------------------------------------------------!
@@ -4063,32 +4137,36 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
       !     First we loop over all cohorts and add the vegetation energy and water.        !
       !------------------------------------------------------------------------------------!
-      sum_leaf_energy = 0.d0
-      sum_leaf_water  = 0.d0
-      sum_leaf_hcap   = 0.d0
-      sum_wood_energy = 0.d0
-      sum_wood_water  = 0.d0
-      sum_wood_hcap   = 0.d0
-      sum_gpp         = 0.d0
-      sum_plresp      = initp%commit_storage_resp + initp%commit_growth_resp
-      sum_lai         = 0.d0
-      sum_wai         = 0.d0
+      sum_leaf_energy     = 0.d0
+      sum_leaf_water      = 0.d0
+      sum_leaf_water_im2  = 0.d0
+      sum_leaf_hcap       = 0.d0
+      sum_wood_energy     = 0.d0
+      sum_wood_water      = 0.d0
+      sum_wood_water_im2  = 0.d0
+      sum_wood_hcap       = 0.d0
+      sum_gpp             = 0.d0
+      sum_plresp          = initp%commit_storage_resp + initp%commit_growth_resp
+      sum_lai             = 0.d0
+      sum_wai             = 0.d0
       cpatch => csite%patch(ipa)
       do ico=1,cpatch%ncohorts
          if (initp%leaf_resolvable(ico)) then
             !----- Integrate vegetation properties using m2gnd rather than plant. ---------!
-            sum_leaf_energy = sum_leaf_energy + initp%leaf_energy(ico)
-            sum_leaf_water  = sum_leaf_water  + initp%leaf_water(ico)
-            sum_leaf_hcap   = sum_leaf_hcap   + initp%leaf_hcap(ico)
-            sum_gpp         = sum_gpp         + initp%gpp(ico)
-            sum_plresp      = sum_plresp      + initp%leaf_resp(ico)                       &
-                                              + initp%root_resp(ico)
+            sum_leaf_energy    = sum_leaf_energy    + initp%leaf_energy   (ico)
+            sum_leaf_water     = sum_leaf_water     + initp%leaf_water    (ico)
+            sum_leaf_water_im2 = sum_leaf_water_im2 + initp%leaf_water_im2(ico)
+            sum_leaf_hcap      = sum_leaf_hcap      + initp%leaf_hcap     (ico)
+            sum_gpp            = sum_gpp            + initp%gpp           (ico)
+            sum_plresp         = sum_plresp         + initp%leaf_resp     (ico)            &
+                                                    + initp%root_resp     (ico)
          end if
          if (initp%wood_resolvable(ico)) then
             !----- Integrate vegetation properties using m2gnd rather than plant. ---------!
-            sum_wood_energy = sum_wood_energy + initp%wood_energy(ico)
-            sum_wood_water  = sum_wood_water  + initp%wood_water(ico)
-            sum_wood_hcap   = sum_wood_hcap   + initp%wood_hcap(ico)
+            sum_wood_energy    = sum_wood_energy    + initp%wood_energy   (ico)
+            sum_wood_water     = sum_wood_water     + initp%wood_water_im2(ico)
+            sum_wood_water_im2 = sum_wood_water_im2 + initp%wood_water    (ico)
+            sum_wood_hcap      = sum_wood_hcap      + initp%wood_hcap     (ico)
          end if
 
          !----- TAI.  We integrate all cohorts, including those that we skip. -------------!
@@ -4127,7 +4205,7 @@ module rk4_misc
             avg_leaf_fliq = 0.d0
          end if
       else
-         call uextcm2tl8(sum_leaf_energy,sum_leaf_water,sum_leaf_hcap                      &
+         call uextcm2tl8(sum_leaf_energy,sum_leaf_water+sum_leaf_water_im2,sum_leaf_hcap   &
                         ,avg_leaf_temp,avg_leaf_fliq)
       end if
       !------------------------------------------------------------------------------------!
@@ -4148,7 +4226,7 @@ module rk4_misc
             avg_wood_fliq = 0.d0
          end if
       else
-         call uextcm2tl8(sum_wood_energy,sum_wood_water,sum_wood_hcap                      &
+         call uextcm2tl8(sum_wood_energy,sum_wood_water+sum_wood_water_im2,sum_wood_hcap   &
                         ,avg_wood_temp,avg_wood_fliq)
       end if
       !------------------------------------------------------------------------------------!
@@ -4289,23 +4367,25 @@ module rk4_misc
             open  (unit=84,file=trim(detail_fout),status='replace',action='write')
             write (unit=84,fmt=chfmt)                                                      &
                             '             YEAR', '            MONTH', '              DAY'  &
-                           ,'             TIME', '             HDID', '              PFT'  &
-                           ,'     LEAF_RESOLVE', '     WOOD_RESOLVE', '           NPLANT'  &
-                           ,'           HEIGHT', '              LAI', '              WAI'  &
-                           ,'       CROWN_AREA', '      LEAF_ENERGY', '       LEAF_WATER'  &
-                           ,'        LEAF_HCAP', '        LEAF_TEMP', '        LEAF_FLIQ'  &
-                           ,'      WOOD_ENERGY', '       WOOD_WATER', '        WOOD_HCAP'  &
-                           ,'        WOOD_TEMP', '        WOOD_FLIQ', '         VEG_WIND'  &
-                           ,'          FS_OPEN', '       LEAF_REYNO', '     LEAF_GRASHOF'  &
-                           ,'      LEAF_NUFREE', '      LEAF_NUFORC', '       WOOD_REYNO'  &
-                           ,'     WOOD_GRASHOF', '      WOOD_NUFREE', '      WOOD_NUFORC'  &
-                           ,'         LINT_SHV', '         LEAF_GBH', '         LEAF_GBW'  &
-                           ,'         WOOD_GBH', '         WOOD_GBW', '         GSW_OPEN'  &
-                           ,'         GSW_CLOS', '              GPP', '        LEAF_RESP'  &
-                           ,'        ROOT_RESP', '         RSHORT_L', '          RLONG_L'  &
-                           ,'         RSHORT_W', '          RLONG_W', '           HFLXLC'  &
-                           ,'           HFLXWC', '          QWFLXLC', '          QWFLXWC'  &
-                           ,'           QWSHED', '          QTRANSP', '     QINTERCEPTED'
+                          , '             TIME', '             HDID', '              PFT'  &
+                          , '     LEAF_RESOLVE', '     WOOD_RESOLVE', '           NPLANT'  &
+                          , '           HEIGHT', '              LAI', '              WAI'  &
+                          , '       CROWN_AREA', '      LEAF_ENERGY', '       LEAF_WATER'  &
+                          , '   LEAF_WATER_IM2', '        LEAF_HCAP', '        LEAF_TEMP'  &
+                          , '        LEAF_FLIQ', '      WOOD_ENERGY', '       WOOD_WATER'  &
+                          , '   WOOD_WATER_IM2', '        WOOD_HCAP', '        WOOD_TEMP'  &
+                          , '        WOOD_FLIQ', '         VEG_WIND', '          FS_OPEN'  &
+                          , '       LEAF_REYNO', '     LEAF_GRASHOF', '      LEAF_NUFREE'  &
+                          , '      LEAF_NUFORC', '       WOOD_REYNO', '     WOOD_GRASHOF'  &
+                          , '      WOOD_NUFREE', '      WOOD_NUFORC', '         LINT_SHV'  &
+                          , '         LEAF_GBH', '         LEAF_GBW', '         WOOD_GBH'  &
+                          , '         WOOD_GBW', '         GSW_OPEN', '         GSW_CLOS'  &
+                          , '              GPP', '        LEAF_RESP', '        ROOT_RESP'  &
+                          , '         RSHORT_L', '          RLONG_L', '         RSHORT_W'  &
+                          , '          RLONG_W', '           HFLXLC', '           HFLXWC'  &
+                          , '          QWFLXLC', '          QWFLXWC', '           QWSHED'  &
+                          , '          QTRANSP', '     QINTERCEPTED'
+                          
             close (unit=84,status='keep')
          end if
          !---------------------------------------------------------------------------------!
@@ -4325,9 +4405,10 @@ module rk4_misc
                       , initp%nplant(ico)             , cpatch%hite(ico)                   &
                       , initp%lai(ico)                , initp%wai(ico)                     &
                       , initp%crown_area(ico)         , initp%leaf_energy(ico)             &
-                      , initp%leaf_water(ico)         , initp%leaf_hcap(ico)               &
-                      , initp%leaf_temp(ico)          , initp%leaf_fliq(ico)               &
-                      , initp%wood_energy(ico)        , initp%wood_water(ico)              &
+                      , initp%leaf_water(ico)         , initp%leaf_water_im2(ico)          &
+                      , initp%leaf_hcap(ico)          , initp%leaf_temp(ico)               &
+                      , initp%leaf_fliq(ico)          , initp%wood_energy(ico)             &
+                      , initp%wood_water(ico)         , initp%wood_water_im2(ico)          &
                       , initp%wood_hcap(ico)          , initp%wood_temp(ico)               &
                       , initp%wood_fliq(ico)          , initp%veg_wind(ico)                &
                       , initp%fs_open(ico)            , initp%leaf_reynolds(ico)           &
@@ -4410,7 +4491,8 @@ module rk4_misc
       do ico=1,cpatch%ncohorts
          !----- Check leaf thermodynamics. ------------------------------------------------!
          if (cpatch%leaf_resolvable(ico)) then
-            call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)                  &
+            call uextcm2tl(cpatch%leaf_energy(ico)                                         &
+                          ,cpatch%leaf_water(ico)+cpatch%leaf_water_im2(ico)               &
                           ,cpatch%leaf_hcap(ico),test_leaf_temp,test_leaf_fliq)
             fine_leaf_temp = abs(cpatch%leaf_temp(ico) - test_leaf_temp) <= fine_toler
             fine_leaf_fliq = abs(cpatch%leaf_fliq(ico) - test_leaf_fliq) <= fine_toler     &
@@ -4424,7 +4506,8 @@ module rk4_misc
 
          !----- Check wood thermodynamics. ------------------------------------------------!
          if (cpatch%wood_resolvable(ico)) then
-            call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)                  &
+            call uextcm2tl(cpatch%wood_energy(ico)                                         &
+                          ,cpatch%wood_water(ico)+cpatch%wood_water_im2(ico)               &
                           ,cpatch%wood_hcap(ico),test_wood_temp,test_wood_fliq)
             fine_wood_temp = abs(cpatch%wood_temp(ico) - test_wood_temp) <= fine_toler
             fine_wood_fliq = abs(cpatch%wood_fliq(ico) - test_wood_fliq) <= fine_toler     &
@@ -4467,6 +4550,7 @@ module rk4_misc
             write (unit=*,fmt=efmt   ) ' + ELONGF           =',cpatch%elongf         (ico)
             write (unit=*,fmt=efmt   ) ' + LEAF_ENERGY      =',cpatch%leaf_energy    (ico)
             write (unit=*,fmt=efmt   ) ' + LEAF_WATER       =',cpatch%leaf_water     (ico)
+            write (unit=*,fmt=efmt   ) ' + LEAF_WATER_IM2   =',cpatch%leaf_water_im2 (ico)
             write (unit=*,fmt=efmt   ) ' + LEAF_HCAP        =',cpatch%leaf_hcap      (ico)
             write (unit=*,fmt=lfmt   ) ' + FINE_LEAF_TEMP   =',fine_leaf_temp
             write (unit=*,fmt=efmt   ) ' + LEAF_TEMP_MEMORY =',cpatch%leaf_temp      (ico)
@@ -4481,6 +4565,7 @@ module rk4_misc
             write (unit=*,fmt=efmt   ) ' + WAI              =',cpatch%wai            (ico)
             write (unit=*,fmt=efmt   ) ' + WOOD_ENERGY      =',cpatch%wood_energy    (ico)
             write (unit=*,fmt=efmt   ) ' + WOOD_WATER       =',cpatch%wood_water     (ico)
+            write (unit=*,fmt=efmt   ) ' + WOOD_WATER_IM2   =',cpatch%wood_water_im2 (ico)
             write (unit=*,fmt=efmt   ) ' + WOOD_HCAP        =',cpatch%wood_hcap      (ico)
             write (unit=*,fmt=lfmt   ) ' + FINE_WOOD_TEMP   =',fine_wood_temp
             write (unit=*,fmt=efmt   ) ' + WOOD_TEMP_MEMORY =',cpatch%wood_temp      (ico)

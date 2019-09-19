@@ -239,6 +239,9 @@ module average_utils
                   cgrid%fmean_leaf_water    (ipy) = cgrid%fmean_leaf_water     (ipy)       &
                                                   + cpatch%fmean_leaf_water    (ico)       &
                                                   * patch_wgt
+                  cgrid%fmean_leaf_water_im2(ipy) = cgrid%fmean_leaf_water_im2 (ipy)       &
+                                                  + cpatch%fmean_leaf_water_im2(ico)       &
+                                                  * patch_wgt
                   cgrid%fmean_leaf_hcap     (ipy) = cgrid%fmean_leaf_hcap      (ipy)       &
                                                   + cpatch%fmean_leaf_hcap     (ico)       &
                                                   * patch_wgt
@@ -259,6 +262,9 @@ module average_utils
                                                   * patch_wgt
                   cgrid%fmean_wood_water    (ipy) = cgrid%fmean_wood_water     (ipy)       &
                                                   + cpatch%fmean_wood_water    (ico)       &
+                                                  * patch_wgt
+                  cgrid%fmean_wood_water_im2(ipy) = cgrid%fmean_wood_water_im2 (ipy)       &
+                                                  + cpatch%fmean_wood_water_im2(ico)       &
                                                   * patch_wgt
                   cgrid%fmean_wood_hcap     (ipy) = cgrid%fmean_wood_hcap      (ipy)       &
                                                   + cpatch%fmean_wood_hcap     (ico)       &
@@ -720,9 +726,12 @@ module average_utils
          !---------------------------------------------------------------------------------!
          !----- Leaf. ---------------------------------------------------------------------!
          if (cgrid%fmean_leaf_hcap(ipy) > 0.) then
-            call uextcm2tl( cgrid%fmean_leaf_energy(ipy), cgrid%fmean_leaf_water (ipy)     &
-                          , cgrid%fmean_leaf_hcap  (ipy), cgrid%fmean_leaf_temp  (ipy)     &
-                          , cgrid%fmean_leaf_fliq  (ipy) )
+            call uextcm2tl( cgrid%fmean_leaf_energy   (ipy)                                &
+                          , cgrid%fmean_leaf_water    (ipy)                                &
+                          + cgrid%fmean_leaf_water_im2(ipy)                                &
+                          , cgrid%fmean_leaf_hcap     (ipy)                                &
+                          , cgrid%fmean_leaf_temp     (ipy)                                &
+                          , cgrid%fmean_leaf_fliq     (ipy) )
          else
             cgrid%fmean_leaf_temp (ipy) = cgrid%fmean_can_temp (ipy)
             if (cgrid%fmean_can_temp(ipy) > t00) then
@@ -735,11 +744,12 @@ module average_utils
          end if
          !----- Wood. ---------------------------------------------------------------------!
          if (cgrid%fmean_wood_hcap(ipy) > 0.) then
-            call uextcm2tl( cgrid%fmean_wood_energy(ipy)                                   &
-                          , cgrid%fmean_wood_water (ipy)                                   &
-                          , cgrid%fmean_wood_hcap  (ipy)                                   &
-                          , cgrid%fmean_wood_temp  (ipy)                                   &
-                          , cgrid%fmean_wood_fliq  (ipy) )
+            call uextcm2tl( cgrid%fmean_wood_energy   (ipy)                                &
+                          , cgrid%fmean_wood_water    (ipy)                                &
+                          + cgrid%fmean_wood_water_im2(ipy)                                &
+                          , cgrid%fmean_wood_hcap     (ipy)                                &
+                          , cgrid%fmean_wood_temp     (ipy)                                &
+                          , cgrid%fmean_wood_fliq     (ipy) )
          else
             cgrid%fmean_wood_temp(ipy) = cgrid%fmean_can_temp(ipy)
             if (cgrid%fmean_can_temp(ipy) > t00) then
@@ -1120,11 +1130,12 @@ module average_utils
                   !------------------------------------------------------------------------!
                   !----- Leaf. ------------------------------------------------------------!
                   if (cpatch%fmean_leaf_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%fmean_leaf_energy(ico)                         &
-                                   , cpatch%fmean_leaf_water (ico)                         &
-                                   , cpatch%fmean_leaf_hcap  (ico)                         &
-                                   , cpatch%fmean_leaf_temp  (ico)                         &
-                                   , cpatch%fmean_leaf_fliq  (ico) )
+                     call uextcm2tl( cpatch%fmean_leaf_energy   (ico)                      &
+                                   , cpatch%fmean_leaf_water    (ico)                      &
+                                   + cpatch%fmean_leaf_water_im2(ico)                      &
+                                   , cpatch%fmean_leaf_hcap     (ico)                      &
+                                   , cpatch%fmean_leaf_temp     (ico)                      &
+                                   , cpatch%fmean_leaf_fliq     (ico) )
                   else
                      cpatch%fmean_leaf_vpdef(ico) = csite%fmean_can_vpdef(ipa)
                      cpatch%fmean_leaf_temp (ico) = csite%fmean_can_temp (ipa)
@@ -1138,11 +1149,12 @@ module average_utils
                   end if
                   !----- Wood. ------------------------------------------------------------!
                   if (cpatch%fmean_wood_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%fmean_wood_energy(ico)                         &
-                                   , cpatch%fmean_wood_water (ico)                         &
-                                   , cpatch%fmean_wood_hcap  (ico)                         &
-                                   , cpatch%fmean_wood_temp  (ico)                         &
-                                   , cpatch%fmean_wood_fliq  (ico) )
+                     call uextcm2tl( cpatch%fmean_wood_energy   (ico)                      &
+                                   , cpatch%fmean_wood_water    (ico)                      &
+                                   + cpatch%fmean_wood_water_im2(ico)                      &
+                                   , cpatch%fmean_wood_hcap     (ico)                      &
+                                   , cpatch%fmean_wood_temp     (ico)                      &
+                                   , cpatch%fmean_wood_fliq     (ico) )
                   else
                      cpatch%fmean_wood_temp(ico) = csite%fmean_can_temp(ipa)
                      if (csite%fmean_can_temp(ipa) > t00) then
@@ -1296,6 +1308,7 @@ module average_utils
          cgrid%fmean_plresp            (  ipy) = 0.0
          cgrid%fmean_leaf_energy       (  ipy) = 0.0
          cgrid%fmean_leaf_water        (  ipy) = 0.0
+         cgrid%fmean_leaf_water_im2    (  ipy) = 0.0
          cgrid%fmean_leaf_hcap         (  ipy) = 0.0
          cgrid%fmean_leaf_vpdef        (  ipy) = 0.0
          cgrid%fmean_leaf_temp         (  ipy) = 0.0
@@ -1304,6 +1317,7 @@ module average_utils
          cgrid%fmean_leaf_gbw          (  ipy) = 0.0
          cgrid%fmean_wood_energy       (  ipy) = 0.0
          cgrid%fmean_wood_water        (  ipy) = 0.0
+         cgrid%fmean_wood_water_im2    (  ipy) = 0.0
          cgrid%fmean_wood_hcap         (  ipy) = 0.0
          cgrid%fmean_wood_temp         (  ipy) = 0.0
          cgrid%fmean_wood_fliq         (  ipy) = 0.0
@@ -1630,6 +1644,16 @@ module average_utils
                   cpatch%fmean_lai               (ico) = 0.0
                   cpatch%fmean_bdeada            (ico) = 0.0
                   cpatch%fmean_bdeadb            (ico) = 0.0
+
+                  cpatch%fmean_leaf_psi          (ico) = 0.0
+                  cpatch%fmean_wood_psi          (ico) = 0.0
+                  cpatch%fmean_leaf_water_int    (ico) = 0.0
+                  cpatch%fmean_leaf_water_im2    (ico) = 0.0
+                  cpatch%fmean_wood_water_int    (ico) = 0.0
+                  cpatch%fmean_wood_water_im2    (ico) = 0.0
+                  cpatch%fmean_wflux_gw          (ico) = 0.0
+                  cpatch%fmean_wflux_wl          (ico) = 0.0
+                  cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -1807,6 +1831,9 @@ module average_utils
          cgrid%dmean_leaf_water     (ipy) = cgrid%dmean_leaf_water     (ipy)               &
                                           + cgrid%fmean_leaf_water     (ipy)               &
                                           * frqsum_o_daysec
+         cgrid%dmean_leaf_water_im2 (ipy) = cgrid%dmean_leaf_water_im2 (ipy)               &
+                                          + cgrid%fmean_leaf_water_im2 (ipy)               &
+                                          * frqsum_o_daysec
          cgrid%dmean_leaf_hcap      (ipy) = cgrid%dmean_leaf_hcap      (ipy)               &
                                           + cgrid%fmean_leaf_hcap      (ipy)               &
                                           * frqsum_o_daysec
@@ -1824,6 +1851,9 @@ module average_utils
                                           * frqsum_o_daysec
          cgrid%dmean_wood_water     (ipy) = cgrid%dmean_wood_water     (ipy)               &
                                           + cgrid%fmean_wood_water     (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_wood_water_im2 (ipy) = cgrid%dmean_wood_water_im2 (ipy)               &
+                                          + cgrid%fmean_wood_water_im2 (ipy)               &
                                           * frqsum_o_daysec
          cgrid%dmean_wood_hcap      (ipy) = cgrid%dmean_wood_hcap      (ipy)               &
                                           + cgrid%fmean_wood_hcap      (ipy)               &
@@ -2553,6 +2583,27 @@ module average_utils
                   cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico)      &
                                                    + cpatch%fmean_wshed_wg      (ico)      &
                                                    * frqsum_o_daysec
+                  cpatch%dmean_leaf_water_int(ico) = cpatch%dmean_leaf_water_int(ico)      &
+                                                   + cpatch%fmean_leaf_water_int(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_leaf_water_im2(ico) = cpatch%dmean_leaf_water_im2(ico)      &
+                                                   + cpatch%fmean_leaf_water_im2(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wood_water_int(ico) = cpatch%dmean_wood_water_int(ico)      &
+                                                   + cpatch%fmean_wood_water_int(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wood_water_im2(ico) = cpatch%dmean_wood_water_im2(ico)      &
+                                                   + cpatch%fmean_wood_water_im2(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_gw      (ico) = cpatch%dmean_wflux_gw      (ico)      &
+                                                   + cpatch%fmean_wflux_gw      (ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_gw_layer(:,ico)=cpatch%dmean_wflux_gw_layer(:,ico)    &
+                                                   + cpatch%fmean_wflux_gw_layer(:,ico)    &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_wflux_wl      (ico) = cpatch%dmean_wflux_wl      (ico)      &
+                                                   + cpatch%fmean_wflux_wl      (ico)      &
+                                                   * frqsum_o_daysec
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -3095,11 +3146,12 @@ module average_utils
                   !------------------------------------------------------------------------!
                   !----- Leaf. ------------------------------------------------------------!
                   if (cpatch%dmean_leaf_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%dmean_leaf_energy(ico)                         &
-                                   , cpatch%dmean_leaf_water (ico)                         &
-                                   , cpatch%dmean_leaf_hcap  (ico)                         &
-                                   , cpatch%dmean_leaf_temp  (ico)                         &
-                                   , cpatch%dmean_leaf_fliq  (ico) )
+                     call uextcm2tl( cpatch%dmean_leaf_energy   (ico)                      &
+                                   , cpatch%dmean_leaf_water    (ico)                      &
+                                   + cpatch%dmean_leaf_water_im2(ico)                      &
+                                   , cpatch%dmean_leaf_hcap     (ico)                      &
+                                   , cpatch%dmean_leaf_temp     (ico)                      &
+                                   , cpatch%dmean_leaf_fliq     (ico) )
                   else
                      cpatch%dmean_leaf_vpdef(ico) = csite%dmean_can_vpdef(ipa)
                      cpatch%dmean_leaf_temp (ico) = csite%dmean_can_temp (ipa)
@@ -3113,11 +3165,12 @@ module average_utils
                   end if
                   !----- Wood. ------------------------------------------------------------!
                   if (cpatch%dmean_wood_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%dmean_wood_energy(ico)                         &
-                                   , cpatch%dmean_wood_water (ico)                         &
-                                   , cpatch%dmean_wood_hcap  (ico)                         &
-                                   , cpatch%dmean_wood_temp  (ico)                         &
-                                   , cpatch%dmean_wood_fliq  (ico) )
+                     call uextcm2tl( cpatch%dmean_wood_energy   (ico)                      &
+                                   , cpatch%dmean_wood_water    (ico)                      &
+                                   + cpatch%dmean_wood_water_im2(ico)                      &
+                                   , cpatch%dmean_wood_hcap     (ico)                      &
+                                   , cpatch%dmean_wood_temp     (ico)                      &
+                                   , cpatch%dmean_wood_fliq     (ico) )
                   else
                      cpatch%dmean_wood_temp(ico) = csite%dmean_can_temp(ipa)
                      if (csite%dmean_can_temp(ipa) > t00) then
@@ -3208,9 +3261,12 @@ module average_utils
          !---------------------------------------------------------------------------------!
          !----- Leaf. ---------------------------------------------------------------------!
          if (cgrid%dmean_leaf_hcap(ipy) > 0.) then
-            call uextcm2tl( cgrid%dmean_leaf_energy(ipy), cgrid%dmean_leaf_water (ipy)     &
-                          , cgrid%dmean_leaf_hcap  (ipy), cgrid%dmean_leaf_temp  (ipy)     &
-                          , cgrid%dmean_leaf_fliq  (ipy) )
+            call uextcm2tl( cgrid%dmean_leaf_energy   (ipy)                                &
+                          , cgrid%dmean_leaf_water    (ipy)                                &
+                          + cgrid%dmean_leaf_water_im2(ipy)                                &
+                          , cgrid%dmean_leaf_hcap     (ipy)                                &
+                          , cgrid%dmean_leaf_temp     (ipy)                                &
+                          , cgrid%dmean_leaf_fliq     (ipy) )
          else
             cgrid%dmean_leaf_temp (ipy) = cgrid%dmean_can_temp (ipy)
             if (cgrid%dmean_can_temp(ipy) > t00) then
@@ -3223,11 +3279,12 @@ module average_utils
          end if
          !----- Wood. ---------------------------------------------------------------------!
          if (cgrid%dmean_wood_hcap(ipy) > 0.) then
-            call uextcm2tl( cgrid%dmean_wood_energy(ipy)                                   &
-                          , cgrid%dmean_wood_water (ipy)                                   &
-                          , cgrid%dmean_wood_hcap  (ipy)                                   &
-                          , cgrid%dmean_wood_temp  (ipy)                                   &
-                          , cgrid%dmean_wood_fliq  (ipy) )
+            call uextcm2tl( cgrid%dmean_wood_energy   (ipy)                                &
+                          , cgrid%dmean_wood_water    (ipy)                                &
+                          + cgrid%dmean_wood_water_im2(ipy)                                &
+                          , cgrid%dmean_wood_hcap     (ipy)                                &
+                          , cgrid%dmean_wood_temp     (ipy)                                &
+                          , cgrid%dmean_wood_fliq     (ipy) )
          else
             cgrid%dmean_wood_temp(ipy) = cgrid%dmean_can_temp(ipy)
             if (cgrid%dmean_can_temp(ipy) > t00) then
@@ -3361,6 +3418,77 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_DX_VARS        
+   !> \brief This subroutine resets the daily eXtreme (maximum,minimum) variables, once the
+   !> variables have been used. Current only dmin/dmax water potentials are included. 
+   !> \author Xiangtao Xu
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_dx_vars(cgrid)
+      use ed_state_vars, only : edtype        & ! structure
+                              , polygontype   & ! structure
+                              , sitetype      & ! structure
+                              , patchtype     ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target  :: cgrid
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer :: cpoly
+      type(sitetype)   , pointer :: csite
+      type(patchtype)  , pointer :: cpatch
+      integer                    :: ipy
+      integer                    :: isi
+      integer                    :: ipa
+      integer                    :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !       Loop over polygons.                                                          !
+      !------------------------------------------------------------------------------------!
+      polyloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         
+         !---------------------------------------------------------------------------------!
+         !       Loop over sites.                                                          !
+         !---------------------------------------------------------------------------------!
+         siteloop: do isi=1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+            !------------------------------------------------------------------------------!
+            !       Loop over patches.                                                     !
+            !------------------------------------------------------------------------------!
+            patchloop: do ipa=1,csite%npatches
+               cpatch => csite%patch(ipa)
+
+               !---------------------------------------------------------------------------!
+               !       Loop over cohorts.                                                  !
+               !---------------------------------------------------------------------------!
+               cohortloop: do ico=1, cpatch%ncohorts
+                  cpatch%dmax_leaf_psi(ico) = 0.0
+                  cpatch%dmin_leaf_psi(ico) = 0.0
+                  cpatch%dmax_wood_psi(ico) = 0.0
+                  cpatch%dmin_wood_psi(ico) = 0.0
+               end do cohortloop
+               !---------------------------------------------------------------------------!
+            end do patchloop
+            !------------------------------------------------------------------------------!
+         end do siteloop
+         !---------------------------------------------------------------------------------!
+      end do polyloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_dx_vars
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !    This subroutine resets the daily averages once the daily average file has been     !
    ! written and used to compute the monthly mean (in case the latter was requested).      !
    !---------------------------------------------------------------------------------------!
@@ -3424,6 +3552,7 @@ module average_utils
          cgrid%dmean_plresp             (ipy) = 0.0
          cgrid%dmean_leaf_energy        (ipy) = 0.0
          cgrid%dmean_leaf_water         (ipy) = 0.0
+         cgrid%dmean_leaf_water_im2     (ipy) = 0.0
          cgrid%dmean_leaf_hcap          (ipy) = 0.0
          cgrid%dmean_leaf_vpdef         (ipy) = 0.0
          cgrid%dmean_leaf_temp          (ipy) = 0.0
@@ -3432,6 +3561,7 @@ module average_utils
          cgrid%dmean_leaf_gbw           (ipy) = 0.0
          cgrid%dmean_wood_energy        (ipy) = 0.0
          cgrid%dmean_wood_water         (ipy) = 0.0
+         cgrid%dmean_wood_water_im2     (ipy) = 0.0
          cgrid%dmean_wood_hcap          (ipy) = 0.0
          cgrid%dmean_wood_temp          (ipy) = 0.0
          cgrid%dmean_wood_fliq          (ipy) = 0.0
@@ -3733,6 +3863,14 @@ module average_utils
                   cpatch%dmean_vapor_wc          (ico) = 0.0
                   cpatch%dmean_intercepted_aw    (ico) = 0.0
                   cpatch%dmean_wshed_wg          (ico) = 0.0
+
+                  cpatch%dmean_leaf_water_int    (ico) = 0.0
+                  cpatch%dmean_leaf_water_im2    (ico) = 0.0
+                  cpatch%dmean_wood_water_int    (ico) = 0.0
+                  cpatch%dmean_wood_water_im2    (ico) = 0.0
+                  cpatch%dmean_wflux_gw          (ico) = 0.0
+                  cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
+                  cpatch%dmean_wflux_wl          (ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -3893,6 +4031,9 @@ module average_utils
          cgrid%mmean_leaf_drop        (:,:,ipy) = cgrid%mmean_leaf_drop        (:,:,ipy)   &
                                                 + cgrid%leaf_drop              (:,:,ipy)   &
                                                 * ndaysi
+         cgrid%mmean_root_drop        (:,:,ipy) = cgrid%mmean_root_drop        (:,:,ipy)   &
+                                                + cgrid%root_drop              (:,:,ipy)   &
+                                                * ndaysi
          cgrid%mmean_fast_grnd_c          (ipy) = cgrid%mmean_fast_grnd_c          (ipy)   &
                                                 + cgrid%fast_grnd_c                (ipy)   &
                                                 * ndaysi
@@ -3998,6 +4139,9 @@ module average_utils
          cgrid%mmean_leaf_water        (ipy) = cgrid%mmean_leaf_water        (ipy)         &
                                              + cgrid%dmean_leaf_water        (ipy)         &
                                              * ndaysi
+         cgrid%mmean_leaf_water_im2    (ipy) = cgrid%mmean_leaf_water_im2    (ipy)         &
+                                             + cgrid%dmean_leaf_water_im2    (ipy)         &
+                                             * ndaysi
          cgrid%mmean_leaf_hcap         (ipy) = cgrid%mmean_leaf_hcap         (ipy)         &
                                              + cgrid%dmean_leaf_hcap         (ipy)         &
                                              * ndaysi
@@ -4015,6 +4159,9 @@ module average_utils
                                              * ndaysi
          cgrid%mmean_wood_water        (ipy) = cgrid%mmean_wood_water        (ipy)         &
                                              + cgrid%dmean_wood_water        (ipy)         &
+                                             * ndaysi
+         cgrid%mmean_wood_water_im2    (ipy) = cgrid%mmean_wood_water_im2    (ipy)         &
+                                             + cgrid%dmean_wood_water_im2    (ipy)         &
                                              * ndaysi
          cgrid%mmean_wood_hcap         (ipy) = cgrid%mmean_wood_hcap         (ipy)         &
                                              + cgrid%dmean_wood_hcap         (ipy)         &
@@ -4965,6 +5112,9 @@ module average_utils
                   cpatch%mmean_leaf_drop       (ico) = cpatch%mmean_leaf_drop       (ico)  &
                                                      + cpatch%leaf_drop             (ico)  &
                                                      * ndaysi
+                  cpatch%mmean_root_drop       (ico) = cpatch%mmean_root_drop       (ico)  &
+                                                     + cpatch%root_drop             (ico)  &
+                                                     * ndaysi
                   cpatch%mmean_cb              (ico) = cpatch%mmean_cb              (ico)  &
                                                      + ( cpatch%dmean_gpp           (ico)  &
                                                        - cpatch%dmean_plresp        (ico)  &
@@ -4973,6 +5123,7 @@ module average_utils
                                                        - cpatch%barka_maintenance   (ico)  &
                                                        - cpatch%barkb_maintenance   (ico)  &
                                                        - cpatch%leaf_drop           (ico)  &
+                                                       - cpatch%root_drop           (ico)  &
                                                        ) / yr_day * ndaysi
                   !------------------------------------------------------------------------!
 
@@ -5211,6 +5362,40 @@ module average_utils
                   cpatch%mmean_nppdaily        (ico) = cpatch%mmean_nppdaily        (ico)  &
                                                      + cpatch%dmean_nppdaily        (ico)  &
                                                      * ndaysi
+
+                  cpatch%mmean_dmax_leaf_psi   (ico) = cpatch%mmean_dmax_leaf_psi   (ico)  &
+                                                     + cpatch%dmax_leaf_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmin_leaf_psi   (ico) = cpatch%mmean_dmin_leaf_psi   (ico)  &
+                                                     + cpatch%dmin_leaf_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmax_wood_psi   (ico) = cpatch%mmean_dmax_wood_psi   (ico)  &
+                                                     + cpatch%dmax_wood_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_dmin_wood_psi   (ico) = cpatch%mmean_dmin_wood_psi   (ico)  &
+                                                     + cpatch%dmin_wood_psi         (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_leaf_water_int  (ico) = cpatch%mmean_leaf_water_int  (ico)  &
+                                                     + cpatch%dmean_leaf_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_leaf_water_im2  (ico) = cpatch%mmean_leaf_water_im2  (ico)  &
+                                                     + cpatch%dmean_leaf_water_im2  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wood_water_int  (ico) = cpatch%mmean_wood_water_int  (ico)  &
+                                                     + cpatch%dmean_wood_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wood_water_im2  (ico) = cpatch%mmean_wood_water_im2  (ico)  &
+                                                     + cpatch%dmean_wood_water_im2  (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_gw        (ico) = cpatch%mmean_wflux_gw        (ico)  &
+                                                     + cpatch%dmean_wflux_gw        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_wl        (ico) = cpatch%mmean_wflux_wl        (ico)  &
+                                                     + cpatch%dmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_gw_layer(:,ico) = cpatch%mmean_wflux_gw_layer(:,ico)  &
+                                                     + cpatch%dmean_wflux_gw_layer(:,ico)  &
+                                                     * ndaysi
                   !----- Integrate mean sum of squares. -----------------------------------!
                   cpatch%mmsqu_gpp        (ico) = cpatch%mmsqu_gpp                  (ico)  &
                                                 + isqu_ftz(cpatch%dmean_gpp         (ico)) &
@@ -5430,11 +5615,12 @@ module average_utils
                   !------------------------------------------------------------------------!
                   !----- Leaf. ------------------------------------------------------------!
                   if (cpatch%mmean_leaf_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%mmean_leaf_energy(ico)                         &
-                                   , cpatch%mmean_leaf_water (ico)                         &
-                                   , cpatch%mmean_leaf_hcap  (ico)                         &
-                                   , cpatch%mmean_leaf_temp  (ico)                         &
-                                   , cpatch%mmean_leaf_fliq  (ico) )
+                     call uextcm2tl( cpatch%mmean_leaf_energy   (ico)                      &
+                                   , cpatch%mmean_leaf_water    (ico)                      &
+                                   + cpatch%mmean_leaf_water_im2(ico)                      &
+                                   , cpatch%mmean_leaf_hcap     (ico)                      &
+                                   , cpatch%mmean_leaf_temp     (ico)                      &
+                                   , cpatch%mmean_leaf_fliq     (ico) )
                   else
                      cpatch%mmean_leaf_vpdef(ico) = csite%mmean_can_vpdef(ipa)
                      cpatch%mmean_leaf_temp (ico) = csite%mmean_can_temp (ipa)
@@ -5448,11 +5634,12 @@ module average_utils
                   end if
                   !----- Wood. ------------------------------------------------------------!
                   if (cpatch%mmean_wood_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%mmean_wood_energy(ico)                         &
-                                   , cpatch%mmean_wood_water (ico)                         &
-                                   , cpatch%mmean_wood_hcap  (ico)                         &
-                                   , cpatch%mmean_wood_temp  (ico)                         &
-                                   , cpatch%mmean_wood_fliq  (ico) )
+                     call uextcm2tl( cpatch%mmean_wood_energy   (ico)                      &
+                                   , cpatch%mmean_wood_water    (ico)                      &
+                                   + cpatch%mmean_wood_water_im2(ico)                      &
+                                   , cpatch%mmean_wood_hcap     (ico)                      &
+                                   , cpatch%mmean_wood_temp     (ico)                      &
+                                   , cpatch%mmean_wood_fliq     (ico) )
                   else
                      cpatch%mmean_wood_temp(ico) = csite%mmean_can_temp(ipa)
                      if (csite%mmean_can_temp(ipa) > t00) then
@@ -5543,9 +5730,12 @@ module average_utils
          !---------------------------------------------------------------------------------!
          !----- Leaf. ---------------------------------------------------------------------!
          if (cgrid%mmean_leaf_hcap(ipy) > 0.) then
-            call uextcm2tl( cgrid%mmean_leaf_energy(ipy), cgrid%mmean_leaf_water (ipy)     &
-                          , cgrid%mmean_leaf_hcap  (ipy), cgrid%mmean_leaf_temp  (ipy)     &
-                          , cgrid%mmean_leaf_fliq  (ipy) )
+            call uextcm2tl( cgrid%mmean_leaf_energy   (ipy)                                &
+                          , cgrid%mmean_leaf_water    (ipy)                                &
+                          + cgrid%mmean_leaf_water_im2(ipy)                                &
+                          , cgrid%mmean_leaf_hcap     (ipy)                                &
+                          , cgrid%mmean_leaf_temp     (ipy)                                &
+                          , cgrid%mmean_leaf_fliq     (ipy) )
          else
             cgrid%mmean_leaf_temp (ipy) = cgrid%mmean_can_temp (ipy)
             if (cgrid%mmean_can_temp(ipy) > t00) then
@@ -5558,11 +5748,12 @@ module average_utils
          end if
          !----- Wood. ---------------------------------------------------------------------!
          if (cgrid%mmean_wood_hcap(ipy) > 0.) then
-            call uextcm2tl( cgrid%mmean_wood_energy(ipy)                                   &
-                          , cgrid%mmean_wood_water (ipy)                                   &
-                          , cgrid%mmean_wood_hcap  (ipy)                                   &
-                          , cgrid%mmean_wood_temp  (ipy)                                   &
-                          , cgrid%mmean_wood_fliq  (ipy) )
+            call uextcm2tl( cgrid%mmean_wood_energy   (ipy)                                &
+                          , cgrid%mmean_wood_water    (ipy)                                &
+                          + cgrid%mmean_wood_water_im2(ipy)                                &
+                          , cgrid%mmean_wood_hcap     (ipy)                                &
+                          , cgrid%mmean_wood_temp     (ipy)                                &
+                          , cgrid%mmean_wood_fliq     (ipy) )
          else
             cgrid%mmean_wood_temp(ipy) = cgrid%mmean_can_temp(ipy)
             if (cgrid%mmean_can_temp(ipy) > t00) then
@@ -5637,6 +5828,7 @@ module average_utils
          cgrid%mmean_barka_maintenance(:,:,ipy) = 0.0
          cgrid%mmean_barkb_maintenance(:,:,ipy) = 0.0
          cgrid%mmean_leaf_drop        (:,:,ipy) = 0.0
+         cgrid%mmean_root_drop        (:,:,ipy) = 0.0
          cgrid%mmean_fast_grnd_c          (ipy) = 0.0
          cgrid%mmean_fast_soil_c          (ipy) = 0.0
          cgrid%mmean_struct_grnd_c        (ipy) = 0.0
@@ -5670,6 +5862,7 @@ module average_utils
          cgrid%mmean_plresp               (ipy) = 0.0
          cgrid%mmean_leaf_energy          (ipy) = 0.0
          cgrid%mmean_leaf_water           (ipy) = 0.0
+         cgrid%mmean_leaf_water_im2       (ipy) = 0.0
          cgrid%mmean_leaf_hcap            (ipy) = 0.0
          cgrid%mmean_leaf_vpdef           (ipy) = 0.0
          cgrid%mmean_leaf_temp            (ipy) = 0.0
@@ -5678,6 +5871,7 @@ module average_utils
          cgrid%mmean_leaf_gbw             (ipy) = 0.0
          cgrid%mmean_wood_energy          (ipy) = 0.0
          cgrid%mmean_wood_water           (ipy) = 0.0
+         cgrid%mmean_wood_water_im2       (ipy) = 0.0
          cgrid%mmean_wood_hcap            (ipy) = 0.0
          cgrid%mmean_wood_temp            (ipy) = 0.0
          cgrid%mmean_wood_fliq            (ipy) = 0.0
@@ -6013,6 +6207,7 @@ module average_utils
                   cpatch%mmean_barka_maintenance  (ico) = 0.0
                   cpatch%mmean_barkb_maintenance  (ico) = 0.0
                   cpatch%mmean_leaf_drop          (ico) = 0.0
+                  cpatch%mmean_root_drop          (ico) = 0.0
                   select case (iddmort_scheme)
                   case (0)
                      cpatch%mmean_cb              (ico) = 0.0
@@ -6095,6 +6290,19 @@ module average_utils
                   cpatch%mmean_nppseeds           (ico) = 0.0
                   cpatch%mmean_nppwood            (ico) = 0.0
                   cpatch%mmean_nppdaily           (ico) = 0.0
+
+                  cpatch%mmean_dmax_leaf_psi      (ico) = 0.0
+                  cpatch%mmean_dmax_wood_psi      (ico) = 0.0
+                  cpatch%mmean_dmin_leaf_psi      (ico) = 0.0
+                  cpatch%mmean_dmin_wood_psi      (ico) = 0.0
+                  cpatch%mmean_leaf_water_int     (ico) = 0.0
+                  cpatch%mmean_leaf_water_im2     (ico) = 0.0
+                  cpatch%mmean_wood_water_int     (ico) = 0.0
+                  cpatch%mmean_wood_water_im2     (ico) = 0.0
+                  cpatch%mmean_wflux_gw           (ico) = 0.0
+                  cpatch%mmean_wflux_wl           (ico) = 0.0
+                  cpatch%mmean_wflux_gw_layer   (:,ico) = 0.0
+
                   cpatch%mmsqu_gpp                (ico) = 0.0
                   cpatch%mmsqu_npp                (ico) = 0.0
                   cpatch%mmsqu_plresp             (ico) = 0.0
@@ -6270,6 +6478,9 @@ module average_utils
          cgrid%qmean_leaf_water        (t,ipy) = cgrid%qmean_leaf_water        (t,ipy)     &
                                                + cgrid%fmean_leaf_water          (ipy)     &
                                                * ndaysi
+         cgrid%qmean_leaf_water_im2    (t,ipy) = cgrid%qmean_leaf_water_im2    (t,ipy)     &
+                                               + cgrid%fmean_leaf_water_im2      (ipy)     &
+                                               * ndaysi
          cgrid%qmean_leaf_hcap         (t,ipy) = cgrid%qmean_leaf_hcap         (t,ipy)     &
                                                + cgrid%fmean_leaf_hcap           (ipy)     &
                                                * ndaysi
@@ -6287,6 +6498,9 @@ module average_utils
                                                * ndaysi
          cgrid%qmean_wood_water        (t,ipy) = cgrid%qmean_wood_water        (t,ipy)     &
                                                + cgrid%fmean_wood_water          (ipy)     &
+                                               * ndaysi
+         cgrid%qmean_wood_water_im2    (t,ipy) = cgrid%qmean_wood_water_im2    (t,ipy)     &
+                                               + cgrid%fmean_wood_water_im2      (ipy)     &
                                                * ndaysi
          cgrid%qmean_wood_hcap         (t,ipy) = cgrid%qmean_wood_hcap         (t,ipy)     &
                                                + cgrid%fmean_wood_hcap           (ipy)     &
@@ -7211,6 +7425,32 @@ module average_utils
                   cpatch%qmean_wshed_wg      (t,ico) = cpatch%qmean_wshed_wg      (t,ico)  &
                                                      + cpatch%fmean_wshed_wg        (ico)  &
                                                      * ndaysi
+
+                  cpatch%qmean_leaf_psi      (t,ico) = cpatch%qmean_leaf_psi      (t,ico)  &
+                                                     + cpatch%fmean_leaf_psi        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wood_psi      (t,ico) = cpatch%qmean_wood_psi      (t,ico)  &
+                                                     + cpatch%fmean_wood_psi        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_leaf_water_int(t,ico) = cpatch%qmean_leaf_water_int(t,ico)  &
+                                                     + cpatch%fmean_leaf_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_leaf_water_im2(t,ico) = cpatch%qmean_leaf_water_im2(t,ico)  &
+                                                     + cpatch%fmean_leaf_water_im2  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wood_water_int(t,ico) = cpatch%qmean_wood_water_int(t,ico)  &
+                                                     + cpatch%fmean_wood_water_int  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wood_water_im2(t,ico) = cpatch%qmean_wood_water_im2(t,ico)  &
+                                                     + cpatch%fmean_wood_water_im2  (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wflux_gw      (t,ico) = cpatch%qmean_wflux_gw      (t,ico)  &
+                                                     + cpatch%fmean_wflux_gw        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wflux_wl      (t,ico) = cpatch%qmean_wflux_wl      (t,ico)  &
+                                                     + cpatch%fmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+
                   !------ Mean sum of squares. --------------------------------------------!
                   cpatch%qmsqu_gpp        (t,ico) = cpatch%qmsqu_gpp              (t,ico)  &
                                                   + isqu_ftz(cpatch%fmean_gpp       (ico)) &
@@ -7435,11 +7675,12 @@ module average_utils
                   do t=1,ndcycle
                      !----- Leaf. ---------------------------------------------------------!
                      if (cpatch%qmean_leaf_hcap(t,ico) > 0.) then
-                        call uextcm2tl( cpatch%qmean_leaf_energy(t,ico)                    &
-                                      , cpatch%qmean_leaf_water (t,ico)                    &
-                                      , cpatch%qmean_leaf_hcap  (t,ico)                    &
-                                      , cpatch%qmean_leaf_temp  (t,ico)                    &
-                                      , cpatch%qmean_leaf_fliq  (t,ico) )
+                        call uextcm2tl( cpatch%qmean_leaf_energy   (t,ico)                 &
+                                      , cpatch%qmean_leaf_water    (t,ico)                 &
+                                      + cpatch%qmean_leaf_water_im2(t,ico)                 &
+                                      , cpatch%qmean_leaf_hcap     (t,ico)                 &
+                                      , cpatch%qmean_leaf_temp     (t,ico)                 &
+                                      , cpatch%qmean_leaf_fliq     (t,ico) )
                      else
                         cpatch%qmean_leaf_vpdef(t,ico) = csite%qmean_can_vpdef(t,ipa)
                         cpatch%qmean_leaf_temp (t,ico) = csite%qmean_can_temp (t,ipa)
@@ -7453,11 +7694,12 @@ module average_utils
                      end if
                      !----- Wood. ---------------------------------------------------------!
                      if (cpatch%qmean_wood_hcap(t,ico) > 0.) then
-                        call uextcm2tl( cpatch%qmean_wood_energy(t,ico)                    &
-                                      , cpatch%qmean_wood_water (t,ico)                    &
-                                      , cpatch%qmean_wood_hcap  (t,ico)                    &
-                                      , cpatch%qmean_wood_temp  (t,ico)                    &
-                                      , cpatch%qmean_wood_fliq  (t,ico) )
+                        call uextcm2tl( cpatch%qmean_wood_energy   (t,ico)                 &
+                                      , cpatch%qmean_wood_water    (t,ico)                 &
+                                      + cpatch%qmean_wood_water_im2(t,ico)                 &
+                                      , cpatch%qmean_wood_hcap     (t,ico)                 &
+                                      , cpatch%qmean_wood_temp     (t,ico)                 &
+                                      , cpatch%qmean_wood_fliq     (t,ico) )
                      else
                         cpatch%qmean_wood_temp(t,ico) = csite%qmean_can_temp(t,ipa)
                         if (csite%qmean_can_temp(t,ipa) > t00) then
@@ -7557,11 +7799,12 @@ module average_utils
             !------------------------------------------------------------------------------!
             !----- Leaf. ------------------------------------------------------------------!
             if (cgrid%qmean_leaf_hcap(t,ipy) > 0.) then
-               call uextcm2tl( cgrid%qmean_leaf_energy(t,ipy)                              &
-                             , cgrid%qmean_leaf_water (t,ipy)                              &
-                             , cgrid%qmean_leaf_hcap  (t,ipy)                              &
-                             , cgrid%qmean_leaf_temp  (t,ipy)                              &
-                             , cgrid%qmean_leaf_fliq  (t,ipy) )
+               call uextcm2tl( cgrid%qmean_leaf_energy   (t,ipy)                           &
+                             , cgrid%qmean_leaf_water    (t,ipy)                           &
+                             + cgrid%qmean_leaf_water_im2(t,ipy)                           &
+                             , cgrid%qmean_leaf_hcap     (t,ipy)                           &
+                             , cgrid%qmean_leaf_temp     (t,ipy)                           &
+                             , cgrid%qmean_leaf_fliq     (t,ipy) )
             else
                cgrid%qmean_leaf_temp (t,ipy) = cgrid%qmean_can_temp (t,ipy)
                if (cgrid%qmean_can_temp(t,ipy) > t00) then
@@ -7574,11 +7817,12 @@ module average_utils
             end if
             !----- Wood. ------------------------------------------------------------------!
             if (cgrid%qmean_wood_hcap(t,ipy) > 0.) then
-               call uextcm2tl( cgrid%qmean_wood_energy(t,ipy)                              &
-                             , cgrid%qmean_wood_water (t,ipy)                              &
-                             , cgrid%qmean_wood_hcap  (t,ipy)                              &
-                             , cgrid%qmean_wood_temp  (t,ipy)                              &
-                             , cgrid%qmean_wood_fliq  (t,ipy) )
+               call uextcm2tl( cgrid%qmean_wood_energy   (t,ipy)                           &
+                             , cgrid%qmean_wood_water    (t,ipy)                           &
+                             + cgrid%qmean_wood_water_im2(t,ipy)                           &
+                             , cgrid%qmean_wood_hcap     (t,ipy)                           &
+                             , cgrid%qmean_wood_temp     (t,ipy)                           &
+                             , cgrid%qmean_wood_fliq     (t,ipy) )
             else
                cgrid%qmean_wood_temp(t,ipy) = cgrid%qmean_can_temp(t,ipy)
                if (cgrid%qmean_can_temp(t,ipy) > t00) then
@@ -7651,6 +7895,7 @@ module average_utils
          cgrid%qmean_plresp             (:,ipy) = 0.0
          cgrid%qmean_leaf_energy        (:,ipy) = 0.0
          cgrid%qmean_leaf_water         (:,ipy) = 0.0
+         cgrid%qmean_leaf_water_im2     (:,ipy) = 0.0
          cgrid%qmean_leaf_hcap          (:,ipy) = 0.0
          cgrid%qmean_leaf_vpdef         (:,ipy) = 0.0
          cgrid%qmean_leaf_temp          (:,ipy) = 0.0
@@ -7659,6 +7904,7 @@ module average_utils
          cgrid%qmean_leaf_gbw           (:,ipy) = 0.0
          cgrid%qmean_wood_energy        (:,ipy) = 0.0
          cgrid%qmean_wood_water         (:,ipy) = 0.0
+         cgrid%qmean_wood_water_im2     (:,ipy) = 0.0
          cgrid%qmean_wood_hcap          (:,ipy) = 0.0
          cgrid%qmean_wood_temp          (:,ipy) = 0.0
          cgrid%qmean_wood_fliq          (:,ipy) = 0.0
@@ -7996,6 +8242,16 @@ module average_utils
                   cpatch%qmean_vapor_wc            (:,ico) = 0.0
                   cpatch%qmean_intercepted_aw      (:,ico) = 0.0
                   cpatch%qmean_wshed_wg            (:,ico) = 0.0
+
+                  cpatch%qmean_leaf_psi            (:,ico) = 0.0
+                  cpatch%qmean_wood_psi            (:,ico) = 0.0
+                  cpatch%qmean_leaf_water_int      (:,ico) = 0.0
+                  cpatch%qmean_leaf_water_im2      (:,ico) = 0.0
+                  cpatch%qmean_wood_water_int      (:,ico) = 0.0
+                  cpatch%qmean_wood_water_im2      (:,ico) = 0.0
+                  cpatch%qmean_wflux_gw            (:,ico) = 0.0
+                  cpatch%qmean_wflux_wl            (:,ico) = 0.0
+
                   cpatch%qmsqu_gpp                 (:,ico) = 0.0
                   cpatch%qmsqu_npp                 (:,ico) = 0.0
                   cpatch%qmsqu_plresp              (:,ico) = 0.0

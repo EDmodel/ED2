@@ -352,6 +352,8 @@ module phenology_aux
       use grid_coms     , only : nzg              ! ! intent(in)
       use therm_lib     , only : cmtl2uext        ! ! function
       use stable_cohorts, only : is_resolvable    ! ! sub-routine
+      use plant_hydro   , only : rwc2tw           & ! sub-routine
+                               , twi2twe          ! ! sub-routine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid       ! Current grid
@@ -420,14 +422,24 @@ module phenology_aux
                                     ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
-                  cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)               &
-                                                     ,cpatch%leaf_water(ico)               &
-                                                     ,cpatch%leaf_temp (ico)               &
-                                                     ,cpatch%leaf_fliq (ico))
-                  cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)               &
-                                                     ,cpatch%wood_water(ico)               &
-                                                     ,cpatch%wood_temp (ico)               &
-                                                     ,cpatch%wood_fliq (ico))
+                  call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%bleaf(ico)  &
+                             ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)                  &
+                             ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)      &
+                             ,cpatch%dbh(ico),cpatch%pft(ico),cpatch%leaf_water_int(ico)   &
+                             ,cpatch%wood_water_int(ico))
+                  call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
+                              ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
+                              ,cpatch%wood_water_im2(ico))
+                  cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)          &
+                                                     , cpatch%leaf_water    (ico)          &
+                                                     + cpatch%leaf_water_im2(ico)          &
+                                                     , cpatch%leaf_temp     (ico)          &
+                                                     , cpatch%leaf_fliq     (ico) )
+                  cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)          &
+                                                     , cpatch%wood_water    (ico)          &
+                                                     + cpatch%wood_water_im2(ico)          &
+                                                     , cpatch%wood_temp     (ico)          &
+                                                     , cpatch%wood_fliq     (ico) )
                   call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
 

@@ -545,6 +545,7 @@ module rk4_integ_utils
       use consts_coms          , only : wdnsi8                ! ! intent(in)
       use soil_coms            , only : isoilbc               & ! intent(in)
                                       , dslzi8                ! ! intent(in)
+      use physiology_coms      , only : plant_hydro_scheme    ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target     :: y      ! Struct. with the guesses
@@ -788,6 +789,49 @@ module rk4_integ_utils
             yscal%veg_energy(ico)  = huge_offset
             !------------------------------------------------------------------------------!
          end do
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Check plant hydraulics variables.                                             !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !    Plant hydraulics is not enabled, make changes in internal water always       !
+         ! acceptable.                                                                     !
+         !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            yscal%leaf_water_im2(ico)    = huge_offset
+            yscal%wood_water_im2(ico)    = huge_offset
+         end do
+         !---------------------------------------------------------------------------------!
+      case (-2,-1,1,2)
+         !---------------------------------------------------------------------------------!
+         !    Simulation running with plant hydraulics.  Calculate the scale similarly to  !
+         ! leaf/wood energy.                                                               !
+         !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            !------------------------------------------------------------------------------!
+            !     Check whether leaf and wood are resolvable.                              !
+            !------------------------------------------------------------------------------!
+            if (yscal%leaf_resolvable(ico)) then
+               yscal%leaf_water_im2(ico) = abs( y%leaf_water_im2(ico))                     &
+                                         + abs(dy%leaf_water_im2(ico) * htry )
+            else
+                yscal%leaf_water_im2(ico) = huge_offset
+            end if
+            if (yscal%wood_resolvable(ico)) then
+               yscal%wood_water_im2(ico) = abs( y%wood_water_im2(ico))                     &
+                                         + abs(dy%wood_water_im2(ico) * htry)
+            else
+               yscal%wood_water_im2(ico) = huge_offset
+            end if
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
@@ -1057,17 +1101,46 @@ module rk4_integ_utils
       end select
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !     Leaf/wood internal water pool                                                  !
+      !------------------------------------------------------------------------------------!
+      ! leaf
+      errh2oMAX  = 0.d0
+      do ico = 1,cpatch%ncohorts
+         if (yscal%leaf_resolvable(ico)) then
+            errh2o     = abs(yerr%leaf_water_im2 (ico) / yscal%leaf_water_im2 (ico))
+            errmax     = max(errmax,errh2o)
+            errh2oMAX  = max(errh2oMAX ,errh2o )
+         end if
+      end do
+      if(cpatch%ncohorts > 0 .and. record_err) then
+         if (errh2oMAX  > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
+      end if
+      ! wood
+      errh2oMAX  = 0.d0
+      do ico = 1,cpatch%ncohorts
+         if (yscal%wood_resolvable(ico)) then
+            errh2o     = abs(yerr%wood_water_im2 (ico) / yscal%wood_water_im2 (ico))
+            errmax     = max(errmax,errh2o)
+            errh2oMAX  = max(errh2oMAX ,errh2o )
+         end if
+      end do
+      if(cpatch%ncohorts > 0 .and. record_err) then
+         if (errh2oMAX  > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
+      end if
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     Virtual pool.                                                                  !
       !------------------------------------------------------------------------------------!
       err    = abs(yerr%virtual_energy/yscal%virtual_energy)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
 
       err    = abs(yerr%virtual_water/yscal%virtual_water)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8      
+      if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8      
       !------------------------------------------------------------------------------------!
 
 
@@ -1080,39 +1153,39 @@ module rk4_integ_utils
       if (checkbudget) then
          err    = abs(yerr%co2budget_storage/yscal%co2budget_storage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
          err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
 
          err    = abs(yerr%ebudget_netrad/yscal%ebudget_netrad)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
 
          err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(17,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
 
          err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(18,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
 
          err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(19,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
 
          err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(20,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(21,1) + 1_8
 
          err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(21,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(22,1) = integ_err(22,1) + 1_8
 
          err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(22,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(23,1) = integ_err(23,1) + 1_8
       end if
       !------------------------------------------------------------------------------------!
 

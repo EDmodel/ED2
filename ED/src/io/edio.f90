@@ -4,8 +4,9 @@ module edio
    !=======================================================================================!
    !     This is the main driver for file output in ED.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_output(analysis_time,new_day,new_year,dail_analy_time,mont_analy_time     &
-                       ,dcyc_analy_time,annual_time,history_time,dcycle_time)
+   subroutine ed_output(observation_time,analysis_time,new_day,new_year,dail_analy_time    &
+                       ,mont_analy_time,dcyc_analy_time,annual_time,history_time           &
+                       ,dcycle_time)
       use ed_state_vars, only : edgrid_g                & ! structure
                               , filltab_alltypes        & ! subroutine
                               , filltables              ! ! intent(inout)
@@ -24,6 +25,7 @@ module edio
                               , normalize_ed_dmean_vars & ! sub-routine
                               , integrate_ed_mmean_vars & ! sub-routine
                               , zero_ed_dmean_vars      & ! sub-routine
+                              , zero_ed_dx_vars         & ! sub-routine
                               , normalize_ed_mmean_vars & ! sub-routine
                               , normalize_ed_qmean_vars & ! sub-routine
                               , zero_ed_mmean_vars      & ! sub-routine
@@ -33,6 +35,7 @@ module edio
       use ed_print     , only : print_fields            ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
+      logical, intent(in)  :: observation_time
       logical, intent(in)  :: analysis_time
       logical, intent(in)  :: dail_analy_time
       logical, intent(in)  :: mont_analy_time
@@ -53,8 +56,9 @@ module edio
       ! to date or not.  They must be rehashed if there has been any change in the number  !
       ! of cohorts or patches (e.g, a cohort or a patch has been terminated or created).   !
       !------------------------------------------------------------------------------------!
-      if (analysis_time   .or. history_time    .or.                                        &
-          dail_analy_time .or. mont_analy_time .or. dcyc_analy_time .or. annual_time ) then
+      if (analysis_time   .or. history_time    .or. observation_time .or.                  &
+          dail_analy_time .or. mont_analy_time .or. dcyc_analy_time  .or. annual_time )    &
+      then
 
          if (filltables) then
 
@@ -72,8 +76,9 @@ module edio
       !      If this is the time for an output, we shall call routines to prepare the      !
       ! variables for output.                                                              !
       !------------------------------------------------------------------------------------!
-      if ( analysis_time .or.   history_time .or. dcycle_time  .or.                        &
-          (new_day       .and. (writing_dail .or. writing_mont .or. writing_dcyc))) then
+      if ( analysis_time .or.   history_time .or. dcycle_time  .or.  observation_time .or. &
+          (new_day       .and. (writing_dail .or. writing_mont .or. writing_dcyc)     ))   &
+      then
          do ifm=1,ngrids
             call normalize_ed_fmean_vars    (edgrid_g(ifm))
             call aggregate_polygon_fmean    (edgrid_g(ifm))
@@ -107,6 +112,14 @@ module edio
 
 
 
+      !----- Observation time   -----------------------------------------------------------!
+      if (observation_time) then
+          call h5_output('INST')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Daily analysis output and monthly integration. -------------------------------!
       if (new_day .and. (writing_dail .or. writing_mont .or. writing_dcyc)) then
 
@@ -121,6 +134,16 @@ module edio
 
          do ifm=1,ngrids
             call zero_ed_dmean_vars(edgrid_g(ifm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Reset extreme daily values. --------------------------------------------------!
+      if (new_day) then
+         do ifm=1,ngrids
+            call zero_ed_dx_vars(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!

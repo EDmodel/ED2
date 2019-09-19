@@ -188,7 +188,7 @@ default = list( run           = "unnamed"
               , lwidth.nltree = 0.05
               , q10.c3        = 2.21
               , q10.c4        = 2.21
-              , h2o.limit     = 3
+              , h2o.limit     = 5
               , imort.scheme  = 1
               , ddmort.const  = 0.8
               , cbr.scheme    = 0

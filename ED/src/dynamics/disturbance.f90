@@ -847,7 +847,7 @@ module disturbance
                         call new_fuse_cohorts(csite,onsp+new_lu,cpoly%lsl(isi),.false.)
                      end select
                      call terminate_cohorts(csite,onsp+new_lu,cmet,elim_nplant,elim_lai)
-                     call split_cohorts(qpatch, cpoly%green_leaf_factor(:,isi))
+                     call split_cohorts(csite,onsp+new_lu, cpoly%green_leaf_factor(:,isi))
                   end if
                   !------------------------------------------------------------------------!
 
@@ -3753,9 +3753,11 @@ module disturbance
                         ,cpatch%bbarka(nc),cpatch%nplant(nc),cpatch%pft(nc)                &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
-      cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc),cpatch%leaf_water(nc)       &
+      cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc)                             &
+                                        ,cpatch%leaf_water(nc) + cpatch%leaf_water_im2(nc) &
                                         ,cpatch%leaf_temp (nc),cpatch%leaf_fliq (nc))
-      cpatch%wood_energy(nc) = cmtl2uext(cpatch%wood_hcap (nc),cpatch%wood_water(nc)       &
+      cpatch%wood_energy(nc) = cmtl2uext(cpatch%wood_hcap (nc)                             &
+                                        ,cpatch%wood_water(nc) + cpatch%wood_water_im2(nc) &
                                         ,cpatch%wood_temp (nc),cpatch%wood_fliq (nc))
       call is_resolvable(csite,np,nc)
       !------------------------------------------------------------------------------------!
@@ -3809,6 +3811,8 @@ module disturbance
       use ed_max_dims,     only : n_pft                    ! ! intent(in)
       use consts_coms,     only : pio4                     ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
+      use plant_hydro,     only : rwc2tw                   & ! sub-routine
+                                , twi2twe                  ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3832,6 +3836,8 @@ module disturbance
       real                                         :: bbarka_in
       real                                         :: old_leaf_hcap
       real                                         :: old_wood_hcap
+      real                                         :: old_leaf_water_im2
+      real                                         :: old_wood_water_im2
       real                                         :: bleaf_max
       real                                         :: delta_blfrt
       real                                         :: delta_bwood
@@ -3874,12 +3880,14 @@ module disturbance
          ! because cpatch%hite will be increased instead of reduced
          if (is_liana(ipft) .and. cpatch%hite(ico) > maxh .and. maxh >= 1.0) then
 
-            bleaf_in      = cpatch%bleaf    (ico)
-            bsapa_in      = cpatch%bsapwooda(ico)
-            bdeada_in     = cpatch%bdeada   (ico)
-            bbarka_in     = cpatch%bbarka   (ico)
-            old_leaf_hcap = cpatch%leaf_hcap(ico)
-            old_wood_hcap = cpatch%wood_hcap(ico)
+            bleaf_in           = cpatch%bleaf    (ico)
+            bsapa_in           = cpatch%bsapwooda(ico)
+            bdeada_in          = cpatch%bdeada   (ico)
+            bbarka_in          = cpatch%bbarka   (ico)
+            old_leaf_hcap      = cpatch%leaf_hcap(ico)
+            old_wood_hcap      = cpatch%wood_hcap(ico)
+            old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+            old_wood_water_im2 = cpatch%wood_water_im2(ico)
             !add the agb_f to bdead
             !if new root depth is smaller keep the old one keep track of the value
 
@@ -3916,7 +3924,16 @@ module disturbance
             call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico),cpatch%bsapwooda(ico)  &
                               ,cpatch%bbarka(ico),cpatch%nplant(ico), cpatch%pft(ico)      &
                               ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-            call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap)
+            call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                          &
+                       ,cpatch%bleaf(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)      &
+                       ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)            &
+                       ,cpatch%dbh(ico),cpatch%pft(ico),cpatch%leaf_water_int(ico)         &
+                       ,cpatch%wood_water_int(ico))
+            call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)             &
+                        ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                     &
+                        ,cpatch%wood_water_im2(ico))
+            call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap           &
+                                       ,old_leaf_water_im2,old_wood_water_im2)
             !----- Update the stability status. -------------------------------------------!
             call is_resolvable(csite,np,ico)
             !------------------------------------------------------------------------------!
@@ -3952,6 +3969,7 @@ module disturbance
          end if
 
       end do cohortloop2
+      !------------------------------------------------------------------------------------!
 
 
       !--- Sort the cohorts so that the new cohort is at the correct height bin. ----------!

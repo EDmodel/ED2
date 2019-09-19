@@ -137,6 +137,7 @@ module budget_utils
       csite%ebudget_denseffect   (ipa) = 0.0
       csite%ebudget_prsseffect   (ipa) = 0.0
       csite%ebudget_hcapeffect   (ipa) = 0.0
+      csite%ebudget_wcapeffect   (ipa) = 0.0
       csite%ebudget_zcaneffect   (ipa) = 0.0
       csite%ebudget_residual     (ipa) = 0.0
       csite%wbudget_precipgain   (ipa) = 0.0
@@ -144,6 +145,7 @@ module budget_utils
       csite%wbudget_loss2runoff  (ipa) = 0.0
       csite%wbudget_loss2drainage(ipa) = 0.0
       csite%wbudget_denseffect   (ipa) = 0.0
+      csite%wbudget_wcapeffect   (ipa) = 0.0
       csite%wbudget_zcaneffect   (ipa) = 0.0
       csite%wbudget_residual     (ipa) = 0.0
       !------------------------------------------------------------------------------------!
@@ -575,6 +577,7 @@ module budget_utils
       real                                  :: ecurr_denseffect
       real                                  :: ecurr_prsseffect
       real                                  :: ecurr_hcapeffect
+      real                                  :: ecurr_wcapeffect
       real                                  :: ecurr_zcaneffect
       real                                  :: ecurr_residual
       real                                  :: wbudget_initialstorage
@@ -583,6 +586,7 @@ module budget_utils
       real                                  :: wbudget_tolerance
       real                                  :: wcurr_precipgain
       real                                  :: wcurr_denseffect
+      real                                  :: wcurr_wcapeffect
       real                                  :: wcurr_zcaneffect
       real                                  :: wcurr_residual
       real                                  :: curr_can_enthalpy
@@ -609,8 +613,8 @@ module budget_utils
       character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
       character(len= 9)     , parameter     :: fmti='(a,1x,i7)'
       character(len= 9)     , parameter     :: fmtl='(a,1x,l1)'
-      character(len=10)     , parameter     :: bhfmt='(44(a,1x))'
-      character(len=48)     , parameter     :: bbfmt='(3(i14,1x),41(es14.7,1x))'
+      character(len=10)     , parameter     :: bhfmt='(46(a,1x))'
+      character(len=48)     , parameter     :: bbfmt='(3(i14,1x),43(es14.7,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical               , save          :: first_time = .true.
       !------------------------------------------------------------------------------------!
@@ -649,14 +653,14 @@ module budget_utils
                                         , '  ENT.RESIDUAL' , '  ENT.DSTORAGE'              &
                                         , '    ENT.PRECIP' , '    ENT.NETRAD'              &
                                         , '  ENT.DENS.EFF' , '  ENT.PRSS.EFF'              &
-                                        , '  ENT.HCAP.EFF' , '  ENT.ZCAN.EFF'              &
-                                        , '  ENT.LOSS2ATM' , '  ENT.DRAINAGE'              &
-                                        , '    ENT.RUNOFF' , '   H2O.STORAGE'              &
-                                        , '  H2O.RESIDUAL' , '  H2O.DSTORAGE'              &
-                                        , '    H2O.PRECIP' , '  H2O.DENS.EFF'              &
+                                        , '  ENT.HCAP.EFF' , '  ENT.WCAP.EFF'              &
+                                        , '  ENT.ZCAN.EFF' , '  ENT.LOSS2ATM'              &
+                                        , '  ENT.DRAINAGE' , '    ENT.RUNOFF'              &
+                                        , '   H2O.STORAGE' , '  H2O.RESIDUAL'              &
+                                        , '  H2O.DSTORAGE' , '    H2O.PRECIP'              &
+                                        , '  H2O.DENS.EFF' , '  H2O.WCAP.EFF'              &
                                         , '  H2O.ZCAN.EFF' , '  H2O.LOSS2ATM'              &
                                         , '  H2O.DRAINAGE' , '    H2O.RUNOFF'
-                                        
                close(unit=86,status='keep')
             end if
          end do
@@ -751,8 +755,10 @@ module budget_utils
       ccurr_zcaneffect   = csite%cbudget_zcaneffect  (ipa) * frqsum
       ccurr_loss2yield   = csite%cbudget_loss2yield  (ipa) * frqsum
       ccurr_seedrain     = csite%cbudget_seedrain    (ipa) * frqsum
+      wcurr_wcapeffect   = csite%wbudget_wcapeffect  (ipa) * frqsum
       wcurr_zcaneffect   = csite%wbudget_zcaneffect  (ipa) * frqsum
       ecurr_hcapeffect   = csite%ebudget_hcapeffect  (ipa) * frqsum
+      ecurr_wcapeffect   = csite%ebudget_wcapeffect  (ipa) * frqsum
       ecurr_zcaneffect   = csite%ebudget_zcaneffect  (ipa) * frqsum
       !------------------------------------------------------------------------------------!
 
@@ -837,14 +843,15 @@ module budget_utils
                          + ccurr_denseffect + ccurr_zcaneffect )
       !----- 3. Energy. -------------------------------------------------------------------!
       ecurr_residual   = ebudget_deltastorage                                              &
-                       - ( ecurr_precipgain    - ecurr_loss2atm   - ecurr_loss2drainage    &
-                         - ecurr_loss2runoff   + ecurr_netrad     + ecurr_prsseffect       &
-                         + ecurr_denseffect    + ecurr_hcapeffect + ecurr_zcaneffect    )
+                       - ( ecurr_precipgain    - ecurr_loss2atm    - ecurr_loss2drainage   &
+                         - ecurr_loss2runoff   + ecurr_netrad      + ecurr_prsseffect      &
+                         + ecurr_denseffect    + ecurr_hcapeffect  + ecurr_wcapeffect      &
+                         + ecurr_zcaneffect    )
       !----- 4. Water. --------------------------------------------------------------------!
       wcurr_residual   = wbudget_deltastorage                                              &
                        - ( wcurr_precipgain    - wcurr_loss2atm                            &
                          - wcurr_loss2drainage - wcurr_loss2runoff                         &
-                         + wcurr_denseffect    + wcurr_zcaneffect  )
+                         + wcurr_denseffect    + wcurr_wcapeffect  + wcurr_zcaneffect  )
       !------------------------------------------------------------------------------------!
 
 
@@ -923,7 +930,9 @@ module budget_utils
       csite%cbudget_loss2yield  (ipa) = 0.0
       csite%cbudget_seedrain    (ipa) = 0.0
       csite%ebudget_hcapeffect  (ipa) = 0.0
+      csite%ebudget_wcapeffect  (ipa) = 0.0
       csite%ebudget_zcaneffect  (ipa) = 0.0
+      csite%wbudget_wcapeffect  (ipa) = 0.0
       csite%wbudget_zcaneffect  (ipa) = 0.0
       !------------------------------------------------------------------------------------!
 
@@ -1046,6 +1055,7 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT  : ',ecurr_denseffect
             write (unit=*,fmt=fmtf ) ' PRESSURE_EFFECT : ',ecurr_prsseffect
             write (unit=*,fmt=fmtf ) ' VEG_HCAP_EFFECT : ',ecurr_hcapeffect
+            write (unit=*,fmt=fmtf ) ' CAPACITY_EFFECT : ',ecurr_wcapeffect
             write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT : ',ecurr_zcaneffect
             write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',ecurr_loss2atm
             write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE   : ',ecurr_loss2drainage
@@ -1061,6 +1071,7 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' DELTA_STORAGE   : ',wbudget_deltastorage
             write (unit=*,fmt=fmtf ) ' PRECIPGAIN      : ',wcurr_precipgain
             write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT  : ',wcurr_denseffect
+            write (unit=*,fmt=fmtf ) ' CAPACITY_EFFECT : ',wcurr_wcapeffect
             write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT : ',wcurr_zcaneffect
             write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',wcurr_loss2atm
             write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE   : ',wcurr_loss2drainage
@@ -1122,6 +1133,7 @@ module budget_utils
             ecurr_denseffect       = ecurr_denseffect       * ent_factor
             ecurr_prsseffect       = ecurr_prsseffect       * ent_factor
             ecurr_hcapeffect       = ecurr_hcapeffect       * ent_factor
+            ecurr_wcapeffect       = ecurr_wcapeffect       * ent_factor
             ecurr_zcaneffect       = ecurr_zcaneffect       * ent_factor
             ecurr_loss2atm         = ecurr_loss2atm         * ent_factor
             ecurr_loss2drainage    = ecurr_loss2drainage    * ent_factor
@@ -1130,6 +1142,7 @@ module budget_utils
             wbudget_deltastorage   = wbudget_deltastorage   * h2o_factor
             wcurr_precipgain       = wcurr_precipgain       * h2o_factor
             wcurr_denseffect       = wcurr_denseffect       * h2o_factor
+            wcurr_wcapeffect       = wcurr_wcapeffect       * h2o_factor
             wcurr_zcaneffect       = wcurr_zcaneffect       * h2o_factor
             wcurr_loss2atm         = wcurr_loss2atm         * h2o_factor
             wcurr_loss2drainage    = wcurr_loss2drainage    * h2o_factor
@@ -1154,11 +1167,12 @@ module budget_utils
                , ccurr_loss2yield       , ccurr_loss2atm         , ebudget_finalstorage    &
                , ecurr_residual         , ebudget_deltastorage   , ecurr_precipgain        &
                , ecurr_netrad           , ecurr_denseffect       , ecurr_prsseffect        &
-               , ecurr_hcapeffect       , ecurr_zcaneffect       , ecurr_loss2atm          &
-               , ecurr_loss2drainage    , ecurr_loss2runoff      , wbudget_finalstorage    &
-               , wcurr_residual         , wbudget_deltastorage   , wcurr_precipgain        &
-               , wcurr_denseffect       , wcurr_zcaneffect       , wcurr_loss2atm          &
-               , wcurr_loss2drainage    , wcurr_loss2runoff
+               , ecurr_hcapeffect       , ecurr_wcapeffect       , ecurr_zcaneffect        &
+               , ecurr_loss2atm         , ecurr_loss2drainage    , ecurr_loss2runoff       &
+               , wbudget_finalstorage   , wcurr_residual         , wbudget_deltastorage    &
+               , wcurr_precipgain       , wcurr_denseffect       , wcurr_wcapeffect        &
+               , wcurr_zcaneffect       , wcurr_loss2atm         , wcurr_loss2drainage     &
+               , wcurr_loss2runoff
             close(unit=86,status='keep')
             !------------------------------------------------------------------------------!
          end if

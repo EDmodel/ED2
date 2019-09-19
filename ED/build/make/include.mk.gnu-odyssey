@@ -20,7 +20,6 @@ BASE=$(ED_ROOT)/build/
 # libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may still  #
 # be able to compile without HDF5 but it will not run.                                     #
 #------------------------------------------------------------------------------------------#
-USE_HDF5=1
 HDF5_PATH=/n/home00/mlongo/Util/Modules/hdf5/1.10.2_gnu
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl

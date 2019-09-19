@@ -147,6 +147,23 @@ module phenology_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !     Factor that controls the fine-root "elongation factor" relative to leaf           !
+   ! elongation factor.  This is currently applied only for PFTs with phenology = 5.       !
+   !                                                                                       !
+   ! e_root = (e_leaf + root_phen_factor - 1) / root_phen_factor.                          !
+   !                                                                                       !
+   ! root_phen_factor > 1.  Fine roots will senesce more slowly than leaf shedding.        !
+   ! root_phen_factor = 1.  Fine root elongation factor will be the same as for leaves.    !
+   ! root_phen_factor < 1.  Fine roots will senesce more rapidly than leaf shedding.       !
+   ! root_phen_factor = 0.  Special flag to disable fine-root phenology.                   !
+   ! root_phen_factor < 0.  Non-sensical, currently assume the same as 0.                  !
+   !---------------------------------------------------------------------------------------!
+   real    :: root_phen_factor
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Flag that checks whether to Use soil potential rather than soil moisture to drive !
    ! phenology.                                                                            !
    !---------------------------------------------------------------------------------------!

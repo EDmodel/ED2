@@ -215,17 +215,19 @@ subroutine ed_init_atm()
                   
                   call calc_veg_hcap( cpatch%bleaf     (ico) , cpatch%bdeada   (ico)       &
                                     , cpatch%bsapwooda (ico) , cpatch%bbarka   (ico)       &
-                                    , cpatch%nplant   (ico)  , cpatch%pft      (ico)       &
-                                    , cpatch%leaf_hcap(ico)  , cpatch%wood_hcap(ico) )
+                                    , cpatch%nplant    (ico) , cpatch%pft      (ico)       &
+                                    , cpatch%leaf_hcap (ico) , cpatch%wood_hcap(ico) )
 
-                  cpatch%leaf_energy (ico) = cmtl2uext( cpatch%leaf_hcap   (ico)           &
-                                                      , cpatch%leaf_water  (ico)           &
-                                                      , cpatch%leaf_temp   (ico)           &
-                                                      , cpatch%leaf_fliq   (ico) )
-                  cpatch%wood_energy (ico) = cmtl2uext( cpatch%wood_hcap   (ico)           &
-                                                      , cpatch%wood_water  (ico)           &
-                                                      , cpatch%wood_temp   (ico)           &
-                                                      , cpatch%wood_fliq   (ico) )
+                  cpatch%leaf_energy (ico) = cmtl2uext( cpatch%leaf_hcap     (ico)         &
+                                                      , cpatch%leaf_water    (ico)         &
+                                                      + cpatch%leaf_water_im2(ico)         &
+                                                      , cpatch%leaf_temp     (ico)         &
+                                                      , cpatch%leaf_fliq     (ico) )
+                  cpatch%wood_energy (ico) = cmtl2uext( cpatch%wood_hcap     (ico)         &
+                                                      , cpatch%wood_water    (ico)         &
+                                                      + cpatch%wood_water_im2(ico)         &
+                                                      , cpatch%wood_temp     (ico)         &
+                                                      , cpatch%wood_fliq     (ico) )
 
                   call is_resolvable(csite,ipa,ico)
 
@@ -524,7 +526,7 @@ subroutine ed_init_atm()
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.true.)
                      end select
                      call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
-                     call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
+                     call split_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi))
                   end if
 
                   cohortloop3: do ico = 1,cpatch%ncohorts

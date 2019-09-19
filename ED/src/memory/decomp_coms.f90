@@ -86,6 +86,17 @@ Module decomp_coms
    real :: rh_lloyd_2
    real :: rh_lloyd_3
    !---------------------------------------------------------------------------------------!
+   !     The following variables are used when DECOMP_SCHEME is 3 or 4. (based on M12).    !
+   !                                                                                       !
+   !  Moyano FE, Vasilyeva N, Bouckaert L, Cook F, Craine J, Curiel Yuste J, Don A,        !
+   !     Epron D, Formanek P, Franzluebbers A et al. 2012. The moisture response of soil   !
+   !     heterotrophic respiration: interaction with soil properties. Biogeosciences, 9:   !
+   !     1173-1182. doi:10.5194/bg-9-1173-2012 (M12).                                      !
+   !---------------------------------------------------------------------------------------!
+   real :: rh_moyano12_a0
+   real :: rh_moyano12_a1
+   real :: rh_moyano12_a2
+   !---------------------------------------------------------------------------------------!
    !     The following variables are used when DECOMP_SCHEME is 2. (based on CENTURY model !
    ! and ED-1.0).                                                                          !
    !---------------------------------------------------------------------------------------!

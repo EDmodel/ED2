@@ -6,9 +6,7 @@
 ! restart run, you may want to use ied_init_mode=5 instead (see next subroutine).          !
 !------------------------------------------------------------------------------------------!
 subroutine read_ed21_history_file
-#if USE_HDF5
    use hdf5
-#endif
    use ed_max_dims         , only : n_pft                       & ! intent(in)
                                   , huge_polygon                & ! intent(in)
                                   , str_len                     ! ! intent(in)
@@ -80,7 +78,6 @@ subroutine read_ed21_history_file
                                   , init_ed_site_vars           & ! subroutine
                                   , init_ed_poly_vars           ! ! subroutine
    implicit none
-#if USE_HDF5
 
    !------ Local variables. ---------------------------------------------------------------!
    type(edtype)          , pointer     :: cgrid
@@ -1002,11 +999,6 @@ subroutine read_ed21_history_file
    !----- Close the file. -----------------------------------------------------------------!
    call h5close_f(hdferr)
 
-#else
-   call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
-                    ,'read_ed21_history_file','ed_read_ed21_history.F90')
-#endif
-
    return
 end subroutine read_ed21_history_file
 !==========================================================================================!
@@ -1027,9 +1019,7 @@ end subroutine read_ed21_history_file
 ! closest restart polygon available.                                                       !
 !------------------------------------------------------------------------------------------!
 subroutine read_ed21_history_unstruct
-#if USE_HDF5
    use hdf5
-#endif
    use ed_max_dims         , only : n_pft                       & ! intent(in)
                                   , huge_polygon                & ! intent(in)
                                   , str_len                     & ! intent(in)
@@ -1108,7 +1098,6 @@ subroutine read_ed21_history_unstruct
 
    implicit none
 
-#if (USE_HDF5)
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)          , pointer                              :: cgrid
    type(polygontype)     , pointer                              :: cpoly
@@ -2384,10 +2373,6 @@ subroutine read_ed21_history_unstruct
    !----- Close the HDF5 environment. -----------------------------------------------------!
    call h5close_f(hdferr)
 
-#else
-   call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
-                    ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
-#endif
 
 
    return
@@ -2410,10 +2395,7 @@ end subroutine read_ed21_history_unstruct
 ! of the donor polygons.                                                                   !
 !==========================================================================================!
 subroutine read_ed21_polyclone
-
-#if USE_HDF5
    use hdf5
-#endif
    use ed_max_dims         , only : n_pft                       & ! intent(in)
                                   , huge_polygon                & ! intent(in)
                                   , str_len                     & ! intent(in)
@@ -2491,7 +2473,6 @@ subroutine read_ed21_polyclone
                                   , init_ed_poly_vars           ! ! subroutine
    implicit none
 
-#if (USE_HDF5)
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)          , pointer                              :: cgrid
    type(polygontype)     , pointer                              :: cpoly
@@ -3765,10 +3746,6 @@ call h5eset_auto_f(1,hdferr)
 !----- Close the HDF5 environment. -----------------------------------------------------!
 call h5close_f(hdferr)
 
-#else
-   call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
-                    ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
-#endif
 
 
    return

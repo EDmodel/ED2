@@ -131,6 +131,7 @@ module rk4_copy_patch
          targetp%leaf_resolvable   (k) = sourcep%leaf_resolvable   (k)
          targetp%leaf_energy       (k) = sourcep%leaf_energy       (k)
          targetp%leaf_water        (k) = sourcep%leaf_water        (k)
+         targetp%leaf_water_im2    (k) = sourcep%leaf_water_im2    (k)
          targetp%leaf_temp         (k) = sourcep%leaf_temp         (k)
          targetp%leaf_fliq         (k) = sourcep%leaf_fliq         (k)
          targetp%leaf_hcap         (k) = sourcep%leaf_hcap         (k)
@@ -146,6 +147,7 @@ module rk4_copy_patch
          targetp%wood_resolvable   (k) = sourcep%wood_resolvable   (k)
          targetp%wood_energy       (k) = sourcep%wood_energy       (k)
          targetp%wood_water        (k) = sourcep%wood_water        (k)
+         targetp%wood_water_im2    (k) = sourcep%wood_water_im2    (k)
          targetp%wood_temp         (k) = sourcep%wood_temp         (k)
          targetp%wood_fliq         (k) = sourcep%wood_fliq         (k)
          targetp%wood_hcap         (k) = sourcep%wood_hcap         (k)
@@ -161,6 +163,7 @@ module rk4_copy_patch
          targetp%veg_resolvable    (k) = sourcep%veg_resolvable    (k)
          targetp%veg_energy        (k) = sourcep%veg_energy        (k)
          targetp%veg_water         (k) = sourcep%veg_water         (k)
+         targetp%veg_water_im2     (k) = sourcep%veg_water_im2     (k)
          targetp%veg_hcap          (k) = sourcep%veg_hcap          (k)
 
          targetp%veg_wind          (k) = sourcep%veg_wind          (k)

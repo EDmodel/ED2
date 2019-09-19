@@ -847,6 +847,8 @@ module ed_init_history
                         ,'DMEAN_LEAF_ENERGY_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_leaf_water     (ipy:ipy)                           &
                         ,'DMEAN_LEAF_WATER_PY       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_leaf_water_im2 (ipy:ipy)                           &
+                        ,'DMEAN_LEAF_WATER_IM2_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_leaf_hcap      (ipy:ipy)                           &
                         ,'DMEAN_LEAF_HCAP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_leaf_vpdef     (ipy:ipy)                           &
@@ -863,6 +865,8 @@ module ed_init_history
                         ,'DMEAN_WOOD_ENERGY_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_wood_water     (ipy:ipy)                           &
                         ,'DMEAN_WOOD_WATER_PY       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_wood_water_im2 (ipy:ipy)                           &
+                        ,'DMEAN_WOOD_WATER_IM2_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_wood_hcap      (ipy:ipy)                           &
                         ,'DMEAN_WOOD_HCAP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_wood_temp      (ipy:ipy)                           &
@@ -1239,6 +1243,8 @@ module ed_init_history
                         ,'MMEAN_LEAF_ENERGY_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_leaf_water     (ipy:ipy)                           &
                         ,'MMEAN_LEAF_WATER_PY       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_leaf_water_im2 (ipy:ipy)                           &
+                        ,'MMEAN_LEAF_WATER_IM2_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_leaf_hcap      (ipy:ipy)                           &
                         ,'MMEAN_LEAF_HCAP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_leaf_vpdef     (ipy:ipy)                           &
@@ -1255,6 +1261,8 @@ module ed_init_history
                         ,'MMEAN_WOOD_ENERGY_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_wood_water     (ipy:ipy)                           &
                         ,'MMEAN_WOOD_WATER_PY       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_wood_water_im2 (ipy:ipy)                           &
+                        ,'MMEAN_WOOD_WATER_IM2_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_wood_hcap      (ipy:ipy)                           &
                         ,'MMEAN_WOOD_HCAP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_wood_temp      (ipy:ipy)                           &
@@ -1862,6 +1870,8 @@ module ed_init_history
                         ,'QMEAN_LEAF_ENERGY_PY     ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_leaf_water     (:,ipy)                             &
                         ,'QMEAN_LEAF_WATER_PY      ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_leaf_water_im2 (:,ipy)                             &
+                        ,'QMEAN_LEAF_WATER_IM2_PY  ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_leaf_hcap      (:,ipy)                             &
                         ,'QMEAN_LEAF_HCAP_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_leaf_vpdef     (:,ipy)                             &
@@ -1878,6 +1888,8 @@ module ed_init_history
                         ,'QMEAN_WOOD_ENERGY_PY     ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_wood_water     (:,ipy)                             &
                         ,'QMEAN_WOOD_WATER_PY      ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_wood_water_im2 (:,ipy)                             &
+                        ,'QMEAN_WOOD_WATER_IM2_PY  ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_wood_hcap      (:,ipy)                             &
                         ,'QMEAN_WOOD_HCAP_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_wood_temp      (:,ipy)                             &
@@ -2668,6 +2680,8 @@ module ed_init_history
                      ,'BARKB_MAINTENANCE_PY         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cgrid%leaf_drop                (:,:,ipy)                          &
                      ,'LEAF_DROP_PY                 ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cgrid%root_drop                (:,:,ipy)                          &
+                     ,'ROOT_DROP_PY                 ',dsetrank,iparallel,.true. ,foundvar)
       if (writing_eorq) then
          call hdf_getslab_r(cgrid%mmean_thbark          (:,:,ipy)                          &
                         ,'MMEAN_THBARK_PY           ',dsetrank,iparallel,.false.,foundvar)
@@ -2707,6 +2721,8 @@ module ed_init_history
                         ,'MMEAN_BARKB_MAINTENANCE_PY',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_leaf_drop       (:,:,ipy)                          &
                         ,'MMEAN_LEAF_DROP_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_root_drop       (:,:,ipy)                          &
+                        ,'MMEAN_ROOT_DROP_PY        ',dsetrank,iparallel,.false.,foundvar)
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -3668,6 +3684,8 @@ module ed_init_history
                      ,'WBUDGET_LOSS2ATM            ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_denseffect                                          &
                      ,'WBUDGET_DENSEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%wbudget_wcapeffect                                          &
+                     ,'WBUDGET_WCAPEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_zcaneffect                                          &
                      ,'WBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_precipgain                                          &
@@ -3688,6 +3706,8 @@ module ed_init_history
                      ,'EBUDGET_PRSSEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_hcapeffect                                          &
                      ,'EBUDGET_HCAPEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%ebudget_wcapeffect                                          &
+                     ,'EBUDGET_WCAPEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_zcaneffect                                          &
                      ,'EBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_loss2runoff                                         &
@@ -4766,6 +4786,7 @@ module ed_init_history
                                     , writing_long  & ! intent(in)
                                     , writing_eorq  & ! intent(in)
                                     , writing_dcyc  ! ! intent(in)
+      use grid_coms          , only : nzg           ! ! intent(in)
       implicit none
       !----- Interfaces. ------------------------------------------------------------------!
 
@@ -4851,6 +4872,10 @@ module ed_init_history
                         ,'FIRST_CENSUS              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_i(cpatch%new_recruit_flag                                           &
                         ,'NEW_RECRUIT_FLAG          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_i(cpatch%high_leaf_psi_days                                         &
+                        ,'HIGH_LEAF_PSI_DAYS        ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_i(cpatch%low_leaf_psi_days                                          &
+                        ,'LOW_LEAF_PSI_DAYS         ',dsetrank,iparallel,.true. ,foundvar)
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -5031,10 +5056,8 @@ module ed_init_history
                         ,'BARKA_STORAGE_RESP      ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%barkb_storage_resp                                         &
                         ,'BARKB_STORAGE_RESP      ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(cpatch%monthly_dndt                                               &
-                        ,'MONTHLY_DNDT              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%monthly_dlnndt                                             &
-                        ,'MONTHLY_DLNNDT            ',dsetrank,iparallel,.true. ,foundvar)
+                        ,'MONTHLY_DLNNDT          ',dsetrank,iparallel,.true. ,foundvar)
 
       call hdf_getslab_r(cpatch%par_level_beam                                             &
                      ,'PAR_LEVEL_BEAM              ',dsetrank,iparallel,.false. ,foundvar)
@@ -5117,6 +5140,8 @@ module ed_init_history
                         ,'BARKB_MAINTENANCE         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%leaf_drop                                                  &
                         ,'LEAF_DROP                 ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%root_drop                                                  &
+                        ,'ROOT_DROP                 ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%leaf_respiration                                           &
                         ,'LEAF_RESPIRATION          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%root_respiration                                           &
@@ -5135,6 +5160,30 @@ module ed_init_history
                         ,'VM_BAR                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%sla                                                        &
                         ,'SLA                       ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%leaf_psi                                                   &
+                        ,'LEAF_PSI                  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%wood_psi                                                   &
+                        ,'WOOD_PSI                  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%leaf_rwc                                                   &
+                        ,'LEAF_RWC                  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%wood_rwc                                                   &
+                        ,'WOOD_RWC                  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%leaf_water_int                                             &
+                        ,'LEAF_WATER_INT            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%leaf_water_im2                                             &
+                        ,'LEAF_WATER_IM2            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%wood_water_int                                             &
+                        ,'WOOD_WATER_INT            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%wood_water_im2                                             &
+                        ,'WOOD_WATER_IM2            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%wflux_gw                                                   &
+                        ,'WFLUX_GW                  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%wflux_wl                                                   &
+                        ,'WFLUX_WL                  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%last_gV                                                    &
+                        ,'LAST_GV                   ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%last_gJ                                                    &
+                        ,'LAST_GJ                   ',dsetrank,iparallel,.true. ,foundvar)
       !----- Daily means. -----------------------------------------------------------------!
       if (writing_long) then
          call hdf_getslab_r(cpatch%dmean_nppleaf                                           &
@@ -5286,8 +5335,28 @@ module ed_init_history
                         ,'DMEAN_INTERCEPTED_AW_CO   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%dmean_wshed_wg                                          &
                         ,'DMEAN_WSHED_WG_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmax_leaf_psi                                           &
+                        ,'DMAX_LEAF_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmin_leaf_psi                                           &
+                        ,'DMIN_LEAF_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmax_wood_psi                                           &
+                        ,'DMAX_WOOD_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmin_wood_psi                                           &
+                        ,'DMIN_WOOD_PSI_CO          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmean_leaf_water_int                                    &
+                        ,'DMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmean_leaf_water_im2                                    &
+                        ,'DMEAN_LEAF_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmean_wood_water_int                                    &
+                        ,'DMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmean_wood_water_im2                                    &
+                        ,'DMEAN_WOOD_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmean_wflux_gw                                          &
+                        ,'DMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmean_wflux_wl                                          &
+                        ,'DMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
       end if
-      !----- Daily means. --------------------------------------------------------------------!
+      !----- Monthly means. ---------------------------------------------------------------!
       if (writing_eorq) then
          call hdf_getslab_r(cpatch%mmean_thbark                                            &
                         ,'MMEAN_THBARK_CO           ',dsetrank,iparallel,.false.,foundvar)
@@ -5315,6 +5384,8 @@ module ed_init_history
                         ,'MMEAN_BARKB_MAINTENANCE_CO',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_leaf_drop                                         &
                         ,'MMEAN_LEAF_DROP_CO        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_root_drop                                         &
+                        ,'MMEAN_ROOT_DROP_CO        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_cb                                                &
                         ,'MMEAN_CB_CO               ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_gpp                                               &
@@ -5465,6 +5536,27 @@ module ed_init_history
                         ,'MMEAN_NPPWOOD_CO          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_nppdaily                                          &
                         ,'MMEAN_NPPDAILY_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_dmax_leaf_psi                                     &
+                        ,'MMEAN_DMAX_LEAF_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_dmin_leaf_psi                                     &
+                        ,'MMEAN_DMIN_LEAF_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_dmax_wood_psi                                     &
+                        ,'MMEAN_DMAX_WOOD_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_dmin_wood_psi                                     &
+                        ,'MMEAN_DMIN_WOOD_PSI_CO    ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_leaf_water_int                                    &
+                        ,'MMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_leaf_water_im2                                    &
+                        ,'MMEAN_LEAF_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_wood_water_int                                    &
+                        ,'MMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_wood_water_im2                                    &
+                        ,'MMEAN_WOOD_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_wflux_gw                                          &
+                        ,'MMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_wflux_wl                                          &
+                        ,'MMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
+
          call hdf_getslab_r(cpatch%mmsqu_gpp                                               &
                         ,'MMSQU_GPP_CO              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmsqu_npp                                               &
@@ -5482,6 +5574,41 @@ module ed_init_history
          call hdf_getslab_r(cpatch%mmsqu_vapor_wc                                          &
                         ,'MMSQU_VAPOR_WC_CO         ',dsetrank,iparallel,.false.,foundvar)
       end if
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !      2-D variables, dimensions: (nzg,ncohorts).                                    !
+      !------------------------------------------------------------------------------------!
+      dsetrank    = 2
+      globdims(1) = int(nzg,8)
+      chnkdims(1) = int(nzg,8)
+      chnkoffs(1) = 0_8
+      memdims (1) = int(nzg,8)
+      memsize (1) = int(nzg,8)
+      memoffs (1) = 0_8
+
+      globdims(2) = int(ncohorts_global,8)
+      chnkdims(2) = int(cpatch%ncohorts,8)
+      chnkoffs(2) = int(paco_index - 1,8)
+      memdims (2) = int(cpatch%ncohorts,8)
+      memsize (2) = int(cpatch%ncohorts,8)
+      memoffs (2) = 0_8
+      call hdf_getslab_r(cpatch%wflux_gw_layer                                             &
+                        ,'WFLUX_GW_LAYER             ',dsetrank,iparallel,.true. ,foundvar)
+      if (writing_long) then
+         call hdf_getslab_r(cpatch%dmean_wflux_gw_layer                                    &
+                           ,'DMEAN_WFLUX_GW_LAYER_CO ',dsetrank,iparallel,.false.,foundvar)
+      end if
+      if (writing_eorq) then
+         call hdf_getslab_r(cpatch%mmean_wflux_gw_layer                                    &
+                           ,'MMEAN_WFLUX_GW_LAYER_CO ',dsetrank,iparallel,.false.,foundvar)
+      end if
+      !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -5750,6 +5877,24 @@ module ed_init_history
                         ,'QMEAN_INTERCEPTED_AW_CO   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmean_wshed_wg                                          &
                         ,'QMEAN_WSHED_WG_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_leaf_psi                                          &
+                        ,'QMEAN_LEAF_PSI_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_wood_psi                                          &
+                        ,'QMEAN_WOOD_PSI_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_leaf_water_int                                    &
+                        ,'QMEAN_LEAF_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_leaf_water_im2                                    &
+                        ,'QMEAN_LEAF_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_wood_water_int                                    &
+                        ,'QMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_wood_water_im2                                    &
+                        ,'QMEAN_WOOD_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_wflux_gw                                          &
+                        ,'QMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_wflux_wl                                          &
+                        ,'QMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
+
+
          call hdf_getslab_r(cpatch%qmsqu_gpp                                               &
                         ,'QMSQU_GPP_CO              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmsqu_npp                                               &

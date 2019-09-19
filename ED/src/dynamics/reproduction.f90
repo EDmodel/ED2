@@ -12,59 +12,63 @@ module reproduction
    ! didn't want it, in which case the seedling biomass will go to the litter pools.       !
    !---------------------------------------------------------------------------------------!
    subroutine reproduction_driver(cgrid,month,veget_dyn_on)
-      use ed_state_vars       , only : edtype                     & ! structure
-                                     , polygontype                & ! structure
-                                     , sitetype                   & ! structure
-                                     , patchtype                  & ! structure
-                                     , allocate_patchtype         & ! subroutine
-                                     , copy_patchtype             & ! subroutine
-                                     , deallocate_patchtype       ! ! subroutine
-      use met_driver_coms     , only : met_driv_state             ! ! structure
-      use pft_coms            , only : recruittype                & ! structure
-                                     , zero_recruit               & ! subroutine
-                                     , copy_recruit               & ! subroutine
-                                     , seedling_mortality         & ! intent(in)
-                                     , min_recruit_size           & ! intent(in)
-                                     , one_plant_c                & ! intent(in)
-                                     , c2n_recruit                & ! intent(in)
-                                     , include_pft                & ! intent(in)
-                                     , include_pft_ag             & ! intent(in)
-                                     , include_pft_fp             & ! intent(in)
-                                     , q                          & ! intent(in)
-                                     , qsw                        & ! intent(in)
-                                     , qbark                      & ! intent(in)
-                                     , agf_bs                     & ! intent(in)
-                                     , hgt_min                    & ! intent(in)
-                                     , plant_min_temp             ! ! intent(in)
-      use ed_max_dims         , only : n_pft                      ! ! intent(in)
-      use fuse_fiss_utils     , only : sort_cohorts               & ! subroutine
-                                     , terminate_cohorts          & ! subroutine
-                                     , old_fuse_cohorts           & ! subroutine
-                                     , new_fuse_cohorts           & ! subroutine
-                                     , split_cohorts              & ! subroutine
-                                     , rescale_patches            ! ! subroutine
-      use phenology_coms      , only : repro_scheme               ! ! intent(in)
-      use mem_polygons        , only : maxcohort                  ! ! intent(in)
-      use consts_coms         , only : pio4                       ! ! intent(in)
-      use ed_therm_lib        , only : calc_veg_hcap              & ! function
-                                     , update_veg_energy_cweh     ! ! function
-      use allometry           , only : size2bl                    & ! function
-                                     , size2bd                    & ! function
-                                     , h2dbh                      & ! function
-                                     , size2bt                    & ! function
-                                     , size2xb                    & ! function
-                                     , ed_biomass                 & ! function
-                                     , area_indices               & ! subroutine
-                                     , size2krdepth               ! ! function
-      use grid_coms           , only : nzg                        ! ! intent(in)
-      use ed_misc_coms        , only : ibigleaf                   & ! intent(in)
-                                     , current_time               ! ! intent(in)
-      use phenology_aux       , only : pheninit_balive_bstorage   ! ! intent(in)
-      use stable_cohorts      , only : is_resolvable              ! ! function
-      use update_derived_utils, only : update_patch_derived_props & ! sub-routine
-                                     , update_site_derived_props  ! ! sub-routine
-      use fusion_fission_coms , only : ifusion                    ! ! intent(in)
-      use ed_type_init        , only : init_ed_cohort_vars        ! ! sub-routine
+      use ed_state_vars       , only : edtype                      & ! structure
+                                     , polygontype                 & ! structure
+                                     , sitetype                    & ! structure
+                                     , patchtype                   & ! structure
+                                     , allocate_patchtype          & ! subroutine
+                                     , copy_patchtype              & ! subroutine
+                                     , deallocate_patchtype        ! ! subroutine
+      use met_driver_coms     , only : met_driv_state              ! ! structure
+      use pft_coms            , only : recruittype                 & ! structure
+                                     , zero_recruit                & ! subroutine
+                                     , copy_recruit                & ! subroutine
+                                     , seedling_mortality          & ! intent(in)
+                                     , min_recruit_size            & ! intent(in)
+                                     , one_plant_c                 & ! intent(in)
+                                     , c2n_recruit                 & ! intent(in)
+                                     , include_pft                 & ! intent(in)
+                                     , include_pft_ag              & ! intent(in)
+                                     , include_pft_fp              & ! intent(in)
+                                     , q                           & ! intent(in)
+                                     , qsw                         & ! intent(in)
+                                     , qbark                       & ! intent(in)
+                                     , agf_bs                      & ! intent(in)
+                                     , hgt_min                     & ! intent(in)
+                                     , plant_min_temp              ! ! intent(in)
+      use ed_max_dims         , only : n_pft                       ! ! intent(in)
+      use fuse_fiss_utils     , only : sort_cohorts                & ! subroutine
+                                     , terminate_cohorts           & ! subroutine
+                                     , old_fuse_cohorts            & ! subroutine
+                                     , new_fuse_cohorts            & ! subroutine
+                                     , split_cohorts               & ! subroutine
+                                     , rescale_patches             ! ! subroutine
+      use phenology_coms      , only : repro_scheme                ! ! intent(in)
+      use mem_polygons        , only : maxcohort                   ! ! intent(in)
+      use consts_coms         , only : pio4                        ! ! intent(in)
+      use ed_therm_lib        , only : calc_veg_hcap               & ! function
+                                     , update_veg_energy_cweh      ! ! function
+      use allometry           , only : size2bl                     & ! function
+                                     , size2bd                     & ! function
+                                     , h2dbh                       & ! function
+                                     , size2bt                     & ! function
+                                     , size2xb                     & ! function
+                                     , ed_biomass                  & ! function
+                                     , area_indices                & ! subroutine
+                                     , size2krdepth                ! ! function
+      use grid_coms           , only : nzg                         ! ! intent(in)
+      use ed_misc_coms        , only : ibigleaf                    & ! intent(in)
+                                     , current_time                ! ! intent(in)
+      use phenology_aux       , only : pheninit_balive_bstorage    ! ! intent(in)
+      use stable_cohorts      , only : is_resolvable               ! ! function
+      use update_derived_utils, only : update_patch_derived_props  & ! sub-routine
+                                     , update_site_derived_props   & ! sub-routine
+                                     , update_cohort_plastic_trait ! ! sub-routine
+      use fusion_fission_coms , only : ifusion                     ! ! intent(in)
+      use ed_type_init        , only : init_ed_cohort_vars         ! ! sub-routine
+      use plant_hydro         , only : rwc2tw                      & ! sub-routine
+                                     , twi2twe                     ! ! sub-routine
+      use physiology_coms     , only : trait_plasticity_scheme     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)        , target     :: cgrid
@@ -519,6 +523,25 @@ module reproduction
                         !------------------------------------------------------------------!
 
 
+
+                        !------------------------------------------------------------------!
+                        !     Update plastic traits (SLA, Vm0).  This must be done before  !
+                        ! calculating LAI.                                                 !
+                        !------------------------------------------------------------------!
+                        select case (trait_plasticity_scheme)
+                        case (0) 
+                           !----- Trait plasticity is disabled, do nothing. ---------------!
+                           continue
+                           !---------------------------------------------------------------!
+                        case (-2,2) ! Update trait every month
+                           !----- Allow recruits to start adapted to their environment. ---!
+                           call update_cohort_plastic_trait(cpatch,ico)
+                           !---------------------------------------------------------------!
+                        end select
+                        !------------------------------------------------------------------!
+
+
+
                         !------------------------------------------------------------------!
                         !    Obtain derived properties.                                    !
                         !------------------------------------------------------------------!
@@ -529,13 +552,23 @@ module reproduction
                                           ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)        &
                                           ,cpatch%nplant(ico),cpatch%pft(ico)              &
                                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                        !----- Find total internal water content. -------------------------!
+                        call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)              &
+                                   ,cpatch%bleaf(ico),cpatch%bsapwooda(ico)                &
+                                   ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico)               &
+                                   ,cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)   &
+                                   ,cpatch%pft(ico),cpatch%leaf_water_int(ico)             &
+                                   ,cpatch%wood_water_int(ico))
+                        call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico) &
+                                    ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)         &
+                                    ,cpatch%wood_water_im2(ico))
                         !------------------------------------------------------------------!
                         !    Set internal energy to 0., then update it so the effect of    !
                         ! recruits to the carbon balance is accounted for.                 !
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.)
                         !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico)
                         !------------------------------------------------------------------!
@@ -574,7 +607,7 @@ module reproduction
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
                      end select
                      call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
-                     call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
+                     call split_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi))
                   end if
                   !------------------------------------------------------------------------!
 
@@ -757,13 +790,23 @@ module reproduction
                                           ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)        &
                                           ,cpatch%nplant(ico),cpatch%pft(ico)              &
                                           ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                        !----- Find total internal water content. -------------------------!
+                        call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)              &
+                                   ,cpatch%bleaf(ico),cpatch%bsapwooda(ico)                &
+                                   ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico)               &
+                                   ,cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)   &
+                                   ,cpatch%pft(ico),cpatch%leaf_water_int(ico)             &
+                                   ,cpatch%wood_water_int(ico))
+                        call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico) &
+                                    ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)         &
+                                    ,cpatch%wood_water_im2(ico))
                         !------------------------------------------------------------------!
                         !    Set internal energy to 0., then update it so the effect of    !
                         ! recruits to the carbon balance is accounted for.                 !
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.)
                         !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico)
                         !------------------------------------------------------------------!

@@ -94,6 +94,9 @@ subroutine copy_nl(copy_type)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
+                                   , plant_hydro_scheme        & ! intent(out)
+                                   , istomata_scheme           & ! intent(out)
+                                   , istruct_growth_scheme     & ! intent(out)
                                    , trait_plasticity_scheme   & ! intent(out)
                                    , iddmort_scheme            & ! intent(out)
                                    , cbr_scheme                & ! intent(out)
@@ -196,7 +199,9 @@ subroutine copy_nl(copy_type)
                                    , iyoutput                  & ! intent(out)
                                    , iqoutput                  & ! intent(out)
                                    , itoutput                  & ! intent(out)
+                                   , iooutput                  & ! intent(out)
                                    , igoutput                  & ! intent(out)
+                                   , obstime_db                & ! intent(out)
                                    , dtlsm                     & ! intent(out)
                                    , month_yrstep              & ! intent(out)
                                    , frqstate                  & ! intent(out)
@@ -327,6 +332,7 @@ subroutine copy_nl(copy_type)
       iqoutput                  = nl%iqoutput
       iyoutput                  = nl%iyoutput
       itoutput                  = nl%itoutput
+      iooutput                  = nl%iooutput
       isoutput                  = nl%isoutput
 
       iadd_site_means           = nl%iadd_site_means
@@ -370,6 +376,7 @@ subroutine copy_nl(copy_type)
       thsums_database           = nl%thsums_database
 
       ed_met_driver_db          = nl%ed_met_driver_db
+      obstime_db                = nl%obstime_db
       soilstate_db              = nl%soilstate_db
       soildepth_db              = nl%soildepth_db
       isoilstateinit            = nl%isoilstateinit
@@ -416,6 +423,9 @@ subroutine copy_nl(copy_type)
       igoutput                  = nl%igoutput
       gfilout                   = nl%gfilout
       h2o_plant_lim             = nl%h2o_plant_lim
+      plant_hydro_scheme        = nl%plant_hydro_scheme
+      istomata_scheme           = nl%istomata_scheme
+      istruct_growth_scheme     = nl%istruct_growth_scheme
       trait_plasticity_scheme   = nl%trait_plasticity_scheme
       iddmort_scheme            = nl%iddmort_scheme
       cbr_scheme                = nl%cbr_scheme
@@ -728,7 +738,7 @@ subroutine copy_nl(copy_type)
                         ( unitstate == 1 .and. frqstate == 1.      )      )
    history_dail     = unitstate == 0 .and. frqstate < day_sec
    history_eorq     = unitstate <= 1
-   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or.                                &
+   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. iooutput /= 0 .or.             &
                       imoutput /= 0 .or. iqoutput /= 0 .or. itoutput /= 0
    !---------------------------------------------------------------------------------------!
 

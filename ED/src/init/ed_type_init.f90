@@ -37,6 +37,10 @@ module ed_type_init
                                 , llspan_inf         ! ! intent(in)
       use consts_coms    , only : umol_2_mol         & ! intent(in)
                                 , mmdry              ! ! intent(in)
+      use plant_hydro    , only : psi2rwc            & ! subroutine
+                                , rwc2tw             & ! subroutine
+                                , twi2twe            ! ! subroutine
+      use physiology_coms, only : plant_hydro_scheme ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target     :: cpatch  ! Current patch
@@ -99,6 +103,47 @@ module ed_type_init
          cpatch%vm_bar(ico) = Vm0(ipft)
       end select
       cpatch%sla(ico) = sla(ipft)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Start variables related with plant hydraulics                                  !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+         !----- Set psi to 0. -------------------------------------------------------------!
+         cpatch%leaf_psi      (  ico) = 0.
+         cpatch%wood_psi      (  ico) = 0.
+         !---------------------------------------------------------------------------------!
+      case (-1,-2,1,2)
+         !---------------------------------------------------------------------------------!
+         !     Start the water potential with ~-0.1MPa, assuming the plant is under well-  !
+         ! -watered conditions.                                                            !
+         !---------------------------------------------------------------------------------!
+         cpatch%leaf_psi      (  ico) = -10. - cpatch%hite(ico) ! in m
+         cpatch%wood_psi      (  ico) = -10. ! in m
+         !---------------------------------------------------------------------------------!
+      end select
+
+      !----- Convert water potential to relative water content. ---------------------------!
+      call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)               &
+                  ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+      !----- Convert relative water content to total water content. -----------------------!
+      call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                                &
+                 ,cpatch%bleaf(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)            &
+                 ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)  &
+                 ,cpatch%pft(ico),cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+      !----- Convert total water content (kgW/plant) to extensive (kgW/m2). ---------------!
+      call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)                   &
+                  ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico),cpatch%wood_water_im2(ico))
+      !----- Initialise the fluxes with 0. ------------------------------------------------!
+      cpatch%wflux_gw          (  ico) = 0.
+      cpatch%wflux_wl          (  ico) = 0.
+      cpatch%wflux_gw_layer    (:,ico) = 0.
+      cpatch%high_leaf_psi_days  (ico) = 0
+      cpatch%low_leaf_psi_days   (ico) = 0
+      cpatch%last_gV             (ico) = 0.
+      cpatch%last_gJ             (ico) = 0.
       !------------------------------------------------------------------------------------!
 
 
@@ -191,7 +236,6 @@ module ed_type_init
       cpatch%sapb_storage_resp     (ico) = 0.0
       cpatch%barka_storage_resp    (ico) = 0.0
       cpatch%barkb_storage_resp    (ico) = 0.0
-      cpatch%monthly_dndt          (ico) = 0.0
       cpatch%monthly_dlnndt        (ico) = 0.0
       cpatch%mort_rate           (:,ico) = 0.0
       cpatch%dagb_dt               (ico) = 0.0
@@ -231,6 +275,7 @@ module ed_type_init
       cpatch%barka_maintenance     (ico) = 0.0
       cpatch%barkb_maintenance     (ico) = 0.0
       cpatch%leaf_drop             (ico) = 0.0
+      cpatch%root_drop             (ico) = 0.0
       cpatch%paw_avg               (ico) = 0.0
       cpatch%elongf                (ico) = 0.0
       cpatch%new_recruit_flag      (ico) = 0
@@ -336,6 +381,20 @@ module ed_type_init
       cpatch%fmean_lai               (ico) = 0.0
       cpatch%fmean_bdeada            (ico) = 0.0
       cpatch%fmean_bdeadb            (ico) = 0.0
+
+      cpatch%fmean_leaf_psi          (ico) = 0.0
+      cpatch%fmean_wood_psi          (ico) = 0.0
+      cpatch%fmean_leaf_water_int    (ico) = 0.0
+      cpatch%fmean_leaf_water_im2    (ico) = 0.0
+      cpatch%fmean_wood_water_int    (ico) = 0.0
+      cpatch%fmean_wood_water_im2    (ico) = 0.0
+      cpatch%fmean_wflux_gw          (ico) = 0.0
+      cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
+      cpatch%fmean_wflux_wl          (ico) = 0.0
+      cpatch%dmax_leaf_psi           (ico) = 0.0
+      cpatch%dmin_leaf_psi           (ico) = 0.0
+      cpatch%dmax_wood_psi           (ico) = 0.0 
+      cpatch%dmin_wood_psi           (ico) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -421,6 +480,15 @@ module ed_type_init
          cpatch%dmean_vapor_wc          (ico) = 0.0
          cpatch%dmean_intercepted_aw    (ico) = 0.0
          cpatch%dmean_wshed_wg          (ico) = 0.0
+
+         cpatch%dmean_leaf_water_int    (ico) = 0.0
+         cpatch%dmean_leaf_water_im2    (ico) = 0.0
+         cpatch%dmean_wood_water_int    (ico) = 0.0
+         cpatch%dmean_wood_water_im2    (ico) = 0.0
+         cpatch%dmean_wflux_gw          (ico) = 0.0
+         cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
+         cpatch%dmean_wflux_wl          (ico) = 0.0
+
       end if
       !------------------------------------------------------------------------------------!
 
@@ -512,6 +580,7 @@ module ed_type_init
          cpatch%mmean_barka_maintenance   (ico) = 0.0
          cpatch%mmean_barkb_maintenance   (ico) = 0.0
          cpatch%mmean_leaf_drop           (ico) = 0.0
+         cpatch%mmean_root_drop           (ico) = 0.0
          cpatch%mmean_cb                  (ico) = 0.0
          cpatch%mmean_nppleaf             (ico) = 0.0
          cpatch%mmean_nppfroot            (ico) = 0.0
@@ -521,6 +590,19 @@ module ed_type_init
          cpatch%mmean_nppseeds            (ico) = 0.0
          cpatch%mmean_nppwood             (ico) = 0.0
          cpatch%mmean_nppdaily            (ico) = 0.0
+
+         cpatch%mmean_dmax_leaf_psi       (ico) = 0.0
+         cpatch%mmean_dmin_leaf_psi       (ico) = 0.0
+         cpatch%mmean_dmax_wood_psi       (ico) = 0.0
+         cpatch%mmean_dmin_wood_psi       (ico) = 0.0
+         cpatch%mmean_leaf_water_int      (ico) = 0.0
+         cpatch%mmean_leaf_water_im2      (ico) = 0.0
+         cpatch%mmean_wood_water_int      (ico) = 0.0
+         cpatch%mmean_wood_water_im2      (ico) = 0.0
+         cpatch%mmean_wflux_gw            (ico) = 0.0
+         cpatch%mmean_wflux_gw_layer    (:,ico) = 0.0
+         cpatch%mmean_wflux_wl            (ico) = 0.0
+
          cpatch%mmsqu_gpp                 (ico) = 0.0
          cpatch%mmsqu_npp                 (ico) = 0.0
          cpatch%mmsqu_plresp              (ico) = 0.0
@@ -600,6 +682,16 @@ module ed_type_init
          cpatch%qmean_transp            (:,ico) = 0.0
          cpatch%qmean_intercepted_al    (:,ico) = 0.0
          cpatch%qmean_wshed_lg          (:,ico) = 0.0
+
+         cpatch%qmean_leaf_psi          (:,ico) = 0.0
+         cpatch%qmean_wood_psi          (:,ico) = 0.0
+         cpatch%qmean_leaf_water_int    (:,ico) = 0.0
+         cpatch%qmean_leaf_water_im2    (:,ico) = 0.0
+         cpatch%qmean_wood_water_int    (:,ico) = 0.0
+         cpatch%qmean_wood_water_im2    (:,ico) = 0.0
+         cpatch%qmean_wflux_gw          (:,ico) = 0.0
+         cpatch%qmean_wflux_wl          (:,ico) = 0.0
+
          cpatch%qmean_rshort_w          (:,ico) = 0.0
          cpatch%qmean_rlong_w           (:,ico) = 0.0
          cpatch%qmean_rad_profile     (:,:,ico) = 0.0
@@ -806,6 +898,7 @@ module ed_type_init
       csite%wbudget_loss2runoff             (ipaa:ipaz) = 0.0
       csite%wbudget_loss2drainage           (ipaa:ipaz) = 0.0
       csite%wbudget_denseffect              (ipaa:ipaz) = 0.0
+      csite%wbudget_wcapeffect              (ipaa:ipaz) = 0.0
       csite%wbudget_zcaneffect              (ipaa:ipaz) = 0.0
       csite%wbudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%wbudget_residual                (ipaa:ipaz) = 0.0
@@ -817,6 +910,7 @@ module ed_type_init
       csite%ebudget_denseffect              (ipaa:ipaz) = 0.0
       csite%ebudget_prsseffect              (ipaa:ipaz) = 0.0
       csite%ebudget_hcapeffect              (ipaa:ipaz) = 0.0
+      csite%ebudget_wcapeffect              (ipaa:ipaz) = 0.0
       csite%ebudget_zcaneffect              (ipaa:ipaz) = 0.0
       csite%ebudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%ebudget_residual                (ipaa:ipaz) = 0.0
@@ -1642,6 +1736,7 @@ module ed_type_init
          cgrid%barka_maintenance       (:,:,ipy) = 0.0
          cgrid%barkb_maintenance       (:,:,ipy) = 0.0
          cgrid%leaf_drop               (:,:,ipy) = 0.0
+         cgrid%root_drop               (:,:,ipy) = 0.0
          cgrid%fast_grnd_c                 (ipy) = 0.0
          cgrid%fast_soil_c                 (ipy) = 0.0
          cgrid%struct_grnd_c               (ipy) = 0.0
@@ -1692,6 +1787,7 @@ module ed_type_init
          cgrid%fmean_plresp               (ipy) = 0.0
          cgrid%fmean_leaf_energy          (ipy) = 0.0
          cgrid%fmean_leaf_water           (ipy) = 0.0
+         cgrid%fmean_leaf_water_im2       (ipy) = 0.0
          cgrid%fmean_leaf_hcap            (ipy) = 0.0
          cgrid%fmean_leaf_vpdef           (ipy) = 0.0
          cgrid%fmean_leaf_temp            (ipy) = 0.0
@@ -1700,6 +1796,7 @@ module ed_type_init
          cgrid%fmean_leaf_gbw             (ipy) = 0.0
          cgrid%fmean_wood_energy          (ipy) = 0.0
          cgrid%fmean_wood_water           (ipy) = 0.0
+         cgrid%fmean_wood_water_im2       (ipy) = 0.0
          cgrid%fmean_wood_hcap            (ipy) = 0.0
          cgrid%fmean_wood_temp            (ipy) = 0.0
          cgrid%fmean_wood_fliq            (ipy) = 0.0
@@ -1864,6 +1961,7 @@ module ed_type_init
             cgrid%dmean_plresp               (ipy) = 0.0
             cgrid%dmean_leaf_energy          (ipy) = 0.0
             cgrid%dmean_leaf_water           (ipy) = 0.0
+            cgrid%dmean_leaf_water_im2       (ipy) = 0.0
             cgrid%dmean_leaf_hcap            (ipy) = 0.0
             cgrid%dmean_leaf_vpdef           (ipy) = 0.0
             cgrid%dmean_leaf_temp            (ipy) = 0.0
@@ -1872,6 +1970,7 @@ module ed_type_init
             cgrid%dmean_leaf_gbw             (ipy) = 0.0
             cgrid%dmean_wood_energy          (ipy) = 0.0
             cgrid%dmean_wood_water           (ipy) = 0.0
+            cgrid%dmean_wood_water_im2       (ipy) = 0.0
             cgrid%dmean_wood_hcap            (ipy) = 0.0
             cgrid%dmean_wood_temp            (ipy) = 0.0
             cgrid%dmean_wood_fliq            (ipy) = 0.0
@@ -2015,6 +2114,7 @@ module ed_type_init
             cgrid%mmean_plresp               (ipy) = 0.0
             cgrid%mmean_leaf_energy          (ipy) = 0.0
             cgrid%mmean_leaf_water           (ipy) = 0.0
+            cgrid%mmean_leaf_water_im2       (ipy) = 0.0
             cgrid%mmean_leaf_hcap            (ipy) = 0.0
             cgrid%mmean_leaf_vpdef           (ipy) = 0.0
             cgrid%mmean_leaf_temp            (ipy) = 0.0
@@ -2023,6 +2123,7 @@ module ed_type_init
             cgrid%mmean_leaf_gbw             (ipy) = 0.0
             cgrid%mmean_wood_energy          (ipy) = 0.0
             cgrid%mmean_wood_water           (ipy) = 0.0
+            cgrid%mmean_wood_water_im2       (ipy) = 0.0
             cgrid%mmean_wood_hcap            (ipy) = 0.0
             cgrid%mmean_wood_temp            (ipy) = 0.0
             cgrid%mmean_wood_fliq            (ipy) = 0.0
@@ -2139,6 +2240,7 @@ module ed_type_init
             cgrid%mmean_barka_maintenance(:,:,ipy) = 0.0
             cgrid%mmean_barkb_maintenance(:,:,ipy) = 0.0
             cgrid%mmean_leaf_drop        (:,:,ipy) = 0.0
+            cgrid%mmean_root_drop        (:,:,ipy) = 0.0
             cgrid%mmean_fast_grnd_c          (ipy) = 0.0
             cgrid%mmean_fast_soil_c          (ipy) = 0.0
             cgrid%mmean_struct_grnd_c        (ipy) = 0.0
@@ -2244,6 +2346,7 @@ module ed_type_init
             cgrid%qmean_plresp             (:,ipy) = 0.0
             cgrid%qmean_leaf_energy        (:,ipy) = 0.0
             cgrid%qmean_leaf_water         (:,ipy) = 0.0
+            cgrid%qmean_leaf_water_im2     (:,ipy) = 0.0
             cgrid%qmean_leaf_hcap          (:,ipy) = 0.0
             cgrid%qmean_leaf_vpdef         (:,ipy) = 0.0
             cgrid%qmean_leaf_temp          (:,ipy) = 0.0
@@ -2252,6 +2355,7 @@ module ed_type_init
             cgrid%qmean_leaf_gbw           (:,ipy) = 0.0
             cgrid%qmean_wood_energy        (:,ipy) = 0.0
             cgrid%qmean_wood_water         (:,ipy) = 0.0
+            cgrid%qmean_wood_water_im2     (:,ipy) = 0.0
             cgrid%qmean_wood_hcap          (:,ipy) = 0.0
             cgrid%qmean_wood_temp          (:,ipy) = 0.0
             cgrid%qmean_wood_fliq          (:,ipy) = 0.0

@@ -1037,6 +1037,7 @@ module update_derived_utils
          cgrid%barka_maintenance   (:,:,ipy) = 0.0
          cgrid%barkb_maintenance   (:,:,ipy) = 0.0
          cgrid%leaf_drop           (:,:,ipy) = 0.0
+         cgrid%root_drop           (:,:,ipy) = 0.0
          cgrid%fast_grnd_c             (ipy) = 0.0
          cgrid%fast_soil_c             (ipy) = 0.0
          cgrid%microbe_soil_c          (ipy) = 0.0
@@ -1328,6 +1329,10 @@ module update_derived_utils
                                                    * patch_wgt
                   cgrid%leaf_drop        (p,d,ipy) = cgrid%leaf_drop         (p,d,ipy)     &
                                                    + cpatch%leaf_drop            (ico)     &
+                                                   * cpatch%nplant               (ico)     &
+                                                   * patch_wgt
+                  cgrid%root_drop        (p,d,ipy) = cgrid%root_drop         (p,d,ipy)     &
+                                                   + cpatch%root_drop            (ico)     &
                                                    * cpatch%nplant               (ico)     &
                                                    * patch_wgt
                   !------------------------------------------------------------------------!
@@ -1809,11 +1814,12 @@ module update_derived_utils
          cpatch%gpp                (ico) = cpatch%gpp                (ico) * mult
          cpatch%leaf_respiration   (ico) = cpatch%leaf_respiration   (ico) * mult
          cpatch%root_respiration   (ico) = cpatch%root_respiration   (ico) * mult
-         cpatch%monthly_dndt       (ico) = cpatch%monthly_dndt       (ico) * mult
          cpatch%leaf_water         (ico) = cpatch%leaf_water         (ico) * mult
+         cpatch%leaf_water_im2     (ico) = cpatch%leaf_water_im2     (ico) * mult
          cpatch%leaf_hcap          (ico) = cpatch%leaf_hcap          (ico) * mult
          cpatch%leaf_energy        (ico) = cpatch%leaf_energy        (ico) * mult
          cpatch%wood_water         (ico) = cpatch%wood_water         (ico) * mult
+         cpatch%wood_water_im2     (ico) = cpatch%wood_water_im2     (ico) * mult
          cpatch%wood_hcap          (ico) = cpatch%wood_hcap          (ico) * mult
          cpatch%wood_energy        (ico) = cpatch%wood_energy        (ico) * mult
          !----- Crown area shall not exceed 1. --------------------------------------------!
@@ -1821,9 +1827,11 @@ module update_derived_utils
          !----- Fast-scale means. ---------------------------------------------------------!
          cpatch%fmean_leaf_energy   (ico) = cpatch%fmean_leaf_energy   (ico) * mult
          cpatch%fmean_leaf_water    (ico) = cpatch%fmean_leaf_water    (ico) * mult
+         cpatch%fmean_leaf_water_im2(ico) = cpatch%fmean_leaf_water_im2(ico) * mult
          cpatch%fmean_leaf_hcap     (ico) = cpatch%fmean_leaf_hcap     (ico) * mult
          cpatch%fmean_wood_energy   (ico) = cpatch%fmean_wood_energy   (ico) * mult
          cpatch%fmean_wood_water    (ico) = cpatch%fmean_wood_water    (ico) * mult
+         cpatch%fmean_wood_water_im2(ico) = cpatch%fmean_wood_water_im2(ico) * mult
          cpatch%fmean_wood_hcap     (ico) = cpatch%fmean_wood_hcap     (ico) * mult
          cpatch%fmean_water_supply  (ico) = cpatch%fmean_water_supply  (ico) * mult
          cpatch%fmean_par_l         (ico) = cpatch%fmean_par_l         (ico) * mult
@@ -1847,9 +1855,11 @@ module update_derived_utils
          if (writing_long) then
             cpatch%dmean_leaf_energy   (ico) = cpatch%dmean_leaf_energy   (ico) * mult
             cpatch%dmean_leaf_water    (ico) = cpatch%dmean_leaf_water    (ico) * mult
+            cpatch%dmean_leaf_water_im2(ico) = cpatch%dmean_leaf_water_im2(ico) * mult
             cpatch%dmean_leaf_hcap     (ico) = cpatch%dmean_leaf_hcap     (ico) * mult
             cpatch%dmean_wood_energy   (ico) = cpatch%dmean_wood_energy   (ico) * mult
             cpatch%dmean_wood_water    (ico) = cpatch%dmean_wood_water    (ico) * mult
+            cpatch%dmean_wood_water_im2(ico) = cpatch%dmean_wood_water_im2(ico) * mult
             cpatch%dmean_wood_hcap     (ico) = cpatch%dmean_wood_hcap     (ico) * mult
             cpatch%dmean_water_supply  (ico) = cpatch%dmean_water_supply  (ico) * mult
             cpatch%dmean_par_l         (ico) = cpatch%dmean_par_l         (ico) * mult
@@ -1875,9 +1885,11 @@ module update_derived_utils
             cpatch%mmean_lai           (ico) = cpatch%mmean_lai           (ico) * mult
             cpatch%mmean_leaf_energy   (ico) = cpatch%mmean_leaf_energy   (ico) * mult
             cpatch%mmean_leaf_water    (ico) = cpatch%mmean_leaf_water    (ico) * mult
+            cpatch%mmean_leaf_water_im2(ico) = cpatch%mmean_leaf_water_im2(ico) * mult
             cpatch%mmean_leaf_hcap     (ico) = cpatch%mmean_leaf_hcap     (ico) * mult
             cpatch%mmean_wood_energy   (ico) = cpatch%mmean_wood_energy   (ico) * mult
             cpatch%mmean_wood_water    (ico) = cpatch%mmean_wood_water    (ico) * mult
+            cpatch%mmean_wood_water_im2(ico) = cpatch%mmean_wood_water_im2(ico) * mult
             cpatch%mmean_wood_hcap     (ico) = cpatch%mmean_wood_hcap     (ico) * mult
             cpatch%mmean_water_supply  (ico) = cpatch%mmean_water_supply  (ico) * mult
             cpatch%mmean_par_l         (ico) = cpatch%mmean_par_l         (ico) * mult
@@ -1910,9 +1922,11 @@ module update_derived_utils
          if (writing_dcyc) then
             cpatch%qmean_leaf_energy   (:,ico) = cpatch%qmean_leaf_energy   (:,ico)*mult
             cpatch%qmean_leaf_water    (:,ico) = cpatch%qmean_leaf_water    (:,ico)*mult
+            cpatch%qmean_leaf_water_im2(:,ico) = cpatch%qmean_leaf_water_im2(:,ico)*mult
             cpatch%qmean_leaf_hcap     (:,ico) = cpatch%qmean_leaf_hcap     (:,ico)*mult
             cpatch%qmean_wood_energy   (:,ico) = cpatch%qmean_wood_energy   (:,ico)*mult
             cpatch%qmean_wood_water    (:,ico) = cpatch%qmean_wood_water    (:,ico)*mult
+            cpatch%qmean_wood_water_im2(:,ico) = cpatch%qmean_wood_water_im2(:,ico)*mult
             cpatch%qmean_wood_hcap     (:,ico) = cpatch%qmean_wood_hcap     (:,ico)*mult
             cpatch%qmean_water_supply  (:,ico) = cpatch%qmean_water_supply  (:,ico)*mult
             cpatch%qmean_par_l         (:,ico) = cpatch%qmean_par_l         (:,ico)*mult

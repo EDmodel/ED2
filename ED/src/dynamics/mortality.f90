@@ -135,7 +135,8 @@ module mortality
       use ed_max_dims  , only : n_pft         & ! intent(in)
                               , n_dist_types  ! ! intent(in)
       use consts_coms  , only : lnexp_max     & ! intent(in)
-                              , tiny_num      ! ! intent(in)
+                              , tiny_num      & ! intent(in)
+                              , almost_one    ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                         , target      :: csite
@@ -185,7 +186,7 @@ module mortality
       !     Loop over cohorts, and find mortality.                                         !
       !------------------------------------------------------------------------------------!
       do ico=1,cpatch%ncohorts
-         if ( a_factor(ico) < (1.0 - epsilon(1.0)) ) then
+         if ( a_factor(ico) < almost_one ) then
             cpatch%mort_rate(5,ico) = log( 1.0 / (1.0 - a_factor(ico)) )
          else
             cpatch%mort_rate(5,ico) = lnexp_max

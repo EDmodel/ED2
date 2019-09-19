@@ -1154,6 +1154,7 @@ subroutine ed_opspec_misc
                                     , imoutput                     & ! intent(in)
                                     , iyoutput                     & ! intent(in)
                                     , itoutput                     & ! intent(in)
+                                    , iooutput                     & ! intent(in)
                                     , isoutput                     & ! intent(in)
                                     , igoutput                     & ! intent(in)
                                     , iyeara                       & ! intent(in)
@@ -1206,6 +1207,9 @@ subroutine ed_opspec_misc
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
+                                    , plant_hydro_scheme           & ! intent(in)
+                                    , istomata_scheme              & ! intent(in)
+                                    , istruct_growth_scheme        & ! intent(in)
                                     , trait_plasticity_scheme      & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
                                     , cbr_scheme                   & ! intent(in)
@@ -1337,6 +1341,13 @@ subroutine ed_opspec_misc
         ,'Yours is set to ',min_patch_area,'...'
    end if
 
+
+   if (ifoutput == 3 .and. iooutput == 3) then
+      call warning(  'IFOUTPUT and IOOUTPUT are both on. '                                 &
+                  // 'Outputs from both are labeled -I-.'                                  &
+                  ,  'ed_opspec_misc','ed_opspec.F90')
+   end if
+
    if (ifoutput /= 0 .and. ifoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IFOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',ifoutput,'...'
@@ -1364,6 +1375,12 @@ subroutine ed_opspec_misc
    if (iyoutput /= 0 .and. iyoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IYOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iyoutput,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+   if (iooutput /= 0 .and. iooutput /= 3) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IOOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iooutput,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
@@ -1699,6 +1716,34 @@ end do
    end select
    !---------------------------------------------------------------------------------------!
 
+   if (plant_hydro_scheme < -2 .or. plant_hydro_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid PLANT_HYDRO_SCHEME, it must be between -2 and 2. Yours is set to'   &
+                    ,plant_hydro_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   else if (plant_hydro_scheme /= 0 .and. igrass /= 0) then
+      write(reason,fmt='(a,1x,i4,a,1x,i4,a)')                                              &
+                   ' Dynamic plant hydraulics (PLANT_HYDRO_SCHEME =',plant_hydro_scheme    &
+                   ,') cannot be used with new grass scheme (IGRASS =',igrass,').'
+   end if
+
+   if (istomata_scheme < 0 .or. istomata_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISTOMATA_SCHEME, it must be between 0 and 1. Yours is set to' &
+                    ,istomata_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (istruct_growth_scheme < 0 .or. istruct_growth_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISTRUCT_GROWTH_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    ,istruct_growth_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (trait_plasticity_scheme < -2 .or. trait_plasticity_scheme > 2) then
       write (reason,fmt='(2a,1x,i4,a)')                                                    &
                     'Invalid TRAIT_PLASTICITY_SCHEME, it must be between -2 and 2.'        &
@@ -1713,9 +1758,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iphysiol < 0 .or. iphysiol > 3) then
+   if (iphysiol < 0 .or. iphysiol > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHYSIOL, it must be between 0 and 3. Yours is set to'        &
+                    'Invalid IPHYSIOL, it must be between 0 and 4. Yours is set to'        &
                     ,iphysiol,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1752,9 +1797,9 @@ end do
    
    end if
 
-   if (iphen_scheme < -1 .or. iphen_scheme > 3) then
+   if (iphen_scheme < -1 .or. iphen_scheme > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
+                    'Invalid IPHEN_SCHEME, it must be between -1 and 4. Yours is set to'   &
                     ,iphen_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1783,10 +1828,28 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 3) then
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 5) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 3.  Yours is set to'  &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 5.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   else if ( ( h2o_plant_lim == 3 .or. h2o_plant_lim == 4) .and.                           &
+             ( plant_hydro_scheme == 0 ) ) then
+      write (reason,fmt='(a,1x,i4,a,1x,a)')                                                &
+                    'H2O_PLANT_LIM is set to ',h2o_plant_lim,'.'                           &
+                   ,'This requires PLANT_HYDRO_SCHEME /= 0.'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   else if (h2o_plant_lim == 4 .and. (istomata_scheme == 0)) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'H2O_PLANT_LIM cannot be set to 4 with istomata_scheme set to '        &
+                    ,istomata_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+   else if (h2o_plant_lim == 5 .and. istomata_scheme /= 0) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'H2O_PLANT_LIM cannot be set to 5 with istomata_scheme set to '        &
+                    ,istomata_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -2039,22 +2102,13 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   select case (decomp_scheme)
-   case (0,1,2,5)
-      continue
-   case (3,4)
+   if (decomp_scheme < 0 .or. decomp_scheme > 5) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid DECOMP_SCHEME, options 3 and 4 are not implemented yet.'      &
+                    'Invalid DECOMP_SCHEME, it must be between 0 and 5. Yours is set to'   &
                     ,decomp_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   case default
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid DECOMP_SCHEME, it must be 0, 1, 2 and 5. Yours is set to'     &
-                    ,decomp_scheme,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end select
+   end if
 
    if (include_fire < 0 .or. include_fire > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &

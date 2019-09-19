@@ -36,6 +36,7 @@ module rk4_driver
       use rk4_integ_utils        , only : copy_met_2_rk4site         ! ! sub-routine
       use update_derived_utils   , only : update_patch_thermo_props  & ! sub-routine
                                         , update_patch_derived_props ! ! sub-routine
+      use plant_hydro            , only : plant_hydro_driver         ! ! sub-routine
       !$ use omp_lib
       implicit none
 
@@ -216,10 +217,13 @@ module rk4_driver
                   end if
                   !------------------------------------------------------------------------!
 
+
                   !------------------------------------------------------------------------!
-                  !     Set up the integration patch.                                      !
+                  !     Get plant water flow driven by plant hydraulics.  This must be     !
+                  ! placed before canopy_photosynthesis, because plant_hydro_driver needs  !
+                  ! fs_open from the previous timestep.                                    !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
+                  call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
                   !------------------------------------------------------------------------!
 
 
@@ -240,10 +244,15 @@ module rk4_driver
                   call update_cbudget_committed(csite,ipa)
                   !------------------------------------------------------------------------!
 
-
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
+                  !                                                                        !
+                  ! MLO: The separation between init and init_carbon may have become       !
+                  !      obsolete.  I am going to keep them separated in case I find out   !
+                  !      why copy_patch_init should be placed before photosynthesis, but   !
+                  !      I do not see any good reason now.                                 !
                   !------------------------------------------------------------------------!
+                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
                   call copy_patch_init_carbon(csite,ipa,initp)
                   !------------------------------------------------------------------------!
 
@@ -408,7 +417,6 @@ module rk4_driver
    subroutine initp2modelp(hdid,initp,csite,ipa,nighttime,wbudget_loss2atm,ebudget_netrad  &
                           ,ebudget_loss2atm,co2budget_loss2atm,wbudget_loss2drainage       &
                           ,ebudget_loss2drainage,wbudget_loss2runoff,ebudget_loss2runoff)
-      use rk4_misc
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -438,9 +446,13 @@ module rk4_driver
                                       , cmtl2uext            & ! subroutine
                                       , qslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
+      use physiology_coms        , only : plant_hydro_scheme         ! ! intent(in)
       use allometry            , only : h2crownbh            ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
                                       , k_fire_first         ! ! intent(in)
+      use plant_hydro          , only : twe2twi              & ! subroutine
+                                      , tw2rwc               ! ! subroutine
+      use rk4_misc             , only : print_rk4patch       ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -766,6 +778,53 @@ module rk4_driver
       ! snow.                                                                              !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+         !---------------------------------------------------------------------------------!
+         !      First, update variables related with plant hydrodynamics because it can    !
+         ! change leaf/wood heat capacity, which will be used later.                       !
+         !---------------------------------------------------------------------------------!
+         select case (plant_hydro_scheme)
+         case (0)
+            continue
+         case default
+            !----- Need to update leaf_water_im2 and wood_water_im2. ----------------------!
+            cpatch%leaf_water_im2(ico) = sngloff(initp%leaf_water_im2(ico),tiny_offset)
+            cpatch%wood_water_im2(ico) = sngloff(initp%wood_water_im2(ico),tiny_offset)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Update intensive internal water content.                                !
+            !------------------------------------------------------------------------------!
+            call twe2twi(cpatch%leaf_water_im2(ico),cpatch%wood_water_im2(ico)             &
+                        ,cpatch%nplant(ico),cpatch%pft(ico),cpatch%bleaf(ico)              &
+                        ,cpatch%broot(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)     &
+                        ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Update rwc since it will be used to update leaf/wood heat capacity.     !
+            !------------------------------------------------------------------------------!
+            call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)              &
+                       ,cpatch%bleaf(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)      &
+                       ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)            &
+                       ,cpatch%dbh(ico),cpatch%pft(ico),cpatch%leaf_rwc(ico)               &
+                       ,cpatch%wood_rwc(ico))
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Leaf and wood psi are updated in plant_hydro_driver of file             !
+            ! ED/src/dynamics/plant_hydro.f90 for consistency reasons.  See that file for  !
+            ! details.                                                                     !
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+
+
          select case (ibranch_thermo)
          case (1)
             !------------------------------------------------------------------------------!
@@ -788,6 +847,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                cpatch%leaf_water (ico) = sngloff(initp%leaf_water (ico) , tiny_offset)
                cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico) , tiny_offset)
+               !---------------------------------------------------------------------------!
 
 
                if (initp%leaf_resolvable(ico)) then
@@ -795,7 +855,8 @@ module rk4_driver
                   !    Leaves were solved, find the temperature and liquid fraction from   !
                   ! internal energy.                                                       !
                   !------------------------------------------------------------------------!
-                  call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)            &
+                  call uextcm2tl(cpatch%leaf_energy(ico)                                   &
+                                ,cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)       &
                                 ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)               &
                                 ,cpatch%leaf_fliq(ico))
                   !------------------------------------------------------------------------!
@@ -892,7 +953,8 @@ module rk4_driver
                   !    Branches were solved, find the temperature and liquid fraction from !
                   ! internal energy.                                                       !
                   !------------------------------------------------------------------------!
-                  call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)            &
+                  call uextcm2tl(cpatch%wood_energy(ico)                                   &
+                                ,cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)       &
                                 ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)               &
                                 ,cpatch%wood_fliq(ico))
                   !------------------------------------------------------------------------!
@@ -953,14 +1015,16 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Find the internal energy diagnostically...                            !
                !---------------------------------------------------------------------------!
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
                !---------------------------------------------------------------------------!
 
 
@@ -1020,14 +1084,16 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Find the internal energy diagnostically...                            !
                !---------------------------------------------------------------------------!
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
                !---------------------------------------------------------------------------!
 
 
@@ -1082,7 +1148,8 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                cpatch%leaf_water(ico)  = sngloff(initp%leaf_water(ico) , tiny_offset)
                cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico), tiny_offset)
-               call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)               &
+               call uextcm2tl(cpatch%leaf_energy(ico)                                      &
+                             ,cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)          &
                              ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)                  &
                              ,cpatch%leaf_fliq(ico))
 
@@ -1148,10 +1215,11 @@ module rk4_driver
                   cpatch%leaf_fliq(ico)   = 0.0
                end if
                cpatch%leaf_water(ico)  = 0.
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
                !---------------------------------------------------------------------------!
                !     The intercellular specific humidity is always assumed to be at        !
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
@@ -1194,10 +1262,11 @@ module rk4_driver
                   cpatch%leaf_fliq(ico)   = 0.0
                end if
                cpatch%leaf_water(ico)  = 0.
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
                !---------------------------------------------------------------------------!
                !     The intercellular specific humidity is always assumed to be at        !
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
@@ -1243,7 +1312,8 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                cpatch%wood_water(ico)  = sngloff(initp%wood_water(ico) , tiny_offset)
                cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico), tiny_offset)
-               call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)               &
+               call uextcm2tl(cpatch%wood_energy(ico)                                      &
+                             ,cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)          &
                              ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)                  &
                              ,cpatch%wood_fliq(ico))
 
@@ -1277,10 +1347,11 @@ module rk4_driver
                   cpatch%wood_fliq(ico)   = 0.0
                end if
                cpatch%wood_water(ico)  = 0.
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
                !---------------------------------------------------------------------------!
 
                !----- Copy the meteorological wind to here. -------------------------------!
@@ -1308,10 +1379,11 @@ module rk4_driver
                   cpatch%wood_fliq(ico)   = 0.0
                end if
                cpatch%wood_water(ico)  = 0.
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
 
 
                !----- Set the conductances to zero. ---------------------------------------!
@@ -1341,25 +1413,27 @@ module rk4_driver
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
             write (unit=*,fmt='(a)')           'FINAL LEAF_TEMP IS WRONG IN INITP2MODELP'
             write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4site%lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
-            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
-            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
-            write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
-            write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',rk4site%lon
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',rk4site%lat
+            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:       ',ipa
+            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:      ',ico
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:   '
+            write (unit=*,fmt='(a,1x,es12.4)') '  - AGE:        ',csite%age(ipa)
+            write (unit=*,fmt='(a,1x,i6)')     '  - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%leaf_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%leaf_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%leaf_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%leaf_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%leaf_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',initp%leaf_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',initp%leaf_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',initp%leaf_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',initp%leaf_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',initp%leaf_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',initp%leaf_hcap(ico)
             write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%leaf_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%leaf_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%leaf_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%leaf_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%leaf_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',cpatch%leaf_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',cpatch%leaf_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',cpatch%leaf_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',cpatch%leaf_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',cpatch%leaf_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',cpatch%leaf_hcap(ico)
             write (unit=*,fmt='(80a)') ('-',k=1,80)
             call print_rk4patch(initp, csite,ipa)
             call fatal_error('extreme vegetation temperature','initp2modelp'               &
@@ -1370,25 +1444,27 @@ module rk4_driver
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
             write (unit=*,fmt='(a)')           'FINAL WOOD_TEMP IS WRONG IN INITP2MODELP'
             write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4site%lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
-            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
-            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
-            write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
-            write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',rk4site%lon
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',rk4site%lat
+            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:       ',ipa
+            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:      ',ico
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:   '
+            write (unit=*,fmt='(a,1x,es12.4)') '  - AGE:        ',csite%age(ipa)
+            write (unit=*,fmt='(a,1x,i6)')     '  - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%wood_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%wood_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%wood_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%wood_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%wood_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',initp%wood_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',initp%wood_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',initp%wood_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',initp%wood_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',initp%wood_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',initp%wood_hcap(ico)
             write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%wood_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%wood_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%wood_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%wood_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%wood_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',cpatch%wood_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',cpatch%wood_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',cpatch%wood_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',cpatch%wood_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',cpatch%wood_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',cpatch%wood_hcap(ico)
             write (unit=*,fmt='(80a)') ('-',k=1,80)
             call print_rk4patch(initp, csite,ipa)
             call fatal_error('extreme vegetation temperature','initp2modelp'               &
@@ -1444,51 +1520,78 @@ module rk4_driver
       end do
       !------ Cohort-level variables. -----------------------------------------------------!
       do ico=1,cpatch%ncohorts
-         cpatch%fmean_leaf_energy(ico) = cpatch%fmean_leaf_energy(ico)                     &
-                                       + cpatch%leaf_energy      (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_water (ico) = cpatch%fmean_leaf_water (ico)                     &
-                                       + cpatch%leaf_water       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_hcap  (ico) = cpatch%fmean_leaf_hcap  (ico)                     &
-                                       + cpatch%leaf_hcap        (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_vpdef (ico) = cpatch%fmean_leaf_vpdef (ico)                     &
-                                       + cpatch%leaf_vpdef       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_energy(ico) = cpatch%fmean_wood_energy(ico)                     &
-                                       + cpatch%wood_energy      (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_water (ico) = cpatch%fmean_wood_water (ico)                     &
-                                       + cpatch%wood_water       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_hcap  (ico) = cpatch%fmean_wood_hcap  (ico)                     &
-                                       + cpatch%wood_hcap        (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_gsw   (ico) = cpatch%fmean_leaf_gsw   (ico)                     &
-                                       + cpatch%leaf_gsw         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_gbw   (ico) = cpatch%fmean_leaf_gbw   (ico)                     &
-                                       + cpatch%leaf_gbw         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_gbw   (ico) = cpatch%fmean_wood_gbw   (ico)                     &
-                                       + cpatch%wood_gbw         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_psi_open   (ico) = cpatch%fmean_psi_open   (ico)                     &
-                                       + cpatch%psi_open         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_psi_closed (ico) = cpatch%fmean_psi_closed (ico)                     &
-                                       + cpatch%psi_closed       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_fs_open    (ico) = cpatch%fmean_fs_open    (ico)                     &
-                                       + cpatch%fs_open          (ico) * dtlsm_o_frqsum
-         cpatch%fmean_fsw        (ico) = cpatch%fmean_fsw        (ico)                     &
-                                       + cpatch%fsw              (ico) * dtlsm_o_frqsum
-         cpatch%fmean_fsn        (ico) = cpatch%fmean_fsn        (ico)                     &
-                                       + cpatch%fsn              (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_open     (ico) = cpatch%fmean_A_open     (ico)                     &
-                                       + cpatch%A_open           (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_closed   (ico) = cpatch%fmean_A_closed   (ico)                     &
-                                       + cpatch%A_closed         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_net      (ico) = cpatch%fmean_A_net      (ico)                     &
-                                       + ( ( 1. - cpatch%fs_open (ico) )                   &
-                                         * cpatch%A_closed       (ico)                     &
-                                         + cpatch%fs_open        (ico)                     &
-                                         * cpatch%A_open         (ico) ) * dtlsm_o_frqsum
-         cpatch%fmean_A_light    (ico) = cpatch%fmean_A_light    (ico)                     &
-                                       + cpatch%A_light          (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_rubp     (ico) = cpatch%fmean_A_rubp     (ico)                     &
-                                       + cpatch%A_rubp           (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_co2      (ico) = cpatch%fmean_A_co2      (ico)                     &
-                                       + cpatch%A_co2            (ico) * dtlsm_o_frqsum
+         cpatch%fmean_leaf_energy   (ico) = cpatch%fmean_leaf_energy   (ico)               &
+                                          + cpatch%leaf_energy         (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_water    (ico) = cpatch%fmean_leaf_water    (ico)               &
+                                          + cpatch%leaf_water          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_water_im2(ico) = cpatch%fmean_leaf_water_im2(ico)               &
+                                          + cpatch%leaf_water_im2      (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_hcap     (ico) = cpatch%fmean_leaf_hcap     (ico)               &
+                                          + cpatch%leaf_hcap           (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_vpdef    (ico) = cpatch%fmean_leaf_vpdef    (ico)               &
+                                          + cpatch%leaf_vpdef          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_energy   (ico) = cpatch%fmean_wood_energy   (ico)               &
+                                          + cpatch%wood_energy         (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_water    (ico) = cpatch%fmean_wood_water    (ico)               &
+                                          + cpatch%wood_water          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_water_im2(ico) = cpatch%fmean_wood_water_im2(ico)               &
+                                          + cpatch%wood_water_im2      (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_hcap     (ico) = cpatch%fmean_wood_hcap     (ico)               &
+                                          + cpatch%wood_hcap           (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_gsw      (ico) = cpatch%fmean_leaf_gsw      (ico)               &
+                                          + cpatch%leaf_gsw            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_gbw      (ico) = cpatch%fmean_leaf_gbw      (ico)               &
+                                          + cpatch%leaf_gbw            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_gbw      (ico) = cpatch%fmean_wood_gbw      (ico)               &
+                                          + cpatch%wood_gbw            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_psi_open      (ico) = cpatch%fmean_psi_open      (ico)               &
+                                          + cpatch%psi_open            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_psi_closed    (ico) = cpatch%fmean_psi_closed    (ico)               &
+                                          + cpatch%psi_closed          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_fs_open       (ico) = cpatch%fmean_fs_open       (ico)               &
+                                          + cpatch%fs_open             (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_fsw           (ico) = cpatch%fmean_fsw           (ico)               &
+                                          + cpatch%fsw                 (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_fsn           (ico) = cpatch%fmean_fsn           (ico)               &
+                                          + cpatch%fsn                 (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_open        (ico) = cpatch%fmean_A_open        (ico)               &
+                                          + cpatch%A_open              (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_closed      (ico) = cpatch%fmean_A_closed      (ico)               &
+                                          + cpatch%A_closed            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_net         (ico) = cpatch%fmean_A_net         (ico)               &
+                                          + ( ( 1. - cpatch%fs_open    (ico) )             &
+                                            * cpatch%A_closed          (ico)               &
+                                            + cpatch%fs_open           (ico)               &
+                                            * cpatch%A_open            (ico) )               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_light       (ico) = cpatch%fmean_A_light       (ico)               &
+                                          + cpatch%A_light             (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_rubp        (ico) = cpatch%fmean_A_rubp        (ico)               &
+                                          + cpatch%A_rubp              (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_co2         (ico) = cpatch%fmean_A_co2         (ico)               &
+                                          + cpatch%A_co2               (ico)               &
+                                          * dtlsm_o_frqsum
          !---------------------------------------------------------------------------------!
          !     The penalty factor for water and nitrogen are meaningful only during the    !
          ! day.  For the daily means we must add only when it is daytime, so we integrate  !

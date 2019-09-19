@@ -413,9 +413,6 @@ module ed_state_vars
       real ,pointer,dimension(:) :: barkb_storage_resp
       !< Below-ground bark storage respiration (kgC/plant/day)
 
-      real ,pointer,dimension(:) :: monthly_dndt
-      !<Plant density change rate (plants/m2/month)
-
       real ,pointer,dimension(:) :: monthly_dlnndt
       !<Plant density relative change rate (1/month)
 
@@ -564,6 +561,9 @@ module ed_state_vars
      
       real , pointer, dimension(:) :: leaf_drop
       !<Leaf loss to litter layer due to phenology [kgC/plant]
+     
+      real , pointer, dimension(:) :: root_drop
+      !<Fine-root loss to litter layer due to phenology [kgC/plant]
 
       real ,pointer,dimension(:) :: leaf_respiration
       !<Instantaneous values of leaf respiration [umolmu;mol/m2/s]
@@ -584,6 +584,64 @@ module ed_state_vars
       real, pointer, dimension(:) :: llspan
       real, pointer, dimension(:) :: vm_bar
       real, pointer, dimension(:) :: sla
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for plant hydraulic calculations              !
+      !------------------------------------------------------------------------------------!
+      real, pointer, dimension(:) :: leaf_psi
+      !<Leaf water potential [m]
+      real, pointer, dimension(:) :: wood_psi
+      !<Wood water potential at the base of stem [m]
+      real, pointer, dimension(:) :: leaf_rwc
+      !<Leaf relative water content [0-1]
+      real, pointer, dimension(:) :: wood_rwc
+      !<Wood relative water content [0-1]
+      real, pointer, dimension(:) :: leaf_water_int
+      !<Leaf internal water content per plant [kg/plant]
+      real, pointer, dimension(:) :: wood_water_int
+      !<Wood internal water content per plant [kg/plant]
+      real, pointer, dimension(:) :: leaf_water_im2
+      !<Leaf internal water content per plant [kg/m2]
+      real, pointer, dimension(:) :: wood_water_im2
+      !<Wood internal water content per plant [kg/m2]
+      real, pointer, dimension(:) :: wflux_gw
+      !<Water flux from ground to wood/stem [kg H2O/s], root is assumed to be
+      !!super-connected with stem and shares the same water potential and rwc
+      real, pointer, dimension(:,:) :: wflux_gw_layer
+      !<Water flux from ground to wood/stem separated by each layer [kg H2O/s].
+      !! For each cohort, the sum of wflux_gw_layer should equal wflux_gw
+      real, pointer, dimension(:) :: wflux_wl
+      !<Water flux from wood to leaf [kg H2O/s], corresponding to sapflow in field
+      !! measurement
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for new drought phenology driven by plant     !
+      ! leaf water potential.                                                              !
+      !------------------------------------------------------------------------------------!
+      integer, pointer, dimension(:) :: high_leaf_psi_days
+      !<Consecutive days with daily maximum leaf water potential higher than
+      !< leaf_psi_tlp * 0.5 [days]
+
+      integer, pointer, dimension(:) :: low_leaf_psi_days
+      !<Consecutive days with daily maximum leaf water potential lower than
+      !< leaf_psi_tlp [days]
+
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are used for Katul's stomatal model.                   !
+      !------------------------------------------------------------------------------------!
+      real, pointer, dimension(:) :: last_gV
+      !< Optimized stomatal conductance under Rubisco-limited scenario using
+      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
+      !< optimization calculations
+      
+      real, pointer, dimension(:) :: last_gJ
+      !< Optimized stomatal conductance under Light-limited scenario using
+      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
+      !< optimization calculations
+
 
       !------------------------------------------------------------------------------------!
       ! These are diagnostic variables, averaged over various time scales.                 !
@@ -668,6 +726,15 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_lai              !<LAI               [     m2/m2]
       real,pointer,dimension(:)   :: fmean_bdeada           !<Bdead (AG)        [     kg/pl]
       real,pointer,dimension(:)   :: fmean_bdeadb           !<Bdead (AG)        [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_leaf_psi         !<&Psi; leaf        [         m]
+      real,pointer,dimension(:)   :: fmean_wood_psi         !<&Psi; wood        [         m]
+      real,pointer,dimension(:)   :: fmean_leaf_water_int   !<Water conc. leaf  [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_leaf_water_im2   !<Water conc. leaf  [     kg/m2]
+      real,pointer,dimension(:)   :: fmean_wood_water_int   !<Water conc. wood  [     kg/pl]
+      real,pointer,dimension(:)   :: fmean_wood_water_im2   !<Water conc. wood  [     kg/m2]
+      real,pointer,dimension(:)   :: fmean_wflux_gw         !<Water Abs.        [      kg/s]
+      real,pointer,dimension(:,:) :: fmean_wflux_gw_layer   !<Water Abs. Layer  [      kg/s]
+      real,pointer,dimension(:)   :: fmean_wflux_wl         !<sapflow           [      kg/s]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:)   :: dmean_nppleaf          !<Leaf NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppfroot         !<Fine root NPP     [ kgC/pl/yr]
@@ -692,6 +759,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: mmean_barka_maintenance !<AG Bark mainten. [ kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_barkb_maintenance !<BG Bark mainten. [ kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_leaf_drop         !<Leaf drop        [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_root_drop         !<Fine-root drop   [ kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_cb                !<12-mon C balance [    kgC/pl]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
@@ -762,6 +830,21 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_vapor_wc
       real,pointer,dimension(:)     :: dmean_intercepted_aw
       real,pointer,dimension(:)     :: dmean_wshed_wg
+
+      ! for plant hydrodyanmics, daily mean water potential is of less interest.
+      ! We only track daily maximum and minimum water potential here. DMEAN of
+      ! water fluxes are calculated.
+      real,pointer,dimension(:)     :: dmax_leaf_psi        !<Daily max &Psi; leaf [m]
+      real,pointer,dimension(:)     :: dmin_leaf_psi        !<Daily min &Psi; leaf [m]
+      real,pointer,dimension(:)     :: dmax_wood_psi        !<Daily max &Psi; wood [m]
+      real,pointer,dimension(:)     :: dmin_wood_psi        !<Daily min &Psi; wood [m]
+      real,pointer,dimension(:)     :: dmean_leaf_water_int
+      real,pointer,dimension(:)     :: dmean_leaf_water_im2
+      real,pointer,dimension(:)     :: dmean_wood_water_int
+      real,pointer,dimension(:)     :: dmean_wood_water_im2
+      real,pointer,dimension(:)     :: dmean_wflux_gw
+      real,pointer,dimension(:,:)   :: dmean_wflux_gw_layer
+      real,pointer,dimension(:)     :: dmean_wflux_wl
       !----- Monthly mean (same units as fast mean). --------------------------------------!
       real,pointer,dimension(:)     :: mmean_gpp
       real,pointer,dimension(:)     :: mmean_npp
@@ -839,6 +922,18 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nppseeds
       real,pointer,dimension(:)     :: mmean_nppwood
       real,pointer,dimension(:)     :: mmean_nppdaily
+      ! plant hydraulics
+      real,pointer,dimension(:)     :: mmean_dmax_leaf_psi
+      real,pointer,dimension(:)     :: mmean_dmin_leaf_psi
+      real,pointer,dimension(:)     :: mmean_dmax_wood_psi
+      real,pointer,dimension(:)     :: mmean_dmin_wood_psi
+      real,pointer,dimension(:)     :: mmean_leaf_water_int
+      real,pointer,dimension(:)     :: mmean_leaf_water_im2
+      real,pointer,dimension(:)     :: mmean_wood_water_int
+      real,pointer,dimension(:)     :: mmean_wood_water_im2
+      real,pointer,dimension(:)     :: mmean_wflux_gw
+      real,pointer,dimension(:,:)   :: mmean_wflux_gw_layer
+      real,pointer,dimension(:)     :: mmean_wflux_wl
       !----- Monthly mean sum of squares. -------------------------------------------------!
       real,pointer,dimension(:)     :: mmsqu_gpp
       real,pointer,dimension(:)     :: mmsqu_npp
@@ -918,6 +1013,17 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_vapor_wc
       real,pointer,dimension(:,:)   :: qmean_intercepted_aw
       real,pointer,dimension(:,:)   :: qmean_wshed_wg
+
+      ! plant hydraulics, here for simplicity, wflux_gw_layer is not included
+      real,pointer,dimension(:,:)   :: qmean_leaf_psi
+      real,pointer,dimension(:,:)   :: qmean_wood_psi
+      real,pointer,dimension(:,:)   :: qmean_leaf_water_int
+      real,pointer,dimension(:,:)   :: qmean_leaf_water_im2
+      real,pointer,dimension(:,:)   :: qmean_wood_water_int
+      real,pointer,dimension(:,:)   :: qmean_wood_water_im2
+      real,pointer,dimension(:,:)   :: qmean_wflux_gw
+      real,pointer,dimension(:,:)   :: qmean_wflux_wl
+
       !------ Mean diel of sum of squares. ------------------------------------------------!
       real,pointer,dimension(:,:)   :: qmsqu_gpp
       real,pointer,dimension(:,:)   :: qmsqu_npp
@@ -1223,6 +1329,10 @@ module ed_state_vars
       !<Contribution of density change on change in the final storage
       !<(kg_H2O/m2/s)
 
+      real , pointer,dimension(:) :: wbudget_wcapeffect
+      !<Contribution of total internal water capacity change in the final storage
+      !<(kg_H2O/m2/s)
+
       real , pointer,dimension(:) :: wbudget_zcaneffect
       !<Contribution of CAS depth change on change in the final storage
       !<(kg_H2O/m2/s)
@@ -1257,6 +1367,10 @@ module ed_state_vars
 
       real , pointer,dimension(:) :: ebudget_hcapeffect
       !<Mean change in storage due to vegetation heat capacity change
+      !<(J/m2/s)
+
+      real , pointer,dimension(:) :: ebudget_wcapeffect
+      !<Mean change in storage due to water capacity change
       !<(J/m2/s)
 
       real , pointer,dimension(:) :: ebudget_zcaneffect
@@ -2648,6 +2762,7 @@ module ed_state_vars
       real,pointer,dimension(:,:,:) :: barka_maintenance
       real,pointer,dimension(:,:,:) :: barkb_maintenance
       real,pointer,dimension(:,:,:) :: leaf_drop
+      real,pointer,dimension(:,:,:) :: root_drop
       !------------------------------------------------------------------------------------!
 
 
@@ -2745,6 +2860,7 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_plresp           !<Plant respiration.  [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_leaf_energy      !<Leaf int. energy    [      J/m2]
       real,pointer,dimension(:) :: fmean_leaf_water       !<Leaf sfc. water     [     kg/m2]
+      real,pointer,dimension(:) :: fmean_leaf_water_im2   !<Leaf int. water     [     kg/m2]
       real,pointer,dimension(:) :: fmean_leaf_hcap        !<Leaf heat capacity  [    J/m2/K]
       real,pointer,dimension(:) :: fmean_leaf_vpdef       !<Leaf VPD            [        Pa]
       real,pointer,dimension(:) :: fmean_leaf_temp        !<Leaf temperature    [         K]
@@ -2753,6 +2869,7 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_leaf_gbw         !<Leaf BL conduct.    [       m/s]
       real,pointer,dimension(:) :: fmean_wood_energy      !<Wood int. energy    [      J/m2]
       real,pointer,dimension(:) :: fmean_wood_water       !<Wood sfc. water     [     kg/m2]
+      real,pointer,dimension(:) :: fmean_wood_water_im2   !<Wood int. water     [     kg/m2]
       real,pointer,dimension(:) :: fmean_wood_hcap        !<Wood heat capacity  [    J/m2/K]
       real,pointer,dimension(:) :: fmean_wood_temp        !<Wood temperature    [         K]
       real,pointer,dimension(:) :: fmean_wood_fliq        !<Liquid fraction     [        --]
@@ -2916,6 +3033,7 @@ module ed_state_vars
       real,pointer,dimension(:,:,:) :: mmean_barka_maintenance !<Bark maintenance[kgC/m2/yr]
       real,pointer,dimension(:,:,:) :: mmean_barkb_maintenance !<Bark maintenance[kgC/m2/yr]
       real,pointer,dimension(:,:,:) :: mmean_leaf_drop         !<Leaf shedding   [kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_root_drop         !<Root "shedding" [kgC/m2/yr]
       real,pointer,dimension(:)     :: mmean_fast_grnd_c       !<Fast grnd C     [   kgC/m2]
       real,pointer,dimension(:)     :: mmean_fast_soil_c       !<Fast soil C     [   kgC/m2]
       real,pointer,dimension(:)     :: mmean_struct_grnd_c     !<Struct. grnd C  [   kgC/m2]
@@ -2950,6 +3068,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_plresp
       real,pointer,dimension(:)     :: dmean_leaf_energy
       real,pointer,dimension(:)     :: dmean_leaf_water
+      real,pointer,dimension(:)     :: dmean_leaf_water_im2
       real,pointer,dimension(:)     :: dmean_leaf_hcap
       real,pointer,dimension(:)     :: dmean_leaf_vpdef
       real,pointer,dimension(:)     :: dmean_leaf_temp
@@ -2958,6 +3077,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_leaf_gbw
       real,pointer,dimension(:)     :: dmean_wood_energy
       real,pointer,dimension(:)     :: dmean_wood_water
+      real,pointer,dimension(:)     :: dmean_wood_water_im2
       real,pointer,dimension(:)     :: dmean_wood_hcap
       real,pointer,dimension(:)     :: dmean_wood_temp
       real,pointer,dimension(:)     :: dmean_wood_fliq
@@ -3092,6 +3212,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_plresp
       real,pointer,dimension(:)     :: mmean_leaf_energy
       real,pointer,dimension(:)     :: mmean_leaf_water
+      real,pointer,dimension(:)     :: mmean_leaf_water_im2
       real,pointer,dimension(:)     :: mmean_leaf_hcap
       real,pointer,dimension(:)     :: mmean_leaf_vpdef
       real,pointer,dimension(:)     :: mmean_leaf_temp
@@ -3100,6 +3221,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_leaf_gbw
       real,pointer,dimension(:)     :: mmean_wood_energy
       real,pointer,dimension(:)     :: mmean_wood_water
+      real,pointer,dimension(:)     :: mmean_wood_water_im2
       real,pointer,dimension(:)     :: mmean_wood_hcap
       real,pointer,dimension(:)     :: mmean_wood_temp
       real,pointer,dimension(:)     :: mmean_wood_fliq
@@ -3280,6 +3402,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_plresp
       real,pointer,dimension(:,:)   :: qmean_leaf_energy
       real,pointer,dimension(:,:)   :: qmean_leaf_water
+      real,pointer,dimension(:,:)   :: qmean_leaf_water_im2
       real,pointer,dimension(:,:)   :: qmean_leaf_hcap
       real,pointer,dimension(:,:)   :: qmean_leaf_vpdef
       real,pointer,dimension(:,:)   :: qmean_leaf_temp
@@ -3288,6 +3411,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_leaf_gbw
       real,pointer,dimension(:,:)   :: qmean_wood_energy
       real,pointer,dimension(:,:)   :: qmean_wood_water
+      real,pointer,dimension(:,:)   :: qmean_wood_water_im2
       real,pointer,dimension(:,:)   :: qmean_wood_hcap
       real,pointer,dimension(:,:)   :: qmean_wood_temp
       real,pointer,dimension(:,:)   :: qmean_wood_fliq
@@ -3700,6 +3824,7 @@ module ed_state_vars
       allocate(cgrid%barka_maintenance          (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%barkb_maintenance          (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%leaf_drop                  (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%root_drop                  (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%fast_grnd_c                (                    npolygons))
       allocate(cgrid%fast_soil_c                (                    npolygons))
       allocate(cgrid%struct_grnd_c              (                    npolygons))
@@ -3752,6 +3877,7 @@ module ed_state_vars
       allocate(cgrid%fmean_plresp               (                    npolygons))
       allocate(cgrid%fmean_leaf_energy          (                    npolygons))
       allocate(cgrid%fmean_leaf_water           (                    npolygons))
+      allocate(cgrid%fmean_leaf_water_im2       (                    npolygons))
       allocate(cgrid%fmean_leaf_hcap            (                    npolygons))
       allocate(cgrid%fmean_leaf_vpdef           (                    npolygons))
       allocate(cgrid%fmean_leaf_temp            (                    npolygons))
@@ -3760,6 +3886,7 @@ module ed_state_vars
       allocate(cgrid%fmean_leaf_gbw             (                    npolygons))
       allocate(cgrid%fmean_wood_energy          (                    npolygons))
       allocate(cgrid%fmean_wood_water           (                    npolygons))
+      allocate(cgrid%fmean_wood_water_im2       (                    npolygons))
       allocate(cgrid%fmean_wood_hcap            (                    npolygons))
       allocate(cgrid%fmean_wood_temp            (                    npolygons))
       allocate(cgrid%fmean_wood_fliq            (                    npolygons))
@@ -3921,6 +4048,7 @@ module ed_state_vars
          allocate(cgrid%dmean_plresp            (                     npolygons))
          allocate(cgrid%dmean_leaf_energy       (                     npolygons))
          allocate(cgrid%dmean_leaf_water        (                     npolygons))
+         allocate(cgrid%dmean_leaf_water_im2    (                     npolygons))
          allocate(cgrid%dmean_leaf_hcap         (                     npolygons))
          allocate(cgrid%dmean_leaf_vpdef        (                     npolygons))
          allocate(cgrid%dmean_leaf_temp         (                     npolygons))
@@ -3929,6 +4057,7 @@ module ed_state_vars
          allocate(cgrid%dmean_leaf_gbw          (                     npolygons))
          allocate(cgrid%dmean_wood_energy       (                     npolygons))
          allocate(cgrid%dmean_wood_water        (                     npolygons))
+         allocate(cgrid%dmean_wood_water_im2    (                     npolygons))
          allocate(cgrid%dmean_wood_hcap         (                     npolygons))
          allocate(cgrid%dmean_wood_temp         (                     npolygons))
          allocate(cgrid%dmean_wood_fliq         (                     npolygons))
@@ -4073,6 +4202,7 @@ module ed_state_vars
          allocate(cgrid%mmean_barka_maintenance (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_barkb_maintenance (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_leaf_drop         (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_root_drop         (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_fast_grnd_c       (                     npolygons)) 
          allocate(cgrid%mmean_fast_soil_c       (                     npolygons)) 
          allocate(cgrid%mmean_struct_grnd_c     (                     npolygons)) 
@@ -4106,6 +4236,7 @@ module ed_state_vars
          allocate(cgrid%mmean_plresp            (                     npolygons)) 
          allocate(cgrid%mmean_leaf_energy       (                     npolygons)) 
          allocate(cgrid%mmean_leaf_water        (                     npolygons)) 
+         allocate(cgrid%mmean_leaf_water_im2    (                     npolygons)) 
          allocate(cgrid%mmean_leaf_hcap         (                     npolygons)) 
          allocate(cgrid%mmean_leaf_vpdef        (                     npolygons)) 
          allocate(cgrid%mmean_leaf_temp         (                     npolygons)) 
@@ -4114,6 +4245,7 @@ module ed_state_vars
          allocate(cgrid%mmean_leaf_gbw          (                     npolygons)) 
          allocate(cgrid%mmean_wood_energy       (                     npolygons)) 
          allocate(cgrid%mmean_wood_water        (                     npolygons)) 
+         allocate(cgrid%mmean_wood_water_im2    (                     npolygons)) 
          allocate(cgrid%mmean_wood_hcap         (                     npolygons)) 
          allocate(cgrid%mmean_wood_temp         (                     npolygons)) 
          allocate(cgrid%mmean_wood_fliq         (                     npolygons)) 
@@ -4303,6 +4435,7 @@ module ed_state_vars
          allocate(cgrid%qmean_plresp            (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_energy       (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_water        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_leaf_water_im2    (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_hcap         (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_vpdef        (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_temp         (             ndcycle,npolygons))
@@ -4311,6 +4444,7 @@ module ed_state_vars
          allocate(cgrid%qmean_leaf_gbw          (             ndcycle,npolygons))
          allocate(cgrid%qmean_wood_energy       (             ndcycle,npolygons))
          allocate(cgrid%qmean_wood_water        (             ndcycle,npolygons))
+         allocate(cgrid%qmean_wood_water_im2    (             ndcycle,npolygons))
          allocate(cgrid%qmean_wood_hcap         (             ndcycle,npolygons))
          allocate(cgrid%qmean_wood_temp         (             ndcycle,npolygons))
          allocate(cgrid%qmean_wood_fliq         (             ndcycle,npolygons))
@@ -4783,6 +4917,7 @@ module ed_state_vars
       allocate(csite%avg_monthly_waterdef          (              npatches))
       allocate(csite%wbudget_loss2atm              (              npatches))
       allocate(csite%wbudget_denseffect            (              npatches))
+      allocate(csite%wbudget_wcapeffect            (              npatches))
       allocate(csite%wbudget_zcaneffect            (              npatches))
       allocate(csite%wbudget_precipgain            (              npatches))
       allocate(csite%wbudget_loss2runoff           (              npatches))
@@ -4793,6 +4928,7 @@ module ed_state_vars
       allocate(csite%ebudget_denseffect            (              npatches))
       allocate(csite%ebudget_prsseffect            (              npatches))
       allocate(csite%ebudget_hcapeffect            (              npatches))
+      allocate(csite%ebudget_wcapeffect            (              npatches))
       allocate(csite%ebudget_zcaneffect            (              npatches))
       allocate(csite%ebudget_loss2runoff           (              npatches))
       allocate(csite%ebudget_loss2drainage         (              npatches))
@@ -5395,7 +5531,6 @@ module ed_state_vars
       allocate(cpatch%sapb_storage_resp            (                    ncohorts))
       allocate(cpatch%barka_storage_resp           (                    ncohorts))
       allocate(cpatch%barkb_storage_resp           (                    ncohorts))
-      allocate(cpatch%monthly_dndt                 (                    ncohorts))
       allocate(cpatch%monthly_dlnndt               (                    ncohorts))
       allocate(cpatch%mort_rate                    (             n_mort,ncohorts))
 
@@ -5445,6 +5580,7 @@ module ed_state_vars
       allocate(cpatch%barka_maintenance            (                    ncohorts))
       allocate(cpatch%barkb_maintenance            (                    ncohorts))
       allocate(cpatch%leaf_drop                    (                    ncohorts))
+      allocate(cpatch%root_drop                    (                    ncohorts))
       allocate(cpatch%leaf_respiration             (                    ncohorts))
       allocate(cpatch%root_respiration             (                    ncohorts))
       allocate(cpatch%gpp                          (                    ncohorts))
@@ -5454,6 +5590,24 @@ module ed_state_vars
       allocate(cpatch%llspan                       (                    ncohorts))
       allocate(cpatch%vm_bar                       (                    ncohorts))
       allocate(cpatch%sla                          (                    ncohorts))
+
+      allocate(cpatch%leaf_psi                     (                    ncohorts))
+      allocate(cpatch%wood_psi                     (                    ncohorts))
+      allocate(cpatch%leaf_rwc                     (                    ncohorts))
+      allocate(cpatch%wood_rwc                     (                    ncohorts))
+      allocate(cpatch%leaf_water_int               (                    ncohorts))
+      allocate(cpatch%leaf_water_im2               (                    ncohorts))
+      allocate(cpatch%wood_water_int               (                    ncohorts))
+      allocate(cpatch%wood_water_im2               (                    ncohorts))
+      allocate(cpatch%wflux_gw                     (                    ncohorts))
+      allocate(cpatch%wflux_gw_layer               (                nzg,ncohorts))
+      allocate(cpatch%wflux_wl                     (                    ncohorts))
+
+      allocate(cpatch%high_leaf_psi_days           (                    ncohorts))
+      allocate(cpatch%low_leaf_psi_days            (                    ncohorts))
+
+      allocate(cpatch%last_gV                      (                    ncohorts))
+      allocate(cpatch%last_gJ                      (                    ncohorts))
       allocate(cpatch%fmean_gpp                    (                    ncohorts))
       allocate(cpatch%fmean_npp                    (                    ncohorts))
       allocate(cpatch%fmean_leaf_resp              (                    ncohorts))
@@ -5525,6 +5679,23 @@ module ed_state_vars
       allocate(cpatch%fmean_lai                    (                    ncohorts))
       allocate(cpatch%fmean_bdeada                 (                    ncohorts))
       allocate(cpatch%fmean_bdeadb                 (                    ncohorts))
+
+      allocate(cpatch%fmean_leaf_psi               (                    ncohorts))
+      allocate(cpatch%fmean_wood_psi               (                    ncohorts))
+      allocate(cpatch%fmean_leaf_water_int         (                    ncohorts))
+      allocate(cpatch%fmean_leaf_water_im2         (                    ncohorts))
+      allocate(cpatch%fmean_wood_water_int         (                    ncohorts))
+      allocate(cpatch%fmean_wood_water_im2         (                    ncohorts))
+      allocate(cpatch%fmean_wflux_gw               (                    ncohorts))
+      allocate(cpatch%fmean_wflux_gw_layer         (                nzg,ncohorts))
+      allocate(cpatch%fmean_wflux_wl               (                    ncohorts))
+      ! despite dmax/dmin variables are at daily level, it is not an average.
+      ! Those variables will be used for phenology/mortality, etc. an thus need
+      ! to be allocated in all cases
+      allocate(cpatch%dmax_leaf_psi                (                    ncohorts))
+      allocate(cpatch%dmin_leaf_psi                (                    ncohorts))
+      allocate(cpatch%dmax_wood_psi                (                    ncohorts))
+      allocate(cpatch%dmin_wood_psi                (                    ncohorts))
 
 
       if (writing_long) then
@@ -5604,6 +5775,14 @@ module ed_state_vars
          allocate(cpatch%dmean_vapor_wc            (                    ncohorts))
          allocate(cpatch%dmean_intercepted_aw      (                    ncohorts))
          allocate(cpatch%dmean_wshed_wg            (                    ncohorts))
+         
+         allocate(cpatch%dmean_leaf_water_int      (                    ncohorts))
+         allocate(cpatch%dmean_leaf_water_im2      (                    ncohorts))
+         allocate(cpatch%dmean_wood_water_int      (                    ncohorts))
+         allocate(cpatch%dmean_wood_water_im2      (                    ncohorts))
+         allocate(cpatch%dmean_wflux_gw            (                    ncohorts))
+         allocate(cpatch%dmean_wflux_gw_layer      (                nzg,ncohorts))
+         allocate(cpatch%dmean_wflux_wl            (                    ncohorts))
       end if
 
       if (writing_eorq) then
@@ -5621,6 +5800,7 @@ module ed_state_vars
          allocate(cpatch%mmean_barka_maintenance   (                    ncohorts))
          allocate(cpatch%mmean_barkb_maintenance   (                    ncohorts))
          allocate(cpatch%mmean_leaf_drop           (                    ncohorts))
+         allocate(cpatch%mmean_root_drop           (                    ncohorts))
          allocate(cpatch%mmean_cb                  (                    ncohorts))
          allocate(cpatch%mmean_gpp                 (                    ncohorts))
          allocate(cpatch%mmean_npp                 (                    ncohorts))
@@ -5698,6 +5878,19 @@ module ed_state_vars
          allocate(cpatch%mmean_nppseeds            (                    ncohorts))
          allocate(cpatch%mmean_nppwood             (                    ncohorts))
          allocate(cpatch%mmean_nppdaily            (                    ncohorts))
+
+         allocate(cpatch%mmean_dmax_leaf_psi       (                    ncohorts))
+         allocate(cpatch%mmean_dmin_leaf_psi       (                    ncohorts))
+         allocate(cpatch%mmean_dmax_wood_psi       (                    ncohorts))
+         allocate(cpatch%mmean_dmin_wood_psi       (                    ncohorts))
+         allocate(cpatch%mmean_leaf_water_int      (                    ncohorts))
+         allocate(cpatch%mmean_leaf_water_im2      (                    ncohorts))
+         allocate(cpatch%mmean_wood_water_int      (                    ncohorts))
+         allocate(cpatch%mmean_wood_water_im2      (                    ncohorts))
+         allocate(cpatch%mmean_wflux_gw            (                    ncohorts))
+         allocate(cpatch%mmean_wflux_gw_layer      (                nzg,ncohorts))
+         allocate(cpatch%mmean_wflux_wl            (                    ncohorts))
+
          allocate(cpatch%mmsqu_gpp                 (                    ncohorts))
          allocate(cpatch%mmsqu_npp                 (                    ncohorts))
          allocate(cpatch%mmsqu_plresp              (                    ncohorts))
@@ -5779,6 +5972,16 @@ module ed_state_vars
          allocate(cpatch%qmean_vapor_wc            (            ndcycle,ncohorts))
          allocate(cpatch%qmean_intercepted_aw      (            ndcycle,ncohorts))
          allocate(cpatch%qmean_wshed_wg            (            ndcycle,ncohorts))
+
+         allocate(cpatch%qmean_leaf_psi            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_psi            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_water_int      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_water_im2      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_water_int      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_water_im2      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wflux_gw            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wflux_wl            (            ndcycle,ncohorts))
+
          allocate(cpatch%qmsqu_gpp                 (            ndcycle,ncohorts))
          allocate(cpatch%qmsqu_npp                 (            ndcycle,ncohorts))
          allocate(cpatch%qmsqu_plresp              (            ndcycle,ncohorts))
@@ -5897,6 +6100,7 @@ module ed_state_vars
       nullify(cgrid%barka_maintenance       )
       nullify(cgrid%barkb_maintenance       )
       nullify(cgrid%leaf_drop               )
+      nullify(cgrid%root_drop               )
       nullify(cgrid%fast_grnd_c             )
       nullify(cgrid%fast_soil_c             )
       nullify(cgrid%struct_grnd_c           )
@@ -5948,6 +6152,7 @@ module ed_state_vars
       nullify(cgrid%fmean_plresp            )
       nullify(cgrid%fmean_leaf_energy       )
       nullify(cgrid%fmean_leaf_water        )
+      nullify(cgrid%fmean_leaf_water_im2    )
       nullify(cgrid%fmean_leaf_hcap         )
       nullify(cgrid%fmean_leaf_vpdef        )
       nullify(cgrid%fmean_leaf_temp         )
@@ -5956,6 +6161,7 @@ module ed_state_vars
       nullify(cgrid%fmean_leaf_gbw          )
       nullify(cgrid%fmean_wood_energy       )
       nullify(cgrid%fmean_wood_water        )
+      nullify(cgrid%fmean_wood_water_im2    )
       nullify(cgrid%fmean_wood_hcap         )
       nullify(cgrid%fmean_wood_temp         )
       nullify(cgrid%fmean_wood_fliq         )
@@ -6109,6 +6315,7 @@ module ed_state_vars
       nullify(cgrid%dmean_plresp            )
       nullify(cgrid%dmean_leaf_energy       )
       nullify(cgrid%dmean_leaf_water        )
+      nullify(cgrid%dmean_leaf_water_im2    )
       nullify(cgrid%dmean_leaf_hcap         )
       nullify(cgrid%dmean_leaf_vpdef        )
       nullify(cgrid%dmean_leaf_temp         )
@@ -6117,6 +6324,7 @@ module ed_state_vars
       nullify(cgrid%dmean_leaf_gbw          )
       nullify(cgrid%dmean_wood_energy       )
       nullify(cgrid%dmean_wood_water        )
+      nullify(cgrid%dmean_wood_water_im2    )
       nullify(cgrid%dmean_wood_hcap         )
       nullify(cgrid%dmean_wood_temp         )
       nullify(cgrid%dmean_wood_fliq         )
@@ -6250,6 +6458,7 @@ module ed_state_vars
       nullify(cgrid%mmean_barka_maintenance )
       nullify(cgrid%mmean_barkb_maintenance )
       nullify(cgrid%mmean_leaf_drop         )
+      nullify(cgrid%mmean_root_drop         )
       nullify(cgrid%mmean_fast_grnd_c       )
       nullify(cgrid%mmean_fast_soil_c       )
       nullify(cgrid%mmean_struct_grnd_c     )
@@ -6283,6 +6492,7 @@ module ed_state_vars
       nullify(cgrid%mmean_plresp            )
       nullify(cgrid%mmean_leaf_energy       )
       nullify(cgrid%mmean_leaf_water        )
+      nullify(cgrid%mmean_leaf_water_im2    )
       nullify(cgrid%mmean_leaf_hcap         )
       nullify(cgrid%mmean_leaf_vpdef        )
       nullify(cgrid%mmean_leaf_temp         )
@@ -6291,6 +6501,7 @@ module ed_state_vars
       nullify(cgrid%mmean_leaf_gbw          )
       nullify(cgrid%mmean_wood_energy       )
       nullify(cgrid%mmean_wood_water        )
+      nullify(cgrid%mmean_wood_water_im2    )
       nullify(cgrid%mmean_wood_hcap         )
       nullify(cgrid%mmean_wood_temp         )
       nullify(cgrid%mmean_wood_fliq         )
@@ -6469,6 +6680,7 @@ module ed_state_vars
       nullify(cgrid%qmean_plresp            )
       nullify(cgrid%qmean_leaf_energy       )
       nullify(cgrid%qmean_leaf_water        )
+      nullify(cgrid%qmean_leaf_water_im2    )
       nullify(cgrid%qmean_leaf_hcap         )
       nullify(cgrid%qmean_leaf_vpdef        )
       nullify(cgrid%qmean_leaf_temp         )
@@ -6477,6 +6689,7 @@ module ed_state_vars
       nullify(cgrid%qmean_leaf_gbw          )
       nullify(cgrid%qmean_wood_energy       )
       nullify(cgrid%qmean_wood_water        )
+      nullify(cgrid%qmean_wood_water_im2    )
       nullify(cgrid%qmean_wood_hcap         )
       nullify(cgrid%qmean_wood_temp         )
       nullify(cgrid%qmean_wood_fliq         )
@@ -6876,6 +7089,7 @@ module ed_state_vars
       nullify(csite%avg_monthly_waterdef       )
       nullify(csite%wbudget_loss2atm           )
       nullify(csite%wbudget_denseffect         )
+      nullify(csite%wbudget_wcapeffect         )
       nullify(csite%wbudget_zcaneffect         )
       nullify(csite%wbudget_precipgain         )
       nullify(csite%wbudget_loss2runoff        )
@@ -6886,6 +7100,7 @@ module ed_state_vars
       nullify(csite%ebudget_denseffect         )
       nullify(csite%ebudget_prsseffect         )
       nullify(csite%ebudget_hcapeffect         )
+      nullify(csite%ebudget_wcapeffect         )
       nullify(csite%ebudget_zcaneffect         )
       nullify(csite%ebudget_loss2runoff        )
       nullify(csite%ebudget_loss2drainage      )
@@ -7460,7 +7675,6 @@ module ed_state_vars
       nullify(cpatch%sapb_storage_resp       )
       nullify(cpatch%barka_storage_resp      )
       nullify(cpatch%barkb_storage_resp      )
-      nullify(cpatch%monthly_dndt            )
       nullify(cpatch%monthly_dlnndt          )
       nullify(cpatch%mort_rate               )
       nullify(cpatch%krdepth                 )
@@ -7509,6 +7723,7 @@ module ed_state_vars
       nullify(cpatch%barka_maintenance       )
       nullify(cpatch%barkb_maintenance       )
       nullify(cpatch%leaf_drop               )
+      nullify(cpatch%root_drop               )
       nullify(cpatch%leaf_respiration        )
       nullify(cpatch%root_respiration        )
       nullify(cpatch%gpp                     )
@@ -7518,6 +7733,22 @@ module ed_state_vars
       nullify(cpatch%llspan                  )
       nullify(cpatch%vm_bar                  )
       nullify(cpatch%sla                     )
+      nullify(cpatch%leaf_psi                )
+      nullify(cpatch%wood_psi                )
+      nullify(cpatch%leaf_rwc                )
+      nullify(cpatch%wood_rwc                )
+      nullify(cpatch%leaf_water_int          )
+      nullify(cpatch%leaf_water_im2          )
+      nullify(cpatch%wood_water_int          )
+      nullify(cpatch%wood_water_im2          )
+      nullify(cpatch%wflux_gw                )
+      nullify(cpatch%wflux_gw_layer          )
+      nullify(cpatch%wflux_wl                )
+      nullify(cpatch%high_leaf_psi_days      )
+      nullify(cpatch%low_leaf_psi_days       )
+      nullify(cpatch%last_gV                 )
+      nullify(cpatch%last_gJ                 )
+
       nullify(cpatch%fmean_gpp               )
       nullify(cpatch%fmean_npp               )
       nullify(cpatch%fmean_leaf_resp         )
@@ -7589,6 +7820,17 @@ module ed_state_vars
       nullify(cpatch%fmean_lai               )
       nullify(cpatch%fmean_bdeada            )
       nullify(cpatch%fmean_bdeadb            )
+
+      nullify(cpatch%fmean_leaf_psi          )
+      nullify(cpatch%fmean_wood_psi          )
+      nullify(cpatch%fmean_leaf_water_int    )
+      nullify(cpatch%fmean_leaf_water_im2    )
+      nullify(cpatch%fmean_wood_water_int    )
+      nullify(cpatch%fmean_wood_water_im2    )
+      nullify(cpatch%fmean_wflux_gw          )
+      nullify(cpatch%fmean_wflux_gw_layer    )
+      nullify(cpatch%fmean_wflux_wl          )
+
       nullify(cpatch%dmean_nppleaf           )
       nullify(cpatch%dmean_nppfroot          )
       nullify(cpatch%dmean_nppsapwood        )
@@ -7665,6 +7907,19 @@ module ed_state_vars
       nullify(cpatch%dmean_vapor_wc          )
       nullify(cpatch%dmean_intercepted_aw    )
       nullify(cpatch%dmean_wshed_wg          )
+
+      nullify(cpatch%dmax_leaf_psi           )
+      nullify(cpatch%dmin_leaf_psi           )
+      nullify(cpatch%dmax_wood_psi           )
+      nullify(cpatch%dmin_wood_psi           )
+      nullify(cpatch%dmean_leaf_water_int    )
+      nullify(cpatch%dmean_leaf_water_im2    )
+      nullify(cpatch%dmean_wood_water_int    )
+      nullify(cpatch%dmean_wood_water_im2    )
+      nullify(cpatch%dmean_wflux_gw          )
+      nullify(cpatch%dmean_wflux_gw_layer    )
+      nullify(cpatch%dmean_wflux_wl          )
+
       nullify(cpatch%mmean_thbark            )
       nullify(cpatch%mmean_lai               )
       nullify(cpatch%mmean_bleaf             )
@@ -7679,6 +7934,7 @@ module ed_state_vars
       nullify(cpatch%mmean_barka_maintenance )
       nullify(cpatch%mmean_barkb_maintenance )
       nullify(cpatch%mmean_leaf_drop         )
+      nullify(cpatch%mmean_root_drop         )
       nullify(cpatch%mmean_cb                )
       nullify(cpatch%mmean_gpp               )
       nullify(cpatch%mmean_npp               )
@@ -7756,6 +8012,19 @@ module ed_state_vars
       nullify(cpatch%mmean_nppseeds          )
       nullify(cpatch%mmean_nppwood           )
       nullify(cpatch%mmean_nppdaily          )
+
+      nullify(cpatch%mmean_dmax_leaf_psi     )
+      nullify(cpatch%mmean_dmin_leaf_psi     )
+      nullify(cpatch%mmean_dmax_wood_psi     )
+      nullify(cpatch%mmean_dmin_wood_psi     )
+      nullify(cpatch%mmean_leaf_water_int    )
+      nullify(cpatch%mmean_leaf_water_im2    )
+      nullify(cpatch%mmean_wood_water_int    )
+      nullify(cpatch%mmean_wood_water_im2    )
+      nullify(cpatch%mmean_wflux_gw          )
+      nullify(cpatch%mmean_wflux_gw_layer    )
+      nullify(cpatch%mmean_wflux_wl          )
+
       nullify(cpatch%mmsqu_gpp               )
       nullify(cpatch%mmsqu_npp               )
       nullify(cpatch%mmsqu_plresp            )
@@ -7764,6 +8033,7 @@ module ed_state_vars
       nullify(cpatch%mmsqu_transp            )
       nullify(cpatch%mmsqu_sensible_wc       )
       nullify(cpatch%mmsqu_vapor_wc          )
+      
       nullify(cpatch%qmean_gpp               )
       nullify(cpatch%qmean_npp               )
       nullify(cpatch%qmean_leaf_resp         )
@@ -7832,6 +8102,16 @@ module ed_state_vars
       nullify(cpatch%qmean_vapor_wc          )
       nullify(cpatch%qmean_intercepted_aw    )
       nullify(cpatch%qmean_wshed_wg          )
+
+      nullify(cpatch%qmean_leaf_psi          )
+      nullify(cpatch%qmean_wood_psi          )
+      nullify(cpatch%qmean_leaf_water_int    )
+      nullify(cpatch%qmean_leaf_water_im2    )
+      nullify(cpatch%qmean_wood_water_int    )
+      nullify(cpatch%qmean_wood_water_im2    )
+      nullify(cpatch%qmean_wflux_gw          )
+      nullify(cpatch%qmean_wflux_wl          )
+
       nullify(cpatch%qmsqu_gpp               )
       nullify(cpatch%qmsqu_npp               )
       nullify(cpatch%qmsqu_plresp            )
@@ -7947,6 +8227,7 @@ module ed_state_vars
       if(associated(csite%avg_monthly_waterdef       )) deallocate(csite%avg_monthly_waterdef       )
       if(associated(csite%wbudget_loss2atm           )) deallocate(csite%wbudget_loss2atm           )
       if(associated(csite%wbudget_denseffect         )) deallocate(csite%wbudget_denseffect         )
+      if(associated(csite%wbudget_wcapeffect         )) deallocate(csite%wbudget_wcapeffect         )
       if(associated(csite%wbudget_zcaneffect         )) deallocate(csite%wbudget_zcaneffect         )
       if(associated(csite%wbudget_precipgain         )) deallocate(csite%wbudget_precipgain         )
       if(associated(csite%wbudget_loss2runoff        )) deallocate(csite%wbudget_loss2runoff        )
@@ -7957,6 +8238,7 @@ module ed_state_vars
       if(associated(csite%ebudget_denseffect         )) deallocate(csite%ebudget_denseffect         )
       if(associated(csite%ebudget_prsseffect         )) deallocate(csite%ebudget_prsseffect         )
       if(associated(csite%ebudget_hcapeffect         )) deallocate(csite%ebudget_hcapeffect         )
+      if(associated(csite%ebudget_wcapeffect         )) deallocate(csite%ebudget_wcapeffect         )
       if(associated(csite%ebudget_zcaneffect         )) deallocate(csite%ebudget_zcaneffect         )
       if(associated(csite%ebudget_loss2runoff        )) deallocate(csite%ebudget_loss2runoff        )
       if(associated(csite%ebudget_loss2drainage      )) deallocate(csite%ebudget_loss2drainage      )
@@ -8536,7 +8818,6 @@ module ed_state_vars
       if(associated(cpatch%sapb_storage_resp       )) deallocate(cpatch%sapb_storage_resp       )
       if(associated(cpatch%barka_storage_resp      )) deallocate(cpatch%barka_storage_resp      )
       if(associated(cpatch%barkb_storage_resp      )) deallocate(cpatch%barkb_storage_resp      )
-      if(associated(cpatch%monthly_dndt            )) deallocate(cpatch%monthly_dndt            )
       if(associated(cpatch%monthly_dlnndt          )) deallocate(cpatch%monthly_dlnndt          )
       if(associated(cpatch%mort_rate               )) deallocate(cpatch%mort_rate               )
       if(associated(cpatch%krdepth                 )) deallocate(cpatch%krdepth                 )
@@ -8585,6 +8866,7 @@ module ed_state_vars
       if(associated(cpatch%barka_maintenance       )) deallocate(cpatch%barka_maintenance       )
       if(associated(cpatch%barkb_maintenance       )) deallocate(cpatch%barkb_maintenance       )
       if(associated(cpatch%leaf_drop               )) deallocate(cpatch%leaf_drop               )
+      if(associated(cpatch%root_drop               )) deallocate(cpatch%root_drop               )
       if(associated(cpatch%leaf_respiration        )) deallocate(cpatch%leaf_respiration        )
       if(associated(cpatch%root_respiration        )) deallocate(cpatch%root_respiration        )
       if(associated(cpatch%gpp                     )) deallocate(cpatch%gpp                     )
@@ -8594,6 +8876,24 @@ module ed_state_vars
       if(associated(cpatch%llspan                  )) deallocate(cpatch%llspan                  )
       if(associated(cpatch%vm_bar                  )) deallocate(cpatch%vm_bar                  )
       if(associated(cpatch%sla                     )) deallocate(cpatch%sla                     )
+
+      if(associated(cpatch%leaf_psi                )) deallocate(cpatch%leaf_psi                )
+      if(associated(cpatch%wood_psi                )) deallocate(cpatch%wood_psi                )
+      if(associated(cpatch%leaf_rwc                )) deallocate(cpatch%leaf_rwc                )
+      if(associated(cpatch%wood_rwc                )) deallocate(cpatch%wood_rwc                )
+      if(associated(cpatch%leaf_water_int          )) deallocate(cpatch%leaf_water_int          )
+      if(associated(cpatch%leaf_water_im2          )) deallocate(cpatch%leaf_water_im2          )
+      if(associated(cpatch%wood_water_int          )) deallocate(cpatch%wood_water_int          )
+      if(associated(cpatch%wood_water_im2          )) deallocate(cpatch%wood_water_im2          )
+      if(associated(cpatch%wflux_gw                )) deallocate(cpatch%wflux_gw                )
+      if(associated(cpatch%wflux_gw_layer          )) deallocate(cpatch%wflux_gw_layer          )
+      if(associated(cpatch%wflux_wl                )) deallocate(cpatch%wflux_wl                )
+
+      if(associated(cpatch%high_leaf_psi_days      )) deallocate(cpatch%high_leaf_psi_days      )
+      if(associated(cpatch%low_leaf_psi_days       )) deallocate(cpatch%low_leaf_psi_days       )
+      if(associated(cpatch%last_gV                 )) deallocate(cpatch%last_gV                 )
+      if(associated(cpatch%last_gJ                 )) deallocate(cpatch%last_gJ                 )
+
       if(associated(cpatch%fmean_gpp               )) deallocate(cpatch%fmean_gpp               )
       if(associated(cpatch%fmean_npp               )) deallocate(cpatch%fmean_npp               )
       if(associated(cpatch%fmean_leaf_resp         )) deallocate(cpatch%fmean_leaf_resp         )
@@ -8665,6 +8965,17 @@ module ed_state_vars
       if(associated(cpatch%fmean_lai               )) deallocate(cpatch%fmean_lai               )
       if(associated(cpatch%fmean_bdeada            )) deallocate(cpatch%fmean_bdeada            )
       if(associated(cpatch%fmean_bdeadb            )) deallocate(cpatch%fmean_bdeadb            )
+
+      if(associated(cpatch%fmean_leaf_psi          )) deallocate(cpatch%fmean_leaf_psi          )
+      if(associated(cpatch%fmean_wood_psi          )) deallocate(cpatch%fmean_wood_psi          )
+      if(associated(cpatch%fmean_leaf_water_int    )) deallocate(cpatch%fmean_leaf_water_int    )
+      if(associated(cpatch%fmean_leaf_water_im2    )) deallocate(cpatch%fmean_leaf_water_im2    )
+      if(associated(cpatch%fmean_wood_water_int    )) deallocate(cpatch%fmean_wood_water_int    )
+      if(associated(cpatch%fmean_wood_water_im2    )) deallocate(cpatch%fmean_wood_water_im2    )
+      if(associated(cpatch%fmean_wflux_gw          )) deallocate(cpatch%fmean_wflux_gw          )
+      if(associated(cpatch%fmean_wflux_gw_layer    )) deallocate(cpatch%fmean_wflux_gw_layer    )
+      if(associated(cpatch%fmean_wflux_wl          )) deallocate(cpatch%fmean_wflux_wl          )
+
       if(associated(cpatch%dmean_nppleaf           )) deallocate(cpatch%dmean_nppleaf           )
       if(associated(cpatch%dmean_nppfroot          )) deallocate(cpatch%dmean_nppfroot          )
       if(associated(cpatch%dmean_nppsapwood        )) deallocate(cpatch%dmean_nppsapwood        )
@@ -8741,6 +9052,19 @@ module ed_state_vars
       if(associated(cpatch%dmean_vapor_wc          )) deallocate(cpatch%dmean_vapor_wc          )
       if(associated(cpatch%dmean_intercepted_aw    )) deallocate(cpatch%dmean_intercepted_aw    )
       if(associated(cpatch%dmean_wshed_wg          )) deallocate(cpatch%dmean_wshed_wg          )
+
+      if(associated(cpatch%dmax_leaf_psi           )) deallocate(cpatch%dmax_leaf_psi           )
+      if(associated(cpatch%dmin_leaf_psi           )) deallocate(cpatch%dmin_leaf_psi           )
+      if(associated(cpatch%dmax_wood_psi           )) deallocate(cpatch%dmax_wood_psi           )
+      if(associated(cpatch%dmin_wood_psi           )) deallocate(cpatch%dmin_wood_psi           )
+      if(associated(cpatch%dmean_leaf_water_int    )) deallocate(cpatch%dmean_leaf_water_int    )
+      if(associated(cpatch%dmean_leaf_water_im2    )) deallocate(cpatch%dmean_leaf_water_im2    )
+      if(associated(cpatch%dmean_wood_water_int    )) deallocate(cpatch%dmean_wood_water_int    )
+      if(associated(cpatch%dmean_wood_water_im2    )) deallocate(cpatch%dmean_wood_water_im2    )
+      if(associated(cpatch%dmean_wflux_gw          )) deallocate(cpatch%dmean_wflux_gw          )
+      if(associated(cpatch%dmean_wflux_gw_layer    )) deallocate(cpatch%dmean_wflux_gw_layer    )
+      if(associated(cpatch%dmean_wflux_wl          )) deallocate(cpatch%dmean_wflux_wl          )
+
       if(associated(cpatch%mmean_thbark            )) deallocate(cpatch%mmean_thbark            )
       if(associated(cpatch%mmean_lai               )) deallocate(cpatch%mmean_lai               )
       if(associated(cpatch%mmean_bleaf             )) deallocate(cpatch%mmean_bleaf             )
@@ -8755,6 +9079,7 @@ module ed_state_vars
       if(associated(cpatch%mmean_barka_maintenance )) deallocate(cpatch%mmean_barka_maintenance )
       if(associated(cpatch%mmean_barkb_maintenance )) deallocate(cpatch%mmean_barkb_maintenance )
       if(associated(cpatch%mmean_leaf_drop         )) deallocate(cpatch%mmean_leaf_drop         )
+      if(associated(cpatch%mmean_root_drop         )) deallocate(cpatch%mmean_root_drop         )
       if(associated(cpatch%mmean_cb                )) deallocate(cpatch%mmean_cb                )
       if(associated(cpatch%mmean_gpp               )) deallocate(cpatch%mmean_gpp               )
       if(associated(cpatch%mmean_npp               )) deallocate(cpatch%mmean_npp               )
@@ -8832,6 +9157,19 @@ module ed_state_vars
       if(associated(cpatch%mmean_nppseeds          )) deallocate(cpatch%mmean_nppseeds          )
       if(associated(cpatch%mmean_nppwood           )) deallocate(cpatch%mmean_nppwood           )
       if(associated(cpatch%mmean_nppdaily          )) deallocate(cpatch%mmean_nppdaily          )
+
+      if(associated(cpatch%mmean_dmax_leaf_psi     )) deallocate(cpatch%mmean_dmax_leaf_psi     )
+      if(associated(cpatch%mmean_dmin_leaf_psi     )) deallocate(cpatch%mmean_dmin_leaf_psi     )
+      if(associated(cpatch%mmean_dmax_wood_psi     )) deallocate(cpatch%mmean_dmax_wood_psi     )
+      if(associated(cpatch%mmean_dmin_wood_psi     )) deallocate(cpatch%mmean_dmin_wood_psi     )
+      if(associated(cpatch%mmean_leaf_water_int    )) deallocate(cpatch%mmean_leaf_water_int    )
+      if(associated(cpatch%mmean_leaf_water_im2    )) deallocate(cpatch%mmean_leaf_water_im2    )
+      if(associated(cpatch%mmean_wood_water_int    )) deallocate(cpatch%mmean_wood_water_int    )
+      if(associated(cpatch%mmean_wood_water_im2    )) deallocate(cpatch%mmean_wood_water_im2    )
+      if(associated(cpatch%mmean_wflux_gw          )) deallocate(cpatch%mmean_wflux_gw          )
+      if(associated(cpatch%mmean_wflux_gw_layer    )) deallocate(cpatch%mmean_wflux_gw_layer    )
+      if(associated(cpatch%mmean_wflux_wl          )) deallocate(cpatch%mmean_wflux_wl          )
+
       if(associated(cpatch%mmsqu_gpp               )) deallocate(cpatch%mmsqu_gpp               )
       if(associated(cpatch%mmsqu_npp               )) deallocate(cpatch%mmsqu_npp               )
       if(associated(cpatch%mmsqu_plresp            )) deallocate(cpatch%mmsqu_plresp            )
@@ -8840,6 +9178,7 @@ module ed_state_vars
       if(associated(cpatch%mmsqu_transp            )) deallocate(cpatch%mmsqu_transp            )
       if(associated(cpatch%mmsqu_sensible_wc       )) deallocate(cpatch%mmsqu_sensible_wc       )
       if(associated(cpatch%mmsqu_vapor_wc          )) deallocate(cpatch%mmsqu_vapor_wc          )
+
       if(associated(cpatch%qmean_gpp               )) deallocate(cpatch%qmean_gpp               )
       if(associated(cpatch%qmean_npp               )) deallocate(cpatch%qmean_npp               )
       if(associated(cpatch%qmean_leaf_resp         )) deallocate(cpatch%qmean_leaf_resp         )
@@ -8908,6 +9247,16 @@ module ed_state_vars
       if(associated(cpatch%qmean_vapor_wc          )) deallocate(cpatch%qmean_vapor_wc          )
       if(associated(cpatch%qmean_intercepted_aw    )) deallocate(cpatch%qmean_intercepted_aw    )
       if(associated(cpatch%qmean_wshed_wg          )) deallocate(cpatch%qmean_wshed_wg          )
+
+      if(associated(cpatch%qmean_leaf_psi          )) deallocate(cpatch%qmean_leaf_psi          )
+      if(associated(cpatch%qmean_wood_psi          )) deallocate(cpatch%qmean_wood_psi          )
+      if(associated(cpatch%qmean_leaf_water_int    )) deallocate(cpatch%qmean_leaf_water_int    )
+      if(associated(cpatch%qmean_leaf_water_im2    )) deallocate(cpatch%qmean_leaf_water_im2    )
+      if(associated(cpatch%qmean_wood_water_int    )) deallocate(cpatch%qmean_wood_water_int    )
+      if(associated(cpatch%qmean_wood_water_im2    )) deallocate(cpatch%qmean_wood_water_im2    )
+      if(associated(cpatch%qmean_wflux_gw          )) deallocate(cpatch%qmean_wflux_gw          )
+      if(associated(cpatch%qmean_wflux_wl          )) deallocate(cpatch%qmean_wflux_wl          )
+
       if(associated(cpatch%qmsqu_gpp               )) deallocate(cpatch%qmsqu_gpp               )
       if(associated(cpatch%qmsqu_npp               )) deallocate(cpatch%qmsqu_npp               )
       if(associated(cpatch%qmsqu_plresp            )) deallocate(cpatch%qmsqu_plresp            )
@@ -9042,6 +9391,7 @@ module ed_state_vars
          osite%avg_monthly_waterdef       (opa) = isite%avg_monthly_waterdef       (ipa)
          osite%wbudget_loss2atm           (opa) = isite%wbudget_loss2atm           (ipa)
          osite%wbudget_denseffect         (opa) = isite%wbudget_denseffect         (ipa)
+         osite%wbudget_wcapeffect         (opa) = isite%wbudget_wcapeffect         (ipa)
          osite%wbudget_zcaneffect         (opa) = isite%wbudget_zcaneffect         (ipa)
          osite%wbudget_precipgain         (opa) = isite%wbudget_precipgain         (ipa)
          osite%wbudget_loss2runoff        (opa) = isite%wbudget_loss2runoff        (ipa)
@@ -9052,6 +9402,7 @@ module ed_state_vars
          osite%ebudget_denseffect         (opa) = isite%ebudget_denseffect         (ipa)
          osite%ebudget_prsseffect         (opa) = isite%ebudget_prsseffect         (ipa)
          osite%ebudget_hcapeffect         (opa) = isite%ebudget_hcapeffect         (ipa)
+         osite%ebudget_wcapeffect         (opa) = isite%ebudget_wcapeffect         (ipa)
          osite%ebudget_zcaneffect         (opa) = isite%ebudget_zcaneffect         (ipa)
          osite%ebudget_loss2runoff        (opa) = isite%ebudget_loss2runoff        (ipa)
          osite%ebudget_loss2drainage      (opa) = isite%ebudget_loss2drainage      (ipa)
@@ -9790,6 +10141,7 @@ module ed_state_vars
       osite%avg_monthly_waterdef       (1:z) = pack(isite%avg_monthly_waterdef       ,lmask)
       osite%wbudget_loss2atm           (1:z) = pack(isite%wbudget_loss2atm           ,lmask)
       osite%wbudget_denseffect         (1:z) = pack(isite%wbudget_denseffect         ,lmask)
+      osite%wbudget_wcapeffect         (1:z) = pack(isite%wbudget_wcapeffect         ,lmask)
       osite%wbudget_zcaneffect         (1:z) = pack(isite%wbudget_zcaneffect         ,lmask)
       osite%wbudget_precipgain         (1:z) = pack(isite%wbudget_precipgain         ,lmask)
       osite%wbudget_loss2runoff        (1:z) = pack(isite%wbudget_loss2runoff        ,lmask)
@@ -9800,6 +10152,7 @@ module ed_state_vars
       osite%ebudget_denseffect         (1:z) = pack(isite%ebudget_denseffect         ,lmask)
       osite%ebudget_prsseffect         (1:z) = pack(isite%ebudget_prsseffect         ,lmask)
       osite%ebudget_hcapeffect         (1:z) = pack(isite%ebudget_hcapeffect         ,lmask)
+      osite%ebudget_wcapeffect         (1:z) = pack(isite%ebudget_wcapeffect         ,lmask)
       osite%ebudget_zcaneffect         (1:z) = pack(isite%ebudget_zcaneffect         ,lmask)
       osite%ebudget_loss2runoff        (1:z) = pack(isite%ebudget_loss2runoff        ,lmask)
       osite%ebudget_loss2drainage      (1:z) = pack(isite%ebudget_loss2drainage      ,lmask)
@@ -10624,7 +10977,6 @@ module ed_state_vars
          opatch%sapb_storage_resp       (oco) = ipatch%sapb_storage_resp       (ico)
          opatch%barka_storage_resp      (oco) = ipatch%barka_storage_resp      (ico)
          opatch%barkb_storage_resp      (oco) = ipatch%barkb_storage_resp      (ico)
-         opatch%monthly_dndt            (oco) = ipatch%monthly_dndt            (ico)
          opatch%monthly_dlnndt          (oco) = ipatch%monthly_dlnndt          (ico)
          opatch%krdepth                 (oco) = ipatch%krdepth                 (ico)
          opatch%first_census            (oco) = ipatch%first_census            (ico)
@@ -10671,6 +11023,7 @@ module ed_state_vars
          opatch%barka_maintenance       (oco) = ipatch%barka_maintenance       (ico)
          opatch%barkb_maintenance       (oco) = ipatch%barkb_maintenance       (ico)
          opatch%leaf_drop               (oco) = ipatch%leaf_drop               (ico)
+         opatch%root_drop               (oco) = ipatch%root_drop               (ico)
          opatch%leaf_respiration        (oco) = ipatch%leaf_respiration        (ico)
          opatch%root_respiration        (oco) = ipatch%root_respiration        (ico)
          opatch%gpp                     (oco) = ipatch%gpp                     (ico)
@@ -10680,6 +11033,23 @@ module ed_state_vars
          opatch%llspan                  (oco) = ipatch%llspan                  (ico)
          opatch%vm_bar                  (oco) = ipatch%vm_bar                  (ico)
          opatch%sla                     (oco) = ipatch%sla                     (ico)
+
+         opatch%leaf_psi                (oco) = ipatch%leaf_psi                (ico)
+         opatch%wood_psi                (oco) = ipatch%wood_psi                (ico)
+         opatch%leaf_water_int          (oco) = ipatch%leaf_water_int          (ico)
+         opatch%leaf_water_im2          (oco) = ipatch%leaf_water_im2          (ico)
+         opatch%wood_water_int          (oco) = ipatch%wood_water_int          (ico)
+         opatch%wood_water_im2          (oco) = ipatch%wood_water_im2          (ico)
+         opatch%leaf_rwc                (oco) = ipatch%leaf_rwc                (ico)
+         opatch%wood_rwc                (oco) = ipatch%wood_rwc                (ico)
+         opatch%wflux_gw                (oco) = ipatch%wflux_gw                (ico)
+         opatch%wflux_wl                (oco) = ipatch%wflux_wl                (ico)
+
+         opatch%high_leaf_psi_days      (oco) = ipatch%high_leaf_psi_days      (ico)
+         opatch%low_leaf_psi_days       (oco) = ipatch%low_leaf_psi_days       (ico)
+         opatch%last_gV                 (oco) = ipatch%last_gV                 (ico)
+         opatch%last_gJ                 (oco) = ipatch%last_gJ                 (ico)
+
          opatch%fmean_gpp               (oco) = ipatch%fmean_gpp               (ico)
          opatch%fmean_npp               (oco) = ipatch%fmean_npp               (ico)
          opatch%fmean_leaf_resp         (oco) = ipatch%fmean_leaf_resp         (ico)
@@ -10750,6 +11120,20 @@ module ed_state_vars
          opatch%fmean_lai               (oco) = ipatch%fmean_lai               (ico)
          opatch%fmean_bdeada            (oco) = ipatch%fmean_bdeada            (ico)
          opatch%fmean_bdeadb            (oco) = ipatch%fmean_bdeadb            (ico)
+
+         opatch%fmean_leaf_psi          (oco) = ipatch%fmean_leaf_psi          (ico)
+         opatch%fmean_wood_psi          (oco) = ipatch%fmean_wood_psi          (ico)
+         opatch%fmean_leaf_water_int    (oco) = ipatch%fmean_leaf_water_int    (ico)
+         opatch%fmean_leaf_water_im2    (oco) = ipatch%fmean_leaf_water_im2    (ico)
+         opatch%fmean_wood_water_int    (oco) = ipatch%fmean_wood_water_int    (ico)
+         opatch%fmean_wood_water_im2    (oco) = ipatch%fmean_wood_water_im2    (ico)
+         opatch%fmean_wflux_gw          (oco) = ipatch%fmean_wflux_gw          (ico)
+         opatch%fmean_wflux_wl          (oco) = ipatch%fmean_wflux_wl          (ico)
+
+         opatch%dmax_leaf_psi           (oco) = ipatch%dmax_leaf_psi           (ico)
+         opatch%dmin_leaf_psi           (oco) = ipatch%dmin_leaf_psi           (ico)
+         opatch%dmax_wood_psi           (oco) = ipatch%dmax_wood_psi           (ico)
+         opatch%dmin_wood_psi           (oco) = ipatch%dmin_wood_psi           (ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -10860,6 +11244,19 @@ module ed_state_vars
             opatch%dmean_intercepted_aw    (oco) = ipatch%dmean_intercepted_aw    (ico)
             opatch%dmean_wshed_wg          (oco) = ipatch%dmean_wshed_wg          (ico)
 
+            opatch%dmean_leaf_water_int    (oco) = ipatch%dmean_leaf_water_int    (ico)
+            opatch%dmean_leaf_water_im2    (oco) = ipatch%dmean_leaf_water_im2    (ico)
+            opatch%dmean_wood_water_int    (oco) = ipatch%dmean_wood_water_int    (ico)
+            opatch%dmean_wood_water_im2    (oco) = ipatch%dmean_wood_water_im2    (ico)
+            opatch%dmean_wflux_gw          (oco) = ipatch%dmean_wflux_gw          (ico)
+            opatch%dmean_wflux_wl          (oco) = ipatch%dmean_wflux_wl          (ico)
+
+            !------ Water absorption from each soil layer ---------------------------------!
+            do m=1,nzg
+               opatch%dmean_wflux_gw_layer  (m,oco) = ipatch%dmean_wflux_gw_layer  (m,ico)
+            end do
+            !------------------------------------------------------------------------------!
+
 
             !------ Radiation profile variables. ------------------------------------------!
             do m=1,n_radprof
@@ -10890,6 +11287,7 @@ module ed_state_vars
             opatch%mmean_barka_maintenance (oco) = ipatch%mmean_barka_maintenance (ico)
             opatch%mmean_barkb_maintenance (oco) = ipatch%mmean_barkb_maintenance (ico)
             opatch%mmean_leaf_drop         (oco) = ipatch%mmean_leaf_drop         (ico)
+            opatch%mmean_root_drop         (oco) = ipatch%mmean_root_drop         (ico)
             opatch%mmean_cb                (oco) = ipatch%mmean_cb                (ico)
             opatch%mmean_gpp               (oco) = ipatch%mmean_gpp               (ico)
             opatch%mmean_npp               (oco) = ipatch%mmean_npp               (ico)
@@ -10966,6 +11364,18 @@ module ed_state_vars
             opatch%mmean_nppseeds          (oco) = ipatch%mmean_nppseeds          (ico)
             opatch%mmean_nppwood           (oco) = ipatch%mmean_nppwood           (ico)
             opatch%mmean_nppdaily          (oco) = ipatch%mmean_nppdaily          (ico)
+
+            opatch%mmean_dmax_leaf_psi     (oco) = ipatch%mmean_dmax_leaf_psi     (ico)
+            opatch%mmean_dmin_leaf_psi     (oco) = ipatch%mmean_dmin_leaf_psi     (ico)
+            opatch%mmean_dmax_wood_psi     (oco) = ipatch%mmean_dmax_wood_psi     (ico)
+            opatch%mmean_dmin_wood_psi     (oco) = ipatch%mmean_dmin_wood_psi     (ico)
+            opatch%mmean_leaf_water_int    (oco) = ipatch%mmean_leaf_water_int    (ico)
+            opatch%mmean_leaf_water_im2    (oco) = ipatch%mmean_leaf_water_im2    (ico)
+            opatch%mmean_wood_water_int    (oco) = ipatch%mmean_wood_water_int    (ico)
+            opatch%mmean_wood_water_im2    (oco) = ipatch%mmean_wood_water_im2    (ico)
+            opatch%mmean_wflux_gw          (oco) = ipatch%mmean_wflux_gw          (ico)
+            opatch%mmean_wflux_wl          (oco) = ipatch%mmean_wflux_wl          (ico)
+
             opatch%mmsqu_gpp               (oco) = ipatch%mmsqu_gpp               (ico)
             opatch%mmsqu_npp               (oco) = ipatch%mmsqu_npp               (ico)
             opatch%mmsqu_plresp            (oco) = ipatch%mmsqu_plresp            (ico)
@@ -10974,6 +11384,14 @@ module ed_state_vars
             opatch%mmsqu_transp            (oco) = ipatch%mmsqu_transp            (ico)
             opatch%mmsqu_sensible_wc       (oco) = ipatch%mmsqu_sensible_wc       (ico)
             opatch%mmsqu_vapor_wc          (oco) = ipatch%mmsqu_vapor_wc          (ico)
+
+            !------ Water absorption from each soil layer ---------------------------------!
+            do m=1,nzg
+               opatch%mmean_wflux_gw_layer  (m,oco) = ipatch%mmean_wflux_gw_layer  (m,ico)
+            end do
+            !------------------------------------------------------------------------------!
+
+
             !----- Mortality variables. ---------------------------------------------------!
             do m=1,n_mort
                opatch%mmean_mort_rate(m,oco) = ipatch%mmean_mort_rate(m,ico)
@@ -11063,6 +11481,16 @@ module ed_state_vars
                opatch%qmean_vapor_wc          (n,oco) = ipatch%qmean_vapor_wc          (n,ico)
                opatch%qmean_intercepted_aw    (n,oco) = ipatch%qmean_intercepted_aw    (n,ico)
                opatch%qmean_wshed_wg          (n,oco) = ipatch%qmean_wshed_wg          (n,ico)
+
+               opatch%qmean_leaf_psi          (n,oco) = ipatch%qmean_leaf_psi          (n,ico)
+               opatch%qmean_wood_psi          (n,oco) = ipatch%qmean_wood_psi          (n,ico)
+               opatch%qmean_leaf_water_int    (n,oco) = ipatch%qmean_leaf_water_int    (n,ico)
+               opatch%qmean_leaf_water_im2    (n,oco) = ipatch%qmean_leaf_water_im2    (n,ico)
+               opatch%qmean_wood_water_int    (n,oco) = ipatch%qmean_wood_water_int    (n,ico)
+               opatch%qmean_wood_water_im2    (n,oco) = ipatch%qmean_wood_water_im2    (n,ico)
+               opatch%qmean_wflux_gw          (n,oco) = ipatch%qmean_wflux_gw          (n,ico)
+               opatch%qmean_wflux_wl          (n,oco) = ipatch%qmean_wflux_wl          (n,ico)
+
                opatch%qmsqu_gpp               (n,oco) = ipatch%qmsqu_gpp               (n,ico)
                opatch%qmsqu_npp               (n,oco) = ipatch%qmsqu_npp               (n,ico)
                opatch%qmsqu_plresp            (n,oco) = ipatch%qmsqu_plresp            (n,ico)
@@ -11267,7 +11695,6 @@ module ed_state_vars
       opatch%sapb_storage_resp     (1:z) = pack(ipatch%sapb_storage_resp         ,lmask)
       opatch%barka_storage_resp    (1:z) = pack(ipatch%barka_storage_resp        ,lmask)
       opatch%barkb_storage_resp    (1:z) = pack(ipatch%barkb_storage_resp        ,lmask)
-      opatch%monthly_dndt          (1:z) = pack(ipatch%monthly_dndt              ,lmask)
       opatch%monthly_dlnndt        (1:z) = pack(ipatch%monthly_dlnndt            ,lmask)
       opatch%krdepth               (1:z) = pack(ipatch%krdepth                   ,lmask)
       opatch%first_census          (1:z) = pack(ipatch%first_census              ,lmask)
@@ -11314,6 +11741,7 @@ module ed_state_vars
       opatch%barka_maintenance     (1:z) = pack(ipatch%barka_maintenance         ,lmask)
       opatch%barkb_maintenance     (1:z) = pack(ipatch%barkb_maintenance         ,lmask)
       opatch%leaf_drop             (1:z) = pack(ipatch%leaf_drop                 ,lmask)
+      opatch%root_drop             (1:z) = pack(ipatch%root_drop                 ,lmask)
       opatch%leaf_respiration      (1:z) = pack(ipatch%leaf_respiration          ,lmask)
       opatch%root_respiration      (1:z) = pack(ipatch%root_respiration          ,lmask)
       opatch%gpp                   (1:z) = pack(ipatch%gpp                       ,lmask)
@@ -11323,6 +11751,31 @@ module ed_state_vars
       opatch%llspan                (1:z) = pack(ipatch%llspan                    ,lmask)
       opatch%vm_bar                (1:z) = pack(ipatch%vm_bar                    ,lmask)
       opatch%sla                   (1:z) = pack(ipatch%sla                       ,lmask)
+
+      opatch%leaf_psi              (1:z) = pack(ipatch%leaf_psi                  ,lmask)
+      opatch%wood_psi              (1:z) = pack(ipatch%wood_psi                  ,lmask)
+      opatch%leaf_rwc              (1:z) = pack(ipatch%leaf_rwc                  ,lmask)
+      opatch%wood_rwc              (1:z) = pack(ipatch%wood_rwc                  ,lmask)
+      opatch%leaf_water_int        (1:z) = pack(ipatch%leaf_water_int            ,lmask)
+      opatch%leaf_water_im2        (1:z) = pack(ipatch%leaf_water_im2            ,lmask)
+      opatch%wood_water_int        (1:z) = pack(ipatch%wood_water_int            ,lmask)
+      opatch%wood_water_im2        (1:z) = pack(ipatch%wood_water_im2            ,lmask)
+      opatch%wflux_gw              (1:z) = pack(ipatch%wflux_gw                  ,lmask)
+      opatch%wflux_wl              (1:z) = pack(ipatch%wflux_wl                  ,lmask)
+
+      opatch%high_leaf_psi_days    (1:z) = pack(ipatch%high_leaf_psi_days        ,lmask)
+      opatch%low_leaf_psi_days     (1:z) = pack(ipatch%low_leaf_psi_days         ,lmask)
+      opatch%last_gV               (1:z) = pack(ipatch%last_gV                   ,lmask)
+      opatch%last_gJ               (1:z) = pack(ipatch%last_gJ                   ,lmask)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------ Water absorption from each soil layer ---------------------------------------!
+      do m=1,nzg
+         opatch%wflux_gw_layer  (m,1:z) = pack(ipatch%wflux_gw_layer    (m,:),lmask)
+      end do
       !------------------------------------------------------------------------------------!
 
 
@@ -11450,7 +11903,29 @@ module ed_state_vars
       opatch%fmean_lai               (1:z) = pack(ipatch%fmean_lai                ,lmask)
       opatch%fmean_bdeada            (1:z) = pack(ipatch%fmean_bdeada             ,lmask)
       opatch%fmean_bdeadb            (1:z) = pack(ipatch%fmean_bdeadb             ,lmask)
+
+      opatch%fmean_leaf_psi          (1:z) = pack(ipatch%fmean_leaf_psi           ,lmask)
+      opatch%fmean_wood_psi          (1:z) = pack(ipatch%fmean_wood_psi           ,lmask)
+      opatch%fmean_leaf_water_int    (1:z) = pack(ipatch%fmean_leaf_water_int     ,lmask)
+      opatch%fmean_leaf_water_im2    (1:z) = pack(ipatch%fmean_leaf_water_im2     ,lmask)
+      opatch%fmean_wood_water_int    (1:z) = pack(ipatch%fmean_wood_water_int     ,lmask)
+      opatch%fmean_wood_water_im2    (1:z) = pack(ipatch%fmean_wood_water_im2     ,lmask)
+      opatch%fmean_wflux_gw          (1:z) = pack(ipatch%fmean_wflux_gw           ,lmask)
+      opatch%fmean_wflux_wl          (1:z) = pack(ipatch%fmean_wflux_wl           ,lmask)
+
+      opatch%dmax_leaf_psi           (1:z) = pack(ipatch%dmax_leaf_psi            ,lmask)
+      opatch%dmin_leaf_psi           (1:z) = pack(ipatch%dmin_leaf_psi            ,lmask)
+      opatch%dmax_wood_psi           (1:z) = pack(ipatch%dmax_wood_psi            ,lmask)
+      opatch%dmin_wood_psi           (1:z) = pack(ipatch%dmin_wood_psi            ,lmask)
       !------------------------------------------------------------------------------------!
+
+
+
+      !------ Water absorption from each soil layer ------------------------------------!
+      do m=1,nzg
+         opatch%fmean_wflux_gw_layer(m,1:z) = pack(ipatch%fmean_wflux_gw_layer(m,:),lmask)
+      end do
+      !---------------------------------------------------------------------------------!
 
 
       !------ Radiation profile variables. ------------------------------------------------!
@@ -11565,6 +12040,20 @@ module ed_state_vars
       opatch%dmean_vapor_wc          (1:z) = pack(ipatch%dmean_vapor_wc            ,lmask)
       opatch%dmean_intercepted_aw    (1:z) = pack(ipatch%dmean_intercepted_aw      ,lmask)
       opatch%dmean_wshed_wg          (1:z) = pack(ipatch%dmean_wshed_wg            ,lmask)
+
+      opatch%dmean_leaf_water_int    (1:z) = pack(ipatch%dmean_leaf_water_int      ,lmask)
+      opatch%dmean_leaf_water_im2    (1:z) = pack(ipatch%dmean_leaf_water_im2      ,lmask)
+      opatch%dmean_wood_water_int    (1:z) = pack(ipatch%dmean_wood_water_int      ,lmask)
+      opatch%dmean_wood_water_im2    (1:z) = pack(ipatch%dmean_wood_water_im2      ,lmask)
+      opatch%dmean_wflux_gw          (1:z) = pack(ipatch%dmean_wflux_gw            ,lmask)
+      opatch%dmean_wflux_wl          (1:z) = pack(ipatch%dmean_wflux_wl            ,lmask)
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Water absorption from each soil layer ---------------------------------!
+      do m=1,nzg
+         opatch%dmean_wflux_gw_layer(m,1:z) = pack(ipatch%dmean_wflux_gw_layer(m,:),lmask)
+      end do
       !------------------------------------------------------------------------------------!
 
 
@@ -11620,6 +12109,7 @@ module ed_state_vars
       opatch%mmean_barka_maintenance (1:z) = pack(ipatch%mmean_barka_maintenance   ,lmask)
       opatch%mmean_barkb_maintenance (1:z) = pack(ipatch%mmean_barkb_maintenance   ,lmask)
       opatch%mmean_leaf_drop         (1:z) = pack(ipatch%mmean_leaf_drop           ,lmask)
+      opatch%mmean_root_drop         (1:z) = pack(ipatch%mmean_root_drop           ,lmask)
       opatch%mmean_cb                (1:z) = pack(ipatch%mmean_cb                  ,lmask)
       opatch%mmean_gpp               (1:z) = pack(ipatch%mmean_gpp                 ,lmask)
       opatch%mmean_npp               (1:z) = pack(ipatch%mmean_npp                 ,lmask)
@@ -11696,6 +12186,18 @@ module ed_state_vars
       opatch%mmean_nppseeds          (1:z) = pack(ipatch%mmean_nppseeds            ,lmask)
       opatch%mmean_nppwood           (1:z) = pack(ipatch%mmean_nppwood             ,lmask)
       opatch%mmean_nppdaily          (1:z) = pack(ipatch%mmean_nppdaily            ,lmask)
+
+      opatch%mmean_dmax_leaf_psi     (1:z) = pack(ipatch%mmean_dmax_leaf_psi       ,lmask)
+      opatch%mmean_dmin_leaf_psi     (1:z) = pack(ipatch%mmean_dmin_leaf_psi       ,lmask)
+      opatch%mmean_dmax_wood_psi     (1:z) = pack(ipatch%mmean_dmax_wood_psi       ,lmask)
+      opatch%mmean_dmin_wood_psi     (1:z) = pack(ipatch%mmean_dmin_wood_psi       ,lmask)
+      opatch%mmean_leaf_water_int    (1:z) = pack(ipatch%mmean_leaf_water_int      ,lmask)
+      opatch%mmean_leaf_water_im2    (1:z) = pack(ipatch%mmean_leaf_water_im2      ,lmask)
+      opatch%mmean_wood_water_int    (1:z) = pack(ipatch%mmean_wood_water_int      ,lmask)
+      opatch%mmean_wood_water_im2    (1:z) = pack(ipatch%mmean_wood_water_im2      ,lmask)
+      opatch%mmean_wflux_gw          (1:z) = pack(ipatch%mmean_wflux_gw            ,lmask)
+      opatch%mmean_wflux_wl          (1:z) = pack(ipatch%mmean_wflux_wl            ,lmask)
+
       opatch%mmsqu_gpp               (1:z) = pack(ipatch%mmsqu_gpp                 ,lmask)
       opatch%mmsqu_npp               (1:z) = pack(ipatch%mmsqu_npp                 ,lmask)
       opatch%mmsqu_plresp            (1:z) = pack(ipatch%mmsqu_plresp              ,lmask)
@@ -11704,6 +12206,13 @@ module ed_state_vars
       opatch%mmsqu_transp            (1:z) = pack(ipatch%mmsqu_transp              ,lmask)
       opatch%mmsqu_sensible_wc       (1:z) = pack(ipatch%mmsqu_sensible_wc         ,lmask)
       opatch%mmsqu_vapor_wc          (1:z) = pack(ipatch%mmsqu_vapor_wc            ,lmask)
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Water absorption from each soil layer ---------------------------------------!
+      do m=1,nzg
+         opatch%mmean_wflux_gw_layer(m,1:z) = pack(ipatch%mmean_wflux_gw_layer(m,:),lmask)
+      end do
       !------------------------------------------------------------------------------------!
 
 
@@ -11819,6 +12328,16 @@ module ed_state_vars
          opatch%qmean_vapor_wc          (n,1:z) = pack(ipatch%qmean_vapor_wc          (n,:),lmask)
          opatch%qmean_intercepted_aw    (n,1:z) = pack(ipatch%qmean_intercepted_aw    (n,:),lmask)
          opatch%qmean_wshed_wg          (n,1:z) = pack(ipatch%qmean_wshed_wg          (n,:),lmask)
+
+         opatch%qmean_leaf_psi          (n,1:z) = pack(ipatch%qmean_leaf_psi          (n,:),lmask)
+         opatch%qmean_wood_psi          (n,1:z) = pack(ipatch%qmean_wood_psi          (n,:),lmask)
+         opatch%qmean_leaf_water_int    (n,1:z) = pack(ipatch%qmean_leaf_water_int    (n,:),lmask)
+         opatch%qmean_leaf_water_im2    (n,1:z) = pack(ipatch%qmean_leaf_water_im2    (n,:),lmask)
+         opatch%qmean_wood_water_int    (n,1:z) = pack(ipatch%qmean_wood_water_int    (n,:),lmask)
+         opatch%qmean_wood_water_im2    (n,1:z) = pack(ipatch%qmean_wood_water_im2    (n,:),lmask)
+         opatch%qmean_wflux_gw          (n,1:z) = pack(ipatch%qmean_wflux_gw          (n,:),lmask)
+         opatch%qmean_wflux_wl          (n,1:z) = pack(ipatch%qmean_wflux_wl          (n,:),lmask)
+
          opatch%qmsqu_gpp               (n,1:z) = pack(ipatch%qmsqu_gpp               (n,:),lmask)
          opatch%qmsqu_npp               (n,1:z) = pack(ipatch%qmsqu_npp               (n,:),lmask)
          opatch%qmsqu_plresp            (n,1:z) = pack(ipatch%qmsqu_plresp            (n,:),lmask)
@@ -13337,6 +13856,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Leaf surface water'                          &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
+      if (associated(cgrid%fmean_leaf_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_leaf_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LEAF_WATER_IM2_PY    :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Leaf internal water'                         &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_leaf_hcap       )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_hcap                                     &
@@ -13407,6 +13935,15 @@ module ed_state_vars
                            ,'FMEAN_WOOD_WATER_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood surface water'                          &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_wood_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_wood_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_WOOD_WATER_IM2_PY    :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Wood internal water'                         &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_wood_hcap       )) then
@@ -14770,6 +15307,15 @@ module ed_state_vars
                            ,'Daily mean - Leaf surface water'                              &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_leaf_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_leaf_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_LEAF_WATER_IM2_PY    :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Leaf surface water'                              &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_leaf_hcap       )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_hcap                                     &
@@ -14840,6 +15386,15 @@ module ed_state_vars
                            ,'DMEAN_WOOD_WATER_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood surface water'                              &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_wood_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_wood_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_WOOD_WATER_IM2_PY    :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Wood internal water'                             &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
       if (associated(cgrid%dmean_wood_hcap       )) then
@@ -16024,6 +16579,15 @@ module ed_state_vars
                            ,'Monthly mean - Leaf surface water'                            &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
+      if (associated(cgrid%mmean_leaf_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_leaf_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_LEAF_WATER_IM2_PY    :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Leaf internal water'                           &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
       if (associated(cgrid%mmean_leaf_hcap       )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_hcap                                     &
@@ -16094,6 +16658,15 @@ module ed_state_vars
                            ,'MMEAN_WOOD_WATER_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood surface water'                            &
+                           ,'[      kg/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_wood_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_wood_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_WOOD_WATER_IM2_PY    :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Wood internal water'                           &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_wood_hcap       )) then
@@ -17792,6 +18365,15 @@ module ed_state_vars
                            ,'Mean diel - Leaf surface water'                               &
                            ,'[      kg/m2]','(ndcycle,ipoly)'    )
       end if
+      if (associated(cgrid%qmean_leaf_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_leaf_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_LEAF_WATER_IM2_PY   :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Leaf internal water'                              &
+                           ,'[      kg/m2]','(ndcycle,ipoly)'    )
+      end if
       if (associated(cgrid%qmean_leaf_hcap       )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_hcap                                     &
@@ -17862,6 +18444,15 @@ module ed_state_vars
                            ,'QMEAN_WOOD_WATER_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood surface water'                               &
+                           ,'[      kg/m2]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_wood_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_wood_water_im2                                &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_WOOD_WATER_IM2_PY   :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Wood internal water'                              &
                            ,'[      kg/m2]','(ndcycle,ipoly)'    )
       end if
       if (associated(cgrid%qmean_wood_hcap       )) then
@@ -19938,6 +20529,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Leaf drop'                                           &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
+      if (associated(cgrid%root_drop)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%root_drop                                           &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'ROOT_DROP_PY    :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Fine-root drop'                                      &
+                           ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
+      end if
       if (associated(cgrid%mmean_thbark)) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_thbark                                        &
@@ -20088,6 +20687,14 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_LEAF_DROP_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Leaf drop'                            &
+                           ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_root_drop)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_root_drop                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_ROOT_DROP_PY       :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Fine-root drop'                       &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
       !------------------------------------------------------------------------------------!
@@ -22911,6 +23518,16 @@ module ed_state_vars
                            ,'[  kgW/m2/s]','NA')
       end if
 
+      if (associated(csite%wbudget_wcapeffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_wcapeffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_WCAPEFFECT :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: storage change due to change in water capacity' &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
       if (associated(csite%wbudget_zcaneffect)) then
          nvar=nvar+1
          call vtable_edio_r(npts,csite%wbudget_zcaneffect                                  &
@@ -23008,6 +23625,16 @@ module ed_state_vars
                            ,'EBUDGET_HCAPEFFECT :31:hist')
          call metadata_edio(nvar,igr                                                       &
                            ,'Enthalpy budget: storage change due to heat capacity change'  &
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_wcapeffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_wcapeffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_WCAPEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: storage change due to water capacity change' &
                            ,'[    J/m2/s]','NA') 
       end if
 
@@ -27259,6 +27886,7 @@ module ed_state_vars
       call filltab_patchtype_p41dmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p41mmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_m41     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_patchtype_p42     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p48     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p491    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p411    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
@@ -27362,6 +27990,20 @@ module ed_state_vars
            call vtable_edio_i(npts,cpatch%new_recruit_flag,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'NEW_RECRUIT_FLAG :40:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%high_leaf_psi_days)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%high_leaf_psi_days,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'HIGH_LEAF_PSI_DAYS :40:hist:dail')
+         call metadata_edio(nvar,igr,'Consecutive days with high DMAX leaf psi','[day]','NA') 
+      end if
+
+      if (associated(cpatch%low_leaf_psi_days)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%low_leaf_psi_days,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LOW_LEAF_PSI_DAYS :40:hist:dail')
+         call metadata_edio(nvar,igr,'Consecutive days with low DMAX leaf psi','[day]','NA') 
       end if
       !------------------------------------------------------------------------------------!
 
@@ -27837,13 +28479,6 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpatch%monthly_dndt)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%monthly_dndt,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MONTHLY_DNDT :41:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
       if (associated(cpatch%monthly_dlnndt)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%monthly_dlnndt,nvar,igr,init,cpatch%coglob_id, &
@@ -28138,6 +28773,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpatch%root_drop)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%root_drop,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'ROOT_DROP :41:hist:dail') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(cpatch%bseeds)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bseeds,nvar,igr,init,cpatch%coglob_id, &
@@ -28208,6 +28850,99 @@ module ed_state_vars
            var_len,var_len_global,max_ptrs,'SLA :41:hist:anal:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'Specific leaf area','[m2_leaf/kgC]','icohort') 
       end if
+
+      if (associated(cpatch%leaf_psi)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_psi,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_PSI :41:hist') 
+         call metadata_edio(nvar,igr,'Leaf Water Potential','[m]','icohort') 
+      end if
+
+      if (associated(cpatch%wood_psi)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wood_psi,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WOOD_PSI :41:hist') 
+         call metadata_edio(nvar,igr,'Wood Water Potential','[m]','icohort') 
+      end if
+
+      if (associated(cpatch%leaf_rwc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_rwc,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_RWC :41:hist') 
+         call metadata_edio(nvar,igr,'Leaf Relative Water Content','[-]','icohort') 
+      end if
+
+      if (associated(cpatch%wood_rwc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wood_rwc,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WOOD_RWC :41:hist') 
+         call metadata_edio(nvar,igr,'Wood Relative Water Content','[-]','icohort') 
+      end if
+
+      if (associated(cpatch%leaf_water_int)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_water_int,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_WATER_INT :41:hist') 
+         call metadata_edio(nvar,igr,'Leaf internal water content per plant'      ,     &
+                                     '[kg/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%leaf_water_im2)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_water_im2,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_WATER_IM2 :41:hist') 
+         call metadata_edio(nvar,igr,'Leaf internal water content per area'       ,     &
+                                     '[kg/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%wood_water_int)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wood_water_int,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WOOD_WATER_INT :41:hist') 
+         call metadata_edio(nvar,igr,'Wood internal water content per plant'      ,     &
+                                     '[kg/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%wood_water_im2)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wood_water_im2,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WOOD_WATER_IM2 :41:hist') 
+         call metadata_edio(nvar,igr,'Wood internal water content per area'       ,     &
+                                     '[kg/n2]','icohort') 
+      end if
+
+      if (associated(cpatch%wflux_gw)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wflux_gw,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WFLUX_GW :41:hist') 
+         call metadata_edio(nvar,igr,'Water flow from ground to wood = root water absorption',&
+                                     '[kg/s]','icohort') 
+      end if
+
+      if (associated(cpatch%wflux_wl)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%wflux_wl,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'WFLUX_WL :41:hist') 
+         call metadata_edio(nvar,igr,'Water flow from wood to leaf = sapflow',     &
+                                    '[kg/s]','icohort') 
+      end if
+
+      if (associated(cpatch%last_gV)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%last_gV,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LAST_GV :41:hist') 
+         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Vcmax',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
+      if (associated(cpatch%last_gJ)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%last_gJ,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LAST_GJ :41:hist') 
+         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Jmax',  &
+            '[umol/m2l/s]','icohort') 
+      end if
+
       !------------------------------------------------------------------------------------!
 
       return
@@ -29004,6 +29739,78 @@ module ed_state_vars
                            ,'Sub-daily mean - Wood shedding'                               &
                            ,'[    kg/m2/s]','(icohort)'            )
       end if
+      if (associated(cpatch%fmean_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_LEAF_PSI_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Leaf Water Potential'                        &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WOOD_PSI_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Wood Water Potential'                        &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_leaf_water_int        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_LEAF_WATER_INT_CO    :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Leaf internal water content per plant'       &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_leaf_water_im2        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_leaf_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_LEAF_WATER_IM2_CO    :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Leaf internal water content per area'        &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wood_water_int        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WOOD_WATER_INT_CO    :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Wood internal water content per plant'       &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wood_water_im2        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wood_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WOOD_WATER_IM2_CO    :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Wood internal water content per area'        &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WFLUX_GW_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water flux from ground to wood'              &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WFLUX_WL_CO          :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water flux from wood to leaf, sapflow'       &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -29733,6 +30540,96 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood shedding'                                   &
                            ,'[    kg/m2/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmax_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmax_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMAX_LEAF_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily maximum - Leaf Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmin_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmin_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMIN_LEAF_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily minimum - Leaf Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmax_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmax_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMAX_WOOD_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily maximum - Wood Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmin_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmin_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMIN_WOOD_PSI_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily minimum - Wood Water Potential'                         &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_leaf_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_LEAF_WATER_INT_CO    :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Leaf internal water content per plant'           &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_leaf_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_leaf_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_LEAF_WATER_IM2_CO    :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Leaf internal water content per area'            &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_wood_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WOOD_WATER_INT_CO    :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Wood internal water content per plant'           &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_wood_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wood_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WOOD_WATER_IM2_CO    :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Wood internal water content per area'            &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WFLUX_GW_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water flux from ground to wood, root absorption' &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WFLUX_WL_CO          :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water flux from wood to leaf, sapflow'           &
+                           ,'[       kg/s]','(icohort)'            )
       end if
       !------------------------------------------------------------------------------------!
 
@@ -30511,6 +31408,15 @@ module ed_state_vars
                            ,'Monthly mean - Leaf drop'                                     &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
+      if (associated(cpatch%mmean_root_drop       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_root_drop                                    &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_ROOT_DROP_CO            :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Fine-root drop'                                &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
       if (associated(cpatch%mmean_cb              )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_cb                                           &
@@ -30592,6 +31498,101 @@ module ed_state_vars
                            ,'Monthly mean - Net primary productivity - total'              &
                            ,'[  kgC/m2/yr]','(icohort)'            )
       end if
+
+      if (associated(cpatch%mmean_dmax_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmax_leaf_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMAX_LEAF_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily maximum leaf water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_dmin_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmin_leaf_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMIN_LEAF_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily minimum leaf water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_dmax_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmax_wood_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMAX_WOOD_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily maximum wood water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_dmin_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_dmin_wood_psi                                &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_DMIN_WOOD_PSI_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Daily minimum wood water potential'            &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_leaf_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_LEAF_WATER_INT_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Leaf internal water content per plant'          &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_leaf_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_leaf_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_LEAF_WATER_IM2_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Leaf internal water content per area'          &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_wood_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WOOD_WATER_INT_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Wood internal water content per plant'         &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_wood_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wood_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WOOD_WATER_IM2_CO    :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Wood internal water content per area'          &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WFLUX_GW_CO          :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water flux from ground to wood, root absorption' &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WFLUX_WL_CO          :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water flux from wood to leaf, sapflow'          &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+
+
+
+
       if (associated(cpatch%mmsqu_gpp             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_gpp                                          &
@@ -31317,6 +32318,82 @@ module ed_state_vars
                            ,'Mean diel - Wood shedding'                                    &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
       end if
+
+
+      if (associated(cpatch%qmean_leaf_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_leaf_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_LEAF_PSI_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Leaf Water Potential'                             &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wood_psi        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wood_psi                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WOOD_PSI_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Wood Water Potential'                             &
+                           ,'[          m]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_leaf_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_leaf_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_LEAF_WATER_INT_CO    :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Leaf internal water content per plant'            &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_leaf_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_leaf_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_LEAF_WATER_IM2_CO    :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Leaf internal water content per area'             &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wood_water_int  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wood_water_int                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WOOD_WATER_INT_CO    :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Wood internal water content per plant'            &
+                           ,'[      kg/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wood_water_im2  )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wood_water_im2                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WOOD_WATER_IM2_CO    :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Wood internal water content per area'             &
+                           ,'[      kg/m2]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wflux_gw        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wflux_gw                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WFLUX_GW_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Water flux from ground to wood'                   &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%qmean_wflux_wl        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_wflux_wl                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_WFLUX_WL_CO          :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Water flux from wood to leaf, sapflow'            &
+                           ,'[       kg/s]','(icohort)'            )
+      end if
+
+
       if (associated(cpatch%qmsqu_gpp             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_gpp                                          &
@@ -31395,6 +32472,117 @@ module ed_state_vars
 
       return
    end subroutine filltab_patchtype_m41
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P32
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (nzg,npatches).
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_patchtype_p42(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      character(len=str_len)                :: dail_keys
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !       This part should have only 2-D vectors with dimensions ncohorts and nzg.     !
+      !  Notice that they all use the same npts.                                           !
+      !------------------------------------------------------------------------------------!
+      npts = cpatch%ncohorts * nzg
+
+      if (associated(cpatch%wflux_gw_layer)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%wflux_gw_layer                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'WFLUX_GW_LAYER :42:hist') 
+         call metadata_edio(nvar,igr,'Instantaneous - Water flux from ground to wood'      &
+                           ,'[kg/s]','(nzg,icohort)') 
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the fast, daily, and monthly means to the history.    !
+      !------------------------------------------------------------------------------------!
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_fast) then
+            fast_keys = 'hist:anal'
+         else
+            fast_keys = 'anal'
+         end if
+         if (history_dail) then
+            dail_keys = 'hist:dail'
+         else
+            dail_keys = 'dail'
+         end if
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      if (associated(cpatch%fmean_wflux_gw_layer     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_wflux_gw_layer                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Water flux from ground to wood'              &
+                           ,'[       kg/s]','(nzg,icohort)'        )
+      end if
+      if (associated(cpatch%dmean_wflux_gw_layer     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_wflux_gw_layer                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Water flux from ground to wood'                  &
+                           ,'[       kg/s]','(nzg,icohort)'        )
+      end if
+      if (associated(cpatch%mmean_wflux_gw_layer     )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_wflux_gw_layer                               &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Water flux from ground to wood'                &
+                           ,'[       kg/s]','(nzg,icohort)'        )
+      end if
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine filltab_patchtype_p42
    !=======================================================================================!
    !=======================================================================================!
 

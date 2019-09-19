@@ -82,7 +82,10 @@ module vegetation_dynamics
       if (veget_dyn_on) then
          call prescribed_event(current_time%year,doy)
       end if
-     
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !   Loop over all domains.                                                           !
       !------------------------------------------------------------------------------------!
@@ -122,10 +125,16 @@ module vegetation_dynamics
          end if
          !---------------------------------------------------------------------------------!
 
+
+
+
          !------  update dmean and mmean values for NPP allocation terms ------------------!
          call normalize_ed_todayNPP_vars(cgrid)
          !---------------------------------------------------------------------------------!
-         
+
+
+
+
          !---------------------------------------------------------------------------------!
          !     This should be done every day, after the monthly step, but before           !
          ! disturbance, so floating point operations have less effect on carbon            !
@@ -283,7 +292,7 @@ module vegetation_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !     Loop through all polygons, sites, and patches, and reset virtual pool.         !
+      !     Loop through all polygons, sites, and patches, and update age.                 !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)

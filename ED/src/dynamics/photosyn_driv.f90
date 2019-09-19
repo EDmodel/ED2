@@ -21,7 +21,8 @@ module photosyn_driv
                                 , D0                      & ! intent(in)
                                 , cuticular_cond          & ! intent(in)
                                 , leaf_turnover_rate      & ! intent(in)
-                                , phenology               ! ! intent(in)
+                                , stoma_psi_b             & ! intent(in)
+                                , stoma_psi_c             ! ! intent(in)
       use soil_coms      , only : soil                    & ! intent(in)
                                 , slzt                    & ! intent(in)
                                 , dslz                    ! ! intent(in)
@@ -33,6 +34,7 @@ module photosyn_driv
                                 , umols_2_kgCyr           & ! intent(in)
                                 , yr_day                  & ! intent(in)
                                 , lnexp_min               & ! intent(in)
+                                , lnexp_max               & ! intent(in)
                                 , tiny_num                & ! intent(in)
                                 , umol_2_mol              & ! intent(in)
                                 , mmdry                   ! ! intent(in)
@@ -40,9 +42,11 @@ module photosyn_driv
                                 , dtlsm_o_frqsum          ! ! intent(in)
       use met_driver_coms, only : met_driv_state          ! ! structure
       use physiology_coms, only : print_photo_debug       & ! intent(in)
+                                , istomata_scheme         & ! intent(in)
                                 , h2o_plant_lim           ! ! intent(in)
       use phenology_coms , only : llspan_inf              ! ! intent(in)
       use farq_leuning   , only : lphysiol_full           ! ! sub-routine
+      use farq_katul     , only : katul_lphys             ! ! sub-routine
       use allometry      , only : h2crownbh               ! ! function
       use therm_lib      , only : qslif                   ! ! function
       use rk4_coms       , only : effarea_transp          & ! intent(in)
@@ -99,6 +103,7 @@ module photosyn_driv
       real                                    :: pss_available_water
       real                                    :: vm0_tuco
       real                                    :: llspan_tuco
+      real                                    :: lnexp
       integer, dimension(n_pft)               :: tuco_pft
       !----- External function. -----------------------------------------------------------!
       real(kind=4)             , external     :: sngloff ! Safe double -> single precision
@@ -160,7 +165,7 @@ module photosyn_driv
          end do
          !---------------------------------------------------------------------------------!
 
-      case (2,3)
+      case default
          !---------------------------------------------------------------------------------!
          !     The available water factor is the soil moisture at field capacity minus     !
          ! wilting point, scaled by the wilting factor, defined as a function of soil      !
@@ -273,11 +278,10 @@ module photosyn_driv
 
                !---------------------------------------------------------------------------!
                !      Find the tallest cohort for this PFT.  In case the patch no longer   !
-               ! has the PFT, then we just the default Vm0 and leaf life span.  This only  !
-               ! matters for light-controlled phenology, not the standard cases.           !
+               ! has the PFT, then we just the default Vm0 and leaf life span.             !
                !---------------------------------------------------------------------------!
                tpft = tuco_pft(ipft)
-               if (tpft == 0 .or. phenology(ipft) /= 3) then
+               if (tpft == 0) then
                   !------------------------------------------------------------------------!
                   !    For most cases, we use the default leaf life spand and              !
                   ! carboxylation capacity.  This includes the case in which trait         !
@@ -312,49 +316,95 @@ module photosyn_driv
                !    Notice that the units that are per unit area are per m2 of leaf, not   !
                ! the patch area.                                                           !
                !---------------------------------------------------------------------------!
-               call lphysiol_full(ibuff    & ! Multithread ID
-                , csite%can_prss(ipa)      & ! Canopy air pressure              [       Pa]
-                , csite%can_rhos(ipa)      & ! Canopy air density               [    kg/m3]
-                , csite%can_shv(ipa)       & ! Canopy air sp. humidity          [    kg/kg]
-                , csite%can_co2(ipa)       & ! Canopy air CO2 mixing ratio      [ umol/mol]
-                , ipft                     & ! Plant functional type            [      ---]
-                , csite%par_l_max(ipa)     & ! Absorbed photos. active rad.     [ W/m2leaf]
-                , cpatch%leaf_temp(tuco)   & ! Leaf temperature                 [        K]
-                , cpatch%lint_shv(tuco)    & ! Leaf intercellular spec. hum.    [    kg/kg]
-                , green_leaf_factor(ipft)  & ! Greenness rel. to on-allometry   [      ---]
-                , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM     [      ---]
-                , llspan_tuco              & ! Leaf life span                   [       yr]
-                , vm0_tuco                 & ! Average Vm function              [umol/m2/s]
-                , cpatch%leaf_gbw(tuco)    & ! Aerodyn. condct. of water vapour [  kg/m2/s]
-                , D0(ipft)                 & ! VPD scale for stomatal closure   [  mol/mol]
-                , csite%A_o_max(ipft,ipa)  & ! Photosynthesis rate     (open)   [umol/m2/s]
-                , csite%A_c_max(ipft,ipa)  & ! Photosynthesis rate     (closed) [umol/m2/s]
-                , d_A_light_max            & ! Photosynthesis rate     (light)  [umol/m2/s]
-                , d_A_rubp_max             & ! Photosynthesis rate     (RuBP)   [umol/m2/s]
-                , d_A_co2_max              & ! Photosynthesis rate     (CO2)    [umol/m2/s]
-                , d_gsw_open               & ! Stom. condct. of water  (open)   [  kg/m2/s]
-                , d_gsw_closed             & ! Stom. condct. of water  (closed) [  kg/m2/s]
-                , d_lsfc_shv_open          & ! Leaf sfc. sp. humidity  (open)   [    kg/kg]
-                , d_lsfc_shv_closed        & ! Leaf sfc. sp. humidity  (closed) [    kg/kg]
-                , d_lsfc_co2_open          & ! Leaf sfc. CO2 mix. rat. (open)   [ umol/mol]
-                , d_lsfc_co2_closed        & ! Leaf sfc. CO2 mix. rat. (closed) [ umol/mol]
-                , d_lint_co2_open          & ! Intercellular CO2       (open)   [ umol/mol]
-                , d_lint_co2_closed        & ! Intercellular CO2       (closed) [ umol/mol]
-                , leaf_resp                & ! Leaf respiration rate            [umol/m2/s]
-                , vm                       & ! Max. capacity of Rubisco         [umol/m2/s]
-                , jm                       & ! Max. electron transport          [umol/m2/s]
-                , tpm                      & ! Max. triose phosphate            [umol/m2/s]
-                , jact                     & ! Actual electron transport        [umol/m2/s]
-                , compp                    & ! Gross photo. compensation point  [ umol/mol]
-                , limit_flag               & ! Photosynthesis limitation flag   [      ---]
-                )
+               select case (istomata_scheme)
+               case (0)
+                  !----- Farquhar with Leuning (1995) stomatal conductance. ---------------!
+                  call lphysiol_full(ibuff    & ! Multithread ID
+                   , csite%can_prss(ipa)      & ! Canopy air pressure           [       Pa]
+                   , csite%can_rhos(ipa)      & ! Canopy air density            [    kg/m3]
+                   , csite%can_shv(ipa)       & ! Canopy air sp. humidity       [    kg/kg]
+                   , csite%can_co2(ipa)       & ! Canopy air CO2 mixing ratio   [ umol/mol]
+                   , ipft                     & ! Plant functional type         [      ---]
+                   , csite%par_l_max(ipa)     & ! Absorbed photos. active rad.  [ W/m2leaf]
+                   , cpatch%leaf_temp(tuco)   & ! Leaf temperature              [        K]
+                   , cpatch%lint_shv(tuco)    & ! Leaf intercellular spec. hum. [    kg/kg]
+                   , green_leaf_factor(ipft)  & ! Cold-deciduous elong. factor  [      ---]
+                   , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM  [      ---]
+                   , llspan_tuco              & ! Leaf life span                [       yr]
+                   , vm0_tuco                 & ! Average Vm function           [umol/m2/s]
+                   , cpatch%leaf_gbw(tuco)    & ! Leaf boundary-layer conduct.  [  kg/m2/s]
+                   , D0(ipft)                 & ! VPD stomatal-closure scale    [  mol/mol]
+                   , csite%A_o_max(ipft,ipa)  & ! Photosynthesis rate (open   ) [umol/m2/s]
+                   , csite%A_c_max(ipft,ipa)  & ! Photosynthesis rate (closed ) [umol/m2/s]
+                   , d_A_light_max            & ! Photosynthesis rate (light  ) [umol/m2/s]
+                   , d_A_rubp_max             & ! Photosynthesis rate (RuBP   ) [umol/m2/s]
+                   , d_A_co2_max              & ! Photosynthesis rate (TPU/CO2) [umol/m2/s]
+                   , d_gsw_open               & ! Stomatal conduct.   (open   ) [  kg/m2/s]
+                   , d_gsw_closed             & ! Stomatal conduct.   (closed ) [  kg/m2/s]
+                   , d_lsfc_shv_open          & ! Leaf sfc. sp. hum.  (open   ) [    kg/kg]
+                   , d_lsfc_shv_closed        & ! Leaf sfc. sp. hum.  (closed ) [    kg/kg]
+                   , d_lsfc_co2_open          & ! Leaf sfc. CO2       (open   ) [ umol/mol]
+                   , d_lsfc_co2_closed        & ! Leaf sfc. CO2       (closed ) [ umol/mol]
+                   , d_lint_co2_open          & ! Intercellular CO2   (open   ) [ umol/mol]
+                   , d_lint_co2_closed        & ! Intercellular CO2   (closed ) [ umol/mol]
+                   , leaf_resp                & ! Leaf respiration rate         [umol/m2/s]
+                   , vm                       & ! Max. carboxylation rate       [umol/m2/s]
+                   , jm                       & ! Max. electron transport       [umol/m2/s]
+                   , tpm                      & ! Max. triose phosphate         [umol/m2/s]
+                   , jact                     & ! Actual electron transport     [umol/m2/s]
+                   , compp                    & ! Gross photo. compensation pt. [ umol/mol]
+                   , limit_flag               & ! Photosynthesis lim. flag      [      ---]
+                   )
+                  !------------------------------------------------------------------------!
+               case (1)
+                  !----- Farquhar with Katul et al. (2010) stomatal conductance. ----------!
+                  call katul_lphys(           & !
+                     csite%can_prss(ipa)      & ! Canopy air pressure           [       Pa]
+                   , csite%can_shv(ipa)       & ! Canopy air sp. humidity       [    kg/kg]
+                   , csite%can_co2(ipa)       & ! Canopy air CO2 mixing ratio   [ umol/mol]
+                   , ipft                     & ! Plant functional type         [      ---]
+                   , csite%par_l_max(ipa)     & ! Absorbed photos. active rad.  [ W/m2leaf]
+                   , cpatch%leaf_temp(tuco)   & ! Leaf temperature              [        K]
+                   , cpatch%lint_shv(tuco)    & ! Leaf intercellular spec. hum. [    kg/kg]
+                   , green_leaf_factor(ipft)  & ! Cold-deciduous elong. factor  [      ---]
+                   , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM  [      ---]
+                   , llspan_tuco              & ! Leaf life span                [       yr]
+                   , vm0_tuco                 & ! Average Vm function           [umol/m2/s]
+                   , cpatch%leaf_gbw(tuco)    & ! Leaf boundary-layer conduct.  [  kg/m2/s]
+                   , 0.                       & ! Leaf water potential          [        m]
+                   , cpatch%last_gV(tuco)     & ! gs from last timestep         [  kg/m2/s]
+                   , cpatch%last_gJ(tuco)     & ! gs from last timestep         [  kg/m2/s]
+                   , csite%A_o_max(ipft,ipa)  & ! Photosynthesis rate (open   ) [umol/m2/s]
+                   , csite%A_c_max(ipft,ipa)  & ! Photosynthesis rate (closed ) [umol/m2/s]
+                   , d_A_light_max            & ! Photosynthesis rate (light  ) [umol/m2/s]
+                   , d_A_rubp_max             & ! Photosynthesis rate (RuBP   ) [umol/m2/s]
+                   , d_A_co2_max              & ! Photosynthesis rate (TPU/CO2) [umol/m2/s]
+                   , d_gsw_open               & ! Stomatal conduct.   (open   ) [  kg/m2/s]
+                   , d_gsw_closed             & ! Stomatal conduct.   (closed ) [  kg/m2/s]
+                   , d_lsfc_shv_open          & ! Leaf sfc. sp. hum.  (open   ) [    kg/kg]
+                   , d_lsfc_shv_closed        & ! Leaf sfc. sp. hum.  (closed ) [    kg/kg]
+                   , d_lsfc_co2_open          & ! Leaf sfc. CO2       (open   ) [ umol/mol]
+                   , d_lsfc_co2_closed        & ! Leaf sfc. CO2       (closed ) [ umol/mol]
+                   , d_lint_co2_open          & ! Intercellular CO2   (open   ) [ umol/mol]
+                   , d_lint_co2_closed        & ! Intercellular CO2   (closed ) [ umol/mol]
+                   , leaf_resp                & ! Leaf respiration rate         [umol/m2/s]
+                   , vm                       & ! Max. carboxylation rate       [umol/m2/s]
+                   , compp                    & ! Gross photo. compensation pt. [ umol/mol]
+                   , limit_flag               & ! Photosynthesis lim. flag      [      ---]
+                   )                         
+                  !------------------------------------------------------------------------!
+               end select
+               !---------------------------------------------------------------------------!
             end if
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
 
       else
          !---- There is no "active" cohort. -----------------------------------------------!
          csite%A_o_max(1:n_pft,ipa) = 0.0
          csite%A_c_max(1:n_pft,ipa) = 0.0
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -394,6 +444,7 @@ module photosyn_driv
 
             !----- Root biomass [kg/m2]. --------------------------------------------------!
             broot_loc = cpatch%broot(ico)  * cpatch%nplant(ico)
+            !------------------------------------------------------------------------------!
 
             !----- Supply of water. -------------------------------------------------------!
             cpatch%water_supply      (ico) = water_conductance       (ipft) * broot_loc    &
@@ -401,15 +452,22 @@ module photosyn_driv
             cpatch%fmean_water_supply(ico) = cpatch%fmean_water_supply(ico)                &
                                            + cpatch%water_supply      (ico)                &
                                            * dtlsm_o_frqsum
- 
+            !------------------------------------------------------------------------------!
+
+
+
             !----- Find the VPD limitation factor (aka Leuning's D0). ---------------------!
             select case (h2o_plant_lim)
-            case(3)
+            case (5)
+               !----- Scale D0 with water availability. -----------------------------------!
                leaf_D0 = max( 0.005 * D0(ipft)                                             &
                             , epi * cpatch%water_supply(ico)                               &
                             / (cpatch%lai(ico) * cpatch%leaf_gsw(ico) ) )
+               !---------------------------------------------------------------------------!
             case default
+               !----- Use default values, and apply fsw to down-regulated gsw. ------------!
                leaf_D0 = D0(ipft)
+               !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
 
@@ -423,42 +481,94 @@ module photosyn_driv
             !    Notice that the units that are per unit area are per m2 of leaf, not      !
             ! the patch area.                                                              !
             !------------------------------------------------------------------------------!
-            call lphysiol_full(ibuff       & ! Multithread ID
-             , csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
-             , csite%can_rhos(ipa)         & ! Canopy air density            [    kg/m3]
-             , csite%can_shv(ipa)          & ! Canopy air sp. humidity       [    kg/kg]
-             , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio   [ umol/mol]
-             , ipft                        & ! Plant functional type         [      ---]
-             , leaf_par                    & ! Absorbed photos. active rad.  [ W/m2leaf]
-             , cpatch%leaf_temp(ico)       & ! Leaf temperature              [        K]
-             , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum. [    kg/kg]
-             , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
-             , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
-             , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
-             , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
-             , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
-             , leaf_D0                     & ! VPD scale for stom. closure   [  mol/mol]
-             , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
-             , cpatch%A_closed(ico)        & ! Photosynthesis rate (closed)  [umol/m2/s]
-             , cpatch%A_light(ico)         & ! Photosynthesis rate (light)   [umol/m2/s]
-             , cpatch%A_rubp(ico)          & ! Photosynthesis rate (RuBP)    [umol/m2/s]
-             , cpatch%A_co2(ico)           & ! Photosynthesis rate (CO2)     [umol/m2/s]
-             , cpatch%gsw_open(ico)        & ! Stom. condct. (water, open)   [  kg/m2/s]
-             , cpatch%gsw_closed(ico)      & ! Stom. condct. (water, closed) [  kg/m2/s]
-             , cpatch%lsfc_shv_open(ico)   & ! Leaf sp. humidity (open)      [    kg/kg]
-             , cpatch%lsfc_shv_closed(ico) & ! Leaf sp. humidity (closed)    [    kg/kg]
-             , cpatch%lsfc_co2_open(ico)   & ! Leaf CO2 mix. rat. (open)     [ umol/mol]
-             , cpatch%lsfc_co2_closed(ico) & ! Leaf CO2 mix. rat. (closed)   [ umol/mol]
-             , cpatch%lint_co2_open(ico)   & ! Intercellular CO2  (open)     [ umol/mol]
-             , cpatch%lint_co2_closed(ico) & ! Intercellular CO2  (closed)   [ umol/mol]
-             , leaf_resp                   & ! Leaf respiration rate         [umol/m2/s]
-             , vm                          & ! Max. capacity of Rubisco      [umol/m2/s]
-             , jm                          & ! Max. electron transport       [umol/m2/s]
-             , tpm                         & ! Max. triose phosphate         [umol/m2/s]
-             , jact                        & ! Actual electron transport     [umol/m2/s]
-             , compp                       & ! Gross photo. compens. point   [ umol/mol]
-             , limit_flag                  & ! Photosynth. limitation flag   [      ---]
-             )
+            select case (istomata_scheme)
+            case (0)
+               !----- Farquhar with Leuning (1995) stomatal conductance. ------------------!
+               call lphysiol_full(ibuff       & ! Multithread ID
+                , csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
+                , csite%can_rhos(ipa)         & ! Canopy air density            [    kg/m3]
+                , csite%can_shv(ipa)          & ! Canopy air sp. humidity       [    kg/kg]
+                , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio   [ umol/mol]
+                , ipft                        & ! Plant functional type         [      ---]
+                , leaf_par                    & ! Absorbed photos. active rad.  [ W/m2leaf]
+                , cpatch%leaf_temp(ico)       & ! Leaf temperature              [        K]
+                , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum. [    kg/kg]
+                , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
+                , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
+                , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
+                , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
+                , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
+                , leaf_D0                     & ! VPD scale for stom. closure   [  mol/mol]
+                , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
+                , cpatch%A_closed(ico)        & ! Photosynthesis rate (closed)  [umol/m2/s]
+                , cpatch%A_light(ico)         & ! Photosynthesis rate (light)   [umol/m2/s]
+                , cpatch%A_rubp(ico)          & ! Photosynthesis rate (RuBP)    [umol/m2/s]
+                , cpatch%A_co2(ico)           & ! Photosynthesis rate (TPU/CO2) [umol/m2/s]
+                , cpatch%gsw_open(ico)        & ! Stom. condct. (water, open)   [  kg/m2/s]
+                , cpatch%gsw_closed(ico)      & ! Stom. condct. (water, closed) [  kg/m2/s]
+                , cpatch%lsfc_shv_open(ico)   & ! Leaf sp. humidity (open)      [    kg/kg]
+                , cpatch%lsfc_shv_closed(ico) & ! Leaf sp. humidity (closed)    [    kg/kg]
+                , cpatch%lsfc_co2_open(ico)   & ! Leaf CO2 mix. rat. (open)     [ umol/mol]
+                , cpatch%lsfc_co2_closed(ico) & ! Leaf CO2 mix. rat. (closed)   [ umol/mol]
+                , cpatch%lint_co2_open(ico)   & ! Intercellular CO2  (open)     [ umol/mol]
+                , cpatch%lint_co2_closed(ico) & ! Intercellular CO2  (closed)   [ umol/mol]
+                , leaf_resp                   & ! Leaf respiration rate         [umol/m2/s]
+                , vm                          & ! Max. capacity of Rubisco      [umol/m2/s]
+                , jm                          & ! Max. electron transport       [umol/m2/s]
+                , tpm                         & ! Max. triose phosphate         [umol/m2/s]
+                , jact                        & ! Actual electron transport     [umol/m2/s]
+                , compp                       & ! Gross photo. compens. point   [ umol/mol]
+                , limit_flag                  & ! Photosynth. limitation flag   [      ---]
+                )
+               !---------------------------------------------------------------------------!
+            case (1)
+               !----- Farquhar with Katul et al. (2010) stomatal conductance. ------------!
+               call katul_lphys(              & !
+                  csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
+                , csite%can_shv(ipa)          & ! Canopy air sp. humidity       [    kg/kg]
+                , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio   [ umol/mol]
+                , ipft                        & ! Plant functional type         [      ---]
+                , leaf_par                    & ! Absorbed photos. active rad.  [ W/m2leaf]
+                , cpatch%leaf_temp(ico)       & ! Leaf temperature              [        K]
+                , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum. [    kg/kg]
+                , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
+                , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
+                , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
+                , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
+                , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
+                , cpatch%leaf_psi(ico)        & ! Leaf water potential          [        m]
+                , cpatch%last_gV(ico)         & ! gs from last timestep         [  kg/m2/s]
+                , cpatch%last_gJ(ico)         & ! gs from last timestep         [  kg/m2/s]
+                , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
+                , cpatch%A_closed(ico)        & ! Photosynthesis rate (closed)  [umol/m2/s]
+                , cpatch%A_light(ico)         & ! Photosynthesis rate (light)   [umol/m2/s]
+                , cpatch%A_rubp(ico)          & ! Photosynthesis rate (RuBP)    [umol/m2/s]
+                , cpatch%A_co2(ico)           & ! Photosynthesis rate (TPU/CO2) [umol/m2/s]
+                , cpatch%gsw_open(ico)        & ! Stom. condct. (water, open)   [  kg/m2/s]
+                , cpatch%gsw_closed(ico)      & ! Stom. condct. (water, closed) [  kg/m2/s]
+                , cpatch%lsfc_shv_open(ico)   & ! Leaf sp. humidity (open)      [    kg/kg]
+                , cpatch%lsfc_shv_closed(ico) & ! Leaf sp. humidity (closed)    [    kg/kg]
+                , cpatch%lsfc_co2_open(ico)   & ! Leaf CO2 mix. rat. (open)     [ umol/mol]
+                , cpatch%lsfc_co2_closed(ico) & ! Leaf CO2 mix. rat. (closed)   [ umol/mol]
+                , cpatch%lint_co2_open(ico)   & ! Intercellular CO2  (open)     [ umol/mol]
+                , cpatch%lint_co2_closed(ico) & ! Intercellular CO2  (closed)   [ umol/mol]
+                , leaf_resp                   & ! Leaf respiration rate         [umol/m2/s]
+                , vm                          & ! Max. capacity of Rubisco      [umol/m2/s]
+                , compp                       & ! Gross photo. compens. point   [ umol/mol]
+                , limit_flag                  & ! Photosynth. limitation flag   [      ---]
+                )
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !     For now add dummy values.  These could come from katul_phys, but need !
+               ! to coordinate with XX.                                                    !
+               !---------------------------------------------------------------------------!
+               jm   = 0.0
+               tpm  = 0.0
+               jact = 0.0
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
 
             !----- Convert leaf respiration to [umol/m2ground/s] --------------------------!
             cpatch%leaf_respiration(ico) = leaf_resp * cpatch%lai (ico)
@@ -480,6 +590,7 @@ module photosyn_driv
             broot_tot                 = broot_tot + broot_loc
             pss_available_water       = pss_available_water                                &
                                       + avail_h2o_coh(ico) * broot_loc
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !     Determine the fraction of open stomata due to water limitation.          !
@@ -491,8 +602,9 @@ module photosyn_driv
             case (0)
                !---- No water limitation, fsw is always 1.0. ------------------------------!
                cpatch%fsw(ico) = 1.0
-
+               !---------------------------------------------------------------------------!
             case (1,2)
+               !---- Original Moorcroft et al. (2001) scheme. -----------------------------!
                water_demand    = cpatch%psi_open(ico) * cpatch%lai(ico)
                if (cpatch%water_supply (ico) < tiny_num) then
                   cpatch%fsw(ico) = 0.0
@@ -500,10 +612,31 @@ module photosyn_driv
                   cpatch%fsw(ico) = 1.0                                                    &
                                   / (1.0 + water_demand / cpatch%water_supply(ico))
                end if
+               !---------------------------------------------------------------------------!
             case (3)
+               !---------------------------------------------------------------------------!
+               !    Based on P17 water stress function:                                    !
+               !                                                                           !
+               ! Powell TL, Koven CD, Johnson DJ, Faybishenko B, Fisher RA, Knox RG,       !
+               !    McDowell NG, Condit R, Hubbell SP, Wright SJ et al. 2018. Variation in !
+               !    hydroclimate sustains tropical forest biomass and promotes functional  !
+               !    diversity. New Phytol., 219: 932-946. doi:10.1111/nph.15271 (P17).     !
+               !---------------------------------------------------------------------------!
+               lnexp           =  ( cpatch%leaf_psi(ico) / stoma_psi_b(ipft) )             &
+                               ** stoma_psi_c(ipft)
+               cpatch%fsw(ico) = exp( - max(lnexp_min,min(lnexp_max,lnexp)) )
+               !---------------------------------------------------------------------------!
+            case (4)
+               !---------------------------------------------------------------------------!
+               !    Down-regulate photosynthetic parameters using leaf water potential.    !
+               ! In this case, fsw must remain 1.0.                                        !
+               !---------------------------------------------------------------------------!
+               cpatch%fsw(ico) = 1.0
+               !---------------------------------------------------------------------------!
+            case (5)
                !---- Water limitation is embedded in gsw, so fsw must remain 1.0. ---------!
                cpatch%fsw(ico) = 1.0
-               
+               !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
 
@@ -609,14 +742,18 @@ module photosyn_driv
             tpm                              = 0.0
             jact                             = 0.0
             limit_flag                       = 0
+            !------------------------------------------------------------------------------!
 
 
             !----- Stomatal conductance cannot be zero. Set to cuticular conductance. -----!
             cpatch%leaf_gsw(ico) = cuticular_cond(ipft) * umol_2_mol *mmdry                &
                                  / sngloff(effarea_transp(ipft),tiny_offset)
             !------------------------------------------------------------------------------!
-
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
          !    Not really a part of the photosynthesis scheme, but this will do it.  We     !
@@ -752,9 +889,9 @@ module photosyn_driv
       real                                    :: util_parv
       real                                    :: alpha
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: hfmt='(66(a,1x))'
+      character(len=10), parameter :: hfmt='(67(a,1x))'
       character(len=48), parameter ::                                                      &
-                                    bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),60(es13.6,1x))'
+                                    bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),61(es13.6,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical                   , save        :: first_time=.true.
       !------------------------------------------------------------------------------------!
@@ -778,16 +915,17 @@ module photosyn_driv
          !    Ehlringer and Ollebjorkman 1977, if not use default value from ed_params                                             !
          !---------------------------------------------------------------------------------!
          select case(quantum_efficiency_T)
-         case(1)
-              select case (photosyn_pathway(ipft))
-              case (4)
-                  alpha = quantum_efficiency(ipft)
-              case (3)
-                  alpha = -0.0016*(cpatch%leaf_temp(ico)-t00)+0.1040
-              end select
+         case (1)
+            select case (photosyn_pathway(ipft))
+            case (4)
+                alpha = quantum_efficiency(ipft)
+            case (3)
+                alpha = -0.0016*(cpatch%leaf_temp(ico)-t00)+0.1040
+            end select
          case default
-               alpha    = quantum_efficiency(ipft)
+            alpha    = quantum_efficiency(ipft)
          end select
+         !---------------------------------------------------------------------------------!
 
          util_parv  = alpha * parv
       else
@@ -840,24 +978,25 @@ module photosyn_driv
                                   , '         TIME', '          PFT', '   LIMIT_FLAG'      &
                                   , '       HEIGHT', '       NPLANT', '        BLEAF'      &
                                   , '          LAI', '    LEAF_HCAP', '   LEAF_WATER'      &
-                                  , '    LEAF_TEMP', '    WOOD_TEMP', '     CAN_TEMP'      &
-                                  , '     ATM_TEMP', '  GROUND_TEMP', '      CAN_SHV'      &
-                                  , '      ATM_SHV', '   GROUND_SHV', 'LSFC_SHV_OPEN'      &
-                                  , 'LSFC_SHV_CLOS', '     LINT_SHV', '     ATM_PRSS'      &
-                                  , '     CAN_PRSS', '         PCPG', '     CAN_RHOS'      &
-                                  , '      ATM_CO2', '      CAN_CO2', 'LSFC_CO2_OPEN'      &
-                                  , 'LSFC_CO2_CLOS', 'LINT_CO2_OPEN', 'LINT_CO2_CLOS'      &
-                                  , '        COMPP', '     PAR_AREA', '         PARV'      &
-                                  , '    UTIL_PARV', '     NIR_AREA', '         NIRV'      &
-                                  , '          GPP', '    LEAF_RESP', '     LEAF_GBH'      &
-                                  , '     LEAF_GBW', '     WOOD_GBH', '     WOOD_GBW'      &
-                                  , '     LEAF_GSW', '       A_OPEN', '       A_CLOS'      &
-                                  , '      A_LIGHT', '       A_RUBP', '        A_CO2'      &
-                                  , '     GSW_OPEN', '     GSW_CLOS', '     PSI_OPEN'      &
-                                  , '     PSI_CLOS', '   H2O_SUPPLY', '          FSW'      &
-                                  , '          FSN', '      FS_OPEN', '     ATM_WIND'      &
-                                  , '     VEG_WIND', '        USTAR', '           VM'      &
-                                  , '           JM', '          TPM', '         JACT'
+                                  , ' LEAF_H2O_IM2', '    LEAF_TEMP', '    WOOD_TEMP'      &
+                                  , '     CAN_TEMP', '     ATM_TEMP', '  GROUND_TEMP'      &
+                                  , '      CAN_SHV', '      ATM_SHV', '   GROUND_SHV'      &
+                                  , 'LSFC_SHV_OPEN', 'LSFC_SHV_CLOS', '     LINT_SHV'      &
+                                  , '     ATM_PRSS', '     CAN_PRSS', '         PCPG'      &
+                                  , '     CAN_RHOS', '      ATM_CO2', '      CAN_CO2'      &
+                                  , 'LSFC_CO2_OPEN', 'LSFC_CO2_CLOS', 'LINT_CO2_OPEN'      &
+                                  , 'LINT_CO2_CLOS', '        COMPP', '     PAR_AREA'      &
+                                  , '         PARV', '    UTIL_PARV', '     NIR_AREA'      &
+                                  , '         NIRV', '          GPP', '    LEAF_RESP'      &
+                                  , '     LEAF_GBH', '     LEAF_GBW', '     WOOD_GBH'      &
+                                  , '     WOOD_GBW', '     LEAF_GSW', '       A_OPEN'      &
+                                  , '       A_CLOS', '      A_LIGHT', '       A_RUBP'      &
+                                  , '        A_CO2', '     GSW_OPEN', '     GSW_CLOS'      &
+                                  , '     PSI_OPEN', '     PSI_CLOS', '   H2O_SUPPLY'      &
+                                  , '          FSW', '          FSN', '      FS_OPEN'      &
+                                  , '     ATM_WIND', '     VEG_WIND', '        USTAR'      &
+                                  , '           VM', '           JM', '          TPM'      &
+                                  , '         JACT'
 
 
          close (unit=57,status='keep')
@@ -876,33 +1015,34 @@ module photosyn_driv
                              , cpatch%hite(ico)           , cpatch%nplant(ico)             &
                              , cpatch%bleaf(ico)          , cpatch%lai(ico)                &
                              , cpatch%leaf_hcap(ico)      , cpatch%leaf_water(ico)         &
-                             , cpatch%leaf_temp(ico)      , cpatch%wood_temp(ico)          &
-                             , csite%can_temp(ipa)        , cmet%atm_tmp                   &
-                             , csite%ground_temp(ipa)     , csite%can_shv(ipa)             &
-                             , cmet%atm_shv               , csite%ground_shv(ipa)          &
-                             , cpatch%lsfc_shv_open(ico)  , cpatch%lsfc_shv_closed(ico)    &
-                             , cpatch%lint_shv(ico)       , cmet%prss                      &
-                             , csite%can_prss(ipa)        , cmet%pcpg                      &
-                             , csite%can_rhos(ipa)        , cmet%atm_co2                   &
-                             , csite%can_co2(ipa)         , cpatch%lsfc_co2_open(ico)      &
-                             , cpatch%lsfc_co2_closed(ico), cpatch%lint_co2_open(ico)      &
-                             , cpatch%lint_co2_closed(ico), compp                          &
-                             , par_area                   , parv                           &
-                             , util_parv                  , nir_area                       &
-                             , nirv                       , cpatch%gpp(ico)                &
-                             , leaf_resp                  , cpatch%leaf_gbh(ico)           &
-                             , cpatch%leaf_gbw(ico)       , cpatch%wood_gbh(ico)           &
-                             , cpatch%wood_gbw(ico)       , cpatch%leaf_gsw(ico)           &
-                             , cpatch%A_open(ico)         , cpatch%A_closed(ico)           &
-                             , cpatch%A_light(ico)        , cpatch%A_rubp(ico)             &
-                             , cpatch%A_co2   (ico)       , cpatch%gsw_open(ico)           &
-                             , cpatch%gsw_closed(ico)     , cpatch%psi_open(ico)           &
-                             , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)       &
-                             , cpatch%fsw(ico)            , cpatch%fsn(ico)                &
-                             , cpatch%fs_open(ico)        , cmet%vels                      &
-                             , cpatch%veg_wind(ico)       , csite%ustar(ipa)               &
-                             , vm                         , jm                             &
-                             , tpm                        , jact
+                             , cpatch%leaf_water_im2(ico) , cpatch%leaf_temp(ico)          &
+                             , cpatch%wood_temp(ico)      , csite%can_temp(ipa)            &
+                             , cmet%atm_tmp               , csite%ground_temp(ipa)         &
+                             , csite%can_shv(ipa)         , cmet%atm_shv                   &
+                             , csite%ground_shv(ipa)      , cpatch%lsfc_shv_open(ico)      &
+                             , cpatch%lsfc_shv_closed(ico), cpatch%lint_shv(ico)           &
+                             , cmet%prss                  , csite%can_prss(ipa)            &
+                             , cmet%pcpg                  , csite%can_rhos(ipa)            &
+                             , cmet%atm_co2               , csite%can_co2(ipa)             &
+                             , cpatch%lsfc_co2_open(ico)  , cpatch%lsfc_co2_closed(ico)    &
+                             , cpatch%lint_co2_open(ico)  , cpatch%lint_co2_closed(ico)    &
+                             , compp                      , par_area                       &
+                             , parv                       , util_parv                      &
+                             , nir_area                   , nirv                           &
+                             , cpatch%gpp(ico)            , leaf_resp                      &
+                             , cpatch%leaf_gbh(ico)       , cpatch%leaf_gbw(ico)           &
+                             , cpatch%wood_gbh(ico)       , cpatch%wood_gbw(ico)           &
+                             , cpatch%leaf_gsw(ico)       , cpatch%A_open(ico)             &
+                             , cpatch%A_closed(ico)       , cpatch%A_light(ico)            &
+                             , cpatch%A_rubp(ico)         , cpatch%A_co2   (ico)           &
+                             , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)         &
+                             , cpatch%psi_open(ico)       , cpatch%psi_closed(ico)         &
+                             , cpatch%water_supply(ico)   , cpatch%fsw(ico)                &
+                             , cpatch%fsn(ico)            , cpatch%fs_open(ico)            &
+                             , cmet%vels                  , cpatch%veg_wind(ico)           &
+                             , csite%ustar(ipa)           , vm                             &
+                             , jm                         , tpm                            &
+                             , jact
       close(unit=57,status='keep')
       !------------------------------------------------------------------------------------!
 

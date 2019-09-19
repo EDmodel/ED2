@@ -131,30 +131,35 @@ module fuse_fiss_utils
                                     , reducedpress     ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)       , target      :: csite         ! Current site
-      integer              , intent(in)  :: ipa           ! Current patch ID
-      type(met_driv_state) , target      :: cmet          ! Current met forcing
-      real                 , intent(out) :: elim_nplant   ! Nplants eliminated here
-      real                 , intent(out) :: elim_lai      ! LAI eliminated here
+      type(sitetype)       , target      :: csite          ! Current site
+      integer              , intent(in)  :: ipa            ! Current patch ID
+      type(met_driv_state) , target      :: cmet           ! Current met forcing
+      real                 , intent(out) :: elim_nplant    ! Nplants eliminated here
+      real                 , intent(out) :: elim_lai       ! LAI eliminated here
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)      , pointer     :: cpatch        ! Current patch
-      type(patchtype)      , pointer     :: temppatch     ! Scratch patch structure
-      logical, dimension(:), allocatable :: remain_table  ! Flag: this cohort will remain.
-      integer                            :: ico           ! Counter
-      integer                            :: ipft          ! PFT size
-      real                               :: csize         ! Size of current cohort
-      real                               :: elim_energy   ! Energy lost due to termination
-      real                               :: leaf_qboil    ! Leaf energy transferred to CAS
-      real                               :: wood_qboil    ! Wood energy going to CAS
-      real                               :: veg_boil_tot  ! Water transferred to CAS
-      real                               :: can_prss      ! CAS pressure
-      real                               :: can_rhos      ! CAS density
+      type(patchtype)      , pointer     :: cpatch         ! Current patch
+      type(patchtype)      , pointer     :: temppatch      ! Scratch patch structure
+      logical, dimension(:), allocatable :: remain_table   ! Flag: this cohort will remain
+      integer                            :: ico            ! Counter
+      integer                            :: ipft           ! PFT size
+      real                               :: csize          ! Size of current cohort
+      real                               :: elim_e_hcap    ! Heat capacity loss  (energy)
+      real                               :: elim_e_wcap    ! Water capacity loss (energy)
+      real                               :: elim_w_wcap    ! Water capacity loss (water )
+      real                               :: veg_energy_im2 ! Internal water energy (cohort)
+      real                               :: veg_water_im2  ! Internal water mass (cohort)
+      real                               :: veg_qboil     ! Leaf energy transferred to CAS
+      real                               :: veg_boil_tot   ! Water transferred to CAS
+      real                               :: can_prss       ! CAS pressure
+      real                               :: can_rhos       ! CAS density
       !------------------------------------------------------------------------------------!
-      
+
       cpatch        => csite%patch(ipa)
       elim_nplant   = 0.
       elim_lai      = 0.
-      elim_energy   = 0.
+      elim_e_hcap   = 0.
+      elim_e_wcap   = 0.
+      elim_w_wcap   = 0.
       veg_boil_tot  = 0.
 
       !----- Initialize the temporary patch structures and the remain/terminate table -----!
@@ -177,8 +182,52 @@ module fuse_fiss_utils
          if ( (csize < min_cohort_size(ipft)) .or. (.not. cpatch%is_viable(ico)) ) then
             !----- Cohort is indeed too small or it is not viable, terminate it. ----------!
             remain_table(ico) = .false.
-            elim_nplant = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
-            elim_lai    = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
+            elim_nplant    = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
+            elim_lai       = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
+
+
+
+            !------ Internal and surface water will also be eliminated. -------------------!
+            veg_water_im2  = cpatch%leaf_water_im2(ico)                                    &
+                           + cpatch%wood_water_im2(ico)
+            veg_energy_im2 = cpatch%leaf_water_im2(ico)                                    &
+                           * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)                 &
+                           + cpatch%wood_water_im2(ico)                                    &
+                           * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     In case the cohort has any intercepted water, exchange moisture with the !
+            ! canopy air space by donating the total amount as "boiling" (fast evaporation !
+            ! or sublimation).                                                             !
+            !------------------------------------------------------------------------------!
+            if ( (cpatch%leaf_water(ico) + cpatch%wood_water(ico) ) > 0.0 ) then
+               !----- Find the water and enthalpy to be transferred to the CAS. -----------!
+               veg_boil_tot  = veg_boil_tot                                                &
+                             + cpatch%leaf_water(ico) + cpatch%wood_water(ico)
+               veg_qboil     = cpatch%leaf_water(ico)                                      &
+                             * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)               &
+                             + cpatch%wood_water(ico)                                      &
+                             * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
+               !---------------------------------------------------------------------------!
+            else
+               !----- Vegetation surface is dry. No need to boil anything. ----------------!
+               veg_qboil     = 0.0
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update the total water and energy losses due to termination. -----------!
+            elim_e_hcap = elim_e_hcap + cpatch%leaf_energy(ico) + cpatch%wood_energy(ico)  &
+                        - veg_energy_im2 - veg_qboil
+            elim_e_wcap = elim_e_wcap + veg_energy_im2
+            elim_w_wcap = elim_w_wcap + veg_water_im2
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Update litter pools ----------------------------------------------------!
             csite%fgc_in(ipa) = csite%fgc_in(ipa) + cpatch%nplant(ico)                     &
@@ -194,13 +243,13 @@ module fuse_fiss_utils
                                 * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb   (ico)          &
                                   + cpatch%bdeadb   (ico) ) )
 
-            csite%stgc_in(ipa) = csite%stgc_in(ipa) + cpatch%nplant(ico)                     &
+            csite%stgc_in(ipa) = csite%stgc_in(ipa) + cpatch%nplant(ico)                   &
                                * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%bleaf(ico)       &
                                  + ( 1.0 - f_labile_stem(ipft) )                           &
                                  * ( cpatch%bsapwooda(ico) + cpatch%bbarka(ico)            &
                                    + cpatch%bdeada   (ico)                      ) )
 
-            csite%stsc_in(ipa) = csite%stsc_in(ipa) + cpatch%nplant(ico)                     &
+            csite%stsc_in(ipa) = csite%stsc_in(ipa) + cpatch%nplant(ico)                   &
                                * ( ( 1.0 - f_labile_leaf(ipft) ) * cpatch%broot(ico)       &
                                  + ( 1.0 - f_labile_stem(ipft) )                           &
                                  * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)            &
@@ -247,30 +296,6 @@ module fuse_fiss_utils
                                  * ( cpatch%bsapwoodb(ico) + cpatch%bbarkb(ico)            &
                                    + cpatch%bdeadb   (ico)                      ) )        &
                                  / c2n_stem(ipft)
-
-
-            !------------------------------------------------------------------------------!
-            !     In case the cohort has any intercepted water, exchange moisture with the !
-            ! canopy air space by donating the total amount as "boiling" (fast evaporation !
-            ! or sublimation).                                                             !
-            !------------------------------------------------------------------------------!
-            if ( (cpatch%leaf_water(ico) + cpatch%wood_water(ico) ) > 0.0 ) then
-               !----- Find the associated enthalpy to be transferred to the CAS. ----------!
-               leaf_qboil   = cpatch%leaf_water(ico)                                       &
-                            * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
-               wood_qboil   = cpatch%wood_water(ico)                                       &
-                            * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Update the patch-level transfer and loss of water and energy. -------!
-               elim_energy   = elim_energy                                                 &
-                             + cpatch%leaf_energy(ico) - leaf_qboil                        &
-                             + cpatch%wood_energy(ico) - wood_qboil
-               veg_boil_tot  = veg_boil_tot                                                &
-                             + cpatch%leaf_water(ico) + cpatch%wood_water(ico)
-               !---------------------------------------------------------------------------!
-            end if
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -278,13 +303,20 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
+
+
       !------------------------------------------------------------------------------------!
-      !    Update total change in energy due to change in vegetation mass, and send the    !
-      ! water to the canopy air space.  Total enthalpy due to the forced boiling will be   !
-      ! consistently updated because the higher specific humidity will translate into more !
-      ! enthalpy.                                                                          !
+      !    Update total changes in energy due to change in vegetation mass and internal    !
+      ! water, and send the intercepted water to the canopy air space.  Total enthalpy due !
+      ! to the forced boiling will be consistently updated because the higher specific     !
+      ! humidity will translate into more enthalpy.                                        !
       !------------------------------------------------------------------------------------!
-      csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa) - elim_energy * frqsumi
+      csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                        &
+                                    - elim_e_hcap * frqsumi
+      csite%ebudget_wcapeffect(ipa) = csite%ebudget_wcapeffect(ipa)                        &
+                                    - elim_e_wcap * frqsumi
+      csite%wbudget_wcapeffect(ipa) = csite%wbudget_wcapeffect(ipa)                        &
+                                    - elim_w_wcap * frqsumi
       if (veg_boil_tot > 0.0) then
          can_prss           = reducedpress(cmet%prss,cmet%atm_theta,cmet%atm_shv           &
                                           ,cmet%geoht,csite%can_theta(ipa)                 &
@@ -315,7 +347,7 @@ module fuse_fiss_utils
 
 
 
-      !----- Deallocate the temporary patch -----------------------------------------------!     
+      !----- Deallocate the temporary patch -----------------------------------------------!
       call deallocate_patchtype(temppatch)
       deallocate(temppatch)
       deallocate(remain_table)
@@ -738,7 +770,7 @@ module fuse_fiss_utils
                                      , lai_tol             ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
-      use allometry           , only : size2bl         ! ! function
+      use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap       ! ! subroutine
       implicit none
@@ -1425,9 +1457,10 @@ module fuse_fiss_utils
    !   This subroutine will split two cohorts if its LAI has become too large.  This is    !
    ! only necessary when we solve radiation cohort by cohort rather than layer by layer.   !
    !---------------------------------------------------------------------------------------!
-   subroutine split_cohorts(cpatch, green_leaf_factor)
+   subroutine split_cohorts(csite,ipa,green_leaf_factor)
       use update_derived_utils , only : update_cohort_extensive_props ! ! sub-routine
-      use ed_state_vars        , only : patchtype                     & ! structure
+      use ed_state_vars        , only : sitetype                      & ! structure
+                                      , patchtype                     & ! structure
                                       , copy_patchtype                ! ! sub-routine
       use pft_coms             , only : is_grass                      ! ! intent(in)
       use fusion_fission_coms  , only : lai_tol                       ! ! intent(in)
@@ -1438,28 +1471,43 @@ module fuse_fiss_utils
                                       , bl2h                          & ! function
                                       , size2bl                       ! ! function
       use ed_misc_coms         , only : igrass                        ! ! intent(in)
+      use ed_therm_lib         , only : calc_veg_hcap                 & ! function
+                                      , update_veg_energy_cweh        ! ! sub-routine
+      use stable_cohorts       , only : is_resolvable                 ! ! sub-routine
+      use plant_hydro          , only : rwc2tw                        & ! sub-routine
+                                      , twi2twe                       ! ! sub-routine
       implicit none
       !----- Constants --------------------------------------------------------------------!
-      real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
+      real                   , parameter   :: epsilon=0.0001     ! Tweak factor...
       !----- Arguments --------------------------------------------------------------------!
-      type(patchtype)        , target      :: cpatch            ! Current patch
-      real, dimension(n_pft) , intent(in)  :: green_leaf_factor !
+      type(sitetype)         , target      :: csite              ! Current site
+      integer                , intent(in)  :: ipa                ! Patch index
+      real, dimension(n_pft) , intent(in)  :: green_leaf_factor  !
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)        , pointer     :: temppatch         ! Temporary patch
-      logical, dimension(:)  , allocatable :: split_mask        ! Flag: split this cohort
-      integer                              :: ico               ! Counter
-      integer                              :: inew              ! Counter
-      integer                              :: ncohorts_new      ! New # of cohorts
-      integer                              :: tobesplit         ! # of cohorts to be split
-      integer                              :: ipft              ! PFT type
-      real                                 :: bleaf_mp          ! Maximum possible Bleaf
-      real                                 :: tai_mp            ! Maximum possible TAI
-      real                                 :: old_nplant        ! Old nplant
-      real                                 :: new_nplant        ! New nplant
-      real                                 :: old_size          ! Old size
-      real                                 :: new_size          ! New size
+      type(patchtype)        , pointer     :: cpatch             ! Current patch
+      type(patchtype)        , pointer     :: temppatch          ! Temporary patch
+      logical, dimension(:)  , allocatable :: split_mask         ! Flag: split this cohort
+      integer                              :: ico                ! Counter
+      integer                              :: inew               ! Counter
+      integer                              :: ncohorts_new       ! New # of cohorts
+      integer                              :: tobesplit          ! # of cohorts to be split
+      integer                              :: ipft               ! PFT type
+      real                                 :: bleaf_mp           ! Maximum possible Bleaf
+      real                                 :: tai_mp             ! Maximum possible TAI
+      real                                 :: old_leaf_hcap      ! Old heat capacity (leaf)
+      real                                 :: old_wood_hcap      ! Old heat capacity (wood)
+      real                                 :: old_leaf_water_im2 ! Old int. water (leaf)
+      real                                 :: old_wood_water_im2 ! Old int. water (wood)
+      real                                 :: old_nplant         ! Old nplant
+      real                                 :: new_nplant         ! New nplant
+      real                                 :: old_size           ! Old size
+      real                                 :: new_size           ! New size
       !------------------------------------------------------------------------------------!
 
+
+      !----- Set patch. -------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !    We add the iterative loop in case cohorts have too high LAI.  The routine will  !
@@ -1593,6 +1641,55 @@ module fuse_fiss_utils
                      !---------------------------------------------------------------------!
                   end if
                   !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Biomass has changed, we must modify the heat capacity, internal    !
+                  ! water, and account for these changes in the heat capacity effect.      !
+                  !------------------------------------------------------------------------!
+                  !----- Original cohort. -------------------------------------------------!
+                  old_leaf_hcap      = cpatch%leaf_hcap(ico)
+                  old_wood_hcap      = cpatch%wood_hcap(ico)
+                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
+                  call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdeada(ico)                 &
+                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
+                                    ,cpatch%nplant(ico),cpatch%pft(ico)                    &
+                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+                  call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                    &
+                             ,cpatch%bleaf(ico),cpatch%bsapwooda(ico)                      &
+                             ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)  &
+                             ,cpatch%broot(ico),cpatch%dbh(ico),cpatch%pft(ico)            &
+                             ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+                  call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
+                              ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
+                              ,cpatch%wood_water_im2(ico))
+                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
+                                             ,old_leaf_water_im2,old_wood_water_im2)
+                  !----- New cohort. ------------------------------------------------------!
+                  old_leaf_hcap      = cpatch%leaf_hcap(inew)
+                  old_wood_hcap      = cpatch%wood_hcap(inew)
+                  old_leaf_water_im2 = cpatch%leaf_water_im2(inew)
+                  old_wood_water_im2 = cpatch%wood_water_im2(inew)
+                  call calc_veg_hcap(cpatch%bleaf(inew) ,cpatch%bdeada(inew)               &
+                                    ,cpatch%bsapwooda(inew),cpatch%bbarka(inew)            &
+                                    ,cpatch%nplant(inew),cpatch%pft(inew)                  &
+                                    ,cpatch%leaf_hcap(inew),cpatch%wood_hcap(inew))
+                  call rwc2tw(cpatch%leaf_rwc(inew),cpatch%wood_rwc(inew)                  &
+                             ,cpatch%bleaf(inew),cpatch%bsapwooda(inew)                    &
+                             ,cpatch%bsapwoodb(inew),cpatch%bdeada(inew)                   &
+                             ,cpatch%bdeadb(inew),cpatch%broot(inew),cpatch%dbh(inew)      &
+                             ,cpatch%pft(inew),cpatch%leaf_water_int(inew)                 &
+                             ,cpatch%wood_water_int(inew))
+                  call twi2twe(cpatch%leaf_water_int(inew),cpatch%wood_water_int(inew)     &
+                              ,cpatch%nplant(inew),cpatch%leaf_water_im2(inew)             &
+                              ,cpatch%wood_water_im2(inew))
+                  call update_veg_energy_cweh(csite,ipa,inew,old_leaf_hcap,old_wood_hcap   &
+                                             ,old_leaf_water_im2,old_wood_water_im2)
+                  !----- Update the stability status. -------------------------------------!
+                  call is_resolvable(csite,ipa,ico )
+                  call is_resolvable(csite,ipa,inew)
+                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
             end do
@@ -1678,7 +1775,11 @@ module fuse_fiss_utils
       use consts_coms        , only : lnexp_min              & ! intent(in)
                                     , lnexp_max              & ! intent(in)
                                     , tiny_num               ! ! intent(in)
-      use fusion_fission_coms, only : corr_cohort
+      use fusion_fission_coms, only : corr_cohort            ! ! intent(in)
+      use grid_coms          , only : nzg                    ! ! intent(in)
+      use plant_hydro        , only : rwc2psi                & ! subroutine
+                                    , tw2rwc                 & ! subroutine
+                                    , tw2psi                 ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
@@ -1692,10 +1793,15 @@ module fuse_fiss_utils
       integer                      :: imon              ! Month for cb loop
       integer                      :: t                 ! Time of day for dcycle loop
       integer                      :: imty              ! Mortality type
-      real                         :: exp_mort_donc     ! Exp(mortality) donor
-      real                         :: exp_mort_recc     ! Exp(mortality) receptor
+      integer                      :: isl               ! Soil layer
+      real                         :: exp_mort_donc     ! exp(mortality) donor
+      real                         :: exp_mort_recc     ! exp(mortality) receptor
+      real                         :: m_exp_dlnndt_donc ! -exp(dlnndt) donor
+      real                         :: m_exp_dlnndt_recc ! -exp(dlnndt) receptor
       real                         :: recc_basarea      ! BA of receiver
       real                         :: donc_basarea      ! BA of donor
+      real                         :: recc_bleaf        ! Leaf biomass of receiver
+      real                         :: donc_bleaf        ! Leaf biomass of donor
       real                         :: rlai              ! LAI weight of receiver
       real                         :: dlai              ! LAI weight of donor
       real                         :: rwai              ! WAI weight of receiver
@@ -1704,6 +1810,9 @@ module fuse_fiss_utils
       real                         :: dnplant           ! nplant weight of donor
       real                         :: rba               ! BA weight of receiver
       real                         :: dba               ! BA weight of donor
+      real                         :: rbleaf            ! Leaf biomass weight of receiver
+      real                         :: dbleaf            ! Leaf biomass weight of donor
+      real                         :: total_transp      ! Transpiration to be conserved
       !------------------------------------------------------------------------------------!
 
 
@@ -1756,6 +1865,22 @@ module fuse_fiss_utils
       else
          rba = 0.5
          dba = 0.5
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Scaling factor for leaf biomass.                                                !
+      !------------------------------------------------------------------------------------!
+      recc_bleaf = cpatch%nplant(recc) * cpatch%bleaf(recc)
+      donc_bleaf = cpatch%nplant(donc) * cpatch%bleaf(donc)
+      if ((recc_bleaf + donc_bleaf) > 0. ) then
+         rbleaf = recc_bleaf / ( recc_bleaf + donc_bleaf )
+         dbleaf = 1.0 - rbleaf
+      else
+         rbleaf = 0.5
+         dbleaf = 0.5
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1837,6 +1962,8 @@ module fuse_fiss_utils
                                       + cpatch%barkb_maintenance(donc) * dnplant
       cpatch%leaf_drop         (recc) = cpatch%leaf_drop        (recc) * rnplant           &
                                       + cpatch%leaf_drop        (donc) * dnplant
+      cpatch%root_drop         (recc) = cpatch%root_drop        (recc) * rnplant           &
+                                      + cpatch%root_drop        (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1857,55 +1984,6 @@ module fuse_fiss_utils
       cpatch%wood_energy(recc) = cpatch%wood_energy(recc) + cpatch%wood_energy(donc)
       cpatch%wood_water (recc) = cpatch%wood_water (recc) + cpatch%wood_water (donc)
       cpatch%wood_hcap  (recc) = cpatch%wood_hcap  (recc) + cpatch%wood_hcap  (donc)
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      We update temperature and liquid water fraction.  We check whether the heat   !
-      ! capacity is non-zero.  If it is a normal number, use the standard thermodynamic    !
-      ! library, otherwise, average temperature, this is probably a blend of tiny cohorts  !
-      ! that couldn't be solved, or the wood is not solved.                                !
-      !------------------------------------------------------------------------------------!
-      if ( cpatch%leaf_hcap(recc) > 0. ) then
-         !----- Update temperature using the standard thermodynamics. ---------------------!
-         call uextcm2tl(cpatch%leaf_energy(recc),cpatch%leaf_water(recc)                   &
-                       ,cpatch%leaf_hcap(recc),cpatch%leaf_temp(recc)                      &
-                       ,cpatch%leaf_fliq(recc))
-         
-         
-      else 
-         !----- Leaf temperature cannot be found using uextcm2tl, this is a singularity. --!
-         cpatch%leaf_temp(recc)  = cpatch%leaf_temp(recc) * rnplant                        &
-                                 + cpatch%leaf_temp(donc) * dnplant
-         cpatch%leaf_fliq(recc)  = 0.0
-      end if
-
-
-      if ( cpatch%wood_hcap(recc) > 0. ) then
-         !----- Update temperature using the standard thermodynamics. ---------------------!
-         call uextcm2tl(cpatch%wood_energy(recc),cpatch%wood_water(recc)                   &
-                       ,cpatch%wood_hcap(recc),cpatch%wood_temp(recc)                      &
-                       ,cpatch%wood_fliq(recc))
-      else 
-         !----- Wood temperature cannot be found using uextcm2tl, this is a singularity. --!
-         cpatch%wood_temp(recc)  = cpatch%wood_temp(recc) * rnplant                        &
-                                 + cpatch%wood_temp(donc)  * dnplant
-         cpatch%wood_fliq(recc)  = 0.0
-      end if
-      
-      !----- Set time-steps temperatures as the current. ----------------------------------!
-      cpatch%leaf_temp_pv(recc) = cpatch%leaf_temp(recc)
-      cpatch%wood_temp_pv(recc) = cpatch%wood_temp(recc)
-      !------------------------------------------------------------------------------------!
-
-      !------ Find the intercellular value assuming saturation. ---------------------------!
-      cpatch%lint_shv(recc) = qslif(can_prss,cpatch%leaf_temp(recc))
-      !------------------------------------------------------------------------------------!
-
-      !------ Find the vapour pressure deficit. -------------------------------------------!
-      cpatch%leaf_vpdef(recc) = vpdefil(can_prss,cpatch%leaf_temp(recc),can_shv,.true.)
       !------------------------------------------------------------------------------------!
 
 
@@ -2093,6 +2171,20 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
+      !     Save total transpiration before updating psi_open, psi_closed, fs_open and     !
+      ! fs_closed, and merge these variables in a way that conserves total transpiration.  !
+      ! This requirement is essential for consistent plant hydraulics.                     !
+      !------------------------------------------------------------------------------------!
+      total_transp              = ( cpatch%psi_open(recc) * cpatch%fs_open(recc)           &
+                                  + cpatch%psi_closed(recc) * (1. - cpatch%fs_open(recc))) &
+                                  * rlai                                                   &
+                                + ( cpatch%psi_open(donc) * cpatch%fs_open(donc)           &
+                                  + cpatch%psi_closed(donc) * (1. - cpatch%fs_open(donc))) &
+                                  * dlai
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
       !    Water demand is in kg/m2_leaf/s, so we scale them by LAI.  Water supply is in   !
       ! kg/m2_ground/s, so we just add them.                                               !
       !------------------------------------------------------------------------------------!
@@ -2122,7 +2214,33 @@ module fuse_fiss_utils
                                 + cpatch%fsw     (donc) * dlai
       cpatch%fsn     (recc)     = cpatch%fsn     (recc) * rlai                             &
                                 + cpatch%fsn     (donc) * dlai
-      cpatch%fs_open (recc)     = cpatch%fsw(recc) * cpatch%fsn(recc)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     XXT: The original scaling for fs_open can be problematic when photorespiration !
+      ! is too high (see photosyn_driv.f90 for details).  In this case, fs_open is         !
+      ! decoupled from fsw * fsn.  The current approach ensures that the transpiration of  !
+      ! the combined cohort is preserved.                                                  !
+      !------------------------------------------------------------------------------------!
+      if ( abs(cpatch%psi_open(recc) - cpatch%psi_closed(recc)) < tiny_num) then
+         !---------------------------------------------------------------------------------!
+         !    Difference between psi_open and psi_closed is too small, likely because the  !
+         ! stomata are closed.  Use the original scaling approach.                         !
+         !---------------------------------------------------------------------------------!
+         cpatch%fs_open(recc)  = cpatch%fsw(recc) * cpatch%fsn(recc)
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !      Conserve the total leaf-level transpiration.                               !
+         !---------------------------------------------------------------------------------!
+         cpatch%fs_open(recc) = max(0.,min(1.,(total_transp - cpatch%psi_closed(recc))     &
+                                   / (cpatch%psi_open(recc) - cpatch%psi_closed(recc))))
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -2146,16 +2264,44 @@ module fuse_fiss_utils
 
 
 
+
+
+
+
+
+
       !------------------------------------------------------------------------------------!
-      !     Updating the tendency of plant density and the relative mortality rate.  The   !
-      ! first is extensive (i.e. per unit of area), so it must be added, not scaled.  The  !
-      ! second is intensive so it must be scaled.                                          !
+      !    Fuse population change rates (y).  By definition, this is the negative of       !
+      ! mortality, and y is defined as:                                                    !
+      !                                                                                    !
+      !                                    ln(N) - ln(A)                                   !
+      !                               y = ---------------                                  !
+      !                                          dt                                        !
+      !                                                                                    !
+      ! where N is the current population, and A is the population before the rate was     !
+      ! applied.  The cohorts represent a group of individuals with the same size and PFT, !
+      ! so they don't mix new recruits and old plants. Therefore, we can assume that N is  !
+      ! actually nplant.  We don't know A, but if the change rate is assumed constant      !
+      ! during the interval dt, A = N * exp(-y dt).                                        !
+      !                                                                                    !
+      ! For fusion we don't really care about dt, so any number will do as long as it is   !
+      ! the same for both cohorts.  With these assumptions, the change rate for the        !
+      ! fused cohort yf is:                                                                !
+      !                                                                                    !
+      !  yf   =  ln (Nd+Nr) - ln(Ad+Ar) = ln[Nd+Nr] - ln[Nd*exp(-yd) + Nr*exp(-yr)]        !
+      !                                                                                    !
+      !               / Nd*exp(-yd) + Nr*exp(-yr) \                                        !
+      !  yf   =  - ln |---------------------------|                                        !
+      !               \         Nd + Nr           /                                        !
       !------------------------------------------------------------------------------------!
-      cpatch%monthly_dndt  (recc) = cpatch%monthly_dndt  (recc)                            &
-                                  + cpatch%monthly_dndt  (donc)
-      cpatch%monthly_dlnndt(recc) = cpatch%monthly_dlnndt(recc) * rnplant                  &
-                                  + cpatch%monthly_dlnndt(donc) * dnplant
+      m_exp_dlnndt_donc = exp(max(lnexp_min,min(lnexp_max,-cpatch%monthly_dlnndt(donc))))
+      m_exp_dlnndt_recc = exp(max(lnexp_min,min(lnexp_max,-cpatch%monthly_dlnndt(recc))))
+
+      cpatch%monthly_dlnndt(recc) = - log( rnplant * m_exp_dlnndt_recc                     &
+                                         + dnplant * m_exp_dlnndt_donc )
       !------------------------------------------------------------------------------------!
+
+
 
 
 
@@ -2182,17 +2328,151 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !    Light-phenology characteristics (MLO I am not sure if they should be scaled by  !
-      ! nplant or LAI, it seems LAI would make more sense...).                             !
+      !    Light-phenology characteristics.  To conserve maintenance costs, turnover must  !
+      ! be scaled with leaf biomass (but note that the scaling must be applied to turnover !
+      ! instead of leaf lifespan).  For consistency, we also scale the turnover amplitude  !
+      ! with leaf biomass.  Likewise, SLA is in (m2/kgC)leaf so it must be scaled with     !
+      ! leaf biomass.  Carboxylation rate (vm_bar) ia in umol/m2leaf/s, so it must be      !
+      ! scaled with LAI.                                                                   !
+      !                                                                                    !
+      ! MLO -> XX. The SLA scaling with bleaf is numerically equivalent to your changes.   !
       !------------------------------------------------------------------------------------!
-      cpatch%turnover_amp(recc) = cpatch%turnover_amp(recc) * rnplant                      &
-                                + cpatch%turnover_amp(donc) * dnplant
-      cpatch%llspan      (recc) = cpatch%llspan      (recc) * rnplant                      &
-                                + cpatch%llspan      (donc) * dnplant
-      cpatch%vm_bar      (recc) = cpatch%vm_bar      (recc) * rnplant                      &
-                                + cpatch%vm_bar      (donc) * dnplant
-      cpatch%sla         (recc) = cpatch%sla         (recc) * rnplant                      &
-                                + cpatch%sla         (donc) * dnplant
+      cpatch%turnover_amp(recc) = cpatch%turnover_amp(recc) * rbleaf                       &
+                                + cpatch%turnover_amp(donc) * dbleaf
+      cpatch%sla         (recc) = cpatch%sla         (recc) * rbleaf                       &
+                                + cpatch%sla         (donc) * dbleaf
+      cpatch%vm_bar      (recc) = cpatch%vm_bar      (recc) * rlai                         &
+                                + cpatch%vm_bar      (donc) * dlai
+      !------ For Life span, we must check whether they are non-zero. ---------------------!
+      if ( abs(cpatch%llspan(recc)*cpatch%llspan(donc)) > tiny_num ) then
+         !---------------------------------------------------------------------------------!
+         !     The denominator weights are not inadvertenly swapped.  This happens because !
+         ! we are linearly scaling turnover, not leaf life span, to ensure that            !
+         ! maintenance costs are consistent.                                               !
+         !---------------------------------------------------------------------------------!
+         cpatch%llspan   (recc) =   cpatch%llspan    (recc) * cpatch%llspan    (donc)      &
+                                / ( cpatch%llspan    (recc) * dbleaf                       &
+                                  + cpatch%llspan    (donc) * rbleaf )
+         !---------------------------------------------------------------------------------!
+      else
+         !------ This should only happen when both are zero, so it really doesn't matter. -!
+         cpatch%llspan   (recc) = cpatch%llspan      (recc) * rbleaf                       &
+                                + cpatch%llspan      (donc) * dbleaf
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Plant hydrodynamics characteristics (XXT).  Internal water content and water    !
+      ! fluxes are weighted by nplant (int) or added (im2).                                !
+      !------------------------------------------------------------------------------------!
+      cpatch%leaf_water_int(recc) = cpatch%leaf_water_int(recc) * rnplant                  &
+                                  + cpatch%leaf_water_int(donc) * dnplant
+      cpatch%wood_water_int(recc) = cpatch%wood_water_int(recc) * rnplant                  &
+                                  + cpatch%wood_water_int(donc) * dnplant
+      cpatch%leaf_water_im2(recc) = cpatch%leaf_water_im2(recc)                            &
+                                  + cpatch%leaf_water_im2(donc)
+      cpatch%wood_water_im2(recc) = cpatch%wood_water_im2(recc)                            &
+                                  + cpatch%wood_water_im2(donc)
+
+      cpatch%wflux_gw      (recc) = cpatch%wflux_gw     (recc) * rnplant                   &
+                                  + cpatch%wflux_gw     (donc) * dnplant
+      cpatch%wflux_wl      (recc) = cpatch%wflux_wl     (recc) * rnplant                   &
+                                  + cpatch%wflux_wl     (donc) * dnplant
+      do isl = 1,nzg
+         cpatch%wflux_gw_layer(isl,recc) = cpatch%wflux_gw_layer(isl,recc) * rnplant       &
+                                         + cpatch%wflux_gw_layer(isl,donc) * dnplant
+      enddo
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      We update temperature and liquid water fraction.  We check whether the heat   !
+      ! capacity is non-zero.  If it is a normal number, use the standard thermodynamic    !
+      ! library, otherwise, average temperature, this is probably a blend of tiny cohorts  !
+      ! that couldn't be solved, or the wood is not solved.                                !
+      !------------------------------------------------------------------------------------!
+      if ( cpatch%leaf_hcap(recc) > 0. ) then
+         !----- Update temperature using the standard thermodynamics. ---------------------!
+         call uextcm2tl( cpatch%leaf_energy   (recc)                                       &
+                       , cpatch%leaf_water    (recc)                                       &
+                       + cpatch%leaf_water_im2(recc)                                       &
+                       , cpatch%leaf_hcap     (recc)                                       &
+                       , cpatch%leaf_temp     (recc)                                       &
+                       , cpatch%leaf_fliq     (recc) )
+      else 
+         !----- Leaf temperature cannot be found using uextcm2tl, this is a singularity. --!
+         cpatch%leaf_temp(recc)  = cpatch%leaf_temp(recc) * rnplant                        &
+                                 + cpatch%leaf_temp(donc) * dnplant
+         cpatch%leaf_fliq(recc)  = 0.0
+      end if
+
+
+      if ( cpatch%wood_hcap(recc) > 0. ) then
+         !----- Update temperature using the standard thermodynamics. ---------------------!
+         call uextcm2tl( cpatch%wood_energy   (recc)                                       &
+                       , cpatch%wood_water    (recc)                                       &
+                       + cpatch%wood_water_im2(recc)                                       &
+                       , cpatch%wood_hcap     (recc)                                       &
+                       , cpatch%wood_temp     (recc)                                       &
+                       , cpatch%wood_fliq     (recc) )
+      else 
+         !----- Wood temperature cannot be found using uextcm2tl, this is a singularity. --!
+         cpatch%wood_temp(recc)  = cpatch%wood_temp(recc) * rnplant                        &
+                                 + cpatch%wood_temp(donc) * dnplant
+         cpatch%wood_fliq(recc)  = 0.0
+      end if
+      
+      !----- Set time-steps temperatures as the current. ----------------------------------!
+      cpatch%leaf_temp_pv(recc) = cpatch%leaf_temp(recc)
+      cpatch%wood_temp_pv(recc) = cpatch%wood_temp(recc)
+      !------------------------------------------------------------------------------------!
+
+      !------ Find the intercellular value assuming saturation. ---------------------------!
+      cpatch%lint_shv(recc) = qslif(can_prss,cpatch%leaf_temp(recc))
+      !------------------------------------------------------------------------------------!
+
+      !------ Find the vapour pressure deficit. -------------------------------------------!
+      cpatch%leaf_vpdef(recc) = vpdefil(can_prss,cpatch%leaf_temp(recc),can_shv,.true.)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Recalculate rwc and psi from water_int. This ensures that psi, rwc, and total   !
+      ! water are consistent with each other.                                              !
+      !------------------------------------------------------------------------------------!
+      call tw2rwc(cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc)                  &
+                 ,cpatch%bleaf(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)         &
+                 ,cpatch%bdeada(recc),cpatch%bdeadb(recc),cpatch%broot(recc)               &
+                 ,cpatch%dbh(recc),cpatch%pft(recc),cpatch%leaf_rwc(recc)                  &
+                 ,cpatch%wood_rwc(recc))
+      call rwc2psi(cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc),cpatch%pft(recc)            &
+                  ,cpatch%leaf_psi(recc),cpatch%wood_psi(recc))
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Phenology/Stomatal variabels associated with plant hydraulics.  These are also  !
+      ! scaled by nplant.                                                                  !
+      !------------------------------------------------------------------------------------!
+      cpatch%high_leaf_psi_days(recc) = nint(                                              &
+                                        cpatch%high_leaf_psi_days(recc) * rnplant          &
+                                      + cpatch%high_leaf_psi_days(donc) * dnplant)
+      cpatch%low_leaf_psi_days(recc)  = nint(                                              &
+                                        cpatch%low_leaf_psi_days(recc) * rnplant           &
+                                      + cpatch%low_leaf_psi_days(donc) * dnplant)
+      cpatch%last_gJ(recc)  =   cpatch%last_gJ(recc) * rnplant                             &
+                            +   cpatch%last_gJ(recc) * dnplant
+      cpatch%last_gV(recc)  =   cpatch%last_gV(recc) * rnplant                             &
+                            +   cpatch%last_gV(recc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -2402,6 +2682,54 @@ module fuse_fiss_utils
 
 
 
+
+
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT).  Internal water content and water !
+         ! fluxes are weighted by nplant.  Area-based internal water is added.             !
+         !---------------------------------------------------------------------------------!
+         cpatch%fmean_leaf_water_int(recc) = cpatch%fmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%fmean_leaf_water_int(donc) * dnplant
+         cpatch%fmean_wood_water_int(recc) = cpatch%fmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%fmean_wood_water_int(donc) * dnplant
+         cpatch%fmean_leaf_water_im2(recc) = cpatch%fmean_leaf_water_im2(recc)             &
+                                           + cpatch%fmean_leaf_water_im2(donc)
+         cpatch%fmean_wood_water_im2(recc) = cpatch%fmean_wood_water_im2(recc)             &
+                                           + cpatch%fmean_wood_water_im2(donc)
+         cpatch%fmean_wflux_gw      (recc) = cpatch%fmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%fmean_wflux_gw      (donc) * dnplant
+         cpatch%fmean_wflux_wl      (recc) = cpatch%fmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%fmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%fmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%fmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%fmean_wflux_gw_layer(isl,donc) * dnplant
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !----- For daily maximum and minimum psi, we simply use NPLANT as weight. --------!
+         cpatch%dmax_leaf_psi(recc) = cpatch%dmax_leaf_psi(recc) * rnplant +               &
+                                      cpatch%dmax_leaf_psi(donc) * dnplant
+         cpatch%dmin_leaf_psi(recc) = cpatch%dmin_leaf_psi(recc) * rnplant +               &
+                                      cpatch%dmin_leaf_psi(donc) * dnplant
+         cpatch%dmax_wood_psi(recc) = cpatch%dmax_wood_psi(recc) * rnplant +               &
+                                      cpatch%dmax_wood_psi(donc) * dnplant
+         cpatch%dmin_wood_psi(recc) = cpatch%dmin_wood_psi(recc) * rnplant +               &
+                                      cpatch%dmin_wood_psi(donc) * dnplant
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Recalculate psi from water_int. -------------------------------------------!
+         call tw2psi(cpatch%fmean_leaf_water_int(recc),cpatch%fmean_wood_water_int(recc)   &
+                    ,cpatch%bleaf(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)      &
+                    ,cpatch%bdeada(recc),cpatch%bdeadb(recc),cpatch%broot(recc)            &
+                    ,cpatch%dbh(recc),cpatch%pft(recc),cpatch%fmean_leaf_psi(recc)         &
+                    ,cpatch%fmean_wood_psi(recc) )
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !      We update temperature and liquid water fraction.  We check whether the     !
          ! heat capacity is non-zero.  If it is a normal number, use the standard thermo-  !
@@ -2411,9 +2739,12 @@ module fuse_fiss_utils
          !------ Leaf. --------------------------------------------------------------------!
          if ( cpatch%fmean_leaf_hcap(recc) > 0. ) then
             !----- Update temperature and liquid fraction using standard thermodynamics. --!
-            call uextcm2tl(cpatch%fmean_leaf_energy(recc),cpatch%fmean_leaf_water(recc)    &
-                          ,cpatch%fmean_leaf_hcap  (recc),cpatch%fmean_leaf_temp (recc)    &
-                          ,cpatch%fmean_leaf_fliq  (recc))
+            call uextcm2tl( cpatch%fmean_leaf_energy   (recc)                              &
+                          , cpatch%fmean_leaf_water    (recc)                              &
+                          + cpatch%fmean_leaf_water_im2(recc)                              &
+                          , cpatch%fmean_leaf_hcap     (recc)                              &
+                          , cpatch%fmean_leaf_temp     (recc)                              &
+                          , cpatch%fmean_leaf_fliq     (recc) )
             !------------------------------------------------------------------------------!
 
 
@@ -2433,9 +2764,12 @@ module fuse_fiss_utils
          !------ Wood. --------------------------------------------------------------------!
          if ( cpatch%fmean_wood_hcap(recc) > 0. ) then
             !----- Update temperature using the standard thermodynamics. ------------------!
-            call uextcm2tl(cpatch%fmean_wood_energy(recc),cpatch%fmean_wood_water(recc)    &
-                          ,cpatch%fmean_wood_hcap  (recc),cpatch%fmean_wood_temp (recc)    &
-                          ,cpatch%fmean_wood_fliq  (recc))
+            call uextcm2tl( cpatch%fmean_wood_energy   (recc)                              &
+                          , cpatch%fmean_wood_water    (recc)                              &
+                          + cpatch%fmean_wood_water_im2(recc)                              &
+                          , cpatch%fmean_wood_hcap     (recc)                              &
+                          , cpatch%fmean_wood_temp     (recc)                              &
+                          , cpatch%fmean_wood_fliq     (recc) )
             !------------------------------------------------------------------------------!
          else                                                                              
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
@@ -2687,6 +3021,32 @@ module fuse_fiss_utils
 
 
 
+
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT).  Internal water content and water !
+         ! fluxes are weighted by nplant.  Area-based internal water is added.             !
+         !---------------------------------------------------------------------------------!
+         cpatch%dmean_leaf_water_int(recc) = cpatch%dmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%dmean_leaf_water_int(donc) * dnplant
+         cpatch%dmean_wood_water_int(recc) = cpatch%dmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%dmean_wood_water_int(donc) * dnplant
+         cpatch%dmean_leaf_water_im2(recc) = cpatch%dmean_leaf_water_im2(recc)             &
+                                           + cpatch%dmean_leaf_water_im2(donc)
+         cpatch%dmean_wood_water_im2(recc) = cpatch%dmean_wood_water_im2(recc)             &
+                                           + cpatch%dmean_wood_water_im2(donc)
+         cpatch%dmean_wflux_gw      (recc) = cpatch%dmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%dmean_wflux_gw      (donc) * dnplant
+         cpatch%dmean_wflux_wl      (recc) = cpatch%dmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%dmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%dmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%dmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%dmean_wflux_gw_layer(isl,donc) * dnplant
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !      We update temperature and liquid water fraction.  We check whether the     !
          ! heat capacity is non-zero.  If it is a normal number, use the standard thermo-  !
@@ -2696,9 +3056,12 @@ module fuse_fiss_utils
          !------ Leaf. --------------------------------------------------------------------!
          if ( cpatch%dmean_leaf_hcap(recc) > 0. ) then
             !----- Update temperature and liquid fraction using standard thermodynamics. --!
-            call uextcm2tl(cpatch%dmean_leaf_energy(recc),cpatch%dmean_leaf_water(recc)    &
-                          ,cpatch%dmean_leaf_hcap  (recc),cpatch%dmean_leaf_temp (recc)    &
-                          ,cpatch%dmean_leaf_fliq  (recc))                                                  
+            call uextcm2tl( cpatch%dmean_leaf_energy   (recc)                              &
+                          , cpatch%dmean_leaf_water    (recc)                              &
+                          + cpatch%dmean_leaf_water_im2(recc)                              &
+                          , cpatch%dmean_leaf_hcap     (recc)                              &
+                          , cpatch%dmean_leaf_temp     (recc)                              &
+                          , cpatch%dmean_leaf_fliq     (recc) )
             !------------------------------------------------------------------------------!
 
 
@@ -2718,9 +3081,12 @@ module fuse_fiss_utils
          !------ Wood. --------------------------------------------------------------------!
          if ( cpatch%dmean_wood_hcap(recc) > 0. ) then                                     
             !----- Update temperature using the standard thermodynamics. ------------------!
-            call uextcm2tl(cpatch%dmean_wood_energy(recc),cpatch%dmean_wood_water(recc)    &
-                          ,cpatch%dmean_wood_hcap  (recc),cpatch%dmean_wood_temp (recc)    &
-                          ,cpatch%dmean_wood_fliq  (recc))
+            call uextcm2tl( cpatch%dmean_wood_energy   (recc)                              &
+                          , cpatch%dmean_wood_water    (recc)                              &
+                          + cpatch%dmean_wood_water_im2(recc)                              &
+                          , cpatch%dmean_wood_hcap     (recc)                              &
+                          , cpatch%dmean_wood_temp     (recc)                              &
+                          , cpatch%dmean_wood_fliq     (recc) )
             !------------------------------------------------------------------------------!
          else                                                                              
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
@@ -2964,6 +3330,10 @@ module fuse_fiss_utils
                                                * rnplant                                   &
                                                + cpatch%mmean_leaf_drop         (donc)     &
                                                * dnplant
+         cpatch%mmean_root_drop         (recc) = cpatch%mmean_root_drop         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_root_drop         (donc)     &
+                                               * dnplant
          cpatch%mmean_cb                (recc) = cpatch%mmean_cb                (recc)     &
                                                * rnplant                                   &
                                                + cpatch%mmean_cb                (donc)     &
@@ -3095,6 +3465,32 @@ module fuse_fiss_utils
 
 
 
+
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT).  Internal water content and water !
+         ! fluxes are weighted by nplant.  Area-based internal water is added.             !
+         !---------------------------------------------------------------------------------!
+         cpatch%mmean_leaf_water_int(recc) = cpatch%mmean_leaf_water_int(recc) * rnplant   &
+                                           + cpatch%mmean_leaf_water_int(donc) * dnplant
+         cpatch%mmean_wood_water_int(recc) = cpatch%mmean_wood_water_int(recc) * rnplant   &
+                                           + cpatch%mmean_wood_water_int(donc) * dnplant
+         cpatch%mmean_leaf_water_im2(recc) = cpatch%mmean_leaf_water_im2(recc)             &
+                                           + cpatch%mmean_leaf_water_im2(donc)
+         cpatch%mmean_wood_water_im2(recc) = cpatch%mmean_wood_water_im2(recc)             &
+                                           + cpatch%mmean_wood_water_im2(donc)
+         cpatch%mmean_wflux_gw      (recc) = cpatch%mmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%mmean_wflux_gw      (donc) * dnplant
+         cpatch%mmean_wflux_wl      (recc) = cpatch%mmean_wflux_wl      (recc) * rnplant   &
+                                           + cpatch%mmean_wflux_wl      (donc) * dnplant
+         do isl = 1,nzg
+            cpatch%mmean_wflux_gw_layer(isl,recc) =                                        &
+                cpatch%mmean_wflux_gw_layer(isl,recc) * rnplant                            &
+              + cpatch%mmean_wflux_gw_layer(isl,donc) * dnplant
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !      We update temperature and liquid water fraction.  We check whether the     !
          ! heat capacity is non-zero.  If it is a normal number, use the standard thermo-  !
@@ -3104,9 +3500,12 @@ module fuse_fiss_utils
          !------ Leaf. --------------------------------------------------------------------!
          if ( cpatch%mmean_leaf_hcap(recc) > 0. ) then
             !----- Update temperature and liquid fraction using standard thermodynamics. --!
-            call uextcm2tl(cpatch%mmean_leaf_energy(recc),cpatch%mmean_leaf_water(recc)    &
-                          ,cpatch%mmean_leaf_hcap  (recc),cpatch%mmean_leaf_temp (recc)    &
-                          ,cpatch%mmean_leaf_fliq  (recc))                                                  
+            call uextcm2tl( cpatch%mmean_leaf_energy   (recc)                              &
+                          , cpatch%mmean_leaf_water    (recc)                              &
+                          + cpatch%mmean_leaf_water_im2(recc)                              &
+                          , cpatch%mmean_leaf_hcap     (recc)                              &
+                          , cpatch%mmean_leaf_temp     (recc)                              &
+                          , cpatch%mmean_leaf_fliq     (recc) )
             !------------------------------------------------------------------------------!
 
 
@@ -3126,9 +3525,12 @@ module fuse_fiss_utils
          !------ Wood. --------------------------------------------------------------------!
          if ( cpatch%mmean_wood_hcap(recc) > 0. ) then                                     
             !----- Update temperature using the standard thermodynamics. ------------------!
-            call uextcm2tl(cpatch%mmean_wood_energy(recc),cpatch%mmean_wood_water(recc)    &
-                          ,cpatch%mmean_wood_hcap  (recc),cpatch%mmean_wood_temp (recc)    &
-                          ,cpatch%mmean_wood_fliq  (recc))
+            call uextcm2tl( cpatch%mmean_wood_energy   (recc)                              &
+                          , cpatch%mmean_wood_water    (recc)                              &
+                          + cpatch%mmean_wood_water_im2(recc)                              &
+                          , cpatch%mmean_wood_hcap     (recc)                              &
+                          , cpatch%mmean_wood_temp     (recc)                              &
+                          , cpatch%mmean_wood_fliq     (recc) )
             !------------------------------------------------------------------------------!
          else                                                                              
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
@@ -3453,6 +3855,48 @@ module fuse_fiss_utils
 
 
 
+
+
+         !---------------------------------------------------------------------------------!
+         !    Plant hydrodynamics characteristics (XXT).  Internal water content and water !
+         ! fluxes are weighted by nplant.  Area-based internal water is added.             !
+         !---------------------------------------------------------------------------------!
+         cpatch%qmean_leaf_water_int(:,recc) = cpatch%qmean_leaf_water_int(:,recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%qmean_leaf_water_int(:,donc)         &
+                                             * dnplant
+         cpatch%qmean_wood_water_int(:,recc) = cpatch%qmean_wood_water_int(:,recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%qmean_wood_water_int(:,donc)         &
+                                             * dnplant
+         cpatch%qmean_leaf_water_im2(:,recc) = cpatch%qmean_leaf_water_im2(:,recc)         &
+                                             + cpatch%qmean_leaf_water_im2(:,donc)
+         cpatch%qmean_wood_water_im2(:,recc) = cpatch%qmean_wood_water_im2(:,recc)         &
+                                             + cpatch%qmean_wood_water_im2(:,donc)
+         !----- Water fluxes are also weighted by nplant since they are kg H2O/s/plant. ---!
+         cpatch%qmean_wflux_gw      (:,recc) = cpatch%qmean_wflux_gw   (:,recc) * rnplant  &
+                                             + cpatch%qmean_wflux_gw   (:,donc) * dnplant
+         cpatch%qmean_wflux_wl      (:,recc) = cpatch%qmean_wflux_wl   (:,recc) * rnplant  &
+                                             + cpatch%qmean_wflux_wl   (:,donc) * dnplant
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     For psi, we simply use lai-weighted average for leaves and bdead-weighted   !
+         ! average for wood because at this time point we don't know qmean biomass values. !
+         !                                                                                 !
+         ! MLO -> XX wood_psi is currently scaled by LAI too, so not consistent with the   !
+         !        comment above.  Should it be scaled by WAI instead?                      !
+         !---------------------------------------------------------------------------------!
+         cpatch%qmean_leaf_psi      (:,recc) = cpatch%qmean_leaf_psi   (:,recc) * rlai     &
+                                             + cpatch%qmean_leaf_psi   (:,donc) * dlai
+         cpatch%qmean_wood_psi      (:,recc) = cpatch%qmean_wood_psi   (:,recc) * rlai     &
+                                             + cpatch%qmean_wood_psi   (:,donc) * dlai
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !      We update temperature and liquid water fraction.  We check whether the     !
          ! heat capacity is non-zero.  If it is a normal number, use the standard thermo-  !
@@ -3463,11 +3907,12 @@ module fuse_fiss_utils
             !------ Leaf. -----------------------------------------------------------------!
             if ( cpatch%qmean_leaf_hcap(t,recc) > 0. ) then
                !----- Update temperature and liquid fraction. -----------------------------!
-               call uextcm2tl(cpatch%qmean_leaf_energy(t,recc)                             &
-                             ,cpatch%qmean_leaf_water (t,recc)                             &
-                             ,cpatch%qmean_leaf_hcap  (t,recc)                             &
-                             ,cpatch%qmean_leaf_temp  (t,recc)                             &
-                             ,cpatch%qmean_leaf_fliq  (t,recc))
+               call uextcm2tl( cpatch%qmean_leaf_energy   (t,recc)                         &
+                             , cpatch%qmean_leaf_water    (t,recc)                         &
+                             + cpatch%qmean_leaf_water_im2(t,recc)                         &
+                             , cpatch%qmean_leaf_hcap     (t,recc)                         &
+                             , cpatch%qmean_leaf_temp     (t,recc)                         &
+                             , cpatch%qmean_leaf_fliq     (t,recc) )
                !---------------------------------------------------------------------------!
 
 
@@ -3487,11 +3932,12 @@ module fuse_fiss_utils
             !------ Wood. -----------------------------------------------------------------!
             if ( cpatch%qmean_wood_hcap(t,recc) > 0. ) then
                !----- Update temperature and liquid fraction. -----------------------------!
-               call uextcm2tl(cpatch%qmean_wood_energy(t,recc)                             &
-                             ,cpatch%qmean_wood_water (t,recc)                             &
-                             ,cpatch%qmean_wood_hcap  (t,recc)                             &
-                             ,cpatch%qmean_wood_temp  (t,recc)                             &
-                             ,cpatch%qmean_wood_fliq  (t,recc))
+               call uextcm2tl( cpatch%qmean_wood_energy   (t,recc)                         &
+                             , cpatch%qmean_wood_water    (t,recc)                         &
+                             + cpatch%qmean_wood_water_im2(t,recc)                         &
+                             , cpatch%qmean_wood_hcap     (t,recc)                         &
+                             , cpatch%qmean_wood_temp     (t,recc)                         &
+                             , cpatch%qmean_wood_fliq     (t,recc) )
                !---------------------------------------------------------------------------!
             else
                !----- None of the cohorts has leaf biomass use nplant to scale them. ------!
@@ -6431,6 +6877,11 @@ module fuse_fiss_utils
                                              + csite%ebudget_hcapeffect          (donp)    &
                                              * csite%area                        (donp) )  &
                                            * newareai
+      csite%ebudget_wcapeffect      (recp) = ( csite%ebudget_wcapeffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_wcapeffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
       csite%ebudget_zcaneffect      (recp) = ( csite%ebudget_zcaneffect          (recp)    &
                                              * csite%area                        (recp)    &
                                              + csite%ebudget_zcaneffect          (donp)    &
@@ -6469,6 +6920,11 @@ module fuse_fiss_utils
       csite%wbudget_denseffect      (recp) = ( csite%wbudget_denseffect          (recp)    &
                                              * csite%area                        (recp)    &
                                              + csite%wbudget_denseffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_wcapeffect      (recp) = ( csite%wbudget_wcapeffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_wcapeffect          (donp)    &
                                              * csite%area                        (donp) )  &
                                            * newareai
       csite%wbudget_zcaneffect      (recp) = ( csite%wbudget_zcaneffect          (recp)    &
@@ -8444,7 +8900,7 @@ module fuse_fiss_utils
                call new_fuse_cohorts(csite,recp,lsl,fuse_initial)
             end select
             call terminate_cohorts(csite,recp,cmet,elim_nplant,elim_lai)
-            call split_cohorts(cpatch,green_leaf_factor)
+            call split_cohorts(csite,recp,green_leaf_factor)
          end if
          !---------------------------------------------------------------------------------!
       end if

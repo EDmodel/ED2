@@ -86,27 +86,65 @@ module physiology_coms
    ! H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by       !
    !                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply). !
    !                                                                                       !
-   !                  Demand is always the transpiration rates in case soil moisture is    !
-   !                  not limiting (the psi_0 term times LAI).  The supply is determined   !
-   !                  by Kw * nplant * Broot * Available_Water, and the definition of      !
-   !                  available water changes depending on H2O_PLANT_LIM:                  !
-   !                  0.  Force FSW = 1 (effectively available water is infinity).         !
-   !                  1.  Available water is the total soil water above wilting point,     !
-   !                      integrated across all layers within the rooting zone.            !
-   !                  2.  Available water is the soil water at field capacity minus        !
-   !                      wilting point, scaled by the so-called wilting factor:           !
-   !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
-   !                      where psi is the matric potentital at layer k, z is the layer    !
-   !                      depth, H it the crown height and psi_fc and psi_wp are the       !
-   !                      matric potentials at wilting point and field capacity.           !
-   !                  3.  Similar to 2, but the water supply directly affects gsw, as      !
-   !                      opposed to fsw.  This is done by making D0 a function of soil    !
-   !                      moisture, as means to avoid double counting the effect of VPD on !
-   !                      stomatal conductance.  Note that this still uses Kw but Kw must  !
-   !                      be significantly lower, at least for tropical trees (1/15 - 1/10 !
-   !                      of the original).                                                !
+   ! Demand is always the transpiration rates in case soil moisture is not limiting (the   !
+   ! psi_0 term times LAI).  The supply is determined by                                   !
+   !                                                                                       !
+   ! Kw * nplant * Broot * Available_Water,                                                !
+   !                                                                                       !
+   ! and the definition of available water changes depending on H2O_PLANT_LIM:             !
+   ! 0.  Force FSW = 1 (effectively available water is infinity).                          !
+   ! 1.  (Legacy) Available water is the total soil water above wilting point, integrated  !
+   !     across all layers within the rooting zone.                                        !
+   ! 2.  (ED-2.2 default) Available water is the soil water at field capacity minus wilt-  !
+   !     ing point, scaled by the so-called wilting factor:                                !
+   !                                                                                       !
+   !          (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)                           !
+   !                                                                                       !
+   !     where psi is the matric potentital at layer k, z is the layer depth, H it the     !
+   !     crown height and psi_fc and psi_wp are the matric potentials at wilting point     !
+   !     and field capacity.                                                               !
+   ! 3.  (Beta) Use leaf water potential to modify fsw following Powell et al. (2017).     !
+   !     This setting requires PLANT_HYDRO_SCHEME to be non-zero.                          !
+   ! 4.  (Beta) Use leaf water potential to modify the optimization-based stomatal model   !
+   !     following Xu et al. (2016).  This setting requires PLANT_HYDRO_SCHEME to be       !
+   !     non-zero values and set ISTOMATA_SCHEME to 1.                                     !
+   ! 5.  (Beta) Similar to 2, but the water supply directly affects gsw, as opposed to     !
+   !     fsw.  This is done by making D0 a function of soil moisture.  Note that this      !
+   !     still uses Kw but Kw must be significantly lower, at least for tropical trees     !
+   !     (1/15 - 1/10 of the original).                                                    !
    !---------------------------------------------------------------------------------------!
    integer               :: h2o_plant_lim 
+   !---------------------------------------------------------------------------------------!
+
+   integer               :: istruct_growth_scheme
+   !---------------------------------------------------------------------------------------!
+   !< ISTRUCT_GROWTH_SCHEME -- Different methods to perform structural growth.\n
+   !<                          0. Use all bstorage (default by ED2.2 and before) \n
+   !<                          1. Reserve bstorage to reflush the whole canopy and
+   !< fine roots once before calculating structural growth. This helps to give
+   !< deciduous PFTs enough carbon to flush new leaves when growing season comes
+   !---------------------------------------------------------------------------------------!
+
+   integer               :: istomata_scheme
+   !---------------------------------------------------------------------------------------!
+   !< ISTOMATA_SCHEME -- Which stomatal conductance model to use.\n
+   !<                    0. Leuning (default by ED2.2 and before) \n
+   !<                    1. Katul's optimization based (see Xu et al. 2016)\n
+   !---------------------------------------------------------------------------------------!
+
+
+   integer               :: plant_hydro_scheme
+   !---------------------------------------------------------------------------------------!
+   !< PLANT_HYDRO_SCHEME -- Whether to track plant hydrodynamics.\n
+   !<                       0. No hydraulics (leaf and wood are always saturated)\n
+   !<                       1. Track plant hydrodynamics using parameters from
+   !<  Christofferson et al. 2016 GMD\n
+   !<                       2. Track plant hydrodynamics using parameters from
+   !<  Xu et al. 2016 New Phytologist\n
+   !<                      -1. Same as 1 but leaf/wood heat capacity does not
+   !< change with internal water content.
+   !<                      -2. Same as 2 but leaf/wood heat capacity does not
+   !< change with internal water content.
    !---------------------------------------------------------------------------------------!
 
    integer               :: trait_plasticity_scheme
@@ -277,6 +315,15 @@ module physiology_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !     This parameter is from F80, and is the ratio between the turnover number for the  !
+   ! oxygenase function and the turnover number for the carboxylase function.              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) :: kookc
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Coefficients for the various Arrhenius and Collatz function calculations of the   !
    ! terms that control the photosynthesis rates and do not depend on the PFT as long as   !
    ! it is C3.  Such terms are compensation point, and the Michaelis-Mentel coefficients   !
@@ -338,6 +385,7 @@ module physiology_coms
    real(kind=8) :: gbw_2_gbc8
    real(kind=8) :: gsw_2_gsc8
    real(kind=8) :: gsc_2_gsw8
+   real(kind=8) :: kookc8
    real(kind=8) :: tphysref8
    real(kind=8) :: tphysrefi8
    real(kind=8) :: fcoll8

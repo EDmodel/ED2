@@ -1,6 +1,7 @@
 !==========================================================================================!
 !==========================================================================================!
-!    This module is a library with several allometric relationships.                       !
+! MODULE: ALLOMETRY  
+!> \brief This module is a library with the allometric relationships used by ED2.
 !------------------------------------------------------------------------------------------!
 module allometry
 
@@ -189,6 +190,55 @@ module allometry
 
 
 
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! FUNCTION DBH2SF             
+   !< \brief Calculate sapwood fraction from DBH
+   !< \author Xiangtao Xu, 31 Jan. 2018
+   !---------------------------------------------------------------------------------------!
+   real function dbh2sf(dbh,ipft)
+
+      use consts_coms   , only : pio4               ! ! intent(in)
+      use pft_coms      , only : is_grass           & ! intent(in)
+                               , b1SA               & ! intent(in)
+                               , b2SA               ! ! intent(in)
+
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: dbh         ! Diameter at breast height                 [  cm]
+      integer, intent(in) :: ipft        ! Plant fucntional type                     [  --]
+      !----- Local variables. -------------------------------------------------------------!
+      real                :: sapw_area   ! Sapwood area                              [ cm2]
+      real                :: basal_area  ! Basal area                                [ cm2]
+      !------------------------------------------------------------------------------------!
+
+
+      if (is_grass(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !      Assume that all of the 'stem' of grass is sapwood.  In reality, we do not  !
+         ! use sapwood area for grasses, but we keep it consistent across species.         !
+         !---------------------------------------------------------------------------------!
+         dbh2sf = 1.
+         !---------------------------------------------------------------------------------!
+      else
+         !---- Trees. ---------------------------------------------------------------------!
+         sapw_area  = b1SA(ipft) * dbh ** b2SA(ipft)
+         basal_area = pio4 * dbh * dbh
+         dbh2sf     = min(1.0,sapw_area / basal_area)
+         !---------------------------------------------------------------------------------!
+      end if
+
+      return 
+   end function dbh2sf
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !     This function computes the diameter at the breast height given the structural     !
@@ -219,7 +269,7 @@ module allometry
       !------------------------------------------------------------------------------------!
       !    The coefficients have been previously calculated, so the functional form is     !
       ! the same for all allometric models.  The only thing to check is whether the total  !
-      ! heartwood biomass exceeds the critical value, in order to check whether to use the !
+      ! heartwood biomass exceeds the critical value, in order to decide between the       !
       ! "small" or "large" coefficients.                                                   !
       !------------------------------------------------------------------------------------!
       if ( bdead <= bdead_crit(ipft) ) then
@@ -311,8 +361,7 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This subroutine finds height given the biomass of living tissues, assuming       !
-   ! minimum sapwood biomass given DBH.                                                    !
+   !      This subroutine finds height given the biomass of living tissues.                !
    !---------------------------------------------------------------------------------------!
    real function ba2h(balive,ipft)
       use pft_coms    , only : hgt_min     & ! intent(in)
@@ -444,6 +493,7 @@ module allometry
 
       !----- Use existing allometric equations to convert leaves to height. ---------------!
       bl2h = min(hgt_max(ipft),dbh2h(ipft,bl2dbh(bleaf,ipft)))
+      !------------------------------------------------------------------------------------!
 
       return
    end function bl2h
@@ -483,6 +533,7 @@ module allometry
       !----- Internal variables -----------------------------------------------------------!
       real                          :: loclai    !> The maximum local LAI         [  m2/m2]
       real                          :: mdbh      !> The maximum DBH               [     cm]
+      real                          :: size      !> Allometry-dependent size      [cm|cm2m]
       logical                       :: upr_loose !> Cap at dbh_crit               [    T|F]
       !------------------------------------------------------------------------------------!
 
@@ -533,11 +584,20 @@ module allometry
 
          !----- Find the nominal crown area. ----------------------------------------------!
          if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
-            size2ca = b1Ca(ipft) * ( mdbh * mdbh * hite ) ** b2Ca(ipft)
+            size = mdbh * mdbh * hite
          else
-            size2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
+            size = mdbh
          end if
          !---------------------------------------------------------------------------------!
+
+
+         !----- Find the nominal crown area. ----------------------------------------------!
+         size2ca = b1Ca(ipft) * size ** b2Ca(ipft)
+         !---------------------------------------------------------------------------------!
+
+
+
+
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1324,6 +1384,7 @@ module allometry
       !----- Local variables --------------------------------------------------------------!
       real                    :: loccai
       real                    :: mdbh
+      real                    :: size
       integer                 :: ipft
       !------------------------------------------------------------------------------------!
 
@@ -1373,11 +1434,11 @@ module allometry
 
          !-----Find WAI. ------------------------------------------------------------------!
          if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
-            cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI(ipft)                             &
-                            * ( mdbh * mdbh * cpatch%hite(ico) ) ** b2WAI(ipft)
+            size = mdbh * mdbh * cpatch%hite(ico)
          else
-            cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI(ipft) * mdbh ** b2WAI(ipft)
+            size = mdbh
          end if
+         cpatch%wai(ico) = cpatch%nplant(ico) * b1WAI(ipft) * size ** b2WAI(ipft)
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

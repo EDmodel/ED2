@@ -8,9 +8,7 @@
 !          MPI processes are cleanly stopped. Also included 'only' in all use hdf5_coms.
 !------------------------------------------------------------------------------------------!
 module hdf5_utils
-#if USE_HDF5
    use hdf5
-#endif
    !=======================================================================================!
    !=======================================================================================!
 
@@ -33,7 +31,6 @@ module hdf5_utils
       integer                      , intent(inout) :: ndims    !> Dataset rank (in file)
       integer, dimension(*)        , intent(inout) :: dims     !> Dataset dimensions
       !----- Local variables. -------------------------------------------------------------!
-#if USE_HDF5
       integer(HSIZE_T),dimension(4)                :: dimshf   !> Shuffled dimensions
       integer(HSIZE_T),dimension(4)                :: maxdims  !> Maximum # of dimension
       integer                                      :: hdferr   !> Error flag
@@ -111,7 +108,6 @@ module hdf5_utils
          write(unit=*,fmt='(a)'       ) ''
          call fatal_error('Problem closing dataset space','shdf5_info_f','hdf5_utils.F90')
       end if
-#endif
       return
    end subroutine shdf5_info_f
    !=======================================================================================!
@@ -135,7 +131,6 @@ module hdf5_utils
       character(len=*), intent(in)           :: access  !> File access ('R','W','RW')
       logical         , intent(in), optional :: idelete !> Delete/overwrite file? (T|F)
       !----- Local variables. -------------------------------------------------------------!
-#if USE_HDF5
       integer                                :: hdferr    !> Error flag for HDF5
       logical                                :: exists    !> File existence
       logical                                :: overwrite !> Local delete variable
@@ -251,7 +246,6 @@ module hdf5_utils
 
       end select
       return
-#endif
    end subroutine shdf5_open_f
    !=======================================================================================!
    !=======================================================================================!
@@ -291,7 +285,6 @@ module hdf5_utils
       logical         , dimension(*), optional   :: lvara     !> Logical array
       !----- Local variables. -------------------------------------------------------------!
       integer                                    :: idx       !> Index
-#if USE_HDF5
       integer                                    :: h5_type   !> Local type designator
       integer         , dimension(4)             :: dimsh     !> Dataset dimensions.
       integer(HSIZE_T), dimension(4)             :: dimshf    !> Dimensions (shuffle)
@@ -643,7 +636,6 @@ module hdf5_utils
          call fatal_error('Failed closing property!','shdf5_orec_f','hdf5_utils.F90')
       end if
       !------------------------------------------------------------------------------------!
-#endif
       return
    end subroutine shdf5_orec_f
    !=======================================================================================!
@@ -681,7 +673,6 @@ module hdf5_utils
       logical         , dimension(*), optional    :: lvara     !> Logical array
       !----- Local variables. -------------------------------------------------------------!
       integer                                     :: idx       !> Index
-#if USE_HDF5
       integer         , dimension(4)              :: dimsh     !> Dataset dimensions.
       integer(HSIZE_T), dimension(4)              :: dimshf    !> Dimensions (shuffle)
       integer(HID_T)                              :: type_id   !> Variable type ID.
@@ -942,7 +933,6 @@ module hdf5_utils
       end if
       !------------------------------------------------------------------------------------!
 
-#endif
       return
    end subroutine shdf5_irec_f
    !=======================================================================================!
@@ -961,7 +951,6 @@ module hdf5_utils
       use hdf5_coms, only : fileid_f ! ! intent(in)
       implicit none
       !----- Local variables. -------------------------------------------------------------!
-#if USE_HDF5
       integer     :: hdferr  !> Error flags
       !------------------------------------------------------------------------------------!
 
@@ -1008,7 +997,6 @@ module hdf5_utils
                          ,'shdf5_close_f','hdf5_utils.f90')
       end if
       !------------------------------------------------------------------------------------!
-#endif
       return
    end subroutine shdf5_close_f
    !=======================================================================================!

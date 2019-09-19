@@ -38,13 +38,6 @@ BASE=$(ED_ROOT)/build/
 # --------------------------------------------------------------
 
 # HDF 5  Libraries
-# ED2 HAS OPTIONAL HDF 5 I/O
-# If you wish to use this functionality specify USE_HDF5=1
-# and specify the location of the include directory
-# library files. Make sure you include the zlib.a location too.
-
-USE_HDF5=1
-
 HDF5_HOME=/usr
 HDF5_INCS=-I${HDF5_HOME}/include
 HDF5C_INCS=-I${HDF5_HOME}/include

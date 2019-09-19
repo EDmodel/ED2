@@ -31,6 +31,7 @@ module euler_driver
       use rk4_misc              , only : copy_patch_init            & ! subroutine
                                        , copy_patch_init_carbon     & ! subroutine
                                        , sanity_check_veg_energy    ! ! subroutine
+      use plant_hydro           , only : plant_hydro_driver         ! ! subroutine
       !$ use omp_lib
 
       implicit none
@@ -186,12 +187,12 @@ module euler_driver
                   !------------------------------------------------------------------------!
 
 
-
                   !------------------------------------------------------------------------!
-                  !     Set up the integration patch.                                      !
+                  !     Get plant water flow driven by plant hydraulics.  This must be     !
+                  ! placed before canopy_photosynthesis, because plant_hydro_driver needs  !
+                  ! fs_open from the previous timestep.                                    !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,ibuff,integration_buff(ibuff)%initp       &
-                                      ,patch_vels)
+                  call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
                   !------------------------------------------------------------------------!
 
 
@@ -215,9 +216,17 @@ module euler_driver
                   !------------------------------------------------------------------------!
 
 
+
                   !------------------------------------------------------------------------!
-                  !     Set up the remaining, carbon-dependent variables to the buffer.    !
+                  !     Set up the integration patch.                                      !
+                  !                                                                        !
+                  ! MLO: The separation between init and init_carbon may have become       !
+                  !      obsolete.  I am going to keep them separated in case I find out   !
+                  !      why copy_patch_init should be placed before photosynthesis, but   !
+                  !      I do not see any good reason now.                                 !
                   !------------------------------------------------------------------------!
+                  call copy_patch_init(csite,ipa,ibuff,integration_buff(ibuff)%initp       &
+                                      ,patch_vels)
                   call copy_patch_init_carbon(csite,ipa,integration_buff(ibuff)%initp)
                   !------------------------------------------------------------------------!
 

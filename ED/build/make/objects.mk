@@ -60,6 +60,7 @@ OBJ_MODEL =                        \
 	ename_coms.o               \
 	euler_driver.o             \
 	events.o                   \
+	farq_katul.o               \
 	farq_leuning.o             \
 	fatal_error.o              \
 	fire.o                     \
@@ -89,13 +90,14 @@ OBJ_MODEL =                        \
 	multiple_scatter.o         \
 	numutils.o                 \
 	old_twostream_rad.o        \
+	pft_coms.o                 \
 	phenology_aux.o            \
 	phenology_coms.o           \
 	phenology_driv.o           \
 	phenology_startup.o        \
 	photosyn_driv.o            \
 	physiology_coms.o          \
-	pft_coms.o                 \
+	plant_hydro.o              \
 	radiate_driver.o           \
 	radiate_utils.o            \
 	random_utils.o             \

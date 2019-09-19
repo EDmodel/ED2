@@ -20,7 +20,6 @@ BASE=$(ED_ROOT)/build/
 # libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may still  #
 # be able to compile without HDF5 but it will not run.                                     #
 #------------------------------------------------------------------------------------------#
-USE_HDF5=1
 ZLIB_PATH=/Users/mlongo/Util/ED2_Libs/zlib-1.2.11
 HDF5_PATH=/Users/mlongo/Util/ED2_Libs/hdf5-1.10.2
 HDF5_INCS=-I$(HDF5_PATH)/include

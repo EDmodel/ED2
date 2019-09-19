@@ -179,8 +179,9 @@ module pft_coms
    !----- Parameters used by the model that predicts Vm0 based on SLA. --------------------!
    real, dimension(n_pft) :: Vm0_v0
    real, dimension(n_pft) :: Vm0_v1
-   !----- Parameters currently used only by trait plasticity. -----------------------------!
+   !----- Parameters used by the new stomatal conductance model (Farquhar-Katul). ---------!
    real, dimension(n_pft) :: Vcmax25      ! Vm0 at 25degC
+   !----- Parameters currently used only by trait plasticity. -----------------------------!
    real, dimension(n_pft) :: kplastic_vm0 ! Expansion factor for Vm0 (extinction if < 0).
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Vm_hor 
@@ -200,6 +201,9 @@ module pft_coms
 
    !----- Maximum electron transport rate at the reference temperature [umol/m2/s]. -------!
    real, dimension(n_pft) :: Jm0 
+
+   !----- Parameters used by the new stomatal conductance model (Farquhar-Katul). ---------!
+   real, dimension(n_pft) :: Jmax25      ! Jm0 at 25degC
 
    !----- Exponent for Jm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Jm_hor 
@@ -482,6 +486,102 @@ module pft_coms
    !=======================================================================================!
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   ! Plant hydrodynamics -- see "initialize_pft_hydro_params".                             !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: leaf_water_cap
+   !< Leaf hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< constants for now
+
+   real, dimension(n_pft) :: wood_water_cap
+   !< Wood hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< constants for now
+
+   real, dimension(n_pft) :: leaf_water_sat
+   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
+   
+   real, dimension(n_pft) :: wood_water_sat
+   !< Wood water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
+   
+   real, dimension(n_pft) :: bark_water_sat
+   !< Wood water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
+   
+   real, dimension(n_pft) :: leaf_rwc_min  
+   !< Leaf minimum relative water content or leaf residual fraction [-]
+   
+   real, dimension(n_pft) :: leaf_psi_min
+   !< Leaf minimum water potential based on leaf_rwc_min [m]
+
+   real, dimension(n_pft) :: wood_rwc_min  
+   !< Sapwood minimum relative water content or Sapwood residual fraction [-]
+
+   real, dimension(n_pft) :: wood_psi_min
+   !< Sapwood minimum water potential based on leaf_rwc_min [m]
+
+   real, dimension(n_pft) :: leaf_psi_tlp
+   !< Leaf water potential at turgor loss point [m]
+
+   real, dimension(n_pft) :: wood_psi_tlp
+   !< Sapwood water potential at turgor loss point [m]
+
+   real, dimension(n_pft) :: leaf_psi_osmotic
+   !< Leaf osmotic water potential at saturation [m]
+
+   real, dimension(n_pft) :: wood_psi_osmotic
+   !< Sapwood osmotic water potential at saturation [m]
+
+   real, dimension(n_pft) :: leaf_elastic_mod
+   !< Leaf bulk elastic modulus [MPa]                    
+
+   real, dimension(n_pft) :: wood_elastic_mod
+   !< Sapwood bulk elastic modulus [MPa]                   
+
+   real, dimension(n_pft) :: wood_Kmax     
+   !< Maximum hydraulic conductivity of the stem [kg H2O / m / s]       
+   
+   real, dimension(n_pft) :: wood_Kexp     
+   !< Exponent for the hydraulic vulnerability curve of stem conductivity under
+   !< the Weibull function 1/(1+(psi/psi50) ** Kexp_stem) [-]
+
+   real, dimension(n_pft) :: wood_psi50
+   !< Water potential at which 50% of stem conductivity is lost [m]     
+
+   real, dimension(n_pft) :: vessel_curl_factor
+   !< Ratio of actual vessel length (water conducting length) to tree height [-]
+
+   real, dimension(n_pft) :: stoma_lambda
+   !< Marginal water use efficiency under well-watered conditions
+   !< in the optimization based stomatal model [umol/mol/kPa]
+   !< (Katul et al. 2010 Annals of Botany, Manoni et al. 2011 Functional Ecology)
+
+   real, dimension(n_pft) :: stoma_beta
+   !< Sensitivity of stoma_lambda to leaf water potential [m-1]
+
+   real, dimension(n_pft) :: stoma_psi_b  
+   !< Water potential scaler to modify stomatal conductance under water stress from 
+   !< Powell et al. 2017  [ m]
+   real, dimension(n_pft) :: stoma_psi_c  
+   !< Exponent to modify stomatal conductance under water stress from 
+   !< Powell et al. 2017  [ unitless]
+
+   ! Parameters for new drought phenology
+   integer, dimension(n_pft) :: high_psi_threshold
+   !< Threshold of consecutive wet days to grow new leaves   [# of days]
+
+   integer, dimension(n_pft) :: low_psi_threshold
+   !< Threshold of consecutive dry days to grow new leaves   [# of days]
+
+   real, dimension(n_pft) :: leaf_shed_rate
+   !< Rate of leaf shedding if low_psi_threshold is crossed  [unitless]
+
+   real, dimension(n_pft) :: leaf_grow_rate
+   !< Rate of leaf growing if high_psi_threshold is crossed  [unitless]
+
+   !=======================================================================================!
+   !=======================================================================================!
+
+
 
 
 
@@ -513,6 +613,10 @@ module pft_coms
    real   , dimension(n_pft)    :: qbark
    !----- Density ratio between bark and wood [(g cm-3)_bark/(g cm-3)_wood]. --------------!
    real   , dimension(n_pft)    :: qrhob
+   !----- Specific Root Area (m2root area/kg_C]. ------------------------------------------!
+   real   , dimension(n_pft)    :: SRA
+   !----- Root vertical profile parameter. Fraction of root biomass below max root depth --!
+   real   , dimension(n_pft)    :: root_beta
    !---------------------------------------------------------------------------------------!
    !     DBH-height allometry intercept (m).  Notice that this variable has different      !
    ! meaning between temperate and tropical PFTs.                                          !
@@ -564,6 +668,11 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Xb
    !----- DBH-sapwood thickness slope.  All PFTs. -----------------------------------------!
    real   , dimension(n_pft)    :: b1Xs
+
+   real   , dimension(n_pft)    :: b1SA
+   !< DBH-sapwood area allometry intercept
+   real   , dimension(n_pft)    :: b2SA
+   !< DBH-sapwood area allometry slope
    !----- Minimum DBH attainable by this PFT. ---------------------------------------------!
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
@@ -663,18 +772,13 @@ module pft_coms
    real, dimension(n_pft) :: c_ngrn_wood_dry
    !----- Specific heat capacity of dry non-green bark biomass [J/kg/K]. ------------------!
    real, dimension(n_pft) :: c_ngrn_bark_dry
-   !----- Ratio of tissue water to dry mass in green leaves [kg_h2o/kg_leaves]. -----------!
-   real, dimension(n_pft) :: wat_dry_ratio_leaf
-   !----- Ratio of water to dry mass in wood biomass [kg_h2o/kg_wood]. --------------------!
-   real, dimension(n_pft) :: wat_dry_ratio_wood
-   !----- Ratio of water to dry mass in bark biomass [kg_h2o/kg_wood]. --------------------!
-   real, dimension(n_pft) :: wat_dry_ratio_bark
    !-----  Correction-term for energy storage in wood-water bond. -------------------------!
    real, dimension(n_pft) :: delta_c_wood
    real, dimension(n_pft) :: delta_c_bark
-   !----- Net specific heat capacity of leaves, wood, and bark. ---------------------------!
+   !----- Net specific heat capacity of leaves, sapwood, heartwood, and bark. -------------!
    real, dimension(n_pft) :: cleaf
-   real, dimension(n_pft) :: cwood
+   real, dimension(n_pft) :: csapw
+   real, dimension(n_pft) :: cdead
    real, dimension(n_pft) :: cbark
    !=======================================================================================!
    !=======================================================================================!
