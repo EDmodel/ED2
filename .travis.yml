@@ -1,14 +1,20 @@
 language: c
-sudo: required
+dist: xenial
+
+addons:
+  apt:
+    packages:
+      - gfortran
+      - libopenmpi-dev
+      - libhdf5-openmpi-dev
 
 before_install:
-    - sudo apt-get clean && sudo apt-get update
-    - sudo apt-get install gcc gfortran hdf5-tools libopenmpi-dev libhdf5-openmpi-dev 
     - which gfortran
+    - gfortran --version
     - which gcc
-    - which h5dump
+    - gcc --version
 
 script:
-    - pwd
+    - set -e
     - cd ED/build/
     - ./install.sh -k C -p travisci -g
