@@ -223,6 +223,8 @@ default = list( run           = "unnamed"
               , clump.grass   = 0.80
               , igoutput      = 0
               , ivegtdyn      = 1
+              , ihydro        = 0
+              , istomata      = 0
               , iplastic      = 2
               , igndvap       = 0
               , iphen         = -1

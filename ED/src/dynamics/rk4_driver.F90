@@ -446,7 +446,7 @@ module rk4_driver
                                       , cmtl2uext            & ! subroutine
                                       , qslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
-      use physiology_coms        , only : plant_hydro_scheme         ! ! intent(in)
+      use physiology_coms      , only : plant_hydro_scheme   ! ! intent(in)
       use allometry            , only : h2crownbh            ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
                                       , k_fire_first         ! ! intent(in)

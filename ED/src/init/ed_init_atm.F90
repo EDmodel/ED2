@@ -131,7 +131,7 @@ subroutine ed_init_atm()
       !     If this is a standard ED2 restart, we will read these fields in from a history !
       ! file and therefore not worry about setting them here.                              !
       !------------------------------------------------------------------------------------!
-      if(trim(runtype) == 'HISTORY' )return
+      if (trim(runtype) == 'HISTORY' ) return
       !------------------------------------------------------------------------------------!
 
       !----- Loop over polygons, sites and patches. ---------------------------------------!

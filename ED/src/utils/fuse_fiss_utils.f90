@@ -1778,6 +1778,7 @@ module fuse_fiss_utils
       use fusion_fission_coms, only : corr_cohort            ! ! intent(in)
       use grid_coms          , only : nzg                    ! ! intent(in)
       use plant_hydro        , only : rwc2psi                & ! subroutine
+                                    , twe2twi                & ! subroutine
                                     , tw2rwc                 & ! subroutine
                                     , tw2psi                 ! ! subroutine
       implicit none
@@ -2366,13 +2367,10 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !    Plant hydrodynamics characteristics (XXT).  Internal water content and water    !
-      ! fluxes are weighted by nplant (int) or added (im2).                                !
+      !    Plant hydrodynamics characteristics (XXT).  Extensive internal water (kg/m2)    !
+      ! is updated here, and Intensive internal water content (kg/plant) is updated later. !
+      ! Water fluxes are weighted by nplant (int) or added (im2).                          !
       !------------------------------------------------------------------------------------!
-      cpatch%leaf_water_int(recc) = cpatch%leaf_water_int(recc) * rnplant                  &
-                                  + cpatch%leaf_water_int(donc) * dnplant
-      cpatch%wood_water_int(recc) = cpatch%wood_water_int(recc) * rnplant                  &
-                                  + cpatch%wood_water_int(donc) * dnplant
       cpatch%leaf_water_im2(recc) = cpatch%leaf_water_im2(recc)                            &
                                   + cpatch%leaf_water_im2(donc)
       cpatch%wood_water_im2(recc) = cpatch%wood_water_im2(recc)                            &
@@ -2447,6 +2445,10 @@ module fuse_fiss_utils
       !    Recalculate rwc and psi from water_int. This ensures that psi, rwc, and total   !
       ! water are consistent with each other.                                              !
       !------------------------------------------------------------------------------------!
+      call twe2twi(cpatch%leaf_water_im2(recc),cpatch%wood_water_im2(recc)                 &
+                  ,cpatch%nplant(recc),cpatch%pft(recc),cpatch%bleaf(recc)                 &
+                  ,cpatch%broot(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)        &
+                  ,cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc))
       call tw2rwc(cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc)                  &
                  ,cpatch%bleaf(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)         &
                  ,cpatch%bdeada(recc),cpatch%bdeadb(recc),cpatch%broot(recc)               &

@@ -1239,8 +1239,10 @@ module budget_utils
                             * csite%can_rhos(ipa)
       !----- 4. Add the water on the leaf and wood surfaces. ------------------------------!
       do ico = 1,cpatch%ncohorts
-         compute_water_storage = compute_water_storage + cpatch%leaf_water(ico)            &
-                                                       + cpatch%wood_water(ico)
+         compute_water_storage = compute_water_storage + cpatch%leaf_water    (ico)        &
+                                                       + cpatch%leaf_water_im2(ico)        &
+                                                       + cpatch%wood_water    (ico)        &
+                                                       + cpatch%wood_water_im2(ico)
       end do
 
       return

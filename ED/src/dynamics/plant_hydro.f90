@@ -28,17 +28,18 @@ module plant_hydro
    !> \author Xiangtao Xu, 30 Jan. 2018
    !---------------------------------------------------------------------------------------!
    subroutine plant_hydro_driver(csite,ipa,ntext_soil)
-      use ed_state_vars        , only : sitetype               & !structure
-                                      , patchtype              ! !structure
-      use ed_misc_coms         , only : dtlsm                  & !intent(in)
-                                      , frqsum                 ! !intent(in)
-      use soil_coms            , only : soil                   ! !intent(in)
-      use grid_coms            , only : nzg                    ! !intent(in)
-      use consts_coms          , only : pio4                   ! !intent(in)
-      use allometry            , only : dbh2sf                 ! !function
-      use physiology_coms      , only : plant_hydro_scheme     ! !intent(in)
-      use pft_coms             , only : C2B                    & !intent(in)
-                                      , leaf_water_cap         ! !intent(in)
+      use ed_state_vars        , only : sitetype               & ! structure
+                                      , patchtype              ! ! structure
+      use ed_misc_coms         , only : dtlsm                  & ! intent(in)
+                                      , frqsum                 & ! intent(in)
+                                      , current_time           ! ! intent(in)
+      use soil_coms            , only : soil                   ! ! intent(in)
+      use grid_coms            , only : nzg                    ! ! intent(in)
+      use consts_coms          , only : pio4                   ! ! intent(in)
+      use allometry            , only : dbh2sf                 ! ! function
+      use physiology_coms      , only : plant_hydro_scheme     ! ! intent(in)
+      use pft_coms             , only : C2B                    & ! intent(in)
+                                      , leaf_water_cap         ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -93,8 +94,8 @@ module plant_hydro
             cpatch%wood_rwc        (ico)    = 0.
             cpatch%leaf_psi        (ico)    = 0.
             cpatch%wood_psi        (ico)    = 0.
-        enddo
-      case (-2,-1,1,2)
+        end do
+      case default
         ! track plant hydraulics
 
         !--------------------------------------------------------------------------
@@ -123,9 +124,9 @@ module plant_hydro
               soil_cond(k) = soil(nsoil)%slcons                                    &
                            * wgpfrac ** (2.0 * soil(nsoil)%slbs + 3.0) * 1.e3
               ! kgH2O m-2 s-1
-          endif
+          end if
 
-        enddo
+        end do
 
         ! Loop over cohorts, calculate plant hydraulic fluxes
         cohortloop: do ico = 1, cpatch%ncohorts
@@ -137,7 +138,7 @@ module plant_hydro
             ! track water potential in this case, we can never allow soil water
             ! to refill wood
 
-            !if (cpatch%leaf_resolvable(ico)) then
+            if (cpatch%leaf_resolvable(ico)) then
                 !---- prepare input for plant water flux calculations
                 sap_frac    = dbh2sf(cpatch%dbh(ico),cpatch%pft(ico))         ! m2
                 sap_area    = sap_frac * pio4 * (cpatch%dbh(ico) / 100.) ** 2 ! m2
@@ -171,7 +172,7 @@ module plant_hydro
 !                    ! need to reset rwc
 !                    call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico) &
 !                                 cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
-                endif
+                end if
                 
                 !--------------------------------------------------------------------------
                 ! Handling Potential Errors and Help Debugging
@@ -186,9 +187,11 @@ module plant_hydro
                    write (unit=*,fmt='(92a)') ('=',k=1,92)
                    write (unit=*,fmt='(a)'  ) ' Input leaf_psi is too high for plant hydodynamics'
                    write (unit=*,fmt='(92a)') ('-',k=1,92)
-                   write (unit=*,fmt=ifmt   ) ' + IPA              =',ipa
-  
+                   write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : '   &
+                                                   ,current_time%year,current_time%month   &
+                                                   ,current_time%date,current_time%time
                    write (unit=*,fmt='(a)'  ) ' '
+                   write (unit=*,fmt=ifmt   ) ' + IPA              =',ipa
                    write (unit=*,fmt=ifmt   ) ' + ICO              =',ico
                    write (unit=*,fmt=ifmt   ) ' + PFT              =',cpatch%pft(ico)
                    write (unit=*,fmt=ifmt   ) ' + KRDEPTH          =',cpatch%krdepth(ico)
@@ -205,24 +208,33 @@ module plant_hydro
   
                    write (unit=*,fmt='(a)'  ) ' '
                    write (unit=*,fmt=efmt   ) ' + TRANSP           =',transp
-                   write (unit=*,fmt=efmt   ) ' + c_leaf           =',c_leaf
+                   write (unit=*,fmt=efmt   ) ' + C_LEAF           =',c_leaf
                    write (unit=*,fmt=efmt   ) ' + PSI_OPEN         =',cpatch%psi_open(ico)
                    write (unit=*,fmt=efmt   ) ' + PSI_CLOSED       =',cpatch%psi_closed(ico)
-                   write (unit=*,fmt=efmt   ) ' + FS_OPEN          =',cpatch%fs_open(ico)   
+                   write (unit=*,fmt=efmt   ) ' + FS_OPEN          =',cpatch%fs_open(ico)
+                   write (unit=*,fmt='(a)'  ) ' '
                    write (unit=*,fmt=efmt   ) ' + LEAF_PSI         =',cpatch%leaf_psi(ico)
+                   write (unit=*,fmt=efmt   ) ' + LEAF_RWC         =',cpatch%leaf_rwc(ico)
+                   write (unit=*,fmt=efmt   ) ' + LEAF_WATER_INT   =',cpatch%leaf_water_int(ico)
+                   write (unit=*,fmt=efmt   ) ' + LEAF_WATER_IM2   =',cpatch%leaf_water_im2(ico)
+                   write (unit=*,fmt='(a)'  ) ' '
                    write (unit=*,fmt=efmt   ) ' + WOOD_PSI         =',cpatch%wood_psi(ico)
+                   write (unit=*,fmt=efmt   ) ' + WOOD_RWC         =',cpatch%wood_rwc(ico)
+                   write (unit=*,fmt=efmt   ) ' + WOOD_WATER_INT   =',cpatch%wood_water_int(ico)
+                   write (unit=*,fmt=efmt   ) ' + WOOD_WATER_IM2   =',cpatch%wood_water_im2(ico)
+                   write (unit=*,fmt='(a)'  ) ' '
                    write (unit=*,fmt=efmt   ) ' + WFLUX_GW (LAST)  =',cpatch%wflux_gw(ico) 
                    write (unit=*,fmt=efmt   ) ' + WFLUX_WL (LAST)  =',cpatch%wflux_wl(ico)
                    write (unit=*,fmt='(a)'  ) ' + WFLUX_GW_LAYER   ='            
                    do k = 1, nzg
                        write (unit=*,fmt='(i5,1x,es12.5)') k, cpatch%wflux_gw_layer(k,ico)
-                   enddo
+                   end do
   
                    write (unit=*,fmt='(a)'  ) ' '
                    write (unit=*,fmt='(a)'  ) ' + SOIL_PSI         ='            
                    do k = 1, nzg
                        write (unit=*,fmt='(i5,1x,es12.5)') k, soil_psi(k)                 
-                   enddo
+                   end do
                    write (unit=*,fmt='(92a)') ('=',k=1,92)
                    write (unit=*,fmt='(92a)') ('=',k=1,92)
                    write (unit=*,fmt='(a)') ' '
@@ -231,8 +243,8 @@ module plant_hydro
                        call fatal_error('Plant Hydrodynamics is wrong',&
                                         'plant_hydro_driver'       ,&
                                         'plant_hydro.f90')
-                   endif
-                endif
+                   end if
+                end if
 
                 ! note here, transp is from last timestep's psi_open and psi_closed
                 call calc_plant_water_flux(                           &
@@ -245,13 +257,12 @@ module plant_hydro
                        ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)     &!output
                        ,cpatch%wflux_gw_layer(:,ico))                 !!output
 
-            !else
-            !    cpatch%wflux_wl(ico) = 0.
-            !    cpatch%wflux_gw(ico) = 0.
-            !    cpatch%wflux_gw_layer(:,ico)  = 0.
-            !endif
-
-        enddo cohortloop
+            else
+                cpatch%wflux_wl(ico) = 0.
+                cpatch%wflux_gw(ico) = 0.
+                cpatch%wflux_gw_layer(:,ico)  = 0.
+            end if
+        end do cohortloop
 
       end select
 
@@ -274,25 +285,25 @@ module plant_hydro
              cpatch%dmax_leaf_psi(ico) =  cpatch%leaf_psi(ico)
          else
              cpatch%dmax_leaf_psi(ico) =  max(cpatch%dmax_leaf_psi(ico),cpatch%leaf_psi(ico))
-         endif
+         end if
 
          if (cpatch%dmin_leaf_psi(ico) == 0.) then
              cpatch%dmin_leaf_psi(ico) =  cpatch%leaf_psi(ico)
          else
              cpatch%dmin_leaf_psi(ico) =  min(cpatch%dmin_leaf_psi(ico),cpatch%leaf_psi(ico))
-         endif
+         end if
 
          if (cpatch%dmax_wood_psi(ico) == 0.) then
              cpatch%dmax_wood_psi(ico) =  cpatch%wood_psi(ico)
          else
              cpatch%dmax_wood_psi(ico) =  max(cpatch%dmax_wood_psi(ico),cpatch%wood_psi(ico))
-         endif
+         end if
 
          if (cpatch%dmin_wood_psi(ico) == 0.) then
              cpatch%dmin_wood_psi(ico) =  cpatch%wood_psi(ico)
          else
              cpatch%dmin_wood_psi(ico) =  min(cpatch%dmin_wood_psi(ico),cpatch%wood_psi(ico))
-         endif
+         end if
 
           cpatch%fmean_wflux_wl             (ico) = cpatch%fmean_wflux_wl(ico)         &
                                                   + cpatch%wflux_wl(ico)               &
@@ -305,9 +316,9 @@ module plant_hydro
               cpatch%fmean_wflux_gw_layer (k,ico) = cpatch%fmean_wflux_gw_layer(k,ico) &
                                                   + cpatch%wflux_gw_layer(k,ico)       &
                                                   * dtlsm_o_frqsum
-          enddo
+          end do
 
-       enddo
+       end do
 
       return
 
@@ -558,7 +569,7 @@ module plant_hydro
                   proj_leaf_psi = leaf_psi_d - transp_d * dt_d / c_leaf
               else
                   proj_leaf_psi = leaf_psi_d
-              endif
+              end if
   
           else
               ! We do need to calculate sapflow
@@ -591,10 +602,10 @@ module plant_hydro
   
                   ! calculate the average sapflow rate  within the time step [kg H2O /s]
                   wflux_wl_d = (proj_leaf_psi - leaf_psi_d) * c_leaf / dt_d + transp_d
-              endif
+              end if
    
-          endif
-      endif
+          end if
+      end if
 
         
       !--------------------------------------------------------------------------
@@ -612,7 +623,7 @@ module plant_hydro
                 above_layer_depth = -slz8(k+1)
             else
                 above_layer_depth = 0.d0
-            endif
+            end if
 
             ! calcualte the root fraction of this layer
             root_frac = &
@@ -628,7 +639,7 @@ module plant_hydro
             else
                 RAI = broot_d * dble(SRA(ipft)) * root_frac     & !m2
                     / (4.d0 * crown_area_d)                         !m2
-            endif
+            end if
 
             !  Calculate soil-root water conductance kg H2O / m / s
             !  Based on Katul et al. 2003 PCE
@@ -642,7 +653,7 @@ module plant_hydro
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if (soil_psi_d(k) <= wood_psi_d) then
                 gw_cond = 0.d0
-            endif
+            end if
             
             ! Calculate weighted conductance, weighted psi, and
             ! water_supply_layer_frac
@@ -650,7 +661,7 @@ module plant_hydro
             weighted_soil_psi  = weighted_soil_psi + gw_cond * soil_psi_d(k) ! kgH2O/s
 
             layer_water_supply(k) = gw_cond * (soil_psi_d(k) - wood_psi_d)!kgH2O s-1 
-        enddo
+        end do
 
         ! Now we can calculate ground->wood water flow
         ! First we handle special cases
@@ -665,7 +676,7 @@ module plant_hydro
                 proj_wood_psi = wood_psi_d - wflux_wl_d * dt_d / c_stem
             else
                 proj_wood_psi = wood_psi_d
-            endif
+            end if
         else
             ! calculate the average soil water uptake
             ap = - weighted_gw_cond  / c_stem 
@@ -677,7 +688,7 @@ module plant_hydro
             exp_term        = exp(max(ap * dt_d,lnexp_min8))
             proj_wood_psi   = ((ap * wood_psi_d + bp) * exp_term - bp) / ap
             wflux_gw_d     = (proj_wood_psi - wood_psi_d) * c_stem  / dt_d + wflux_wl_d
-        endif
+        end if
 
         ! We need to re-calculate the water fluxes for small tree scenarios
         if (small_tree_flag) then
@@ -691,7 +702,7 @@ module plant_hydro
             wflux_wl_d    = (proj_leaf_psi - org_leaf_psi) &
                           * c_leaf / dt_d + transp_d
 
-        endif
+        end if
 
        
 
@@ -705,7 +716,7 @@ module plant_hydro
         else
             wflux_gw_layer_d = layer_water_supply / sum(layer_water_supply) * &
                                wflux_gw_d
-        endif
+        end if
 
 
 
@@ -751,13 +762,13 @@ module plant_hydro
          write (unit=*,fmt='(a)'  ) ' + WFLUX_GW_LAYER   ='            
          do k = 1, nzg
              write (unit=*,fmt='(i5,1x,es12.5)') k, wflux_gw_layer_d(k)                 
-         enddo
+         end do
 
          write (unit=*,fmt='(a)'  ) ' '
          write (unit=*,fmt='(a)'  ) ' + SOIL_PSI         ='            
          do k = 1, nzg
              write (unit=*,fmt='(i5,1x,es12.5)') k, soil_psi(k)                 
-         enddo
+         end do
          write (unit=*,fmt='(92a)') ('=',k=1,92)
          write (unit=*,fmt='(92a)') ('=',k=1,92)
          write (unit=*,fmt='(a)') ' '
@@ -766,8 +777,8 @@ module plant_hydro
              call fatal_error('Plant Hydrodynamics is wrong',&
                               'calc_plant_water_flux'       ,&
                               'plant_hydro.f90')
-         endif
-      endif
+         end if
+      end if
  
 
 
@@ -775,10 +786,14 @@ module plant_hydro
       ! Copy all the results to output variables
       !--------------------------------------------------------------------------
       wflux_wl = sngloff(wflux_wl_d,tiny_offset)
-      wflux_gw = sngloff(wflux_gw_d,tiny_offset)
+      ! wflux_gw = sngloff(wflux_gw_d,tiny_offset)
       do k = 1, nzg
         wflux_gw_layer(k) = sngloff(wflux_gw_layer_d(k),tiny_offset)
-      enddo
+      end do
+      ! MLO -> XX. I imposed wflux_gw to be the same as the sum of layers to ensure
+      !            that water would be conserved.  Please check that this is ok.
+      wflux_gw = sum(wflux_gw_layer)
+
 
       return
    end subroutine calc_plant_water_flux
@@ -1083,7 +1098,7 @@ module plant_hydro
    !=======================================================================================!
    !=======================================================================================!
    !  SUBROUTINE: TW2PSI            
-   !> \breif Convert total water to water potential for both leaf and wood
+   !> \brief Convert total water to water potential for both leaf and wood
    !> \details the inverse of psi2tw \n
    !=======================================================================================!
    subroutine tw2psi(leaf_water_int,wood_water_int,bleaf,bsapwooda,bsapwoodb,bdeada,bdeadb &

@@ -1716,16 +1716,21 @@ end do
    end select
    !---------------------------------------------------------------------------------------!
 
-   if (plant_hydro_scheme < -2 .or. plant_hydro_scheme > 2) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid PLANT_HYDRO_SCHEME, it must be between -2 and 2. Yours is set to'   &
-                    ,plant_hydro_scheme,'...'
+   if (plant_hydro_scheme < 0 .or. plant_hydro_scheme > 2) then
+      write (reason,fmt='(a,1x,a,1x,i4,a)')                                                &
+                    'Invalid PLANT_HYDRO_SCHEME, it must be between 0 and 2.'              &
+                   ,'Yours is set to' ,plant_hydro_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   else if (plant_hydro_scheme /= 0 .and. igrass /= 0) then
+   else if (plant_hydro_scheme > 0 .and. igrass /= 0) then
       write(reason,fmt='(a,1x,i4,a,1x,i4,a)')                                              &
                    ' Dynamic plant hydraulics (PLANT_HYDRO_SCHEME =',plant_hydro_scheme    &
                    ,') cannot be used with new grass scheme (IGRASS =',igrass,').'
+   else if (plant_hydro_scheme > 0 .and. ibranch_thermo == 0) then
+      write(reason,fmt='(a,1x,i4,a,1x,i4,a)')                                              &
+                   ' Dynamic plant hydraulics (PLANT_HYDRO_SCHEME =',plant_hydro_scheme    &
+                   ,') cannot run with disabled branch thermodynamics (IBRANCH_THERMO ='   &
+                   ,ibranch_thermo,').'
    end if
 
    if (istomata_scheme < 0 .or. istomata_scheme > 1) then
@@ -1838,7 +1843,7 @@ end do
              ( plant_hydro_scheme == 0 ) ) then
       write (reason,fmt='(a,1x,i4,a,1x,a)')                                                &
                     'H2O_PLANT_LIM is set to ',h2o_plant_lim,'.'                           &
-                   ,'This requires PLANT_HYDRO_SCHEME /= 0.'
+                   ,'This requires PLANT_HYDRO_SCHEME > 0.'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    else if (h2o_plant_lim == 4 .and. (istomata_scheme == 0)) then

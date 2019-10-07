@@ -70,6 +70,7 @@ recursive subroutine read_ed_xml_config(filename)
   use fusion_fission_coms
   use grid_coms, only : ngrids
   use ed_max_dims, only : str_len
+  use canopy_air_coms, only : f_bndlyr_init
 
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
@@ -191,6 +192,25 @@ recursive subroutine read_ed_xml_config(filename)
 
       end do
   end if
+
+
+  !*******  MET PARAMS
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','can_air',ntag)    !get number of met tags
+  print*,"CAN_AIR READ FROM FILE ::",ntag
+  if (ntag >= 1) then
+     do i=1,ntag
+        call libxml2f90__ll_selecttag('DOWN','can_air',i)
+
+        call getConfigREAL  ('f_bndlyr_init','can_air',i,rval,texist)
+        if (texist) f_bndlyr_init = sngloff(rval,tiny_offset)
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+
+      end do
+  end if
+
+
 
   !*******  MISC
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
@@ -1659,8 +1679,9 @@ subroutine write_ed_xml_config
 !  use ed_data
   use ed_misc_coms !, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms     !, only : rk4min_veg_temp
-  use budget_utils, only : tol_subday_budget & ! intent(in)
-                         , tol_carbon_budget ! ! intent(in)
+  use budget_utils   , only : tol_subday_budget & ! intent(in)
+                            , tol_carbon_budget ! ! intent(in)
+  use canopy_air_coms, only : f_bndlyr_init     ! ! intent(in)
 
   implicit none
 !  integer :: ival
@@ -1713,6 +1734,14 @@ subroutine write_ed_xml_config
         call putConfigSTRING("nbdsf_file"     ,nbdsf_file     )
         call putConfigSTRING("nddsf_file"     ,nddsf_file     )
   call libxml2f90_ll_closetag("met")
+
+
+
+
+  !************   CANOPY AIR  *****************
+  call libxml2f90_ll_opentag("can_air")
+        call putConfigREAL  ("f_bndlyr_init"  ,f_bndlyr_init  )
+  call libxml2f90_ll_closetag("can_air")
 
 
 

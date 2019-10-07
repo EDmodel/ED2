@@ -25,6 +25,7 @@ module ed_type_init
                                 , leaf_turnover_rate & ! intent(in)
                                 , Vm0                & ! intent(in)
                                 , sla                ! ! intent(in)
+      use canopy_air_coms, only : f_bndlyr_init      ! ! intent(in)
       use rk4_coms       , only : effarea_transp     & ! intent(in)
                                 , tiny_offset        ! ! intent(in)
       use ed_misc_coms   , only : writing_long       & ! intent(in)
@@ -36,11 +37,13 @@ module ed_type_init
                                 , vm0_min            & ! intent(in)
                                 , llspan_inf         ! ! intent(in)
       use consts_coms    , only : umol_2_mol         & ! intent(in)
-                                , mmdry              ! ! intent(in)
+                                , mmdry              & ! intent(in)
+                                , cpdry              ! ! intent(in)
       use plant_hydro    , only : psi2rwc            & ! subroutine
                                 , rwc2tw             & ! subroutine
                                 , twi2twe            ! ! subroutine
-      use physiology_coms, only : plant_hydro_scheme ! ! intent(in)
+      use physiology_coms, only : plant_hydro_scheme & ! intent(in)
+                                , gbh_2_gbw          ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target     :: cpatch  ! Current patch
@@ -50,6 +53,7 @@ module ed_type_init
       integer                     :: ipft    ! PFT index
       !----- External function. -----------------------------------------------------------!
       real(kind=4)    , external  :: sngloff ! Safe double -> single precision
+      !----- Local constants. -------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
@@ -115,7 +119,7 @@ module ed_type_init
          cpatch%leaf_psi      (  ico) = 0.
          cpatch%wood_psi      (  ico) = 0.
          !---------------------------------------------------------------------------------!
-      case (-1,-2,1,2)
+      case default
          !---------------------------------------------------------------------------------!
          !     Start the water potential with ~-0.1MPa, assuming the plant is under well-  !
          ! -watered conditions.                                                            !
@@ -195,6 +199,14 @@ module ed_type_init
 
 
 
+      !----- Also make sure to initialise leaf/wood boundary layer conductancies. ---------!
+      cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+      cpatch%wood_gbw(ico) = cpatch%leaf_gbw(ico)
+      cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+      cpatch%wood_gbh(ico) = cpatch%leaf_gbh(ico)
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !      Most variables start with zero.                                               !
       !------------------------------------------------------------------------------------!
@@ -256,10 +268,6 @@ module ed_type_init
       cpatch%rshort_w_diffuse      (ico) = 0.0
       cpatch%rlong_w               (ico) = 0.0
       cpatch%rad_profile         (:,ico) = 0.0
-      cpatch%leaf_gbh              (ico) = 0.0
-      cpatch%leaf_gbw              (ico) = 0.0
-      cpatch%wood_gbh              (ico) = 0.0
-      cpatch%wood_gbw              (ico) = 0.0
       cpatch%A_open                (ico) = 0.0
       cpatch%A_closed              (ico) = 0.0
       cpatch%A_light               (ico) = 0.0

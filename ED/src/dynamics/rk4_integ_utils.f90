@@ -373,12 +373,16 @@ module rk4_integ_utils
       rkp%cpwp = rkp%cpwp + fac * inc%cpwp
 
       do ico = 1,cpatch%ncohorts
-         rkp%leaf_water (ico) = rkp%leaf_water (ico) + fac * inc%leaf_water (ico)
-         rkp%leaf_energy(ico) = rkp%leaf_energy(ico) + fac * inc%leaf_energy(ico)
-         rkp%wood_water (ico) = rkp%wood_water (ico) + fac * inc%wood_water (ico)
-         rkp%wood_energy(ico) = rkp%wood_energy(ico) + fac * inc%wood_energy(ico)
-         rkp%veg_water (ico)  = rkp%veg_water  (ico) + fac * inc%veg_water  (ico)
-         rkp%veg_energy(ico)  = rkp%veg_energy (ico) + fac * inc%veg_energy (ico)
+         rkp%leaf_water    (ico) = rkp%leaf_water    (ico) + fac * inc%leaf_water    (ico)
+         rkp%leaf_water_im2(ico) = rkp%leaf_water_im2(ico) + fac * inc%leaf_water_im2(ico)
+         rkp%leaf_energy   (ico) = rkp%leaf_energy   (ico) + fac * inc%leaf_energy   (ico)
+         rkp%wood_water    (ico) = rkp%wood_water    (ico) + fac * inc%wood_water    (ico)
+         rkp%wood_water_im2(ico) = rkp%wood_water_im2(ico) + fac * inc%wood_water_im2(ico)
+         rkp%wood_energy   (ico) = rkp%wood_energy   (ico) + fac * inc%wood_energy   (ico)
+         rkp%veg_water     (ico) = rkp%veg_water     (ico) + fac * inc%veg_water     (ico)
+         rkp%veg_water_im2 (ico) = rkp%veg_water_im2 (ico) + fac * inc%veg_water_im2 (ico)
+         rkp%veg_energy    (ico) = rkp%veg_energy    (ico) + fac * inc%veg_energy    (ico)
+
 
          rkp%psi_open  (ico) = rkp%psi_open  (ico) + fac * inc%psi_open  (ico)
          rkp%psi_closed(ico) = rkp%psi_closed(ico) + fac * inc%psi_closed(ico)
@@ -726,14 +730,44 @@ module rk4_integ_utils
 
 
             !------------------------------------------------------------------------------!
+            !      Check plant hydraulics variables.                                       !
+            !------------------------------------------------------------------------------!
+            select case (plant_hydro_scheme)
+            case (0)
+               !---------------------------------------------------------------------------!
+               !    Plant hydraulics is not enabled, make changes in internal water always !
+               ! acceptable.                                                               !
+               !---------------------------------------------------------------------------!
+               yscal%veg_water_im2 (ico)    = huge_offset
+               !---------------------------------------------------------------------------!
+            case default
+               !---------------------------------------------------------------------------!
+               !    Simulation running with plant hydraulics.  Calculate the scale         !
+               ! similarly to leaf/wood energy.                                            !
+               !---------------------------------------------------------------------------!
+               if (yscal%veg_resolvable(ico)) then
+                  yscal%veg_water_im2(ico) = abs( y%veg_water_im2(ico))                    &
+                                           + abs(dy%veg_water_im2(ico) * htry )
+               else
+                  yscal%veg_water_im2(ico) = huge_offset
+               end if
+               !---------------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
             !   No need to scale wood and leaf correctly, make it always acceptable.       !
             !------------------------------------------------------------------------------!
-            yscal%leaf_water(ico)  = huge_offset
-            yscal%leaf_energy(ico) = huge_offset
-            yscal%leaf_temp(ico)   = huge_offset
-            yscal%wood_water(ico)  = huge_offset
-            yscal%wood_energy(ico) = huge_offset
-            yscal%wood_temp(ico)   = huge_offset
+            yscal%leaf_water    (ico) = huge_offset
+            yscal%leaf_water_im2(ico) = huge_offset
+            yscal%leaf_energy   (ico) = huge_offset
+            yscal%leaf_temp     (ico) = huge_offset
+            yscal%wood_water    (ico) = huge_offset
+            yscal%wood_water_im2(ico) = huge_offset
+            yscal%wood_energy   (ico) = huge_offset
+            yscal%wood_temp     (ico) = huge_offset
             !------------------------------------------------------------------------------!
          end do
          !---------------------------------------------------------------------------------!
@@ -776,62 +810,55 @@ module rk4_integ_utils
                                            + abs(dy%wood_water(ico)  * htry)               &
                                            , rk4leaf_drywhc * y%wai(ico))
             else
-               yscal%wood_water(ico)  = huge_offset
+               yscal%wood_water (ico) = huge_offset
                yscal%wood_energy(ico) = huge_offset
-               yscal%wood_temp(ico)   = huge_offset
+               yscal%wood_temp  (ico) = huge_offset
             end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Check plant hydraulics variables.                                       !
+            !------------------------------------------------------------------------------!
+            select case (plant_hydro_scheme)
+            case (0)
+               !---------------------------------------------------------------------------!
+               !    Plant hydraulics is not enabled, make changes in internal water always !
+               ! acceptable.                                                               !
+               !---------------------------------------------------------------------------!
+               yscal%leaf_water_im2(ico)    = huge_offset
+               yscal%wood_water_im2(ico)    = huge_offset
+               !---------------------------------------------------------------------------!
+            case default
+               !---------------------------------------------------------------------------!
+               !    Simulation running with plant hydraulics.  Calculate the scale         !
+               ! similarly to leaf/wood energy.                                            !
+               !---------------------------------------------------------------------------!
+               if (yscal%leaf_resolvable(ico)) then
+                  yscal%leaf_water_im2(ico) = abs( y%leaf_water_im2(ico))                  &
+                                            + abs(dy%leaf_water_im2(ico) * htry )
+               else
+                   yscal%leaf_water_im2(ico) = huge_offset
+               end if
+               if (yscal%wood_resolvable(ico)) then
+                  yscal%wood_water_im2(ico) = abs( y%wood_water_im2(ico))                  &
+                                            + abs(dy%wood_water_im2(ico) * htry)
+               else
+                  yscal%wood_water_im2(ico) = huge_offset
+               end if
+               !---------------------------------------------------------------------------!
+            end select
             !------------------------------------------------------------------------------!
 
 
 
             !----- No need to scale veg correctly, let's make it always acceptable. -------!
-            yscal%veg_water(ico)   = huge_offset
-            yscal%veg_energy(ico)  = huge_offset
+            yscal%veg_water    (ico) = huge_offset
+            yscal%veg_water_im2(ico) = huge_offset
+            yscal%veg_energy   (ico) = huge_offset
             !------------------------------------------------------------------------------!
          end do
-      end select
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      Check plant hydraulics variables.                                             !
-      !------------------------------------------------------------------------------------!
-      select case (plant_hydro_scheme)
-      case (0)
-         !---------------------------------------------------------------------------------!
-         !    Plant hydraulics is not enabled, make changes in internal water always       !
-         ! acceptable.                                                                     !
-         !---------------------------------------------------------------------------------!
-         do ico=1,cpatch%ncohorts
-            yscal%leaf_water_im2(ico)    = huge_offset
-            yscal%wood_water_im2(ico)    = huge_offset
-         end do
-         !---------------------------------------------------------------------------------!
-      case (-2,-1,1,2)
-         !---------------------------------------------------------------------------------!
-         !    Simulation running with plant hydraulics.  Calculate the scale similarly to  !
-         ! leaf/wood energy.                                                               !
-         !---------------------------------------------------------------------------------!
-         do ico=1,cpatch%ncohorts
-            !------------------------------------------------------------------------------!
-            !     Check whether leaf and wood are resolvable.                              !
-            !------------------------------------------------------------------------------!
-            if (yscal%leaf_resolvable(ico)) then
-               yscal%leaf_water_im2(ico) = abs( y%leaf_water_im2(ico))                     &
-                                         + abs(dy%leaf_water_im2(ico) * htry )
-            else
-                yscal%leaf_water_im2(ico) = huge_offset
-            end if
-            if (yscal%wood_resolvable(ico)) then
-               yscal%wood_water_im2(ico) = abs( y%wood_water_im2(ico))                     &
-                                         + abs(dy%wood_water_im2(ico) * htry)
-            else
-               yscal%wood_water_im2(ico) = huge_offset
-            end if
-            !------------------------------------------------------------------------------!
-         end do
-         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
@@ -1060,6 +1087,26 @@ module rk4_integ_utils
          end if
          !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     Combined leaf+wood internal water pool                                      !
+         !---------------------------------------------------------------------------------!
+         ! leaf
+         errh2oMAX  = 0.d0
+         do ico = 1,cpatch%ncohorts
+            if (yscal%veg_resolvable(ico)) then
+               errh2o     = abs(yerr%veg_water_im2 (ico) / yscal%veg_water_im2 (ico))
+               errmax     = max(errmax,errh2o)
+               errh2oMAX  = max(errh2oMAX ,errh2o )
+            end if
+         end do
+         if (cpatch%ncohorts > 0 .and. record_err .and. errh2oMAX  > rk4eps) then
+            integ_err(11,1) = integ_err(11,1) + 1_8
+            integ_err(12,1) = integ_err(12,1) + 1_8
+         end if
+         !---------------------------------------------------------------------------------!
+
       case default
          !---------------------------------------------------------------------------------!
          !     Either we are solving leaves only, or both leaf and branch pools are being  !
@@ -1098,36 +1145,39 @@ module rk4_integ_utils
             if (erreneMAX  > rk4eps) integ_err(10,1) = integ_err(10,1) + 1_8
          end if
          !---------------------------------------------------------------------------------!
-      end select
-      !------------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !     Leaf/wood internal water pool                                                  !
-      !------------------------------------------------------------------------------------!
-      ! leaf
-      errh2oMAX  = 0.d0
-      do ico = 1,cpatch%ncohorts
-         if (yscal%leaf_resolvable(ico)) then
-            errh2o     = abs(yerr%leaf_water_im2 (ico) / yscal%leaf_water_im2 (ico))
-            errmax     = max(errmax,errh2o)
-            errh2oMAX  = max(errh2oMAX ,errh2o )
+
+
+         !---------------------------------------------------------------------------------!
+         !     Leaf/wood internal water pool                                               !
+         !---------------------------------------------------------------------------------!
+         ! leaf
+         errh2oMAX  = 0.d0
+         do ico = 1,cpatch%ncohorts
+            if (yscal%leaf_resolvable(ico)) then
+               errh2o     = abs(yerr%leaf_water_im2 (ico) / yscal%leaf_water_im2 (ico))
+               errmax     = max(errmax,errh2o)
+               errh2oMAX  = max(errh2oMAX ,errh2o )
+            end if
+         end do
+         if(cpatch%ncohorts > 0 .and. record_err) then
+            if (errh2oMAX  > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
          end if
-      end do
-      if(cpatch%ncohorts > 0 .and. record_err) then
-         if (errh2oMAX  > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
-      end if
-      ! wood
-      errh2oMAX  = 0.d0
-      do ico = 1,cpatch%ncohorts
-         if (yscal%wood_resolvable(ico)) then
-            errh2o     = abs(yerr%wood_water_im2 (ico) / yscal%wood_water_im2 (ico))
-            errmax     = max(errmax,errh2o)
-            errh2oMAX  = max(errh2oMAX ,errh2o )
+         ! wood
+         errh2oMAX  = 0.d0
+         do ico = 1,cpatch%ncohorts
+            if (yscal%wood_resolvable(ico)) then
+               errh2o     = abs(yerr%wood_water_im2 (ico) / yscal%wood_water_im2 (ico))
+               errmax     = max(errmax,errh2o)
+               errh2oMAX  = max(errh2oMAX ,errh2o )
+            end if
+         end do
+         if(cpatch%ncohorts > 0 .and. record_err) then
+            if (errh2oMAX  > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
          end if
-      end do
-      if(cpatch%ncohorts > 0 .and. record_err) then
-         if (errh2oMAX  > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
-      end if
+         !---------------------------------------------------------------------------------!
+
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -2963,14 +3013,16 @@ module rk4_integ_utils
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+      write (unit=*,fmt='(2(a5,1x),9(a12,1x))') &
          '  COH','  PFT','         LAI','         WAI','         TAI','  LEAF_WATER'       &
-                        ,'OLD_LEAF_H2O','   LEAF_HCAP','   LEAF_FLIQ'
+                        ,'OLD_LEAF_H2O','LEAF_H2O_IM2',' OLD_LFW_IM2','   LEAF_HCAP'       &
+                        ,'   LEAF_FLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+            write(unit=*,fmt='(2(i5,1x),9(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_water(ico)      &
-                  ,cpatch%leaf_water(ico),cpatch%leaf_hcap(ico),y%leaf_hcap(ico)
+                  ,cpatch%leaf_water(ico),y%leaf_water_im2(ico),cpatch%leaf_water_im2(ico) &
+                  ,cpatch%leaf_hcap(ico),y%leaf_hcap(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
@@ -2993,14 +3045,16 @@ module rk4_integ_utils
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+      write (unit=*,fmt='(2(a5,1x),9(a12,1x))') &
          '  COH','  PFT','         LAI','         WAI','         TAI','  WOOD_WATER'       &
-                        ,'OLD_WOOD_H2O','   WOOD_HCAP','   WOOD_FLIQ'
+                        ,'OLD_WOOD_H2O','WOOD_H2O_IM2',' OLD_WDW_IM2','   WOOD_HCAP'       &
+                        ,'   WOOD_FLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%wood_resolvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+            write(unit=*,fmt='(2(i5,1x),9(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%wood_water(ico)      &
-                  ,cpatch%wood_water(ico),cpatch%wood_hcap(ico),y%wood_hcap(ico)
+                  ,cpatch%wood_water(ico),y%wood_water_im2(ico),cpatch%wood_water_im2(ico) &
+                  ,cpatch%wood_hcap(ico),y%wood_hcap(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)

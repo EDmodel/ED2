@@ -2633,7 +2633,6 @@ subroutine init_pft_alloc_params()
             rho(ipft) = 0.70
          end select
          !---------------------------------------------------------------------------------!
-         rho(ipft) = 0.00
       else
          !----- Tropical broadleaf trees.  These must be defined individually. ------------!
          select case (economics_scheme)
@@ -5367,8 +5366,11 @@ subroutine init_pft_hydro_params()
    real   , dimension(n_pft) :: leaf_density ! density of leaf tissue [kg/m3]
    real   , dimension(n_pft) :: LMA          ! leaf mass per area     [ g/m2]
    real   , dimension(n_pft) :: Amax_25      ! estimated max. photosynthetic rates at 25C
+   real   , dimension(n_pft) :: rho_bnd      ! Bounded wood density, to avoid FPE.
    !------ Local parameters. --------------------------------------------------------------!
-   real   , parameter        :: MPa2m = wdns / grav
+   real   , parameter        :: MPa2m   = wdns / grav
+   real   , parameter        :: rho_min = 0.35 ! Minimum wood density
+   real   , parameter        :: rho_max = 0.95 ! Maximum wood density
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -5432,6 +5434,11 @@ subroutine init_pft_hydro_params()
    !---------------------------------------------------------------------------------------!
 
 
+   !----- Bounded wood density. -----------------------------------------------------------!
+   rho_bnd(:) = max(rho_min,min(rho_max,rho(:)))
+   !---------------------------------------------------------------------------------------!
+
+
    !----- This is kind of arbitrary, total hydraulic path is 50% more than tree height. ---!
    vessel_curl_factor(:)  = 1.5 
    !---------------------------------------------------------------------------------------!
@@ -5453,11 +5460,11 @@ subroutine init_pft_hydro_params()
    !---------------------------------------------------------------------------------------!
 
    !----- Leaf osmotic potential at saturation [m]. ---------------------------------------!
-   leaf_psi_osmotic(:) = MPa2m * (-0.04 - 1.51 * rho(:) - 0.0067 * LMA(:))
+   leaf_psi_osmotic(:) = MPa2m * (-0.04 - 1.51 * rho_bnd(:) - 0.0067 * LMA(:))
    !---------------------------------------------------------------------------------------!
 
    !----- Leaf bulk elastic modulus [MPa]. ------------------------------------------------!
-   leaf_elastic_mod(:) = 2.5 + 37.5 / (1. + exp(-8. * rho(:) + 5.7))
+   leaf_elastic_mod(:) = 2.5 + 37.5 / (1. + exp(-8. * rho_bnd(:) + 5.7))
    !---------------------------------------------------------------------------------------!
 
    !----- Leaf minimum relative water content, or residual fraction. ----------------------!
@@ -5491,22 +5498,22 @@ subroutine init_pft_hydro_params()
    !    Sapwood traits.                                                                    !
    !---------------------------------------------------------------------------------------!
    !----- Sapwood osmotic potential at saturation [m]. ------------------------------------!
-   wood_psi_osmotic(:) = (0.52 - 4.16 * rho(:)) * MPa2m
+   wood_psi_osmotic(:) = (0.52 - 4.16 * rho_bnd(:)) * MPa2m
    !---------------------------------------------------------------------------------------!
 
    !----- Sapwood bulk elastic modulus [MPa]. ---------------------------------------------!
-   wood_elastic_mod(:) = sqrt(1.02 * exp(8.5 * rho(:)) - 2.89)
+   wood_elastic_mod(:) = sqrt(1.02 * exp(8.5 * rho_bnd(:)) - 2.89)
    !---------------------------------------------------------------------------------------!
 
    !----- Sapwood minimum relative water content, or residual fraction. -------------------!
-   rwc_tlp_wood(:) = 1. - (1. - 0.75 * rho(:)) / (2.74 + 2.01 * rho(:))
+   rwc_tlp_wood(:) = 1. - (1.00 - 0.75 * rho_bnd(:)) / (2.74 + 2.01 * rho_bnd(:))
    wood_rwc_min(:) = wood_elastic_mod(:) * (1. - rwc_tlp_wood(:))                          &
                    / (wood_psi_osmotic(:) / MPa2M) + 1.  
    ! note that we set fcap to 0. in the original equation
    !---------------------------------------------------------------------------------------!
 
    !----- Wood water content at saturation (rwc = 1.) [kg H2O / kg biomass]. --------------!
-   wood_water_sat(:) = (1. - rho(:) / 1.53) * wdns / (rho(:) * 1.e3)
+   wood_water_sat(:) = (1. - rho_bnd(:) / 1.53) * wdns / (rho_bnd(:) * 1.e3)
    !---------------------------------------------------------------------------------------!
 
    !----- Bark water content at saturation (rwc = 1.) [kg H2O / kg biomass]. --------------!
@@ -5545,7 +5552,7 @@ subroutine init_pft_hydro_params()
 
 
    !----- Wood P50 [m]. -------------------------------------------------------------------!
-   wood_psi50(:) = (-1.09 - (3.57 * rho(:)) ** 1.73) * MPa2m 
+   wood_psi50(:) = (-1.09 - (3.57 * rho_bnd(:)) ** 1.73) * MPa2m 
    !---------------------------------------------------------------------------------------!
 
 
@@ -5562,7 +5569,7 @@ subroutine init_pft_hydro_params()
    !     Sapwood maximum conductivity [kg/m2/s].  This is estimated from Figure S2.2       !
    ! of C16.                                                                               !
    !---------------------------------------------------------------------------------------!
-   wood_Kmax(:)  = exp(2.11 - 20.05 * rho(:) / Amax_25(:)) / MPa2m 
+   wood_Kmax(:)  = exp(2.11 - 20.05 * rho_bnd(:) / Amax_25(:)) / MPa2m 
    !---------------------------------------------------------------------------------------!
 
 
@@ -5583,7 +5590,7 @@ subroutine init_pft_hydro_params()
    ! from X16.  This is tested for tropical PFTs only.                                     !
    !---------------------------------------------------------------------------------------!
    select case (plant_hydro_scheme)
-   case(-2,2)
+   case (2)
       !------------------------------------------------------------------------------------!
       !      Capacitance is estimated from S11.  Since the capacitance is treated as a     !
       ! constant in the model, it should be way smaller than lab/field measured            !
@@ -5591,8 +5598,8 @@ subroutine init_pft_hydro_params()
       ! is multipled by 1/3.                                                               !
       !------------------------------------------------------------------------------------!
       leaf_water_cap(:) = 3.e-3 * SLA(:) / C2B / MPa2m / 2.
-      wood_water_cap(:) = min(400.,max(50., -700. * (rho(:) - 0.3) + 400.))        &
-                           / (rho(:) * 1.e3) / MPa2m / 3.
+      wood_water_cap(:) = min(400.,max(50., -700. * (rho_bnd(:) - 0.3) + 400.))            &
+                           / (rho_bnd(:) * 1.e3) / MPa2m / 3.
       !------------------------------------------------------------------------------------!
 
 
@@ -5614,9 +5621,9 @@ subroutine init_pft_hydro_params()
 
 
       !----- Additional parameters. -------------------------------------------------------!
-      leaf_psi_tlp(:) = (-4.59 + 0.62 * log(SLA(:)) -1.15 * log(rho(:))) * MPa2m
-      wood_psi50  (:) = (-3. * rho(:) - 0.599) * MPa2m
-      wood_Kmax   (:) = exp(-2.455 * rho(:) + 2.348 + 0.5 * 0.6186) / MPa2m
+      leaf_psi_tlp(:) = (-4.59 + 0.62 * log(SLA(:)) -1.15 * log(rho_bnd(:))) * MPa2m
+      wood_psi50  (:) = (-3. * rho_bnd(:) - 0.599) * MPa2m
+      wood_Kmax   (:) = exp(-2.455 * rho_bnd(:) + 2.348 + 0.5 * 0.6186) / MPa2m
       wood_Kexp   (:) = 4.
       !------------------------------------------------------------------------------------!
    case (0)
@@ -5656,8 +5663,8 @@ subroutine init_pft_hydro_params()
                wood_water_sat(ipft) = 0.7
                bark_water_sat(ipft) = 0.7
             else
-               wood_water_sat(ipft) = exp(1.5018230 - 3.137476 * rho(ipft))
-               bark_water_sat(ipft) = exp(1.9892840 - 3.174365 * rho(ipft))
+               wood_water_sat(ipft) = exp(1.5018230 - 3.137476 * rho_bnd(ipft))
+               bark_water_sat(ipft) = exp(1.9892840 - 3.174365 * rho_bnd(ipft))
             end if
          end do
       case default
@@ -5681,8 +5688,8 @@ subroutine init_pft_hydro_params()
 
 
    !----- Parameters related with stomatal conductance, estimated from M11. ---------------!
-   stoma_lambda(:) = max(3.,(rho(:) - 0.25) * 15. + 3.)
-   stoma_beta  (:) = min(-0.1,(rho(:) - 0.25) * 1.5 - 1.0) / MPa2m
+   stoma_lambda(:) = max( 3.0,(rho_bnd(:) - 0.25) * 15. + 3.)
+   stoma_beta  (:) = min(-0.1,(rho_bnd(:) - 0.25) * 1.5 - 1.0) / MPa2m
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -5886,8 +5893,8 @@ subroutine init_pft_phen_params()
    !---------------------------------------------------------------------------------------!
    !     Phenology-related parameters for phenology(ipft) = 5.                             !
    !---------------------------------------------------------------------------------------!
-   high_psi_threshold(:) = 10.
-   low_psi_threshold (:) = 10.
+   high_psi_threshold(:) = 10
+   low_psi_threshold (:) = 10
    leaf_shed_rate    (:) = 1./20.
    leaf_grow_rate    (:) = 1./20.
    !---------------------------------------------------------------------------------------!
@@ -6104,6 +6111,7 @@ subroutine init_can_air_params()
                              , vh2vr                 & ! intent(out)
                              , vh2dh                 & ! intent(out)
                              , ribmax                & ! intent(out)
+                             , f_bndlyr_init         & ! intent(out)
                              , leaf_drywhc           & ! intent(out)
                              , leaf_maxwhc           & ! intent(out)
                              , gbhmos_min            & ! intent(out)
@@ -6499,6 +6507,11 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    ggsoil0 = 1. / 38113.
    kksoil  = 13.515
+   !---------------------------------------------------------------------------------------!
+
+
+   !-----  Multiplication factor for initial leaf/wood boundary layer conductance. --------!
+   f_bndlyr_init = 10.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -7731,14 +7744,7 @@ subroutine init_derived_params_after_xml()
    !    (X16).                                                                             !
    !---------------------------------------------------------------------------------------!
    select case (plant_hydro_scheme)
-   case (1,2)
-      cleaf(:) = c_grn_leaf_dry (:)
-      csapw(:) = c_ngrn_wood_dry(:)
-      cdead(:) = (c_ngrn_wood_dry(:) + wood_water_sat(:) * cliq)                           &
-               / (1. + wood_water_sat(:))
-      cbark(:) = (c_ngrn_bark_dry(:) + bark_water_sat(:) * cliq)                           &
-               / (1. + bark_water_sat(:))
-   case default
+   case (0)
       cleaf(:) = (c_grn_leaf_dry (:) + leaf_water_sat(:) * cliq)                           &
                / (1. + leaf_water_sat(:))
       csapw(:) = (c_ngrn_wood_dry(:) + wood_water_sat(:) * cliq)                           &
@@ -7747,6 +7753,13 @@ subroutine init_derived_params_after_xml()
                / (1. + wood_water_sat(:)) + delta_c_wood(:)
       cbark(:) = (c_ngrn_bark_dry(:) + bark_water_sat(:) * cliq)                           &
                / (1. + bark_water_sat(:)) + delta_c_bark(:)
+   case default
+      cleaf(:) = c_grn_leaf_dry (:)
+      csapw(:) = c_ngrn_wood_dry(:)
+      cdead(:) = (c_ngrn_wood_dry(:) + wood_water_sat(:) * cliq)                           &
+               / (1. + wood_water_sat(:))
+      cbark(:) = (c_ngrn_bark_dry(:) + bark_water_sat(:) * cliq)                           &
+               / (1. + bark_water_sat(:))
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -8708,44 +8721,43 @@ subroutine init_derived_params_after_xml()
    !----- Print trait coefficients. -------------------------------------------------------!
    if (print_zero_table) then
       open (unit=19,file=trim(strat_file),status='replace',action='write')
-      write(unit=19,fmt='(100(1x,a))') '         PFT','    TROPICAL','       GRASS'         &
-                                      ,'     CONIFER','    SAVANNAH','       LIANA'        &
-                                      ,'      R_BANG','         RHO','         SLA'        &
-                                      ,'         SRA', '  ROOT_BETA','         VM0'        &
-                                      ,'  F_DARKRESP',' F_GROW_RESP','    LEAF_TOR'        &
-                                      ,'    ROOT_TOR','    BARK_TOR',' STORAGE_TOR'        &
-                                      ,'FLABILE_LEAF','FLABILE_STEM','       MORT0'        &
-                                      ,'       MORT1','       MORT2','       MORT3'        &
-                                      ,'   SEED_MORT','TFALL_S_GTHT',' FELL_S_GTHV'        &
-                                      ,' FELL_S_LTHV',' SKID_S_GTHV',' SKID_S_LTHV'        &
-                                      ,'  FIRE_S_MIN','  FIRE_S_MAX','FIRE_S_INTER'        &
-                                      ,'FIRE_S_SLOPE','    ST_FRACT','     R_FRACT'        &
-                                      ,'      R_CV50',' NONLOC_DISP','   SEED_RAIN'        &
-                                      ,'    EFF_HEAT','    EFF_EVAP','  EFF_TRANSP'        &
-                                      ,'  LTRANS_VIS','LREFLECT_VIS','  WTRANS_VIS'        &
-                                      ,'WREFLECT_VIS','  LTRANS_NIR','LREFLECT_NIR'        &
-                                      ,'  WTRANS_NIR','WREFLECT_NIR','  LEMISS_TIR'        &
-                                      ,'  WEMISS_TIR',' ORIENT_FACT','   LSCAT_VIS'        &
-                                      ,'  LBSCAT_VIS','   WSCAT_VIS','  WBSCAT_VIS'        &
-                                      ,'   LSCAT_NIR','  LBSCAT_NIR','   WSCAT_NIR'        &
-                                      ,'  WBSCAT_NIR','  LBSCAT_TIR','  WBSCAT_TIR'        &
-                                      ,'        PHI1','        PHI2','      MU_BAR'        &
-                                      ,'       CLEAF','       CSAPW','       CDEAD'        &
-                                      ,'       CBARK','    C2N_LEAF','    C2N_STEM'        &
-                                      ,' C2N_STORAGE',' C2N_RECRUIT','HIGH_PSI_THR'        &
-                                      ,' LOW_PSI_THR','LEAF_SHED_RT','LEAF_GROW_RT'        &
-                                      ,' VESSEL_CURL','LEAF_H2O_CAP','WOOD_H2O_CAP'        &
-                                      ,'LEAF_H2O_SAT','WOOD_H2O_SAT','LEAF_RWC_MIN'        &
-                                      ,'WOOD_RWC_MIN','LEAF_PSI_MIN','WOOD_PSI_MIN'        &
-                                      ,'LEAF_PSI_OSM','WOOD_PSI_OSM','LEAF_ELA_MOD'        &
-                                      ,'WOOD_ELA_MOD','LEAF_PSI_TLP','WOOD_PSI_TLP'        &
-                                      ,'   WOOD_KMAX','   WOOD_KEXP','  WOOD_PSI50'        &
-                                      ,'STOMA_LAMBDA','  STOMA_BETA',' STOMA_PSI_B'        &
-                                      ,' STOMA_PSI_C'
-
+      write(unit=19,fmt='(100(1x,a))') '          PFT','     TROPICAL','        GRASS'      &
+                                      ,'      CONIFER','     SAVANNAH','        LIANA'     &
+                                      ,'       R_BANG','          RHO','          SLA'     &
+                                      ,'          SRA','    ROOT_BETA','          VM0'     &
+                                      ,'   F_DARKRESP','  F_GROW_RESP','     LEAF_TOR'     &
+                                      ,'     ROOT_TOR','     BARK_TOR','  STORAGE_TOR'     &
+                                      ,' FLABILE_LEAF',' FLABILE_STEM','        MORT0'     &
+                                      ,'        MORT1','        MORT2','        MORT3'     &
+                                      ,'    SEED_MORT',' TFALL_S_GTHT','  FELL_S_GTHV'     &
+                                      ,'  FELL_S_LTHV','  SKID_S_GTHV','  SKID_S_LTHV'     &
+                                      ,'   FIRE_S_MIN','   FIRE_S_MAX',' FIRE_S_INTER'     &
+                                      ,' FIRE_S_SLOPE','     ST_FRACT','      R_FRACT'     &
+                                      ,'       R_CV50','  NONLOC_DISP','    SEED_RAIN'     &
+                                      ,'     EFF_HEAT','     EFF_EVAP','   EFF_TRANSP'     &
+                                      ,'   LTRANS_VIS',' LREFLECT_VIS','   WTRANS_VIS'     &
+                                      ,' WREFLECT_VIS','   LTRANS_NIR',' LREFLECT_NIR'     &
+                                      ,'   WTRANS_NIR',' WREFLECT_NIR','   LEMISS_TIR'     &
+                                      ,'   WEMISS_TIR','  ORIENT_FACT','    LSCAT_VIS'     &
+                                      ,'   LBSCAT_VIS','    WSCAT_VIS','   WBSCAT_VIS'     &
+                                      ,'    LSCAT_NIR','   LBSCAT_NIR','    WSCAT_NIR'     &
+                                      ,'   WBSCAT_NIR','   LBSCAT_TIR','   WBSCAT_TIR'     &
+                                      ,'         PHI1','         PHI2','       MU_BAR'     &
+                                      ,'        CLEAF','        CSAPW','        CDEAD'     &
+                                      ,'        CBARK','     C2N_LEAF','     C2N_STEM'     &
+                                      ,'  C2N_STORAGE','  C2N_RECRUIT',' LEAF_SHED_RT'     &
+                                      ,' LEAF_GROW_RT','  VESSEL_CURL',' LEAF_H2O_CAP'     &
+                                      ,' WOOD_H2O_CAP',' LEAF_H2O_SAT',' WOOD_H2O_SAT'     &
+                                      ,' LEAF_RWC_MIN',' WOOD_RWC_MIN',' LEAF_PSI_MIN'     &
+                                      ,' WOOD_PSI_MIN',' LEAF_PSI_OSM',' WOOD_PSI_OSM'     &
+                                      ,' LEAF_ELA_MOD',' WOOD_ELA_MOD',' LEAF_PSI_TLP'     &
+                                      ,' WOOD_PSI_TLP','    WOOD_KMAX','    WOOD_KEXP'     &
+                                      ,'   WOOD_PSI50',' STOMA_LAMBDA','   STOMA_BETA'     &
+                                      ,'  STOMA_PSI_B','  STOMA_PSI_C',' HIGH_PSI_THR'     &
+                                      ,'  LOW_PSI_THR'
 
       do ipft=1,n_pft
-         write (unit=19,fmt='(8x,i5,6(12x,l1),93(1x,f12.6))')                              &
+         write (unit=19,fmt='(9x,i5,6(13x,l1),91(1x,f13.6),2(1x,i13))')                    &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),r_bang(ipft),rho(ipft),SLA(ipft)  &
                        ,SRA(ipft),root_beta(ipft),Vm0(ipft),dark_respiration_factor(ipft)  &
@@ -8770,16 +8782,16 @@ subroutine init_derived_params_after_xml()
                        ,leaf_backscatter_tir(ipft),wood_backscatter_tir(ipft)              &
                        ,phi1(ipft),phi2(ipft),mu_bar(ipft),cleaf(ipft),csapw(ipft)         &
                        ,cdead(ipft),cbark(ipft),c2n_leaf(ipft),c2n_stem(ipft),c2n_storage  &
-                       ,c2n_recruit(ipft),high_psi_threshold(ipft),low_psi_threshold(ipft) &
-                       ,leaf_shed_rate(ipft),leaf_grow_rate(ipft),vessel_curl_factor(ipft) &
-                       ,leaf_water_cap(ipft),wood_water_cap(ipft),leaf_water_sat(ipft)     &
-                       ,wood_water_sat(ipft),leaf_rwc_min(ipft),wood_rwc_min(ipft)         &
-                       ,leaf_psi_min(ipft),wood_psi_min(ipft),leaf_psi_osmotic(ipft)       &
-                       ,wood_psi_osmotic(ipft),leaf_elastic_mod(ipft)                      &
-                       ,wood_elastic_mod(ipft),leaf_psi_tlp(ipft),wood_psi_tlp(ipft)       &
-                       ,wood_Kmax(ipft),wood_Kexp(ipft),wood_psi50(ipft)                   &
-                       ,stoma_lambda(ipft),stoma_beta(ipft),stoma_psi_b(ipft)              &
-                       ,stoma_psi_c(ipft)
+                       ,c2n_recruit(ipft),leaf_shed_rate(ipft),leaf_grow_rate(ipft)        &
+                       ,vessel_curl_factor(ipft),leaf_water_cap(ipft),wood_water_cap(ipft) &
+                       ,leaf_water_sat(ipft),wood_water_sat(ipft),leaf_rwc_min(ipft)       &
+                       ,wood_rwc_min(ipft),leaf_psi_min(ipft),wood_psi_min(ipft)           &
+                       ,leaf_psi_osmotic(ipft),wood_psi_osmotic(ipft)                      &
+                       ,leaf_elastic_mod(ipft),wood_elastic_mod(ipft),leaf_psi_tlp(ipft)   &
+                       ,wood_psi_tlp(ipft),wood_Kmax(ipft),wood_Kexp(ipft)                 &
+                       ,wood_psi50(ipft),stoma_lambda(ipft),stoma_beta(ipft)               &
+                       ,stoma_psi_b(ipft),stoma_psi_c(ipft),high_psi_threshold(ipft)       &
+                       ,low_psi_threshold(ipft)
       end do
       close(unit=19,status='keep')
    end if

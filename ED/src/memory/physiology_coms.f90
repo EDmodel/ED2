@@ -141,10 +141,6 @@ module physiology_coms
    !<  Christofferson et al. 2016 GMD\n
    !<                       2. Track plant hydrodynamics using parameters from
    !<  Xu et al. 2016 New Phytologist\n
-   !<                      -1. Same as 1 but leaf/wood heat capacity does not
-   !< change with internal water content.
-   !<                      -2. Same as 2 but leaf/wood heat capacity does not
-   !< change with internal water content.
    !---------------------------------------------------------------------------------------!
 
    integer               :: trait_plasticity_scheme

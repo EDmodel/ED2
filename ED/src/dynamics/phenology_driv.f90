@@ -153,8 +153,6 @@ module phenology_driv
       real                                  :: old_wood_hcap
       real                                  :: old_leaf_water_im2
       real                                  :: old_wood_water_im2
-      real                                  :: veg_energy_im2_in
-      real                                  :: veg_water_im2_in
       real                                  :: elongf_try
       real                                  :: elongf_grow
       real                                  :: bleaf_in
@@ -235,11 +233,6 @@ module phenology_driv
             pat_bleaf_in      = pat_bleaf_in    + cpatch%nplant(ico) * cpatch%bleaf   (ico)
             pat_broot_in      = pat_broot_in    + cpatch%nplant(ico) * cpatch%broot   (ico)
             pat_bstorage_in   = pat_bstorage_in + cpatch%nplant(ico) * cpatch%bstorage(ico)
-            veg_water_im2_in  = cpatch%leaf_water_im2(ico) + cpatch%wood_water_im2(ico)
-            veg_energy_im2_in = cpatch%leaf_water_im2(ico)                                 &
-                              * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)              &
-                              + cpatch%wood_water_im2(ico)                                 &
-                              * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
             !------------------------------------------------------------------------------!
 
 

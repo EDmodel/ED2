@@ -3753,12 +3753,16 @@ module disturbance
                         ,cpatch%bbarka(nc),cpatch%nplant(nc),cpatch%pft(nc)                &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
-      cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc)                             &
-                                        ,cpatch%leaf_water(nc) + cpatch%leaf_water_im2(nc) &
-                                        ,cpatch%leaf_temp (nc),cpatch%leaf_fliq (nc))
-      cpatch%wood_energy(nc) = cmtl2uext(cpatch%wood_hcap (nc)                             &
-                                        ,cpatch%wood_water(nc) + cpatch%wood_water_im2(nc) &
-                                        ,cpatch%wood_temp (nc),cpatch%wood_fliq (nc))
+      cpatch%leaf_energy(nc) = cmtl2uext( cpatch%leaf_hcap     (nc)                        &
+                                        , cpatch%leaf_water    (nc)                        &
+                                        + cpatch%leaf_water_im2(nc)                        &
+                                        , cpatch%leaf_temp     (nc)                        &
+                                        , cpatch%leaf_fliq     (nc) )
+      cpatch%wood_energy(nc) = cmtl2uext( cpatch%wood_hcap     (nc)                        &
+                                        , cpatch%wood_water    (nc)                        &
+                                        + cpatch%wood_water_im2(nc)                        &
+                                        , cpatch%wood_temp     (nc)                        &
+                                        , cpatch%wood_fliq     (nc) )
       call is_resolvable(csite,np,nc)
       !------------------------------------------------------------------------------------!
 
@@ -3880,12 +3884,12 @@ module disturbance
          ! because cpatch%hite will be increased instead of reduced
          if (is_liana(ipft) .and. cpatch%hite(ico) > maxh .and. maxh >= 1.0) then
 
-            bleaf_in           = cpatch%bleaf    (ico)
-            bsapa_in           = cpatch%bsapwooda(ico)
-            bdeada_in          = cpatch%bdeada   (ico)
-            bbarka_in          = cpatch%bbarka   (ico)
-            old_leaf_hcap      = cpatch%leaf_hcap(ico)
-            old_wood_hcap      = cpatch%wood_hcap(ico)
+            bleaf_in           = cpatch%bleaf         (ico)
+            bsapa_in           = cpatch%bsapwooda     (ico)
+            bdeada_in          = cpatch%bdeada        (ico)
+            bbarka_in          = cpatch%bbarka        (ico)
+            old_leaf_hcap      = cpatch%leaf_hcap     (ico)
+            old_wood_hcap      = cpatch%wood_hcap     (ico)
             old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
             old_wood_water_im2 = cpatch%wood_water_im2(ico)
             !add the agb_f to bdead

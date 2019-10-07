@@ -271,38 +271,22 @@ module canopy_struct_dynamics
 
 
          !---------------------------------------------------------------------------------!
-         if (cpatch%leaf_resolvable(ico)) then
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
-            ! layer.                                                                       !
-            !------------------------------------------------------------------------------!
-            call leaf_aerodynamic_conductances8(ipft,veg_wind8,leaf_temp8,can_temp8        &
-                                               ,can_rhos8,can_cp8,veg_gbh8,veg_gbw8        &
-                                               ,veg_reynolds8,veg_grashof8,veg_nussfree8   &
-                                               ,veg_nussforc8)
-            cpatch%leaf_gbh(ico) = sngloff(veg_gbh8,tiny_offset)
-            cpatch%leaf_gbw(ico) = sngloff(veg_gbw8,tiny_offset)
-            !------------------------------------------------------------------------------!
-         else
-            cpatch%leaf_gbh(ico)      = 0.0
-            cpatch%leaf_gbw(ico)      = 0.0
-         end if
-         if (cpatch%wood_resolvable(ico)) then
-            !------------------------------------------------------------------------------!
-            !    Find the aerodynamic conductances for heat and water at the wood          !
-            ! boundary layer.                                                              !
-            !------------------------------------------------------------------------------!
-             call wood_aerodynamic_conductances8(ipft,veg_wind8,wood_temp8,can_temp8       &
-                                               ,can_rhos8,can_cp8,veg_gbh8,veg_gbw8        &
-                                               ,veg_reynolds8,veg_grashof8,veg_nussfree8   &
-                                               ,veg_nussforc8)
-            cpatch%wood_gbh(ico) = sngloff(veg_gbh8,tiny_offset)
-            cpatch%wood_gbw(ico) = sngloff(veg_gbw8,tiny_offset)
-            !------------------------------------------------------------------------------!
-         else
-            cpatch%wood_gbh(ico)      = 0.0
-            cpatch%wood_gbw(ico)      = 0.0
-         end if
+         !    Find the aerodynamic conductances for heat and water at the leaf and branch- !
+         ! wood boundary layers.                                                           !
+         !---------------------------------------------------------------------------------!
+         call leaf_aerodynamic_conductances8(ipft,veg_wind8,leaf_temp8,can_temp8           &
+                                            ,can_rhos8,can_cp8,veg_gbh8,veg_gbw8           &
+                                            ,veg_reynolds8,veg_grashof8,veg_nussfree8      &
+                                            ,veg_nussforc8 )
+         cpatch%leaf_gbh(ico) = sngloff(veg_gbh8,tiny_offset)
+         cpatch%leaf_gbw(ico) = sngloff(veg_gbw8,tiny_offset)
+         aux = 1. / cpatch%leaf_gbw(ico)
+         call wood_aerodynamic_conductances8(ipft,veg_wind8,wood_temp8,can_temp8           &
+                                           ,can_rhos8,can_cp8,veg_gbh8,veg_gbw8            &
+                                           ,veg_reynolds8,veg_grashof8,veg_nussfree8       &
+                                           ,veg_nussforc8)
+         cpatch%wood_gbh(ico) = sngloff(veg_gbh8,tiny_offset)
+         cpatch%wood_gbw(ico) = sngloff(veg_gbw8,tiny_offset)
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!

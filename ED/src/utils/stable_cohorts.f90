@@ -80,10 +80,11 @@ module stable_cohorts
    ! 4. The user doesn't want to solve wood thermodynamics (wood only).                    !
    !---------------------------------------------------------------------------------------!
    subroutine is_resolvable(csite,ipa,ico)
-      use ed_state_vars , only : sitetype        & ! structure
-                               , patchtype       ! ! structure
-      use pft_coms      , only : veg_hcap_min    ! ! intent(in)
-      use ed_max_dims   , only : n_pft           ! ! intent(in)
+      use ed_state_vars  , only : sitetype            & ! structure
+                                , patchtype           ! ! structure
+      use pft_coms       , only : veg_hcap_min        ! ! intent(in)
+      use ed_max_dims    , only : n_pft               ! ! intent(in)
+      use physiology_coms, only : plant_hydro_scheme  ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -93,9 +94,10 @@ module stable_cohorts
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)  , pointer :: cpatch       ! Current patch
       integer                    :: ipft         ! Cohort PFT
-      logical                    :: exposed      ! Cohort is above snow       [   T|F]
-      logical                    :: leaf_enough  ! Cohort have enough leaves  [   T|F]
-      logical                    :: wood_enough  ! Cohort have enough wood    [   T|F]
+      logical                    :: exposed      ! Cohort is above snow            [   T|F]
+      logical                    :: leaf_enough  ! Cohort have enough leaves       [   T|F]
+      logical                    :: wood_enough  ! Cohort have enough wood         [   T|F]
+      logical                    :: hydro_req    ! Plant hydraulics requirement    [   T|F]
       !------------------------------------------------------------------------------------!
 
 
@@ -124,10 +126,24 @@ module stable_cohorts
 
 
       !------------------------------------------------------------------------------------!
+      ! 3.   In case dynamic plant hydraulics is active, wood must be resolved whenever    !
+      !      leaf is resolved.                                                             !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+         hydro_req = .false.
+      case default
+         hydro_req = leaf_enough
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
       !     Save the tests in the cohort variable, so the checks are done consistently.    !
       !------------------------------------------------------------------------------------!
       cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough
-      cpatch%wood_resolvable(ico) = exposed .and. wood_enough
+      cpatch%wood_resolvable(ico) = exposed .and. ( wood_enough .or. hydro_req )
       !------------------------------------------------------------------------------------!
 
 

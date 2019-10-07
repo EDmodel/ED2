@@ -208,9 +208,11 @@ module ed_therm_lib
       !     Leaves.  Check whether heat capacity is zero or not.                           !
       !------------------------------------------------------------------------------------!
       if (cpatch%leaf_hcap(ico) == 0. ) then
-         cpatch%leaf_energy(ico) = 0.
-         cpatch%leaf_water(ico)  = 0.
-         cpatch%leaf_fliq(ico)   = 0.
+         cpatch%leaf_energy   (ico) = 0.
+         cpatch%leaf_water    (ico) = 0.
+         cpatch%leaf_water_int(ico) = 0.
+         cpatch%leaf_water_im2(ico) = 0.
+         cpatch%leaf_fliq     (ico) = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%leaf_temp(ico) = csite%can_temp(ipa)
@@ -283,9 +285,11 @@ module ed_therm_lib
       !     Wood.  Check whether heat capacity is zero or not.                             !
       !------------------------------------------------------------------------------------!
       if (cpatch%wood_hcap(ico) == 0. ) then
-         cpatch%wood_energy(ico) = 0.
-         cpatch%wood_water(ico)  = 0.
-         cpatch%wood_fliq(ico)   = 0.
+         cpatch%wood_energy   (ico) = 0.
+         cpatch%wood_water    (ico) = 0.
+         cpatch%wood_water_int(ico) = 0.
+         cpatch%wood_water_im2(ico) = 0.
+         cpatch%wood_fliq     (ico) = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%wood_temp(ico) = csite%can_temp(ipa)

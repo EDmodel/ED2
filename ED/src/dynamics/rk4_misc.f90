@@ -24,11 +24,10 @@ module rk4_misc
                                        , cph2o8                 ! ! intent(in)
       use rk4_coms              , only : rk4patchtype           & ! structure
                                        , rk4site                & ! structure
+                                       , rk4aux                 & ! structure
                                        , rk4water_stab_thresh   & ! intent(in)
                                        , checkbudget            & ! intent(in)
                                        , print_detailed         & ! intent(in)
-                                       , rk4aux                 & 
-                                       , find_derived_thbounds  & ! sub-routine
                                        , reset_rk4_fluxes       ! ! sub-routine
       use ed_max_dims           , only : n_pft                  ! ! intent(in)
       use therm_lib8            , only : uextcm2tl8             & ! subroutine
@@ -139,8 +138,8 @@ module rk4_misc
 
 
       !----- Find the lower and upper bounds for the derived properties. ------------------!
-      call find_derived_thbounds(ibuff,targetp%can_theta,targetp%can_temp,targetp%can_shv  &
-                                ,targetp%can_prss ,targetp%can_depth)
+      call find_derived_thbounds(ibuff,cpatch,targetp%can_theta,targetp%can_temp           &
+                                ,targetp%can_shv,targetp%can_prss ,targetp%can_depth)
       !------------------------------------------------------------------------------------!
 
 
@@ -270,7 +269,9 @@ module rk4_misc
          if (targetp%leaf_resolvable(ico) .or. targetp%wood_resolvable(ico)) then
             rk4aux(ibuff)%any_resolvable = .true.
          end if
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -562,7 +563,8 @@ module rk4_misc
    ! temporary snow/pond layers.                                                           !
    !---------------------------------------------------------------------------------------!
    subroutine update_diagnostic_vars(initp, csite,ipa,ibuff)
-      use rk4_coms              , only : rk4site               & ! intent(in)
+      use rk4_coms              , only : rk4eps                & ! intent(in)
+                                       , rk4site               & ! intent(in)
                                        , ibranch_thermo        & ! intent(in)
                                        , rk4tiny_sfcw_mass     & ! intent(in)
                                        , rk4min_sfcw_mass      & ! intent(in)
@@ -574,7 +576,7 @@ module rk4_misc
                                        , rk4max_veg_temp       & ! intent(in)
                                        , rk4min_soil_temp      & ! intent(in)
                                        , rk4max_soil_temp      & ! intent(in)
-                                       , rk4aux                & 
+                                       , rk4aux                & ! structure
                                        , rk4min_sfcw_temp      & ! intent(in)
                                        , rk4max_sfcw_temp      & ! intent(in)
                                        , tiny_offset           & ! intent(in)
@@ -643,6 +645,10 @@ module rk4_misc
       real(kind=8)                     :: rk4min_veg_water
       real(kind=8)                     :: rk4min_leaf_water
       real(kind=8)                     :: rk4min_wood_water
+      real(kind=8)                     :: rk4min_leaf_water_im2
+      real(kind=8)                     :: rk4max_leaf_water_im2
+      real(kind=8)                     :: rk4min_wood_water_im2
+      real(kind=8)                     :: rk4max_wood_water_im2
       real(kind=8)                     :: wgt_leaf
       real(kind=8)                     :: wgt_wood
       real(kind=8)                     :: bulk_sfcw_dens
@@ -946,7 +952,7 @@ module rk4_misc
                   !------------------------------------------------------------------------!
                   !    Both leaves and branchwood are solved, split according to LAI/WAI.  !
                   !------------------------------------------------------------------------!
-                 wgt_leaf = initp%lai(ico) / initp%tai(ico)
+                  wgt_leaf = initp%lai(ico) / initp%tai(ico)
                   wgt_wood = 1.d0 - wgt_leaf
                elseif (initp%leaf_resolvable(ico)) then
                   wgt_leaf = 1.d0
@@ -960,7 +966,15 @@ module rk4_misc
 
 
                !----- Find the minimum vegetation water for this cohort. ------------------!
-               rk4min_veg_water = rk4min_veg_lwater * initp%tai(ico)
+               rk4min_veg_water      = rk4min_veg_lwater * initp%tai(ico)
+               rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)            &
+                                     * (1.d0-rk4eps)
+               rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)            &
+                                     * (1.d0+rk4eps)
+               rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico)            &
+                                     * (1.d0-rk4eps)
+               rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico)            &
+                                     * (1.d0+rk4eps)
                !---------------------------------------------------------------------------!
 
 
@@ -969,13 +983,18 @@ module rk4_misc
                !     Update leaf temperature and liquid fraction only if leaf water makes  !
                ! sense.                                                                    !
                !---------------------------------------------------------------------------!
-               if (initp%veg_water(ico) < rk4min_veg_water) then
+               if ( ( initp%veg_water     (ico) < rk4min_veg_water      ) .or. &
+                    ( initp%leaf_water_im2(ico) < rk4min_leaf_water_im2 ) .or. &
+                    ( initp%leaf_water_im2(ico) > rk4max_leaf_water_im2 ) .or. &
+                    ( initp%wood_water_im2(ico) < rk4min_wood_water_im2 ) .or. &
+                    ( initp%wood_water_im2(ico) > rk4max_wood_water_im2 ) ) then
+
                   !------------------------------------------------------------------------!
                   !     Water is too negative, we must reject the step.  To be safe, we    !
                   ! cheat  and put the total water to both pools.                          !
                   !------------------------------------------------------------------------!
-                  initp%leaf_water(ico) = initp%veg_water(ico)
-                  initp%wood_water(ico) = initp%veg_water(ico)
+                  initp%leaf_water    (ico) = initp%veg_water    (ico)
+                  initp%wood_water    (ico) = initp%veg_water    (ico)
                   !------------------------------------------------------------------------!
 
 
@@ -1120,20 +1139,31 @@ module rk4_misc
             if (initp%leaf_resolvable(ico)) then
 
                !----- Find the minimum leaf water for this cohort. ------------------------!
-               rk4min_leaf_water = rk4min_veg_lwater * initp%lai(ico)
+               rk4min_leaf_water     = rk4min_veg_lwater * initp%lai(ico)
+               rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)            &
+                                     * (1.d0-rk4eps)
+               rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)            &
+                                     * (1.d0+rk4eps)
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !     Update leaf temperature and liquid fraction only if leaf water makes  !
                ! sense.                                                                    !
                !---------------------------------------------------------------------------!
-               if (initp%leaf_water(ico) < rk4min_leaf_water) then
+               if ( ( initp%leaf_water    (ico) < rk4min_leaf_water     ) .or.             &
+                    ( initp%leaf_water_im2(ico) < rk4min_leaf_water_im2 ) .or.             &
+                    ( initp%leaf_water_im2(ico) > rk4max_leaf_water_im2 ) )                &
+               then
                   ok_leaf = .false.
                   cycle leafloop
                else
-                  call uextcm2tl8(initp%leaf_energy(ico)                                   &
-                                 ,initp%leaf_water(ico) + initp%leaf_water_im2(ico)        &
-                                 ,initp%leaf_hcap(ico),initp%leaf_temp(ico)                &
-                                 ,initp%leaf_fliq(ico))
+                  call uextcm2tl8( initp%leaf_energy   (ico)                               &
+                                 , initp%leaf_water    (ico)                               &
+                                 + initp%leaf_water_im2(ico)                               &
+                                 , initp%leaf_hcap     (ico)                               &
+                                 , initp%leaf_temp     (ico)                               &
+                                 , initp%leaf_fliq     (ico) )
                   if (initp%leaf_temp(ico) < rk4min_veg_temp .or.                          &
                       initp%leaf_temp(ico) > rk4max_veg_temp) then
                      ok_leaf = .false.
@@ -1195,7 +1225,11 @@ module rk4_misc
             if (initp%wood_resolvable(ico)) then
 
                !----- Find the minimum leaf water for this cohort. ------------------------!
-               rk4min_wood_water = rk4min_veg_lwater * initp%wai(ico)
+               rk4min_wood_water     = rk4min_veg_lwater * initp%wai(ico)
+               rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico)            &
+                                     * (1.d0-rk4eps)
+               rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico)            &
+                                     * (1.d0+rk4eps)
                !---------------------------------------------------------------------------!
 
 
@@ -1204,14 +1238,19 @@ module rk4_misc
                !     Update wood temperature and liquid fraction only if wood water makes  !
                ! sense.                                                                    !
                !---------------------------------------------------------------------------!
-               if (initp%wood_water(ico) < rk4min_wood_water) then
+               if ( ( initp%wood_water    (ico) < rk4min_wood_water     ) .or.             &
+                    ( initp%wood_water_im2(ico) < rk4min_wood_water_im2 ) .or.             &
+                    ( initp%wood_water_im2(ico) > rk4max_wood_water_im2 ) )                &
+               then
                   ok_wood = .false.
                   cycle woodloop
                else
-                  call uextcm2tl8(initp%wood_energy(ico)                                   &
-                                 ,initp%wood_water(ico)+initp%wood_water_im2(ico)          &
-                                 ,initp%wood_hcap(ico),initp%wood_temp(ico)                &
-                                 ,initp%wood_fliq(ico))
+                  call uextcm2tl8( initp%wood_energy   (ico)                               &
+                                 , initp%wood_water    (ico)                               &
+                                 + initp%wood_water_im2(ico)                               &
+                                 , initp%wood_hcap     (ico)                               &
+                                 , initp%wood_temp     (ico)                               &
+                                 , initp%wood_fliq     (ico) )
                   if (initp%wood_temp(ico) < rk4min_veg_temp .or.                          &
                       initp%wood_temp(ico) > rk4max_veg_temp) then
                      ok_wood = .false.
@@ -1253,8 +1292,9 @@ module rk4_misc
          ! time step is about to be rejected anyway.                                       !
          !---------------------------------------------------------------------------------!
          do ico=1,cpatch%ncohorts
-            initp%veg_energy(ico) = initp%leaf_energy(ico) + initp%wood_energy(ico)
-            initp%veg_water(ico)  = initp%leaf_water(ico)  + initp%wood_water(ico)
+            initp%veg_energy   (ico) = initp%leaf_energy   (ico) + initp%wood_energy   (ico)
+            initp%veg_water    (ico) = initp%leaf_water    (ico) + initp%wood_water    (ico)
+            initp%veg_water_im2(ico) = initp%leaf_water_im2(ico) + initp%wood_water_im2(ico)
          end do
          !---------------------------------------------------------------------------------!
       end select
@@ -2792,6 +2832,10 @@ module rk4_misc
       integer                             :: ksn
       real(kind=8)                        :: rk4min_leaf_water
       real(kind=8)                        :: rk4min_wood_water
+      real(kind=8)                        :: rk4min_leaf_water_im2
+      real(kind=8)                        :: rk4min_wood_water_im2
+      real(kind=8)                        :: rk4max_leaf_water_im2
+      real(kind=8)                        :: rk4max_wood_water_im2
       real(kind=8)                        :: min_leaf_water
       real(kind=8)                        :: max_leaf_water
       real(kind=8)                        :: min_wood_water
@@ -2826,10 +2870,12 @@ module rk4_misc
       real(kind=8)                        :: wood_qboil_tot
       real(kind=8)                        :: old_leaf_energy
       real(kind=8)                        :: old_leaf_water
+      real(kind=8)                        :: old_leaf_water_im2
       real(kind=8)                        :: old_leaf_temp
       real(kind=8)                        :: old_leaf_fliq
       real(kind=8)                        :: old_wood_energy
       real(kind=8)                        :: old_wood_water
+      real(kind=8)                        :: old_wood_water_im2
       real(kind=8)                        :: old_wood_temp
       real(kind=8)                        :: old_wood_fliq
       real(kind=8)                        :: hdidi
@@ -2858,34 +2904,48 @@ module rk4_misc
 
       !----- Looping over cohorts ---------------------------------------------------------!
       cohortloop: do ico=1,cpatch%ncohorts
+         !---------------------------------------------------------------------------------!
+         !   Now we find the maximum leaf and wood water possible.                         !
+         !---------------------------------------------------------------------------------!
+         if (initp%leaf_resolvable(ico) .or. initp%wood_resolvable(ico)) then
+            rk4min_leaf_water     = rk4min_veg_lwater * initp%lai(ico)
+            rk4min_wood_water     = rk4min_veg_lwater * initp%wai(ico)
+            rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)
+            rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)
+            rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico)
+            rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico)
+            min_leaf_water        = rk4leaf_drywhc    * initp%lai(ico)
+            max_leaf_water        = rk4leaf_maxwhc    * initp%lai(ico)
+            min_wood_water        = rk4leaf_drywhc    * initp%wai(ico)
+            max_wood_water        = rk4leaf_maxwhc    * initp%wai(ico)
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
          !    Check whether we can solve leaves in this cohort...                          !
          !---------------------------------------------------------------------------------!
          if (initp%leaf_resolvable(ico)) then
             !------------------------------------------------------------------------------!
-            !   Now we find the maximum leaf water possible.                               !
-            !------------------------------------------------------------------------------!
-            rk4min_leaf_water = rk4min_veg_lwater * initp%lai(ico)
-            min_leaf_water    = rk4leaf_drywhc    * initp%lai(ico)
-            max_leaf_water    = rk4leaf_maxwhc    * initp%lai(ico)
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
             !    In case water is to be removed or added, we will need to update the       !
             ! leaf internal energy.  We want to preserve the temperature, though, because  !
             ! this happens as loss of internal energy (shedding) or latent heat (fast      !
             ! dew/boiling).                                                                !
             !------------------------------------------------------------------------------!
-            call uextcm2tl8(initp%leaf_energy(ico)                                         &
-                           ,initp%leaf_water(ico) + initp%leaf_water_im2(ico)              &
-                           ,initp%leaf_hcap(ico),initp%leaf_temp(ico),initp%leaf_fliq(ico))
-            old_leaf_energy = initp%leaf_energy(ico)
-            old_leaf_water  = initp%leaf_water (ico)
-            old_leaf_temp   = initp%leaf_temp  (ico)
-            old_leaf_fliq   = initp%leaf_fliq  (ico)
+            call uextcm2tl8( initp%leaf_energy   (ico)                                     &
+                           , initp%leaf_water    (ico)                                     &
+                           + initp%leaf_water_im2(ico)                                     &
+                           , initp%leaf_hcap     (ico)                                     &
+                           , initp%leaf_temp     (ico)                                     &
+                           , initp%leaf_fliq     (ico) )
+            old_leaf_energy    = initp%leaf_energy   (ico)
+            old_leaf_water     = initp%leaf_water    (ico)
+            old_leaf_water_im2 = initp%leaf_water_im2(ico)
+            old_leaf_temp      = initp%leaf_temp     (ico)
+            old_leaf_fliq      = initp%leaf_fliq     (ico)
             !------------------------------------------------------------------------------!
 
             if (initp%leaf_water(ico) > max_leaf_water) then
@@ -2962,6 +3022,18 @@ module rk4_misc
                end if
                !---------------------------------------------------------------------------!
             end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !       Check whether leaf internal water is bounded,                          !
+            !------------------------------------------------------------------------------!
+            if (initp%leaf_water_im2(ico) > rk4max_leaf_water_im2) then
+               !------ 
+            elseif (initp%leaf_water_im2(ico) < rk4min_leaf_water_im2) then
+            end if
+            !------------------------------------------------------------------------------!
+
          end if
          !---------------------------------------------------------------------------------!
 
@@ -2972,13 +3044,6 @@ module rk4_misc
          !    Check whether we can solve wood in this cohort...                            !
          !---------------------------------------------------------------------------------!
          if (initp%wood_resolvable(ico)) then
-            !------------------------------------------------------------------------------!
-            !   Now we find the maximum leaf water possible.                               !
-            !------------------------------------------------------------------------------!
-            rk4min_wood_water = rk4min_veg_lwater * initp%wai(ico)
-            min_wood_water    = rk4leaf_drywhc    * initp%wai(ico)
-            max_wood_water    = rk4leaf_maxwhc    * initp%wai(ico)
-            !------------------------------------------------------------------------------!
 
 
 
@@ -4590,6 +4655,268 @@ module rk4_misc
 
       return
    end subroutine sanity_check_veg_energy
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine sets ED2 acceptable range for several variables (only those whose  !
+   ! range dynamically varies).                                                            !
+   !---------------------------------------------------------------------------------------!
+   subroutine find_derived_thbounds(ibuff,cpatch,can_theta,can_temp,can_shv,can_prss       &
+                                   ,can_depth)
+      use grid_coms      , only : nzg                ! ! intent(in)
+      use consts_coms    , only : rdry8              & ! intent(in)
+                                , epim18             & ! intent(in)
+                                , ep8                & ! intent(in)
+                                , mmdryi8            & ! intent(in)
+                                , hr_sec             & ! intent(in)
+                                , min_sec            ! ! intent(in)
+      use ed_state_vars  , only : patchtype          ! ! structure
+      use therm_lib8     , only : press2exner8       & ! function
+                                , extemp2theta8      & ! function
+                                , tq2enthalpy8       & ! function
+                                , thetaeiv8          & ! function
+                                , thetaeivs8         & ! function
+                                , idealdenssh8       & ! function
+                                , reducedpress8      ! ! function
+      use soil_coms      , only : soil8              ! ! intent(in)
+      use ed_misc_coms   , only : current_time       ! ! intent(in)
+      use pft_coms       , only : leaf_rwc_min       & ! intent(in)
+                                , wood_rwc_min       ! ! intent(in)
+      use physiology_coms, only : plant_hydro_scheme ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(patchtype)             , target     :: cpatch
+      integer                     , intent(in) :: ibuff
+      real(kind=8)                , intent(in) :: can_theta
+      real(kind=8)                , intent(in) :: can_temp
+      real(kind=8)                , intent(in) :: can_shv
+      real(kind=8)                , intent(in) :: can_prss
+      real(kind=8)                , intent(in) :: can_depth
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                             :: can_exner_try
+      real(kind=8)                             :: can_theta_try
+      real(kind=8)                             :: can_enthalpy_try
+      real(kind=8)                             :: nplant
+      real(kind=4)                             :: leaf_water_int_4
+      real(kind=4)                             :: leaf_water_im2_4
+      real(kind=4)                             :: wood_water_int_4
+      real(kind=4)                             :: wood_water_im2_4
+      integer                                  :: k
+      integer                                  :: hour
+      integer                                  :: minute
+      integer                                  :: second
+      integer                                  :: nsoil
+      integer                                  :: ico
+      integer                                  :: ipft
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     File header is now written by initialize_misc_stepvars.                        !
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the bounds for pressure.  To avoid the pressure range to be too relaxed,  !
+      ! switch one of the dependent variable a time, and use the current values for the    !
+      ! other.  In addition, we force pressure to be bounded between the reduced pressure  !
+      ! in case the reference height was different by the order of 10%.                    !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Initial value, the most extreme one. --------------------------------------!
+      rk4aux(ibuff)%rk4min_can_prss =                                                      &
+            reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv               &
+                         ,9.d-1*rk4site%geoht,can_theta,can_shv,can_depth)
+      rk4aux(ibuff)%rk4max_can_prss =                                                      &
+            reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv               &
+                         ,1.1d0*rk4site%geoht,can_theta,can_shv,can_depth)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the bounds for potential temperature.  To avoid the pressure range to be  !
+      ! too relaxed, switch one of the dependent variable a time, and use the current      !
+      ! values for the other.                                                              !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Initial value, the most extreme one. --------------------------------------!
+      rk4aux(ibuff)%rk4min_can_theta   =  huge(1.d0)
+      rk4aux(ibuff)%rk4max_can_theta   = -huge(1.d0)
+      !----- 2. Minimum temperature. ------------------------------------------------------!
+      can_exner_try      = press2exner8(can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,rk4min_can_temp)
+      rk4aux(ibuff)%rk4min_can_theta   = min(rk4aux(ibuff)%rk4min_can_theta,can_theta_try)
+      rk4aux(ibuff)%rk4max_can_theta   = max(rk4aux(ibuff)%rk4max_can_theta,can_theta_try)
+      !----- 3. Maximum temperature. ------------------------------------------------------!
+      can_exner_try      = press2exner8(can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,rk4max_can_temp)
+      rk4aux(ibuff)%rk4min_can_theta   = min(rk4aux(ibuff)%rk4min_can_theta,can_theta_try)
+      rk4aux(ibuff)%rk4max_can_theta   = max(rk4aux(ibuff)%rk4max_can_theta,can_theta_try)
+      !----- 4. Minimum pressure. ---------------------------------------------------------!
+      can_exner_try      = press2exner8(rk4aux(ibuff)%rk4min_can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
+      rk4aux(ibuff)%rk4min_can_theta   = min(rk4aux(ibuff)%rk4min_can_theta,can_theta_try)
+      rk4aux(ibuff)%rk4max_can_theta   = max(rk4aux(ibuff)%rk4max_can_theta,can_theta_try)
+      !----- 5. Maximum pressure. ---------------------------------------------------------!
+      can_exner_try      = press2exner8(rk4aux(ibuff)%rk4max_can_prss)
+      can_theta_try      = extemp2theta8(can_exner_try,can_temp)
+      rk4aux(ibuff)%rk4min_can_theta   = min(rk4aux(ibuff)%rk4min_can_theta,can_theta_try)
+      rk4aux(ibuff)%rk4max_can_theta   = max(rk4aux(ibuff)%rk4max_can_theta,can_theta_try)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Minimum and maximum enthalpy.                                                 !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Initial value, the most extreme one. --------------------------------------!
+      rk4aux(ibuff)%rk4min_can_enthalpy = huge(1.d0)
+      rk4aux(ibuff)%rk4max_can_enthalpy = - huge(1.d0)
+      !----- 2. Minimum temperature. ------------------------------------------------------!
+      can_enthalpy_try    = tq2enthalpy8(rk4min_can_temp,can_shv,.true.)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 3. Maximum temperature. ------------------------------------------------------!
+      can_enthalpy_try    = tq2enthalpy8(rk4max_can_temp,can_shv,.true.)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 4. Minimum specific humidity. ------------------------------------------------!
+      can_enthalpy_try    = tq2enthalpy8(can_temp,rk4min_can_shv,.true.)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      !----- 5. Maximum specific humidity. ------------------------------------------------!
+      can_enthalpy_try    = tq2enthalpy8(can_temp,rk4max_can_shv,.true.)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print boundaries for scalar quantities.                                        !
+      !------------------------------------------------------------------------------------!
+      if (print_thbnd) then
+         hour   = floor(nint(current_time%time) / hr_sec)
+         minute = floor((nint(current_time%time) - hour * hr_sec) / min_sec)
+         second = floor( mod( nint(current_time%time) - hour * hr_sec - minute * min_sec   &
+                            , min_sec                                                   ) )
+
+         open (unit=39,file=trim(thbnds_fout),status='old',action='write'                  &
+                      ,position='append')
+         write (unit=39,fmt='(6(i12,1x),10(es12.5,1x))')                                   &
+                                 current_time%year, current_time%month,  current_time%date &
+                              ,               hour,             minute,             second &
+                              ,    rk4min_can_temp,    rk4max_can_temp,     rk4min_can_shv &
+                              ,     rk4max_can_shv,   rk4aux(ibuff)%rk4min_can_theta       &
+                              , rk4aux(ibuff)%rk4max_can_theta                             &
+                              , rk4aux(ibuff)%rk4min_can_prss                              &
+                              , rk4aux(ibuff)%rk4max_can_prss                              &
+                              , rk4aux(ibuff)%rk4min_can_enthalpy                          &
+                              , rk4aux(ibuff)%rk4max_can_enthalpy
+         close (unit=39,status='keep')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Boundaries for plant internal water content. --------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+         !----- Plant hydraulics is disabled.  Accept everything. -------------------------!
+         do ico=1,cpatch%ncohorts
+            rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = - huge(1.d0)
+            rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = + huge(1.d0)
+            rk4aux(ibuff)%rk4min_wood_water_im2(ico) = - huge(1.d0)
+            rk4aux(ibuff)%rk4max_wood_water_im2(ico) = + huge(1.d0)
+            rk4aux(ibuff)%rk4min_veg_water_im2 (ico) = - huge(1.d0)
+            rk4aux(ibuff)%rk4max_veg_water_im2 (ico) = + huge(1.d0)
+         end do
+         !---------------------------------------------------------------------------------!
+      case default
+         do ico=1,cpatch%ncohorts
+            ipft    = cpatch%pft(ico)
+            nplant  = dble(cpatch%nplant(ico))
+
+
+
+            !------------------------------------------------------------------------------!
+            !    By default, when plant hydraulics is active, wood is resolvable whenever  !
+            ! leaf is resolvable.                                                          !
+            !------------------------------------------------------------------------------!
+            if (cpatch%leaf_resolvable(ico)) then
+
+               !----- Find the lower limits. ----------------------------------------------!
+               call rwc2tw(leaf_rwc_min(ipft),wood_rwc_min(ipft),cpatch%bleaf(ico)         &
+                          ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico),cpatch%bdeada(ico)  &
+                          ,cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)            &
+                          ,ipft,leaf_water_int_4,wood_water_int_4)
+               call twi2twe(leaf_water_int_4,wood_water_int_4,cpatch%nplant(ico)           &
+                           ,leaf_water_im2_4,wood_water_im2_4)
+               rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = nplant * dble(leaf_water_im2_4)
+               rk4aux(ibuff)%rk4min_wood_water_im2(ico) = nplant * dble(wood_water_im2_4)
+               rk4aux(ibuff)%rk4min_veg_water_im2 (ico) =                                  &
+                                                  rk4aux(ibuff)%rk4min_leaf_water_im2(ico) &
+                                                + rk4aux(ibuff)%rk4min_wood_water_im2(ico)
+               !---------------------------------------------------------------------------!
+
+
+
+               !----- Find the upper limits. ----------------------------------------------!
+               call rwc2tw(1.0,1.0,cpatch%bleaf(ico),cpatch%bsapwooda(ico)                 &
+                          ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)     &
+                          ,cpatch%broot(ico),cpatch%dbh(ico),ipft,leaf_water_int_4         &
+                          ,wood_water_int_4)
+               call twi2twe(leaf_water_int_4,wood_water_int_4,cpatch%nplant(ico)           &
+                           ,leaf_water_im2_4,wood_water_im2_4)
+               rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = nplant * dble(leaf_water_im2_4)
+               rk4aux(ibuff)%rk4max_wood_water_im2(ico) = nplant * dble(wood_water_im2_4)
+               rk4aux(ibuff)%rk4max_veg_water_im2 (ico) =                                  &
+                                                  rk4aux(ibuff)%rk4max_leaf_water_im2(ico) &
+                                                + rk4aux(ibuff)%rk4max_wood_water_im2(ico)
+               !---------------------------------------------------------------------------!
+            else
+               !---------------------------------------------------------------------------!
+               !      Accept everything.                                                   !
+               !---------------------------------------------------------------------------!
+               rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = - huge(1.d0)
+               rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = + huge(1.d0)
+               rk4aux(ibuff)%rk4min_wood_water_im2(ico) = - huge(1.d0)
+               rk4aux(ibuff)%rk4max_wood_water_im2(ico) = + huge(1.d0)
+               rk4aux(ibuff)%rk4min_veg_water_im2 (ico) = - huge(1.d0)
+               rk4aux(ibuff)%rk4max_veg_water_im2 (ico) = + huge(1.d0)
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Limits for the soil moisture. ------------------------------------------------!
+      do k = rk4site%lsl, nzg
+         nsoil = rk4site%ntext_soil(k)
+         rk4aux(ibuff)%rk4min_soil_water(k) = soil8(nsoil)%soilcp * (1.d0 - rk4eps)
+         rk4aux(ibuff)%rk4max_soil_water(k) = soil8(nsoil)%slmsts * (1.d0 + rk4eps)
+      end do
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine find_derived_thbounds
    !=======================================================================================!
    !=======================================================================================!
 

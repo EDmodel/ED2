@@ -3,7 +3,7 @@
 ! MODULE: GROWTH_BALIVE
 !
 !> \brief   Various routines handling plant C and N use given size and allometry.
-!> \details Essentially, this file contains dbalive_dt[_eq0] and their libraries of fns.
+!> \details Essentially, this file contains dbalive_dt and their libraries of fns.
 !> \author  Translated from ED1 by Ryan Knox and Marcos Longo
 !> \author  31 Aug 2015 - Big refactoring in commit b8fb585, Daniel Scott
 !> \author  6 Oct 2017 - Included bark as an "active" tissue, Marcos Longo

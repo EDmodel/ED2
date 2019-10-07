@@ -88,6 +88,7 @@ module rk4_derivs
                                       , matric_potential8     & ! function
                                       , hydr_conduct8         ! ! function
       use rk4_coms             , only : checkbudget           & ! intent(in)
+                                      , print_detailed        & ! intent(in)
                                       , rk4site               & ! intent(in)
                                       , rk4patchtype          & ! structure
                                       , rk4aux                & ! intent(out)
@@ -96,9 +97,9 @@ module rk4_derivs
                                       , patchtype             & ! structure
                                       , polygontype           ! ! structure
       use therm_lib8           , only : tl2uint8              ! ! functions
+      use ed_misc_coms         , only : fast_diagnostics      ! ! intent(in)
       use physiology_coms      , only : h2o_plant_lim         & ! intent(in)
                                       , plant_hydro_scheme    ! ! intent(in)
-
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype)  , target     :: initp     ! RK4 structure, intermediate step
@@ -184,7 +185,9 @@ module rk4_derivs
       dinitp%virtual_energy     = 0.0d0
       dinitp%virtual_water      = 0.0d0
       dinitp%virtual_depth      = 0.0d0
-      dinitp%avg_transloss(:)   = 0.0d0
+      if (fast_diagnostics) then
+         dinitp%avg_transloss(:)   = 0.0d0
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -403,7 +406,9 @@ module rk4_derivs
                                        * (initp%soil_tempk(k) - initp%soil_tempk(k-1))     &
                                        * dslzti8(k)
          !------ Diagnostic sensible heat flux. -------------------------------------------!
-         dinitp%avg_sensible_gg(k-1) = rk4aux(ibuff)%h_flux_g(k)
+         if (fast_diagnostics) then
+            dinitp%avg_sensible_gg(k-1) = rk4aux(ibuff)%h_flux_g(k)
+         end if
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -453,10 +458,13 @@ module rk4_derivs
       !------------------------------------------------------------------------------------!
       !      Add the irradiance and canopy fluxes.                                         !
       !------------------------------------------------------------------------------------!
-      dinitp%avg_sensible_gg(mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))          &
-                                    - dble(csite%rshort_g(ipa))
+      if (fast_diagnostics) then
+         dinitp%avg_sensible_gg(mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))       &
+                                       - dble(csite%rshort_g(ipa))
+      end if
       rk4aux(ibuff)%h_flux_g(mzg+1) = rk4aux(ibuff)%h_flux_g(mzg+1)                        &
-                                    + dinitp%avg_sensible_gg (mzg)
+                                    + hflxgc + qwflxgc - dble(csite%rlong_g(ipa))          &
+                                    - dble(csite%rshort_g(ipa))
       !------------------------------------------------------------------------------------!
 
 
@@ -508,9 +516,11 @@ module rk4_derivs
 
 
       !------ Diagnostic variable for water flux, bypass the virtual/sfcw layers. ---------!
-      dinitp%avg_smoist_gg(mzg) = rk4aux(ibuff)%w_flux_g(mzg+1)                            &
-                                + dewgnd +  wshed_tot +  throughfall_tot -  wflxsc         &
-                                - wflxgc
+      if (fast_diagnostics) then
+         dinitp%avg_smoist_gg(mzg) = rk4aux(ibuff)%w_flux_g(mzg+1)                         &
+                                   + dewgnd +  wshed_tot +  throughfall_tot -  wflxsc      &
+                                   - wflxgc
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -640,7 +650,7 @@ module rk4_derivs
 
 
          !----- Save the moisture flux in kg/m2/s. ----------------------------------------!
-         if (k /= 1) then
+         if (fast_diagnostics .and. (k /= 1)) then
             dinitp%avg_smoist_gg(k-1) = rk4aux(ibuff)%w_flux_g(k) * wdns8 ! Diagnostic
          end if
          !---------------------------------------------------------------------------------!
@@ -653,15 +663,17 @@ module rk4_derivs
       ! drainage, but that shouldn't affect the budget in any way (except that we are add- !
       ! ing water to the system).                                                          !
       !------------------------------------------------------------------------------------!
-      dinitp%avg_drainage  = - rk4aux(ibuff)%w_flux_g (klsl) * wdns8
-      dinitp%avg_qdrainage = - rk4aux(ibuff)%qw_flux_g(klsl)
+      if (fast_diagnostics) then
+         dinitp%avg_drainage  = - rk4aux(ibuff)%w_flux_g (klsl) * wdns8
+         dinitp%avg_qdrainage = - rk4aux(ibuff)%qw_flux_g(klsl)
+      end if
       !----- Copy the variables to the budget arrays. -------------------------------------!
       if (checkbudget) then
-         dinitp%wbudget_loss2drainage = dinitp%avg_drainage
-         dinitp%ebudget_loss2drainage = dinitp%avg_qdrainage
+         dinitp%wbudget_loss2drainage = - rk4aux(ibuff)%w_flux_g (klsl) * wdns8
+         dinitp%ebudget_loss2drainage = - rk4aux(ibuff)%qw_flux_g(klsl)
 
-         dinitp%wbudget_storage = dinitp%wbudget_storage - dinitp%avg_drainage
-         dinitp%ebudget_storage = dinitp%ebudget_storage - dinitp%avg_qdrainage
+         dinitp%wbudget_storage = dinitp%wbudget_storage - dinitp%wbudget_loss2drainage
+         dinitp%ebudget_storage = dinitp%ebudget_storage - dinitp%ebudget_loss2drainage
       end if
       !------------------------------------------------------------------------------------!
 
@@ -776,9 +788,11 @@ module rk4_derivs
 
 
                   !----- Update derivatives of water, energy, and transpiration. ----------!
-                  dinitp%soil_water   (k2) = dinitp%soil_water(k2)    - wvlmeloss_tot
-                  dinitp%soil_energy  (k2) = dinitp%soil_energy(k2)   - qvlmeloss_tot
-                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wloss_tot
+                  dinitp%soil_water   (k2) = dinitp%soil_water   (k2) - wvlmeloss_tot
+                  dinitp%soil_energy  (k2) = dinitp%soil_energy  (k2) - qvlmeloss_tot
+                  if (fast_diagnostics) then
+                     dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wloss_tot
+                  end if
                   !------------------------------------------------------------------------!
                end do k2_transp_loop
                !---------------------------------------------------------------------------!
@@ -812,7 +826,11 @@ module rk4_derivs
                !----- Find the soil water loss associated with this cohort. ---------------!
                wloss = dble(cpatch%wflux_gw_layer(k1,ico))                                 &
                      * dble(cpatch%nplant(ico))            ! kg/m2g/s
-               qloss = wloss * uint_water_k1               !  J/m2g/s
+               if (wloss >= 0.d0) then
+                  qloss = wloss * uint_water_k1            !  J/m2g/s
+               else
+                  qloss = wloss * tl2uint8(initp%wood_temp(ico),1.d0)
+               end if
                !---------------------------------------------------------------------------!
 
 
@@ -823,6 +841,7 @@ module rk4_derivs
                ! we will do it in two steps so we ensure energy is conserved.              !
                !---------------------------------------------------------------------------!
                dinitp%wood_water_im2(ico) = dinitp%wood_water_im2(ico) + wloss
+               dinitp%veg_water_im2 (ico) = dinitp%veg_water_im2 (ico) + wloss
                dinitp%veg_energy    (ico) = dinitp%veg_energy    (ico) + qloss
                dinitp%wood_energy   (ico) = dinitp%wood_energy   (ico) + qloss
                initp%hflx_lrsti     (ico) = initp%hflx_lrsti     (ico) + qloss
@@ -832,6 +851,14 @@ module rk4_derivs
                !---- Count the total loss from the layer. ---------------------------------!
                wloss_tot = wloss_tot + wloss
                qloss_tot = qloss_tot + qloss
+               !---------------------------------------------------------------------------!
+
+
+               !----- Averaged fluxes. ----------------------------------------------------!
+               if (fast_diagnostics .or. print_detailed) then
+                  dinitp%avg_wflux_gw         (ico) = dinitp%avg_wflux_gw(ico) + wloss
+                  dinitp%avg_wflux_gw_layer(k1,ico) = wloss
+               end if
                !---------------------------------------------------------------------------!
             end do
             !------------------------------------------------------------------------------!
@@ -849,9 +876,11 @@ module rk4_derivs
             ! that the avg_transloss actually represents total soil water loss due to      !
             ! plant uptake, not transpiration.                                             !
             !------------------------------------------------------------------------------!
-            dinitp%soil_water   (k1) = dinitp%soil_water(k1)    - wvlmeloss_tot
-            dinitp%soil_energy  (k1) = dinitp%soil_energy(k1)   - qvlmeloss_tot
-            dinitp%avg_transloss(k1) = dinitp%avg_transloss(k1) - wloss_tot
+            dinitp%soil_water   (k1) = dinitp%soil_water   (k1) - wvlmeloss_tot
+            dinitp%soil_energy  (k1) = dinitp%soil_energy  (k1) - qvlmeloss_tot
+            if (fast_diagnostics) then
+               dinitp%avg_transloss(k1) = dinitp%avg_transloss(k1) - wloss_tot
+            end if
             !------------------------------------------------------------------------------!
          end do k1_transh_loop
          !---------------------------------------------------------------------------------!
@@ -1249,7 +1278,7 @@ module rk4_derivs
          ! (or the user is fine with super-saturation).                                    !
          !---------------------------------------------------------------------------------!
          wflxgc            = ( 1.d0 - initp%snowfac ) * initp%ggnet * initp%can_rhos       &
-                           * ( initp%ground_ssh - initp%can_shv )                          &
+                           * ( initp%ground_shv - initp%can_shv )                          &
                            * ( 1.d0 / (1.d0 + initp%ggnet / initp%ggsoil) )
          qwflxgc           = wflxgc * tq2enthalpy8(initp%ground_temp,1.d0,.true.)
          !----- Set flux flag. ------------------------------------------------------------!
@@ -1598,14 +1627,19 @@ module rk4_derivs
             qthroughfall_tot = qthroughfall_tot + qthroughfall
             dthroughfall_tot = dthroughfall_tot + dthroughfall
          else
+            !----- Leaf is not resolved. Set transpiration to zero. -----------------------!
+            transp = 0.d0
+            !------------------------------------------------------------------------------!
+
             !------------------------------------------------------------------------------!
             !     If there is not enough leaf biomass to safely solve the leaf energy and  !
             ! water balances, set leaf fluxes and interception to zero.                    !
             !------------------------------------------------------------------------------!
             dinitp%leaf_energy(ico) = 0.d0
-            dinitp%leaf_water(ico)  = 0.d0
-            dinitp%psi_open(ico)    = 0.d0
-            dinitp%psi_closed(ico)  = 0.d0
+            dinitp%leaf_water (ico) = 0.d0
+            dinitp%psi_open   (ico) = 0.d0
+            dinitp%psi_closed (ico) = 0.d0
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -1663,8 +1697,6 @@ module rk4_derivs
          !               wood energy set to equilibrium with the canopy air space          !
          !               (temperature).                                                    !
          !---------------------------------------------------------------------------------!
-
-
          if (initp%wood_resolvable(ico)) then
 
             !------ Define some aliases to indices ----------------------------------------!
@@ -1755,7 +1787,6 @@ module rk4_derivs
                qwflxwc                = wflxwc                                             &
                                       * tq2enthalpy8(initp%wood_temp(ico),1.d0,.true.)
                !---------------------------------------------------------------------------!
-
             end if
             !------------------------------------------------------------------------------!
 
@@ -1935,6 +1966,27 @@ module rk4_derivs
             !------------------------------------------------------------------------------!
             dinitp%leaf_water_im2(ico) = 0.d0
             dinitp%wood_water_im2(ico) = 0.d0
+            dinitp%veg_water_im2 (ico) = 0.d0
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !    If we are saving fast diagnostics, then we save the fluxes for this       !
+            ! cohort.                                                                      !
+            !------------------------------------------------------------------------------!
+            if (fast_diagnostics) then
+               dinitp%avg_wflux_wl (ico)  = 0.d0
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !    If the detailed output is tracked, then we save the fluxes for this       !
+            ! cohort.                                                                      !
+            !------------------------------------------------------------------------------!
+            if (print_detailed) then
+               dinitp%cfx_qwflux_wl(ico)  = 0.d0
+            end if
             !------------------------------------------------------------------------------!
          case default
             !------------------------------------------------------------------------------!
@@ -1942,54 +1994,57 @@ module rk4_derivs
             !------------------------------------------------------------------------------!
 
             !----- Update water (soil water uptake is accounted for in leaftw_derivs. -----!
-            if (.not. initp%leaf_resolvable(ico)) transp = 0.d0
             wflux_wl                   = dble(cpatch%wflux_wl(ico))                        &
                                        * dble(cpatch%nplant  (ico))
             dinitp%leaf_water_im2(ico) =   wflux_wl - transp 
-            dinitp%wood_water_im2(ico) = - wflux_wl 
+            dinitp%wood_water_im2(ico) = - wflux_wl
+            dinitp%veg_water_im2 (ico) = - transp
             !------------------------------------------------------------------------------!
 
 
 
             !------------------------------------------------------------------------------!
-            !    Update energy.  Decide how to do it based on plant_hydro_scheme.          !
+            !     Calculate the internal energy flow associated with wood-leaf flux        !
+            ! consistent with the sign of the flux.                                        !
             !------------------------------------------------------------------------------!
-            select case (plant_hydro_scheme)
-            case (1,2)
-               !---------------------------------------------------------------------------!
-               !    Track changes in energy and heat capacity.  qwflux_wl is the internal  !
-               ! energy flux associated with sapflow.                                      !
-               !---------------------------------------------------------------------------!
-               qwflux_wl               = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
-               dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qwflux_wl
-               dinitp%wood_energy(ico) = dinitp%wood_energy(ico) - qwflux_wl
-               !---------------------------------------------------------------------------!
-            case default
-               !---------------------------------------------------------------------------!
-               !    Do not track changes in heat capacity.  We must force wflux_wl to be   !
-               ! the same as transpiration when calculating energy fluxes.  qwflux_wl is   !
-               ! the internal energy flux associated with sapflow.                         !
-               !---------------------------------------------------------------------------!
-               qwflux_wl               = transp * tl2uint8(initp%wood_temp(ico),1.d0)
-               dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qwflux_wl
-               !---------------------------------------------------------------------------!
+            if (wflux_wl >= 0.d0) then
+               qwflux_wl = wflux_wl * tl2uint8(initp%wood_temp(ico),1.d0)
+            else
+               qwflux_wl = wflux_wl * tl2uint8(initp%leaf_temp(ico),1.d0)
+            end if
+            !------------------------------------------------------------------------------!
 
 
 
-               !---------------------------------------------------------------------------!
-               !     Similarly, we must force wflux_wl to be the same as wflux_gw when     !
-               ! calculating energy fluxes for wood.                                       !
-               !---------------------------------------------------------------------------!
-               qwflux_wl               = dble(cpatch%wflux_gw(ico))                        &
-                                       * dble(cpatch%nplant(ico))                          &
-                                       * tl2uint8(initp%wood_temp(ico),1.d0)
-               dinitp%wood_energy(ico) = dinitp%wood_energy(ico) - qwflux_wl
-               !---------------------------------------------------------------------------!
-            end select
+            !------------------------------------------------------------------------------!
+            !    Update energy.  Variable qwflux_wl is the internal energy flux associated !
+            ! with sapflow.                                                                !
+            !------------------------------------------------------------------------------!
+            dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qwflux_wl
+            dinitp%wood_energy(ico) = dinitp%wood_energy(ico) - qwflux_wl
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !    If we are saving fast diagnostics, then we save the fluxes for this       !
+            ! cohort.                                                                      !
+            !------------------------------------------------------------------------------!
+            if (fast_diagnostics) then
+               dinitp%avg_wflux_wl (ico)  = wflux_wl
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !    If the detailed output is tracked, then we save the fluxes for this       !
+            ! cohort.                                                                      !
+            !------------------------------------------------------------------------------!
+            if (print_detailed) then
+               dinitp%cfx_qwflux_wl(ico)  = qwflux_wl
+            end if
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
-
 
 
          !------ Find the combined leaf + wood derivative. --------------------------------!

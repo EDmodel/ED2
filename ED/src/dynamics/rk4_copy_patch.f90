@@ -33,6 +33,7 @@ module rk4_copy_patch
       type(rk4patchtype) , target     :: targetp
       type(patchtype)    , target     :: cpatch
       !----- Local variable ---------------------------------------------------------------!
+      integer                         :: i
       integer                         :: k
       !------------------------------------------------------------------------------------!
 
@@ -127,61 +128,61 @@ module rk4_copy_patch
          targetp%sfcwater_fracliq  (k) = sourcep%sfcwater_fracliq  (k)
       end do
 
-      do k=1,cpatch%ncohorts
-         targetp%leaf_resolvable   (k) = sourcep%leaf_resolvable   (k)
-         targetp%leaf_energy       (k) = sourcep%leaf_energy       (k)
-         targetp%leaf_water        (k) = sourcep%leaf_water        (k)
-         targetp%leaf_water_im2    (k) = sourcep%leaf_water_im2    (k)
-         targetp%leaf_temp         (k) = sourcep%leaf_temp         (k)
-         targetp%leaf_fliq         (k) = sourcep%leaf_fliq         (k)
-         targetp%leaf_hcap         (k) = sourcep%leaf_hcap         (k)
-         targetp%leaf_reynolds     (k) = sourcep%leaf_reynolds     (k)
-         targetp%leaf_grashof      (k) = sourcep%leaf_grashof      (k)
-         targetp%leaf_nussfree     (k) = sourcep%leaf_nussfree     (k)
-         targetp%leaf_nussforc     (k) = sourcep%leaf_nussforc     (k)
-         targetp%leaf_gbh          (k) = sourcep%leaf_gbh          (k)
-         targetp%leaf_gbw          (k) = sourcep%leaf_gbw          (k)
-         targetp%rshort_l          (k) = sourcep%rshort_l          (k)
-         targetp%rlong_l           (k) = sourcep%rlong_l           (k)
+      do i=1,cpatch%ncohorts
+         targetp%leaf_resolvable   (i) = sourcep%leaf_resolvable   (i)
+         targetp%leaf_energy       (i) = sourcep%leaf_energy       (i)
+         targetp%leaf_water        (i) = sourcep%leaf_water        (i)
+         targetp%leaf_water_im2    (i) = sourcep%leaf_water_im2    (i)
+         targetp%leaf_temp         (i) = sourcep%leaf_temp         (i)
+         targetp%leaf_fliq         (i) = sourcep%leaf_fliq         (i)
+         targetp%leaf_hcap         (i) = sourcep%leaf_hcap         (i)
+         targetp%leaf_reynolds     (i) = sourcep%leaf_reynolds     (i)
+         targetp%leaf_grashof      (i) = sourcep%leaf_grashof      (i)
+         targetp%leaf_nussfree     (i) = sourcep%leaf_nussfree     (i)
+         targetp%leaf_nussforc     (i) = sourcep%leaf_nussforc     (i)
+         targetp%leaf_gbh          (i) = sourcep%leaf_gbh          (i)
+         targetp%leaf_gbw          (i) = sourcep%leaf_gbw          (i)
+         targetp%rshort_l          (i) = sourcep%rshort_l          (i)
+         targetp%rlong_l           (i) = sourcep%rlong_l           (i)
 
-         targetp%wood_resolvable   (k) = sourcep%wood_resolvable   (k)
-         targetp%wood_energy       (k) = sourcep%wood_energy       (k)
-         targetp%wood_water        (k) = sourcep%wood_water        (k)
-         targetp%wood_water_im2    (k) = sourcep%wood_water_im2    (k)
-         targetp%wood_temp         (k) = sourcep%wood_temp         (k)
-         targetp%wood_fliq         (k) = sourcep%wood_fliq         (k)
-         targetp%wood_hcap         (k) = sourcep%wood_hcap         (k)
-         targetp%wood_reynolds     (k) = sourcep%wood_reynolds     (k)
-         targetp%wood_grashof      (k) = sourcep%wood_grashof      (k)
-         targetp%wood_nussfree     (k) = sourcep%wood_nussfree     (k)
-         targetp%wood_nussforc     (k) = sourcep%wood_nussforc     (k)
-         targetp%wood_gbh          (k) = sourcep%wood_gbh          (k)
-         targetp%wood_gbw          (k) = sourcep%wood_gbw          (k)
-         targetp%rshort_w          (k) = sourcep%rshort_w          (k)
-         targetp%rlong_w           (k) = sourcep%rlong_w           (k)
+         targetp%wood_resolvable   (i) = sourcep%wood_resolvable   (i)
+         targetp%wood_energy       (i) = sourcep%wood_energy       (i)
+         targetp%wood_water        (i) = sourcep%wood_water        (i)
+         targetp%wood_water_im2    (i) = sourcep%wood_water_im2    (i)
+         targetp%wood_temp         (i) = sourcep%wood_temp         (i)
+         targetp%wood_fliq         (i) = sourcep%wood_fliq         (i)
+         targetp%wood_hcap         (i) = sourcep%wood_hcap         (i)
+         targetp%wood_reynolds     (i) = sourcep%wood_reynolds     (i)
+         targetp%wood_grashof      (i) = sourcep%wood_grashof      (i)
+         targetp%wood_nussfree     (i) = sourcep%wood_nussfree     (i)
+         targetp%wood_nussforc     (i) = sourcep%wood_nussforc     (i)
+         targetp%wood_gbh          (i) = sourcep%wood_gbh          (i)
+         targetp%wood_gbw          (i) = sourcep%wood_gbw          (i)
+         targetp%rshort_w          (i) = sourcep%rshort_w          (i)
+         targetp%rlong_w           (i) = sourcep%rlong_w           (i)
 
-         targetp%veg_resolvable    (k) = sourcep%veg_resolvable    (k)
-         targetp%veg_energy        (k) = sourcep%veg_energy        (k)
-         targetp%veg_water         (k) = sourcep%veg_water         (k)
-         targetp%veg_water_im2     (k) = sourcep%veg_water_im2     (k)
-         targetp%veg_hcap          (k) = sourcep%veg_hcap          (k)
+         targetp%veg_resolvable    (i) = sourcep%veg_resolvable    (i)
+         targetp%veg_energy        (i) = sourcep%veg_energy        (i)
+         targetp%veg_water         (i) = sourcep%veg_water         (i)
+         targetp%veg_water_im2     (i) = sourcep%veg_water_im2     (i)
+         targetp%veg_hcap          (i) = sourcep%veg_hcap          (i)
 
-         targetp%veg_wind          (k) = sourcep%veg_wind          (k)
-         targetp%lint_shv          (k) = sourcep%lint_shv          (k)
-         targetp%nplant            (k) = sourcep%nplant            (k)
-         targetp%lai               (k) = sourcep%lai               (k)
-         targetp%wai               (k) = sourcep%wai               (k)
-         targetp%tai               (k) = sourcep%tai               (k)
-         targetp%crown_area        (k) = sourcep%crown_area        (k)
-         targetp%elongf            (k) = sourcep%elongf            (k)
-         targetp%gsw_open          (k) = sourcep%gsw_open          (k)
-         targetp%gsw_closed        (k) = sourcep%gsw_closed        (k)
-         targetp%psi_open          (k) = sourcep%psi_open          (k)
-         targetp%psi_closed        (k) = sourcep%psi_closed        (k)
-         targetp%fs_open           (k) = sourcep%fs_open           (k)
-         targetp%gpp               (k) = sourcep%gpp               (k)
-         targetp%leaf_resp         (k) = sourcep%leaf_resp         (k)
-         targetp%root_resp         (k) = sourcep%root_resp         (k)
+         targetp%veg_wind          (i) = sourcep%veg_wind          (i)
+         targetp%lint_shv          (i) = sourcep%lint_shv          (i)
+         targetp%nplant            (i) = sourcep%nplant            (i)
+         targetp%lai               (i) = sourcep%lai               (i)
+         targetp%wai               (i) = sourcep%wai               (i)
+         targetp%tai               (i) = sourcep%tai               (i)
+         targetp%crown_area        (i) = sourcep%crown_area        (i)
+         targetp%elongf            (i) = sourcep%elongf            (i)
+         targetp%gsw_open          (i) = sourcep%gsw_open          (i)
+         targetp%gsw_closed        (i) = sourcep%gsw_closed        (i)
+         targetp%psi_open          (i) = sourcep%psi_open          (i)
+         targetp%psi_closed        (i) = sourcep%psi_closed        (i)
+         targetp%fs_open           (i) = sourcep%fs_open           (i)
+         targetp%gpp               (i) = sourcep%gpp               (i)
+         targetp%leaf_resp         (i) = sourcep%leaf_resp         (i)
+         targetp%root_resp         (i) = sourcep%root_resp         (i)
       end do
 
       if (checkbudget) then
@@ -220,16 +221,18 @@ module rk4_copy_patch
          end do
 
 
-         do k=1,cpatch%ncohorts
-            targetp%avg_sensible_lc    (k) = sourcep%avg_sensible_lc   (k)
-            targetp%avg_sensible_wc    (k) = sourcep%avg_sensible_wc   (k)
-            targetp%avg_vapor_lc       (k) = sourcep%avg_vapor_lc      (k)
-            targetp%avg_vapor_wc       (k) = sourcep%avg_vapor_wc      (k)
-            targetp%avg_transp         (k) = sourcep%avg_transp        (k)
-            targetp%avg_intercepted_al (k) = sourcep%avg_intercepted_al(k)
-            targetp%avg_intercepted_aw (k) = sourcep%avg_intercepted_aw(k)
-            targetp%avg_wshed_lg       (k) = sourcep%avg_wshed_lg      (k)
-            targetp%avg_wshed_wg       (k) = sourcep%avg_wshed_wg      (k)
+         do i=1,cpatch%ncohorts
+            targetp%avg_sensible_lc    (i) = sourcep%avg_sensible_lc    (i)
+            targetp%avg_sensible_wc    (i) = sourcep%avg_sensible_wc    (i)
+            targetp%avg_vapor_lc       (i) = sourcep%avg_vapor_lc       (i)
+            targetp%avg_vapor_wc       (i) = sourcep%avg_vapor_wc       (i)
+            targetp%avg_transp         (i) = sourcep%avg_transp         (i)
+            targetp%avg_intercepted_al (i) = sourcep%avg_intercepted_al (i)
+            targetp%avg_intercepted_aw (i) = sourcep%avg_intercepted_aw (i)
+            targetp%avg_wshed_lg       (i) = sourcep%avg_wshed_lg       (i)
+            targetp%avg_wshed_wg       (i) = sourcep%avg_wshed_wg       (i)
+            targetp%avg_wflux_wl       (i) = sourcep%avg_wflux_wl       (i)
+            targetp%avg_wflux_gw       (i) = sourcep%avg_wflux_gw       (i)
          end do
       end if
 
@@ -240,6 +243,8 @@ module rk4_copy_patch
          targetp%flx_vapor_wc           = sourcep%flx_vapor_wc
          targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
          targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
+         targetp%flx_wflux_wl           = sourcep%flx_wflux_wl
+         targetp%flx_wflux_gw           = sourcep%flx_wflux_gw
          targetp%flx_intercepted        = sourcep%flx_intercepted
          targetp%flx_throughfall        = sourcep%flx_throughfall
          targetp%flx_vapor_ac           = sourcep%flx_vapor_ac
@@ -262,17 +267,25 @@ module rk4_copy_patch
             targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
             targetp%flx_transloss(k)   = sourcep%flx_transloss(k)  
          end do
-         
-         do k=1,cpatch%ncohorts
-            targetp%cfx_hflxlc      (k) = sourcep%cfx_hflxlc      (k)
-            targetp%cfx_hflxwc      (k) = sourcep%cfx_hflxwc      (k)
-            targetp%cfx_qwflxlc     (k) = sourcep%cfx_qwflxlc     (k)
-            targetp%cfx_qwflxwc     (k) = sourcep%cfx_qwflxwc     (k)
-            targetp%cfx_qwshed      (k) = sourcep%cfx_qwshed      (k)
-            targetp%cfx_qtransp     (k) = sourcep%cfx_qtransp     (k)
-            targetp%cfx_qintercepted(k) = sourcep%cfx_qintercepted(k)
+
+         do i=1,cpatch%ncohorts
+            targetp%cfx_hflxlc      (i) = sourcep%cfx_hflxlc      (i)
+            targetp%cfx_hflxwc      (i) = sourcep%cfx_hflxwc      (i)
+            targetp%cfx_qwflxlc     (i) = sourcep%cfx_qwflxlc     (i)
+            targetp%cfx_qwflxwc     (i) = sourcep%cfx_qwflxwc     (i)
+            targetp%cfx_qwshed      (i) = sourcep%cfx_qwshed      (i)
+            targetp%cfx_qtransp     (i) = sourcep%cfx_qtransp     (i)
+            targetp%cfx_qintercepted(i) = sourcep%cfx_qintercepted(i)
+            targetp%cfx_qwflux_wl   (i) = sourcep%cfx_qwflux_wl   (i)
+            targetp%cfx_qwflux_gw   (i) = sourcep%cfx_qwflux_gw   (i)
+            do k=rk4site%lsl,nzg
+               targetp%cfx_qwflux_gw_layer(k,i) = sourcep%cfx_qwflux_gw_layer(k,i)
+            end do
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
 
 
