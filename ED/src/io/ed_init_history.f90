@@ -915,6 +915,10 @@ module ed_init_history
                         ,'DMEAN_VAPOR_LC_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_transp         (ipy:ipy)                           &
                         ,'DMEAN_TRANSP_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_wflux_wl       (ipy:ipy)                           &
+                        ,'DMEAN_WFLUX_WL_PY         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_wflux_gw       (ipy:ipy)                           &
+                        ,'DMEAN_WFLUX_GW_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_intercepted_al (ipy:ipy)                           &
                         ,'DMEAN_INTERCEPTED_AL_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_wshed_lg       (ipy:ipy)                           &
@@ -1311,6 +1315,10 @@ module ed_init_history
                         ,'MMEAN_VAPOR_LC_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_transp         (ipy:ipy)                           &
                         ,'MMEAN_TRANSP_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_wflux_wl       (ipy:ipy)                           &
+                        ,'MMEAN_WFLUX_WL_PY         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_wflux_gw       (ipy:ipy)                           &
+                        ,'MMEAN_WFLUX_GW_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_intercepted_al (ipy:ipy)                           &
                         ,'MMEAN_INTERCEPTED_AL_PY   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_wshed_lg       (ipy:ipy)                           &
@@ -1533,6 +1541,10 @@ module ed_init_history
                         ,'MMSQU_VAPOR_LC_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmsqu_transp         (ipy:ipy)                           &
                         ,'MMSQU_TRANSP_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmsqu_wflux_wl       (ipy:ipy)                           &
+                        ,'MMSQU_WFLUX_WL_PY         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmsqu_wflux_gw       (ipy:ipy)                           &
+                        ,'MMSQU_WFLUX_GW_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmsqu_sensible_wc    (ipy:ipy)                           &
                         ,'MMSQU_SENSIBLE_WC_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmsqu_vapor_wc       (ipy:ipy)                           &
@@ -1938,6 +1950,10 @@ module ed_init_history
                         ,'QMEAN_VAPOR_LC_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_transp         (:,ipy)                             &
                         ,'QMEAN_TRANSP_PY          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_wflux_wl       (:,ipy)                             &
+                        ,'QMEAN_WFLUX_WL_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_wflux_gw       (:,ipy)                             &
+                        ,'QMEAN_WFLUX_GW_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_intercepted_al (:,ipy)                             &
                         ,'QMEAN_INTERCEPTED_AL_PY  ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_wshed_lg       (:,ipy)                             &
@@ -2114,6 +2130,10 @@ module ed_init_history
                         ,'QMSQU_VAPOR_LC_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmsqu_transp         (:,ipy)                             &
                         ,'QMSQU_TRANSP_PY          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmsqu_wflux_wl       (:,ipy)                             &
+                        ,'QMSQU_WFLUX_WL_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmsqu_wflux_gw       (:,ipy)                             &
+                        ,'QMSQU_WFLUX_GW_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmsqu_sensible_wc    (:,ipy)                             &
                         ,'QMSQU_SENSIBLE_WC_PY     ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmsqu_vapor_wc       (:,ipy)                             &
@@ -5351,10 +5371,10 @@ module ed_init_history
                         ,'DMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%dmean_wood_water_im2                                    &
                         ,'DMEAN_WOOD_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
-         call hdf_getslab_r(cpatch%dmean_wflux_gw                                          &
-                        ,'DMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%dmean_wflux_wl                                          &
                         ,'DMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%dmean_wflux_gw                                          &
+                        ,'DMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
       end if
       !----- Monthly means. ---------------------------------------------------------------!
       if (writing_eorq) then
@@ -5552,10 +5572,10 @@ module ed_init_history
                         ,'MMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_wood_water_im2                                    &
                         ,'MMEAN_WOOD_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
-         call hdf_getslab_r(cpatch%mmean_wflux_gw                                          &
-                        ,'MMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_wflux_wl                                          &
                         ,'MMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_wflux_gw                                          &
+                        ,'MMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
 
          call hdf_getslab_r(cpatch%mmsqu_gpp                                               &
                         ,'MMSQU_GPP_CO              ',dsetrank,iparallel,.false.,foundvar)
@@ -5569,6 +5589,10 @@ module ed_init_history
                         ,'MMSQU_VAPOR_LC_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmsqu_transp                                            &
                         ,'MMSQU_TRANSP_CO           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmsqu_wflux_wl                                          &
+                        ,'MMSQU_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmsqu_wflux_gw                                          &
+                        ,'MMSQU_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmsqu_sensible_wc                                       &
                         ,'MMSQU_SENSIBLE_WC_CO      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmsqu_vapor_wc                                          &
@@ -5861,6 +5885,7 @@ module ed_init_history
                         ,'QMEAN_VAPOR_LC_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmean_transp                                            &
                         ,'QMEAN_TRANSP_CO           ',dsetrank,iparallel,.false.,foundvar)
+
          call hdf_getslab_r(cpatch%qmean_intercepted_al                                    &
                         ,'QMEAN_INTERCEPTED_AL_CO   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmean_wshed_lg                                          &
@@ -5889,10 +5914,10 @@ module ed_init_history
                         ,'QMEAN_WOOD_WATER_INT_CO   ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmean_wood_water_im2                                    &
                         ,'QMEAN_WOOD_WATER_IM2_CO   ',dsetrank,iparallel,.false.,foundvar)
-         call hdf_getslab_r(cpatch%qmean_wflux_gw                                          &
-                        ,'QMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmean_wflux_wl                                          &
                         ,'QMEAN_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmean_wflux_gw                                          &
+                        ,'QMEAN_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
 
 
          call hdf_getslab_r(cpatch%qmsqu_gpp                                               &
@@ -5907,6 +5932,10 @@ module ed_init_history
                         ,'QMSQU_VAPOR_LC_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmsqu_transp                                            &
                         ,'QMSQU_TRANSP_CO           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmsqu_wflux_wl                                          &
+                        ,'QMSQU_WFLUX_WL_CO         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%qmsqu_wflux_gw                                          &
+                        ,'QMSQU_WFLUX_GW_CO         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmsqu_sensible_wc                                       &
                         ,'QMSQU_SENSIBLE_WC_CO      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%qmsqu_vapor_wc                                          &

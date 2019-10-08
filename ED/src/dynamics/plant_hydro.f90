@@ -304,20 +304,16 @@ module plant_hydro
          else
              cpatch%dmin_wood_psi(ico) =  min(cpatch%dmin_wood_psi(ico),cpatch%wood_psi(ico))
          end if
+         !---------------------------------------------------------------------------------!
 
-          cpatch%fmean_wflux_wl             (ico) = cpatch%fmean_wflux_wl(ico)         &
-                                                  + cpatch%wflux_wl(ico)               &
-                                                  * dtlsm_o_frqsum
-          cpatch%fmean_wflux_gw             (ico) = cpatch%fmean_wflux_gw(ico)         &
-                                                  + cpatch%wflux_gw(ico)               &
-                                                  * dtlsm_o_frqsum
-          do k = 1, nzg
 
-              cpatch%fmean_wflux_gw_layer (k,ico) = cpatch%fmean_wflux_gw_layer(k,ico) &
-                                                  + cpatch%wflux_gw_layer(k,ico)       &
-                                                  * dtlsm_o_frqsum
-          end do
 
+         !---------------------------------------------------------------------------------!
+         ! MLO -> XX.  I removed the fluxes from here because during the RK4 integration   !
+         !             the water content may go slightly off.  When this happens, we       !
+         !             correct the storage and exchange water in adjust_veg_properties,    !
+         !             and correct fluxes accordingly.                                     !
+         !---------------------------------------------------------------------------------!
        end do
 
       return

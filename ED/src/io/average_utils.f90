@@ -352,6 +352,19 @@ module average_utils
                   cgrid%fmean_transp        (ipy) = cgrid%fmean_transp         (ipy)       &
                                                   + cpatch%fmean_transp        (ico)       &
                                                   * patch_wgt
+                  !------------------------------------------------------------------------!
+                  !    Convert polygon-level, plant-hydraulic fluxes to kg/m2/s (cohort-   !
+                  ! -level fluxes are in (kg/pl/s).                                        !
+                  !------------------------------------------------------------------------!
+                  cgrid%fmean_wflux_wl      (ipy) = cgrid%fmean_wflux_wl       (ipy)       &
+                                                  + cpatch%fmean_wflux_wl      (ico)       &
+                                                  * cpatch%nplant              (ico)       &
+                                                  * patch_wgt
+                  cgrid%fmean_wflux_gw      (ipy) = cgrid%fmean_wflux_gw       (ipy)       &
+                                                  + cpatch%fmean_wflux_gw      (ico)       &
+                                                  * cpatch%nplant              (ico)       &
+                                                  * patch_wgt
+                  !------------------------------------------------------------------------!
                   cgrid%fmean_intercepted_al(ipy) = cgrid%fmean_intercepted_al (ipy)       &
                                                   + cpatch%fmean_intercepted_al(ico)       &
                                                   * patch_wgt
@@ -1009,7 +1022,7 @@ module average_utils
                csite%fmean_qrunoff       (ipa) = csite%fmean_qrunoff       (ipa) * frqsumi
                csite%fmean_qdrainage     (ipa) = csite%fmean_qdrainage     (ipa) * frqsumi
                !------ Soil flux. ---------------------------------------------------------!
-               do k=cpoly%lsl(isi),nzg
+               do k=lsl,nzg
                   csite%fmean_sensible_gg(k,ipa) = csite%fmean_sensible_gg   (k,ipa)       &
                                                  * frqsumi
                   csite%fmean_smoist_gg  (k,ipa) = csite%fmean_smoist_gg     (k,ipa)       &
@@ -1101,7 +1114,8 @@ module average_utils
                   !------------------------------------------------------------------------!
                   !    Energy and water fluxes were integrated over the past frqsum        !
                   ! interval.   Use frqsumi to normalise them.  Energy fluxes will become  !
-                  ! W/m�, and water fluxes will become kg/m�/s.                            !
+                  ! W/m2, and water fluxes will become kg/m2/s (or kg/pl/s, in the case    !
+                  ! of internal water fluxes).                                             !
                   !------------------------------------------------------------------------!
                   cpatch%fmean_sensible_lc   (ico) = cpatch%fmean_sensible_lc   (ico)      &
                                                    * frqsumi
@@ -1121,6 +1135,14 @@ module average_utils
                                                    * frqsumi
                   cpatch%fmean_wshed_wg      (ico) = cpatch%fmean_wshed_wg      (ico)      &
                                                    * frqsumi
+                  cpatch%fmean_wflux_wl      (ico) = cpatch%fmean_wflux_wl      (ico)      &
+                                                   * frqsumi
+                  cpatch%fmean_wflux_gw      (ico) = cpatch%fmean_wflux_gw      (ico)      &
+                                                   * frqsumi
+                  do k=lsl,nzg
+                     cpatch%fmean_wflux_gw_layer(k,ico) =                                  &
+                                               cpatch%fmean_wflux_gw_layer(k,ico) * frqsumi
+                  end do
                   !------------------------------------------------------------------------!
 
 
@@ -1342,6 +1364,8 @@ module average_utils
          cgrid%fmean_sensible_lc       (  ipy) = 0.0
          cgrid%fmean_vapor_lc          (  ipy) = 0.0
          cgrid%fmean_transp            (  ipy) = 0.0
+         cgrid%fmean_wflux_wl          (  ipy) = 0.0
+         cgrid%fmean_wflux_gw          (  ipy) = 0.0
          cgrid%fmean_intercepted_al    (  ipy) = 0.0
          cgrid%fmean_wshed_lg          (  ipy) = 0.0
          cgrid%fmean_rshort_w          (  ipy) = 0.0
@@ -1893,6 +1917,12 @@ module average_utils
                                           * frqsum_o_daysec
          cgrid%dmean_transp         (ipy) = cgrid%dmean_transp         (ipy)               &
                                           + cgrid%fmean_transp         (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_wflux_wl       (ipy) = cgrid%dmean_wflux_wl       (ipy)               &
+                                          + cgrid%fmean_wflux_wl       (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_wflux_gw       (ipy) = cgrid%dmean_wflux_gw       (ipy)               &
+                                          + cgrid%fmean_wflux_gw       (ipy)               &
                                           * frqsum_o_daysec
          cgrid%dmean_intercepted_al (ipy) = cgrid%dmean_intercepted_al (ipy)               &
                                           + cgrid%fmean_intercepted_al (ipy)               &
@@ -2595,14 +2625,14 @@ module average_utils
                   cpatch%dmean_wood_water_im2(ico) = cpatch%dmean_wood_water_im2(ico)      &
                                                    + cpatch%fmean_wood_water_im2(ico)      &
                                                    * frqsum_o_daysec
+                  cpatch%dmean_wflux_wl      (ico) = cpatch%dmean_wflux_wl      (ico)      &
+                                                   + cpatch%fmean_wflux_wl      (ico)      &
+                                                   * frqsum_o_daysec
                   cpatch%dmean_wflux_gw      (ico) = cpatch%dmean_wflux_gw      (ico)      &
                                                    + cpatch%fmean_wflux_gw      (ico)      &
                                                    * frqsum_o_daysec
                   cpatch%dmean_wflux_gw_layer(:,ico)=cpatch%dmean_wflux_gw_layer(:,ico)    &
                                                    + cpatch%fmean_wflux_gw_layer(:,ico)    &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wflux_wl      (ico) = cpatch%dmean_wflux_wl      (ico)      &
-                                                   + cpatch%fmean_wflux_wl      (ico)      &
                                                    * frqsum_o_daysec
                   !------------------------------------------------------------------------!
                end do cohortloop
@@ -3586,6 +3616,8 @@ module average_utils
          cgrid%dmean_sensible_lc        (ipy) = 0.0
          cgrid%dmean_vapor_lc           (ipy) = 0.0
          cgrid%dmean_transp             (ipy) = 0.0
+         cgrid%dmean_wflux_wl           (ipy) = 0.0
+         cgrid%dmean_wflux_gw           (ipy) = 0.0
          cgrid%dmean_intercepted_al     (ipy) = 0.0
          cgrid%dmean_wshed_lg           (ipy) = 0.0
          cgrid%dmean_rshort_w           (ipy) = 0.0
@@ -3868,9 +3900,9 @@ module average_utils
                   cpatch%dmean_leaf_water_im2    (ico) = 0.0
                   cpatch%dmean_wood_water_int    (ico) = 0.0
                   cpatch%dmean_wood_water_im2    (ico) = 0.0
+                  cpatch%dmean_wflux_wl          (ico) = 0.0
                   cpatch%dmean_wflux_gw          (ico) = 0.0
                   cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
-                  cpatch%dmean_wflux_wl          (ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -4229,6 +4261,12 @@ module average_utils
          cgrid%mmean_transp            (ipy) = cgrid%mmean_transp            (ipy)         &
                                              + cgrid%dmean_transp            (ipy)         &
                                              * ndaysi
+         cgrid%mmean_wflux_wl          (ipy) = cgrid%mmean_wflux_wl          (ipy)         &
+                                             + cgrid%dmean_wflux_wl          (ipy)         &
+                                             * ndaysi
+         cgrid%mmean_wflux_gw          (ipy) = cgrid%mmean_wflux_gw          (ipy)         &
+                                             + cgrid%dmean_wflux_gw          (ipy)         &
+                                             * ndaysi
          cgrid%mmean_intercepted_al    (ipy) = cgrid%mmean_intercepted_al    (ipy)         &
                                              + cgrid%dmean_intercepted_al    (ipy)         &
                                              * ndaysi
@@ -4569,6 +4607,12 @@ module average_utils
          cgrid%mmsqu_transp           (ipy) = cgrid%mmsqu_transp              (ipy)        &
                                             + isqu_ftz(cgrid%dmean_transp     (ipy))       &
                                             * ndaysi
+         cgrid%mmsqu_wflux_wl          (ipy) = cgrid%mmsqu_wflux_wl          (ipy)         &
+                                             + isqu_ftz(cgrid%dmean_wflux_wl  (ipy))       &
+                                             * ndaysi
+         cgrid%mmsqu_wflux_gw          (ipy) = cgrid%mmsqu_wflux_gw          (ipy)         &
+                                             + isqu_ftz(cgrid%dmean_wflux_gw (ipy))        &
+                                             * ndaysi
          cgrid%mmsqu_sensible_wc      (ipy) = cgrid%mmsqu_sensible_wc         (ipy)        &
                                             + isqu_ftz(cgrid%dmean_sensible_wc(ipy))       &
                                             * ndaysi
@@ -5387,11 +5431,11 @@ module average_utils
                   cpatch%mmean_wood_water_im2  (ico) = cpatch%mmean_wood_water_im2  (ico)  &
                                                      + cpatch%dmean_wood_water_im2  (ico)  &
                                                      * ndaysi
-                  cpatch%mmean_wflux_gw        (ico) = cpatch%mmean_wflux_gw        (ico)  &
-                                                     + cpatch%dmean_wflux_gw        (ico)  &
-                                                     * ndaysi
                   cpatch%mmean_wflux_wl        (ico) = cpatch%mmean_wflux_wl        (ico)  &
                                                      + cpatch%dmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_wflux_gw        (ico) = cpatch%mmean_wflux_gw        (ico)  &
+                                                     + cpatch%dmean_wflux_gw        (ico)  &
                                                      * ndaysi
                   cpatch%mmean_wflux_gw_layer(:,ico) = cpatch%mmean_wflux_gw_layer(:,ico)  &
                                                      + cpatch%dmean_wflux_gw_layer(:,ico)  &
@@ -5414,6 +5458,12 @@ module average_utils
                                                 * ndaysi
                   cpatch%mmsqu_transp     (ico) = cpatch%mmsqu_transp               (ico)  &
                                                 + isqu_ftz(cpatch%dmean_transp      (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_wflux_wl   (ico) = cpatch%mmsqu_wflux_wl             (ico)  &
+                                                + isqu_ftz(cpatch%dmean_wflux_wl    (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_wflux_gw   (ico) = cpatch%mmsqu_wflux_gw             (ico)  &
+                                                + isqu_ftz(cpatch%dmean_wflux_gw    (ico)) &
                                                 * ndaysi
                   cpatch%mmsqu_sensible_wc(ico) = cpatch%mmsqu_sensible_wc          (ico)  &
                                                 + isqu_ftz(cpatch%dmean_sensible_wc (ico)) &
@@ -5896,6 +5946,8 @@ module average_utils
          cgrid%mmean_sensible_lc          (ipy) = 0.0
          cgrid%mmean_vapor_lc             (ipy) = 0.0
          cgrid%mmean_transp               (ipy) = 0.0
+         cgrid%mmean_wflux_wl             (ipy) = 0.0
+         cgrid%mmean_wflux_gw             (ipy) = 0.0
          cgrid%mmean_intercepted_al       (ipy) = 0.0
          cgrid%mmean_wshed_lg             (ipy) = 0.0
          cgrid%mmean_rshort_w             (ipy) = 0.0
@@ -6015,6 +6067,8 @@ module average_utils
          cgrid%mmsqu_sensible_lc          (ipy) = 0.0
          cgrid%mmsqu_vapor_lc             (ipy) = 0.0
          cgrid%mmsqu_transp               (ipy) = 0.0
+         cgrid%mmsqu_wflux_wl             (ipy) = 0.0
+         cgrid%mmsqu_wflux_gw             (ipy) = 0.0
          cgrid%mmsqu_sensible_wc          (ipy) = 0.0
          cgrid%mmsqu_vapor_wc             (ipy) = 0.0
          cgrid%mmsqu_rh                   (ipy) = 0.0
@@ -6299,8 +6353,8 @@ module average_utils
                   cpatch%mmean_leaf_water_im2     (ico) = 0.0
                   cpatch%mmean_wood_water_int     (ico) = 0.0
                   cpatch%mmean_wood_water_im2     (ico) = 0.0
-                  cpatch%mmean_wflux_gw           (ico) = 0.0
                   cpatch%mmean_wflux_wl           (ico) = 0.0
+                  cpatch%mmean_wflux_gw           (ico) = 0.0
                   cpatch%mmean_wflux_gw_layer   (:,ico) = 0.0
 
                   cpatch%mmsqu_gpp                (ico) = 0.0
@@ -6309,6 +6363,8 @@ module average_utils
                   cpatch%mmsqu_sensible_lc        (ico) = 0.0
                   cpatch%mmsqu_vapor_lc           (ico) = 0.0
                   cpatch%mmsqu_transp             (ico) = 0.0
+                  cpatch%mmsqu_wflux_wl           (ico) = 0.0
+                  cpatch%mmsqu_wflux_gw           (ico) = 0.0
                   cpatch%mmsqu_sensible_wc        (ico) = 0.0
                   cpatch%mmsqu_vapor_wc           (ico) = 0.0
                end do cohortloop
@@ -6567,6 +6623,12 @@ module average_utils
                                                * ndaysi
          cgrid%qmean_transp            (t,ipy) = cgrid%qmean_transp            (t,ipy)     &
                                                + cgrid%fmean_transp              (ipy)     &
+                                               * ndaysi
+         cgrid%qmean_wflux_wl          (t,ipy) = cgrid%qmean_wflux_wl          (t,ipy)     &
+                                               + cgrid%fmean_wflux_wl            (ipy)     &
+                                               * ndaysi
+         cgrid%qmean_wflux_gw          (t,ipy) = cgrid%qmean_wflux_gw          (t,ipy)     &
+                                               + cgrid%fmean_wflux_gw            (ipy)     &
                                                * ndaysi
          cgrid%qmean_intercepted_al    (t,ipy) = cgrid%qmean_intercepted_al    (t,ipy)     &
                                                + cgrid%fmean_intercepted_al      (ipy)     &
@@ -6834,6 +6896,12 @@ module average_utils
                                               * ndaysi
          cgrid%qmsqu_transp           (t,ipy) = cgrid%qmsqu_transp              (t,ipy)    &
                                               + isqu_ftz(cgrid%fmean_transp       (ipy))   &
+                                              * ndaysi
+         cgrid%qmsqu_wflux_wl         (t,ipy) = cgrid%qmsqu_wflux_wl            (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_wflux_wl     (ipy))   &
+                                              * ndaysi
+         cgrid%qmsqu_wflux_gw         (t,ipy) = cgrid%qmsqu_wflux_gw            (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_wflux_gw     (ipy))   &
                                               * ndaysi
          cgrid%qmsqu_sensible_wc      (t,ipy) = cgrid%qmsqu_sensible_wc         (t,ipy)    &
                                               + isqu_ftz(cgrid%fmean_sensible_wc  (ipy))   &
@@ -7444,11 +7512,11 @@ module average_utils
                   cpatch%qmean_wood_water_im2(t,ico) = cpatch%qmean_wood_water_im2(t,ico)  &
                                                      + cpatch%fmean_wood_water_im2  (ico)  &
                                                      * ndaysi
-                  cpatch%qmean_wflux_gw      (t,ico) = cpatch%qmean_wflux_gw      (t,ico)  &
-                                                     + cpatch%fmean_wflux_gw        (ico)  &
-                                                     * ndaysi
                   cpatch%qmean_wflux_wl      (t,ico) = cpatch%qmean_wflux_wl      (t,ico)  &
                                                      + cpatch%fmean_wflux_wl        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_wflux_gw      (t,ico) = cpatch%qmean_wflux_gw      (t,ico)  &
+                                                     + cpatch%fmean_wflux_gw        (ico)  &
                                                      * ndaysi
 
                   !------ Mean sum of squares. --------------------------------------------!
@@ -7469,6 +7537,12 @@ module average_utils
                                                   * ndaysi
                   cpatch%qmsqu_transp     (t,ico) = cpatch%qmsqu_transp           (t,ico)  &
                                                   + isqu_ftz(cpatch%fmean_transp    (ico)) &
+                                                  * ndaysi
+                  cpatch%qmsqu_wflux_wl   (t,ico) = cpatch%qmsqu_wflux_wl         (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_wflux_wl  (ico)) &
+                                                  * ndaysi
+                  cpatch%qmsqu_wflux_gw   (t,ico) = cpatch%qmsqu_wflux_gw         (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_wflux_gw  (ico)) &
                                                   * ndaysi
                   cpatch%qmsqu_sensible_wc(t,ico) = cpatch%qmsqu_sensible_wc      (t,ico)  &
                                                 + isqu_ftz(cpatch%fmean_sensible_wc (ico)) &
@@ -7929,6 +8003,8 @@ module average_utils
          cgrid%qmean_sensible_lc        (:,ipy) = 0.0
          cgrid%qmean_vapor_lc           (:,ipy) = 0.0
          cgrid%qmean_transp             (:,ipy) = 0.0
+         cgrid%qmean_wflux_wl           (:,ipy) = 0.0
+         cgrid%qmean_wflux_gw           (:,ipy) = 0.0
          cgrid%qmean_intercepted_al     (:,ipy) = 0.0
          cgrid%qmean_wshed_lg           (:,ipy) = 0.0
          cgrid%qmean_rshort_w           (:,ipy) = 0.0
@@ -8025,6 +8101,8 @@ module average_utils
          cgrid%qmsqu_sensible_lc        (:,ipy) = 0.0
          cgrid%qmsqu_vapor_lc           (:,ipy) = 0.0
          cgrid%qmsqu_transp             (:,ipy) = 0.0
+         cgrid%qmsqu_wflux_wl           (:,ipy) = 0.0
+         cgrid%qmsqu_wflux_gw           (:,ipy) = 0.0
          cgrid%qmsqu_sensible_wc        (:,ipy) = 0.0
          cgrid%qmsqu_vapor_wc           (:,ipy) = 0.0
          cgrid%qmsqu_rh                 (:,ipy) = 0.0
@@ -8249,8 +8327,8 @@ module average_utils
                   cpatch%qmean_leaf_water_im2      (:,ico) = 0.0
                   cpatch%qmean_wood_water_int      (:,ico) = 0.0
                   cpatch%qmean_wood_water_im2      (:,ico) = 0.0
-                  cpatch%qmean_wflux_gw            (:,ico) = 0.0
                   cpatch%qmean_wflux_wl            (:,ico) = 0.0
+                  cpatch%qmean_wflux_gw            (:,ico) = 0.0
 
                   cpatch%qmsqu_gpp                 (:,ico) = 0.0
                   cpatch%qmsqu_npp                 (:,ico) = 0.0
@@ -8258,6 +8336,8 @@ module average_utils
                   cpatch%qmsqu_sensible_lc         (:,ico) = 0.0
                   cpatch%qmsqu_vapor_lc            (:,ico) = 0.0
                   cpatch%qmsqu_transp              (:,ico) = 0.0
+                  cpatch%qmsqu_wflux_wl            (:,ico) = 0.0
+                  cpatch%qmsqu_wflux_gw            (:,ico) = 0.0
                   cpatch%qmsqu_sensible_wc         (:,ico) = 0.0
                   cpatch%qmsqu_vapor_wc            (:,ico) = 0.0
                end do cohortloop

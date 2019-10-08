@@ -433,25 +433,34 @@ module rk4_integ_utils
          end do
 
 
-         do k=1,cpatch%ncohorts
-            rkp%avg_sensible_lc   (k) =       rkp%avg_sensible_lc   (k)                    &
-                                      + fac * inc%avg_sensible_lc   (k)
-            rkp%avg_sensible_wc   (k) =       rkp%avg_sensible_wc   (k)                    &
-                                      + fac * inc%avg_sensible_wc   (k)
-            rkp%avg_vapor_lc      (k) =       rkp%avg_vapor_lc      (k)                    &
-                                      + fac * inc%avg_vapor_lc      (k)
-            rkp%avg_vapor_wc      (k) =       rkp%avg_vapor_wc      (k)                    &
-                                      + fac * inc%avg_vapor_wc      (k)
-            rkp%avg_transp        (k) =       rkp%avg_transp        (k)                    &
-                                      + fac * inc%avg_transp        (k)
-            rkp%avg_intercepted_al(k) =       rkp%avg_intercepted_al(k)                    &
-                                      + fac * inc%avg_intercepted_al(k)
-            rkp%avg_intercepted_aw(k) =       rkp%avg_intercepted_aw(k)                    &
-                                      + fac * inc%avg_intercepted_aw(k)
-            rkp%avg_wshed_lg      (k) =       rkp%avg_wshed_lg      (k)                    &
-                                      + fac * inc%avg_wshed_lg      (k)
-            rkp%avg_wshed_wg      (k) =       rkp%avg_wshed_wg      (k)                    &
-                                      + fac * inc%avg_wshed_wg      (k)
+         do ico=1,cpatch%ncohorts
+            rkp%avg_sensible_lc        (ico) =       rkp%avg_sensible_lc     (ico)         &
+                                             + fac * inc%avg_sensible_lc     (ico)
+            rkp%avg_sensible_wc        (ico) =       rkp%avg_sensible_wc     (ico)         &
+                                             + fac * inc%avg_sensible_wc     (ico)
+            rkp%avg_vapor_lc           (ico) =       rkp%avg_vapor_lc        (ico)         &
+                                             + fac * inc%avg_vapor_lc        (ico)
+            rkp%avg_vapor_wc           (ico) =       rkp%avg_vapor_wc        (ico)         &
+                                             + fac * inc%avg_vapor_wc        (ico)
+            rkp%avg_transp             (ico) =       rkp%avg_transp          (ico)         &
+                                             + fac * inc%avg_transp          (ico)
+            rkp%avg_intercepted_al     (ico) =       rkp%avg_intercepted_al  (ico)         &
+                                             + fac * inc%avg_intercepted_al  (ico)
+            rkp%avg_intercepted_aw     (ico) =       rkp%avg_intercepted_aw  (ico)         &
+                                             + fac * inc%avg_intercepted_aw  (ico)
+            rkp%avg_wshed_lg           (ico) =       rkp%avg_wshed_lg        (ico)         &
+                                             + fac * inc%avg_wshed_lg        (ico)
+            rkp%avg_wshed_wg           (ico) =       rkp%avg_wshed_wg        (ico)         &
+                                             + fac * inc%avg_wshed_wg        (ico)
+            rkp%avg_wflux_wl           (ico) =       rkp%avg_wflux_wl        (ico)         &
+                                             + fac * inc%avg_wflux_wl        (ico)
+            rkp%avg_wflux_gw           (ico) =       rkp%avg_wflux_gw        (ico)         &
+                                             + fac * inc%avg_wflux_gw        (ico)
+            do k=rk4site%lsl,nzg
+               rkp%avg_wflux_gw_layer(k,ico) =       rkp%avg_wflux_gw_layer(k,ico)         &
+                                             + fac * inc%avg_wflux_gw_layer(k,ico)
+            end do
+
          end do
 
       end if
@@ -476,43 +485,55 @@ module rk4_integ_utils
 
          do k=rk4site%lsl,nzg
             rkp%flx_sensible_gg(k) = rkp%flx_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
-            rkp%flx_smoist_gg(k)   = rkp%flx_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
-            rkp%flx_transloss(k)   = rkp%flx_transloss(k)    + fac * inc%avg_transloss(k)  
+            rkp%flx_smoist_gg  (k) = rkp%flx_smoist_gg  (k)  + fac * inc%avg_smoist_gg  (k)
+            rkp%flx_transloss  (k) = rkp%flx_transloss  (k)  + fac * inc%avg_transloss  (k)
          end do
 
          do ico = 1,cpatch%ncohorts
-            rkp%flx_vapor_lc           =         rkp%flx_vapor_lc                          &
-                                       + fac *   inc%avg_vapor_lc       (ico)
-            rkp%flx_vapor_wc           =         rkp%flx_vapor_wc                          &
-                                       + fac *   inc%avg_vapor_wc       (ico)
-            rkp%flx_wshed_vg           =         rkp%flx_wshed_vg                          &
-                                       + fac * ( inc%avg_wshed_lg       (ico)              &
-                                               + inc%avg_wshed_wg       (ico) )
-            rkp%flx_intercepted        =       rkp%flx_intercepted                         &
-                                       + fac * ( inc%avg_intercepted_al (ico)              &
-                                               + inc%avg_intercepted_aw (ico) )
-            rkp%flx_sensible_lc        =         rkp%flx_sensible_lc                       &
-                                       + fac *   inc%avg_sensible_lc    (ico)
-            rkp%flx_sensible_wc        =         rkp%flx_sensible_wc                       &
-                                       + fac *   inc%avg_sensible_wc    (ico)
-            rkp%flx_qwshed_vg          =         rkp%flx_qwshed_vg                         &
-                                       + fac *   inc%cfx_qwshed         (ico)
-            rkp%flx_qintercepted       =         rkp%flx_qintercepted                      &
-                                       + fac *   inc%cfx_qintercepted   (ico)
-            rkp%cfx_hflxlc      (ico)  =         rkp%cfx_hflxlc         (ico)              &
-                                       + fac *   inc%cfx_hflxlc         (ico)
-            rkp%cfx_hflxwc      (ico)  =         rkp%cfx_hflxwc         (ico)              &
-                                       + fac *   inc%cfx_hflxwc         (ico)
-            rkp%cfx_qwflxlc     (ico)  =         rkp%cfx_qwflxlc        (ico)              &
-                                       + fac *   inc%cfx_qwflxlc        (ico)
-            rkp%cfx_qwflxwc     (ico)  =         rkp%cfx_qwflxwc        (ico)              &
-                                       + fac *   inc%cfx_qwflxwc        (ico)
-            rkp%cfx_qwshed      (ico)  =         rkp%cfx_qwshed         (ico)              &
-                                       + fac *   inc%cfx_qwshed         (ico)
-            rkp%cfx_qtransp     (ico)  =         rkp%cfx_qtransp        (ico)              &
-                                       + fac *   inc%cfx_qtransp        (ico)
-            rkp%cfx_qintercepted(ico)  =         rkp%cfx_qintercepted   (ico)              &
-                                       + fac *   inc%cfx_qintercepted   (ico)
+            rkp%flx_vapor_lc                  =         rkp%flx_vapor_lc                   &
+                                              + fac *   inc%avg_vapor_lc         (ico)
+            rkp%flx_vapor_wc                  =         rkp%flx_vapor_wc                   &
+                                              + fac *   inc%avg_vapor_wc         (ico)
+            rkp%flx_wshed_vg                  =         rkp%flx_wshed_vg                   &
+                                              + fac * ( inc%avg_wshed_lg         (ico)     &
+                                                      + inc%avg_wshed_wg         (ico) )
+            rkp%flx_wflux_wl                  =         rkp%flx_wflux_wl                   &
+                                              + fac *   inc%avg_wflux_wl         (ico)
+            rkp%flx_wflux_gw                  =         rkp%flx_wflux_gw                   &
+                                              + fac *   inc%avg_wflux_gw         (ico)
+            rkp%flx_intercepted               =       rkp%flx_intercepted                  &
+                                              + fac * ( inc%avg_intercepted_al   (ico)     &
+                                                      + inc%avg_intercepted_aw   (ico) )
+            rkp%flx_sensible_lc               =         rkp%flx_sensible_lc                &
+                                              + fac *   inc%avg_sensible_lc      (ico)
+            rkp%flx_sensible_wc               =         rkp%flx_sensible_wc                &
+                                              + fac *   inc%avg_sensible_wc      (ico)
+            rkp%flx_qwshed_vg                 =         rkp%flx_qwshed_vg                  &
+                                              + fac *   inc%cfx_qwshed           (ico)
+            rkp%flx_qintercepted              =         rkp%flx_qintercepted               &
+                                              + fac *   inc%cfx_qintercepted     (ico)
+            rkp%cfx_hflxlc              (ico) =         rkp%cfx_hflxlc           (ico)     &
+                                              + fac *   inc%cfx_hflxlc           (ico)
+            rkp%cfx_hflxwc              (ico) =         rkp%cfx_hflxwc           (ico)     &
+                                              + fac *   inc%cfx_hflxwc           (ico)
+            rkp%cfx_qwflxlc             (ico) =         rkp%cfx_qwflxlc          (ico)     &
+                                              + fac *   inc%cfx_qwflxlc          (ico)
+            rkp%cfx_qwflxwc             (ico) =         rkp%cfx_qwflxwc          (ico)     &
+                                              + fac *   inc%cfx_qwflxwc          (ico)
+            rkp%cfx_qwshed              (ico) =         rkp%cfx_qwshed           (ico)     &
+                                              + fac *   inc%cfx_qwshed           (ico)
+            rkp%cfx_qtransp             (ico) =         rkp%cfx_qtransp          (ico)     &
+                                              + fac *   inc%cfx_qtransp          (ico)
+            rkp%cfx_qintercepted        (ico) =         rkp%cfx_qintercepted     (ico)     &
+                                              + fac *   inc%cfx_qintercepted     (ico)
+            rkp%cfx_qwflux_wl           (ico) =         rkp%cfx_qwflux_wl        (ico)     &
+                                              + fac *   inc%cfx_qwflux_wl        (ico)
+            rkp%cfx_qwflux_gw           (ico) =         rkp%cfx_qwflux_gw        (ico)     &
+                                              + fac *   inc%cfx_qwflux_gw        (ico)
+            do k=rk4site%lsl,nzg
+               rkp%cfx_qwflux_gw_layer(k,ico) =         rkp%cfx_qwflux_gw_layer(k,ico)     &
+                                              + fac *   inc%cfx_qwflux_gw_layer(k,ico)
+            end do
          end do
 
       end if
@@ -2250,8 +2271,9 @@ module rk4_integ_utils
    subroutine rk4_sanity_check(ibuff,y,reject_step, csite,ipa,dydx,h,print_problems)
       use rk4_coms              , only : rk4patchtype          & ! structure
                                        , integration_vars      & ! structure
-                                       , rk4site               & ! intent(in)
-                                       , rk4aux                & ! intent(in)
+                                       , rk4site               & ! structure
+                                       , rk4aux                & ! structure
+                                       , rk4eps                & ! intent(in)
                                        , rk4max_can_shv        & ! intent(in)
                                        , rk4min_can_shv        & ! intent(in)
                                        , rk4min_can_rhv        & ! intent(in)
@@ -2295,12 +2317,18 @@ module rk4_integ_utils
       integer                          :: ksn
       real(kind=8)                     :: rk4min_leaf_water
       real(kind=8)                     :: rk4min_wood_water
+      real(kind=8)                     :: rk4min_leaf_water_im2
+      real(kind=8)                     :: rk4max_leaf_water_im2
+      real(kind=8)                     :: rk4min_wood_water_im2
+      real(kind=8)                     :: rk4max_wood_water_im2
       integer                          :: ipa
       integer                          :: ico
       logical                          :: cflag7
       logical                          :: cflag8
       logical                          :: cflag9
       logical                          :: cflag10
+      logical                          :: cflag11
+      logical                          :: cflag12
       !------------------------------------------------------------------------------------!
 
 
@@ -2509,13 +2537,19 @@ module rk4_integ_utils
       !     Check leaf properties, but only for those cohorts with sufficient LAI.         !
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
-      cflag7 = .false.
-      cflag8 = .false.
+      cflag7  = .false.
+      cflag8  = .false.
+      cflag11 = .false.
       leafloop: do ico = 1,cpatch%ncohorts
          if (.not. y%leaf_resolvable(ico)) cycle leafloop
 
-         !----- Find the minimum leaf surface water. --------------------------------------!
-         rk4min_leaf_water = rk4min_veg_lwater * y%lai(ico)
+         !----- Find the boundaries for leaf water (surface and internal). ----------------!
+         rk4min_leaf_water     = rk4min_veg_lwater * y%lai(ico)
+         rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico) * (1.d0 - rk4eps)
+         rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico) * (1.d0 + rk4eps)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Check leaf surface water. -------------------------------------------------!
          if (y%leaf_water(ico) < rk4min_leaf_water) then
@@ -2537,6 +2571,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_FRACLIQ:  ',y%leaf_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_ENERGY:   ',y%leaf_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER:    ',y%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER_IM2:',y%leaf_water_im2(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
@@ -2548,11 +2583,14 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFORC:   ',y%leaf_nussforc(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_EN)/Dt: ',dydx%leaf_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_WAT)/Dt:',dydx%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_IM2)/Dt:',dydx%leaf_water_im2(ico)
                write(unit=*,fmt='(a)')           '========================================'
             elseif (.not. record_err) then
                return
             end if
          end if
+         !---------------------------------------------------------------------------------!
+
 
          !----- Check leaf temperature. ---------------------------------------------------!
          if (y%leaf_temp(ico) > rk4max_veg_temp .or.                                       &
@@ -2575,6 +2613,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_FRACLIQ:  ',y%leaf_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_ENERGY:   ',y%leaf_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER:    ',y%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER_IM2:',y%leaf_water_im2(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
@@ -2586,14 +2625,60 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFORC:   ',y%leaf_nussforc(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_EN)/Dt: ',dydx%leaf_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_WAT)/Dt:',dydx%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_IM2)/Dt:',dydx%leaf_water_im2(ico)
                write(unit=*,fmt='(a)')           '========================================'
             elseif (.not. record_err) then
                return
             end if
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Check leaf internal water. ------------------------------------------------!
+         if (y%leaf_water_im2(ico) < rk4min_leaf_water_im2 .or.                            &
+             y%leaf_water_im2(ico) < rk4min_leaf_water_im2      ) then
+            reject_step = .true.
+            if(record_err) cflag11 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Leaf internal water is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_HCAP:     ',y%leaf_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_TEMP:     ',y%leaf_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_FRACLIQ:  ',y%leaf_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_ENERGY:   ',y%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER:    ',y%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER_IM2:',y%leaf_water_im2(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBH:      ',y%leaf_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBW:      ',y%leaf_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_REYNOLDS: ',y%leaf_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GRASHOF:  ',y%leaf_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFREE:   ',y%leaf_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFORC:   ',y%leaf_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_EN)/Dt: ',dydx%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_WAT)/Dt:',dydx%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_IM2)/Dt:',dydx%leaf_water_im2(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+         !---------------------------------------------------------------------------------!
       end do leafloop
-      if(record_err .and. cflag7) integ_err(7,2) = integ_err(7,2) + 1_8
-      if(record_err .and. cflag8) integ_err(8,2) = integ_err(8,2) + 1_8
+      if(record_err .and. cflag7 ) integ_err( 7,2) = integ_err( 7,2) + 1_8
+      if(record_err .and. cflag8 ) integ_err( 8,2) = integ_err( 8,2) + 1_8
+      if(record_err .and. cflag11) integ_err(11,2) = integ_err(11,2) + 1_8
       !------------------------------------------------------------------------------------!
 
 
@@ -2604,11 +2689,16 @@ module rk4_integ_utils
       cpatch => csite%patch(ipa)
       cflag9  = .false.
       cflag10 = .false.
+      cflag12 = .false.
       woodloop: do ico = 1,cpatch%ncohorts
          if (.not. y%wood_resolvable(ico)) cycle woodloop
 
-         !----- Find the minimum wood surface water. --------------------------------------!
+         !----- Find the boundaries for wood water (surface and internal). ----------------!
          rk4min_wood_water = rk4min_veg_lwater * y%wai(ico)
+         rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico) * (1.d0 - rk4eps)
+         rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico) * (1.d0 + rk4eps)
+         !---------------------------------------------------------------------------------!
+
 
          !----- Check wood surface water. -------------------------------------------------!
          if (y%wood_water(ico) < rk4min_wood_water) then
@@ -2630,6 +2720,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_FRACLIQ:  ',y%wood_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_ENERGY:   ',y%wood_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER:    ',y%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER_IM2:',y%wood_water_im2(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
@@ -2641,11 +2732,15 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFORC:   ',y%wood_nussforc(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_EN)/Dt: ',dydx%wood_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_WAT)/Dt:',dydx%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_IM2)/Dt:',dydx%wood_water_im2(ico)
                write(unit=*,fmt='(a)')           '========================================'
             elseif (.not. record_err) then
                return
             end if
          end if
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Check wood temperature. ---------------------------------------------------!
          if (y%wood_temp(ico) > rk4max_veg_temp .or.                                       &
@@ -2668,6 +2763,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_FRACLIQ:  ',y%wood_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_ENERGY:   ',y%wood_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER:    ',y%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER_IM2:',y%wood_water_im2(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
@@ -2679,14 +2775,59 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFORC:   ',y%wood_nussforc(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_EN)/Dt: ',dydx%wood_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_WAT)/Dt:',dydx%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_IM2)/Dt:',dydx%wood_water_im2(ico)
                write(unit=*,fmt='(a)')           '========================================'
             elseif (.not. record_err) then
                return
             end if
          end if
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Check wood internal water. ------------------------------------------------!
+         if (y%wood_water_im2(ico) < rk4min_wood_water_im2 .or.                            &
+             y%wood_water_im2(ico) > rk4min_wood_water_im2      ) then
+            reject_step = .true.
+            if(record_err) cflag12 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Wood internal water is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_HCAP:     ',y%wood_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_TEMP:     ',y%wood_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_FRACLIQ:  ',y%wood_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_ENERGY:   ',y%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER:    ',y%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER_IM2:',y%wood_water_im2(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBH:      ',y%wood_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBW:      ',y%wood_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_REYNOLDS: ',y%wood_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GRASHOF:  ',y%wood_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFREE:   ',y%wood_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFORC:   ',y%wood_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_EN)/Dt: ',dydx%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_WAT)/Dt:',dydx%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_IM2)/Dt:',dydx%wood_water_im2(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+         !---------------------------------------------------------------------------------!
       end do woodloop
       if(record_err .and. cflag9 ) integ_err( 9,2) = integ_err( 9,2) + 1_8
       if(record_err .and. cflag10) integ_err(10,2) = integ_err(10,2) + 1_8
+      if(record_err .and. cflag12) integ_err(12,2) = integ_err(12,2) + 1_8
       !------------------------------------------------------------------------------------!
 
 
@@ -2698,7 +2839,7 @@ module rk4_integ_utils
       !------------------------------------------------------------------------------------!
       if (y%virtual_water < rk4min_virt_water) then
          reject_step = .true.
-         if(record_err) integ_err(12,2) = integ_err(12,2) + 1_8
+         if(record_err) integ_err(14,2) = integ_err(14,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
@@ -2718,7 +2859,7 @@ module rk4_integ_utils
              (y%virtual_tempk < rk4min_sfcw_temp .or. y%virtual_tempk > rk4max_sfcw_temp)) &
       then
          reject_step = .true.
-         if(record_err) integ_err(11,2) = integ_err(11,2) + 1_8
+         if(record_err) integ_err(13,2) = integ_err(13,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer temp. is off-track...'

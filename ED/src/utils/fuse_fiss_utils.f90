@@ -2698,10 +2698,10 @@ module fuse_fiss_utils
                                            + cpatch%fmean_leaf_water_im2(donc)
          cpatch%fmean_wood_water_im2(recc) = cpatch%fmean_wood_water_im2(recc)             &
                                            + cpatch%fmean_wood_water_im2(donc)
-         cpatch%fmean_wflux_gw      (recc) = cpatch%fmean_wflux_gw      (recc) * rnplant   &
-                                           + cpatch%fmean_wflux_gw      (donc) * dnplant
          cpatch%fmean_wflux_wl      (recc) = cpatch%fmean_wflux_wl      (recc) * rnplant   &
                                            + cpatch%fmean_wflux_wl      (donc) * dnplant
+         cpatch%fmean_wflux_gw      (recc) = cpatch%fmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%fmean_wflux_gw      (donc) * dnplant
          do isl = 1,nzg
             cpatch%fmean_wflux_gw_layer(isl,recc) =                                        &
                 cpatch%fmean_wflux_gw_layer(isl,recc) * rnplant                            &
@@ -3036,10 +3036,10 @@ module fuse_fiss_utils
                                            + cpatch%dmean_leaf_water_im2(donc)
          cpatch%dmean_wood_water_im2(recc) = cpatch%dmean_wood_water_im2(recc)             &
                                            + cpatch%dmean_wood_water_im2(donc)
-         cpatch%dmean_wflux_gw      (recc) = cpatch%dmean_wflux_gw      (recc) * rnplant   &
-                                           + cpatch%dmean_wflux_gw      (donc) * dnplant
          cpatch%dmean_wflux_wl      (recc) = cpatch%dmean_wflux_wl      (recc) * rnplant   &
                                            + cpatch%dmean_wflux_wl      (donc) * dnplant
+         cpatch%dmean_wflux_gw      (recc) = cpatch%dmean_wflux_gw      (recc) * rnplant   &
+                                           + cpatch%dmean_wflux_gw      (donc) * dnplant
          do isl = 1,nzg
             cpatch%dmean_wflux_gw_layer(isl,recc) =                                        &
                 cpatch%dmean_wflux_gw_layer(isl,recc) * rnplant                            &
@@ -3155,6 +3155,20 @@ module fuse_fiss_utils
                                                    , cpatch%mmsqu_transp     (donc)        &
                                                    , dnplant                               &
                                                    , corr_cohort, .true. )
+         cpatch%mmsqu_wflux_wl   (recc) = fuse_msqu( cpatch%mmean_wflux_wl   (recc)        &
+                                                   , cpatch%mmsqu_wflux_wl   (recc)        &
+                                                   , rnplant                               &
+                                                   , cpatch%mmean_wflux_wl   (donc)        &
+                                                   , cpatch%mmsqu_wflux_wl   (donc)        &
+                                                   , dnplant                               &
+                                                   , corr_cohort, .false.) !kg/pl/s
+         cpatch%mmsqu_wflux_gw   (recc) = fuse_msqu( cpatch%mmean_wflux_gw   (recc)        &
+                                                   , cpatch%mmsqu_wflux_gw   (recc)        &
+                                                   , rnplant                               &
+                                                   , cpatch%mmean_wflux_gw   (donc)        &
+                                                   , cpatch%mmsqu_wflux_gw   (donc)        &
+                                                   , dnplant                               &
+                                                   , corr_cohort, .false.) !kg/pl/s
          cpatch%mmsqu_sensible_wc(recc) = fuse_msqu( cpatch%mmean_sensible_wc(recc)        &
                                                    , cpatch%mmsqu_sensible_wc(recc)        &
                                                    , rnplant                               &
@@ -3635,6 +3649,20 @@ module fuse_fiss_utils
                                                         ,cpatch%qmsqu_transp     (t,donc)  &
                                                         ,dnplant                           &
                                                         ,corr_cohort,.true. )
+            cpatch%qmsqu_wflux_wl   (t,recc) = fuse_msqu(cpatch%qmean_wflux_wl   (t,recc)  &
+                                                        ,cpatch%qmsqu_wflux_wl   (t,recc)  &
+                                                        ,rnplant                           &
+                                                        ,cpatch%qmean_wflux_wl   (t,donc)  &
+                                                        ,cpatch%qmsqu_wflux_wl   (t,donc)  &
+                                                        ,dnplant                           &
+                                                        ,corr_cohort, .false.)
+            cpatch%qmsqu_wflux_gw   (t,recc) = fuse_msqu(cpatch%qmean_wflux_gw   (t,recc)  &
+                                                        ,cpatch%qmsqu_wflux_gw   (t,recc)  &
+                                                        ,rnplant                           &
+                                                        ,cpatch%qmean_wflux_gw   (t,donc)  &
+                                                        ,cpatch%qmsqu_wflux_gw   (t,donc)  &
+                                                        ,dnplant                           &
+                                                        ,corr_cohort, .false.)
             cpatch%qmsqu_sensible_wc(t,recc) = fuse_msqu(cpatch%qmean_sensible_wc(t,recc)  &
                                                         ,cpatch%qmsqu_sensible_wc(t,recc)  &
                                                         ,rnplant                           &

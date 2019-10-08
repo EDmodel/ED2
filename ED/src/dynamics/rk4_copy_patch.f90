@@ -33,7 +33,7 @@ module rk4_copy_patch
       type(rk4patchtype) , target     :: targetp
       type(patchtype)    , target     :: cpatch
       !----- Local variable ---------------------------------------------------------------!
-      integer                         :: i
+      integer                         :: ico
       integer                         :: k
       !------------------------------------------------------------------------------------!
 
@@ -128,61 +128,61 @@ module rk4_copy_patch
          targetp%sfcwater_fracliq  (k) = sourcep%sfcwater_fracliq  (k)
       end do
 
-      do i=1,cpatch%ncohorts
-         targetp%leaf_resolvable   (i) = sourcep%leaf_resolvable   (i)
-         targetp%leaf_energy       (i) = sourcep%leaf_energy       (i)
-         targetp%leaf_water        (i) = sourcep%leaf_water        (i)
-         targetp%leaf_water_im2    (i) = sourcep%leaf_water_im2    (i)
-         targetp%leaf_temp         (i) = sourcep%leaf_temp         (i)
-         targetp%leaf_fliq         (i) = sourcep%leaf_fliq         (i)
-         targetp%leaf_hcap         (i) = sourcep%leaf_hcap         (i)
-         targetp%leaf_reynolds     (i) = sourcep%leaf_reynolds     (i)
-         targetp%leaf_grashof      (i) = sourcep%leaf_grashof      (i)
-         targetp%leaf_nussfree     (i) = sourcep%leaf_nussfree     (i)
-         targetp%leaf_nussforc     (i) = sourcep%leaf_nussforc     (i)
-         targetp%leaf_gbh          (i) = sourcep%leaf_gbh          (i)
-         targetp%leaf_gbw          (i) = sourcep%leaf_gbw          (i)
-         targetp%rshort_l          (i) = sourcep%rshort_l          (i)
-         targetp%rlong_l           (i) = sourcep%rlong_l           (i)
+      do ico=1,cpatch%ncohorts
+         targetp%leaf_resolvable   (ico) = sourcep%leaf_resolvable   (ico)
+         targetp%leaf_energy       (ico) = sourcep%leaf_energy       (ico)
+         targetp%leaf_water        (ico) = sourcep%leaf_water        (ico)
+         targetp%leaf_water_im2    (ico) = sourcep%leaf_water_im2    (ico)
+         targetp%leaf_temp         (ico) = sourcep%leaf_temp         (ico)
+         targetp%leaf_fliq         (ico) = sourcep%leaf_fliq         (ico)
+         targetp%leaf_hcap         (ico) = sourcep%leaf_hcap         (ico)
+         targetp%leaf_reynolds     (ico) = sourcep%leaf_reynolds     (ico)
+         targetp%leaf_grashof      (ico) = sourcep%leaf_grashof      (ico)
+         targetp%leaf_nussfree     (ico) = sourcep%leaf_nussfree     (ico)
+         targetp%leaf_nussforc     (ico) = sourcep%leaf_nussforc     (ico)
+         targetp%leaf_gbh          (ico) = sourcep%leaf_gbh          (ico)
+         targetp%leaf_gbw          (ico) = sourcep%leaf_gbw          (ico)
+         targetp%rshort_l          (ico) = sourcep%rshort_l          (ico)
+         targetp%rlong_l           (ico) = sourcep%rlong_l           (ico)
 
-         targetp%wood_resolvable   (i) = sourcep%wood_resolvable   (i)
-         targetp%wood_energy       (i) = sourcep%wood_energy       (i)
-         targetp%wood_water        (i) = sourcep%wood_water        (i)
-         targetp%wood_water_im2    (i) = sourcep%wood_water_im2    (i)
-         targetp%wood_temp         (i) = sourcep%wood_temp         (i)
-         targetp%wood_fliq         (i) = sourcep%wood_fliq         (i)
-         targetp%wood_hcap         (i) = sourcep%wood_hcap         (i)
-         targetp%wood_reynolds     (i) = sourcep%wood_reynolds     (i)
-         targetp%wood_grashof      (i) = sourcep%wood_grashof      (i)
-         targetp%wood_nussfree     (i) = sourcep%wood_nussfree     (i)
-         targetp%wood_nussforc     (i) = sourcep%wood_nussforc     (i)
-         targetp%wood_gbh          (i) = sourcep%wood_gbh          (i)
-         targetp%wood_gbw          (i) = sourcep%wood_gbw          (i)
-         targetp%rshort_w          (i) = sourcep%rshort_w          (i)
-         targetp%rlong_w           (i) = sourcep%rlong_w           (i)
+         targetp%wood_resolvable   (ico) = sourcep%wood_resolvable   (ico)
+         targetp%wood_energy       (ico) = sourcep%wood_energy       (ico)
+         targetp%wood_water        (ico) = sourcep%wood_water        (ico)
+         targetp%wood_water_im2    (ico) = sourcep%wood_water_im2    (ico)
+         targetp%wood_temp         (ico) = sourcep%wood_temp         (ico)
+         targetp%wood_fliq         (ico) = sourcep%wood_fliq         (ico)
+         targetp%wood_hcap         (ico) = sourcep%wood_hcap         (ico)
+         targetp%wood_reynolds     (ico) = sourcep%wood_reynolds     (ico)
+         targetp%wood_grashof      (ico) = sourcep%wood_grashof      (ico)
+         targetp%wood_nussfree     (ico) = sourcep%wood_nussfree     (ico)
+         targetp%wood_nussforc     (ico) = sourcep%wood_nussforc     (ico)
+         targetp%wood_gbh          (ico) = sourcep%wood_gbh          (ico)
+         targetp%wood_gbw          (ico) = sourcep%wood_gbw          (ico)
+         targetp%rshort_w          (ico) = sourcep%rshort_w          (ico)
+         targetp%rlong_w           (ico) = sourcep%rlong_w           (ico)
 
-         targetp%veg_resolvable    (i) = sourcep%veg_resolvable    (i)
-         targetp%veg_energy        (i) = sourcep%veg_energy        (i)
-         targetp%veg_water         (i) = sourcep%veg_water         (i)
-         targetp%veg_water_im2     (i) = sourcep%veg_water_im2     (i)
-         targetp%veg_hcap          (i) = sourcep%veg_hcap          (i)
+         targetp%veg_resolvable    (ico) = sourcep%veg_resolvable    (ico)
+         targetp%veg_energy        (ico) = sourcep%veg_energy        (ico)
+         targetp%veg_water         (ico) = sourcep%veg_water         (ico)
+         targetp%veg_water_im2     (ico) = sourcep%veg_water_im2     (ico)
+         targetp%veg_hcap          (ico) = sourcep%veg_hcap          (ico)
 
-         targetp%veg_wind          (i) = sourcep%veg_wind          (i)
-         targetp%lint_shv          (i) = sourcep%lint_shv          (i)
-         targetp%nplant            (i) = sourcep%nplant            (i)
-         targetp%lai               (i) = sourcep%lai               (i)
-         targetp%wai               (i) = sourcep%wai               (i)
-         targetp%tai               (i) = sourcep%tai               (i)
-         targetp%crown_area        (i) = sourcep%crown_area        (i)
-         targetp%elongf            (i) = sourcep%elongf            (i)
-         targetp%gsw_open          (i) = sourcep%gsw_open          (i)
-         targetp%gsw_closed        (i) = sourcep%gsw_closed        (i)
-         targetp%psi_open          (i) = sourcep%psi_open          (i)
-         targetp%psi_closed        (i) = sourcep%psi_closed        (i)
-         targetp%fs_open           (i) = sourcep%fs_open           (i)
-         targetp%gpp               (i) = sourcep%gpp               (i)
-         targetp%leaf_resp         (i) = sourcep%leaf_resp         (i)
-         targetp%root_resp         (i) = sourcep%root_resp         (i)
+         targetp%veg_wind          (ico) = sourcep%veg_wind          (ico)
+         targetp%lint_shv          (ico) = sourcep%lint_shv          (ico)
+         targetp%nplant            (ico) = sourcep%nplant            (ico)
+         targetp%lai               (ico) = sourcep%lai               (ico)
+         targetp%wai               (ico) = sourcep%wai               (ico)
+         targetp%tai               (ico) = sourcep%tai               (ico)
+         targetp%crown_area        (ico) = sourcep%crown_area        (ico)
+         targetp%elongf            (ico) = sourcep%elongf            (ico)
+         targetp%gsw_open          (ico) = sourcep%gsw_open          (ico)
+         targetp%gsw_closed        (ico) = sourcep%gsw_closed        (ico)
+         targetp%psi_open          (ico) = sourcep%psi_open          (ico)
+         targetp%psi_closed        (ico) = sourcep%psi_closed        (ico)
+         targetp%fs_open           (ico) = sourcep%fs_open           (ico)
+         targetp%gpp               (ico) = sourcep%gpp               (ico)
+         targetp%leaf_resp         (ico) = sourcep%leaf_resp         (ico)
+         targetp%root_resp         (ico) = sourcep%root_resp         (ico)
       end do
 
       if (checkbudget) then
@@ -221,18 +221,18 @@ module rk4_copy_patch
          end do
 
 
-         do i=1,cpatch%ncohorts
-            targetp%avg_sensible_lc    (i) = sourcep%avg_sensible_lc    (i)
-            targetp%avg_sensible_wc    (i) = sourcep%avg_sensible_wc    (i)
-            targetp%avg_vapor_lc       (i) = sourcep%avg_vapor_lc       (i)
-            targetp%avg_vapor_wc       (i) = sourcep%avg_vapor_wc       (i)
-            targetp%avg_transp         (i) = sourcep%avg_transp         (i)
-            targetp%avg_intercepted_al (i) = sourcep%avg_intercepted_al (i)
-            targetp%avg_intercepted_aw (i) = sourcep%avg_intercepted_aw (i)
-            targetp%avg_wshed_lg       (i) = sourcep%avg_wshed_lg       (i)
-            targetp%avg_wshed_wg       (i) = sourcep%avg_wshed_wg       (i)
-            targetp%avg_wflux_wl       (i) = sourcep%avg_wflux_wl       (i)
-            targetp%avg_wflux_gw       (i) = sourcep%avg_wflux_gw       (i)
+         do ico=1,cpatch%ncohorts
+            targetp%avg_sensible_lc    (ico) = sourcep%avg_sensible_lc    (ico)
+            targetp%avg_sensible_wc    (ico) = sourcep%avg_sensible_wc    (ico)
+            targetp%avg_vapor_lc       (ico) = sourcep%avg_vapor_lc       (ico)
+            targetp%avg_vapor_wc       (ico) = sourcep%avg_vapor_wc       (ico)
+            targetp%avg_transp         (ico) = sourcep%avg_transp         (ico)
+            targetp%avg_intercepted_al (ico) = sourcep%avg_intercepted_al (ico)
+            targetp%avg_intercepted_aw (ico) = sourcep%avg_intercepted_aw (ico)
+            targetp%avg_wshed_lg       (ico) = sourcep%avg_wshed_lg       (ico)
+            targetp%avg_wshed_wg       (ico) = sourcep%avg_wshed_wg       (ico)
+            targetp%avg_wflux_wl       (ico) = sourcep%avg_wflux_wl       (ico)
+            targetp%avg_wflux_gw       (ico) = sourcep%avg_wflux_gw       (ico)
          end do
       end if
 
@@ -268,18 +268,18 @@ module rk4_copy_patch
             targetp%flx_transloss(k)   = sourcep%flx_transloss(k)  
          end do
 
-         do i=1,cpatch%ncohorts
-            targetp%cfx_hflxlc      (i) = sourcep%cfx_hflxlc      (i)
-            targetp%cfx_hflxwc      (i) = sourcep%cfx_hflxwc      (i)
-            targetp%cfx_qwflxlc     (i) = sourcep%cfx_qwflxlc     (i)
-            targetp%cfx_qwflxwc     (i) = sourcep%cfx_qwflxwc     (i)
-            targetp%cfx_qwshed      (i) = sourcep%cfx_qwshed      (i)
-            targetp%cfx_qtransp     (i) = sourcep%cfx_qtransp     (i)
-            targetp%cfx_qintercepted(i) = sourcep%cfx_qintercepted(i)
-            targetp%cfx_qwflux_wl   (i) = sourcep%cfx_qwflux_wl   (i)
-            targetp%cfx_qwflux_gw   (i) = sourcep%cfx_qwflux_gw   (i)
+         do ico=1,cpatch%ncohorts
+            targetp%cfx_hflxlc      (ico) = sourcep%cfx_hflxlc      (ico)
+            targetp%cfx_hflxwc      (ico) = sourcep%cfx_hflxwc      (ico)
+            targetp%cfx_qwflxlc     (ico) = sourcep%cfx_qwflxlc     (ico)
+            targetp%cfx_qwflxwc     (ico) = sourcep%cfx_qwflxwc     (ico)
+            targetp%cfx_qwshed      (ico) = sourcep%cfx_qwshed      (ico)
+            targetp%cfx_qtransp     (ico) = sourcep%cfx_qtransp     (ico)
+            targetp%cfx_qintercepted(ico) = sourcep%cfx_qintercepted(ico)
+            targetp%cfx_qwflux_wl   (ico) = sourcep%cfx_qwflux_wl   (ico)
+            targetp%cfx_qwflux_gw   (ico) = sourcep%cfx_qwflux_gw   (ico)
             do k=rk4site%lsl,nzg
-               targetp%cfx_qwflux_gw_layer(k,i) = sourcep%cfx_qwflux_gw_layer(k,i)
+               targetp%cfx_qwflux_gw_layer(k,ico) = sourcep%cfx_qwflux_gw_layer(k,ico)
             end do
             !------------------------------------------------------------------------------!
          end do

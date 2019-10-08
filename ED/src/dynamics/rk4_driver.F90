@@ -592,24 +592,41 @@ module rk4_driver
          !     Cohort-level variables.                                                     !
          !---------------------------------------------------------------------------------!
          do ico=1,cpatch%ncohorts
-            cpatch%fmean_sensible_lc   (ico) = sngloff(initp%avg_sensible_lc    (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_sensible_wc   (ico) = sngloff(initp%avg_sensible_wc    (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_vapor_lc      (ico) = sngloff(initp%avg_vapor_lc       (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_vapor_wc      (ico) = sngloff(initp%avg_vapor_wc       (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_transp        (ico) = sngloff(initp%avg_transp         (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_intercepted_al(ico) = sngloff(initp%avg_intercepted_al (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_intercepted_aw(ico) = sngloff(initp%avg_intercepted_aw (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_wshed_lg      (ico) = sngloff(initp%avg_wshed_lg       (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_wshed_wg      (ico) = sngloff(initp%avg_wshed_wg       (ico)      &
-                                                     ,tiny_offset)
+            cpatch%fmean_sensible_lc   (ico) = sngloff( initp%avg_sensible_lc   (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_sensible_wc   (ico) = sngloff( initp%avg_sensible_wc   (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_vapor_lc      (ico) = sngloff( initp%avg_vapor_lc      (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_vapor_wc      (ico) = sngloff( initp%avg_vapor_wc      (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_transp        (ico) = sngloff( initp%avg_transp        (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_intercepted_al(ico) = sngloff( initp%avg_intercepted_al(ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_intercepted_aw(ico) = sngloff( initp%avg_intercepted_aw(ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_wshed_lg      (ico) = sngloff( initp%avg_wshed_lg      (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_wshed_wg      (ico) = sngloff( initp%avg_wshed_wg      (ico)      &
+                                                      , tiny_offset)
+            !------------------------------------------------------------------------------!
+            !     Plant hydraulic fluxes.  Convert them to kg/pl/s.                        !
+            ! MLO: I kept the original units, although I would prefer to standardise all   !
+            !      the fluxes to kg/m2/s.                                                  !
+            !------------------------------------------------------------------------------!
+            cpatch%fmean_wflux_wl      (ico) = sngloff( initp%avg_wflux_wl      (ico)      &
+                                                      / initp%nplant            (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_wflux_gw      (ico) = sngloff( initp%avg_wflux_gw      (ico)      &
+                                                      / initp%nplant            (ico)      &
+                                                      , tiny_offset)
+            do k = rk4site%lsl, nzg
+               cpatch%fmean_wflux_gw_layer(k,ico) =                                        &
+                  sngloff( initp%avg_wflux_gw_layer(k,ico) / initp%nplant(ico)             &
+                         , tiny_offset )
+            end do
+            !------------------------------------------------------------------------------!
          end do
          !---------------------------------------------------------------------------------!
       end if

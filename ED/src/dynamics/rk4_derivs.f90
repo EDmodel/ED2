@@ -185,7 +185,7 @@ module rk4_derivs
       dinitp%virtual_energy     = 0.0d0
       dinitp%virtual_water      = 0.0d0
       dinitp%virtual_depth      = 0.0d0
-      if (fast_diagnostics) then
+      if (fast_diagnostics .or. print_detailed) then
          dinitp%avg_transloss(:)   = 0.0d0
       end if
       !------------------------------------------------------------------------------------!
@@ -406,7 +406,7 @@ module rk4_derivs
                                        * (initp%soil_tempk(k) - initp%soil_tempk(k-1))     &
                                        * dslzti8(k)
          !------ Diagnostic sensible heat flux. -------------------------------------------!
-         if (fast_diagnostics) then
+         if (fast_diagnostics .or. print_detailed) then
             dinitp%avg_sensible_gg(k-1) = rk4aux(ibuff)%h_flux_g(k)
          end if
          !---------------------------------------------------------------------------------!
@@ -458,7 +458,7 @@ module rk4_derivs
       !------------------------------------------------------------------------------------!
       !      Add the irradiance and canopy fluxes.                                         !
       !------------------------------------------------------------------------------------!
-      if (fast_diagnostics) then
+      if (fast_diagnostics .or. print_detailed) then
          dinitp%avg_sensible_gg(mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))       &
                                        - dble(csite%rshort_g(ipa))
       end if
@@ -516,7 +516,7 @@ module rk4_derivs
 
 
       !------ Diagnostic variable for water flux, bypass the virtual/sfcw layers. ---------!
-      if (fast_diagnostics) then
+      if (fast_diagnostics .or. print_detailed) then
          dinitp%avg_smoist_gg(mzg) = rk4aux(ibuff)%w_flux_g(mzg+1)                         &
                                    + dewgnd +  wshed_tot +  throughfall_tot -  wflxsc      &
                                    - wflxgc
@@ -650,7 +650,7 @@ module rk4_derivs
 
 
          !----- Save the moisture flux in kg/m2/s. ----------------------------------------!
-         if (fast_diagnostics .and. (k /= 1)) then
+         if ( (fast_diagnostics .or. print_detailed) .and. (k /= 1) ) then
             dinitp%avg_smoist_gg(k-1) = rk4aux(ibuff)%w_flux_g(k) * wdns8 ! Diagnostic
          end if
          !---------------------------------------------------------------------------------!
@@ -663,7 +663,7 @@ module rk4_derivs
       ! drainage, but that shouldn't affect the budget in any way (except that we are add- !
       ! ing water to the system).                                                          !
       !------------------------------------------------------------------------------------!
-      if (fast_diagnostics) then
+      if (fast_diagnostics .or. print_detailed) then
          dinitp%avg_drainage  = - rk4aux(ibuff)%w_flux_g (klsl) * wdns8
          dinitp%avg_qdrainage = - rk4aux(ibuff)%qw_flux_g(klsl)
       end if
@@ -762,7 +762,7 @@ module rk4_derivs
                   !------------------------------------------------------------------------!
                   do ico=1,cpatch%ncohorts
                      !----- Find the soil water loss associated with this cohort. ---------!
-                     wloss         = rk4aux(ibuff)%extracted_water(ico,k1) * ext_weight
+                     wloss         = rk4aux(ibuff)%extracted_water(k1,ico) * ext_weight
                      qloss         = wloss * uint_water_k2
                      !---------------------------------------------------------------------!
 
@@ -772,9 +772,9 @@ module rk4_derivs
                      ! eventually lost to the canopy air space because of transpiration,   !
                      ! but we will do it in two steps so we ensure energy is conserved.    !
                      !---------------------------------------------------------------------!
-                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico)  + qloss
-                     dinitp%veg_energy(ico)  = dinitp%veg_energy(ico)   + qloss
-                     initp%hflx_lrsti(ico) = initp%hflx_lrsti(ico)      + qloss
+                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + qloss
+                     dinitp%veg_energy (ico) = dinitp%veg_energy (ico) + qloss
+                     initp%hflx_lrsti  (ico) = initp%hflx_lrsti  (ico) + qloss
                      !---------------------------------------------------------------------!
                   end do
                   !------------------------------------------------------------------------!
@@ -790,7 +790,7 @@ module rk4_derivs
                   !----- Update derivatives of water, energy, and transpiration. ----------!
                   dinitp%soil_water   (k2) = dinitp%soil_water   (k2) - wvlmeloss_tot
                   dinitp%soil_energy  (k2) = dinitp%soil_energy  (k2) - qvlmeloss_tot
-                  if (fast_diagnostics) then
+                  if (fast_diagnostics .or. print_detailed) then
                      dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wloss_tot
                   end if
                   !------------------------------------------------------------------------!
@@ -878,7 +878,7 @@ module rk4_derivs
             !------------------------------------------------------------------------------!
             dinitp%soil_water   (k1) = dinitp%soil_water   (k1) - wvlmeloss_tot
             dinitp%soil_energy  (k1) = dinitp%soil_energy  (k1) - qvlmeloss_tot
-            if (fast_diagnostics) then
+            if (fast_diagnostics .or. print_detailed) then
                dinitp%avg_transloss(k1) = dinitp%avg_transloss(k1) - wloss_tot
             end if
             !------------------------------------------------------------------------------!
@@ -1578,7 +1578,7 @@ module rk4_derivs
             !    If we are saving fast diagnostics, then we save the fluxes for this       !
             ! cohort.                                                                      !
             !------------------------------------------------------------------------------!
-            if (fast_diagnostics) then
+            if (fast_diagnostics .or. print_detailed) then
                dinitp%avg_sensible_lc      (ico)  = hflxlc
                dinitp%avg_vapor_lc         (ico)  = wflxlc
                dinitp%avg_transp           (ico)  = transp
@@ -1646,7 +1646,7 @@ module rk4_derivs
             !    If we are saving fast diagnostics, then we save the fluxes for this       !
             ! cohort.                                                                      !
             !------------------------------------------------------------------------------!
-            if (fast_diagnostics) then
+            if (fast_diagnostics .or. print_detailed) then
                dinitp%avg_sensible_lc      (ico)  = 0.d0
                dinitp%avg_vapor_lc         (ico)  = 0.d0
                dinitp%avg_transp           (ico)  = 0.d0
@@ -1858,7 +1858,7 @@ module rk4_derivs
             !    If we are saving fast diagnostics, then we save the fluxes for this       !
             ! cohort.                                                                      !
             !------------------------------------------------------------------------------!
-            if (fast_diagnostics) then
+            if (fast_diagnostics .or. print_detailed) then
                dinitp%avg_sensible_wc      (ico)  = hflxwc
                dinitp%avg_vapor_wc         (ico)  = wflxwc
                dinitp%avg_intercepted_aw   (ico)  = wood_intercepted
@@ -1921,7 +1921,7 @@ module rk4_derivs
             !    If we are saving fast diagnostics, then we save the fluxes for this       !
             ! cohort.                                                                      !
             !------------------------------------------------------------------------------!
-            if (fast_diagnostics) then
+            if (fast_diagnostics .or. print_detailed) then
                dinitp%avg_sensible_wc      (ico)  = 0.d0
                dinitp%avg_vapor_wc         (ico)  = 0.d0
                dinitp%avg_intercepted_aw   (ico)  = 0.d0
@@ -1974,7 +1974,7 @@ module rk4_derivs
             !    If we are saving fast diagnostics, then we save the fluxes for this       !
             ! cohort.                                                                      !
             !------------------------------------------------------------------------------!
-            if (fast_diagnostics) then
+            if (fast_diagnostics .or. print_detailed) then
                dinitp%avg_wflux_wl (ico)  = 0.d0
             end if
             !------------------------------------------------------------------------------!
@@ -2029,18 +2029,11 @@ module rk4_derivs
             !    If we are saving fast diagnostics, then we save the fluxes for this       !
             ! cohort.                                                                      !
             !------------------------------------------------------------------------------!
-            if (fast_diagnostics) then
+            if (fast_diagnostics .or. print_detailed) then
                dinitp%avg_wflux_wl (ico)  = wflux_wl
-            end if
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !    If the detailed output is tracked, then we save the fluxes for this       !
-            ! cohort.                                                                      !
-            !------------------------------------------------------------------------------!
-            if (print_detailed) then
-               dinitp%cfx_qwflux_wl(ico)  = qwflux_wl
+               if (print_detailed) then
+                  dinitp%cfx_qwflux_wl(ico)  = qwflux_wl
+               end if
             end if
             !------------------------------------------------------------------------------!
          end select
@@ -2118,7 +2111,7 @@ module rk4_derivs
       !     Integrate diagnostic variables - These are not activated unless fast file-type !
       ! outputs are selected. This will speed up the integrator.                           !
       !------------------------------------------------------------------------------------!
-      if (fast_diagnostics .or. checkbudget .or. print_detailed) then
+      if (fast_diagnostics .or. print_detailed) then
 
 
          dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy

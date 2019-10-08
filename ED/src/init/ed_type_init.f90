@@ -385,6 +385,9 @@ module ed_type_init
       cpatch%fmean_vapor_wc          (ico) = 0.0
       cpatch%fmean_intercepted_aw    (ico) = 0.0
       cpatch%fmean_wshed_wg          (ico) = 0.0
+      cpatch%fmean_wflux_wl          (ico) = 0.0
+      cpatch%fmean_wflux_gw          (ico) = 0.0
+      cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
 
       cpatch%fmean_lai               (ico) = 0.0
       cpatch%fmean_bdeada            (ico) = 0.0
@@ -396,9 +399,6 @@ module ed_type_init
       cpatch%fmean_leaf_water_im2    (ico) = 0.0
       cpatch%fmean_wood_water_int    (ico) = 0.0
       cpatch%fmean_wood_water_im2    (ico) = 0.0
-      cpatch%fmean_wflux_gw          (ico) = 0.0
-      cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
-      cpatch%fmean_wflux_wl          (ico) = 0.0
       cpatch%dmax_leaf_psi           (ico) = 0.0
       cpatch%dmin_leaf_psi           (ico) = 0.0
       cpatch%dmax_wood_psi           (ico) = 0.0 
@@ -488,14 +488,14 @@ module ed_type_init
          cpatch%dmean_vapor_wc          (ico) = 0.0
          cpatch%dmean_intercepted_aw    (ico) = 0.0
          cpatch%dmean_wshed_wg          (ico) = 0.0
+         cpatch%dmean_wflux_gw          (ico) = 0.0
+         cpatch%dmean_wflux_wl          (ico) = 0.0
+         cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
 
          cpatch%dmean_leaf_water_int    (ico) = 0.0
          cpatch%dmean_leaf_water_im2    (ico) = 0.0
          cpatch%dmean_wood_water_int    (ico) = 0.0
          cpatch%dmean_wood_water_im2    (ico) = 0.0
-         cpatch%dmean_wflux_gw          (ico) = 0.0
-         cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
-         cpatch%dmean_wflux_wl          (ico) = 0.0
 
       end if
       !------------------------------------------------------------------------------------!
@@ -565,6 +565,9 @@ module ed_type_init
          cpatch%mmean_sensible_lc         (ico) = 0.0
          cpatch%mmean_vapor_lc            (ico) = 0.0
          cpatch%mmean_transp              (ico) = 0.0
+         cpatch%mmean_wflux_wl            (ico) = 0.0
+         cpatch%mmean_wflux_gw            (ico) = 0.0
+         cpatch%mmean_wflux_gw_layer    (:,ico) = 0.0
          cpatch%mmean_intercepted_al      (ico) = 0.0
          cpatch%mmean_wshed_lg            (ico) = 0.0
          cpatch%mmean_rshort_w            (ico) = 0.0
@@ -607,9 +610,6 @@ module ed_type_init
          cpatch%mmean_leaf_water_im2      (ico) = 0.0
          cpatch%mmean_wood_water_int      (ico) = 0.0
          cpatch%mmean_wood_water_im2      (ico) = 0.0
-         cpatch%mmean_wflux_gw            (ico) = 0.0
-         cpatch%mmean_wflux_gw_layer    (:,ico) = 0.0
-         cpatch%mmean_wflux_wl            (ico) = 0.0
 
          cpatch%mmsqu_gpp                 (ico) = 0.0
          cpatch%mmsqu_npp                 (ico) = 0.0
@@ -617,6 +617,8 @@ module ed_type_init
          cpatch%mmsqu_sensible_lc         (ico) = 0.0
          cpatch%mmsqu_vapor_lc            (ico) = 0.0
          cpatch%mmsqu_transp              (ico) = 0.0
+         cpatch%mmsqu_wflux_wl            (ico) = 0.0
+         cpatch%mmsqu_wflux_gw            (ico) = 0.0
          cpatch%mmsqu_sensible_wc         (ico) = 0.0
          cpatch%mmsqu_vapor_wc            (ico) = 0.0
       end if
@@ -688,6 +690,8 @@ module ed_type_init
          cpatch%qmean_sensible_lc       (:,ico) = 0.0
          cpatch%qmean_vapor_lc          (:,ico) = 0.0
          cpatch%qmean_transp            (:,ico) = 0.0
+         cpatch%qmean_wflux_wl          (:,ico) = 0.0
+         cpatch%qmean_wflux_gw          (:,ico) = 0.0
          cpatch%qmean_intercepted_al    (:,ico) = 0.0
          cpatch%qmean_wshed_lg          (:,ico) = 0.0
 
@@ -697,8 +701,6 @@ module ed_type_init
          cpatch%qmean_leaf_water_im2    (:,ico) = 0.0
          cpatch%qmean_wood_water_int    (:,ico) = 0.0
          cpatch%qmean_wood_water_im2    (:,ico) = 0.0
-         cpatch%qmean_wflux_gw          (:,ico) = 0.0
-         cpatch%qmean_wflux_wl          (:,ico) = 0.0
 
          cpatch%qmean_rshort_w          (:,ico) = 0.0
          cpatch%qmean_rlong_w           (:,ico) = 0.0
@@ -713,6 +715,8 @@ module ed_type_init
          cpatch%qmsqu_sensible_lc       (:,ico) = 0.0
          cpatch%qmsqu_vapor_lc          (:,ico) = 0.0
          cpatch%qmsqu_transp            (:,ico) = 0.0
+         cpatch%qmsqu_wflux_wl          (:,ico) = 0.0
+         cpatch%qmsqu_wflux_gw          (:,ico) = 0.0
          cpatch%qmsqu_sensible_wc       (:,ico) = 0.0
          cpatch%qmsqu_vapor_wc          (:,ico) = 0.0
       end if
@@ -1837,6 +1841,8 @@ module ed_type_init
          cgrid%fmean_vapor_wc             (ipy) = 0.0
          cgrid%fmean_intercepted_aw       (ipy) = 0.0
          cgrid%fmean_wshed_wg             (ipy) = 0.0
+         cgrid%fmean_wflux_gw             (ipy) = 0.0
+         cgrid%fmean_wflux_wl             (ipy) = 0.0
 
          cgrid%fmean_lai                  (ipy) = 0.0
          cgrid%fmean_bdeada               (ipy) = 0.0
@@ -2005,6 +2011,8 @@ module ed_type_init
             cgrid%dmean_transp               (ipy) = 0.0
             cgrid%dmean_intercepted_al       (ipy) = 0.0
             cgrid%dmean_wshed_lg             (ipy) = 0.0
+            cgrid%dmean_wflux_gw             (ipy) = 0.0
+            cgrid%dmean_wflux_wl             (ipy) = 0.0
             cgrid%dmean_rshort_w             (ipy) = 0.0
             cgrid%dmean_rlong_w              (ipy) = 0.0
             cgrid%dmean_sensible_wc          (ipy) = 0.0
@@ -2156,6 +2164,8 @@ module ed_type_init
             cgrid%mmean_sensible_lc          (ipy) = 0.0
             cgrid%mmean_vapor_lc             (ipy) = 0.0
             cgrid%mmean_transp               (ipy) = 0.0
+            cgrid%mmean_wflux_gw             (ipy) = 0.0
+            cgrid%mmean_wflux_wl             (ipy) = 0.0
             cgrid%mmean_intercepted_al       (ipy) = 0.0
             cgrid%mmean_wshed_lg             (ipy) = 0.0
             cgrid%mmean_rshort_w             (ipy) = 0.0
@@ -2301,6 +2311,8 @@ module ed_type_init
             cgrid%mmsqu_sensible_lc          (ipy) = 0.0
             cgrid%mmsqu_vapor_lc             (ipy) = 0.0
             cgrid%mmsqu_transp               (ipy) = 0.0
+            cgrid%mmsqu_wflux_gw             (ipy) = 0.0
+            cgrid%mmsqu_wflux_wl             (ipy) = 0.0
             cgrid%mmsqu_sensible_wc          (ipy) = 0.0
             cgrid%mmsqu_vapor_wc             (ipy) = 0.0
             cgrid%mmsqu_rh                   (ipy) = 0.0
@@ -2388,6 +2400,8 @@ module ed_type_init
             cgrid%qmean_sensible_lc        (:,ipy) = 0.0
             cgrid%qmean_vapor_lc           (:,ipy) = 0.0
             cgrid%qmean_transp             (:,ipy) = 0.0
+            cgrid%qmean_wflux_gw           (:,ipy) = 0.0
+            cgrid%qmean_wflux_wl           (:,ipy) = 0.0
             cgrid%qmean_intercepted_al     (:,ipy) = 0.0
             cgrid%qmean_wshed_lg           (:,ipy) = 0.0
             cgrid%qmean_rshort_w           (:,ipy) = 0.0
@@ -2484,6 +2498,8 @@ module ed_type_init
             cgrid%qmsqu_sensible_lc        (:,ipy) = 0.0
             cgrid%qmsqu_vapor_lc           (:,ipy) = 0.0
             cgrid%qmsqu_transp             (:,ipy) = 0.0
+            cgrid%qmsqu_wflux_gw           (:,ipy) = 0.0
+            cgrid%qmsqu_wflux_wl           (:,ipy) = 0.0
             cgrid%qmsqu_sensible_wc        (:,ipy) = 0.0
             cgrid%qmsqu_vapor_wc           (:,ipy) = 0.0
             cgrid%qmsqu_rh                 (:,ipy) = 0.0

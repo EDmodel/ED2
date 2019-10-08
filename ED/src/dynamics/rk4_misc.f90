@@ -445,22 +445,32 @@ module rk4_misc
          end do
 
          do ico=1,cpatch%ncohorts
-            targetp%avg_sensible_lc    (ico) = dble(cpatch%fmean_sensible_lc   (ico))
-            targetp%avg_sensible_wc    (ico) = dble(cpatch%fmean_sensible_wc   (ico))
-            targetp%avg_vapor_lc       (ico) = dble(cpatch%fmean_vapor_lc      (ico))
-            targetp%avg_vapor_wc       (ico) = dble(cpatch%fmean_vapor_wc      (ico))
-            targetp%avg_transp         (ico) = dble(cpatch%fmean_transp        (ico))
-            targetp%avg_intercepted_al (ico) = dble(cpatch%fmean_intercepted_al(ico))
-            targetp%avg_intercepted_aw (ico) = dble(cpatch%fmean_intercepted_aw(ico))
-            targetp%avg_wshed_lg       (ico) = dble(cpatch%fmean_wshed_lg      (ico))
-            targetp%avg_wshed_wg       (ico) = dble(cpatch%fmean_wshed_wg      (ico))
+            targetp%avg_sensible_lc   (ico) = dble(cpatch%fmean_sensible_lc   (ico))
+            targetp%avg_sensible_wc   (ico) = dble(cpatch%fmean_sensible_wc   (ico))
+            targetp%avg_vapor_lc      (ico) = dble(cpatch%fmean_vapor_lc      (ico))
+            targetp%avg_vapor_wc      (ico) = dble(cpatch%fmean_vapor_wc      (ico))
+            targetp%avg_transp        (ico) = dble(cpatch%fmean_transp        (ico))
+            targetp%avg_intercepted_al(ico) = dble(cpatch%fmean_intercepted_al(ico))
+            targetp%avg_intercepted_aw(ico) = dble(cpatch%fmean_intercepted_aw(ico))
+            targetp%avg_wshed_lg      (ico) = dble(cpatch%fmean_wshed_lg      (ico))
+            targetp%avg_wshed_wg      (ico) = dble(cpatch%fmean_wshed_wg      (ico))
+            targetp%avg_wflux_wl      (ico) = dble(cpatch%fmean_wflux_wl      (ico))       &
+                                            * targetp%nplant(ico)
+            targetp%avg_wflux_gw      (ico) = dble(cpatch%fmean_wflux_gw      (ico))       &
+                                            * targetp%nplant(ico)
+
+            do k = rk4site%lsl, nzg
+               targetp%avg_wflux_gw_layer(k,ico) =                                         &
+                             dble(cpatch%fmean_wflux_gw_layer(k,ico)) * targetp%nplant(ico)
+            end do
+
          end do
 
       end if
       if (checkbudget) then
          targetp%co2budget_storage     = dble(sourcesite%co2budget_initialstorage(ipa))
-         targetp%ebudget_storage       = dble(sourcesite%ebudget_initialstorage(ipa))
-         targetp%wbudget_storage       = dble(sourcesite%wbudget_initialstorage(ipa))
+         targetp%ebudget_storage       = dble(sourcesite%ebudget_initialstorage  (ipa))
+         targetp%wbudget_storage       = dble(sourcesite%wbudget_initialstorage  (ipa))
          targetp%co2budget_loss2atm    = 0.d0
          targetp%ebudget_netrad        = 0.d0
          targetp%ebudget_loss2atm      = 0.d0
@@ -2805,20 +2815,25 @@ module rk4_misc
    !---------------------------------------------------------------------------------------!
    subroutine adjust_veg_properties(initp,hdid,csite,ipa,ibuff)
       use rk4_coms             , only : rk4patchtype       & ! structure
-                                      , rk4aux             &
+                                      , rk4site            & ! structure
+                                      , rk4aux             & ! structure
                                       , rk4min_veg_lwater  & ! intent(in)
                                       , rk4leaf_drywhc     & ! intent(in)
                                       , rk4leaf_maxwhc     & ! intent(in)
                                       , print_detailed     ! ! intent(in)
       use ed_state_vars        , only : sitetype           & ! structure
                                       , patchtype          ! ! structure
-      use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
+      use ed_misc_coms         , only : fast_diagnostics   ! ! intent(in)
       use consts_coms          , only : t3ple8             & ! intent(in)
+                                      , wdns8              & ! intent(in)
                                       , wdnsi8             & ! intent(in)
                                       , fdnsi8             ! ! intent(in)
       use therm_lib8           , only : uextcm2tl8         & ! subroutine
                                       , tl2uint8           & ! function
                                       , tq2enthalpy8       ! ! function
+      use soil_coms            , only : soil8              & ! intent(in)
+                                      , dslzi8             & ! intent(in)
+                                      , dslz8              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype)     , target     :: initp  ! Integration buffer
@@ -2830,6 +2845,9 @@ module rk4_misc
       type(patchtype)        , pointer    :: cpatch
       integer                             :: ico
       integer                             :: ksn
+      integer                             :: kt
+      integer                             :: nstop
+      real(kind=8)                        :: shctop
       real(kind=8)                        :: rk4min_leaf_water
       real(kind=8)                        :: rk4min_wood_water
       real(kind=8)                        :: rk4min_leaf_water_im2
@@ -2840,6 +2858,13 @@ module rk4_misc
       real(kind=8)                        :: max_leaf_water
       real(kind=8)                        :: min_wood_water
       real(kind=8)                        :: max_wood_water
+      real(kind=8)                        :: leaf_water_hint
+      real(kind=8)                        :: leaf_water_uint
+      real(kind=8)                        :: leaf_water_zint
+      real(kind=8)                        :: leaf_excess
+      real(kind=8)                        :: leaf_demand
+      real(kind=8)                        :: leaf_qexcess
+      real(kind=8)                        :: leaf_qdemand
       real(kind=8)                        :: leaf_wshed
       real(kind=8)                        :: leaf_qwshed
       real(kind=8)                        :: leaf_dwshed
@@ -2854,6 +2879,13 @@ module rk4_misc
       real(kind=8)                        :: leaf_qdew_tot
       real(kind=8)                        :: leaf_boil_tot
       real(kind=8)                        :: leaf_qboil_tot
+      real(kind=8)                        :: wood_water_hint
+      real(kind=8)                        :: wood_water_uint
+      real(kind=8)                        :: wood_water_zint
+      real(kind=8)                        :: wood_excess
+      real(kind=8)                        :: wood_qexcess
+      real(kind=8)                        :: wood_demand
+      real(kind=8)                        :: wood_qdemand
       real(kind=8)                        :: wood_wshed
       real(kind=8)                        :: wood_qwshed
       real(kind=8)                        :: wood_dwshed
@@ -2868,6 +2900,11 @@ module rk4_misc
       real(kind=8)                        :: wood_qdew_tot
       real(kind=8)                        :: wood_boil_tot
       real(kind=8)                        :: wood_qboil_tot
+      real(kind=8)                        :: soil_demand
+      real(kind=8)                        :: soil_qdemand
+      real(kind=8)                        :: soil_excess
+      real(kind=8)                        :: soil_qexcess
+      real(kind=8)                        :: soil_water_uint
       real(kind=8)                        :: old_leaf_energy
       real(kind=8)                        :: old_leaf_water
       real(kind=8)                        :: old_leaf_water_im2
@@ -2885,6 +2922,18 @@ module rk4_misc
       
       !----- Inverse of time increment ----------------------------------------------------!
       hdidi = 1.d0 / hdid
+
+      !------------------------------------------------------------------------------------!
+      !     If we reached this point, then we may be slightly off-track.  It is very       !
+      ! likely that we will need top soil layer temperature and liquid fraction, so we     !
+      ! find them now.                                                                     !
+      !------------------------------------------------------------------------------------!
+      nstop           = rk4site%ntext_soil(kt)
+      shctop          = soil8(nstop)%slcpd
+      call uextcm2tl8(initp%soil_energy(kt),initp%soil_water(kt)*wdns8,shctop              &
+                     ,initp%soil_tempk(kt),initp%soil_fracliq(kt))
+      soil_water_uint = tl2uint8(initp%soil_tempk(kt),initp%soil_fracliq(kt))
+      !------------------------------------------------------------------------------------!
 
       !----- Initialise the total shedding. -----------------------------------------------!
       leaf_wshed_tot  = 0.d0 
@@ -2919,6 +2968,48 @@ module rk4_misc
             min_wood_water        = rk4leaf_drywhc    * initp%wai(ico)
             max_wood_water        = rk4leaf_maxwhc    * initp%wai(ico)
             !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    In case water is to be removed or added, we will need to update the       !
+            ! vegetation internal energy.  We want to preserve the temperature, though,    !
+            ! because exchanges happen as mass flux or latent heat flux (fast dew or       !
+            ! boiling).                                                                    !
+            !------------------------------------------------------------------------------!
+            !----- Leaf. ------------------------------------------------------------------!
+            call uextcm2tl8( initp%leaf_energy   (ico)                                     &
+                           , initp%leaf_water    (ico)                                     &
+                           + initp%leaf_water_im2(ico)                                     &
+                           , initp%leaf_hcap     (ico)                                     &
+                           , initp%leaf_temp     (ico)                                     &
+                           , initp%leaf_fliq     (ico) )
+            leaf_water_hint    = tq2enthalpy8(initp%leaf_temp(ico),1.d0,.true.)
+            leaf_water_uint    = tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
+            leaf_water_zint    =          initp%leaf_fliq(ico)   * wdnsi8                  &
+                               + ( 1.d0 - initp%leaf_fliq(ico) ) * fdnsi8
+            old_leaf_energy    = initp%leaf_energy   (ico)
+            old_leaf_water     = initp%leaf_water    (ico)
+            old_leaf_water_im2 = initp%leaf_water_im2(ico)
+            old_leaf_temp      = initp%leaf_temp     (ico)
+            old_leaf_fliq      = initp%leaf_fliq     (ico)
+            !----- Wood. ------------------------------------------------------------------!
+            call uextcm2tl8( initp%wood_energy   (ico)                                     &
+                           , initp%wood_water    (ico)                                     &
+                           + initp%wood_water_im2(ico)                                     &
+                           , initp%wood_hcap     (ico)                                     &
+                           , initp%wood_temp     (ico)                                     &
+                           , initp%wood_fliq     (ico) )
+            wood_water_hint    = tq2enthalpy8(initp%wood_temp(ico),1.d0,.true.)
+            wood_water_uint    = tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
+            wood_water_zint    =          initp%wood_fliq(ico)   * wdnsi8                  &
+                               + ( 1.d0 - initp%wood_fliq(ico) ) * fdnsi8
+            old_wood_energy    = initp%wood_energy   (ico)
+            old_wood_water     = initp%wood_water    (ico)
+            old_wood_water_im2 = initp%wood_water_im2(ico)
+            old_wood_temp      = initp%wood_temp     (ico)
+            old_wood_fliq      = initp%wood_fliq     (ico)
+            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
 
@@ -2929,24 +3020,6 @@ module rk4_misc
          !    Check whether we can solve leaves in this cohort...                          !
          !---------------------------------------------------------------------------------!
          if (initp%leaf_resolvable(ico)) then
-            !------------------------------------------------------------------------------!
-            !    In case water is to be removed or added, we will need to update the       !
-            ! leaf internal energy.  We want to preserve the temperature, though, because  !
-            ! this happens as loss of internal energy (shedding) or latent heat (fast      !
-            ! dew/boiling).                                                                !
-            !------------------------------------------------------------------------------!
-            call uextcm2tl8( initp%leaf_energy   (ico)                                     &
-                           , initp%leaf_water    (ico)                                     &
-                           + initp%leaf_water_im2(ico)                                     &
-                           , initp%leaf_hcap     (ico)                                     &
-                           , initp%leaf_temp     (ico)                                     &
-                           , initp%leaf_fliq     (ico) )
-            old_leaf_energy    = initp%leaf_energy   (ico)
-            old_leaf_water     = initp%leaf_water    (ico)
-            old_leaf_water_im2 = initp%leaf_water_im2(ico)
-            old_leaf_temp      = initp%leaf_temp     (ico)
-            old_leaf_fliq      = initp%leaf_fliq     (ico)
-            !------------------------------------------------------------------------------!
 
             if (initp%leaf_water(ico) > max_leaf_water) then
 
@@ -2954,11 +3027,9 @@ module rk4_misc
                !    Too much water over these leaves, we shall shed the excess to the      !
                ! ground.                                                                   !
                !---------------------------------------------------------------------------!
-               leaf_wshed  = initp%leaf_water(ico) - max_leaf_water
-               leaf_qwshed = leaf_wshed                                                    &
-                           * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
-               leaf_dwshed = leaf_wshed * ( initp%leaf_fliq(ico) * wdnsi8                  &
-                                          + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
+               leaf_wshed      = initp%leaf_water(ico) - max_leaf_water
+               leaf_qwshed     = leaf_wshed * leaf_water_uint
+               leaf_dwshed     = leaf_wshed * leaf_water_zint
 
                !----- Add the contribution of this cohort to the total shedding. ----------!
                leaf_wshed_tot  = leaf_wshed_tot  + leaf_wshed
@@ -2990,8 +3061,8 @@ module rk4_misc
                !---------------------------------------------------------------------------!
                leaf_boil  = max(0.d0,  initp%leaf_water(ico))
                leaf_dew   = max(0.d0,- initp%leaf_water(ico))
-               leaf_qboil = leaf_boil * tq2enthalpy8(initp%leaf_temp(ico),1.d0,.true.)
-               leaf_qdew  = leaf_dew  * tq2enthalpy8(initp%leaf_temp(ico),1.d0,.true.)
+               leaf_qboil = leaf_boil * leaf_water_hint
+               leaf_qdew  = leaf_dew  * leaf_water_hint
                !---------------------------------------------------------------------------!
 
 
@@ -3025,12 +3096,101 @@ module rk4_misc
             !------------------------------------------------------------------------------!
 
 
+
+
             !------------------------------------------------------------------------------!
-            !       Check whether leaf internal water is bounded,                          !
+            !       Check whether leaf internal water is bounded.                          !
             !------------------------------------------------------------------------------!
             if (initp%leaf_water_im2(ico) > rk4max_leaf_water_im2) then
-               !------ 
+               !---------------------------------------------------------------------------!
+               !     Leaves have too much water.  If possible, send water back to wood.    !
+               ! If wood is also saturated, leaves expel the excess water as shedding.     !
+               !---------------------------------------------------------------------------!
+               leaf_excess     = rk4max_leaf_water_im2 - initp%leaf_water_im2(ico)
+               wood_demand     = min(leaf_excess,max(0.d0                                  &
+                                    ,rk4max_wood_water_im2-initp%wood_water_im2(ico)))
+               leaf_wshed      = leaf_excess - wood_demand
+               wood_qdemand    = wood_demand * leaf_water_uint
+               leaf_qwshed     = leaf_wshed  * leaf_water_uint
+               leaf_dwshed     = leaf_wshed  * leaf_water_zint
+               leaf_qexcess    = wood_qdemand + leaf_qwshed
+               !---------------------------------------------------------------------------!
+
+               !----- Add the contribution of this cohort to the total shedding. ----------!
+               leaf_wshed_tot  = leaf_wshed_tot  + leaf_wshed
+               leaf_qwshed_tot = leaf_qwshed_tot + leaf_qwshed
+               leaf_dwshed_tot = leaf_dwshed_tot + leaf_dwshed
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Exchange water and internal energy.                                   !
+               !---------------------------------------------------------------------------!
+               initp%leaf_water_im2(ico) = initp%leaf_water_im2(ico) - leaf_excess
+               initp%wood_water_im2(ico) = initp%wood_water_im2(ico) + wood_demand
+               initp%veg_water_im2 (ico) = initp%veg_water_im2 (ico) - leaf_wshed
+               initp%leaf_energy   (ico) = initp%leaf_energy   (ico) - leaf_qexcess
+               initp%wood_energy   (ico) = initp%wood_energy   (ico) + wood_qdemand
+               initp%veg_energy    (ico) = initp%veg_energy    (ico) - leaf_qwshed
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update fluxes if needed be. -----------------------------------------!
+               if (fast_diagnostics) then
+                  initp%avg_wflux_wl(ico) = initp%avg_wflux_wl(ico) - wood_demand !*hdidi
+                  initp%avg_wshed_lg(ico) = initp%avg_wshed_lg(ico) + leaf_wshed  !*hdidi
+               end if
+               if (print_detailed) then
+                  initp%cfx_qwflux_wl(ico) = initp%cfx_qwflux_wl(ico) - wood_qdemand !*hdidi
+                  initp%cfx_qwshed   (ico) = initp%cfx_qwshed   (ico) + leaf_qwshed  !*hdidi
+               end if
+               !---------------------------------------------------------------------------!
+
+
             elseif (initp%leaf_water_im2(ico) < rk4min_leaf_water_im2) then
+               !---------------------------------------------------------------------------!
+               !     Leaves have too little water.  If possible, pull it from wood. If     !
+               ! wood is also dry, leaves steal water from the canopy air space as fast    !
+               ! "dew/frost" condensation.                                                 !
+               !---------------------------------------------------------------------------!
+               leaf_demand     = rk4min_leaf_water_im2 - initp%leaf_water_im2(ico)
+               wood_excess     = min(leaf_demand,max(0.d0                                  &
+                                    ,initp%wood_water_im2(ico)-rk4min_wood_water))
+               leaf_dew        = leaf_demand - wood_excess
+               wood_qexcess    = wood_excess * wood_water_uint
+               leaf_qdew       = leaf_dew    * leaf_water_hint
+               leaf_qdemand    = wood_qexcess + leaf_qdew
+               !---------------------------------------------------------------------------!
+
+
+               !----- Add the contribution of this cohort to the total boiling. -----------!
+               leaf_dew_tot   = leaf_dew_tot   + leaf_dew
+               leaf_qdew_tot  = leaf_qdew_tot  + leaf_qdew
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Exchange water and internal energy.                                   !
+               !---------------------------------------------------------------------------!
+               initp%leaf_water_im2(ico) = initp%leaf_water_im2(ico) + leaf_demand
+               initp%wood_water_im2(ico) = initp%wood_water_im2(ico) - wood_excess
+               initp%veg_water_im2 (ico) = initp%veg_water_im2 (ico) + leaf_dew
+               initp%leaf_energy   (ico) = initp%leaf_energy   (ico) + leaf_qdemand
+               initp%wood_energy   (ico) = initp%wood_energy   (ico) - wood_qexcess
+               initp%veg_energy    (ico) = initp%veg_energy    (ico) + leaf_qdew
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update fluxes if needed be. -----------------------------------------!
+               if (fast_diagnostics) then
+                  initp%avg_wflux_wl (ico) = initp%avg_wflux_wl (ico) + wood_excess  !*hdidi
+                  initp%avg_transp   (ico) = initp%avg_transp   (ico) - leaf_dew     !*hdidi
+               end if
+               if (print_detailed) then
+                  initp%cfx_qwflux_wl(ico) = initp%cfx_qwflux_wl(ico) + wood_qexcess !*hdidi
+                  initp%cfx_qtransp  (ico) = initp%cfx_qtransp  (ico) - leaf_qdew    !*hdidi
+               end if
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
 
@@ -3044,23 +3204,6 @@ module rk4_misc
          !    Check whether we can solve wood in this cohort...                            !
          !---------------------------------------------------------------------------------!
          if (initp%wood_resolvable(ico)) then
-
-
-
-            !------------------------------------------------------------------------------!
-            !    In case water is to be removed or added, we will need to update the       !
-            ! wood internal energy.  We want to preserve the temperature, though, because  !
-            ! this happens as loss of internal energy (shedding) or latent heat (fast      !
-            ! dew/boiling).                                                                !
-            !------------------------------------------------------------------------------!
-            call uextcm2tl8(initp%wood_energy(ico)                                         &
-                           ,initp%wood_water(ico)+initp%wood_water_im2(ico)                &
-                           ,initp%wood_hcap(ico),initp%wood_temp(ico),initp%wood_fliq(ico) )
-            old_wood_energy = initp%wood_energy(ico)
-            old_wood_water  = initp%wood_water (ico)
-            old_wood_temp   = initp%wood_temp  (ico)
-            old_wood_fliq   = initp%wood_fliq  (ico)
-            !------------------------------------------------------------------------------!
 
             if (initp%wood_water(ico) > max_wood_water) then
 
@@ -3141,6 +3284,160 @@ module rk4_misc
                end if
                !---------------------------------------------------------------------------!
             end if
+            !------------------------------------------------------------------------------!
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !       Check whether wood internal water is bounded.                          !
+            !------------------------------------------------------------------------------!
+            if (initp%wood_water_im2(ico) > rk4max_wood_water_im2) then
+               !---------------------------------------------------------------------------!
+               !     Wood has too much water.  If possible, send water to leaves.  If      !
+               ! leaves are also saturated, wood expels the excess water to the top soil   !
+               ! layer.  In case this is not sufficient (unlikely as this excess is tiny), !
+               ! the excess water goes to shedding.                                        !
+               !---------------------------------------------------------------------------!
+               !----- First guess. --------------------------------------------------------!
+               wood_excess = rk4max_wood_water_im2 - initp%wood_water_im2(ico)
+               leaf_demand = rk4max_leaf_water_im2 - initp%leaf_water_im2(ico)
+               soil_demand = (soil8(nstop)%slmsts-initp%soil_water(kt)) * dslz8(kt) * wdns8
+               !----- Bounded guess. ------------------------------------------------------!
+               leaf_demand = max(0.d0,min(wood_excess            ,leaf_demand))
+               soil_demand = max(0.d0,min(wood_excess-leaf_demand,soil_demand))
+               wood_wshed  = max(0.d0,wood_excess - leaf_demand - soil_demand)
+               !----- Energy associated with transfers. -----------------------------------!
+               leaf_qdemand = leaf_demand * wood_water_uint
+               soil_qdemand = soil_demand * wood_water_uint
+               wood_qwshed  = wood_wshed  * wood_water_uint
+               wood_dwshed  = wood_wshed  * wood_water_zint
+               wood_qexcess = leaf_qdemand + soil_qdemand + wood_qwshed
+               !---------------------------------------------------------------------------!
+
+
+
+               !----- Add the contribution of this cohort to the total shedding. ----------!
+               wood_wshed_tot  = wood_wshed_tot  + wood_wshed
+               wood_qwshed_tot = wood_qwshed_tot + wood_qwshed
+               wood_dwshed_tot = wood_dwshed_tot + wood_dwshed
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Exchange water and internal energy.                                   !
+               !---------------------------------------------------------------------------!
+               initp%wood_water_im2(ico) = initp%wood_water_im2 (ico) - wood_excess
+               initp%leaf_water_im2(ico) = initp%leaf_water_im2 (ico) + leaf_demand
+               initp%veg_water_im2 (ico) = initp%veg_water_im2  (ico) - soil_demand        &
+                                                                      - wood_wshed
+               initp%soil_water    ( kt) = initp%soil_water     ( kt) + soil_demand        &
+                                                                      * dslzi8(kt) * wdnsi8
+               initp%wood_energy   (ico) = initp%wood_energy    (ico) - wood_qexcess
+               initp%leaf_energy   (ico) = initp%leaf_energy    (ico) + leaf_qdemand
+               initp%veg_energy    (ico) = initp%veg_energy     (ico) - soil_qdemand       &
+                                                                      - wood_qwshed
+               initp%soil_energy   ( kt) = initp%soil_energy    ( kt) + soil_qdemand       &
+                                                                      * dslzi8(kt)
+               !---------------------------------------------------------------------------!
+
+
+
+               !----- Update fluxes if needed be. -----------------------------------------!
+               if (fast_diagnostics) then
+                  initp%avg_wflux_wl          (ico) = initp%avg_wflux_wl          (ico)    &
+                                                    + leaf_demand
+                  initp%avg_wflux_gw          (ico) = initp%avg_wflux_wl          (ico)    &
+                                                    - soil_demand
+                  initp%avg_wshed_lg          (ico) = initp%avg_wshed_lg          (ico)    &
+                                                    + leaf_wshed
+                  initp%avg_wflux_gw_layer (kt,ico) = initp%avg_wflux_gw_layer (kt,ico)    &
+                                                    - soil_demand
+               end if
+               if (print_detailed) then
+                  initp%cfx_qwflux_wl         (ico) = initp%cfx_qwflux_wl         (ico)    &
+                                                    + leaf_qdemand
+                  initp%cfx_qwflux_gw         (ico) = initp%cfx_qwflux_gw         (ico)    &
+                                                    - soil_qdemand
+                  initp%cfx_qwshed            (ico) = initp%cfx_qwshed            (ico)    &
+                                                    + leaf_qwshed 
+                  initp%cfx_qwflux_gw_layer(kt,ico) = initp%cfx_qwflux_gw_layer(kt,ico)    &
+                                                    - soil_qdemand
+               end if
+               !---------------------------------------------------------------------------!
+
+
+            elseif (initp%wood_water_im2(ico) < rk4min_wood_water_im2) then
+               !---------------------------------------------------------------------------!
+               !     Leaves have too little water.  If possible, pull it from wood. If     !
+               ! leaf is also dry, take water from the top soil layer.  As a last          !
+               ! resource, extract from the canopy air space (very unlikely to occur).                                                !
+               !---------------------------------------------------------------------------!
+               !----- First guess. --------------------------------------------------------!
+               wood_demand = rk4min_wood_water_im2 - initp%wood_water_im2(ico)
+               leaf_excess = initp%leaf_water_im2(ico) - rk4min_leaf_water_im2
+               soil_excess = (initp%soil_water(kt)-soil8(nstop)%soilcp) * dslz8(kt) * wdns8
+               !----- Bounded guess. ------------------------------------------------------!
+               leaf_excess = max(0.d0,min(wood_demand            ,leaf_excess))
+               soil_excess = max(0.d0,min(wood_demand-leaf_excess,soil_excess))
+               wood_dew    = max(0.d0,wood_demand - leaf_excess - soil_excess)
+               !----- Energy associated with transfers. -----------------------------------!
+               leaf_qexcess = leaf_excess * leaf_water_uint
+               soil_qexcess = soil_excess * soil_water_uint
+               wood_qdew    = wood_dew    * wood_water_hint
+               wood_qdemand = leaf_qexcess + soil_qexcess + wood_qdew
+               !---------------------------------------------------------------------------!
+
+
+               !----- Add the contribution of this cohort to the total boiling. -----------!
+               wood_dew_tot   = wood_dew_tot   + wood_dew
+               wood_qdew_tot  = wood_qdew_tot  + wood_qdew
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Exchange water and internal energy.                                   !
+               !---------------------------------------------------------------------------!
+               initp%wood_water_im2(ico) = initp%wood_water_im2(ico) + wood_demand
+               initp%leaf_water_im2(ico) = initp%leaf_water_im2(ico) - leaf_excess
+               initp%veg_water_im2 (ico) = initp%veg_water_im2 (ico) + soil_excess         &
+                                                                     + wood_dew
+               initp%soil_water    ( kt) = initp%soil_water    ( kt) - soil_excess         &
+                                                                     * dslzi8(kt) * wdnsi8
+               initp%wood_energy   (ico) = initp%wood_energy   (ico) + wood_qdemand
+               initp%leaf_energy   (ico) = initp%leaf_energy   (ico) - leaf_qexcess
+               initp%veg_energy    (ico) = initp%veg_energy    (ico) + soil_qexcess        &
+                                                                     + wood_qdew
+               initp%soil_energy   ( kt) = initp%soil_energy   ( kt) - soil_qexcess        &
+                                                                     * dslzi8(kt)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Update fluxes if needed be. -----------------------------------------!
+               if (fast_diagnostics) then
+                  initp%avg_wflux_wl          (ico) = initp%avg_wflux_wl          (ico)    &
+                                                    - leaf_excess
+                  initp%avg_wflux_gw          (ico) = initp%avg_wflux_wl          (ico)    &
+                                                    + soil_excess
+                  initp%avg_transp            (ico) = initp%avg_transp            (ico)    &
+                                                    - wood_dew
+                  initp%avg_wflux_gw_layer (kt,ico) = initp%avg_wflux_gw_layer (kt,ico)    &
+                                                    + soil_excess
+               end if
+               if (print_detailed) then
+                  initp%cfx_qwflux_wl         (ico) = initp%cfx_qwflux_wl         (ico)    &
+                                                    - leaf_qexcess
+                  initp%cfx_qwflux_gw         (ico) = initp%cfx_qwflux_gw         (ico)    &
+                                                    + soil_qexcess
+                  initp%cfx_qtransp           (ico) = initp%cfx_qtransp           (ico)    &
+                                                    - leaf_qdew
+                  initp%cfx_qwflux_gw_layer(kt,ico) = initp%cfx_qwflux_gw_layer(kt,ico)    &
+                                                    + soil_qexcess
+               end if
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
          end if
          !---------------------------------------------------------------------------------!
       end do cohortloop
@@ -4671,6 +4968,15 @@ module rk4_misc
    subroutine find_derived_thbounds(ibuff,cpatch,can_theta,can_temp,can_shv,can_prss       &
                                    ,can_depth)
       use grid_coms      , only : nzg                ! ! intent(in)
+      use rk4_coms       , only : rk4aux             & ! structure
+                                , rk4site            & ! structure
+                                , rk4eps             & ! intent(in)
+                                , rk4max_can_temp    & ! intent(in)
+                                , rk4min_can_temp    & ! intent(in)
+                                , rk4min_can_shv     & ! intent(in)
+                                , rk4max_can_shv     & ! intent(in)
+                                , print_thbnd        & ! intent(in)
+                                , thbnds_fout        ! ! intent(in)
       use consts_coms    , only : rdry8              & ! intent(in)
                                 , epim18             & ! intent(in)
                                 , ep8                & ! intent(in)
@@ -4690,6 +4996,8 @@ module rk4_misc
       use pft_coms       , only : leaf_rwc_min       & ! intent(in)
                                 , wood_rwc_min       ! ! intent(in)
       use physiology_coms, only : plant_hydro_scheme ! ! intent(in)
+      use plant_hydro    , only : rwc2tw             & ! subroutine
+                                , twi2twe            ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)             , target     :: cpatch

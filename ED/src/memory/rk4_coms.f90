@@ -463,19 +463,19 @@ module rk4_coms
 
       
       !----- Minimums and Maximum Bounds on integration that change with each step ------- !
-      real(kind=8)                          :: rk4min_can_prss
-      real(kind=8)                          :: rk4max_can_prss
-      real(kind=8)                          :: rk4min_can_theta
-      real(kind=8)                          :: rk4max_can_theta
-      real(kind=8)                          :: rk4min_can_enthalpy
-      real(kind=8)                          :: rk4max_can_enthalpy
+      real(kind=8)                         :: rk4min_can_prss
+      real(kind=8)                         :: rk4max_can_prss
+      real(kind=8)                         :: rk4min_can_theta
+      real(kind=8)                         :: rk4max_can_theta
+      real(kind=8)                         :: rk4min_can_enthalpy
+      real(kind=8)                         :: rk4max_can_enthalpy
 
-      real(kind=8)                          :: rk4min_leaf_water_im2
-      real(kind=8)                          :: rk4max_leaf_water_im2
-      real(kind=8)                          :: rk4min_wood_water_im2
-      real(kind=8)                          :: rk4max_wood_water_im2
-      real(kind=8)                          :: rk4min_veg_water_im2
-      real(kind=8)                          :: rk4max_veg_water_im2
+      real(kind=8), dimension(:),  pointer :: rk4min_leaf_water_im2
+      real(kind=8), dimension(:),  pointer :: rk4max_leaf_water_im2
+      real(kind=8), dimension(:),  pointer :: rk4min_wood_water_im2
+      real(kind=8), dimension(:),  pointer :: rk4max_wood_water_im2
+      real(kind=8), dimension(:),  pointer :: rk4min_veg_water_im2
+      real(kind=8), dimension(:),  pointer :: rk4max_veg_water_im2
 
 
       real(kind=8), dimension(:),  pointer :: rk4min_soil_water
