@@ -31,12 +31,12 @@ module rk4_driver
       use soil_respiration       , only : soil_respiration_driver    ! ! sub-routine
       use photosyn_driv          , only : canopy_photosynthesis      ! ! sub-routine
       use rk4_misc               , only : sanity_check_veg_energy    & ! sub-routine
-                                        , copy_patch_init            & ! sub-routine
-                                        , copy_patch_init_carbon     ! ! sub-routine
+                                        , copy_patch_init            ! ! sub-routine
       use rk4_integ_utils        , only : copy_met_2_rk4site         ! ! sub-routine
       use update_derived_utils   , only : update_patch_thermo_props  & ! sub-routine
                                         , update_patch_derived_props ! ! sub-routine
       use plant_hydro            , only : plant_hydro_driver         ! ! sub-routine
+      use therm_lib              , only : tq2enthalpy                ! ! function
       !$ use omp_lib
       implicit none
 
@@ -72,8 +72,15 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
-      real                                    :: old_can_rhos
       real                                    :: old_can_prss
+      real                                    :: old_can_enthalpy
+      real                                    :: old_can_temp
+      real                                    :: old_can_shv
+      real                                    :: old_can_co2
+      real                                    :: old_can_rhos
+      real                                    :: old_can_dmol
+      real                                    :: mid_can_rhos
+      real                                    :: mid_can_dmol
       real                                    :: patch_vels
       integer                                 :: ibuff
       integer                                 :: npa_thread
@@ -128,9 +135,11 @@ module rk4_driver
             !------------------------------------------------------------------------------!
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
             !$OMP  ipa,ita,initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,ak4,ak5,ak6,ak7           &
-            !$OMP ,patch_vels,old_can_rhos,old_can_prss,ecurr_netrad,wcurr_loss2atm        &
-            !$OMP ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
-            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps )
+            !$OMP ,patch_vels,old_can_prss,old_can_enthalpy,old_can_temp,old_can_shv       &
+            !$OMP ,old_can_co2,old_can_rhos,old_can_dmol,mid_can_rhos,mid_can_dmol         &
+            !$OMP ,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm             &
+            !$OMP ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff               &
+            !$OMP ,ecurr_loss2runoff,nsteps)
             threadloop: do ibuff=1,nthreads
                !------ Update pointers. ---------------------------------------------------!
                initp => integration_buff(ibuff)%initp
@@ -202,8 +211,14 @@ module rk4_driver
 
 
                   !----- Save the previous thermodynamic state. ---------------------------!
-                  old_can_rhos     = csite%can_rhos (ipa)
-                  old_can_prss     = csite%can_prss (ipa)
+                  old_can_prss     = csite%can_prss(ipa)
+                  old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa)    &
+                                                ,.true.)
+                  old_can_temp     = csite%can_temp(ipa)
+                  old_can_shv      = csite%can_shv (ipa)
+                  old_can_co2      = csite%can_co2 (ipa)
+                  old_can_rhos     = csite%can_rhos(ipa)
+                  old_can_dmol     = csite%can_dmol(ipa)
                   !------------------------------------------------------------------------!
 
 
@@ -246,14 +261,9 @@ module rk4_driver
 
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
-                  !                                                                        !
-                  ! MLO: The separation between init and init_carbon may have become       !
-                  !      obsolete.  I am going to keep them separated in case I find out   !
-                  !      why copy_patch_init should be placed before photosynthesis, but   !
-                  !      I do not see any good reason now.                                 !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
-                  call copy_patch_init_carbon(csite,ipa,initp)
+                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels,mid_can_rhos       &
+                                      ,mid_can_dmol)
                   !------------------------------------------------------------------------!
 
 
@@ -286,7 +296,6 @@ module rk4_driver
 
 
 
-
                   !------------------------------------------------------------------------!
                   !    Update roughness and canopy depth.  This should be done after the   !
                   ! integration.                                                           !
@@ -305,7 +314,9 @@ module rk4_driver
                                      ,co2curr_loss2atm,wcurr_loss2drainage                 &
                                      ,ecurr_loss2drainage,wcurr_loss2runoff                &
                                      ,ecurr_loss2runoff,cpoly%area(isi)                    &
-                                     ,cgrid%cbudget_nep(ipy),old_can_rhos,old_can_prss)
+                                     ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy &
+                                     ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos    &
+                                     ,old_can_dmol,mid_can_rhos,mid_can_dmol)
                   !------------------------------------------------------------------------!
 
                end do taskloop
@@ -338,7 +349,7 @@ module rk4_driver
                                  ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm             &
                                  ,wcurr_loss2drainage,ecurr_loss2drainage                  &
                                  ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
-      use rk4_integ_utils
+      use rk4_integ_utils , only : odeint               ! ! sub-routine
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use rk4_coms        , only : integration_vars     & ! structure
@@ -388,7 +399,7 @@ module rk4_driver
       initp%upwp = initp%can_rhos * initp%upwp * dtrk4i
       initp%tpwp = initp%can_rhos * initp%tpwp * dtrk4i
       initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
-      initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
+      initp%cpwp = initp%can_dmol * initp%cpwp * dtrk4i
       initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
 
 
@@ -398,6 +409,8 @@ module rk4_driver
       call initp2modelp(tend-tbeg,initp,csite,ipa,nighttime,wcurr_loss2atm,ecurr_netrad    &
                        ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
                        ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+      !------------------------------------------------------------------------------------!
+
 
       return
    end subroutine integrate_patch_rk4
@@ -502,16 +515,17 @@ module rk4_driver
       ! those in which this is not true.  All floating point variables are converted back  !
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_theta(ipa)        = sngloff(initp%can_theta       ,tiny_offset)
-      csite%can_prss(ipa)         = sngloff(initp%can_prss        ,tiny_offset)
-      csite%can_temp(ipa)         = sngloff(initp%can_temp        ,tiny_offset)
-      csite%can_shv(ipa)          = sngloff(initp%can_shv         ,tiny_offset)
-      csite%can_co2(ipa)          = sngloff(initp%can_co2         ,tiny_offset)
-      csite%can_rhos(ipa)         = sngloff(initp%can_rhos        ,tiny_offset)
-      csite%can_depth(ipa)        = sngloff(initp%can_depth       ,tiny_offset)
-      csite%veg_displace(ipa)     = sngloff(initp%veg_displace    ,tiny_offset)
-      csite%rough(ipa)            = sngloff(initp%rough           ,tiny_offset)
-      csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
+      csite%can_theta       (ipa) = sngloff(initp%can_theta       ,tiny_offset)
+      csite%can_prss        (ipa) = sngloff(initp%can_prss        ,tiny_offset)
+      csite%can_temp        (ipa) = sngloff(initp%can_temp        ,tiny_offset)
+      csite%can_shv         (ipa) = sngloff(initp%can_shv         ,tiny_offset)
+      csite%can_co2         (ipa) = sngloff(initp%can_co2         ,tiny_offset)
+      csite%can_rhos        (ipa) = sngloff(initp%can_rhos        ,tiny_offset)
+      csite%can_dmol        (ipa) = sngloff(initp%can_dmol        ,tiny_offset)
+      csite%can_depth       (ipa) = sngloff(initp%can_depth       ,tiny_offset)
+      csite%veg_displace    (ipa) = sngloff(initp%veg_displace    ,tiny_offset)
+      csite%rough           (ipa) = sngloff(initp%rough           ,tiny_offset)
+      csite%snowfac         (ipa) = sngloff(initp%snowfac         ,tiny_offset)
       csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
 
       !------------------------------------------------------------------------------------!
@@ -642,14 +656,14 @@ module rk4_driver
          wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
          wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
       else
-         co2budget_loss2atm             = 0.
-         ebudget_netrad                 = 0.
-         ebudget_loss2atm               = 0.
-         ebudget_loss2drainage          = 0.
-         ebudget_loss2runoff            = 0.
-         wbudget_loss2atm               = 0.
-         wbudget_loss2drainage          = 0.
-         wbudget_loss2runoff            = 0.
+         co2budget_loss2atm    = 0.
+         ebudget_netrad        = 0.
+         ebudget_loss2atm      = 0.
+         ebudget_loss2drainage = 0.
+         ebudget_loss2runoff   = 0.
+         wbudget_loss2atm      = 0.
+         wbudget_loss2drainage = 0.
+         wbudget_loss2runoff   = 0.
       end if
       !------------------------------------------------------------------------------------!
 
@@ -814,9 +828,8 @@ module rk4_driver
             !      Update intensive internal water content.                                !
             !------------------------------------------------------------------------------!
             call twe2twi(cpatch%leaf_water_im2(ico),cpatch%wood_water_im2(ico)             &
-                        ,cpatch%nplant(ico),cpatch%pft(ico),cpatch%bleaf(ico)              &
-                        ,cpatch%broot(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)     &
-                        ,cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+                        ,cpatch%nplant(ico),cpatch%leaf_water_int(ico)                     &
+                        ,cpatch%wood_water_int(ico))
             !------------------------------------------------------------------------------!
 
 

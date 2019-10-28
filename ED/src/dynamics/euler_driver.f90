@@ -29,9 +29,9 @@ module euler_driver
                                        , update_patch_derived_props ! ! subroutine
       use rk4_integ_utils       , only : copy_met_2_rk4site         ! ! subroutine
       use rk4_misc              , only : copy_patch_init            & ! subroutine
-                                       , copy_patch_init_carbon     & ! subroutine
                                        , sanity_check_veg_energy    ! ! subroutine
       use plant_hydro           , only : plant_hydro_driver         ! ! subroutine
+      use therm_lib             , only : tq2enthalpy                ! ! function
       !$ use omp_lib
 
       implicit none
@@ -62,8 +62,15 @@ module euler_driver
       real                                   :: ecurr_loss2drainage
       real                                   :: wcurr_loss2runoff
       real                                   :: ecurr_loss2runoff
-      real                                   :: old_can_rhos
       real                                   :: old_can_prss
+      real                                   :: old_can_enthalpy
+      real                                   :: old_can_temp
+      real                                   :: old_can_shv
+      real                                   :: old_can_co2
+      real                                   :: old_can_rhos
+      real                                   :: old_can_dmol
+      real                                   :: mid_can_rhos
+      real                                   :: mid_can_dmol
       integer                                :: ibuff
       integer                                :: npa_thread
       integer                                :: ita
@@ -113,9 +120,10 @@ module euler_driver
             !        of threads is less than the number of patches.                        !
             !------------------------------------------------------------------------------!
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
-            !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_rhos           &
-            !$OMP ,old_can_prss,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm                 &
-            !$OMP ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage                &
+            !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_prss           &
+            !$OMP ,old_can_enthalpy,old_can_temp,old_can_shv,old_can_co2,old_can_rhos      &
+            !$OMP ,old_can_dmol,mid_can_rhos,mid_can_dmol,ecurr_netrad,wcurr_loss2atm      &
+            !$OMP ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
             !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
             threadloop: do ibuff=1,nthreads
                !------ Update pointers. ---------------------------------------------------!
@@ -172,8 +180,14 @@ module euler_driver
 
 
                   !----- Save the previous thermodynamic state. ---------------------------!
-                  old_can_rhos     = csite%can_rhos(ipa)
                   old_can_prss     = csite%can_prss(ipa)
+                  old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa)    &
+                                                ,.true.)
+                  old_can_temp     = csite%can_temp(ipa)
+                  old_can_shv      = csite%can_shv (ipa)
+                  old_can_co2      = csite%can_co2 (ipa)
+                  old_can_rhos     = csite%can_rhos(ipa)
+                  old_can_dmol     = csite%can_dmol(ipa)
                   !------------------------------------------------------------------------!
 
 
@@ -219,15 +233,9 @@ module euler_driver
 
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
-                  !                                                                        !
-                  ! MLO: The separation between init and init_carbon may have become       !
-                  !      obsolete.  I am going to keep them separated in case I find out   !
-                  !      why copy_patch_init should be placed before photosynthesis, but   !
-                  !      I do not see any good reason now.                                 !
                   !------------------------------------------------------------------------!
                   call copy_patch_init(csite,ipa,ibuff,integration_buff(ibuff)%initp       &
-                                      ,patch_vels)
-                  call copy_patch_init_carbon(csite,ipa,integration_buff(ibuff)%initp)
+                                      ,patch_vels,mid_can_rhos,mid_can_dmol)
                   !------------------------------------------------------------------------!
 
 
@@ -285,7 +293,9 @@ module euler_driver
                                      ,co2curr_loss2atm,wcurr_loss2drainage                 &
                                      ,ecurr_loss2drainage,wcurr_loss2runoff                &
                                      ,ecurr_loss2runoff,cpoly%area(isi)                    &
-                                     ,cgrid%cbudget_nep(ipy),old_can_rhos,old_can_prss)
+                                     ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy &
+                                     ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos    &
+                                     ,old_can_dmol,mid_can_rhos,mid_can_dmol)
                   !------------------------------------------------------------------------!
                end do taskloop
                !---------------------------------------------------------------------------!
@@ -392,15 +402,16 @@ module euler_driver
       initp%upwp = initp%can_rhos * initp%upwp * dtrk4i
       initp%tpwp = initp%can_rhos * initp%tpwp * dtrk4i
       initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
-      initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
+      initp%cpwp = initp%can_dmol * initp%cpwp * dtrk4i
       initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
 
       !------------------------------------------------------------------------------------!
-      ! Move the state variables from the integrated patch to the model patch.             !
+      !      Move the state variables from the integrated patch to the model patch.        !
       !------------------------------------------------------------------------------------!
       call initp2modelp(tend-tbeg,initp,csite,ipa,nighttime,wcurr_loss2atm,ecurr_netrad    &
                        ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
                        ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine integrate_patch_euler
@@ -678,6 +689,7 @@ module euler_driver
 
          !----- If the integration reached the next step, make some final adjustments -----!
          if((x-tend)*dtrk4 >= 0.d0)then
+            call copy_rk4_patch(initp,ytemp,csite%patch(ipa))
 
             ksn = initp%nlev_sfcwater
 

@@ -1051,16 +1051,47 @@ recursive subroutine read_ed_xml_config(filename)
   print*,"SOIL READ FROM FILE ::",ntag
   if(ntag .ge. 1) then
      do i=1,ntag
-
-        call libxml2f90__ll_selecttag('DOWN','soil',i)
-        
-        call getConfigREAL  ('water_stab_thresh','soil',i,rval,texist)
-        if(texist) water_stab_thresh = sngloff(rval,tiny_offset)
-        call getConfigINT  ('infiltration_method','soil',i,ival,texist)
-         if(texist) infiltration_method = ival
+         call libxml2f90__ll_selecttag('DOWN','soil',i)
+         call getConfigREAL  ('soil_rough','soil',i,rval,texist)
+         if (texist) then
+            soil_rough  = sngloff(rval,tiny_offset)
+            soil_rough8 = rval
+         end if
+         call getConfigREAL  ('snow_rough','soil',i,rval,texist)
+         if (texist) then
+            snow_rough  = sngloff(rval,tiny_offset)
+            snow_rough8 = rval
+         end if
+         call getConfigREAL  ('ny07_eq04_a','soil',i,rval,texist)
+         if (texist) then
+            ny07_eq04_a  = sngloff(rval,tiny_offset)
+            ny07_eq04_a8 = rval
+         end if
+         call getConfigREAL  ('ny07_eq04_m','soil',i,rval,texist)
+         if (texist) then
+            ny07_eq04_m  = sngloff(rval,tiny_offset)
+            ny07_eq04_m8 = rval
+         end if
          call getConfigREAL  ('dewmax','soil',i,rval,texist)
          if(texist) dewmax = sngloff(rval,tiny_offset)
-
+         call getConfigREAL  ('water_stab_thresh','soil',i,rval,texist)
+         if(texist) water_stab_thresh = sngloff(rval,tiny_offset)
+         call getConfigREAL  ('tiny_sfcwater_mass','soil',i,rval,texist)
+         if(texist) tiny_sfcwater_mass = sngloff(rval,tiny_offset)
+         call getConfigREAL  ('snowmin','soil',i,rval,texist)
+         if(texist) snowmin = sngloff(rval,tiny_offset)
+         call getConfigINT  ('infiltration_method','soil',i,ival,texist)
+         if(texist) infiltration_method = ival
+         call getConfigREAL  ('freezecoef','soil',i,rval,texist)
+         if (texist) then
+            freezecoef  = sngloff(rval,tiny_offset)
+            freezecoef8 = rval
+         end if
+         call getConfigREAL  ('hydcond_min','soil',i,rval,texist)
+         if (texist) then
+           hydcond_min  = sngloff(rval,tiny_offset)
+           hydcond_min8 = rval
+         end if
          call getConfigSTRING  ('vegetation_database','soil',i,cval,texist)
          if (texist) then
             do ng=1,ngrids
@@ -2133,18 +2164,25 @@ subroutine write_ed_xml_config
 
   !************   SOILS  *****************
   call libxml2f90_ll_opentag("soil")
-     call putConfigREAL("water_stab_thresh",water_stab_thresh)
-     call putConfigINT("infiltration_method",infiltration_method)
-     call putConfigREAL("dewmax",dewmax)
-     call putConfigSTRING("soilstate_db",soilstate_db)
-     call putConfigSTRING("soildepth_db",soildepth_db)
-     call putConfigINT("isoilstateinit",isoilstateinit)
-     call putConfigINT("isoildepthflg",isoildepthflg)
-     call putConfigREAL("runoff_time",runoff_time)
+
+     call putConfigREAL  ("soil_rough"         ,soil_rough         )
+     call putConfigREAL  ("snow_rough"         ,snow_rough         )
+     call putConfigREAL  ("ny07_eq04_a"        ,ny07_eq04_a        )
+     call putConfigREAL  ("ny07_eq04_m"        ,ny07_eq04_m        )
+     call putConfigREAL  ("dewmax"             ,dewmax             )
+     call putConfigREAL  ("water_stab_thresh"  ,water_stab_thresh  )
+     call putConfigREAL  ("tiny_sfcwater_mass" ,tiny_sfcwater_mass )
+     call putConfigREAL  ("snowmin"            ,snowmin            )
+     call putConfigINT   ("infiltration_method",infiltration_method)
+     call putConfigSTRING("soilstate_db"       ,soilstate_db       )
+     call putConfigSTRING("soildepth_db"       ,soildepth_db       )
+     call putConfigINT   ("isoilstateinit"     ,isoilstateinit     )
+     call putConfigINT   ("isoildepthflg"      ,isoildepthflg      )
+     call putConfigREAL  ("runoff_time"        ,runoff_time        )
      call libxml2f90_ll_opentag("grid")
         do ng=1,ngrids
-           call putConfigSTRING("vegetation_database",veg_database(ng))
-           call putConfigSTRING("soil_database",soil_database(ng))
+           call putConfigSTRING("vegetation_database",veg_database (ng))
+           call putConfigSTRING("soil_database"      ,soil_database(ng))
         end do
      call libxml2f90_ll_closetag("grid")
 

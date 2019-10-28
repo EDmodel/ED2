@@ -2447,6 +2447,42 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function finds the dry-air molar density (mol/m3), using the ideal gas law.  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function idealdmolsh(pres,temp,qvpr)
+      use consts_coms, only : rmol & ! intent(in)
+                            , ep   ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in)           :: pres ! Pressure                        [    Pa]
+      real(kind=4), intent(in)           :: temp ! Temperature                     [     K]
+      real(kind=4), intent(in)           :: qvpr ! Vapour specific mass            [ kg/kg]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)                       :: pdry ! Dry-air pressure                [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial pressure of water vapour. -----------------------------------!
+      pdry = pres * (1.0 - qvpr / (ep + (1.0 - ep) * qvpr))
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Convert using a generalised function. ----------------------------------------!
+      idealdmolsh = pdry / (rmol * temp)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function idealdmolsh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This function computes reduces the pressure from the reference height to the      !
    ! canopy height by assuming hydrostatic equilibrium.  For simplicity, we assume that    !
    ! R and cp are constants (in reality they are dependent on humidity).                   !

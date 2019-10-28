@@ -269,6 +269,14 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !      These terms are used to convert extensive enthalpy and water to temperature.     !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: cph2o_tscvap = cph2o * tsupercool_vap
+   real, parameter :: cpdiff_epim1 = cph2o - epi * cpdry
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Minimum temperature for computing the condensation effect of temperature on       !

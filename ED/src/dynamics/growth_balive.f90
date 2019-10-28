@@ -509,7 +509,8 @@ module growth_balive
                               ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
                               ,cpatch%wood_water_im2(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
-                                             ,old_leaf_water_im2,old_wood_water_im2)
+                                             ,old_leaf_water_im2,old_wood_water_im2        &
+                                             ,.true.)
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!

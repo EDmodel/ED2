@@ -1197,6 +1197,9 @@ module ed_state_vars
       real , pointer,dimension(:) :: can_rhos
       !<Density [kg/m3] of canopy air
 
+      real , pointer,dimension(:) :: can_dmol
+      !<Molar density [mol/m3] of canopy air space (dry air only)
+
       real , pointer,dimension(:) :: can_prss
       !<Canopy air pressure.
 
@@ -1832,6 +1835,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_can_shv         !<CAS Specific hum.  [    kg/kg]
       real,pointer,dimension(:)   :: fmean_can_co2         !<CAS CO2 mix. ratio [ umol/mol]
       real,pointer,dimension(:)   :: fmean_can_rhos        !<CAS air density    [    kg/m3]
+      real,pointer,dimension(:)   :: fmean_can_dmol        !<CAS air mol. dens. [   mol/m3]
       real,pointer,dimension(:)   :: fmean_can_prss        !<CAS pressure       [       Pa]
       real,pointer,dimension(:)   :: fmean_gnd_temp        !<Ground temperature [        K]
       real,pointer,dimension(:)   :: fmean_gnd_shv         !<Ground spec. hum.  [    kg/kg]
@@ -1924,6 +1928,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_can_shv
       real,pointer,dimension(:)     :: dmean_can_co2
       real,pointer,dimension(:)     :: dmean_can_rhos
+      real,pointer,dimension(:)     :: dmean_can_dmol
       real,pointer,dimension(:)     :: dmean_can_prss
       real,pointer,dimension(:)     :: dmean_gnd_temp
       real,pointer,dimension(:)     :: dmean_gnd_shv
@@ -1990,6 +1995,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_can_shv
       real,pointer,dimension(:)     :: mmean_can_co2
       real,pointer,dimension(:)     :: mmean_can_rhos
+      real,pointer,dimension(:)     :: mmean_can_dmol
       real,pointer,dimension(:)     :: mmean_can_prss
       real,pointer,dimension(:)     :: mmean_gnd_temp
       real,pointer,dimension(:)     :: mmean_gnd_shv
@@ -2086,6 +2092,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_can_shv
       real,pointer,dimension(:,:)   :: qmean_can_co2
       real,pointer,dimension(:,:)   :: qmean_can_rhos
+      real,pointer,dimension(:,:)   :: qmean_can_dmol
       real,pointer,dimension(:,:)   :: qmean_can_prss
       real,pointer,dimension(:,:)   :: qmean_gnd_temp
       real,pointer,dimension(:,:)   :: qmean_gnd_shv
@@ -2928,6 +2935,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_can_shv         !<CAS Specific hum.  [     kg/kg]
       real,pointer,dimension(:)   :: fmean_can_co2         !<CAS CO2 mix. ratio [  umol/mol]
       real,pointer,dimension(:)   :: fmean_can_rhos        !<CAS air density    [     kg/m3]
+      real,pointer,dimension(:)   :: fmean_can_dmol        !<CAS molar dens.    [    mol/m3]
       real,pointer,dimension(:)   :: fmean_can_prss        !<CAS pressure       [        Pa]
       real,pointer,dimension(:)   :: fmean_gnd_temp        !<Ground temperature [         K]
       real,pointer,dimension(:)   :: fmean_gnd_shv         !<Ground spec. hum.  [     kg/kg]
@@ -3136,6 +3144,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_can_shv
       real,pointer,dimension(:)     :: dmean_can_co2
       real,pointer,dimension(:)     :: dmean_can_rhos
+      real,pointer,dimension(:)     :: dmean_can_dmol
       real,pointer,dimension(:)     :: dmean_can_prss
       real,pointer,dimension(:)     :: dmean_gnd_temp
       real,pointer,dimension(:)     :: dmean_gnd_shv
@@ -3282,6 +3291,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_can_shv
       real,pointer,dimension(:)     :: mmean_can_co2
       real,pointer,dimension(:)     :: mmean_can_rhos
+      real,pointer,dimension(:)     :: mmean_can_dmol
       real,pointer,dimension(:)     :: mmean_can_prss
       real,pointer,dimension(:)     :: mmean_gnd_temp
       real,pointer,dimension(:)     :: mmean_gnd_shv
@@ -3476,6 +3486,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_can_shv
       real,pointer,dimension(:,:)   :: qmean_can_co2
       real,pointer,dimension(:,:)   :: qmean_can_rhos
+      real,pointer,dimension(:,:)   :: qmean_can_dmol
       real,pointer,dimension(:,:)   :: qmean_can_prss
       real,pointer,dimension(:,:)   :: qmean_gnd_temp
       real,pointer,dimension(:,:)   :: qmean_gnd_shv
@@ -3956,6 +3967,7 @@ module ed_state_vars
       allocate(cgrid%fmean_can_shv              (                    npolygons))
       allocate(cgrid%fmean_can_co2              (                    npolygons))
       allocate(cgrid%fmean_can_rhos             (                    npolygons))
+      allocate(cgrid%fmean_can_dmol             (                    npolygons))
       allocate(cgrid%fmean_can_prss             (                    npolygons))
       allocate(cgrid%fmean_gnd_temp             (                    npolygons))
       allocate(cgrid%fmean_gnd_shv              (                    npolygons))
@@ -4129,6 +4141,7 @@ module ed_state_vars
          allocate(cgrid%dmean_can_shv           (                     npolygons))
          allocate(cgrid%dmean_can_co2           (                     npolygons))
          allocate(cgrid%dmean_can_rhos          (                     npolygons))
+         allocate(cgrid%dmean_can_dmol          (                     npolygons))
          allocate(cgrid%dmean_can_prss          (                     npolygons))
          allocate(cgrid%dmean_gnd_temp          (                     npolygons))
          allocate(cgrid%dmean_gnd_shv           (                     npolygons))
@@ -4319,6 +4332,7 @@ module ed_state_vars
          allocate(cgrid%mmean_can_shv           (                     npolygons)) 
          allocate(cgrid%mmean_can_co2           (                     npolygons)) 
          allocate(cgrid%mmean_can_rhos          (                     npolygons)) 
+         allocate(cgrid%mmean_can_dmol          (                     npolygons)) 
          allocate(cgrid%mmean_can_prss          (                     npolygons)) 
          allocate(cgrid%mmean_gnd_temp          (                     npolygons)) 
          allocate(cgrid%mmean_gnd_shv           (                     npolygons)) 
@@ -4522,6 +4536,7 @@ module ed_state_vars
          allocate(cgrid%qmean_can_shv           (             ndcycle,npolygons))
          allocate(cgrid%qmean_can_co2           (             ndcycle,npolygons))
          allocate(cgrid%qmean_can_rhos          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_can_dmol          (             ndcycle,npolygons))
          allocate(cgrid%qmean_can_prss          (             ndcycle,npolygons))
          allocate(cgrid%qmean_gnd_temp          (             ndcycle,npolygons))
          allocate(cgrid%qmean_gnd_shv           (             ndcycle,npolygons))
@@ -4903,6 +4918,7 @@ module ed_state_vars
       allocate(csite%can_shv                       (              npatches))
       allocate(csite%can_co2                       (              npatches))
       allocate(csite%can_rhos                      (              npatches))
+      allocate(csite%can_dmol                      (              npatches))
       allocate(csite%can_prss                      (              npatches))
       allocate(csite%can_theta                     (              npatches))
       allocate(csite%can_depth                     (              npatches))
@@ -5099,6 +5115,7 @@ module ed_state_vars
       allocate(csite%fmean_can_shv                 (              npatches))
       allocate(csite%fmean_can_co2                 (              npatches))
       allocate(csite%fmean_can_rhos                (              npatches))
+      allocate(csite%fmean_can_dmol                (              npatches))
       allocate(csite%fmean_can_prss                (              npatches))
       allocate(csite%fmean_gnd_temp                (              npatches))
       allocate(csite%fmean_gnd_shv                 (              npatches))
@@ -5173,6 +5190,7 @@ module ed_state_vars
          allocate(csite%dmean_can_shv              (              npatches))
          allocate(csite%dmean_can_co2              (              npatches))
          allocate(csite%dmean_can_rhos             (              npatches))
+         allocate(csite%dmean_can_dmol             (              npatches))
          allocate(csite%dmean_can_prss             (              npatches))
          allocate(csite%dmean_gnd_temp             (              npatches))
          allocate(csite%dmean_gnd_shv              (              npatches))
@@ -5261,6 +5279,7 @@ module ed_state_vars
          allocate(csite%mmean_can_shv              (              npatches))
          allocate(csite%mmean_can_co2              (              npatches))
          allocate(csite%mmean_can_rhos             (              npatches))
+         allocate(csite%mmean_can_dmol             (              npatches))
          allocate(csite%mmean_can_prss             (              npatches))
          allocate(csite%mmean_gnd_temp             (              npatches))
          allocate(csite%mmean_gnd_shv              (              npatches))
@@ -5357,6 +5376,7 @@ module ed_state_vars
          allocate(csite%qmean_can_shv              (      ndcycle,npatches))
          allocate(csite%qmean_can_co2              (      ndcycle,npatches))
          allocate(csite%qmean_can_rhos             (      ndcycle,npatches))
+         allocate(csite%qmean_can_dmol             (      ndcycle,npatches))
          allocate(csite%qmean_can_prss             (      ndcycle,npatches))
          allocate(csite%qmean_gnd_temp             (      ndcycle,npatches))
          allocate(csite%qmean_gnd_shv              (      ndcycle,npatches))
@@ -6247,6 +6267,7 @@ module ed_state_vars
       nullify(cgrid%fmean_can_shv           )
       nullify(cgrid%fmean_can_co2           )
       nullify(cgrid%fmean_can_rhos          )
+      nullify(cgrid%fmean_can_dmol          )
       nullify(cgrid%fmean_can_prss          )
       nullify(cgrid%fmean_gnd_temp          )
       nullify(cgrid%fmean_gnd_shv           )
@@ -6412,6 +6433,7 @@ module ed_state_vars
       nullify(cgrid%dmean_can_shv           )
       nullify(cgrid%dmean_can_co2           )
       nullify(cgrid%dmean_can_rhos          )
+      nullify(cgrid%dmean_can_dmol          )
       nullify(cgrid%dmean_can_prss          )
       nullify(cgrid%dmean_gnd_temp          )
       nullify(cgrid%dmean_gnd_shv           )
@@ -6591,6 +6613,7 @@ module ed_state_vars
       nullify(cgrid%mmean_can_shv           )
       nullify(cgrid%mmean_can_co2           )
       nullify(cgrid%mmean_can_rhos          )
+      nullify(cgrid%mmean_can_dmol          )
       nullify(cgrid%mmean_can_prss          )
       nullify(cgrid%mmean_gnd_temp          )
       nullify(cgrid%mmean_gnd_shv           )
@@ -6783,6 +6806,7 @@ module ed_state_vars
       nullify(cgrid%qmean_can_shv           )
       nullify(cgrid%qmean_can_co2           )
       nullify(cgrid%qmean_can_rhos          )
+      nullify(cgrid%qmean_can_dmol          )
       nullify(cgrid%qmean_can_prss          )
       nullify(cgrid%qmean_gnd_temp          )
       nullify(cgrid%qmean_gnd_shv           )
@@ -7091,6 +7115,7 @@ module ed_state_vars
       nullify(csite%can_shv                    )
       nullify(csite%can_co2                    )
       nullify(csite%can_rhos                   )
+      nullify(csite%can_dmol                   )
       nullify(csite%can_prss                   )
       nullify(csite%can_theta                  )
       nullify(csite%can_depth                  )
@@ -7287,6 +7312,7 @@ module ed_state_vars
       nullify(csite%fmean_can_shv              )
       nullify(csite%fmean_can_co2              )
       nullify(csite%fmean_can_rhos             )
+      nullify(csite%fmean_can_dmol             )
       nullify(csite%fmean_can_prss             )
       nullify(csite%fmean_gnd_temp             )
       nullify(csite%fmean_gnd_shv              )
@@ -7359,6 +7385,7 @@ module ed_state_vars
       nullify(csite%dmean_can_shv              )
       nullify(csite%dmean_can_co2              )
       nullify(csite%dmean_can_rhos             )
+      nullify(csite%dmean_can_dmol             )
       nullify(csite%dmean_can_prss             )
       nullify(csite%dmean_gnd_temp             )
       nullify(csite%dmean_gnd_shv              )
@@ -7445,6 +7472,7 @@ module ed_state_vars
       nullify(csite%mmean_can_shv              )
       nullify(csite%mmean_can_co2              )
       nullify(csite%mmean_can_rhos             )
+      nullify(csite%mmean_can_dmol             )
       nullify(csite%mmean_can_prss             )
       nullify(csite%mmean_gnd_temp             )
       nullify(csite%mmean_gnd_shv              )
@@ -7539,6 +7567,7 @@ module ed_state_vars
       nullify(csite%qmean_can_shv              )
       nullify(csite%qmean_can_co2              )
       nullify(csite%qmean_can_rhos             )
+      nullify(csite%qmean_can_dmol             )
       nullify(csite%qmean_can_prss             )
       nullify(csite%qmean_gnd_temp             )
       nullify(csite%qmean_gnd_shv              )
@@ -8233,6 +8262,7 @@ module ed_state_vars
       if(associated(csite%can_shv                    )) deallocate(csite%can_shv                    )
       if(associated(csite%can_co2                    )) deallocate(csite%can_co2                    )
       if(associated(csite%can_rhos                   )) deallocate(csite%can_rhos                   )
+      if(associated(csite%can_dmol                   )) deallocate(csite%can_dmol                   )
       if(associated(csite%can_prss                   )) deallocate(csite%can_prss                   )
       if(associated(csite%can_theta                  )) deallocate(csite%can_theta                  )
       if(associated(csite%can_depth                  )) deallocate(csite%can_depth                  )
@@ -8430,6 +8460,7 @@ module ed_state_vars
       if(associated(csite%fmean_can_shv              )) deallocate(csite%fmean_can_shv              )
       if(associated(csite%fmean_can_co2              )) deallocate(csite%fmean_can_co2              )
       if(associated(csite%fmean_can_rhos             )) deallocate(csite%fmean_can_rhos             )
+      if(associated(csite%fmean_can_dmol             )) deallocate(csite%fmean_can_dmol             )
       if(associated(csite%fmean_can_prss             )) deallocate(csite%fmean_can_prss             )
       if(associated(csite%fmean_gnd_temp             )) deallocate(csite%fmean_gnd_temp             )
       if(associated(csite%fmean_gnd_shv              )) deallocate(csite%fmean_gnd_shv              )
@@ -8502,6 +8533,7 @@ module ed_state_vars
       if(associated(csite%dmean_can_shv              )) deallocate(csite%dmean_can_shv              )
       if(associated(csite%dmean_can_co2              )) deallocate(csite%dmean_can_co2              )
       if(associated(csite%dmean_can_rhos             )) deallocate(csite%dmean_can_rhos             )
+      if(associated(csite%dmean_can_dmol             )) deallocate(csite%dmean_can_dmol             )
       if(associated(csite%dmean_can_prss             )) deallocate(csite%dmean_can_prss             )
       if(associated(csite%dmean_gnd_temp             )) deallocate(csite%dmean_gnd_temp             )
       if(associated(csite%dmean_gnd_shv              )) deallocate(csite%dmean_gnd_shv              )
@@ -8588,6 +8620,7 @@ module ed_state_vars
       if(associated(csite%mmean_can_shv              )) deallocate(csite%mmean_can_shv              )
       if(associated(csite%mmean_can_co2              )) deallocate(csite%mmean_can_co2              )
       if(associated(csite%mmean_can_rhos             )) deallocate(csite%mmean_can_rhos             )
+      if(associated(csite%mmean_can_dmol             )) deallocate(csite%mmean_can_dmol             )
       if(associated(csite%mmean_can_prss             )) deallocate(csite%mmean_can_prss             )
       if(associated(csite%mmean_gnd_temp             )) deallocate(csite%mmean_gnd_temp             )
       if(associated(csite%mmean_gnd_shv              )) deallocate(csite%mmean_gnd_shv              )
@@ -8682,6 +8715,7 @@ module ed_state_vars
       if(associated(csite%qmean_can_shv              )) deallocate(csite%qmean_can_shv              )
       if(associated(csite%qmean_can_co2              )) deallocate(csite%qmean_can_co2              )
       if(associated(csite%qmean_can_rhos             )) deallocate(csite%qmean_can_rhos             )
+      if(associated(csite%qmean_can_dmol             )) deallocate(csite%qmean_can_dmol             )
       if(associated(csite%qmean_can_prss             )) deallocate(csite%qmean_can_prss             )
       if(associated(csite%qmean_gnd_temp             )) deallocate(csite%qmean_gnd_temp             )
       if(associated(csite%qmean_gnd_shv              )) deallocate(csite%qmean_gnd_shv              )
@@ -9420,6 +9454,7 @@ module ed_state_vars
          osite%can_shv                    (opa) = isite%can_shv                    (ipa)
          osite%can_co2                    (opa) = isite%can_co2                    (ipa)
          osite%can_rhos                   (opa) = isite%can_rhos                   (ipa)
+         osite%can_dmol                   (opa) = isite%can_dmol                   (ipa)
          osite%can_prss                   (opa) = isite%can_prss                   (ipa)
          osite%can_theta                  (opa) = isite%can_theta                  (ipa)
          osite%can_depth                  (opa) = isite%can_depth                  (ipa)
@@ -9594,6 +9629,7 @@ module ed_state_vars
          osite%fmean_can_shv              (opa) = isite%fmean_can_shv              (ipa)
          osite%fmean_can_co2              (opa) = isite%fmean_can_co2              (ipa)
          osite%fmean_can_rhos             (opa) = isite%fmean_can_rhos             (ipa)
+         osite%fmean_can_dmol             (opa) = isite%fmean_can_dmol             (ipa)
          osite%fmean_can_prss             (opa) = isite%fmean_can_prss             (ipa)
          osite%fmean_gnd_temp             (opa) = isite%fmean_gnd_temp             (ipa)
          osite%fmean_gnd_shv              (opa) = isite%fmean_gnd_shv              (ipa)
@@ -9721,6 +9757,7 @@ module ed_state_vars
             osite%dmean_can_shv        (opa) = isite%dmean_can_shv        (ipa)
             osite%dmean_can_co2        (opa) = isite%dmean_can_co2        (ipa)
             osite%dmean_can_rhos       (opa) = isite%dmean_can_rhos       (ipa)
+            osite%dmean_can_dmol       (opa) = isite%dmean_can_dmol       (ipa)
             osite%dmean_can_prss       (opa) = isite%dmean_can_prss       (ipa)
             osite%dmean_gnd_temp       (opa) = isite%dmean_gnd_temp       (ipa)
             osite%dmean_gnd_shv        (opa) = isite%dmean_gnd_shv        (ipa)
@@ -9824,6 +9861,7 @@ module ed_state_vars
             osite%mmean_can_shv        (opa) = isite%mmean_can_shv        (ipa)
             osite%mmean_can_co2        (opa) = isite%mmean_can_co2        (ipa)
             osite%mmean_can_rhos       (opa) = isite%mmean_can_rhos       (ipa)
+            osite%mmean_can_dmol       (opa) = isite%mmean_can_dmol       (ipa)
             osite%mmean_can_prss       (opa) = isite%mmean_can_prss       (ipa)
             osite%mmean_gnd_temp       (opa) = isite%mmean_gnd_temp       (ipa)
             osite%mmean_gnd_shv        (opa) = isite%mmean_gnd_shv        (ipa)
@@ -9936,6 +9974,7 @@ module ed_state_vars
                osite%qmean_can_shv        (n,opa) = isite%qmean_can_shv        (n,ipa)
                osite%qmean_can_co2        (n,opa) = isite%qmean_can_co2        (n,ipa)
                osite%qmean_can_rhos       (n,opa) = isite%qmean_can_rhos       (n,ipa)
+               osite%qmean_can_dmol       (n,opa) = isite%qmean_can_dmol       (n,ipa)
                osite%qmean_can_prss       (n,opa) = isite%qmean_can_prss       (n,ipa)
                osite%qmean_gnd_temp       (n,opa) = isite%qmean_gnd_temp       (n,ipa)
                osite%qmean_gnd_shv        (n,opa) = isite%qmean_gnd_shv        (n,ipa)
@@ -10170,6 +10209,7 @@ module ed_state_vars
       osite%can_shv                    (1:z) = pack(isite%can_shv                    ,lmask)
       osite%can_co2                    (1:z) = pack(isite%can_co2                    ,lmask)
       osite%can_rhos                   (1:z) = pack(isite%can_rhos                   ,lmask)
+      osite%can_dmol                   (1:z) = pack(isite%can_dmol                   ,lmask)
       osite%can_prss                   (1:z) = pack(isite%can_prss                   ,lmask)
       osite%can_theta                  (1:z) = pack(isite%can_theta                  ,lmask)
       osite%can_depth                  (1:z) = pack(isite%can_depth                  ,lmask)
@@ -10425,6 +10465,7 @@ module ed_state_vars
       osite%fmean_can_shv             (1:z) = pack(isite%fmean_can_shv             ,lmask)
       osite%fmean_can_co2             (1:z) = pack(isite%fmean_can_co2             ,lmask)
       osite%fmean_can_rhos            (1:z) = pack(isite%fmean_can_rhos            ,lmask)
+      osite%fmean_can_dmol            (1:z) = pack(isite%fmean_can_dmol            ,lmask)
       osite%fmean_can_prss            (1:z) = pack(isite%fmean_can_prss            ,lmask)
       osite%fmean_gnd_temp            (1:z) = pack(isite%fmean_gnd_temp            ,lmask)
       osite%fmean_gnd_shv             (1:z) = pack(isite%fmean_gnd_shv             ,lmask)
@@ -10539,6 +10580,7 @@ module ed_state_vars
       osite%dmean_can_shv        (1:z) = pack(isite%dmean_can_shv        (:),lmask)
       osite%dmean_can_co2        (1:z) = pack(isite%dmean_can_co2        (:),lmask)
       osite%dmean_can_rhos       (1:z) = pack(isite%dmean_can_rhos       (:),lmask)
+      osite%dmean_can_dmol       (1:z) = pack(isite%dmean_can_dmol       (:),lmask)
       osite%dmean_can_prss       (1:z) = pack(isite%dmean_can_prss       (:),lmask)
       osite%dmean_gnd_temp       (1:z) = pack(isite%dmean_gnd_temp       (:),lmask)
       osite%dmean_gnd_shv        (1:z) = pack(isite%dmean_gnd_shv        (:),lmask)
@@ -10669,6 +10711,7 @@ module ed_state_vars
       osite%mmean_can_shv        (1:z) = pack(isite%mmean_can_shv        (:),lmask)
       osite%mmean_can_co2        (1:z) = pack(isite%mmean_can_co2        (:),lmask)
       osite%mmean_can_rhos       (1:z) = pack(isite%mmean_can_rhos       (:),lmask)
+      osite%mmean_can_dmol       (1:z) = pack(isite%mmean_can_dmol       (:),lmask)
       osite%mmean_can_prss       (1:z) = pack(isite%mmean_can_prss       (:),lmask)
       osite%mmean_gnd_temp       (1:z) = pack(isite%mmean_gnd_temp       (:),lmask)
       osite%mmean_gnd_shv        (1:z) = pack(isite%mmean_gnd_shv        (:),lmask)
@@ -10808,6 +10851,7 @@ module ed_state_vars
          osite%qmean_can_shv        (n,1:z) = pack(isite%qmean_can_shv        (n,:),lmask)
          osite%qmean_can_co2        (n,1:z) = pack(isite%qmean_can_co2        (n,:),lmask)
          osite%qmean_can_rhos       (n,1:z) = pack(isite%qmean_can_rhos       (n,:),lmask)
+         osite%qmean_can_dmol       (n,1:z) = pack(isite%qmean_can_dmol       (n,:),lmask)
          osite%qmean_can_prss       (n,1:z) = pack(isite%qmean_can_prss       (n,:),lmask)
          osite%qmean_gnd_temp       (n,1:z) = pack(isite%qmean_gnd_temp       (n,:),lmask)
          osite%qmean_gnd_shv        (n,1:z) = pack(isite%qmean_gnd_shv        (n,:),lmask)
@@ -14498,6 +14542,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Air density - CAS'                           &
                            ,'[      kg/m3]','(ipoly)'            )
       end if
+      if (associated(cgrid%fmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_can_dmol                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_CAN_DMOL_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Dry-air molar density - CAS'                 &
+                           ,'[     mol/m3]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_can_prss        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_prss                                      &
@@ -15967,6 +16020,15 @@ module ed_state_vars
                            ,'Daily mean - Air density - CAS'                               &
                            ,'[      kg/m3]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_can_dmol                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_CAN_DMOL_PY          :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Dry-air molar density - CAS'                     &
+                           ,'[     mol/m3]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_can_prss        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_prss                                      &
@@ -17256,6 +17318,15 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air density - CAS'                             &
                            ,'[      kg/m3]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_can_dmol                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_CAN_DMOL_PY          :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Dry-air molar density - CAS'                   &
+                           ,'[     mol/m3]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_can_prss        )) then
          nvar = nvar+1
@@ -19078,6 +19149,15 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air density - CAS'                                &
                            ,'[      kg/m3]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_can_dmol                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_CAN_DMOL_PY         :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Dry-air molar density - CAS'                      &
+                           ,'[     mol/m3]','(ndcycle,ipoly)'    )
       end if
       if (associated(cgrid%qmean_can_prss        )) then
          nvar = nvar+1
@@ -22995,6 +23075,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Canopy air Density','[kg/m3]','NA') 
       end if
    
+      if (associated(csite%can_dmol)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%can_dmol,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CAN_DMOL :31:hist') 
+         call metadata_edio(nvar,igr,'Canopy air molar density (dry air only)','[mol/m3]','NA') 
+      end if
+   
       if (associated(csite%can_prss)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%can_prss,nvar,igr,init,csite%paglob_id, &
@@ -24508,6 +24595,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Air density - CAS'                           &
                            ,'[      kg/m3]','(ipatch)'            )
       end if
+      if (associated(csite%fmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_can_dmol                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_CAN_DMOL_PA          :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Dry-air molar density - CAS'                 &
+                           ,'[     mol/m3]','(ipatch)'            )
+      end if
       if (associated(csite%fmean_can_prss        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_prss                                      &
@@ -25139,6 +25235,15 @@ module ed_state_vars
                            ,'Daily mean - Air density - CAS'                               &
                            ,'[      kg/m3]','(ipatch)'            )
       end if
+      if (associated(csite%dmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_can_dmol                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_CAN_DMOL_PA          :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Dry-air molar density - CAS'                     &
+                           ,'[     mol/m3]','(ipatch)'            )
+      end if
       if (associated(csite%dmean_can_prss        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_prss                                      &
@@ -25714,6 +25819,15 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air density - CAS'                             &
                            ,'[      kg/m3]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_can_dmol                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_CAN_DMOL_PA          :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Dry-air molar density - CAS'                   &
+                           ,'[     mol/m3]','(ipatch)'            )
       end if
       if (associated(csite%mmean_can_prss        )) then
          nvar = nvar+1
@@ -26682,6 +26796,15 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air density - CAS'                                &
                            ,'[      kg/m3]','(ndcycle,ipatch)'    )
+      end if
+      if (associated(csite%qmean_can_dmol        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_can_dmol                                      &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_CAN_DMOL_PA         :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Dry-air molar  density - CAS'                     &
+                           ,'[     mol/m3]','(ndcycle,ipatch)'    )
       end if
       if (associated(csite%qmean_can_prss        )) then
          nvar = nvar+1

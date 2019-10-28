@@ -563,13 +563,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
-                          rk4aux(ibuff)%wcapcan,                                           &
-                          rk4aux(ibuff)%hcapcan,                                           &
-                          rk4aux(ibuff)%ccapcan,                                           &
-                          rk4aux(ibuff)%wcapcani,                                          &
-                          rk4aux(ibuff)%hcapcani,                                          &
-                          rk4aux(ibuff)%ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
+                         ,rk4aux(ibuff)%wcapcan                                            &
+                         ,rk4aux(ibuff)%hcapcan                                            &
+                         ,rk4aux(ibuff)%ccapcan                                            &
+                         ,rk4aux(ibuff)%wcapcani                                           &
+                         ,rk4aux(ibuff)%hcapcani                                           &
+                         ,rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
          return
@@ -770,13 +770,14 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
-                          rk4aux(ibuff)%wcapcan,                                           &
-                          rk4aux(ibuff)%hcapcan,                                           &
-                          rk4aux(ibuff)%ccapcan,                                           &
-                          rk4aux(ibuff)%wcapcani,                                          &
-                          rk4aux(ibuff)%hcapcani,                                          &
-                          rk4aux(ibuff)%ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
+                         ,rk4aux(ibuff)%wcapcan                                            &
+                         ,rk4aux(ibuff)%hcapcan                                            &
+                         ,rk4aux(ibuff)%ccapcan                                            &
+                         ,rk4aux(ibuff)%wcapcani                                           &
+                         ,rk4aux(ibuff)%hcapcani                                           &
+                         ,rk4aux(ibuff)%ccapcani)
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Find the net ground conductance.  The net conductance is derived from the   !
@@ -939,14 +940,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
-                          rk4aux(ibuff)%wcapcan,                                           &
-                          rk4aux(ibuff)%hcapcan,                                           &
-                          rk4aux(ibuff)%ccapcan,                                           &
-                          rk4aux(ibuff)%wcapcani,                                          &
-                          rk4aux(ibuff)%hcapcani,                                          &
-                          rk4aux(ibuff)%ccapcani)
-
+         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
+                         ,rk4aux(ibuff)%wcapcan                                            &
+                         ,rk4aux(ibuff)%hcapcan                                            &
+                         ,rk4aux(ibuff)%ccapcan                                            &
+                         ,rk4aux(ibuff)%wcapcani                                           &
+                         ,rk4aux(ibuff)%hcapcani                                           &
+                         ,rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1565,13 +1565,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
-                          rk4aux(ibuff)%wcapcan,                                           &
-                          rk4aux(ibuff)%hcapcan,                                           &
-                          rk4aux(ibuff)%ccapcan,                                           &
-                          rk4aux(ibuff)%wcapcani,                                          &
-                          rk4aux(ibuff)%hcapcani,                                          &
-                          rk4aux(ibuff)%ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
+                         ,rk4aux(ibuff)%wcapcan                                            &
+                         ,rk4aux(ibuff)%hcapcan                                            &
+                         ,rk4aux(ibuff)%ccapcan                                            &
+                         ,rk4aux(ibuff)%wcapcani                                           &
+                         ,rk4aux(ibuff)%hcapcani                                           &
+                         ,rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
@@ -1711,7 +1711,7 @@ module canopy_struct_dynamics
       real(kind=8)                :: thetav_atm   ! Atmos. virtual pot. temp.     [      K]
       real(kind=8)                :: thetav_can   ! Canopy air virtual pot. temp. [      K]
       !----- External functions. ----------------------------------------------------------!
-      real(kind=8), external      :: cbrt8        ! Cubic root
+      real(kind=8), external      :: cbrt8        ! Cube root
       !------------------------------------------------------------------------------------!
 
 
@@ -2154,13 +2154,14 @@ module canopy_struct_dynamics
    ! (or the canopy depth) must be allowed to change over time, so work can be done by the !
    ! canopy or into the canopy.                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whccap8(can_rhos,can_depth,wcapcan,hcapcan,ccapcan                       &
+   subroutine can_whccap8(can_rhos,can_dmol,can_depth,wcapcan,hcapcan,ccapcan              &
                         ,wcapcani,hcapcani,ccapcani)
       use consts_coms, only : mmdry8  & ! intent(in)
                             , mmdryi8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: can_rhos  ! Canopy air density                 [  kg/m3]
+      real(kind=8), intent(in)  :: can_rhos  ! Canopy air mass density            [  kg/m3]
+      real(kind=8), intent(in)  :: can_dmol  ! Canopy dry-air molar density       [ mol/m3]
       real(kind=8), intent(in)  :: can_depth ! Depth of canopy air space          [      m]
       real(kind=8), intent(out) :: wcapcan   ! Water capacity - canopy air space  [  kg/m2]
       real(kind=8), intent(out) :: hcapcan   ! Enthalpy capacity - CAS            [  kg/m2]
@@ -2189,8 +2190,8 @@ module canopy_struct_dynamics
       !     The CO2 capacity must be in mol/m2 rather than kg/m2, since CO2 variable is in !
       ! umol/mol.                                                                          !
       !------------------------------------------------------------------------------------!
-      ccapcan  = mmdryi8 * wcapcan
-      ccapcani = mmdry8 * wcapcani
+      ccapcan  = can_dmol * can_depth
+      ccapcani = 1.d0 / ccapcan
       !------------------------------------------------------------------------------------!
 
       return

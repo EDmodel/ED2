@@ -125,6 +125,12 @@ module disturbance
       real                                          :: elim_lai
       real                                          :: new_nplant
       real                                          :: lfactor
+      real                                          :: cb_enthalpy_np
+      real                                          :: can_exner_np
+      real                                          :: cb_mass_np
+      real                                          :: cb_molar_np
+      real                                          :: cb_water_np
+      real                                          :: cb_co2_np
       logical                                       :: is_managed
       logical                                       :: is_oldgrowth
       logical                                       :: is_plantation
@@ -535,6 +541,12 @@ module disturbance
             new_lu_l3rd: do new_lu=1,n_dist_types
                !----- Retrieve the area gain for this new land use type. ------------------!
                act_area_gain(new_lu) = sum(act_area_loss(:,new_lu))
+               cb_enthalpy_np        = 0.0
+               can_exner_np          = 0.0
+               cb_mass_np            = 0.0
+               cb_molar_np           = 0.0
+               cb_water_np           = 0.0
+               cb_co2_np             = 0.0
                !---------------------------------------------------------------------------!
 
 
@@ -691,7 +703,10 @@ module disturbance
                            !     Size-and-age structure.                                   !
                            !---------------------------------------------------------------!
                            area_fac = act_area_loss(ipa,new_lu) / csite%area(onsp+new_lu)
-                           call increment_patch_vars(csite,onsp+new_lu,ipa,area_fac)
+                           call increment_patch_vars(csite,onsp+new_lu,ipa,area_fac        &
+                                                    ,cb_enthalpy_np,can_exner_np           &
+                                                    ,cb_mass_np,cb_molar_np,cb_water_np    &
+                                                    ,cb_co2_np)
                            call insert_survivors(csite,onsp+new_lu,ipa,new_lu,area_fac     &
                                                 ,mindbh_harvest)
                            call accum_dist_harv_litt(cpoly,isi,1,onsp+new_lu,ipa,new_lu    &
@@ -719,7 +734,10 @@ module disturbance
                               !     Cropland, pasture, or forest plantation.               !
                               !------------------------------------------------------------!
                               area_fac = act_area_loss(ipa,new_lu)/csite%area(npa)
-                              call increment_patch_vars(csite,npa,ipa,area_fac)
+                              call increment_patch_vars(csite,npa,ipa,area_fac             &
+                                                       ,cb_enthalpy_np,can_exner_np        &
+                                                       ,cb_mass_np,cb_molar_np,cb_water_np &
+                                                       ,cb_co2_np)
                               call insert_survivors(csite,npa,ipa,new_lu,area_fac          &
                                                    ,mindbh_harvest)
                               call accum_dist_harv_litt(cpoly,isi,1,npa,ipa,new_lu         &
@@ -770,7 +788,10 @@ module disturbance
                                  !     Accumulate survivors to the new patch.              !
                                  !---------------------------------------------------------!
                                  if (same_pft) then
-                                    call increment_patch_vars(csite,npa,ipa,area_fac)
+                                    call increment_patch_vars(csite,npa,ipa,area_fac       &
+                                                             ,cb_enthalpy_np,can_exner_np  &
+                                                             ,cb_mass_np,cb_molar_np       &
+                                                             ,cb_water_np,cb_co2_np)
                                     call insert_survivors(csite,npa,ipa,new_lu,area_fac    &
                                                          ,mindbh_harvest)
                                     call accum_dist_harv_litt(cpoly,isi,1,npa,ipa,new_lu   &
@@ -786,6 +807,16 @@ module disturbance
                      end if
                      !---------------------------------------------------------------------!
                   end do old_lu_l3rd
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !      Normalise canopy air properties.  This must be done after         !
+                  ! incrementing canopy air space variables.                               !
+                  !------------------------------------------------------------------------!
+                  call norm_canopy_air_props(csite,onsp+new_lu,cb_enthalpy_np,can_exner_np &
+                                            ,cb_mass_np,cb_molar_np,cb_water_np,cb_co2_np)
                   !------------------------------------------------------------------------!
 
 
@@ -1721,7 +1752,8 @@ module disturbance
    !     This subroutine will include the contribution of each contributing patch (cp) to  !
    ! the new, disturbed patch (np).                                                        !
    !---------------------------------------------------------------------------------------!
-   subroutine increment_patch_vars(csite,np, cp, area_fac)
+   subroutine increment_patch_vars(csite,np,cp,area_fac,cb_enthalpy,can_exner,cb_mass      &
+                                  ,cb_molar,cb_water,cb_co2)
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
       use ed_max_dims  , only : n_pft        ! ! intent(in)
@@ -1729,14 +1761,27 @@ module disturbance
       use ed_misc_coms , only : writing_long & ! intent(in)
                               , writing_eorq & ! intent(in)
                               , writing_dcyc ! ! intent(in)
+      use therm_lib    , only : tq2enthalpy  & ! function
+                              , press2exner  ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target      :: csite
-      integer       , intent(in)  :: np
-      integer       , intent(in)  :: cp
-      real          , intent(in)  :: area_fac
+      type(sitetype), target        :: csite
+      integer       , intent(in)    :: np
+      integer       , intent(in)    :: cp
+      real          , intent(in)    :: area_fac
+      real          , intent(inout) :: cb_enthalpy
+      real          , intent(inout) :: can_exner
+      real          , intent(inout) :: cb_mass
+      real          , intent(inout) :: cb_molar
+      real          , intent(inout) :: cb_water
+      real          , intent(inout) :: cb_co2
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: k
+      integer                       :: k
+      real                          :: can_enthalpy
+      real                          :: can_mass
+      real                          :: can_molar
+      real                          :: can_water
+      real                          :: can_co2
       !------------------------------------------------------------------------------------!
 
       csite%htry                       (np) = csite%htry                       (np)        &
@@ -1793,29 +1838,8 @@ module disturbance
       csite%sum_chd                    (np) = csite%sum_chd                    (np)        &
                                             + csite%sum_chd                    (cp)        &
                                             * area_fac
-      csite%can_theta                  (np) = csite%can_theta                  (np)        &
-                                            + csite%can_theta                  (cp)        &
-                                            * area_fac
-      csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
-                                            + csite%can_theiv                  (cp)        &
-                                            * area_fac
-      csite%can_temp                   (np) = csite%can_temp                   (np)        &
-                                            + csite%can_temp                   (cp)        &
-                                            * area_fac
       csite%can_temp_pv                (np) = csite%can_temp_pv                (np)        &
                                             + csite%can_temp_pv                (cp)        &
-                                            * area_fac
-      csite%can_vpdef                  (np) = csite%can_vpdef                  (np)        &
-                                            + csite%can_vpdef                  (cp)        &
-                                            * area_fac
-      csite%can_prss                   (np) = csite%can_prss                   (np)        &
-                                            + csite%can_prss                   (cp)        &
-                                            * area_fac
-      csite%can_shv                    (np) = csite%can_shv                    (np)        &
-                                            + csite%can_shv                    (cp)        &
-                                            * area_fac
-      csite%can_co2                    (np) = csite%can_co2                    (np)        &
-                                            + csite%can_co2                    (cp)        &
                                             * area_fac
       csite%can_depth                  (np) = csite%can_depth                  (np)        &
                                             + csite%can_depth                  (cp)        &
@@ -1944,6 +1968,120 @@ module disturbance
                                             * area_fac
       !------------------------------------------------------------------------------------!
 
+
+      !----- Update canopy air properties. ------------------------------------------------!
+      can_mass     = csite%can_rhos(cp) * csite%can_depth(cp)
+      can_molar    = csite%can_dmol(cp) * csite%can_depth(cp)
+      can_enthalpy = can_mass    * tq2enthalpy(csite%can_temp(cp),csite%can_shv(cp),.true.)
+      can_water    = can_mass    * csite%can_shv(cp)
+      can_co2      = can_molar   * csite%can_co2(cp)
+      cb_enthalpy  = cb_enthalpy + can_enthalpy                    * area_fac
+      can_exner    = can_exner   + press2exner(csite%can_prss(cp)) * area_fac
+      cb_mass      = cb_mass     + can_mass                        * area_fac
+      cb_molar     = cb_molar    + can_molar                       * area_fac
+      cb_water     = cb_water    + can_water                       * area_fac
+      cb_co2       = cb_co2      + can_co2                         * area_fac
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Update all budget variables. -------------------------------------------------!
+      csite%co2budget_gpp           (np) = csite%co2budget_gpp           (np)              &
+                                         + csite%co2budget_gpp           (cp)              &
+                                         * area_fac
+      csite%co2budget_rh            (np) = csite%co2budget_rh            (np)              &
+                                         + csite%co2budget_rh            (cp)              &
+                                         * area_fac
+      csite%co2budget_plresp        (np) = csite%co2budget_plresp        (np)              &
+                                         + csite%co2budget_plresp        (cp)              &
+                                         * area_fac
+      csite%co2budget_loss2atm      (np) = csite%co2budget_loss2atm      (np)              &
+                                         + csite%co2budget_loss2atm      (cp)              &
+                                         * area_fac
+      csite%co2budget_denseffect    (np) = csite%co2budget_denseffect    (np)              &
+                                         + csite%co2budget_denseffect    (cp)              &
+                                         * area_fac
+      csite%co2budget_zcaneffect    (np) = csite%co2budget_zcaneffect    (np)              &
+                                         + csite%co2budget_zcaneffect    (cp)              &
+                                         * area_fac
+      csite%co2budget_residual      (np) = csite%co2budget_residual      (np)              &
+                                         + csite%co2budget_residual      (cp)              &
+                                         * area_fac
+      csite%cbudget_loss2atm        (np) = csite%cbudget_loss2atm        (np)              &
+                                         + csite%cbudget_loss2atm        (cp)              &
+                                         * area_fac
+      csite%cbudget_denseffect      (np) = csite%cbudget_denseffect      (np)              &
+                                         + csite%cbudget_denseffect      (cp)              &
+                                         * area_fac
+      csite%cbudget_zcaneffect      (np) = csite%cbudget_zcaneffect      (np)              &
+                                         + csite%cbudget_zcaneffect      (cp)              &
+                                         * area_fac
+      csite%cbudget_seedrain        (np) = csite%cbudget_seedrain        (np)              &
+                                         + csite%cbudget_seedrain        (cp)              &
+                                         * area_fac
+      csite%cbudget_loss2yield      (np) = csite%cbudget_loss2yield      (np)              &
+                                         + csite%cbudget_loss2yield      (cp)              &
+                                         * area_fac
+      csite%cbudget_residual        (np) = csite%cbudget_residual        (np)              &
+                                         + csite%cbudget_residual        (cp)              &
+                                         * area_fac
+      csite%wbudget_precipgain      (np) = csite%wbudget_precipgain      (np)              &
+                                         + csite%wbudget_precipgain      (cp)              &
+                                         * area_fac
+      csite%wbudget_loss2atm        (np) = csite%wbudget_loss2atm        (np)              &
+                                         + csite%wbudget_loss2atm        (cp)              &
+                                         * area_fac
+      csite%wbudget_loss2runoff     (np) = csite%wbudget_loss2runoff     (np)              &
+                                         + csite%wbudget_loss2runoff     (cp)              &
+                                         * area_fac
+      csite%wbudget_loss2drainage   (np) = csite%wbudget_loss2drainage   (np)              &
+                                         + csite%wbudget_loss2drainage   (cp)              &
+                                         * area_fac
+      csite%wbudget_denseffect      (np) = csite%wbudget_denseffect      (np)              &
+                                         + csite%wbudget_denseffect      (cp)              &
+                                         * area_fac
+      csite%wbudget_wcapeffect      (np) = csite%wbudget_wcapeffect      (np)              &
+                                         + csite%wbudget_wcapeffect      (cp)              &
+                                         * area_fac
+      csite%wbudget_zcaneffect      (np) = csite%wbudget_zcaneffect      (np)              &
+                                         + csite%wbudget_zcaneffect      (cp)              &
+                                         * area_fac
+      csite%wbudget_residual        (np) = csite%wbudget_residual        (np)              &
+                                         + csite%wbudget_residual        (cp)              &
+                                         * area_fac
+      csite%ebudget_precipgain      (np) = csite%ebudget_precipgain      (np)              &
+                                         + csite%ebudget_precipgain      (cp)              &
+                                         * area_fac
+      csite%ebudget_netrad          (np) = csite%ebudget_netrad          (np)              &
+                                         + csite%ebudget_netrad          (cp)              &
+                                         * area_fac
+      csite%ebudget_loss2atm        (np) = csite%ebudget_loss2atm        (np)              &
+                                         + csite%ebudget_loss2atm        (cp)              &
+                                         * area_fac
+      csite%ebudget_loss2runoff     (np) = csite%ebudget_loss2runoff     (np)              &
+                                         + csite%ebudget_loss2runoff     (cp)              &
+                                         * area_fac
+      csite%ebudget_loss2drainage   (np) = csite%ebudget_loss2drainage   (np)              &
+                                         + csite%ebudget_loss2drainage   (cp)              &
+                                         * area_fac
+      csite%ebudget_denseffect      (np) = csite%ebudget_denseffect      (np)              &
+                                         + csite%ebudget_denseffect      (cp)              &
+                                         * area_fac
+      csite%ebudget_prsseffect      (np) = csite%ebudget_prsseffect      (np)              &
+                                         + csite%ebudget_prsseffect      (cp)              &
+                                         * area_fac
+      csite%ebudget_hcapeffect      (np) = csite%ebudget_hcapeffect      (np)              &
+                                         + csite%ebudget_hcapeffect      (cp)              &
+                                         * area_fac
+      csite%ebudget_wcapeffect      (np) = csite%ebudget_wcapeffect      (np)              &
+                                         + csite%ebudget_wcapeffect      (cp)              &
+                                         * area_fac
+      csite%ebudget_zcaneffect      (np) = csite%ebudget_zcaneffect      (np)              &
+                                         + csite%ebudget_zcaneffect      (cp)              &
+                                         * area_fac
+      csite%ebudget_residual        (np) = csite%ebudget_residual        (np)              &
+                                         + csite%ebudget_residual        (cp)              &
+                                         * area_fac
+      !------------------------------------------------------------------------------------!
 
 
       !----- Reproduction array. ----------------------------------------------------------!
@@ -2277,6 +2415,9 @@ module disturbance
          csite%dmean_can_rhos       (    np) = csite%dmean_can_rhos       (    np)         &
                                              + csite%dmean_can_rhos       (    cp)         &
                                              * area_fac
+         csite%dmean_can_dmol       (    np) = csite%dmean_can_dmol       (    np)         &
+                                             + csite%dmean_can_dmol       (    cp)         &
+                                             * area_fac
          csite%dmean_can_prss       (    np) = csite%dmean_can_prss       (    np)         &
                                              + csite%dmean_can_prss       (    cp)         &
                                              * area_fac
@@ -2544,6 +2685,9 @@ module disturbance
                                              * area_fac
          csite%mmean_can_rhos       (    np) = csite%mmean_can_rhos       (    np)         &
                                              + csite%mmean_can_rhos       (    cp)         &
+                                             * area_fac
+         csite%mmean_can_dmol       (    np) = csite%mmean_can_dmol       (    np)         &
+                                             + csite%mmean_can_dmol       (    cp)         &
                                              * area_fac
          csite%mmean_can_prss       (    np) = csite%mmean_can_prss       (    np)         &
                                              + csite%mmean_can_prss       (    cp)         &
@@ -2837,6 +2981,9 @@ module disturbance
          csite%qmean_can_rhos       (  :,np) = csite%qmean_can_rhos       (  :,np)         &
                                              + csite%qmean_can_rhos       (  :,cp)         &
                                              * area_fac
+         csite%qmean_can_dmol       (  :,np) = csite%qmean_can_dmol       (  :,np)         &
+                                             + csite%qmean_can_dmol       (  :,cp)         &
+                                             * area_fac
          csite%qmean_can_prss       (  :,np) = csite%qmean_can_prss       (  :,np)         &
                                              + csite%qmean_can_prss       (  :,cp)         &
                                              * area_fac
@@ -3051,6 +3198,78 @@ module disturbance
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine mormalises the canopy air properties integrated across patches.   !
+   !---------------------------------------------------------------------------------------!
+   subroutine norm_canopy_air_props(csite,ipa,cb_enthalpy,can_exner,cb_mass,cb_molar       &
+                                   ,cb_water,cb_co2)
+      use ed_state_vars, only : sitetype                 & ! structure
+                              , patchtype                ! ! structure
+      use therm_lib    , only : exner2press              & ! function
+                              , hq2temp                  & ! function
+                              , extemp2theta             & ! function
+                              , thetaeiv                 & ! function
+                              , vpdefil                  & ! function
+                              , idealdenssh              & ! function
+                              , idealdmolsh              ! ! function
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype) , target     :: csite
+      integer        , intent(in) :: ipa
+      real           , intent(in) :: cb_enthalpy
+      real           , intent(in) :: can_exner
+      real           , intent(in) :: cb_mass
+      real           , intent(in) :: cb_molar
+      real           , intent(in) :: cb_water
+      real           , intent(in) :: cb_co2
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype), pointer    :: cpatch
+      real                        :: can_enthalpy
+      real                        :: can_rvap
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Alias. -----------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Find air density and the specific properties. -------------------------------!
+      can_enthalpy         = cb_enthalpy / cb_mass
+      csite%can_shv  (ipa) = cb_water    / cb_mass
+      csite%can_co2  (ipa) = cb_co2      / cb_molar
+      !------ Water mixing ratio (used by can_theiv). -------------------------------------!
+      can_rvap             = csite%can_shv(ipa) / (1.0 - csite%can_shv(ipa))
+      csite%can_prss (ipa) = exner2press(can_exner)
+      csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)           &
+                                        ,csite%can_shv (ipa),csite%can_shv (ipa) )
+      csite%can_dmol (ipa) = idealdmolsh(csite%can_prss(ipa),csite%can_temp(ipa)           &
+                                        ,csite%can_shv (ipa))
+      !------ Find temperature from enthalpy, then find potential temperature. ------------!
+      csite%can_temp (ipa) = hq2temp(can_enthalpy,csite%can_shv(ipa),.true.)
+      csite%can_theta(ipa) = extemp2theta(can_exner,csite%can_temp(ipa))
+      csite%can_theiv(ipa) = thetaeiv( csite%can_theta(ipa), csite%can_prss (ipa)          &
+                                     , csite%can_temp (ipa), can_rvap                      &
+                                     , can_rvap                                   )
+      !------ Update vapour pressure deficit. ---------------------------------------------!
+      csite%can_vpdef(ipa) = vpdefil( csite%can_prss(ipa), csite%can_temp(ipa)             &
+                                    , csite%can_shv (ipa), .true.              )
+      !------------------------------------------------------------------------------------!
+
+
+
+      return
+   end subroutine norm_canopy_air_props
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -3066,23 +3285,23 @@ module disturbance
       use pft_coms            , only : negligible_nplant             ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype)                  , target      :: csite
-      integer                         , intent(in)  :: new_lu
-      integer                         , intent(in)  :: np
-      integer                         , intent(in)  :: cp
-      real          , dimension(n_pft), intent(in)  :: mindbh_harvest
-      real                            , intent(in)  :: area_fac
+      type(sitetype)                  , target        :: csite
+      integer                         , intent(in)    :: new_lu
+      integer                         , intent(in)    :: np
+      integer                         , intent(in)    :: cp
+      real          , dimension(n_pft), intent(in)    :: mindbh_harvest
+      real                            , intent(in)    :: area_fac
       !----- Local variables. -------------------------------------------------------------!
-      type(patchtype)                 , pointer     :: cpatch
-      type(patchtype)                 , pointer     :: npatch
-      type(patchtype)                 , pointer     :: tpatch
-      logical        , dimension(:)   , allocatable :: mask
-      real           , dimension(:)   , allocatable :: survival_fac
-      integer                                       :: ipft
-      integer                                       :: ico
-      integer                                       :: nco
-      integer                                       :: addco
-      real                                          :: n_survivors
+      type(patchtype)                 , pointer       :: cpatch
+      type(patchtype)                 , pointer       :: npatch
+      type(patchtype)                 , pointer       :: tpatch
+      logical        , dimension(:)   , allocatable   :: mask
+      real           , dimension(:)   , allocatable   :: survival_fac
+      integer                                         :: ipft
+      integer                                         :: ico
+      integer                                         :: nco
+      integer                                         :: addco
+      real                                            :: n_survivors
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -3694,7 +3913,7 @@ module disturbance
 
 
       !----- Initialise other cohort-level variables. -------------------------------------!
-      call init_ed_cohort_vars(cpatch, nc, lsl)
+      call init_ed_cohort_vars(cpatch, nc, lsl,mzg,ntext_soil)
       !------------------------------------------------------------------------------------!
 
 
@@ -3937,7 +4156,7 @@ module disturbance
                         ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                     &
                         ,cpatch%wood_water_im2(ico))
             call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap           &
-                                       ,old_leaf_water_im2,old_wood_water_im2)
+                                       ,old_leaf_water_im2,old_wood_water_im2,.true.)
             !----- Update the stability status. -------------------------------------------!
             call is_resolvable(csite,np,ico)
             !------------------------------------------------------------------------------!

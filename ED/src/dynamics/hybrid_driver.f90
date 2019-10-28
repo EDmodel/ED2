@@ -36,10 +36,10 @@ module hybrid_driver
      use rk4_integ_utils       , only : copy_met_2_rk4site         & ! subroutine
                                       , rk4_sanity_check           ! ! subroutine
      use rk4_misc              , only : copy_patch_init            & ! subroutine
-                                      , copy_patch_init_carbon     & ! subroutine
                                       , sanity_check_veg_energy    ! ! subroutine
      use plant_hydro           , only : plant_hydro_driver         ! ! subroutine
      use rk4_copy_patch        , only : copy_rk4_patch             ! ! subroutine
+     use therm_lib             , only : tq2enthalpy                ! ! function
 
      !$  use omp_lib
 
@@ -68,8 +68,15 @@ module hybrid_driver
      real                                   :: ecurr_loss2drainage
      real                                   :: wcurr_loss2runoff
      real                                   :: ecurr_loss2runoff
-     real                                   :: old_can_rhos
      real                                   :: old_can_prss
+     real                                   :: old_can_enthalpy
+     real                                   :: old_can_temp
+     real                                   :: old_can_shv
+     real                                   :: old_can_co2
+     real                                   :: old_can_rhos
+     real                                   :: old_can_dmol
+     real                                   :: mid_can_rhos
+     real                                   :: mid_can_dmol
      real                                   :: wtime0
      real(kind=8)                           :: hbeg
      integer                                :: ibuff
@@ -123,12 +130,14 @@ module hybrid_driver
            !        of threads is less than the number of patches.                        !
            !------------------------------------------------------------------------------!
            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(          &
-           !$OMP ita,ipa,initp,ytemp,dinitp,yprev,hbeg,nsteps, &
-           !$OMP patch_vels,old_can_rhos,old_can_prss,         &
-           !$OMP wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm,   &
-           !$OMP co2curr_loss2atm,wcurr_loss2drainage,         &
-           !$OMP ecurr_loss2drainage,wcurr_loss2runoff,        &
-           !$OMP ecurr_loss2runoff)
+           !$OMP  ita,ipa,initp,ytemp,dinitp,yprev,hbeg,nsteps &
+           !$OMP ,patch_vels,old_can_prss,old_can_enthalpy     &
+           !$OMP ,old_can_temp,old_can_shv,old_can_co2         &
+           !$OMP ,old_can_rhos,old_can_dmol,mid_can_rhos       &
+           !$OMP ,mid_can_dmol,wcurr_loss2atm,ecurr_netrad     &
+           !$OMP ,ecurr_loss2atm,co2curr_loss2atm              &
+           !$OMP ,wcurr_loss2drainage,ecurr_loss2drainage      &
+           !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff)
            threadloop: do ibuff=1,nthreads
               initp => integration_buff(ibuff)%initp
               ytemp => integration_buff(ibuff)%ytemp
@@ -175,8 +184,14 @@ module hybrid_driver
 
 
                  !----- Save the previous thermodynamic state. ---------------------!
+                 old_can_prss     = csite%can_prss(ipa)
+                 old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa)                 &
+                                               ,csite%can_shv (ipa),.true.)
+                 old_can_temp     = csite%can_temp(ipa)
+                 old_can_shv      = csite%can_shv (ipa)
+                 old_can_co2      = csite%can_co2 (ipa)
                  old_can_rhos     = csite%can_rhos(ipa)
-                 old_can_prss     = csite%can_prss (ipa)
+                 old_can_dmol     = csite%can_dmol(ipa)
                  !------------------------------------------------------------------!
 
 
@@ -219,14 +234,9 @@ module hybrid_driver
 
                  !------------------------------------------------------------------!
                  !     Set up the integration patch.                                !
-                 !                                                                  !
-                 ! MLO: The separation between init and init_carbon may have become !
-                 !      obsolete.  I am going to keep them separated in case I find !
-                 !      out why copy_patch_init should be placed before photo-      !
-                 !      synthesis, but I do not see any good reason now.            !
                  !------------------------------------------------------------------!
-                 call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
-                 call copy_patch_init_carbon(csite,ipa,initp)
+                 call copy_patch_init(csite,ipa,ibuff,initp,patch_vels,mid_can_rhos &
+                                     ,mid_can_dmol)
                  !------------------------------------------------------------------!
 
                  !------------------------------------------------------------------!
@@ -274,16 +284,17 @@ module hybrid_driver
                   initp%upwp = initp%can_rhos * initp%upwp * dtrk4i
                   initp%tpwp = initp%can_rhos * initp%tpwp * dtrk4i
                   initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
-                  initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
+                  initp%cpwp = initp%can_dmol * initp%cpwp * dtrk4i
                   initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
 
                   !--------------------------------------------------------------------------!
                   ! Move the state variables from the integrated patch to the model patch.   !
                   !--------------------------------------------------------------------------!
-                  call initp2modelp(tend-tbeg,initp,csite,ipa,cpoly%nighttime(isi)           &
-                                   ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm               &
-                                   ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
-                                   ,wcurr_loss2runoff,ecurr_loss2runoff)
+                  call initp2modelp(tend-tbeg,initp,csite,ipa,cpoly%nighttime(isi)   &
+                                   ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm       &
+                                   ,co2curr_loss2atm,wcurr_loss2drainage             &
+                                   ,ecurr_loss2drainage,wcurr_loss2runoff            &
+                                   ,ecurr_loss2runoff)
 
 
                   !----- Add the number of steps into the step counter. -------------!
@@ -296,6 +307,7 @@ module hybrid_driver
                   if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
                      cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
                   end if
+                 !------------------------------------------------------------------!
 
 
 
@@ -312,11 +324,13 @@ module hybrid_driver
                   !     Compute the residuals.                                       !
                   !------------------------------------------------------------------!
 
-                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa       &
-                       ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                 &
-                       ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
-                       ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
-                       ,cgrid%cbudget_nep(ipy),old_can_rhos,old_can_prss)
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa  &
+                       ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                   &
+                       ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
+                       ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)          &
+                       ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy         &
+                       ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos            &
+                       ,old_can_dmol,mid_can_rhos,mid_can_dmol)
                end do taskloop
                !---------------------------------------------------------------------------!
             end do threadloop

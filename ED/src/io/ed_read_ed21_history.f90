@@ -923,7 +923,8 @@ subroutine read_ed21_history_file
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
                            !----- Initialise the other cohort level variables. ------------!
-                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi),nzg          &
+                                                   ,cpoly%ntext_soil(:,isi))
                         end do cohortloop
                         !------------------------------------------------------------------!
                      end if
@@ -2290,7 +2291,8 @@ subroutine read_ed21_history_unstruct
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
                            !----- Initialise the other cohort level variables. ------------!
-                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi),nzg          &
+                                                   ,cpoly%ntext_soil(:,isi))
                         end do cohortloop
                         !------------------------------------------------------------------!
                      end if
@@ -3635,7 +3637,8 @@ subroutine read_ed21_polyclone
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
                            !----- Initialise the other cohort level variables. ------------!
-                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi),nzg          &
+                                                   ,cpoly%ntext_soil(:,isi))
                         end do cohortloop
                         !------------------------------------------------------------------!
                      end if

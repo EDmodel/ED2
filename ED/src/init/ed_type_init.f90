@@ -17,7 +17,7 @@ module ed_type_init
    ! There will be a few variables that must be initialised with a value other than zero,  !
    ! in which case there will be a note explaining the reason.                             !
    !---------------------------------------------------------------------------------------!
-   subroutine init_ed_cohort_vars(cpatch,ico, lsl)
+   subroutine init_ed_cohort_vars(cpatch,ico, lsl,mzg,ntext_soil)
       use ed_state_vars  , only : patchtype          ! ! structure
       use allometry      , only : size2krdepth       ! ! function
       use pft_coms       , only : phenology          & ! intent(in)
@@ -40,20 +40,27 @@ module ed_type_init
                                 , mmdry              & ! intent(in)
                                 , cpdry              ! ! intent(in)
       use plant_hydro    , only : psi2rwc            & ! subroutine
+                                , rwc2psi            & ! subroutine
                                 , rwc2tw             & ! subroutine
                                 , twi2twe            ! ! subroutine
       use physiology_coms, only : plant_hydro_scheme & ! intent(in)
                                 , gbh_2_gbw          ! ! intent(in)
+      use soil_coms      , only : soil               ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target     :: cpatch  ! Current patch
-      integer        , intent(in) :: ico     ! Index of the current cohort
-      integer        , intent(in) :: lsl     ! Lowest soil level layer
+      type(patchtype)       , target     :: cpatch     ! Current patch
+      integer               , intent(in) :: ico        ! Index of the current cohort
+      integer               , intent(in) :: lsl        ! Lowest soil level layer
+      integer               , intent(in) :: mzg        ! Number of soil layers
+      integer,dimension(mzg), intent(in) :: ntext_soil ! Soil texture profile
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: ipft    ! PFT index
+      integer                            :: ipft       ! PFT index
+      integer                            :: k          ! Soil index
+      integer                            :: ntext      ! Soil texture
+      integer                            :: kroot      ! Index for rooting depth
+      real(kind=4)                       :: slpotfc    ! Matric potential of field cap.
       !----- External function. -----------------------------------------------------------!
-      real(kind=4)    , external  :: sngloff ! Safe double -> single precision
-      !----- Local constants. -------------------------------------------------------------!
+      real(kind=4)           , external  :: sngloff ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
 
 
@@ -111,47 +118,6 @@ module ed_type_init
 
 
       !------------------------------------------------------------------------------------!
-      !     Start variables related with plant hydraulics                                  !
-      !------------------------------------------------------------------------------------!
-      select case (plant_hydro_scheme)
-      case (0)
-         !----- Set psi to 0. -------------------------------------------------------------!
-         cpatch%leaf_psi      (  ico) = 0.
-         cpatch%wood_psi      (  ico) = 0.
-         !---------------------------------------------------------------------------------!
-      case default
-         !---------------------------------------------------------------------------------!
-         !     Start the water potential with ~-0.1MPa, assuming the plant is under well-  !
-         ! -watered conditions.                                                            !
-         !---------------------------------------------------------------------------------!
-         cpatch%leaf_psi      (  ico) = -10. - cpatch%hite(ico) ! in m
-         cpatch%wood_psi      (  ico) = -10. ! in m
-         !---------------------------------------------------------------------------------!
-      end select
-
-      !----- Convert water potential to relative water content. ---------------------------!
-      call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)               &
-                  ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
-      !----- Convert relative water content to total water content. -----------------------!
-      call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                                &
-                 ,cpatch%bleaf(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)            &
-                 ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)  &
-                 ,cpatch%pft(ico),cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
-      !----- Convert total water content (kgW/plant) to extensive (kgW/m2). ---------------!
-      call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)                   &
-                  ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico),cpatch%wood_water_im2(ico))
-      !----- Initialise the fluxes with 0. ------------------------------------------------!
-      cpatch%wflux_gw          (  ico) = 0.
-      cpatch%wflux_wl          (  ico) = 0.
-      cpatch%wflux_gw_layer    (:,ico) = 0.
-      cpatch%high_leaf_psi_days  (ico) = 0
-      cpatch%low_leaf_psi_days   (ico) = 0
-      cpatch%last_gV             (ico) = 0.
-      cpatch%last_gJ             (ico) = 0.
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
       !     Start the fraction of open stomata with 1., since this is the most likely      !
       ! value at night time.  FS_open is initialised with 0., though.                      !
       !------------------------------------------------------------------------------------!
@@ -174,6 +140,64 @@ module ed_type_init
       !      The root depth should be the actual level for the roots.                      !
       !------------------------------------------------------------------------------------!
       cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
+      kroot               = cpatch%krdepth(ico)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Start variables related with plant hydraulics.                                 !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+         !----- Set water content to saturated conditions. --------------------------------!
+         cpatch%leaf_rwc(ico) = 1.0
+         cpatch%wood_rwc(ico) = 1.0
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Convert water potential to relative water content. ------------------------!
+         call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)            &
+                     ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !     Start the water potential with the equivalent to field capacity (well-      !
+         ! watered conditions).                                                            !
+         !---------------------------------------------------------------------------------!
+         cpatch%leaf_psi(ico) = huge(1.0)
+         cpatch%wood_psi(ico) = huge(1.0)
+         do k=kroot,mzg
+            ntext                = ntext_soil(k)
+            slpotfc              = soil(ntext)%slpotfc
+            cpatch%wood_psi(ico) = min(cpatch%wood_psi(ico),soil(ntext)%slpotfc)
+         end do
+         cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%hite(ico) ! in m
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Convert water potential to relative water content. ------------------------!
+         call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)            &
+                     ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+      !----- Convert relative water content to total water content. -----------------------!
+      call rwc2tw(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico)                                &
+                 ,cpatch%bleaf(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)            &
+                 ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)  &
+                 ,cpatch%pft(ico),cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico))
+      !----- Convert total water content (kgW/plant) to extensive (kgW/m2). ---------------!
+      call twi2twe(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)                   &
+                  ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico),cpatch%wood_water_im2(ico))
+      !----- Initialise the fluxes with 0. ------------------------------------------------!
+      cpatch%wflux_gw          (  ico) = 0.
+      cpatch%wflux_wl          (  ico) = 0.
+      cpatch%wflux_gw_layer    (:,ico) = 0.
+      cpatch%high_leaf_psi_days  (ico) = 0
+      cpatch%low_leaf_psi_days   (ico) = 0
+      cpatch%last_gV             (ico) = 0.
+      cpatch%last_gJ             (ico) = 0.
       !------------------------------------------------------------------------------------!
 
 
@@ -981,6 +1005,7 @@ module ed_type_init
       csite%can_shv                         (ipaa:ipaz) = 0.0
       csite%can_co2                         (ipaa:ipaz) = 0.0
       csite%can_rhos                        (ipaa:ipaz) = 0.0
+      csite%can_dmol                        (ipaa:ipaz) = 0.0
       csite%can_prss                        (ipaa:ipaz) = 0.0
       csite%can_theta                       (ipaa:ipaz) = 0.0
       csite%can_depth                       (ipaa:ipaz) = 0.0
@@ -1022,6 +1047,7 @@ module ed_type_init
       csite%fmean_can_shv                   (ipaa:ipaz) = 0.0
       csite%fmean_can_co2                   (ipaa:ipaz) = 0.0
       csite%fmean_can_rhos                  (ipaa:ipaz) = 0.0
+      csite%fmean_can_dmol                  (ipaa:ipaz) = 0.0
       csite%fmean_can_prss                  (ipaa:ipaz) = 0.0
       csite%fmean_gnd_temp                  (ipaa:ipaz) = 0.0
       csite%fmean_gnd_shv                   (ipaa:ipaz) = 0.0
@@ -1103,6 +1129,7 @@ module ed_type_init
          csite%dmean_can_shv                (ipaa:ipaz) = 0.0
          csite%dmean_can_co2                (ipaa:ipaz) = 0.0
          csite%dmean_can_rhos               (ipaa:ipaz) = 0.0
+         csite%dmean_can_dmol               (ipaa:ipaz) = 0.0
          csite%dmean_can_prss               (ipaa:ipaz) = 0.0
          csite%dmean_gnd_temp               (ipaa:ipaz) = 0.0
          csite%dmean_gnd_shv                (ipaa:ipaz) = 0.0
@@ -1178,6 +1205,7 @@ module ed_type_init
          csite%mmean_can_shv                (ipaa:ipaz) = 0.0
          csite%mmean_can_co2                (ipaa:ipaz) = 0.0
          csite%mmean_can_rhos               (ipaa:ipaz) = 0.0
+         csite%mmean_can_dmol               (ipaa:ipaz) = 0.0
          csite%mmean_can_prss               (ipaa:ipaz) = 0.0
          csite%mmean_gnd_temp               (ipaa:ipaz) = 0.0
          csite%mmean_gnd_shv                (ipaa:ipaz) = 0.0
@@ -1296,6 +1324,7 @@ module ed_type_init
          csite%qmean_can_shv              (:,ipaa:ipaz) = 0.0
          csite%qmean_can_co2              (:,ipaa:ipaz) = 0.0
          csite%qmean_can_rhos             (:,ipaa:ipaz) = 0.0
+         csite%qmean_can_dmol             (:,ipaa:ipaz) = 0.0
          csite%qmean_can_prss             (:,ipaa:ipaz) = 0.0
          csite%qmean_gnd_temp             (:,ipaa:ipaz) = 0.0
          csite%qmean_gnd_shv              (:,ipaa:ipaz) = 0.0
@@ -1868,6 +1897,7 @@ module ed_type_init
          cgrid%fmean_can_shv              (ipy) = 0.0
          cgrid%fmean_can_co2              (ipy) = 0.0
          cgrid%fmean_can_rhos             (ipy) = 0.0
+         cgrid%fmean_can_dmol             (ipy) = 0.0
          cgrid%fmean_can_prss             (ipy) = 0.0
          cgrid%fmean_gnd_temp             (ipy) = 0.0
          cgrid%fmean_gnd_shv              (ipy) = 0.0
@@ -2039,6 +2069,7 @@ module ed_type_init
             cgrid%dmean_can_shv              (ipy) = 0.0
             cgrid%dmean_can_co2              (ipy) = 0.0
             cgrid%dmean_can_rhos             (ipy) = 0.0
+            cgrid%dmean_can_dmol             (ipy) = 0.0
             cgrid%dmean_can_prss             (ipy) = 0.0
             cgrid%dmean_gnd_temp             (ipy) = 0.0
             cgrid%dmean_gnd_shv              (ipy) = 0.0
@@ -2194,6 +2225,7 @@ module ed_type_init
             cgrid%mmean_can_shv              (ipy) = 0.0
             cgrid%mmean_can_co2              (ipy) = 0.0
             cgrid%mmean_can_rhos             (ipy) = 0.0
+            cgrid%mmean_can_dmol             (ipy) = 0.0
             cgrid%mmean_can_prss             (ipy) = 0.0
             cgrid%mmean_gnd_temp             (ipy) = 0.0
             cgrid%mmean_gnd_shv              (ipy) = 0.0
@@ -2430,6 +2462,7 @@ module ed_type_init
             cgrid%qmean_can_shv            (:,ipy) = 0.0
             cgrid%qmean_can_co2            (:,ipy) = 0.0
             cgrid%qmean_can_rhos           (:,ipy) = 0.0
+            cgrid%qmean_can_dmol           (:,ipy) = 0.0
             cgrid%qmean_can_prss           (:,ipy) = 0.0
             cgrid%qmean_gnd_temp           (:,ipy) = 0.0
             cgrid%qmean_gnd_shv            (:,ipy) = 0.0

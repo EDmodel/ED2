@@ -46,6 +46,7 @@ subroutine ed_init_atm()
    use therm_lib             , only : thetaeiv                     & ! function
                                     , vpdefil                      & ! function
                                     , idealdenssh                  & ! function
+                                    , idealdmolsh                  & ! function
                                     , qslif                        & ! function
                                     , reducedpress                 & ! function
                                     , press2exner                  & ! function
@@ -173,6 +174,8 @@ subroutine ed_init_atm()
                csite%can_vpdef(ipa) = vpdefil (csite%can_prss(ipa),csite%can_temp(ipa)     &
                                               ,csite%can_shv (ipa),.true.)
                csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa)                      &
+                                                 ,csite%can_temp(ipa),csite%can_shv(ipa))
+               csite%can_dmol (ipa) = idealdmolsh(csite%can_prss(ipa)                      &
                                                  ,csite%can_temp(ipa),csite%can_shv(ipa))
 
                !----- Initialise the ground radiation parameters. -------------------------!

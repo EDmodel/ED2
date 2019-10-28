@@ -449,7 +449,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                              ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                &
                              ,cpatch%wood_water_im2(ico))
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap     &
-                                            ,old_leaf_water_im2,old_wood_water_im2)
+                                            ,old_leaf_water_im2,old_wood_water_im2         &
+                                            ,.true.)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
                  call is_resolvable(csite,ipa,ico)

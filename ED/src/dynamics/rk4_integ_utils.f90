@@ -114,6 +114,8 @@ module rk4_integ_utils
 
             ksn = integration_buff(ibuff)%y%nlev_sfcwater
 
+
+
             !------------------------------------------------------------------------------!
             !   Make temporary surface liquid water disappear.  This will not happen       !
             ! immediately, but liquid water will decay with the time scale defined by      !
@@ -345,9 +347,9 @@ module rk4_integ_utils
       integer                         :: k      ! Counter
       !------------------------------------------------------------------------------------!
 
-      rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
-      rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
-      rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
+      rkp%can_enthalpy  = rkp%can_enthalpy + fac * inc%can_enthalpy
+      rkp%can_shv       = rkp%can_shv      + fac * inc%can_shv
+      rkp%can_co2       = rkp%can_co2      + fac * inc%can_co2
 
       do k=rk4site%lsl,nzg
          rkp%soil_water(k)       = rkp%soil_water(k)  + fac * inc%soil_water(k)
@@ -1058,17 +1060,9 @@ module rk4_integ_utils
 
       err    = abs(yerr%can_shv/yscal%can_shv)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(2,1) = integ_err(2,1) + 1_8 
+      if(record_err .and. err > rk4eps) integ_err(3,1) = integ_err(3,1) + 1_8 
 
       err    = abs(yerr%can_co2/yscal%can_co2)
-      errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(6,1) = integ_err(6,1) + 1_8 
-
-      !------------------------------------------------------------------------------------!
-      !      Pressure is only a semi-prognostic variable, which means that we don't really !
-      ! have a good error estimate, but we try to get a sense of the error.                !
-      !------------------------------------------------------------------------------------!
-      err    = abs(yerr%can_prss/yscal%can_prss)
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(5,1) = integ_err(5,1) + 1_8 
       !------------------------------------------------------------------------------------!
@@ -1098,11 +1092,11 @@ module rk4_integ_utils
          end do
          if(cpatch%ncohorts > 0 .and. record_err) then
             if (errh2oMAX  > rk4eps) then
-               integ_err( 7,1) = integ_err( 7,1) + 1_8
+               integ_err( 6,1) = integ_err( 6,1) + 1_8
                integ_err( 9,1) = integ_err( 9,1) + 1_8
             end if
             if (erreneMAX  > rk4eps) then
-               integ_err( 8,1) = integ_err( 8,1) + 1_8
+               integ_err( 7,1) = integ_err( 7,1) + 1_8
                integ_err(10,1) = integ_err(10,1) + 1_8
             end if
          end if
@@ -1123,8 +1117,8 @@ module rk4_integ_utils
             end if
          end do
          if (cpatch%ncohorts > 0 .and. record_err .and. errh2oMAX  > rk4eps) then
+            integ_err( 8,1) = integ_err( 8,1) + 1_8
             integ_err(11,1) = integ_err(11,1) + 1_8
-            integ_err(12,1) = integ_err(12,1) + 1_8
          end if
          !---------------------------------------------------------------------------------!
 
@@ -1146,8 +1140,8 @@ module rk4_integ_utils
             end if
          end do
          if(cpatch%ncohorts > 0 .and. record_err) then
-            if (errh2oMAX  > rk4eps) integ_err(7,1) = integ_err(7,1) + 1_8
-            if (erreneMAX  > rk4eps) integ_err(8,1) = integ_err(8,1) + 1_8
+            if (errh2oMAX  > rk4eps) integ_err(6,1) = integ_err(6,1) + 1_8
+            if (erreneMAX  > rk4eps) integ_err(7,1) = integ_err(7,1) + 1_8
          end if
          !----- Wood. ---------------------------------------------------------------------!
          errh2oMAX  = 0.d0
@@ -1182,7 +1176,7 @@ module rk4_integ_utils
             end if
          end do
          if(cpatch%ncohorts > 0 .and. record_err) then
-            if (errh2oMAX  > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
+            if (errh2oMAX  > rk4eps) integ_err(8,1) = integ_err(8,1) + 1_8
          end if
          ! wood
          errh2oMAX  = 0.d0
@@ -1194,7 +1188,7 @@ module rk4_integ_utils
             end if
          end do
          if(cpatch%ncohorts > 0 .and. record_err) then
-            if (errh2oMAX  > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
+            if (errh2oMAX  > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
          end if
          !---------------------------------------------------------------------------------!
 
@@ -1207,11 +1201,11 @@ module rk4_integ_utils
       !------------------------------------------------------------------------------------!
       err    = abs(yerr%virtual_energy/yscal%virtual_energy)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
 
       err    = abs(yerr%virtual_water/yscal%virtual_water)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8      
+      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8      
       !------------------------------------------------------------------------------------!
 
 
@@ -1224,39 +1218,39 @@ module rk4_integ_utils
       if (checkbudget) then
          err    = abs(yerr%co2budget_storage/yscal%co2budget_storage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
 
          err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
          err    = abs(yerr%ebudget_netrad/yscal%ebudget_netrad)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
 
          err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
 
          err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
 
          err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(19,1) = integ_err(19,1) + 1_8
 
          err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(21,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(20,1) = integ_err(20,1) + 1_8
 
          err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(22,1) = integ_err(22,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(21,1) = integ_err(21,1) + 1_8
 
          err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
          errmax = max(errmax,err)
-         if(record_err .and. err > rk4eps) integ_err(23,1) = integ_err(23,1) + 1_8
+         if(record_err .and. err > rk4eps) integ_err(22,1) = integ_err(22,1) + 1_8
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1747,15 +1741,16 @@ module rk4_integ_utils
       !------------------------------------------------------------------------------------!
       if (print_thbnd) then
          open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
-         write(unit=39,fmt='(16(a,1x))')  '        YEAR','       MONTH','         DAY'  &
-                                         ,'        HOUR','        MINU','        SECO'  &
-                                         ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'  &
-                                         ,'     MAX_SHV','   MIN_THETA','   MAX_THETA'  &
-                                         ,'    MIN_PRSS','    MAX_PRSS','MIN_ENTHALPY'  &
-                                         ,'MAX_ENTHALPY'
+         write(unit=39,fmt='(18(a,1x))')  '        YEAR','       MONTH','         DAY'     &
+                                         ,'        HOUR','        MINU','        SECO'     &
+                                         ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'     &
+                                         ,'     MAX_SHV','     MIN_CO2','     MAX_CO2'     &
+                                         ,'   MIN_THETA','   MAX_THETA','    MIN_PRSS'     &
+                                         ,'    MAX_PRSS','MIN_ENTHALPY','MAX_ENTHALPY'
          close(unit=39,status='keep')
       end if
       !------------------------------------------------------------------------------------!
+
 
 
 
@@ -2323,12 +2318,12 @@ module rk4_integ_utils
       real(kind=8)                     :: rk4max_wood_water_im2
       integer                          :: ipa
       integer                          :: ico
+      logical                          :: cflag6
       logical                          :: cflag7
       logical                          :: cflag8
       logical                          :: cflag9
       logical                          :: cflag10
       logical                          :: cflag11
-      logical                          :: cflag12
       !------------------------------------------------------------------------------------!
 
 
@@ -2338,7 +2333,7 @@ module rk4_integ_utils
 
 
       !------------------------------------------------------------------------------------!
-      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !   Check whether the canopy air specific enthalpy is off.                           !
       !------------------------------------------------------------------------------------!
       if (y%can_enthalpy > rk4aux(ibuff)%rk4max_can_enthalpy   .or.                        &
           y%can_enthalpy < rk4aux(ibuff)%rk4min_can_enthalpy        ) then
@@ -2346,7 +2341,7 @@ module rk4_integ_utils
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air enthalpy is off-track...'
+            write(unit=*,fmt='(a)')           ' + CAS specific enthalpy is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
@@ -2354,6 +2349,7 @@ module rk4_integ_utils
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DMOL:          ',y%can_dmol
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
@@ -2379,7 +2375,7 @@ module rk4_integ_utils
          if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air pot. temp. is off-track...'
+            write(unit=*,fmt='(a)')           ' + CAS potential temp. is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
@@ -2387,6 +2383,7 @@ module rk4_integ_utils
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DMOL:          ',y%can_dmol
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
@@ -2406,12 +2403,12 @@ module rk4_integ_utils
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if ( y%can_shv > rk4max_can_shv .or. y%can_shv < rk4min_can_shv  ) then
+      if ( y%can_shv > rk4max_can_shv  .or. y%can_shv < rk4min_can_shv ) then
          reject_step = .true.
          if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air sp. humidity is off-track...'
+            write(unit=*,fmt='(a)')           ' + CAS specific humidity is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
@@ -2419,6 +2416,7 @@ module rk4_integ_utils
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DMOL:          ',y%can_dmol
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
@@ -2436,14 +2434,14 @@ module rk4_integ_utils
 
 
       !------------------------------------------------------------------------------------!
-      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !   Check whether the canopy air temperature is off.                                 !
       !------------------------------------------------------------------------------------!
       if (y%can_temp > rk4max_can_temp .or. y%can_temp < rk4min_can_temp) then
          reject_step = .true.
          if(record_err) integ_err(4,2) = integ_err(4,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
+            write(unit=*,fmt='(a)')           ' + CAS temperature is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
@@ -2451,6 +2449,7 @@ module rk4_integ_utils
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DMOL:          ',y%can_dmol
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
@@ -2467,16 +2466,17 @@ module rk4_integ_utils
 
 
 
+
       !------------------------------------------------------------------------------------!
-      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !   Check whether the canopy air CO2 molar count is off.                             !
       !------------------------------------------------------------------------------------!
-      if (    y%can_prss > rk4aux(ibuff)%rk4max_can_prss .or.                              &
-              y%can_prss < rk4aux(ibuff)%rk4min_can_prss) then
+      if ( y%can_co2 > rk4max_can_co2              .or.                                    &
+           y%can_co2 < rk4min_can_co2                   ) then
          reject_step = .true.
          if(record_err) integ_err(5,2) = integ_err(5,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air pressure is off-track...'
+            write(unit=*,fmt='(a)')           ' + CAS CO2 mixing ratio is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
@@ -2484,39 +2484,7 @@ module rk4_integ_utils
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
-            write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' '
-         elseif (.not. record_err) then
-            return
-         end if
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !   Check whether the canopy air equivalent potential temperature is off.            !
-      !------------------------------------------------------------------------------------!
-      if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
-         reject_step = .true.
-         if(record_err) integ_err(6,2) = integ_err(6,2) + 1_8
-         if (print_problems) then
-            write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air CO2 is off-track...'
-            write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DMOL:          ',y%can_dmol
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
@@ -2537,9 +2505,9 @@ module rk4_integ_utils
       !     Check leaf properties, but only for those cohorts with sufficient LAI.         !
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
+      cflag6  = .false.
       cflag7  = .false.
       cflag8  = .false.
-      cflag11 = .false.
       leafloop: do ico = 1,cpatch%ncohorts
          if (.not. y%leaf_resolvable(ico)) cycle leafloop
 
@@ -2554,7 +2522,7 @@ module rk4_integ_utils
          !----- Check leaf surface water. -------------------------------------------------!
          if (y%leaf_water(ico) < rk4min_leaf_water) then
             reject_step = .true.
-            if(record_err) cflag7 = .true.
+            if(record_err) cflag6 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf surface water is off-track...'
@@ -2596,7 +2564,7 @@ module rk4_integ_utils
          if (y%leaf_temp(ico) > rk4max_veg_temp .or.                                       &
              y%leaf_temp(ico) < rk4min_veg_temp      ) then
             reject_step = .true.
-            if(record_err) cflag8 = .true.
+            if(record_err) cflag7 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf temperature is off-track...'
@@ -2636,10 +2604,10 @@ module rk4_integ_utils
 
 
          !----- Check leaf internal water. ------------------------------------------------!
-         if (y%leaf_water_im2(ico) < rk4min_leaf_water_im2 .or.                            &
+         if (y%leaf_water_im2(ico) > rk4max_leaf_water_im2 .or.                            &
              y%leaf_water_im2(ico) < rk4min_leaf_water_im2      ) then
             reject_step = .true.
-            if(record_err) cflag11 = .true.
+            if(record_err) cflag8 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf internal water is off-track...'
@@ -2659,7 +2627,8 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER_IM2:',y%leaf_water_im2(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAFW_IM2: ',rk4min_leaf_water_im2
+               write(unit=*,fmt='(a,1x,es12.4)') ' MAX_LEAFW_IM2: ',rk4max_leaf_water_im2
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBH:      ',y%leaf_gbh(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBW:      ',y%leaf_gbw(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_REYNOLDS: ',y%leaf_reynolds(ico)
@@ -2676,9 +2645,9 @@ module rk4_integ_utils
          end if
          !---------------------------------------------------------------------------------!
       end do leafloop
-      if(record_err .and. cflag7 ) integ_err( 7,2) = integ_err( 7,2) + 1_8
-      if(record_err .and. cflag8 ) integ_err( 8,2) = integ_err( 8,2) + 1_8
-      if(record_err .and. cflag11) integ_err(11,2) = integ_err(11,2) + 1_8
+      if(record_err .and. cflag6) integ_err( 6,2) = integ_err( 6,2) + 1_8
+      if(record_err .and. cflag7) integ_err( 7,2) = integ_err( 7,2) + 1_8
+      if(record_err .and. cflag8) integ_err( 8,2) = integ_err( 8,2) + 1_8
       !------------------------------------------------------------------------------------!
 
 
@@ -2689,7 +2658,7 @@ module rk4_integ_utils
       cpatch => csite%patch(ipa)
       cflag9  = .false.
       cflag10 = .false.
-      cflag12 = .false.
+      cflag11 = .false.
       woodloop: do ico = 1,cpatch%ncohorts
          if (.not. y%wood_resolvable(ico)) cycle woodloop
 
@@ -2785,10 +2754,10 @@ module rk4_integ_utils
 
 
          !----- Check wood internal water. ------------------------------------------------!
-         if (y%wood_water_im2(ico) < rk4min_wood_water_im2 .or.                            &
-             y%wood_water_im2(ico) > rk4min_wood_water_im2      ) then
+         if (y%wood_water_im2(ico) > rk4max_wood_water_im2 .or.                            &
+             y%wood_water_im2(ico) < rk4min_wood_water_im2      ) then
             reject_step = .true.
-            if(record_err) cflag12 = .true.
+            if(record_err) cflag11 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Wood internal water is off-track...'
@@ -2808,7 +2777,8 @@ module rk4_integ_utils
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER_IM2:',y%wood_water_im2(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOODW_IM2: ',rk4min_wood_water_im2
+               write(unit=*,fmt='(a,1x,es12.4)') ' MAX_WOODW_IM2: ',rk4max_wood_water_im2
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBH:      ',y%wood_gbh(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBW:      ',y%wood_gbw(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_REYNOLDS: ',y%wood_reynolds(ico)
@@ -2827,7 +2797,7 @@ module rk4_integ_utils
       end do woodloop
       if(record_err .and. cflag9 ) integ_err( 9,2) = integ_err( 9,2) + 1_8
       if(record_err .and. cflag10) integ_err(10,2) = integ_err(10,2) + 1_8
-      if(record_err .and. cflag12) integ_err(12,2) = integ_err(12,2) + 1_8
+      if(record_err .and. cflag11) integ_err(11,2) = integ_err(11,2) + 1_8
       !------------------------------------------------------------------------------------!
 
 
@@ -2839,7 +2809,7 @@ module rk4_integ_utils
       !------------------------------------------------------------------------------------!
       if (y%virtual_water < rk4min_virt_water) then
          reject_step = .true.
-         if(record_err) integ_err(14,2) = integ_err(14,2) + 1_8
+         if(record_err) integ_err(13,2) = integ_err(13,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
@@ -2859,7 +2829,7 @@ module rk4_integ_utils
              (y%virtual_tempk < rk4min_sfcw_temp .or. y%virtual_tempk > rk4max_sfcw_temp)) &
       then
          reject_step = .true.
-         if(record_err) integ_err(13,2) = integ_err(13,2) + 1_8
+         if(record_err) integ_err(12,2) = integ_err(12,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer temp. is off-track...'
@@ -3026,7 +2996,7 @@ module rk4_integ_utils
                                             ,rk4min_can_rhv  ,rk4max_can_rhv
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(6(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
-                                          ,'   MAX_THETA','MIN_ENTHALPY','MAX_ENTHALPY'
+                                          ,'   MAX_THETA','MIN_ENTH_INT','MAX_ENTH_INT'
          write(unit=*,fmt='(6(es12.5,1x))') rk4min_can_temp    ,rk4max_can_temp            &
                                            ,rk4aux(ibuff)%rk4min_can_theta                 &
                                            ,rk4aux(ibuff)%rk4max_can_theta                 &
@@ -3036,7 +3006,7 @@ module rk4_integ_utils
          write(unit=*,fmt='(4(a,1x))')     '    MIN_PRSS','    MAX_PRSS','     MIN_CO2'    &
                                           ,'     MAX_CO2'
          write(unit=*,fmt='(4(es12.5,1x))') rk4aux(ibuff)%rk4min_can_prss                  &
-                                           ,rk4aux(ibuff)%rk4max_can_prss               &
+                                           ,rk4aux(ibuff)%rk4max_can_prss                  &
                                            ,rk4min_can_co2  ,rk4max_can_co2
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(78a)')         ('-',k=1,78)

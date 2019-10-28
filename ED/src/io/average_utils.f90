@@ -33,6 +33,7 @@ module average_utils
       use therm_lib             , only : uextcm2tl          & ! subroutine
                                        , uint2tl            & ! subroutine
                                        , idealdenssh        & ! function
+                                       , idealdmolsh        & ! function
                                        , press2exner        & ! function
                                        , extheta2temp       ! ! function
       use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
@@ -693,6 +694,9 @@ module average_utils
          cgrid%fmean_can_rhos(ipy) = idealdenssh ( cgrid%fmean_can_prss  (ipy)             &
                                                  , cgrid%fmean_can_temp  (ipy)             &
                                                  , cgrid%fmean_can_shv   (ipy) )
+         cgrid%fmean_can_dmol(ipy) = idealdmolsh ( cgrid%fmean_can_prss  (ipy)             &
+                                                 , cgrid%fmean_can_temp  (ipy)             &
+                                                 , cgrid%fmean_can_shv   (ipy) )
          !---------------------------------------------------------------------------------!
 
 
@@ -936,6 +940,7 @@ module average_utils
       use therm_lib    , only : uextcm2tl          & ! subroutine
                               , uint2tl            & ! subroutine
                               , idealdenssh        & ! function
+                              , idealdmolsh        & ! function
                               , press2exner        & ! function
                               , extheta2temp       ! ! function
       use consts_coms  , only : t00                & ! intent(in)
@@ -1068,6 +1073,9 @@ module average_utils
                csite%fmean_can_temp(ipa) = extheta2temp( can_exner                         &
                                                        , csite%fmean_can_theta (ipa) )
                csite%fmean_can_rhos(ipa) = idealdenssh ( csite%fmean_can_prss  (ipa)       &
+                                                       , csite%fmean_can_temp  (ipa)       &
+                                                       , csite%fmean_can_shv   (ipa)       )
+               csite%fmean_can_dmol(ipa) = idealdmolsh ( csite%fmean_can_prss  (ipa)       &
                                                        , csite%fmean_can_temp  (ipa)       &
                                                        , csite%fmean_can_shv   (ipa)       )
                !---------------------------------------------------------------------------!
@@ -1397,6 +1405,7 @@ module average_utils
          cgrid%fmean_can_shv           (  ipy) = 0.0
          cgrid%fmean_can_co2           (  ipy) = 0.0
          cgrid%fmean_can_rhos          (  ipy) = 0.0
+         cgrid%fmean_can_dmol          (  ipy) = 0.0
          cgrid%fmean_can_prss          (  ipy) = 0.0
          cgrid%fmean_gnd_temp          (  ipy) = 0.0
          cgrid%fmean_gnd_shv           (  ipy) = 0.0
@@ -1545,6 +1554,7 @@ module average_utils
                csite%fmean_can_shv        (  ipa) = 0.0
                csite%fmean_can_co2        (  ipa) = 0.0
                csite%fmean_can_rhos       (  ipa) = 0.0
+               csite%fmean_can_dmol       (  ipa) = 0.0
                csite%fmean_can_prss       (  ipa) = 0.0
                csite%fmean_gnd_temp       (  ipa) = 0.0
                csite%fmean_gnd_shv        (  ipa) = 0.0
@@ -2007,6 +2017,9 @@ module average_utils
                                           * frqsum_o_daysec
          cgrid%dmean_can_rhos       (ipy) = cgrid%dmean_can_rhos       (ipy)               &
                                           + cgrid%fmean_can_rhos       (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_can_dmol       (ipy) = cgrid%dmean_can_dmol       (ipy)               &
+                                          + cgrid%fmean_can_dmol       (ipy)               &
                                           * frqsum_o_daysec
          cgrid%dmean_can_prss       (ipy) = cgrid%dmean_can_prss       (ipy)               &
                                           + cgrid%fmean_can_prss       (ipy)               &
@@ -2864,7 +2877,8 @@ module average_utils
                                       , extheta2temp       & ! function
                                       , uextcm2tl          & ! subroutine
                                       , uint2tl            & ! subroutine
-                                      , idealdenssh        ! ! function
+                                      , idealdenssh        & ! function
+                                      , idealdmolsh        ! ! function
       use soil_coms            , only : tiny_sfcwater_mass & ! intent(in)
                                       , soil               ! ! intent(in)
       use consts_coms          , only : t00                & ! intent(in)
@@ -2993,6 +3007,9 @@ module average_utils
                csite%dmean_can_temp(ipa) = extheta2temp( can_exner                         &
                                                        , csite%dmean_can_theta (ipa) )
                csite%dmean_can_rhos(ipa) = idealdenssh ( csite%dmean_can_prss  (ipa)       &
+                                                       , csite%dmean_can_temp  (ipa)       &
+                                                       , csite%dmean_can_shv   (ipa)       )
+               csite%dmean_can_dmol(ipa) = idealdmolsh ( csite%dmean_can_prss  (ipa)       &
                                                        , csite%dmean_can_temp  (ipa)       &
                                                        , csite%dmean_can_shv   (ipa)       )
                !---------------------------------------------------------------------------!
@@ -3243,6 +3260,9 @@ module average_utils
          can_exner                 = press2exner (cgrid%dmean_can_prss(ipy))
          cgrid%dmean_can_temp(ipy) = extheta2temp(can_exner,cgrid%dmean_can_theta(ipy))
          cgrid%dmean_can_rhos(ipy) = idealdenssh ( cgrid%dmean_can_prss  (ipy)             &
+                                                 , cgrid%dmean_can_temp  (ipy)             &
+                                                 , cgrid%dmean_can_shv   (ipy) )
+         cgrid%dmean_can_dmol(ipy) = idealdmolsh ( cgrid%dmean_can_prss  (ipy)             &
                                                  , cgrid%dmean_can_temp  (ipy)             &
                                                  , cgrid%dmean_can_shv   (ipy) )
          !---------------------------------------------------------------------------------!
@@ -3646,6 +3666,7 @@ module average_utils
          cgrid%dmean_can_shv            (ipy) = 0.0
          cgrid%dmean_can_co2            (ipy) = 0.0
          cgrid%dmean_can_rhos           (ipy) = 0.0
+         cgrid%dmean_can_dmol           (ipy) = 0.0
          cgrid%dmean_can_prss           (ipy) = 0.0
          cgrid%dmean_gnd_temp           (ipy) = 0.0
          cgrid%dmean_gnd_shv            (ipy) = 0.0
@@ -3767,6 +3788,7 @@ module average_utils
                csite%dmean_can_shv          (ipa) = 0.0
                csite%dmean_can_co2          (ipa) = 0.0
                csite%dmean_can_rhos         (ipa) = 0.0
+               csite%dmean_can_dmol         (ipa) = 0.0
                csite%dmean_can_prss         (ipa) = 0.0
                csite%dmean_gnd_temp         (ipa) = 0.0
                csite%dmean_gnd_shv          (ipa) = 0.0
@@ -5507,7 +5529,8 @@ module average_utils
                                       , extheta2temp       & ! function
                                       , uextcm2tl          & ! subroutine
                                       , uint2tl            & ! subroutine
-                                      , idealdenssh        ! ! function
+                                      , idealdenssh        & ! function
+                                      , idealdmolsh        ! ! function
       use soil_coms            , only : tiny_sfcwater_mass & ! intent(in)
                                       , soil               ! ! intent(in)
       use consts_coms          , only : t00                & ! intent(in)
@@ -5604,6 +5627,9 @@ module average_utils
                csite%mmean_can_temp(ipa) = extheta2temp( can_exner                         &
                                                        , csite%mmean_can_theta(ipa))
                csite%mmean_can_rhos(ipa) = idealdenssh ( csite%mmean_can_prss  (ipa)       &
+                                                       , csite%mmean_can_temp  (ipa)       &
+                                                       , csite%mmean_can_shv   (ipa)       )
+               csite%mmean_can_dmol(ipa) = idealdmolsh ( csite%mmean_can_prss  (ipa)       &
                                                        , csite%mmean_can_temp  (ipa)       &
                                                        , csite%mmean_can_shv   (ipa)       )
                !---------------------------------------------------------------------------!
@@ -5732,6 +5758,9 @@ module average_utils
          can_exner                 = press2exner (cgrid%mmean_can_prss(ipy))
          cgrid%mmean_can_temp(ipy) = extheta2temp(can_exner,cgrid%mmean_can_theta(ipy))
          cgrid%mmean_can_rhos(ipy) = idealdenssh ( cgrid%mmean_can_prss  (ipy)             &
+                                                 , cgrid%mmean_can_temp  (ipy)             &
+                                                 , cgrid%mmean_can_shv   (ipy) )
+         cgrid%mmean_can_dmol(ipy) = idealdmolsh ( cgrid%mmean_can_prss  (ipy)             &
                                                  , cgrid%mmean_can_temp  (ipy)             &
                                                  , cgrid%mmean_can_shv   (ipy) )
          !---------------------------------------------------------------------------------!
@@ -5984,6 +6013,7 @@ module average_utils
          cgrid%mmean_can_shv              (ipy) = 0.0
          cgrid%mmean_can_co2              (ipy) = 0.0
          cgrid%mmean_can_rhos             (ipy) = 0.0
+         cgrid%mmean_can_dmol             (ipy) = 0.0
          cgrid%mmean_can_prss             (ipy) = 0.0
          cgrid%mmean_gnd_temp             (ipy) = 0.0
          cgrid%mmean_gnd_shv              (ipy) = 0.0
@@ -6167,6 +6197,7 @@ module average_utils
                csite%mmean_can_shv          (ipa) = 0.0
                csite%mmean_can_co2          (ipa) = 0.0
                csite%mmean_can_rhos         (ipa) = 0.0
+               csite%mmean_can_dmol         (ipa) = 0.0
                csite%mmean_can_prss         (ipa) = 0.0
                csite%mmean_gnd_temp         (ipa) = 0.0
                csite%mmean_gnd_shv          (ipa) = 0.0
@@ -7585,7 +7616,8 @@ module average_utils
                                       , extheta2temp       & ! function
                                       , uextcm2tl          & ! subroutine
                                       , uint2tl            & ! subroutine
-                                      , idealdenssh        ! ! function
+                                      , idealdenssh        & ! function
+                                      , idealdmolsh        ! ! function
       use soil_coms            , only : tiny_sfcwater_mass & ! intent(in)
                                       , soil               ! ! intent(in)
       use consts_coms          , only : t00                & ! intent(in)
@@ -7827,6 +7859,9 @@ module average_utils
             cgrid%qmean_can_rhos(t,ipy) = idealdenssh ( cgrid%qmean_can_prss (t,ipy)       &
                                                       , cgrid%qmean_can_temp (t,ipy)       &
                                                       , cgrid%qmean_can_shv  (t,ipy) )
+            cgrid%qmean_can_dmol(t,ipy) = idealdmolsh ( cgrid%qmean_can_prss (t,ipy)       &
+                                                      , cgrid%qmean_can_temp (t,ipy)       &
+                                                      , cgrid%qmean_can_shv  (t,ipy) )
             !------------------------------------------------------------------------------!
 
 
@@ -8033,6 +8068,7 @@ module average_utils
          cgrid%qmean_can_shv            (:,ipy) = 0.0
          cgrid%qmean_can_co2            (:,ipy) = 0.0
          cgrid%qmean_can_rhos           (:,ipy) = 0.0
+         cgrid%qmean_can_dmol           (:,ipy) = 0.0
          cgrid%qmean_can_prss           (:,ipy) = 0.0
          cgrid%qmean_gnd_temp           (:,ipy) = 0.0
          cgrid%qmean_gnd_shv            (:,ipy) = 0.0
@@ -8178,6 +8214,7 @@ module average_utils
                csite%qmean_can_shv                (:,ipa) = 0.0
                csite%qmean_can_co2                (:,ipa) = 0.0
                csite%qmean_can_rhos               (:,ipa) = 0.0
+               csite%qmean_can_dmol               (:,ipa) = 0.0
                csite%qmean_can_prss               (:,ipa) = 0.0
                csite%qmean_gnd_temp               (:,ipa) = 0.0
                csite%qmean_gnd_shv                (:,ipa) = 0.0

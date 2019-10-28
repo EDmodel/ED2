@@ -10,7 +10,7 @@ module rk4_misc
    !    This subroutine copies that variables that are integrated by the Runge-Kutta       !
    ! solver to a buffer structure.                                                         !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_patch_init(sourcesite,ipa,ibuff,targetp,vels)
+   subroutine copy_patch_init(sourcesite,ipa,ibuff,targetp,vels,mid_can_rhos,mid_can_dmol)
       use ed_state_vars         , only : sitetype               & ! structure
                                        , patchtype              ! ! structure
       use grid_coms             , only : nzg                    & ! intent(in)
@@ -18,13 +18,17 @@ module rk4_misc
       use ed_misc_coms          , only : fast_diagnostics       ! ! intent(in)
       use consts_coms           , only : ep8                    & ! intent(in)
                                        , epim18                 & ! intent(in)
+                                       , mmdryi8                & ! intent(in)
+                                       , rmol8                  & ! intent(in)
                                        , rdry8                  & ! intent(in)
                                        , rdryi8                 & ! intent(in)
                                        , cpdry8                 & ! intent(in)
-                                       , cph2o8                 ! ! intent(in)
+                                       , cph2o8                 & ! intent(in)
+                                       , kgCday_2_umols8        ! ! intent(in)
       use rk4_coms              , only : rk4patchtype           & ! structure
                                        , rk4site                & ! structure
                                        , rk4aux                 & ! structure
+                                       , tiny_offset            & ! intent(in)
                                        , rk4water_stab_thresh   & ! intent(in)
                                        , checkbudget            & ! intent(in)
                                        , print_detailed         & ! intent(in)
@@ -34,6 +38,7 @@ module rk4_misc
                                        , cmtl2uext8             & ! function
                                        , thetaeiv8              & ! function
                                        , idealdenssh8           & ! function
+                                       , idealdmolsh8           & ! function
                                        , rehuil8                & ! function
                                        , qslif8                 & ! function
                                        , reducedpress8          & ! function
@@ -46,11 +51,13 @@ module rk4_misc
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype)    , target     :: targetp
-      type(sitetype)        , target     :: sourcesite
-      integer               , intent(in) :: ipa
-      integer               , intent(in) :: ibuff
-      real                  , intent(in) :: vels
+      type(rk4patchtype)    , target      :: targetp
+      type(sitetype)        , target      :: sourcesite
+      integer               , intent(in)  :: ipa
+      integer               , intent(in)  :: ibuff
+      real                  , intent(in)  :: vels
+      real                  , intent(out) :: mid_can_rhos
+      real                  , intent(out) :: mid_can_dmol
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)       , pointer    :: cpatch
       real(kind=8)                       :: atm_tmp_zcan
@@ -58,6 +65,8 @@ module rk4_misc
       integer                            :: ipft
       integer                            :: k
       integer                            :: ksn
+      !----- External function. -----------------------------------------------------------!
+      real(kind=4)          , external   :: sngloff
       !------------------------------------------------------------------------------------!
 
       !---- Alias for the current patch. --------------------------------------------------!
@@ -75,8 +84,8 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
       !----- Update thermo variables that are conserved between steps. --------------------!
       targetp%can_theta    = dble(sourcesite%can_theta(ipa))
-      targetp%can_shv      = dble(sourcesite%can_shv(ipa))
-      targetp%can_co2      = dble(sourcesite%can_co2(ipa))
+      targetp%can_shv      = dble(sourcesite%can_shv  (ipa))
+      targetp%can_co2      = dble(sourcesite%can_co2  (ipa))
       targetp%can_depth    = dble(sourcesite%can_depth(ipa))
       !------------------------------------------------------------------------------------!
 
@@ -128,9 +137,11 @@ module rk4_misc
 
 
       !------------------------------------------------------------------------------------!
-      !     Update density, relative humidity, and the saturation specific humidity.       !
+      !     Update density, dry-air molar density, relative humidity, and the saturation   !
+      ! specific humidity.                                                                 !
       !------------------------------------------------------------------------------------!
       targetp%can_rhos = idealdenssh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
+      targetp%can_dmol = idealdmolsh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
       targetp%can_rhv  = rehuil8(targetp%can_prss,targetp%can_temp,targetp%can_shv,.true.)
       targetp%can_ssh  = qslif8(targetp%can_prss,targetp%can_temp)
       !------------------------------------------------------------------------------------!
@@ -139,9 +150,8 @@ module rk4_misc
 
       !----- Find the lower and upper bounds for the derived properties. ------------------!
       call find_derived_thbounds(ibuff,cpatch,targetp%can_theta,targetp%can_temp           &
-                                ,targetp%can_shv,targetp%can_prss ,targetp%can_depth)
+                                ,targetp%can_shv,targetp%can_prss,targetp%can_depth)
       !------------------------------------------------------------------------------------!
-
 
 
       !----- Impose a non-sense number for flag_wflxgc. -----------------------------------!
@@ -412,6 +422,43 @@ module rk4_misc
 
 
 
+      !------------------------------------------------------------------------------------!
+      !     Here we copy the cohort level variables that are part of the carbon budget.    !
+      !------------------------------------------------------------------------------------!
+      cpatch => sourcesite%patch(ipa)
+      do ico = 1,cpatch%ncohorts
+     
+         !----- Copy the variables that are already in umol/m2/s. -------------------------!
+         targetp%gpp         (ico) = dble(cpatch%gpp                (ico))
+         targetp%leaf_resp   (ico) = dble(cpatch%leaf_respiration   (ico))
+         targetp%root_resp   (ico) = dble(cpatch%root_respiration   (ico))
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are in kgC/m2/day, convert them to umol/m2/s.          !
+      !------------------------------------------------------------------------------------!
+      targetp%commit_storage_resp  = dble(sourcesite%commit_storage_resp (ipa))            &
+                                   * kgCday_2_umols8
+      targetp%commit_growth_resp   = dble(sourcesite%commit_growth_resp  (ipa))            &
+                                   * kgCday_2_umols8
+      !------------------------------------------------------------------------------------!
+
+      !----- Heterotrophic respiration terms, already in umol/m2/s. -----------------------!
+      targetp%fgc_rh  = dble(sourcesite%fgc_rh (ipa))
+      targetp%fsc_rh  = dble(sourcesite%fsc_rh (ipa))
+      targetp%stgc_rh = dble(sourcesite%stgc_rh(ipa))
+      targetp%stsc_rh = dble(sourcesite%stsc_rh(ipa))
+      targetp%msc_rh  = dble(sourcesite%msc_rh (ipa))
+      targetp%ssc_rh  = dble(sourcesite%ssc_rh (ipa))
+      targetp%psc_rh  = dble(sourcesite%psc_rh (ipa))
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Initialise the characteristic properties, and the heat capacities. -----------!
       call canopy_turbulence8(sourcesite,targetp,ipa,ibuff)
       !------------------------------------------------------------------------------------!
@@ -486,78 +533,19 @@ module rk4_misc
       targetp%water_deficit = 0.d0
       !------------------------------------------------------------------------------------!
 
-
+      !----- If writing the detailed output, reset fluxes. --------------------------------!
       if (print_detailed) call reset_rk4_fluxes(targetp)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Save densities after updating pressure (used to find the density efffect).    !
+      !------------------------------------------------------------------------------------!
+      mid_can_rhos = sngloff(targetp%can_rhos,tiny_offset)
+      mid_can_dmol = sngloff(targetp%can_dmol,tiny_offset)
+      !------------------------------------------------------------------------------------!
       return
    end subroutine copy_patch_init
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine copies the carbon fluxes, which could not be copied by the time we !
-   ! called copy_patch_init.                                                               !
-   !---------------------------------------------------------------------------------------!
-   subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
-      use ed_state_vars        , only : sitetype              & ! structure
-                                      , patchtype             ! ! structure
-      use consts_coms          , only : kgCday_2_umols8       ! ! intent(in)
-      use rk4_coms             , only : rk4patchtype          ! ! structure
-      implicit none
-
-      !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype)    , target     :: targetp
-      type(sitetype)        , target     :: sourcesite
-      integer               , intent(in) :: ipa
-      !----- Local variables --------------------------------------------------------------!
-      type(patchtype)       , pointer    :: cpatch
-      integer                            :: ico
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Here we copy the cohort level variables that are part of the carbon budget.    !
-      !------------------------------------------------------------------------------------!
-      cpatch => sourcesite%patch(ipa)
-      do ico = 1,cpatch%ncohorts
-     
-         !----- Copy the variables that are already in umol/m2/s. -------------------------!
-         targetp%gpp         (ico) = dble(cpatch%gpp                (ico))
-         targetp%leaf_resp   (ico) = dble(cpatch%leaf_respiration   (ico))
-         targetp%root_resp   (ico) = dble(cpatch%root_respiration   (ico))
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     The following variables are in kgC/m2/day, convert them to umol/m2/s.          !
-      !------------------------------------------------------------------------------------!
-      targetp%commit_storage_resp  = dble(sourcesite%commit_storage_resp (ipa))            &
-                                   * kgCday_2_umols8
-      targetp%commit_growth_resp   = dble(sourcesite%commit_growth_resp  (ipa))            &
-                                   * kgCday_2_umols8
-      !------------------------------------------------------------------------------------!
-
-      !----- Heterotrophic respiration terms, already in umol/m2/s. -----------------------!
-      targetp%fgc_rh  = dble(sourcesite%fgc_rh (ipa))
-      targetp%fsc_rh  = dble(sourcesite%fsc_rh (ipa))
-      targetp%stgc_rh = dble(sourcesite%stgc_rh(ipa))
-      targetp%stsc_rh = dble(sourcesite%stsc_rh(ipa))
-      targetp%msc_rh  = dble(sourcesite%msc_rh (ipa))
-      targetp%ssc_rh  = dble(sourcesite%ssc_rh (ipa))
-      targetp%psc_rh  = dble(sourcesite%psc_rh (ipa))
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine copy_patch_init_carbon
    !=======================================================================================!
    !=======================================================================================!
 
@@ -620,7 +608,14 @@ module rk4_misc
                                        , fsdnsi8               & ! intent(in)
                                        , rdryi8                & ! intent(in)
                                        , rdry8                 & ! intent(in)
+                                       , rmol8                 & ! intent(in)
+                                       , ep8                   & ! intent(in)
                                        , epim18                & ! intent(in)
+                                       , cph2o_tscvap8         & ! intent(in)
+                                       , cpdiff_epim18         & ! intent(in)
+                                       , cpor8                 & ! intent(in)
+                                       , mmdry8                & ! intent(in)
+                                       , mmdryi8               & ! intent(in)
                                        , toodry8               ! ! intent(in)
       use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
       use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
@@ -636,9 +631,9 @@ module rk4_misc
       integer                          :: k
       integer                          :: ksn
       integer                          :: nsoil
-      logical                          :: ok_shv
-      logical                          :: ok_enthalpy
-      logical                          :: ok_theta
+      logical                          :: ok_can_enthalpy
+      logical                          :: ok_can_theta
+      logical                          :: ok_can_shv
       logical                          :: ok_ground
       logical                          :: ok_sfcw
       logical                          :: ok_leaf
@@ -665,18 +660,21 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
 
       !----- Then we define some logicals to make the code cleaner. -----------------------!
-      ok_shv      = initp%can_shv      >= rk4min_can_shv        .and.                      &
-                    initp%can_shv      <= rk4max_can_shv
-      ok_enthalpy = initp%can_enthalpy >= rk4aux(ibuff)%rk4min_can_enthalpy   .and.        &
-                    initp%can_enthalpy <= rk4aux(ibuff)%rk4max_can_enthalpy
+      ok_can_shv      = initp%can_shv      >= rk4min_can_shv                      .and.    &
+                        initp%can_shv      <= rk4max_can_shv
+      ok_can_enthalpy = initp%can_enthalpy >= rk4aux(ibuff)%rk4min_can_enthalpy   .and.    &
+                        initp%can_enthalpy <= rk4aux(ibuff)%rk4max_can_enthalpy
+      !------------------------------------------------------------------------------------!
 
+
+
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !     Here we convert enthalpy into temperature, potential temperature and find some !
+      ! derived quantities.  We only calculate these quantities when enthalpy and specific !
+      ! humidity are reasonable.                                                           !
       !------------------------------------------------------------------------------------!
-      !     Here we convert theta into temperature, potential temperature, and density,    !
-      ! and ice-vapour equivalent potential temperature.  The latter variable (or its      !
-      ! natural log) should eventually become the prognostic variable for canopy air space !
-      ! entropy when we add condensed/frozen water in the canopy air space.                !
-      !------------------------------------------------------------------------------------!
-      if (ok_shv .and. ok_enthalpy) then
+      if (ok_can_shv .and. ok_can_enthalpy) then
 
 
          !----- Update the canopy air space heat capacity at constant pressure. -----------!
@@ -694,8 +692,8 @@ module rk4_misc
 
 
          !----- Check whether the potential temperature makes sense or not. ---------------!
-         ok_theta = initp%can_theta >= rk4aux(ibuff)%rk4min_can_theta .and.                &
-                    initp%can_theta <= rk4aux(ibuff)%rk4max_can_theta
+         ok_can_theta = initp%can_theta >= rk4aux(ibuff)%rk4min_can_theta .and.            &
+                        initp%can_theta <= rk4aux(ibuff)%rk4max_can_theta
          !---------------------------------------------------------------------------------!
 
 
@@ -705,9 +703,7 @@ module rk4_misc
          ! makes sense.  Sometimes enthalpy makes sense even though the temperature is     !
          ! bad, because can_shv is way off in the opposite direction of temperature.       !
          !---------------------------------------------------------------------------------!
-         if (ok_theta) then
-
-
+         if (ok_can_theta) then
             !------------------------------------------------------------------------------!
             !     Find the derived humidity variables.                                     !
             !------------------------------------------------------------------------------!
@@ -715,12 +711,13 @@ module rk4_misc
             initp%can_ssh   = qslif8(initp%can_prss,initp%can_temp)
             !------------------------------------------------------------------------------!
          end if
+         !--===----------------------------------------------------------------------------!
       else
          !----- Either enthalpy or specific humidity is screwed, reject theta too. --------!
-         ok_theta = .false.
+         ok_can_theta = .false.
       end if
-      !------------------------------------------------------------------------------------!
-
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
 
 
 
@@ -731,8 +728,8 @@ module rk4_misc
       do k = rk4site%lsl, nzg
          nsoil = rk4site%ntext_soil(k)
          !----- Check whether soil water is fine. -----------------------------------------!
-         ok_slwater = ok_slwater                                  .and.                    &
-                      initp%soil_water(k) >= rk4aux(ibuff)%rk4min_soil_water(k) .and.                 &
+         ok_slwater = ok_slwater                                                .and.      &
+                      initp%soil_water(k) >= rk4aux(ibuff)%rk4min_soil_water(k) .and.      &
                       initp%soil_water(k) <= rk4aux(ibuff)%rk4max_soil_water(k)
          if (ok_slwater) then
             initp%soil_mstpot(k) = matric_potential8(nsoil,initp%soil_water(k))
@@ -1313,7 +1310,7 @@ module rk4_misc
 
 
       !----- Compute canopy turbulence properties. ----------------------------------------!
-      if (ok_leaf .and. ok_wood .and. ok_shv .and. ok_theta .and. ok_ground) then
+      if (ok_leaf .and. ok_wood .and. ok_can_shv .and. ok_can_theta .and. ok_ground) then
          call canopy_turbulence8(csite,initp,ipa,ibuff)
       end if
       !------------------------------------------------------------------------------------!
@@ -1351,7 +1348,7 @@ module rk4_misc
                                , rk4min_can_shv        & ! intent(in)
                                , rk4snowmin            & ! intent(in)
                                , ipercol               & ! intent(in)
-                               , rk4aux
+                               , rk4aux                ! ! intent(in)
       use ed_state_vars , only : sitetype              & ! structure
                                , patchtype             ! ! structure
       use soil_coms     , only : soil8                 & ! intent(in)
@@ -1498,7 +1495,7 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
       !      Initialise the budget variables.                                              !
       !------------------------------------------------------------------------------------!
-      wmass_cas_beg      = initp%can_shv * rk4aux(ibuff)%wcapcan
+      wmass_cas_beg      = initp%can_shv      * rk4aux(ibuff)%wcapcan
       enthalpy_cas_beg   = initp%can_enthalpy * rk4aux(ibuff)%hcapcan
       wmass_virtual_beg  = initp%virtual_water
       energy_virtual_beg = initp%virtual_energy
@@ -1545,7 +1542,7 @@ module rk4_misc
 
 
          !----- Find the amount available at the canopy air space. ------------------------!
-         wmass_available  = rk4aux(ibuff)%wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
+         wmass_available = rk4aux(ibuff)%wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
          !---------------------------------------------------------------------------------!
 
          if ( wmass_available >= wmass_needed) then
@@ -2821,6 +2818,7 @@ module rk4_misc
                                       , rk4leaf_drywhc     & ! intent(in)
                                       , rk4leaf_maxwhc     & ! intent(in)
                                       , print_detailed     ! ! intent(in)
+      use grid_coms            , only : nzg                ! ! intent(in)
       use ed_state_vars        , only : sitetype           & ! structure
                                       , patchtype          ! ! structure
       use ed_misc_coms         , only : fast_diagnostics   ! ! intent(in)
@@ -2928,6 +2926,7 @@ module rk4_misc
       ! likely that we will need top soil layer temperature and liquid fraction, so we     !
       ! find them now.                                                                     !
       !------------------------------------------------------------------------------------!
+      kt              = nzg
       nstop           = rk4site%ntext_soil(kt)
       shctop          = soil8(nstop)%slcpd
       call uextcm2tl8(initp%soil_energy(kt),initp%soil_water(kt)*wdns8,shctop              &
@@ -3549,10 +3548,6 @@ module rk4_misc
       troublemaker = large_error(yerr%can_co2,yscal%can_co2)
       write(unit=*,fmt=onefmt) 'CAN_CO2:',errmax,yerr%can_co2,yscal%can_co2,troublemaker
 
-      errmax = max(errmax,abs(yerr%can_prss/yscal%can_prss))
-      troublemaker = large_error(yerr%can_prss,yscal%can_prss)
-      write(unit=*,fmt=onefmt) 'CAN_PRSS:',errmax,yerr%can_prss,yscal%can_prss,troublemaker
-
       errmax = max(errmax,abs(yerr%virtual_energy/yscal%virtual_energy))
       troublemaker = large_error(yerr%virtual_energy,yscal%virtual_energy)
       write(unit=*,fmt=onefmt) 'VIRTUAL_ENERGY:',errmax,yerr%virtual_energy                &
@@ -4021,13 +4016,13 @@ module rk4_misc
       write (unit=*,fmt='(a)'  ) ' '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-      write (unit=*,fmt='(8(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'       &
+      write (unit=*,fmt='(9(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'       &
                                        ,'   PATCH_LAI','   PATCH_WAI','        HTRY'       &
-                                       ,'    CAN_RHOS','   CAN_DEPTH'
-      write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)       &
+                                       ,'    CAN_RHOS','    CAN_DMOL','   CAN_DEPTH'
+      write (unit=*,fmt='(9(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)       &
                                          ,csite%veg_displace(ipa),pss_lai,pss_wai          &
                                          ,csite%htry(ipa),csite%can_rhos(ipa)              &
-                                         ,csite%can_depth(ipa)
+                                         ,csite%can_dmol(ipa),csite%can_depth(ipa)
 
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -4194,7 +4189,7 @@ module rk4_misc
                                ,'     FS_OPEN','         FSW','         FSN'
       do ico = 1,cpatch%ncohorts
          if (cpatch%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))')                                    &
+            write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))')                                    &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
                  ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdeada(ico)   &
                  ,cpatch%bdeadb(ico),cpatch%bleaf (ico),cpatch%fs_open(ico)                &
@@ -4325,24 +4320,24 @@ module rk4_misc
       write (unit=*,fmt='(a)'  ) ' '
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-      write (unit=*,fmt='(9(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'      &
-                                        ,'   PATCH_LAI','   PATCH_WAI','   CAN_DEPTH'      &
-                                        ,'     CAN_CO2','    CAN_PRSS','       GGNET'
+      write (unit=*,fmt='(10(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'     &
+                                         ,'   PATCH_LAI','   PATCH_WAI','   CAN_DEPTH'     &
+                                         ,'    CAN_RHOS','    CAN_DMOL','    CAN_PRSS'     &
+                                         ,'       GGNET'
 
-      write (unit=*,fmt='(9(es12.4,1x))') y%veg_height,y%veg_rough,y%veg_displace          &
-                                         ,pss_lai,pss_wai,y%can_depth,y%can_co2,y%can_prss &
-                                         ,y%ggnet
+      write (unit=*,fmt='(10(es12.4,1x))') y%veg_height,y%veg_rough,y%veg_displace         &
+                                          ,pss_lai,pss_wai,y%can_depth,y%can_rhos          &
+                                          ,y%can_dmol,y%can_prss,y%ggnet
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(10(a12,1x))') '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'       &
+      write (unit=*,fmt='(10(a12,1x))') '     CAN_CO2','   CAN_THEIV','   CAN_THETA'       &
                                        ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'       &
                                        ,'    CAN_RVAP','   CAN_VPDEF','     CAN_RHV'       &
                                        ,'CAN_ENTHALPY'
 
-      write (unit=*,fmt='(10(es12.4,1x))')  y%can_rhos     , y_can_theiv    , y%can_theta  &
+      write (unit=*,fmt='(10(es12.4,1x))')  y%can_co2      , y_can_theiv    , y%can_theta  &
                                           , y%can_temp     , y%can_shv      , y%can_ssh    &
                                           , y_can_rvap     , y_can_vpdef    , y%can_rhv    &
                                           , y%can_enthalpy
-                                          
 
       write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -4478,12 +4473,12 @@ module rk4_misc
       real(kind=8)                       :: can_theiv
       real(kind=8)                       :: can_vpdef
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: phfmt='(90(a,1x))'
+      character(len=10), parameter :: phfmt='(91(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),80(es13.6,1x))'
+                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),81(es13.6,1x))'
       character(len=10), parameter :: chfmt='(56(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),46(es13.6,1x))'
+                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),47(es13.6,1x))'
       !------------------------------------------------------------------------------------!
 
 
@@ -4625,26 +4620,27 @@ module rk4_misc
                                   , '    ATM.VPDEF' , '   MET.RSHORT', '    MET.RLONG'     &
                                   , '     CAN.PRSS' , '     CAN.TEMP', '      CAN.SHV'     &
                                   , '      CAN.CO2' , '    CAN.DEPTH', '     CAN.RHOS'     &
-                                  , '   CAN.RELHUM' , '    CAN.THETA', '    CAN.THEIV'     &
-                                  , ' CAN.ENTHALPY' , '     SFC.TEMP', '      SFC.SHV'     &
-                                  , '    LEAF.TEMP' , '   LEAF.WATER', '    WOOD.TEMP'     &
-                                  , '   WOOD.WATER' , '       GGBARE', '        GGVEG'     &
-                                  , '        GGNET' , '      OPENCAN', '    SOIL.TEMP'     &
-                                  , '   SOIL.WATER' , '       SOILCP', '       SOILWP'     &
-                                  , '       SOILFC' , '       SLMSTS', '        USTAR'     &
-                                  , '        TSTAR' , '        QSTAR', '        CSTAR'     &
-                                  , '         ZETA' , '      RI.BULK', '   GND.RSHORT'     &
-                                  , '      GND.PAR' , '    GND.RLONG', '       WFLXLC'     &
-                                  , '       WFLXWC' , '       WFLXGC', '       WFLXAC'     &
-                                  , '       TRANSP' , '        WSHED', '    INTERCEPT'     &
-                                  , '  THROUGHFALL' , '       HFLXGC', '       HFLXLC'     &
-                                  , '       HFLXWC' , '       HFLXAC', '       CFLXAC'     &
-                                  , '       CFLXST' , '       FGC.RH', '       FSC.RH'     &
-                                  , '      STGC.RH' , '      STSC.RH', '       MSC.RH'     &
-                                  , '       SSC.RH' , '       PSC.RH', '          GPP'     &
-                                  , '       PLRESP' , ' PAR.BEAM.TOP' , ' PAR.DIFF.TOP'    &
-                                  , ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP' , ' PAR.BEAM.BOT'    &
-                                  , ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT' , ' NIR.DIFF.BOT'
+                                  , '     CAN.DMOL', '   CAN.RELHUM' , '    CAN.THETA'     &
+                                  , '    CAN.THEIV', ' CAN.ENTHALPY' , '     SFC.TEMP'     &
+                                  , '      SFC.SHV', '    LEAF.TEMP' , '   LEAF.WATER'     &
+                                  , '    WOOD.TEMP', '   WOOD.WATER' , '       GGBARE'     &
+                                  , '        GGVEG', '        GGNET' , '      OPENCAN'     &
+                                  , '    SOIL.TEMP', '   SOIL.WATER' , '       SOILCP'     &
+                                  , '       SOILWP', '       SOILFC' , '       SLMSTS'     &
+                                  , '        USTAR', '        TSTAR' , '        QSTAR'     &
+                                  , '        CSTAR', '         ZETA' , '      RI.BULK'     &
+                                  , '   GND.RSHORT', '      GND.PAR' , '    GND.RLONG'     &
+                                  , '       WFLXLC', '       WFLXWC' , '       WFLXGC'     &
+                                  , '       WFLXAC', '       TRANSP' , '        WSHED'     &
+                                  , '    INTERCEPT', '  THROUGHFALL' , '       HFLXGC'     &
+                                  , '       HFLXLC', '       HFLXWC' , '       HFLXAC'     &
+                                  , '       CFLXAC', '       CFLXST' , '       FGC.RH'     &
+                                  , '       FSC.RH', '      STGC.RH' , '      STSC.RH'     &
+                                  , '       MSC.RH', '       SSC.RH' , '       PSC.RH'     &
+                                  , '          GPP', '       PLRESP' , ' PAR.BEAM.TOP'     &
+                                  , ' PAR.DIFF.TOP', ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP'     &
+                                  , ' PAR.BEAM.BOT', ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT'     &
+                                  , ' NIR.DIFF.BOT'
                                   
          close (unit=83,status='keep')
       end if
@@ -4667,26 +4663,27 @@ module rk4_misc
                    , rk4site%atm_vpdef     , rk4site%rshort        , rk4site%rlong         &
                    , initp%can_prss        , initp%can_temp        , initp%can_shv         &
                    , initp%can_co2         , initp%can_depth       , initp%can_rhos        &
-                   , initp%can_rhv         , initp%can_theta       , can_theiv             &
-                   , initp%can_enthalpy    , initp%ground_temp     , initp%ground_shv      &
-                   , avg_leaf_temp         , sum_leaf_water        , avg_wood_temp         &
-                   , sum_wood_water        , initp%ggbare          , initp%ggveg           &
-                   , initp%ggnet           , initp%opencan_frac    , initp%soil_tempk(nzg) &
-                   , initp%soil_water(nzg) , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   &
-                   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   , initp%ustar           &
-                   , initp%tstar           , initp%qstar           , initp%cstar           &
-                   , initp%zeta            , initp%ribulk          , fluxp%flx_rshort_gnd  &
-                   , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    &
-                   , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
-                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
-                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
-                   , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
-                   , fluxp%flx_carbon_st   , initp%fgc_rh          , initp%fsc_rh          &
-                   , initp%stgc_rh         , initp%stsc_rh         , initp%msc_rh          &
-                   , initp%ssc_rh          , initp%psc_rh          , sum_gpp               &
-                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
-                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
-                   , par_b_diff            , nir_b_beam            , nir_b_diff
+                   , initp%can_dmol        , initp%can_rhv         , initp%can_theta       &
+                   , can_theiv             , initp%can_enthalpy    , initp%ground_temp     &
+                   , initp%ground_shv      , avg_leaf_temp         , sum_leaf_water        &
+                   , avg_wood_temp         , sum_wood_water        , initp%ggbare          &
+                   , initp%ggveg           , initp%ggnet           , initp%opencan_frac    &
+                   , initp%soil_tempk(nzg) , initp%soil_water(nzg) , soil8(nsoil)%soilcp   &
+                   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   &
+                   , initp%ustar           , initp%tstar           , initp%qstar           &
+                   , initp%cstar           , initp%zeta            , initp%ribulk          &
+                   , fluxp%flx_rshort_gnd  , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   &
+                   , fluxp%flx_vapor_lc    , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    &
+                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
+                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
+                   , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
+                   , fluxp%flx_carbon_ac   , fluxp%flx_carbon_st   , initp%fgc_rh          &
+                   , initp%fsc_rh          , initp%stgc_rh         , initp%stsc_rh         &
+                   , initp%msc_rh          , initp%ssc_rh          , initp%psc_rh          &
+                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
+                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
+                   , par_b_beam            , par_b_diff            , nir_b_beam            &
+                   , nir_b_diff
                    
       close(unit=83,status='keep')
       !------------------------------------------------------------------------------------!
@@ -4975,14 +4972,13 @@ module rk4_misc
                                 , rk4min_can_temp    & ! intent(in)
                                 , rk4min_can_shv     & ! intent(in)
                                 , rk4max_can_shv     & ! intent(in)
+                                , rk4min_can_co2     & ! intent(in)
+                                , rk4max_can_co2     & ! intent(in)
                                 , print_thbnd        & ! intent(in)
                                 , thbnds_fout        ! ! intent(in)
-      use consts_coms    , only : rdry8              & ! intent(in)
-                                , epim18             & ! intent(in)
-                                , ep8                & ! intent(in)
-                                , mmdryi8            & ! intent(in)
-                                , hr_sec             & ! intent(in)
-                                , min_sec            ! ! intent(in)
+      use consts_coms    , only : hr_sec             & ! intent(in)
+                                , min_sec            & ! intent(in)
+                                , huge_num8          ! ! intent(in)
       use ed_state_vars  , only : patchtype          ! ! structure
       use therm_lib8     , only : press2exner8       & ! function
                                 , extemp2theta8      & ! function
@@ -4990,6 +4986,7 @@ module rk4_misc
                                 , thetaeiv8          & ! function
                                 , thetaeivs8         & ! function
                                 , idealdenssh8       & ! function
+                                , idealdmolsh8       & ! function
                                 , reducedpress8      ! ! function
       use soil_coms      , only : soil8              ! ! intent(in)
       use ed_misc_coms   , only : current_time       ! ! intent(in)
@@ -5011,7 +5008,6 @@ module rk4_misc
       real(kind=8)                             :: can_exner_try
       real(kind=8)                             :: can_theta_try
       real(kind=8)                             :: can_enthalpy_try
-      real(kind=8)                             :: nplant
       real(kind=4)                             :: leaf_water_int_4
       real(kind=4)                             :: leaf_water_im2_4
       real(kind=4)                             :: wood_water_int_4
@@ -5030,8 +5026,6 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
       !     File header is now written by initialize_misc_stepvars.                        !
       !------------------------------------------------------------------------------------!
-
-
 
       !------------------------------------------------------------------------------------!
       !     Find the bounds for pressure.  To avoid the pressure range to be too relaxed,  !
@@ -5083,7 +5077,7 @@ module rk4_misc
       !      Minimum and maximum enthalpy.                                                 !
       !------------------------------------------------------------------------------------!
       !----- 1. Initial value, the most extreme one. --------------------------------------!
-      rk4aux(ibuff)%rk4min_can_enthalpy = huge(1.d0)
+      rk4aux(ibuff)%rk4min_can_enthalpy =   huge(1.d0)
       rk4aux(ibuff)%rk4max_can_enthalpy = - huge(1.d0)
       !----- 2. Minimum temperature. ------------------------------------------------------!
       can_enthalpy_try    = tq2enthalpy8(rk4min_can_temp,can_shv,.true.)
@@ -5112,8 +5106,6 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
 
 
-
-
       !------------------------------------------------------------------------------------!
       !     Print boundaries for scalar quantities.                                        !
       !------------------------------------------------------------------------------------!
@@ -5125,11 +5117,12 @@ module rk4_misc
 
          open (unit=39,file=trim(thbnds_fout),status='old',action='write'                  &
                       ,position='append')
-         write (unit=39,fmt='(6(i12,1x),10(es12.5,1x))')                                   &
+         write (unit=39,fmt='(6(i12,1x),12(es12.5,1x))')                                   &
                                  current_time%year, current_time%month,  current_time%date &
                               ,               hour,             minute,             second &
                               ,    rk4min_can_temp,    rk4max_can_temp,     rk4min_can_shv &
-                              ,     rk4max_can_shv,   rk4aux(ibuff)%rk4min_can_theta       &
+                              ,     rk4max_can_shv,     rk4min_can_co2,     rk4max_can_co2 &
+                              , rk4aux(ibuff)%rk4min_can_theta                             &
                               , rk4aux(ibuff)%rk4max_can_theta                             &
                               , rk4aux(ibuff)%rk4min_can_prss                              &
                               , rk4aux(ibuff)%rk4max_can_prss                              &
@@ -5145,18 +5138,17 @@ module rk4_misc
       case (0)
          !----- Plant hydraulics is disabled.  Accept everything. -------------------------!
          do ico=1,cpatch%ncohorts
-            rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = - huge(1.d0)
-            rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = + huge(1.d0)
-            rk4aux(ibuff)%rk4min_wood_water_im2(ico) = - huge(1.d0)
-            rk4aux(ibuff)%rk4max_wood_water_im2(ico) = + huge(1.d0)
-            rk4aux(ibuff)%rk4min_veg_water_im2 (ico) = - huge(1.d0)
-            rk4aux(ibuff)%rk4max_veg_water_im2 (ico) = + huge(1.d0)
+            rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = - huge_num8
+            rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = + huge_num8
+            rk4aux(ibuff)%rk4min_wood_water_im2(ico) = - huge_num8
+            rk4aux(ibuff)%rk4max_wood_water_im2(ico) = + huge_num8
+            rk4aux(ibuff)%rk4min_veg_water_im2 (ico) = - huge_num8
+            rk4aux(ibuff)%rk4max_veg_water_im2 (ico) = + huge_num8
          end do
          !---------------------------------------------------------------------------------!
       case default
          do ico=1,cpatch%ncohorts
             ipft    = cpatch%pft(ico)
-            nplant  = dble(cpatch%nplant(ico))
 
 
 
@@ -5173,8 +5165,8 @@ module rk4_misc
                           ,ipft,leaf_water_int_4,wood_water_int_4)
                call twi2twe(leaf_water_int_4,wood_water_int_4,cpatch%nplant(ico)           &
                            ,leaf_water_im2_4,wood_water_im2_4)
-               rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = nplant * dble(leaf_water_im2_4)
-               rk4aux(ibuff)%rk4min_wood_water_im2(ico) = nplant * dble(wood_water_im2_4)
+               rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = dble(leaf_water_im2_4)
+               rk4aux(ibuff)%rk4min_wood_water_im2(ico) = dble(wood_water_im2_4)
                rk4aux(ibuff)%rk4min_veg_water_im2 (ico) =                                  &
                                                   rk4aux(ibuff)%rk4min_leaf_water_im2(ico) &
                                                 + rk4aux(ibuff)%rk4min_wood_water_im2(ico)
@@ -5189,8 +5181,8 @@ module rk4_misc
                           ,wood_water_int_4)
                call twi2twe(leaf_water_int_4,wood_water_int_4,cpatch%nplant(ico)           &
                            ,leaf_water_im2_4,wood_water_im2_4)
-               rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = nplant * dble(leaf_water_im2_4)
-               rk4aux(ibuff)%rk4max_wood_water_im2(ico) = nplant * dble(wood_water_im2_4)
+               rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = dble(leaf_water_im2_4)
+               rk4aux(ibuff)%rk4max_wood_water_im2(ico) = dble(wood_water_im2_4)
                rk4aux(ibuff)%rk4max_veg_water_im2 (ico) =                                  &
                                                   rk4aux(ibuff)%rk4max_leaf_water_im2(ico) &
                                                 + rk4aux(ibuff)%rk4max_wood_water_im2(ico)
@@ -5199,12 +5191,12 @@ module rk4_misc
                !---------------------------------------------------------------------------!
                !      Accept everything.                                                   !
                !---------------------------------------------------------------------------!
-               rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = - huge(1.d0)
-               rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = + huge(1.d0)
-               rk4aux(ibuff)%rk4min_wood_water_im2(ico) = - huge(1.d0)
-               rk4aux(ibuff)%rk4max_wood_water_im2(ico) = + huge(1.d0)
-               rk4aux(ibuff)%rk4min_veg_water_im2 (ico) = - huge(1.d0)
-               rk4aux(ibuff)%rk4max_veg_water_im2 (ico) = + huge(1.d0)
+               rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = - huge_num8
+               rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = + huge_num8
+               rk4aux(ibuff)%rk4min_wood_water_im2(ico) = - huge_num8
+               rk4aux(ibuff)%rk4max_wood_water_im2(ico) = + huge_num8
+               rk4aux(ibuff)%rk4min_veg_water_im2 (ico) = - huge_num8
+               rk4aux(ibuff)%rk4max_veg_water_im2 (ico) = + huge_num8
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!

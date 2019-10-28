@@ -1568,7 +1568,9 @@ subroutine init_soil_coms
                              , sldrain               & ! intent(out)
                              , sldrain8              & ! intent(out)
                              , sin_sldrain           & ! intent(out)
-                             , sin_sldrain8          ! ! intent(out)
+                             , sin_sldrain8          & ! intent(out)
+                             , hydcond_min           & ! intent(out)
+                             , hydcond_min8          ! ! intent(out)
    use phenology_coms , only : thetacrit             ! ! intent(in)
    use disturb_coms   , only : sm_fire               ! ! intent(in)
    use grid_coms      , only : ngrids                ! ! intent(in)
@@ -1590,6 +1592,7 @@ subroutine init_soil_coms
    real(kind=4)            :: slxsilt                ! Silt fraction
    !----- Local constants. ----------------------------------------------------------------!
    real(kind=4), parameter :: fieldcp_K   =  0.1     ! hydr. cond. at field cap.   [mm/day]
+   real(kind=4), parameter :: residual_K  =  1.e-5   ! minimum hydr. cond.         [mm/day]
    real(kind=4), parameter :: soilcp_MPa  = -3.1     ! Matric pot. - air dry soil  [   MPa]
    real(kind=4), parameter :: soilwp_MPa  = -1.5     ! Matric pot. - wilting point [   MPa]
    real(kind=4), parameter :: sand_hcapv  =  2.128e6 ! Sand vol. heat capacity     [J/m3/K]
@@ -1624,6 +1627,8 @@ subroutine init_soil_coms
    tiny_sfcwater_mass  = 1.0e-3         ! Minimum mass in temporary layers        [   kg/m2]
    infiltration_method = 0              ! Infiltration method, used in rk4_derivs [     0|1]
    freezecoef          = 7.0 * log(10.) ! Coeff. for infiltration of frozen water [     ---]
+   hydcond_min         = residual_K / wdns /day_sec
+                                        ! Residual hydraulic conductivity         [     m/s]
    !---------------------------------------------------------------------------------------!
 
 
@@ -2016,6 +2021,7 @@ subroutine init_soil_coms
    ny07_eq04_a8 = dble(ny07_eq04_a)
    ny07_eq04_m8 = dble(ny07_eq04_m)
    freezecoef8  = dble(freezecoef )
+   hydcond_min8 = dble(hydcond_min)
 
    !---------------------------------------------------------------------------------------!
    !     Find the double precision version of the drainage slope, and find and save the    !
@@ -7375,8 +7381,7 @@ subroutine init_derived_params_after_xml()
                                    , lnexp_min8                & ! intent(in)
                                    , lnexp_max8                & ! intent(in)
                                    , tiny_num8                 ! ! intent(in)
-   use physiology_coms      , only : iphysiol                  & ! intent(in)
-                                   , plant_hydro_scheme        ! ! intent(in)
+   use physiology_coms      , only : iphysiol                  ! ! intent(in)
    use pft_coms             , only : include_pft               & ! intent(in)
                                    , is_tropical               & ! intent(in)
                                    , is_grass                  & ! intent(in)
@@ -7716,17 +7721,16 @@ subroutine init_derived_params_after_xml()
 
    !---------------------------------------------------------------------------------------!
    !     Find net specific heat for leaves, sapwood, heartwood, and bark.  Here we modify  !
-   ! the calculation from earlier versions of ED-2.2.  When we run the model with plant    !
-   ! hydrology, we separate oven-dry biomass and internal water for leaves and sapwood, as !
-   ! the latter is dynamic.  For now heartwood and bark are assumed to have constant       !
-   ! internal water content, so we incorporate the specific heat of internal water to the  !
-   ! bulk specific heat.                                                                   !
-   !     In addition, we ignore the wood-water bonding heat capacity when dynamic plant    !
-   ! hydraulics is active.  This is a relative small effect (2-5% of heat capacity), and   !
-   ! it only changes when water content is very low.  Keeping this term may add some       !
-   ! non-linearities and would require dynamic updates --- not a big deal, and we may      !
-   ! add this effect in future versions.                                                   !
-   ! 
+   ! the calculation from earlier versions of ED-2.2.  We now separate oven-dry biomass    !
+   ! and internal water for leaves and sapwood, as the latter is dynamic.  For now heart-  !
+   ! wood and bark are assumed to have constant internal water content, so we incorporate  !
+   ! the specific heat of internal water to the bulk specific heat.                        !
+   !     In addition, we ignore the wood-water bonding heat capacity for sapwood.  This is !
+   !  a relative small effect (2-5% of heat capacity), and it only changes when water      !
+   !  content is very low.  Keeping this term may add some non-linearities and would       !
+   ! require dynamic updates --- not a big deal, and we may add this effect in future      !
+   ! versions.                                                                             !
+   !                                                                                       !
    ! References:                                                                           !
    !                                                                                       !
    ! Forest Products Laboratory. 2010. Wood handbook -- wood as an engineering material.   !
@@ -7743,24 +7747,12 @@ subroutine init_derived_params_after_xml()
    !    seasonally dry tropical forests. New Phytol., 212: 80-95. doi:10.1111/nph.14009    !
    !    (X16).                                                                             !
    !---------------------------------------------------------------------------------------!
-   select case (plant_hydro_scheme)
-   case (0)
-      cleaf(:) = (c_grn_leaf_dry (:) + leaf_water_sat(:) * cliq)                           &
-               / (1. + leaf_water_sat(:))
-      csapw(:) = (c_ngrn_wood_dry(:) + wood_water_sat(:) * cliq)                           &
-               / (1. + wood_water_sat(:)) + delta_c_wood(:)
-      cdead(:) = (c_ngrn_wood_dry(:) + wood_water_sat(:) * cliq)                           &
-               / (1. + wood_water_sat(:)) + delta_c_wood(:)
-      cbark(:) = (c_ngrn_bark_dry(:) + bark_water_sat(:) * cliq)                           &
-               / (1. + bark_water_sat(:)) + delta_c_bark(:)
-   case default
-      cleaf(:) = c_grn_leaf_dry (:)
-      csapw(:) = c_ngrn_wood_dry(:)
-      cdead(:) = (c_ngrn_wood_dry(:) + wood_water_sat(:) * cliq)                           &
-               / (1. + wood_water_sat(:))
-      cbark(:) = (c_ngrn_bark_dry(:) + bark_water_sat(:) * cliq)                           &
-               / (1. + bark_water_sat(:))
-   end select
+   cleaf(:) = c_grn_leaf_dry (:)
+   csapw(:) = c_ngrn_wood_dry(:)
+   cdead(:) = (c_ngrn_wood_dry(:) + wood_water_sat(:) * cliq) / (1. + wood_water_sat(:))   &
+            + delta_c_wood(:)
+   cbark(:) = (c_ngrn_bark_dry(:) + bark_water_sat(:) * cliq) / (1. + bark_water_sat(:))   &
+            + delta_c_bark(:)
    !---------------------------------------------------------------------------------------!
 
 

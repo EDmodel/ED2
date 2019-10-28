@@ -16,6 +16,7 @@ module ed_bigleaf_init
                                 , deallocate_sitetype  & ! subroutine
                                 , allocate_patchtype   & ! subroutine
                                 , deallocate_patchtype ! ! subroutine
+      use grid_coms      , only : nzg                  ! ! subroutine
       use ed_max_dims    , only : n_pft                & ! intent(in)
                                 , n_dist_types         ! ! intent(in)
       use allometry      , only : size2bl              & ! function
@@ -461,7 +462,8 @@ module ed_bigleaf_init
             do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
                do ico = 1,cpatch%ncohorts
-                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi)                       &
+                                          ,nzg,cpoly%ntext_soil(:,isi))
                end do
 
                !----- Make sure that cohorts are organised from tallest to shortest. ------!

@@ -85,7 +85,6 @@ module rk4_derivs
                                       , ss                    & ! intent(in)
                                       , isoilbc               & ! intent(in)
                                       , sin_sldrain8          & ! intent(in)
-                                      , matric_potential8     & ! function
                                       , hydr_conduct8         ! ! function
       use rk4_coms             , only : checkbudget           & ! intent(in)
                                       , print_detailed        & ! intent(in)
@@ -762,7 +761,7 @@ module rk4_derivs
                   !------------------------------------------------------------------------!
                   do ico=1,cpatch%ncohorts
                      !----- Find the soil water loss associated with this cohort. ---------!
-                     wloss         = rk4aux(ibuff)%extracted_water(k1,ico) * ext_weight
+                     wloss         = rk4aux(ibuff)%extracted_water(ico,k1) * ext_weight
                      qloss         = wloss * uint_water_k2
                      !---------------------------------------------------------------------!
 
@@ -1014,7 +1013,8 @@ module rk4_derivs
       real(kind=8)                 :: wflxwc_tot        ! Wood -> CAS evaporation (water)
       real(kind=8)                 :: qwflxlc_tot       ! Leaf -> CAS evaporation (energy)
       real(kind=8)                 :: qwflxwc_tot       ! Wood -> CAS evaporation (energy)
-      real(kind=8)                 :: rho_ustar         !
+      real(kind=8)                 :: rhos_ustar        !
+      real(kind=8)                 :: dmol_ustar        !
       real(kind=8)                 :: min_leaf_water    !
       real(kind=8)                 :: max_leaf_water    !
       real(kind=8)                 :: min_wood_water    !
@@ -1049,12 +1049,13 @@ module rk4_derivs
       !------------------------------------------------------------------------------------!
       !    Computing the fluxes from atmosphere to canopy.                                 !
       !------------------------------------------------------------------------------------!
-      rho_ustar = initp%can_rhos * initp%ustar                   ! Aux. variable
-      wflxac    = rho_ustar      * initp%qstar                   ! Water flux
-      eflxac    = rho_ustar      * initp%estar                   ! Enthalpy flux
-      cflxac    = rho_ustar      * initp%cstar * mmdryi8         ! CO2 flux [umol/m2/s]
+      rhos_ustar = initp%can_rhos * initp%ustar        ! Aux. variable
+      dmol_ustar = initp%can_dmol * initp%ustar        ! Aux. variable
+      wflxac     = rhos_ustar     * initp%qstar        ! Water flux     [  kg/m2/s]
+      eflxac     = rhos_ustar     * initp%estar        ! Enthalpy flux  [   J/m2/s]
+      cflxac     = dmol_ustar     * initp%cstar        ! CO2            [umol/m2/s]
       !------ Sensible heat flux. ---------------------------------------------------------!
-      hflxac    = eflxac + wflxac * cph2o8 * tsupercool_vap8
+      hflxac     = eflxac + wflxac * cph2o8 * tsupercool_vap8
       !------------------------------------------------------------------------------------!
 
 
@@ -2052,11 +2053,7 @@ module rk4_derivs
 
 
       !------------------------------------------------------------------------------------!
-      !     Update the log of potential temperature (entropy), water vapour specific mass, !
-      ! and CO2 mixing ratio of the canopy air space.                                      !
-      ! wcapcan: can_rhos * can_depth               (water capacity)                       !
-      ! hcapcan: can_rhos * can_depth * can_exner   (entropy capacity times temperature)   !
-      ! ccapcan: can_rhos * can_depth * mmdryi      (carbon capacity)                      !
+      !     Update the intensive enthalpy, specific humidity, and CO2 mixing ratio.        !
       !------------------------------------------------------------------------------------!
       dinitp%can_enthalpy = ( hflxsc      + hflxgc      + hflxlc_tot                       &
                             + hflxwc_tot  + qwflxsc     + qwflxgc                          &
@@ -2076,10 +2073,10 @@ module rk4_derivs
       !if (is_hybrid) then
 
          a = ( nee_tot                                                                     &
-             + initp%can_rhos*initp%ggbare*mmdryi8*rk4site%atm_co2)                        &
+             + initp%can_dmol*initp%ggbare*rk4site%atm_co2)                                &
              * rk4aux(ibuff)%ccapcani
 
-         b  = (initp%can_rhos*initp%ggbare*mmdryi8) * rk4aux(ibuff)%ccapcani
+         b  = (initp%can_dmol*initp%ggbare) * rk4aux(ibuff)%ccapcani
          c0 = initp%can_co2
 
          ! Calculate the effective derivative
@@ -2087,7 +2084,7 @@ module rk4_derivs
 
          ! Calculate the effective cflxac term
 
-         cflxac = (initp%can_rhos*initp%ggbare*mmdryi8*rk4aux(ibuff)%ccapcani)/dt          &
+         cflxac = (initp%can_dmol*initp%ggbare*rk4aux(ibuff)%ccapcani)/dt                  &
                 * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +                      &
                    c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
 

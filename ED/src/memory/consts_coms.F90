@@ -147,6 +147,8 @@ Module consts_coms
                         , b_del_alvi3      => del_alvi3      & ! intent(in)
                         , b_tsupercool_liq => tsupercool_liq & ! intent(in)
                         , b_tsupercool_vap => tsupercool_vap & ! intent(in)
+                        , b_cph2o_tscvap   => cph2o_tscvap   & ! intent(in)
+                        , b_cpdiff_epim1   => cpdiff_epim1   & ! intent(in)
                         , b_ttripoli       => ttripoli       & ! intent(in)
                         , b_htripoli       => htripoli       & ! intent(in)
                         , b_htripolii      => htripolii      & ! intent(in)
@@ -320,6 +322,8 @@ Module consts_coms
    real        , parameter :: del_alvi3      = b_del_alvi3
    real        , parameter :: tsupercool_liq = b_tsupercool_liq
    real        , parameter :: tsupercool_vap = b_tsupercool_vap
+   real        , parameter :: cph2o_tscvap   = b_cph2o_tscvap
+   real        , parameter :: cpdiff_epim1   = b_cpdiff_epim1
    real        , parameter :: ttripoli       = b_ttripoli
    real        , parameter :: htripoli       = b_htripoli
    real        , parameter :: htripolii      = b_htripolii
@@ -596,6 +600,14 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !      These terms are used to convert extensive enthalpy and water to temperature.     !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: cph2o_tscvap = cph2o * tsupercool_vap
+   real, parameter :: cpdiff_epim1 = cph2o - epi * cpdry
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Minimum temperature for computing the condensation effect of temperature on       !
@@ -774,6 +786,8 @@ Module consts_coms
    real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
    real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)
    real(kind=8), parameter :: tsupercool_vap8 = dble(tsupercool_vap)
+   real(kind=8), parameter :: cph2o_tscvap8   = dble(cph2o_tscvap  )
+   real(kind=8), parameter :: cpdiff_epim18   = dble(cpdiff_epim1  )
    real(kind=8), parameter :: ttripoli8       = dble(ttripoli      )
    real(kind=8), parameter :: htripoli8       = dble(htripoli      )
    real(kind=8), parameter :: htripolii8      = dble(htripolii     )

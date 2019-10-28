@@ -446,7 +446,8 @@ module reproduction
                         !------------------------------------------------------------------!
 
                         !----- Carry out standard initialization. -------------------------!
-                        call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                        call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi),nzg             &
+                                                ,cpoly%ntext_soil(:,isi))
                         !------------------------------------------------------------------!
 
 
@@ -568,7 +569,7 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,.false.)
                         !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico)
                         !------------------------------------------------------------------!
@@ -806,7 +807,7 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,.false.)
                         !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico)
                         !------------------------------------------------------------------!

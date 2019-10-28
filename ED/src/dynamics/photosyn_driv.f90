@@ -570,6 +570,7 @@ module photosyn_driv
             end select
             !------------------------------------------------------------------------------!
 
+
             !----- Convert leaf respiration to [umol/m2ground/s] --------------------------!
             cpatch%leaf_respiration(ico) = leaf_resp * cpatch%lai (ico)
             !------------------------------------------------------------------------------!
@@ -889,9 +890,9 @@ module photosyn_driv
       real                                    :: util_parv
       real                                    :: alpha
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: hfmt='(67(a,1x))'
+      character(len=10), parameter :: hfmt='(68(a,1x))'
       character(len=48), parameter ::                                                      &
-                                    bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),61(es13.6,1x))'
+                                    bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),62(es13.6,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical                   , save        :: first_time=.true.
       !------------------------------------------------------------------------------------!
@@ -983,20 +984,20 @@ module photosyn_driv
                                   , '      CAN_SHV', '      ATM_SHV', '   GROUND_SHV'      &
                                   , 'LSFC_SHV_OPEN', 'LSFC_SHV_CLOS', '     LINT_SHV'      &
                                   , '     ATM_PRSS', '     CAN_PRSS', '         PCPG'      &
-                                  , '     CAN_RHOS', '      ATM_CO2', '      CAN_CO2'      &
-                                  , 'LSFC_CO2_OPEN', 'LSFC_CO2_CLOS', 'LINT_CO2_OPEN'      &
-                                  , 'LINT_CO2_CLOS', '        COMPP', '     PAR_AREA'      &
-                                  , '         PARV', '    UTIL_PARV', '     NIR_AREA'      &
-                                  , '         NIRV', '          GPP', '    LEAF_RESP'      &
-                                  , '     LEAF_GBH', '     LEAF_GBW', '     WOOD_GBH'      &
-                                  , '     WOOD_GBW', '     LEAF_GSW', '       A_OPEN'      &
-                                  , '       A_CLOS', '      A_LIGHT', '       A_RUBP'      &
-                                  , '        A_CO2', '     GSW_OPEN', '     GSW_CLOS'      &
-                                  , '     PSI_OPEN', '     PSI_CLOS', '   H2O_SUPPLY'      &
-                                  , '          FSW', '          FSN', '      FS_OPEN'      &
-                                  , '     ATM_WIND', '     VEG_WIND', '        USTAR'      &
-                                  , '           VM', '           JM', '          TPM'      &
-                                  , '         JACT'
+                                  , '     CAN_RHOS', '     CAN_DMOL', '      ATM_CO2'      &
+                                  , '      CAN_CO2', 'LSFC_CO2_OPEN', 'LSFC_CO2_CLOS'      &
+                                  , 'LINT_CO2_OPEN', 'LINT_CO2_CLOS', '        COMPP'      &
+                                  , '     PAR_AREA', '         PARV', '    UTIL_PARV'      &
+                                  , '     NIR_AREA', '         NIRV', '          GPP'      &
+                                  , '    LEAF_RESP', '     LEAF_GBH', '     LEAF_GBW'      &
+                                  , '     WOOD_GBH', '     WOOD_GBW', '     LEAF_GSW'      &
+                                  , '       A_OPEN', '       A_CLOS', '      A_LIGHT'      &
+                                  , '       A_RUBP', '        A_CO2', '     GSW_OPEN'      &
+                                  , '     GSW_CLOS', '     PSI_OPEN', '     PSI_CLOS'      &
+                                  , '   H2O_SUPPLY', '          FSW', '          FSN'      &
+                                  , '      FS_OPEN', '     ATM_WIND', '     VEG_WIND'      &
+                                  , '        USTAR', '           VM', '           JM'      &
+                                  , '          TPM', '         JACT'
 
 
          close (unit=57,status='keep')
@@ -1023,26 +1024,26 @@ module photosyn_driv
                              , cpatch%lsfc_shv_closed(ico), cpatch%lint_shv(ico)           &
                              , cmet%prss                  , csite%can_prss(ipa)            &
                              , cmet%pcpg                  , csite%can_rhos(ipa)            &
-                             , cmet%atm_co2               , csite%can_co2(ipa)             &
-                             , cpatch%lsfc_co2_open(ico)  , cpatch%lsfc_co2_closed(ico)    &
-                             , cpatch%lint_co2_open(ico)  , cpatch%lint_co2_closed(ico)    &
-                             , compp                      , par_area                       &
-                             , parv                       , util_parv                      &
-                             , nir_area                   , nirv                           &
-                             , cpatch%gpp(ico)            , leaf_resp                      &
-                             , cpatch%leaf_gbh(ico)       , cpatch%leaf_gbw(ico)           &
-                             , cpatch%wood_gbh(ico)       , cpatch%wood_gbw(ico)           &
-                             , cpatch%leaf_gsw(ico)       , cpatch%A_open(ico)             &
-                             , cpatch%A_closed(ico)       , cpatch%A_light(ico)            &
-                             , cpatch%A_rubp(ico)         , cpatch%A_co2   (ico)           &
-                             , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)         &
-                             , cpatch%psi_open(ico)       , cpatch%psi_closed(ico)         &
-                             , cpatch%water_supply(ico)   , cpatch%fsw(ico)                &
-                             , cpatch%fsn(ico)            , cpatch%fs_open(ico)            &
-                             , cmet%vels                  , cpatch%veg_wind(ico)           &
-                             , csite%ustar(ipa)           , vm                             &
-                             , jm                         , tpm                            &
-                             , jact
+                             , csite%can_dmol(ipa)        , cmet%atm_co2                   &
+                             , csite%can_co2(ipa)         , cpatch%lsfc_co2_open(ico)      &
+                             , cpatch%lsfc_co2_closed(ico), cpatch%lint_co2_open(ico)      &
+                             , cpatch%lint_co2_closed(ico), compp                          &
+                             , par_area                   , parv                           &
+                             , util_parv                  , nir_area                       &
+                             , nirv                       , cpatch%gpp(ico)                &
+                             , leaf_resp                  , cpatch%leaf_gbh(ico)           &
+                             , cpatch%leaf_gbw(ico)       , cpatch%wood_gbh(ico)           &
+                             , cpatch%wood_gbw(ico)       , cpatch%leaf_gsw(ico)           &
+                             , cpatch%A_open(ico)         , cpatch%A_closed(ico)           &
+                             , cpatch%A_light(ico)        , cpatch%A_rubp(ico)             &
+                             , cpatch%A_co2   (ico)       , cpatch%gsw_open(ico)           &
+                             , cpatch%gsw_closed(ico)     , cpatch%psi_open(ico)           &
+                             , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)       &
+                             , cpatch%fsw(ico)            , cpatch%fsn(ico)                &
+                             , cpatch%fs_open(ico)        , cmet%vels                      &
+                             , cpatch%veg_wind(ico)       , csite%ustar(ipa)               &
+                             , vm                         , jm                             &
+                             , tpm                        , jact
       close(unit=57,status='keep')
       !------------------------------------------------------------------------------------!
 

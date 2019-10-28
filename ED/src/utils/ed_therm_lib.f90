@@ -154,13 +154,14 @@ module ed_therm_lib
    !    The "cweh" acronym means "consistent water, energy, and heat-capacity" approach.   !
    !---------------------------------------------------------------------------------------!
    subroutine update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap             &
-                                    ,old_leaf_water_im2,old_wood_water_im2)
-      use ed_state_vars, only : sitetype    & ! structure
-                              , patchtype   ! ! structure
-      use therm_lib    , only : uextcm2tl   & ! subroutine
-                              , cmtl2uext   & ! function
-                              , tq2enthalpy ! ! function
-      use ed_misc_coms , only : frqsumi     ! ! intent(in)
+                                    ,old_leaf_water_im2,old_wood_water_im2,check_leaks)
+      use ed_state_vars, only : sitetype     & ! structure
+                              , patchtype    ! ! structure
+      use therm_lib    , only : uextcm2tl    & ! subroutine
+                              , cmtl2uext    & ! function
+                              , tq2enthalpy  ! ! function
+      use ed_misc_coms , only : frqsumi      & ! intent(in)
+                              , current_time ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)   , target     :: csite
@@ -170,6 +171,7 @@ module ed_therm_lib
       real             , intent(in) :: old_wood_hcap
       real             , intent(in) :: old_leaf_water_im2
       real             , intent(in) :: old_wood_water_im2
+      logical          , intent(in) :: check_leaks
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)  , pointer    :: cpatch
       real                          :: new_temp
@@ -184,10 +186,14 @@ module ed_therm_lib
       real                          :: new_wood_energy_im2
       !----- Local constants. -------------------------------------------------------------!
       character(len=13), parameter  :: efmt='(a,1x,es12.5)'
+      character(len=10), parameter  :: ifmt='(a,1x,i12)'
+      character(len=34), parameter  :: tfmt='(a,1x,2(i2.2,a),i4.4,1x,3(i2.2,a))'
       !------------------------------------------------------------------------------------!
 
 
+      !----- Current patch. ---------------------------------------------------------------!
       cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -257,19 +263,37 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          !     In case the temperature is different, give the user the bad news...         !
          !---------------------------------------------------------------------------------!
-         if (abs(new_temp - cpatch%leaf_temp(ico)) > 0.1) then
+         if (check_leaks .and. (abs(new_temp - cpatch%leaf_temp(ico)) > 0.1)) then
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             write(unit=*,fmt='(a)') ' LEAF ENERGY CONSERVATION FAILED!:'
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
-            write(unit=*,fmt=efmt) ' Old temperature:     ',cpatch%leaf_temp     (ico)
-            write(unit=*,fmt=efmt) ' New temperature:     ',new_temp
-            write(unit=*,fmt=efmt) ' Old heat capacity:   ',old_leaf_hcap
-            write(unit=*,fmt=efmt) ' New heat capacity:   ',cpatch%leaf_hcap     (ico)
-            write(unit=*,fmt=efmt) ' Old leaf energy:     ',old_leaf_energy
-            write(unit=*,fmt=efmt) ' New leaf energy:     ',cpatch%leaf_energy   (ico)
-            write(unit=*,fmt=efmt) ' Leaf surface water:  ',cpatch%leaf_water    (ico)
-            write(unit=*,fmt=efmt) ' Leaf internal water: ',cpatch%leaf_water_im2(ico)
+            write (unit=*,fmt=tfmt)                                                        &
+                'Time:',current_time%month,'/',current_time%date,'/',current_time%year     &
+                       ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt=ifmt ) ' Patch:               ',ipa
+            write(unit=*,fmt=ifmt ) ' Dist_type:           ',csite%dist_type      (ipa)
+            write(unit=*,fmt=efmt ) ' Age:                 ',csite%age            (ipa)
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt=ifmt ) ' Cohort:              ',ico
+            write(unit=*,fmt=ifmt ) ' PFT:                 ',cpatch%pft           (ico)
+            write(unit=*,fmt=efmt ) ' Height:              ',cpatch%hite          (ico)
+            write(unit=*,fmt=efmt ) ' DBH:                 ',cpatch%dbh           (ico)
+            write(unit=*,fmt=efmt ) ' NPlant:              ',cpatch%nplant        (ico)
+            write(unit=*,fmt=efmt ) ' LAI:                 ',cpatch%lai           (ico)
+            write(unit=*,fmt=efmt ) ' WAI:                 ',cpatch%wai           (ico)
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt=efmt ) ' Old temperature:     ',cpatch%leaf_temp     (ico)
+            write(unit=*,fmt=efmt ) ' New temperature:     ',new_temp
+            write(unit=*,fmt=efmt ) ' Old heat capacity:   ',old_leaf_hcap
+            write(unit=*,fmt=efmt ) ' New heat capacity:   ',cpatch%leaf_hcap     (ico)
+            write(unit=*,fmt=efmt ) ' Old leaf energy:     ',old_leaf_energy
+            write(unit=*,fmt=efmt ) ' New leaf energy:     ',cpatch%leaf_energy   (ico)
+            write(unit=*,fmt=efmt ) ' Leaf surface water:  ',cpatch%leaf_water    (ico)
+            write(unit=*,fmt=efmt ) ' Leaf internal water: ',cpatch%leaf_water_im2(ico)
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            k = 0
+            k = 1 / k
             call fatal_error('Leaf energy is leaking!!!','update_veg_energy_cweh'          &
                             &,'ed_therm_lib.f90')
          end if
@@ -335,19 +359,37 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          !     In case the temperature is different, give the user the bad news...         !
          !---------------------------------------------------------------------------------!
-         if (abs(new_temp - cpatch%wood_temp(ico)) > 0.1) then
+         if (check_leaks .and. (abs(new_temp - cpatch%wood_temp(ico)) > 0.1)) then
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             write(unit=*,fmt='(a)') ' WOOD ENERGY CONSERVATION FAILED!:'
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
-            write(unit=*,fmt=efmt) ' Old temperature:     ',cpatch%wood_temp     (ico)
-            write(unit=*,fmt=efmt) ' New temperature:     ',new_temp
-            write(unit=*,fmt=efmt) ' Old heat capacity:   ',old_wood_hcap
-            write(unit=*,fmt=efmt) ' New heat capacity:   ',cpatch%wood_hcap     (ico)
-            write(unit=*,fmt=efmt) ' Old wood energy:     ',old_wood_energy
-            write(unit=*,fmt=efmt) ' New wood energy:     ',cpatch%wood_energy   (ico)
-            write(unit=*,fmt=efmt) ' Wood surface water:  ',cpatch%wood_water    (ico)
-            write(unit=*,fmt=efmt) ' Wood internal water: ',cpatch%wood_water_im2(ico)
+            write (unit=*,fmt=tfmt)                                                        &
+                'Time:',current_time%month,'/',current_time%date,'/',current_time%year     &
+                       ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt=ifmt ) ' Patch:               ',ipa
+            write(unit=*,fmt=ifmt ) ' Dist_type:           ',csite%dist_type      (ipa)
+            write(unit=*,fmt=efmt ) ' Age:                 ',csite%age            (ipa)
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt=ifmt ) ' Cohort:              ',ico
+            write(unit=*,fmt=ifmt ) ' PFT:                 ',cpatch%pft           (ico)
+            write(unit=*,fmt=efmt ) ' Height:              ',cpatch%hite          (ico)
+            write(unit=*,fmt=efmt ) ' DBH:                 ',cpatch%dbh           (ico)
+            write(unit=*,fmt=efmt ) ' NPlant:              ',cpatch%nplant        (ico)
+            write(unit=*,fmt=efmt ) ' LAI:                 ',cpatch%lai           (ico)
+            write(unit=*,fmt=efmt ) ' WAI:                 ',cpatch%wai           (ico)
+            write(unit=*,fmt='(a)') ' '
+            write(unit=*,fmt=efmt ) ' Old temperature:     ',cpatch%wood_temp     (ico)
+            write(unit=*,fmt=efmt ) ' New temperature:     ',new_temp
+            write(unit=*,fmt=efmt ) ' Old heat capacity:   ',old_wood_hcap
+            write(unit=*,fmt=efmt ) ' New heat capacity:   ',cpatch%wood_hcap     (ico)
+            write(unit=*,fmt=efmt ) ' Old wood energy:     ',old_wood_energy
+            write(unit=*,fmt=efmt ) ' New wood energy:     ',cpatch%wood_energy   (ico)
+            write(unit=*,fmt=efmt ) ' Wood surface water:  ',cpatch%wood_water    (ico)
+            write(unit=*,fmt=efmt ) ' Wood internal water: ',cpatch%wood_water_im2(ico)
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            k = 0
+            k = 1 / k
             call fatal_error('Wood energy is leaking!!!','update_veg_energy_cweh'          &
                             &,'ed_therm_lib.f90')
          end if

@@ -43,6 +43,7 @@ module rk4_copy_patch
       targetp%can_shv          = sourcep%can_shv
       targetp%can_co2          = sourcep%can_co2
       targetp%can_rhos         = sourcep%can_rhos
+      targetp%can_dmol         = sourcep%can_dmol
       targetp%can_prss         = sourcep%can_prss
       targetp%can_exner        = sourcep%can_exner
       targetp%can_cp           = sourcep%can_cp

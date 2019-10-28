@@ -492,8 +492,7 @@ module update_derived_utils
       use consts_coms         , only : wdns                       & ! intent(in)
                                      , fsdns                      & ! intent(in)
                                      , fsdnsi                     & ! intent(in)
-                                     , mmdryi                     & ! intent(in)
-                                     , mmcod1em6                  ! ! intent(in)
+                                     , umol_2_kgC                 ! ! intent(in)
       use therm_lib           , only : tq2enthalpy                ! ! function
       use ed_misc_coms        , only : frqsumi                    ! ! intent(in)
 
@@ -509,7 +508,8 @@ module update_derived_utils
       real                         :: weight_sum
       real                         :: total_sfcw_mass
       real                         :: bulk_sfcw_dens
-      real                         :: fdelta_storage
+      real                         :: fdelta_mass
+      real                         :: fdelta_dmol
       real                         :: old_can_depth
       real                         :: can_enthalpy
       integer                      :: ico
@@ -612,24 +612,23 @@ module update_derived_utils
          can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
          !---------------------------------------------------------------------------------!
 
-
          !------ Find the volume change of the canopy air space. --------------------------!
-         fdelta_storage                  = frqsumi * csite%can_rhos(ipa)                   &
-                                         * (csite%can_depth(ipa) - old_can_depth)
+         fdelta_mass  = frqsumi * csite%can_rhos(ipa)                                      &
+                      * (csite%can_depth(ipa) - old_can_depth)
+         fdelta_dmol  = frqsumi * csite%can_dmol(ipa)                                      &
+                      * (csite%can_depth(ipa) - old_can_depth)
          !---------------------------------------------------------------------------------!
 
 
          !------ Update the change in storage due to change in CAS capacity. --------------!
          csite%co2budget_zcaneffect(ipa) = csite%co2budget_zcaneffect(ipa)                 &
-                                         + fdelta_storage * csite%can_co2(ipa)             &
-                                         * mmdryi
+                                         + fdelta_dmol * csite%can_co2(ipa)
          csite%cbudget_zcaneffect  (ipa) = csite%cbudget_zcaneffect(ipa)                   &
-                                         + fdelta_storage * csite%can_co2(ipa)             &
-                                         * mmcod1em6
+                                         + fdelta_dmol * csite%can_co2(ipa) * umol_2_kgC
          csite%wbudget_zcaneffect  (ipa) = csite%wbudget_zcaneffect(ipa)                   &
-                                         + fdelta_storage * csite%can_shv(ipa)
+                                         + fdelta_mass * csite%can_shv(ipa)
          csite%ebudget_zcaneffect  (ipa) = csite%ebudget_zcaneffect(ipa)                   &
-                                         + fdelta_storage * can_enthalpy
+                                         + fdelta_mass * can_enthalpy
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -687,6 +686,7 @@ module update_derived_utils
      
       use ed_state_vars, only : sitetype         ! ! structure
       use therm_lib    , only : idealdenssh      & ! function
+                              , idealdmolsh      & ! function
                               , press2exner      & ! function
                               , extheta2temp     & ! function
                               , uextcm2tl        & ! function
@@ -722,6 +722,9 @@ module update_derived_utils
          csite%can_rhos(ipa) = idealdenssh ( csite%can_prss  (ipa)                         &
                                            , csite%can_temp  (ipa)                         &
                                            , csite%can_shv   (ipa)                         )
+         csite%can_dmol(ipa) = idealdmolsh ( csite%can_prss  (ipa)                         &
+                                           , csite%can_temp  (ipa)                         &
+                                           , csite%can_shv   (ipa)                         )
          !---------------------------------------------------------------------------------!
 
 
@@ -731,7 +734,8 @@ module update_derived_utils
             soilhcap = soil(nsoil)%slcpd
             call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap  &
                           ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
-            csite%soil_mstpot(k,ipa) = matric_potential(nsoil,csite%soil_water(k,ipa))
+            csite%soil_mstpot(k,ipa) = matric_potential( nsoil                             &
+                                                       , csite%soil_water  (k,ipa) )
          end do
          !---------------------------------------------------------------------------------!
 
@@ -778,6 +782,7 @@ module update_derived_utils
      
       use ed_state_vars, only : sitetype           ! ! structure
       use therm_lib    , only : idealdenssh        & ! function
+                              , idealdmolsh        & ! function
                               , press2exner        & ! function
                               , extheta2temp       & ! function
                               , uextcm2tl          & ! function
@@ -813,6 +818,9 @@ module update_derived_utils
          csite%fmean_can_rhos(ipa) = idealdenssh ( csite%fmean_can_prss  (ipa)             &
                                                  , csite%fmean_can_temp  (ipa)             &
                                                  , csite%fmean_can_shv   (ipa)             )
+         csite%fmean_can_dmol(ipa) = idealdmolsh ( csite%fmean_can_prss  (ipa)             &
+                                                 , csite%fmean_can_temp  (ipa)             &
+                                                 , csite%fmean_can_shv   (ipa)             )
          !---------------------------------------------------------------------------------!
 
 
@@ -825,8 +833,8 @@ module update_derived_utils
                           , soilhcap                                                       &
                           , csite%fmean_soil_temp  (k,ipa)                                 &
                           , csite%fmean_soil_fliq  (k,ipa) )
-            csite%fmean_soil_mstpot(k,ipa) =                                               &
-                                    matric_potential(nsoil,csite%fmean_soil_water(k,ipa))
+            csite%fmean_soil_mstpot(k,ipa) =  matric_potential( nsoil                      &
+                                                        , csite%fmean_soil_water  (k,ipa) )
          end do
          !---------------------------------------------------------------------------------!
 

@@ -975,6 +975,8 @@ module ed_init_history
                         ,'DMEAN_CAN_CO2_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_can_rhos       (ipy:ipy)                           &
                         ,'DMEAN_CAN_RHOS_PY         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_can_dmol       (ipy:ipy)                           &
+                        ,'DMEAN_CAN_DMOL_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_can_prss       (ipy:ipy)                           &
                         ,'DMEAN_CAN_PRSS_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_gnd_temp       (ipy:ipy)                           &
@@ -1391,6 +1393,8 @@ module ed_init_history
                         ,'MMEAN_CAN_CO2_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_can_rhos       (ipy:ipy)                           &
                         ,'MMEAN_CAN_RHOS_PY         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_can_dmol       (ipy:ipy)                           &
+                        ,'MMEAN_CAN_DMOL_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_can_prss       (ipy:ipy)                           &
                         ,'MMEAN_CAN_PRSS_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_gnd_temp       (ipy:ipy)                           &
@@ -2010,6 +2014,8 @@ module ed_init_history
                         ,'QMEAN_CAN_CO2_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_can_rhos       (:,ipy)                             &
                         ,'QMEAN_CAN_RHOS_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_can_dmol       (:,ipy)                             &
+                        ,'QMEAN_CAN_DMOL_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_can_prss       (:,ipy)                             &
                         ,'QMEAN_CAN_PRSS_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_gnd_temp       (:,ipy)                             &
@@ -3662,6 +3668,8 @@ module ed_init_history
                      ,'CAN_CO2                     ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%can_rhos                                                    &
                      ,'CAN_RHOS                    ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%can_dmol                                                    &
+                     ,'CAN_DMOL                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%can_prss                                                    &
                      ,'CAN_PRSS                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%can_theta                                                   &
@@ -4006,6 +4014,8 @@ module ed_init_history
                         ,'DMEAN_CAN_CO2_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_can_rhos                                           &
                         ,'DMEAN_CAN_RHOS_PA         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%dmean_can_dmol                                           &
+                        ,'DMEAN_CAN_DMOL_PA         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_can_prss                                           &
                         ,'DMEAN_CAN_PRSS_PA         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_gnd_temp                                           &
@@ -4165,6 +4175,8 @@ module ed_init_history
                         ,'MMEAN_CAN_CO2_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_can_rhos                                           &
                         ,'MMEAN_CAN_RHOS_PA         ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_can_dmol                                           &
+                        ,'MMEAN_CAN_DMOL_PA         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_can_prss                                           &
                         ,'MMEAN_CAN_PRSS_PA         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_gnd_temp                                           &
@@ -4368,6 +4380,8 @@ module ed_init_history
                         ,'QMEAN_CAN_CO2_PA         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_can_rhos                                           &
                         ,'QMEAN_CAN_RHOS_PA        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%qmean_can_dmol                                           &
+                        ,'QMEAN_CAN_DMOL_PA        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_can_prss                                           &
                         ,'QMEAN_CAN_PRSS_PA        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_gnd_temp                                           &

@@ -22,10 +22,10 @@ module ed_nbg_init
                                 , polygontype         & ! structure
                                 , sitetype            & ! structure
                                 , allocate_sitetype   ! ! subroutine
+      use grid_coms      , only : nzg                 ! ! intent(in)
       use ed_misc_coms   , only : ied_init_mode       ! ! intent(in)
       use physiology_coms, only : n_plant_lim         ! ! intent(in)
-      use ed_type_init   , only : init_ed_cohort_vars & ! subroutine
-                                , init_ed_patch_vars  & ! subroutine
+      use ed_type_init   , only : init_ed_patch_vars  & ! subroutine
                                 , init_ed_site_vars   & ! subroutine
                                 , init_ed_poly_vars   ! ! subroutine
       use decomp_coms    , only : decomp_scheme       & ! intent(in)
@@ -124,9 +124,11 @@ module ed_nbg_init
             !----- We now populate the cohorts with near bare ground condition. -----------!
             select case (ied_init_mode)
             case (-8)
-               call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
+               call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches           &
+                                          ,nzg,cpoly%ntext_soil(:,isi))
             case (-1,0)
-               call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
+               call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches                 &
+                                    ,nzg,cpoly%ntext_soil(:,isi))
             end select
 
             !----- Initialise the patches now that cohorts are there. ---------------------!
@@ -153,7 +155,7 @@ module ed_nbg_init
    !=======================================================================================!
    !      This subroutine assigns a near-bare ground (NBG) state for some patches.         !
    !---------------------------------------------------------------------------------------!
-   subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
+   subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z,mzg,ntext_soil)
       use ed_state_vars      , only : edtype              & ! structure
                                     , polygontype         & ! structure
                                     , sitetype            & ! structure
@@ -200,6 +202,8 @@ module ed_nbg_init
       integer               , intent(in) :: lsl               ! Lowest soil level
       integer               , intent(in) :: ipa_a             ! 1st patch
       integer               , intent(in) :: ipa_z             ! Last patch
+      integer               , intent(in) :: mzg               ! Number of soil layers
+      integer,dimension(mzg), intent(in) :: ntext_soil        ! Soil texture profile
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)       , pointer    :: cpatch            ! Current patch
       real                               :: bdeadx            ! Heartwood biomass
@@ -365,7 +369,7 @@ module ed_nbg_init
 
 
             !----- Initialize other cohort-level variables. -------------------------------!
-            call init_ed_cohort_vars(cpatch,ico,lsl)
+            call init_ed_cohort_vars(cpatch,ico,lsl,mzg,ntext_soil)
             !------------------------------------------------------------------------------!
 
             !----- Update total patch-level above-ground biomass --------------------------!
@@ -396,7 +400,7 @@ module ed_nbg_init
    !=======================================================================================!
    !      This subroutine assigns a near-bare ground (NBG) state for some patches.         !
    !---------------------------------------------------------------------------------------!
-   subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
+   subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z,mzg,ntext_soil)
       use ed_state_vars      , only : edtype              & ! structure
                                     , polygontype         & ! structure
                                     , sitetype            & ! structure
@@ -433,10 +437,12 @@ module ed_nbg_init
                                     , init_ed_poly_vars   ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype) , target     :: csite  ! Current site
-      integer        , intent(in) :: lsl    ! Lowest soil level
-      integer        , intent(in) :: ipa_a  ! 1st patch to be assigned with NBG stat
-      integer        , intent(in) :: ipa_z  ! Last patch to be assigned with NBG state
+      type(sitetype)        , target     :: csite      ! Current site
+      integer               , intent(in) :: lsl        ! Lowest soil level
+      integer               , intent(in) :: ipa_a      ! 1st patch assigned with NBG stat
+      integer               , intent(in) :: ipa_z      ! Last patch assigned with NBG state
+      integer               , intent(in) :: mzg        ! Number of soil layers
+      integer,dimension(mzg), intent(in) :: ntext_soil ! Soil texture profile
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer    :: cpatch        ! Current patch
       integer                     :: ipa           ! Patch number
@@ -551,7 +557,7 @@ module ed_nbg_init
             !------------------------------------------------------------------------------!
 
             !----- Initialize other cohort-level variables. -------------------------------!
-            call init_ed_cohort_vars(cpatch,ico,lsl)
+            call init_ed_cohort_vars(cpatch,ico,lsl,mzg,ntext_soil)
             !------------------------------------------------------------------------------!
 
             !----- Update total patch-level above-ground biomass --------------------------!
@@ -591,6 +597,7 @@ module ed_nbg_init
                                     , allocate_patchtype  ! ! subroutine
       use ed_misc_coms       , only : ied_init_mode       ! ! intent(in)
       use physiology_coms    , only : n_plant_lim         ! ! intent(in)
+      use grid_coms          , only : nzg                 ! ! intent(in)
       use pft_coms           , only : q                   & ! intent(in)
                                     , qsw                 & ! intent(in)
                                     , qbark               & ! intent(in)
@@ -832,7 +839,8 @@ module ed_nbg_init
 
 
                   !----- Initialize other cohort-level variables. -------------------------!
-                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi),nzg                   &
+                                          ,cpoly%ntext_soil(:,isi))
                   !------------------------------------------------------------------------!
 
 

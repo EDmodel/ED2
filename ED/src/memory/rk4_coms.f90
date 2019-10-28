@@ -31,7 +31,8 @@ module rk4_coms
       real(kind=8)                        :: can_rhv      ! Relative humidity    [     ---]
       real(kind=8)                        :: can_co2      ! CO_2                 [umol/mol]
       real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
-      real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m2]
+      real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m3]
+      real(kind=8)                        :: can_dmol     ! CAS dry molar count  [  mol/m3]
       real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
       real(kind=8)                        :: can_exner    ! Exner function       [  J/kg/K]
       real(kind=8)                        :: can_cp       ! Specific heat        [  J/kg/K]
@@ -724,15 +725,6 @@ module rk4_coms
    !----- The following variables will be defined in sfcdata_ed (ed_init.f90). ------------!
    real(kind=8) :: rk4min_sfcw_mass     ! Minimum snow/pond    mass             [    kg/m2]
    real(kind=8) :: rk4min_virt_water    ! Minimum virtual pool mass             [    kg/m2]
-
-   !----- MOVED THE FOLLOWING BLOCK TO RK4AUX BECAUSE WITH SMP WE NEED MULTIPLES
-   !----- The following variables will be defined every time step. ------------------------!
-!   real(kind=8) :: rk4min_can_theta     ! Minimum canopy    potential temp.     [        K]
-!   real(kind=8) :: rk4max_can_theta     ! Maximum canopy    potential temp.     [        K]
-!   real(kind=8) :: rk4min_can_enthalpy  ! Minimum canopy    enthalpy            [     J/m2]
-!   real(kind=8) :: rk4max_can_enthalpy  ! Maximum canopy    enthalpy            [     J/m2]
-!   real(kind=8) :: rk4min_can_prss      ! Minimum canopy    pressure            [       Pa]
-!   real(kind=8) :: rk4max_can_prss      ! Maximum canopy    pressure            [       Pa]
    !---------------------------------------------------------------------------------------!
 
 
@@ -811,7 +803,7 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 23
+   integer                          , parameter   :: nerrfix = 22
    !---------------------------------------------------------------------------------------!
 
 
@@ -1046,7 +1038,8 @@ module rk4_coms
       y%wbudget_loss2atm               = 0.d0
       y%wbudget_loss2drainage          = 0.d0
       y%wbudget_loss2runoff            = 0.d0
-     
+
+
       y%can_temp                       = 0.d0
       y%can_shv                        = 0.d0
       y%can_ssh                        = 0.d0
@@ -1056,6 +1049,7 @@ module rk4_coms
       y%can_enthalpy                   = 0.d0
       y%can_depth                      = 0.d0
       y%can_rhos                       = 0.d0
+      y%can_dmol                       = 0.d0
       y%can_prss                       = 0.d0
       y%can_exner                      = 0.d0
       y%can_cp                         = 0.d0
@@ -2027,11 +2021,11 @@ module rk4_coms
       implicit none
       !----- Local constants. -------------------------------------------------------------!
       character(len=13), dimension(nerrfix), parameter :: err_lab_fix = (/                 &
-           'CAN_ENTHALPY ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
-          ,'CAN_CO2      ','LEAF_WATER   ','LEAF_ENERGY  ','WOOD_WATER   ','WOOD_ENERGY  ' &
-          ,'LEAF_H2O_IM2 ','WOOD_H2O_IM2 ','VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ' &
-          ,'CO2B_LOSS2ATM','EB_NETRAD    ','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ' &
-          ,'WATB_LOSS2DRA','ENB_STORAGE  ','WATB_STORAGE '/)
+           'CAN_ENTHALPY ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_CO2      ' &
+          ,'LEAF_WATER   ','LEAF_ENERGY  ','LEAF_H2O_IM2 ','WOOD_WATER   ','WOOD_ENERGY  ' &
+          ,'WOOD_H2O_IM2 ','VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ','CO2B_LOSS2ATM' &
+          ,'EB_NETRAD    ','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA' &
+          ,'ENB_STORAGE  ','WATB_STORAGE '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc

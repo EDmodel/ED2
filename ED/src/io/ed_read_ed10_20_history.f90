@@ -41,7 +41,8 @@ subroutine read_ed10_ed20_history_file
                                   , edgrid_g                    & ! variable type
                                   , allocate_sitetype           & ! subroutine
                                   , allocate_patchtype          ! ! subroutine
-   use grid_coms           , only : ngrids                      ! ! intent(in)
+   use grid_coms           , only : ngrids                      & ! intent(in)
+                                  , nzg                         ! ! intent(in)
    use allometry           , only : bd2dbh                      & ! function
                                   , dbh2h                       & ! function
                                   , size2bd                     & ! function
@@ -1040,7 +1041,8 @@ subroutine read_ed10_ed20_history_file
             do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
                do ico = 1,cpatch%ncohorts
-                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi),nzg                   &
+                                          ,cpoly%ntext_soil(:,isi))
                end do
 
                !----- Make sure that cohorts are organised from tallest to shortest. ------!

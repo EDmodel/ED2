@@ -32,9 +32,9 @@ module heun_driver
                                        , update_patch_derived_props ! ! subroutine
       use rk4_integ_utils       , only : copy_met_2_rk4site         ! ! subroutine
       use rk4_misc              , only : copy_patch_init            & ! subroutine
-                                       , copy_patch_init_carbon     & ! subroutine
                                        , sanity_check_veg_energy    ! ! subroutine
       use plant_hydro           , only : plant_hydro_driver         ! ! subroutine
+      use therm_lib             , only : tq2enthalpy                ! ! function
       !$ use omp_lib
 
       implicit none
@@ -63,8 +63,15 @@ module heun_driver
       real                                   :: ecurr_loss2drainage
       real                                   :: wcurr_loss2runoff
       real                                   :: ecurr_loss2runoff
-      real                                   :: old_can_rhos
       real                                   :: old_can_prss
+      real                                   :: old_can_enthalpy
+      real                                   :: old_can_temp
+      real                                   :: old_can_shv
+      real                                   :: old_can_co2
+      real                                   :: old_can_rhos
+      real                                   :: old_can_dmol
+      real                                   :: mid_can_rhos
+      real                                   :: mid_can_dmol
       real                                   :: patch_vels
       integer                                :: ibuff
       integer                                :: npa_thread
@@ -113,9 +120,10 @@ module heun_driver
             !        of threads is less than the number of patches.                        !
             !------------------------------------------------------------------------------!
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
-            !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_rhos           &
-            !$OMP ,old_can_prss,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm                 &
-            !$OMP ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage                &
+            !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_prss           &
+            !$OMP ,old_can_enthalpy,old_can_temp,old_can_shv,old_can_co2,old_can_rhos      &
+            !$OMP ,old_can_dmol,mid_can_rhos,mid_can_dmol,ecurr_netrad,wcurr_loss2atm      &
+            !$OMP ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
             !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
             threadloop: do ibuff=1,nthreads
                !------ Update pointers. ---------------------------------------------------!
@@ -170,8 +178,14 @@ module heun_driver
 
 
                   !----- Save the previous thermodynamic state. ---------------------------!
-                  old_can_rhos     = csite%can_rhos (ipa)
-                  old_can_prss     = csite%can_prss (ipa)
+                  old_can_prss     = csite%can_prss(ipa)
+                  old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa)    &
+                                                ,.true.)
+                  old_can_temp     = csite%can_temp(ipa)
+                  old_can_shv      = csite%can_shv (ipa)
+                  old_can_co2      = csite%can_co2 (ipa)
+                  old_can_rhos     = csite%can_rhos(ipa)
+                  old_can_dmol     = csite%can_dmol(ipa)
                   !------------------------------------------------------------------------!
 
 
@@ -218,14 +232,9 @@ module heun_driver
 
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
-                  !                                                                        !
-                  ! MLO: The separation between init and init_carbon may have become       !
-                  !      obsolete.  I am going to keep them separated in case I find out   !
-                  !      why copy_patch_init should be placed before photosynthesis, but   !
-                  !      I do not see any good reason now.                                 !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels)
-                  call copy_patch_init_carbon(csite,ipa,initp)
+                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels,mid_can_rhos       &
+                                      ,mid_can_dmol)
                   !------------------------------------------------------------------------!
 
 
@@ -280,7 +289,9 @@ module heun_driver
                                      ,co2curr_loss2atm,wcurr_loss2drainage                 &
                                      ,ecurr_loss2drainage,wcurr_loss2runoff                &
                                      ,ecurr_loss2runoff,cpoly%area(isi)                    &
-                                     ,cgrid%cbudget_nep(ipy),old_can_rhos,old_can_prss)
+                                     ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy &
+                                     ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos    &
+                                     ,old_can_dmol,mid_can_rhos,mid_can_dmol)
                   !------------------------------------------------------------------------!
                end do taskloop
                !---------------------------------------------------------------------------!
@@ -372,7 +383,7 @@ module heun_driver
                                          * integration_buff(ibuff)%initp%tpwp * dtrk4i
       integration_buff(ibuff)%initp%qpwp = integration_buff(ibuff)%initp%can_rhos          &
                                          * integration_buff(ibuff)%initp%qpwp * dtrk4i
-      integration_buff(ibuff)%initp%cpwp = integration_buff(ibuff)%initp%can_rhos          &
+      integration_buff(ibuff)%initp%cpwp = integration_buff(ibuff)%initp%can_dmol          &
                                          * integration_buff(ibuff)%initp%cpwp * dtrk4i
       integration_buff(ibuff)%initp%wpwp = integration_buff(ibuff)%initp%can_rhos          &
                                          * integration_buff(ibuff)%initp%wpwp * dtrk4i
@@ -384,6 +395,7 @@ module heun_driver
                        ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm        &
                        ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff          &
                        ,ecurr_loss2runoff)
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine integrate_patch_heun

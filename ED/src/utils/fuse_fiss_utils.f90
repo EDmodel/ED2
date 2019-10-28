@@ -1665,7 +1665,8 @@ module fuse_fiss_utils
                               ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
                               ,cpatch%wood_water_im2(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
-                                             ,old_leaf_water_im2,old_wood_water_im2)
+                                             ,old_leaf_water_im2,old_wood_water_im2        &
+                                             ,.true.)
                   !----- New cohort. ------------------------------------------------------!
                   old_leaf_hcap      = cpatch%leaf_hcap(inew)
                   old_wood_hcap      = cpatch%wood_hcap(inew)
@@ -1685,7 +1686,8 @@ module fuse_fiss_utils
                               ,cpatch%nplant(inew),cpatch%leaf_water_im2(inew)             &
                               ,cpatch%wood_water_im2(inew))
                   call update_veg_energy_cweh(csite,ipa,inew,old_leaf_hcap,old_wood_hcap   &
-                                             ,old_leaf_water_im2,old_wood_water_im2)
+                                             ,old_leaf_water_im2,old_wood_water_im2        &
+                                             ,.true.)
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico )
                   call is_resolvable(csite,ipa,inew)
@@ -1884,6 +1886,22 @@ module fuse_fiss_utils
          dbleaf = 0.5
       end if
       !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Update nplant, LAI, WAI, and crown area.   Many variables use them as weights, !
+      ! but the weights are set above -- DO NOT USE CPATCH%NPLANT, CPATCH%LAI, CPATCH%WAI  !
+      ! AND CPATCH%CROWN_AREA DIRECTLY AS WEIGHTS.  Bad things will happen.                !
+      !------------------------------------------------------------------------------------!
+      cpatch%nplant     (recc) = cpatch%nplant(recc) + cpatch%nplant(donc)
+      cpatch%lai        (recc) = cpatch%lai   (recc) + cpatch%lai   (donc)
+      cpatch%wai        (recc) = cpatch%wai   (recc) + cpatch%wai   (donc)
+      !----- Make sure that crown area is bounded. ----------------------------------------!
+      cpatch%crown_area (recc) = min(1.,cpatch%crown_area(recc)  + cpatch%crown_area(donc))
+      !------------------------------------------------------------------------------------!
+
 
 
 
@@ -2446,9 +2464,8 @@ module fuse_fiss_utils
       ! water are consistent with each other.                                              !
       !------------------------------------------------------------------------------------!
       call twe2twi(cpatch%leaf_water_im2(recc),cpatch%wood_water_im2(recc)                 &
-                  ,cpatch%nplant(recc),cpatch%pft(recc),cpatch%bleaf(recc)                 &
-                  ,cpatch%broot(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)        &
-                  ,cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc))
+                  ,cpatch%nplant(recc),cpatch%leaf_water_int(recc)                         &
+                  ,cpatch%wood_water_int(recc))
       call tw2rwc(cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc)                  &
                  ,cpatch%bleaf(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)         &
                  ,cpatch%bdeada(recc),cpatch%bdeadb(recc),cpatch%broot(recc)               &
@@ -3980,19 +3997,6 @@ module fuse_fiss_utils
          end do
          !---------------------------------------------------------------------------------!
       end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Lastly, we update nplant, LAI, WAI, and crown area.  They may be used as       !
-      ! weighting factors so we leave them in the end.                                     !
-      !------------------------------------------------------------------------------------!
-      cpatch%nplant     (recc) = cpatch%nplant(recc) + cpatch%nplant(donc)
-      cpatch%lai        (recc) = cpatch%lai   (recc) + cpatch%lai   (donc)
-      cpatch%wai        (recc) = cpatch%wai   (recc) + cpatch%wai   (donc)
-      !----- Make sure that crown area is bounded. ----------------------------------------!
-      cpatch%crown_area (recc) = min(1.,cpatch%crown_area(recc)  + cpatch%crown_area(donc))
       !------------------------------------------------------------------------------------!
 
       return
@@ -6377,6 +6381,7 @@ module fuse_fiss_utils
       use therm_lib           , only : uextcm2tl                     & ! subroutine
                                      , uint2tl                       & ! subroutine
                                      , idealdenssh                   & ! function
+                                     , idealdmolsh                   & ! function
                                      , press2exner                   & ! function
                                      , exner2press                   & ! function
                                      , extemp2theta                  & ! function
@@ -6424,19 +6429,21 @@ module fuse_fiss_utils
       real                                 :: newareai          ! 1./(new patch area)
       real                                 :: area_scale        ! Cohort rescaling factor.
       !----- The following variables are for conserving canopy air space. -----------------!
-      real  :: can_enthalpy_recp !< Specific enthalpy  (receptor)               [     J/kg]
-      real  :: can_enthalpy_donp !< Specific enthalpy  (donor)                  [     J/kg]
-      real  :: can_rvap_recp     !< Water mixing ratio (receptor)               [    kg/kg]
-      real  :: can_exner_recp    !< Exner function     (receptor)               [   J/kg/K]
-      real  :: can_exner_donp    !< Exner function     (donor)                  [   J/kg/K]
-      real  :: cb_enthalpy_recp  !< Total enthalpy     (receptor)               [     J/m2]
-      real  :: cb_enthalpy_donp  !< Total enthalpy     (donor)                  [     J/m2]
-      real  :: cb_mass_recp      !< Total water mass   (receptor)               [kg_air/m2]
-      real  :: cb_mass_donp      !< Total water mass   (donor)                  [kg_air/m2]
-      real  :: cb_water_recp     !< Total water mass   (receptor)               [kg_h2o/m2]
-      real  :: cb_water_donp     !< Total water mass   (donor)                  [kg_h2o/m2]
-      real  :: cb_co2_recp       !< Total CO2 mass     (receptor)               [kg_co2/m2]
-      real  :: cb_co2_donp       !< Total CO2 mass     (donor)                  [kg_co2/m2]
+      real  :: can_enthalpy_recp !< Specific enthalpy        (receptor)    [          J/kg]
+      real  :: can_enthalpy_donp !< Specific enthalpy        (donor   )    [          J/kg]
+      real  :: can_rvap_recp     !< Water mixing ratio       (receptor)    [         kg/kg]
+      real  :: can_exner_recp    !< Exner function           (receptor)    [        J/kg/K]
+      real  :: can_exner_donp    !< Exner function           (donor   )    [        J/kg/K]
+      real  :: cb_enthalpy_recp  !< Total enthalpy           (receptor)    [          J/m2]
+      real  :: cb_enthalpy_donp  !< Total enthalpy           (donor   )    [          J/m2]
+      real  :: cb_mass_recp      !< Total water mass         (receptor)    [     kg_air/m2]
+      real  :: cb_mass_donp      !< Total water mass         (donor   )    [     kg_air/m2]
+      real  :: cb_molar_recp     !< Total water molar count  (receptor)    [mol_dry_air/m2]
+      real  :: cb_molar_donp     !< Total water molar count  (donor   )    [mol_dry_air/m2]
+      real  :: cb_water_recp     !< Total water mass         (receptor)    [     kg_h2o/m2]
+      real  :: cb_water_donp     !< Total water mass         (donor   )    [     kg_h2o/m2]
+      real  :: cb_co2_recp       !< Total CO2 mass           (receptor)    [     kg_co2/m2]
+      real  :: cb_co2_donp       !< Total CO2 mass           (donor   )    [     kg_co2/m2]
       !------------------------------------------------------------------------------------!
      
       !------------------------------------------------------------------------------------!
@@ -6602,6 +6609,9 @@ module fuse_fiss_utils
       !------ Find the total canopy air space mass [kg_air/m2]. ---------------------------!
       cb_mass_recp      = csite%can_rhos(recp) * csite%can_depth(recp)
       cb_mass_donp      = csite%can_rhos(donp) * csite%can_depth(donp)
+      !------ Find the molar count of dry air in the canopy air space [mol_dry_air/m2]. ---!
+      cb_molar_recp     = csite%can_dmol(recp) * csite%can_depth(recp)
+      cb_molar_donp     = csite%can_dmol(donp) * csite%can_depth(donp)
       !------ Find the bulk enthalpy of receptor and donor patch [J/m2]. ------------------!
       cb_enthalpy_recp  = cb_mass_recp * can_enthalpy_recp
       cb_enthalpy_donp  = cb_mass_donp * can_enthalpy_donp
@@ -6609,13 +6619,15 @@ module fuse_fiss_utils
       cb_water_recp     = cb_mass_recp * csite%can_shv(recp)
       cb_water_donp     = cb_mass_donp * csite%can_shv(donp)
       !------ Find the total CO2 mass [kg_co2/m2]. ----------------------------------------!
-      cb_co2_recp       = cb_mass_recp * csite%can_co2(recp)
-      cb_co2_donp       = cb_mass_donp * csite%can_co2(donp)
+      cb_co2_recp       = cb_molar_recp * csite%can_co2(recp)
+      cb_co2_donp       = cb_molar_donp * csite%can_co2(donp)
       !------ Find the total properties (X/m2) of the fused patch. ------------------------!
       cb_enthalpy_recp         = newareai * ( cb_enthalpy_donp      * csite%area(donp)     &
                                             + cb_enthalpy_recp      * csite%area(recp) )
       cb_mass_recp             = newareai * ( cb_mass_donp          * csite%area(donp)     &
                                             + cb_mass_recp          * csite%area(recp) )
+      cb_molar_recp            = newareai * ( cb_molar_donp         * csite%area(donp)     &
+                                            + cb_molar_recp         * csite%area(recp) )
       cb_water_recp            = newareai * ( cb_water_donp         * csite%area(donp)     &
                                             + cb_water_recp         * csite%area(recp) )
       cb_co2_recp              = newareai * ( cb_co2_donp           * csite%area(donp)     &
@@ -6628,9 +6640,10 @@ module fuse_fiss_utils
                                             + can_exner_recp    * csite%area(recp) )
       !------ Find air density and the specific properties. -------------------------------!
       csite%can_rhos    (recp) = cb_mass_recp     / csite%can_depth(recp)
+      csite%can_dmol    (recp) = cb_molar_recp    / csite%can_depth(recp)
       can_enthalpy_recp        = cb_enthalpy_recp / cb_mass_recp
       csite%can_shv     (recp) = cb_water_recp    / cb_mass_recp
-      csite%can_co2     (recp) = cb_co2_recp      / cb_mass_recp
+      csite%can_co2     (recp) = cb_co2_recp      / cb_molar_recp
       !------ Water mixing ratio (used by can_theiv). -------------------------------------!
       can_rvap_recp            = csite%can_shv(recp) / (1.0 - csite%can_shv(recp))
       csite%can_prss    (recp) = exner2press(can_exner_recp)
@@ -7293,6 +7306,9 @@ module fuse_fiss_utils
          csite%fmean_can_rhos (recp) = idealdenssh ( csite%fmean_can_prss  (recp)          &
                                                    , csite%fmean_can_temp  (recp)          &
                                                    , csite%fmean_can_shv   (recp)          )
+         csite%fmean_can_dmol (recp) = idealdmolsh ( csite%fmean_can_prss  (recp)          &
+                                                   , csite%fmean_can_temp  (recp)          &
+                                                   , csite%fmean_can_shv   (recp)          )
          !---------------------------------------------------------------------------------!
 
 
@@ -7673,6 +7689,9 @@ module fuse_fiss_utils
             csite%dmean_can_temp (recp) = extheta2temp( xmean_can_exner                    &
                                                       , csite%dmean_can_theta(recp)        )
             csite%dmean_can_rhos (recp) = idealdenssh ( csite%dmean_can_prss  (recp)       &
+                                                      , csite%dmean_can_temp  (recp)       &
+                                                      , csite%dmean_can_shv   (recp)       )
+            csite%dmean_can_dmol (recp) = idealdmolsh ( csite%dmean_can_prss  (recp)       &
                                                       , csite%dmean_can_temp  (recp)       &
                                                       , csite%dmean_can_shv   (recp)       )
             !------------------------------------------------------------------------------!
@@ -8290,6 +8309,9 @@ module fuse_fiss_utils
             csite%mmean_can_rhos (recp) = idealdenssh ( csite%mmean_can_prss  (recp)       &
                                                       , csite%mmean_can_temp  (recp)       &
                                                       , csite%mmean_can_shv   (recp)       )
+            csite%mmean_can_dmol (recp) = idealdmolsh ( csite%mmean_can_prss  (recp)       &
+                                                      , csite%mmean_can_temp  (recp)       &
+                                                      , csite%mmean_can_shv   (recp)       )
             !------------------------------------------------------------------------------!
 
 
@@ -8804,6 +8826,9 @@ module fuse_fiss_utils
                csite%qmean_can_rhos (t,recp) = idealdenssh ( csite%qmean_can_prss (t,recp) &
                                                            , csite%qmean_can_temp (t,recp) &
                                                            , csite%qmean_can_shv  (t,recp) )
+               csite%qmean_can_dmol (t,recp) = idealdmolsh ( csite%qmean_can_prss (t,recp) &
+                                                           , csite%qmean_can_temp (t,recp) &
+                                                           , csite%qmean_can_shv  (t,recp) )
                !---------------------------------------------------------------------------!
 
 
@@ -8876,6 +8901,7 @@ module fuse_fiss_utils
       !    We now update the canopy thermodynamic propeties:                               !
       ! + csite%can_temp(recp)                                                             !
       ! + csite%can_rhos(recp)                                                             !
+      ! + csite%can_dmol(recp)                                                             !
       !------------------------------------------------------------------------------------!
       call update_patch_thermo_props(csite,recp,recp,mzg,mzs,ntext_soil)
 
