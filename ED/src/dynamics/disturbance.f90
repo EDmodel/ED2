@@ -3239,15 +3239,16 @@ module disturbance
       can_enthalpy         = cb_enthalpy / cb_mass
       csite%can_shv  (ipa) = cb_water    / cb_mass
       csite%can_co2  (ipa) = cb_co2      / cb_molar
-      !------ Water mixing ratio (used by can_theiv). -------------------------------------!
-      can_rvap             = csite%can_shv(ipa) / (1.0 - csite%can_shv(ipa))
+      !------ Find temperature first, as most variables depend upon it. -------------------!
+      csite%can_temp (ipa) = hq2temp(can_enthalpy,csite%can_shv(ipa),.true.)
+      !------ Find pressure, and ideal-gas densities (mass and molar). --------------------!
       csite%can_prss (ipa) = exner2press(can_exner)
       csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)           &
                                         ,csite%can_shv (ipa),csite%can_shv (ipa) )
       csite%can_dmol (ipa) = idealdmolsh(csite%can_prss(ipa),csite%can_temp(ipa)           &
                                         ,csite%can_shv (ipa))
-      !------ Find temperature from enthalpy, then find potential temperature. ------------!
-      csite%can_temp (ipa) = hq2temp(can_enthalpy,csite%can_shv(ipa),.true.)
+      !------ Find potential temperatures. ------------------------------------------------!
+      can_rvap             = csite%can_shv(ipa) / (1.0 - csite%can_shv(ipa))
       csite%can_theta(ipa) = extemp2theta(can_exner,csite%can_temp(ipa))
       csite%can_theiv(ipa) = thetaeiv( csite%can_theta(ipa), csite%can_prss (ipa)          &
                                      , csite%can_temp (ipa), can_rvap                      &
@@ -3486,16 +3487,16 @@ module disturbance
 
 
       !---- Initialise the non-scaled litter pools. ---------------------------------------!
-      a_fast_litter     = 0.0
-      b_fast_litter     = 0.0
-      a_struct_litter   = 0.0
-      b_struct_litter   = 0.0
-      a_struct_lignin   = 0.0
-      b_struct_lignin   = 0.0
-      a_fast_litter_n   = 0.0
-      b_fast_litter_n   = 0.0
-      a_struct_litter_n = 0.0
-      b_struct_litter_n = 0.0
+      a_fast_litter        = 0.0
+      b_fast_litter        = 0.0
+      a_struct_litter      = 0.0
+      b_struct_litter      = 0.0
+      a_struct_lignin      = 0.0
+      b_struct_lignin      = 0.0
+      a_fast_litter_n      = 0.0
+      b_fast_litter_n      = 0.0
+      a_struct_litter_n    = 0.0
+      b_struct_litter_n    = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -3757,17 +3758,20 @@ module disturbance
       ! follow the standard tropical allometric parameters.                                !
       !------------------------------------------------------------------------------------!
       if (new_lu == 4 .and. include_fire == 3) then
-         a_fast_combusted   = f_combusted_fast_c   * csite%fast_grnd_C      (np)
-         a_fast_combusted_n = f_combusted_fast_n   * csite%fast_grnd_N      (np)
-         a_struct_combusted = f_combusted_struct_c * csite%structural_grnd_C(np)
-         a_lignin_combusted = f_combusted_struct_c * csite%structural_grnd_L(np)
+         a_fast_combusted     = f_combusted_fast_c   * csite%fast_grnd_C      (np)
+         a_fast_combusted_n   = f_combusted_fast_n   * csite%fast_grnd_N      (np)
+         a_struct_combusted   = f_combusted_struct_c * csite%structural_grnd_C(np)
+         a_lignin_combusted   = f_combusted_struct_c * csite%structural_grnd_L(np)
+         a_struct_combusted_n = f_combusted_struct_n * csite%structural_grnd_N(np)
       else
-         a_fast_combusted    = 0.0
-         a_fast_combusted_n  = 0.0
-         a_struct_combusted  = 0.0
-         a_lignin_combusted  = 0.0
+         a_fast_combusted     = 0.0
+         a_struct_combusted   = 0.0
+         a_lignin_combusted   = 0.0
+         a_fast_combusted_n   = 0.0
+         a_struct_combusted_n = 0.0
       end if
       !------------------------------------------------------------------------------------!
+
 
 
       !----- Load disturbance litter directly into carbon and N pools. --------------------!

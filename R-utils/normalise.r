@@ -32,19 +32,47 @@ normalise <<- function(x,mu,sigma){
       use.norm  = TRUE
       #------------------------------------------------------------------------------------#
    }else{
+      #------ Fit normal distribution. ----------------------------------------------------#
+      normfit     = fitdistr(x=xfit,densfun="normal")
+      normfit$bic = log(nxfit)*2 - 2. * normfit$loglik
+      #------------------------------------------------------------------------------------#
+
+
+
       #------ Find parameters for skew-normal distribution (first guess). -----------------#
       sn3       = sn.stats(x)
       xi        = sn3["location"]
       omega     = sn3["scale"   ]
       alpha     = sn3["shape"   ]
-      snfit     = fitdistr(x=xfit,densfun=dsn,start=list(xi=xi,omega=omega,alpha=alpha))
-      snfit$bic = log(nxfit)*3 - 2. * snfit$loglik + 6
       #------------------------------------------------------------------------------------#
 
 
-      #------ Fit normal distribution. ----------------------------------------------------#
-      normfit     = fitdistr(x=xfit,densfun="normal")
-      normfit$bic = log(nxfit)*2 - 2. * normfit$loglik
+
+      #------ Try to fit skew-normal distribution, then check whether it worked. ----------#
+      snfit     = try( expr   = fitdistr( x       = xfit
+                                        , densfun = dsn
+                                        , start   = list(xi=xi,omega=omega,alpha=alpha)
+                                        )#end fitdistr
+                     , silent = TRUE
+                     )#end try
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------ Verify that snfit actually worked. ------------------------------------------#
+      if ("try-error" %in% is(snfit)){
+         #----- Fitting failed, copy normfit, but set likelihood to infinity to skip it. --#
+         snfit     = normfit
+         snfit$bic = +Inf
+         #---------------------------------------------------------------------------------#
+      }else{
+         #---------------------------------------------------------------------------------#
+         #     Fit worked, find BIC.  Impose a penalty of 6 to select it only when the     #
+         # improvement is really worth.                                                    #
+         #---------------------------------------------------------------------------------#
+         snfit$bic = log(nxfit)*3 - 2. * snfit$loglik + 6
+         #---------------------------------------------------------------------------------#
+      }#end if ("try-error" %in% is(snfit))
       #------------------------------------------------------------------------------------#
 
 
@@ -67,6 +95,9 @@ normalise <<- function(x,mu,sigma){
       use.sn   = (snfit$bic < normfit$bic) & (snfit$bic < lnormfit$bic)
       use.norm = (! use.sn) & (normfit$bic < lnormfit$bic)
       #------------------------------------------------------------------------------------#
+
+
+
    }#end if (force.gauss)
    #---------------------------------------------------------------------------------------#
 

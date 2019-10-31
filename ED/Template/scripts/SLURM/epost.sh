@@ -1,5 +1,5 @@
 #!/bin/bash
-. ${HOME}/.bashrc
+. ~/.bashrc
 #----- Main path, usually set by $(pwd) so you don't need to change it. -------------------#
 here=""
 #----- Computer name, to decide which queues are available. -------------------------------#

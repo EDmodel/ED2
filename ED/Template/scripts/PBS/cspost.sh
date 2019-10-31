@@ -1,5 +1,5 @@
 #!/bin/bash
-. ${HOME}/.bashrc
+. ~/.bashrc
 here=$(pwd)
 thisqueue="moorcroft2b"               # ! Queue where jobs should be submitted
 #----- Check whether to use openlava or typical job submission. ---------------------------#

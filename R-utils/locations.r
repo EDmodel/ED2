@@ -889,6 +889,14 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(0,1,2)
                                        , names  = c("OFF","ON","Logging")
                                        )#end list
+   flagvar[["ihydro"       ]]    = list( descr  = "Plant hydraulics"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2)
+                                       , names  = c( "Static"
+                                                   , "Xu/Christoffersen"
+                                                   , "Xu et al (2016)"
+                                                   )#end c
+                                       )#end list
    flagvar[["ianth.dataset"]]    = list( descr  = "LULCC dataset"
                                        , numeric = FALSE
                                        , values = c("lum-off"
@@ -1448,6 +1456,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iustar","icanturb")
          na     = c(      12,        22)
          nz     = c(      13,        23)
+      }else if (lenici == 24 && grepl(pattern="ihydro",x=ici)){
+         nparms = 2
+         param  = c("ihydro","ivegt.dynamics")
+         na     = c(      12,              23)
+         nz     = c(      13,              24)
       }else if (lenici == 24 && grepl(pattern="icanturb",x=ici)){
          nparms = 2
          param  = c("iphen.scheme","icanturb")

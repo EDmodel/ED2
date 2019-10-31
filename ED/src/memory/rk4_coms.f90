@@ -1190,7 +1190,6 @@ module rk4_coms
       if(associated(y%flx_smoist_gg         ))   y%flx_smoist_gg     (:)          = 0.d0
       if(associated(y%flx_transloss         ))   y%flx_transloss     (:)          = 0.d0
       if(associated(y%flx_sensible_gg       ))   y%flx_sensible_gg   (:)          = 0.d0
-      if(associated(y%flx_wflux_gw_layer    ))   y%flx_wflux_gw_layer(:)          = 0.d0
 
       return
    end subroutine zero_rk4_patch
@@ -1688,7 +1687,6 @@ module rk4_coms
       if(associated(y%flx_smoist_gg      )) y%flx_smoist_gg      (  :) = 0.d0
       if(associated(y%flx_transloss      )) y%flx_transloss      (  :) = 0.d0
       if(associated(y%flx_sensible_gg    )) y%flx_sensible_gg    (  :) = 0.d0
-      if(associated(y%flx_wflux_gw_layer )) y%flx_wflux_gw_layer (  :) = 0.d0
       !----- Reset cohort-level energy fluxes when they are allocated. --------------------!
       if(associated(y%cfx_hflxlc         )) y%cfx_hflxlc         (  :) = 0.d0
       if(associated(y%cfx_hflxwc         )) y%cfx_hflxwc         (  :) = 0.d0

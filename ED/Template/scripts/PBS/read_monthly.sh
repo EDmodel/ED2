@@ -1,5 +1,5 @@
 #!/bin/bash
-. ${HOME}/.bashrc
+. ~/.bashrc
 here="xxxxxxxxxxxxxxxxxxxxx"          # ! Main path
 myself=$(whoami)                      # ! You
 diskthere=""                          # ! Disk where the output files are

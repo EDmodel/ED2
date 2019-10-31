@@ -388,8 +388,6 @@ module ed_therm_lib
             write(unit=*,fmt=efmt ) ' Wood surface water:  ',cpatch%wood_water    (ico)
             write(unit=*,fmt=efmt ) ' Wood internal water: ',cpatch%wood_water_im2(ico)
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
-            k = 0
-            k = 1 / k
             call fatal_error('Wood energy is leaking!!!','update_veg_energy_cweh'          &
                             &,'ed_therm_lib.f90')
          end if

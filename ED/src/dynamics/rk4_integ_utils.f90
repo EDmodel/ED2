@@ -2318,6 +2318,7 @@ module rk4_integ_utils
       real(kind=8)                     :: rk4max_wood_water_im2
       integer                          :: ipa
       integer                          :: ico
+      integer                          :: ipft
       logical                          :: cflag6
       logical                          :: cflag7
       logical                          :: cflag8
@@ -2981,6 +2982,9 @@ module rk4_integ_utils
 
 
 
+      !------------------------------------------------------------------------------------!
+      !     Print bounds to help debugging.                                                !
+      !------------------------------------------------------------------------------------!
       if (reject_step .and. print_problems) then
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(78a)')         ('=',k=1,78)
@@ -2988,6 +2992,8 @@ module rk4_integ_utils
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(a)')           '         ---- SANITY CHECK BOUNDS ----'
          write(unit=*,fmt='(a)')           ' '
+
+         !----- 1. Canopy air space. ------------------------------------------------------!
          write(unit=*,fmt='(a)')           ' 1. CANOPY AIR SPACE: '
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(4(a,1x))')     '     MIN_SHV','     MAX_SHV','     MIN_RHV'    &
@@ -2996,7 +3002,7 @@ module rk4_integ_utils
                                             ,rk4min_can_rhv  ,rk4max_can_rhv
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(6(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
-                                          ,'   MAX_THETA','MIN_ENTH_INT','MAX_ENTH_INT'
+                                          ,'   MAX_THETA','MIN_ENTHALPY','MAX_ENTHALPY'
          write(unit=*,fmt='(6(es12.5,1x))') rk4min_can_temp    ,rk4max_can_temp            &
                                            ,rk4aux(ibuff)%rk4min_can_theta                 &
                                            ,rk4aux(ibuff)%rk4max_can_theta                 &
@@ -3010,31 +3016,90 @@ module rk4_integ_utils
                                            ,rk4min_can_co2  ,rk4max_can_co2
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- 2. Leaves. ----------------------------------------------------------------!
          write(unit=*,fmt='(a)')           ' '
-         write(unit=*,fmt='(a)')           ' 2. LEAF PROPERTIES: '
-         write(unit=*,fmt='(3(a,1x))')     '    MIN_TEMP','    MAX_TEMP','  MIN_LWATER'
-         write(unit=*,fmt='(3(es12.5,1x))') rk4min_veg_temp ,rk4max_veg_temp               &
-                                           ,rk4min_veg_lwater
+         write(unit=*,fmt='(a)')           ' 2. LEAF PROPERTIES (resolvable cohorts only): '
+         write(unit=*,fmt='(7(a,1x))')               '  ICO',       ' IPFT','   MIN_WATER' &
+                                             ,' MIN_WAT_IM2',' MAX_WAT_IM2','    MIN_TEMP' &
+                                             ,'    MAX_TEMP'
+         prob_leaf_loop: do ico = 1,cpatch%ncohorts
+            if (.not. (y%leaf_resolvable(ico))) cycle prob_leaf_loop
+
+            !----- Find the cohort-specific boundaries and print them. --------------------!
+            ipft                  = cpatch%pft(ico)
+            rk4min_leaf_water     = rk4min_veg_lwater * y%lai(ico)
+            rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)               &
+                                  * (1.d0 - rk4eps)
+            rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)               &
+                                  * (1.d0 + rk4eps)
+
+            write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))') ico,ipft,rk4min_leaf_water         &
+                                                       ,rk4min_leaf_water_im2              &
+                                                       ,rk4max_leaf_water_im2              &
+                                                       ,rk4min_veg_temp ,rk4max_veg_temp
+            !------------------------------------------------------------------------------!
+         end do prob_leaf_loop
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- 3. Wood. ------------------------------------------------------------------!
          write(unit=*,fmt='(a)')           ' '
-         write(unit=*,fmt='(a)')           ' 3. SURFACE WATER / VIRTUAL POOL PROPERTIES: '
+         write(unit=*,fmt='(a)')           ' 3. WOOD PROPERTIES (resolvable only): '
+         write(unit=*,fmt='(6(a,1x))')               '  ICO',       ' IPFT','   MIN_WATER' &
+                                             ,' MIN_WAT_IM2',' MAX_WAT_IM2','    MIN_TEMP' &
+                                             ,'    MAX_TEMP'
+         prob_wood_loop: do ico = 1,cpatch%ncohorts
+            if (.not. (y%wood_resolvable(ico))) cycle prob_wood_loop
+
+
+            !----- Find the cohort-specific boundaries and print them. --------------------!
+            ipft                  = cpatch%pft(ico)
+            rk4min_wood_water     = rk4min_veg_lwater * y%lai(ico)
+            rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico)               &
+                                  * (1.d0 - rk4eps)
+            rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico)               &
+                                  * (1.d0 + rk4eps)
+
+            write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))') ico,ipft,rk4min_wood_water         &
+                                                       ,rk4min_wood_water_im2              &
+                                                       ,rk4max_wood_water_im2              &
+                                                       ,rk4min_veg_temp ,rk4max_veg_temp
+            !------------------------------------------------------------------------------!
+         end do prob_wood_loop
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- 4. Temporary surface water (real or virtual). -----------------------------!
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 4. SURFACE WATER / VIRTUAL POOL PROPERTIES: '
          write(unit=*,fmt='(3(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_WMASS'
          write(unit=*,fmt='(3(es12.5,1x))') rk4min_sfcw_temp ,rk4max_sfcw_temp             &
                                            ,rk4min_sfcw_mass
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- 5. Soil (currently only the top layer). -----------------------------------!
          write(unit=*,fmt='(a)')           ' '
-         write(unit=*,fmt='(a)')           ' 4. SOIL (TEXTURE CLASS AT TOP LAYER): '
+         write(unit=*,fmt='(a)')           ' 5. SOIL (TEXTURE CLASS AT TOP LAYER): '
          write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'    &
                                           ,'    MAX_TEMP'
          write(unit=*,fmt='(4(es12.5,1x))') rk4aux(ibuff)%rk4min_soil_water(nzg)           &
                                            ,rk4aux(ibuff)%rk4max_soil_water(nzg)  &
                                            ,rk4min_soil_temp      ,rk4max_soil_temp
-         write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(78a)')         ('=',k=1,78)
          write(unit=*,fmt='(a)')           ' '
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine rk4_sanity_check

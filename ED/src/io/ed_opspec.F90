@@ -1726,11 +1726,15 @@ end do
       write(reason,fmt='(a,1x,i4,a,1x,i4,a)')                                              &
                    ' Dynamic plant hydraulics (PLANT_HYDRO_SCHEME =',plant_hydro_scheme    &
                    ,') cannot be used with new grass scheme (IGRASS =',igrass,').'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
    else if (plant_hydro_scheme > 0 .and. ibranch_thermo == 0) then
       write(reason,fmt='(a,1x,i4,a,1x,i4,a)')                                              &
                    ' Dynamic plant hydraulics (PLANT_HYDRO_SCHEME =',plant_hydro_scheme    &
                    ,') cannot run with disabled branch thermodynamics (IBRANCH_THERMO ='   &
                    ,ibranch_thermo,').'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
    end if
 
    if (istomata_scheme < 0 .or. istomata_scheme > 1) then

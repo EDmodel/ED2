@@ -1,5 +1,5 @@
 #!/bin/bash
-. ${HOME}/.bashrc
+. ~/.bashrc
 here=$(pwd)                           # ! Main path
 myself=$(whoami)                      # ! You
 joborder="${here}/joborder.txt"       # ! File with the job instructions
