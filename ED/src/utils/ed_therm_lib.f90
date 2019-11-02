@@ -202,9 +202,9 @@ module ed_therm_lib
       !------------------------------------------------------------------------------------!
       old_leaf_energy     = cpatch%leaf_energy   (ico)
       old_wood_energy     = cpatch%wood_energy   (ico)
-      old_leaf_energy_im2 = cpatch%leaf_water_im2(ico)                                     &
+      old_leaf_energy_im2 = old_leaf_water_im2                                             &
                           * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
-      old_wood_energy_im2 = cpatch%wood_water_im2(ico)                                     &
+      old_wood_energy_im2 = old_wood_water_im2                                             &
                           * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
       !------------------------------------------------------------------------------------!
 
@@ -289,8 +289,11 @@ module ed_therm_lib
             write(unit=*,fmt=efmt ) ' New heat capacity:   ',cpatch%leaf_hcap     (ico)
             write(unit=*,fmt=efmt ) ' Old leaf energy:     ',old_leaf_energy
             write(unit=*,fmt=efmt ) ' New leaf energy:     ',cpatch%leaf_energy   (ico)
+            write(unit=*,fmt=efmt ) ' Old leaf IM2 energy: ',old_leaf_energy_im2
+            write(unit=*,fmt=efmt ) ' New leaf IM2 energy: ',cpatch%leaf_energy   (ico)
             write(unit=*,fmt=efmt ) ' Leaf surface water:  ',cpatch%leaf_water    (ico)
-            write(unit=*,fmt=efmt ) ' Leaf internal water: ',cpatch%leaf_water_im2(ico)
+            write(unit=*,fmt=efmt ) ' New leaf int. water: ',cpatch%leaf_water_im2(ico)
+            write(unit=*,fmt=efmt ) ' Old leaf int. water: ',old_leaf_water_im2
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             k = 0
             k = 1 / k
@@ -311,8 +314,8 @@ module ed_therm_lib
       if (cpatch%wood_hcap(ico) == 0. ) then
          cpatch%wood_energy   (ico) = 0.
          cpatch%wood_water    (ico) = 0.
-         cpatch%wood_water_int(ico) = 0.
          cpatch%wood_water_im2(ico) = 0.
+         cpatch%wood_water_int(ico) = 0.
          cpatch%wood_fliq     (ico) = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
@@ -331,8 +334,8 @@ module ed_therm_lib
 
       else
          !---------------------------------------------------------------------------------!
-         !     Heat capacity is not zero.  Since we track leaf temperature and liquid      !
-         ! fraction of water held by leaves, we can recalculate the internal energy by     !
+         !     Heat capacity is not zero.  Since we track wood temperature and liquid      !
+         ! fraction of water held by wood, we can recalculate the internal energy by       !
          ! just switching the old heat capacity by the new one.                            !
          !---------------------------------------------------------------------------------!
          cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)                   &
@@ -387,7 +390,10 @@ module ed_therm_lib
             write(unit=*,fmt=efmt ) ' New wood energy:     ',cpatch%wood_energy   (ico)
             write(unit=*,fmt=efmt ) ' Wood surface water:  ',cpatch%wood_water    (ico)
             write(unit=*,fmt=efmt ) ' Wood internal water: ',cpatch%wood_water_im2(ico)
+            write(unit=*,fmt=efmt ) ' Old wood int. water: ',old_wood_water_im2
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
+            k = 0
+            k = 1 / k
             call fatal_error('Wood energy is leaking!!!','update_veg_energy_cweh'          &
                             &,'ed_therm_lib.f90')
          end if

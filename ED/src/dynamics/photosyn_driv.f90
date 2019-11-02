@@ -37,13 +37,16 @@ module photosyn_driv
                                 , lnexp_max               & ! intent(in)
                                 , tiny_num                & ! intent(in)
                                 , umol_2_mol              & ! intent(in)
-                                , mmdry                   ! ! intent(in)
+                                , mmdry                   & ! intent(in)
+                                , cpdry                   ! ! intent(in)
       use ed_misc_coms   , only : dtlsm                   & ! intent(in)
                                 , dtlsm_o_frqsum          ! ! intent(in)
       use met_driver_coms, only : met_driv_state          ! ! structure
+      use canopy_air_coms, only : f_bndlyr_init           ! ! intent(in)
       use physiology_coms, only : print_photo_debug       & ! intent(in)
                                 , istomata_scheme         & ! intent(in)
-                                , h2o_plant_lim           ! ! intent(in)
+                                , h2o_plant_lim           & ! intent(in)
+                                , gbh_2_gbw               ! ! intent(in)
       use phenology_coms , only : llspan_inf              ! ! intent(in)
       use farq_leuning   , only : lphysiol_full           ! ! sub-routine
       use farq_katul     , only : katul_lphys             ! ! sub-routine
@@ -733,9 +736,6 @@ module photosyn_driv
             cpatch%psi_closed(ico)           = 0.0
             cpatch%water_supply(ico)         = 0.0
             cpatch%gsw_closed(ico)           = 0.0
-            cpatch%leaf_gbh(ico)             = 0.0
-            cpatch%leaf_gbw(ico)             = 0.0
-            cpatch%leaf_gsw(ico)             = 0.0
             cpatch%gpp(ico)                  = 0.0
             cpatch%leaf_respiration(ico)     = 0.0
             vm                               = 0.0
@@ -746,9 +746,11 @@ module photosyn_driv
             !------------------------------------------------------------------------------!
 
 
-            !----- Stomatal conductance cannot be zero. Set to cuticular conductance. -----!
+            !----- Leaf conductances cannot be zero.  Set to non-zero defaults. -----------!
             cpatch%leaf_gsw(ico) = cuticular_cond(ipft) * umol_2_mol *mmdry                &
                                  / sngloff(effarea_transp(ipft),tiny_offset)
+            cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+            cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!

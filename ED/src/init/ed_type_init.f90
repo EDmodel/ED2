@@ -24,7 +24,9 @@ module ed_type_init
                                 , cuticular_cond     & ! intent(in)
                                 , leaf_turnover_rate & ! intent(in)
                                 , Vm0                & ! intent(in)
-                                , sla                ! ! intent(in)
+                                , sla                & ! intent(in)
+                                , leaf_rwc_min       & ! intent(in)
+                                , wood_rwc_min       ! ! intent(in)
       use canopy_air_coms, only : f_bndlyr_init      ! ! intent(in)
       use rk4_coms       , only : effarea_transp     & ! intent(in)
                                 , tiny_offset        ! ! intent(in)
@@ -159,7 +161,7 @@ module ed_type_init
          call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)            &
                      ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
          !---------------------------------------------------------------------------------!
-      case default
+      case (9999)
          !---------------------------------------------------------------------------------!
          !     Start the water potential with the equivalent to field capacity (well-      !
          ! watered conditions).                                                            !
@@ -178,6 +180,18 @@ module ed_type_init
          !----- Convert water potential to relative water content. ------------------------!
          call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)            &
                      ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+         !---------------------------------------------------------------------------------!
+
+      case default
+         !----- Set water content to saturated conditions. --------------------------------!
+         cpatch%leaf_rwc(ico) = leaf_rwc_min(ipft) + 0.90 * (1.0 - leaf_rwc_min(ipft))
+         cpatch%wood_rwc(ico) = wood_rwc_min(ipft) + 0.90 * (1.0 - wood_rwc_min(ipft))
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Convert water potential to relative water content. ------------------------!
+         call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)            &
+                     ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

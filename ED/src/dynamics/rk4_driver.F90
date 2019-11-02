@@ -439,7 +439,9 @@ module rk4_driver
                                       , ibranch_thermo       ! ! intent(in)
       use ed_state_vars        , only : sitetype             & ! structure
                                       , patchtype            ! ! structure
+      use canopy_air_coms      , only : f_bndlyr_init        ! ! intent(in)
       use consts_coms          , only : day_sec              & ! intent(in)
+                                      , cpdry                & ! intent(in)
                                       , t3ple                & ! intent(in)
                                       , t3ple8               & ! intent(in)
                                       , wdns8                ! ! intent(in)
@@ -459,7 +461,8 @@ module rk4_driver
                                       , cmtl2uext            & ! subroutine
                                       , qslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
-      use physiology_coms      , only : plant_hydro_scheme   ! ! intent(in)
+      use physiology_coms      , only : plant_hydro_scheme   & ! intent(in)
+                                      , gbh_2_gbw            ! ! intent(in)
       use allometry            , only : h2crownbh            ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
                                       , k_fire_first         ! ! intent(in)
@@ -960,11 +963,15 @@ module rk4_driver
                   !------------------------------------------------------------------------!
 
 
-                  !----- Set water demand and conductances to zero. -----------------------!
+                  !----- Set water demand to zero. ----------------------------------------!
                   cpatch%psi_open  (ico) = 0.0
                   cpatch%psi_closed(ico) = 0.0
-                  cpatch%leaf_gbh  (ico) = 0.0
-                  cpatch%leaf_gbw  (ico) = 0.0
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Leaf conductances cannot be zero.  Set to non-zero defaults. -----!
+                  cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+                  cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1008,9 +1015,9 @@ module rk4_driver
                   !------------------------------------------------------------------------!
 
 
-                  !----- Set the conductances to zero. ------------------------------------!
-                  cpatch%wood_gbh(ico) = 0.0
-                  cpatch%wood_gbw(ico) = 0.0
+                  !----- Wood conductances cannot be zero.  Set to non-zero defaults. -----!
+                  cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+                  cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1079,13 +1086,20 @@ module rk4_driver
 
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
-               cpatch%wood_gbh  (ico) = 0.0
-               cpatch%wood_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+               cpatch%wood_gbw(ico) = cpatch%leaf_gbw(ico)
+               cpatch%wood_gbh(ico) = cpatch%leaf_gbh(ico)
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
@@ -1146,15 +1160,23 @@ module rk4_driver
                                                , csite%can_shv   (ipa), .true.)
                !---------------------------------------------------------------------------!
 
+
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
-               cpatch%wood_gbh  (ico) = 0.0
-               cpatch%wood_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+               cpatch%wood_gbw(ico) = cpatch%leaf_gbw(ico)
+               cpatch%wood_gbh(ico) = cpatch%leaf_gbh(ico)
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -1271,11 +1293,18 @@ module rk4_driver
 
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
 
             else
@@ -1318,11 +1347,18 @@ module rk4_driver
 
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind  (ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -1389,9 +1425,9 @@ module rk4_driver
                !---------------------------------------------------------------------------!
 
 
-               !----- Set the conductances to zero. ---------------------------------------!
-               cpatch%wood_gbh(ico) = 0.0
-               cpatch%wood_gbw(ico) = 0.0
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
 
             else
@@ -1414,11 +1450,12 @@ module rk4_driver
                                                   + cpatch%wood_water_im2(ico)             &
                                                   , cpatch%wood_temp     (ico)             &
                                                   , cpatch%wood_fliq     (ico)             )
+               !---------------------------------------------------------------------------!
 
 
-               !----- Set the conductances to zero. ---------------------------------------!
-               cpatch%wood_gbh(ico) = 0.0
-               cpatch%wood_gbw(ico) = 0.0
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
 
 

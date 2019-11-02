@@ -45,7 +45,8 @@ module reproduction
                                      , rescale_patches             ! ! subroutine
       use phenology_coms      , only : repro_scheme                ! ! intent(in)
       use mem_polygons        , only : maxcohort                   ! ! intent(in)
-      use consts_coms         , only : pio4                        ! ! intent(in)
+      use consts_coms         , only : pio4                        & ! intent(in)
+                                     , t3ple                       ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap               & ! function
                                      , update_veg_energy_cweh      ! ! function
       use allometry           , only : size2bl                     & ! function
@@ -483,10 +484,31 @@ module reproduction
 
                         !----- Initialise the next variables with zeroes... ---------------!
                         cpatch%leaf_water(ico) = 0.0
-                        cpatch%leaf_fliq (ico) = 0.0
                         cpatch%wood_water(ico) = 0.0
-                        cpatch%wood_fliq (ico) = 0.0
                         !------------------------------------------------------------------!
+
+
+                        !------------------------------------------------------------------!
+                        !      Because internal water is likely not be zero, we must       !
+                        ! ensure that leaf and wood liquid water fractions are consistent  !
+                        ! with temperature.                                                !
+                        !------------------------------------------------------------------!
+                        if ( cpatch%leaf_temp(ico) > t3ple) then
+                           cpatch%leaf_fliq (ico) = 1.0
+                        elseif ( cpatch%leaf_temp(ico) < t3ple) then
+                           cpatch%leaf_fliq (ico) = 0.0
+                        else
+                           cpatch%leaf_fliq (ico) = 0.5
+                        end if
+                        if ( cpatch%wood_temp(ico) > t3ple) then
+                           cpatch%wood_fliq (ico) = 1.0
+                        elseif ( cpatch%wood_temp(ico) < t3ple) then
+                           cpatch%wood_fliq (ico) = 0.0
+                        else
+                           cpatch%wood_fliq (ico) = 0.5
+                        end if
+                        !------------------------------------------------------------------!
+
 
 
                         !------------------------------------------------------------------!

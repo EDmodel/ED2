@@ -407,7 +407,8 @@ module plant_hydro
       use consts_coms     , only : pi18                 & ! intent(in)
                                  , lnexp_min8           ! ! intent(in)
       use rk4_coms        , only : tiny_offset          ! ! intent(in)
-      use pft_coms        , only : leaf_water_cap       & ! intent(in) 
+      use pft_coms        , only : is_grass             & ! intent(in) 
+                                 , leaf_water_cap       & ! intent(in) 
                                  , wood_water_cap       & ! intent(in)
                                  , leaf_psi_min         & ! intent(in)
                                  , wood_psi_min         & ! intent(in)
@@ -571,7 +572,8 @@ module plant_hydro
       ! Users are welcomed to modify this term in case leaf_psi shows strong oscillations 
       ! from each timestep to another.
       !------------------------------------------------------------------------------------!
-      small_tree_flag = ((c_leaf > (c_stem / 2.d0)) .or. (hite_d == hgt_min(ipft)))
+      small_tree_flag = is_grass(ipft) .or.                                                &
+                        ((c_leaf > (c_stem / 2.d0)) .or. (hite_d == hgt_min(ipft)))
       if (small_tree_flag) then
          !---------------------------------------------------------------------------------!
          !   1.1.  Small tree, force leaf_psi to be the same as wood_psi.  Calculate the 

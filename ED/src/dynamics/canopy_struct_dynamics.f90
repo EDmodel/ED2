@@ -383,6 +383,7 @@ module canopy_struct_dynamics
                                   , ibranch_thermo       ! ! intent(in)
       use grid_coms        , only : nzg                  ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
+                                  , f_bndlyr_init        & ! intent(in)
                                   , ugbmin8              & ! intent(in)
                                   , vh2vr8               & ! intent(in)
                                   , vh2dh8               & ! intent(in)
@@ -414,7 +415,8 @@ module canopy_struct_dynamics
                                   , zzmid8               & ! intent(in)
                                   , canstr               &
                                   , zero_canopy_layer    ! ! subroutine
-      use consts_coms      , only : vonk8                & ! intent(in)
+      use consts_coms      , only : cpdry                & ! intent(in)
+                                  , vonk8                & ! intent(in)
                                   , grav8                & ! intent(in)
                                   , t008                 & ! intent(in)
                                   , epim18               & ! intent(in)
@@ -430,10 +432,10 @@ module canopy_struct_dynamics
                                   , soil_rough8          ! ! intent(in)
       use pft_coms         , only : is_grass             ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
-                                  , size2bl          ! ! function
+                                  , size2bl              ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
-
+      use physiology_coms  , only : gbh_2_gbw            ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite         ! Current site
@@ -538,6 +540,9 @@ module canopy_struct_dynamics
          initp%rough        = soil_rough8 *(1.d0 - snowfac_can)                            &
                             + snow_rough8 * snowfac_can
          initp%veg_displace = vh2dh8 * initp%rough / vh2vr8
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv               &
@@ -725,14 +730,20 @@ module canopy_struct_dynamics
                cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
             else
+               !----- Set numbers to zero. ------------------------------------------------!
                initp%leaf_reynolds(ico) = 0.d0
                initp%leaf_grashof (ico) = 0.d0
                initp%leaf_nussfree(ico) = 0.d0
                initp%leaf_nussforc(ico) = 0.d0
-               initp%leaf_gbh     (ico) = 0.d0
-               initp%leaf_gbw     (ico) = 0.d0
-               cpatch%leaf_gbh    (ico) = 0.0
-               cpatch%leaf_gbw    (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Leaf conductances cannot be zero.  Set to non-zero defaults. --------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+               initp%leaf_gbw (ico) = dble(cpatch%leaf_gbw(ico))
+               initp%leaf_gbh (ico) = dble(cpatch%leaf_gbh(ico))
+               !---------------------------------------------------------------------------!
             end if
             !------ Wood boundary layer conductance. --------------------------------------!
             if (initp%wood_resolvable(ico)) then
@@ -754,14 +765,20 @@ module canopy_struct_dynamics
                cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
             else
+               !----- Set numbers to zero. ------------------------------------------------!
                initp%wood_reynolds(ico) = 0.d0
                initp%wood_grashof (ico) = 0.d0
                initp%wood_nussfree(ico) = 0.d0
                initp%wood_nussforc(ico) = 0.d0
-               initp%wood_gbh     (ico) = 0.d0
-               initp%wood_gbw     (ico) = 0.d0
-               cpatch%wood_gbh    (ico) = 0.0
-               cpatch%wood_gbw    (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Leaf conductances cannot be zero.  Set to non-zero defaults. --------!
+               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
+               initp%wood_gbw (ico) = dble(cpatch%wood_gbw(ico))
+               initp%wood_gbh (ico) = dble(cpatch%wood_gbh(ico))
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end do
@@ -893,14 +910,20 @@ module canopy_struct_dynamics
                cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
             else
+               !----- Set numbers to zero. ------------------------------------------------!
                initp%leaf_reynolds(ico) = 0.d0
                initp%leaf_grashof (ico) = 0.d0
                initp%leaf_nussfree(ico) = 0.d0
                initp%leaf_nussforc(ico) = 0.d0
-               initp%leaf_gbh     (ico) = 0.d0
-               initp%leaf_gbw     (ico) = 0.d0
-               cpatch%leaf_gbh    (ico) = 0.0
-               cpatch%leaf_gbw    (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Leaf conductances cannot be zero.  Set to non-zero defaults. --------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+               initp%leaf_gbw (ico) = dble(cpatch%leaf_gbw(ico))
+               initp%leaf_gbh (ico) = dble(cpatch%leaf_gbh(ico))
+               !---------------------------------------------------------------------------!
             end if
             !------ Wood boundary layer conductance. --------------------------------------!
             if (initp%wood_resolvable(ico)) then
@@ -922,14 +945,20 @@ module canopy_struct_dynamics
                cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
             else
+               !----- Set numbers to zero. ------------------------------------------------!
                initp%wood_reynolds(ico) = 0.d0
                initp%wood_grashof (ico) = 0.d0
                initp%wood_nussfree(ico) = 0.d0
                initp%wood_nussforc(ico) = 0.d0
-               initp%wood_gbh     (ico) = 0.d0
-               initp%wood_gbw     (ico) = 0.d0
-               cpatch%wood_gbh    (ico) = 0.0
-               cpatch%wood_gbw    (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Leaf conductances cannot be zero.  Set to non-zero defaults. --------!
+               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
+               initp%wood_gbw (ico) = dble(cpatch%wood_gbw(ico))
+               initp%wood_gbh (ico) = dble(cpatch%wood_gbh(ico))
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end do
@@ -1333,14 +1362,20 @@ module canopy_struct_dynamics
                cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
             else
+               !----- Set numbers to zero. ------------------------------------------------!
                initp%leaf_reynolds(ico) = 0.d0
                initp%leaf_grashof (ico) = 0.d0
                initp%leaf_nussfree(ico) = 0.d0
                initp%leaf_nussforc(ico) = 0.d0
-               initp%leaf_gbh     (ico) = 0.d0
-               initp%leaf_gbw     (ico) = 0.d0
-               cpatch%leaf_gbh    (ico) = 0.0
-               cpatch%leaf_gbw    (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Leaf conductances cannot be zero.  Set to non-zero defaults. --------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+               initp%leaf_gbw (ico) = dble(cpatch%leaf_gbw(ico))
+               initp%leaf_gbh (ico) = dble(cpatch%leaf_gbh(ico))
+               !---------------------------------------------------------------------------!
             end if
             !------ Wood boundary layer conductance. --------------------------------------!
             if (initp%wood_resolvable(ico)) then
@@ -1362,14 +1397,20 @@ module canopy_struct_dynamics
                cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
             else
+               !----- Set numbers to zero. ------------------------------------------------!
                initp%wood_reynolds(ico) = 0.d0
                initp%wood_grashof (ico) = 0.d0
                initp%wood_nussfree(ico) = 0.d0
                initp%wood_nussforc(ico) = 0.d0
-               initp%wood_gbh     (ico) = 0.d0
-               initp%wood_gbw     (ico) = 0.d0
-               cpatch%wood_gbh    (ico) = 0.0
-               cpatch%wood_gbw    (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Leaf conductances cannot be zero.  Set to non-zero defaults. --------!
+               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
+               initp%wood_gbw (ico) = dble(cpatch%wood_gbw(ico))
+               initp%wood_gbh (ico) = dble(cpatch%wood_gbh(ico))
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end do
