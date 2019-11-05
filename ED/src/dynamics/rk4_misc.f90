@@ -4352,7 +4352,7 @@ module rk4_misc
       write (unit=*,fmt='(9(a12,1x))')  '      FGC_RH','      FSC_RH','     STGC_RH'       &
                                        ,'     STSC_RH','      MSC_RH','      SSC_RH'       &
                                        ,'      PSC_RH','STORAGE_RESP',' GROWTH_RESP'
-      write (unit=*,fmt='(7(es12.4,1x))') y%fgc_rh,y%fsc_rh,y%stgc_rh,y%stsc_rh,y%msc_rh   &
+      write (unit=*,fmt='(9(es12.4,1x))') y%fgc_rh,y%fsc_rh,y%stgc_rh,y%stsc_rh,y%msc_rh   &
                                          ,y%ssc_rh,y%psc_rh,y%commit_storage_resp          &
                                          ,y%commit_growth_resp
 

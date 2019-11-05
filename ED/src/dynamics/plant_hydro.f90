@@ -488,17 +488,18 @@ module plant_hydro
       real(kind=8)                          :: current_layer_depth
       real(kind=8)                          :: total_water_supply
       real(kind=8)      , dimension(nzg)    :: layer_water_supply
+      !----- variables for loops
+      integer                               :: k
+      !--------------- Flags
+      logical                               :: small_tree_flag
+      logical                               :: zero_flow_flag
+      logical           , dimension(5)      :: error_flag
+      !----- Local constants. -------------------------------------------------------------!
       character(len=13) , parameter         :: efmt       = '(a,1x,es12.5)'
       character(len=9)  , parameter         :: ifmt       = '(a,1x,i5)'
       character(len=9)  , parameter         :: lfmt       = '(a,1x,l1)'
-      !----- variables for loops
-      integer                               :: k
-      integer,parameter                     :: dco        = 0
-      !--------------- Flags
-      logical,parameter                     :: debug_flag = .false.
-      logical                               :: small_tree_flag
-      logical                               :: zero_flow_flag
-      logical                               :: error_flag
+      integer           , parameter         :: dco        = 0
+      logical           , parameter         :: debug_flag = .false.
       !----- External function ------------------------------------------------------------!
       real(kind=4), external                :: sngloff       ! Safe dble 2 single precision
       !------------------------------------------------------------------------------------!
@@ -628,10 +629,10 @@ module plant_hydro
          !          leaf_psi_d drops below wood_psi_d - hite_d.
          !---------------------------------------------------------------------------------!
          zero_flow_flag = ( c_leaf == 0.d0                            ) .or.  & ! Case 1
-                          ( leaf_psi_d <= (wood_psi_d - hite_d) .and.         &
-                            wood_psi_d <= wood_psi_min_d              ) .or.  & ! Case 2a
                           ( leaf_psi_d >= (wood_psi_d - hite_d) .and.         &
-                            leaf_psi_d <= leaf_psi_min_d              ) .or.  & ! Case 2b
+                            leaf_psi_d <= leaf_psi_min_d              ) .or.  & ! Case 2a
+                          ( leaf_psi_d <= (wood_psi_d - hite_d) .and.         &
+                            wood_psi_d <= wood_psi_min_d              ) .or.  & ! Case 2b
                           ( leaf_psi_d >  (wood_psi_d - hite_d)       )       ! ! Case 3
          !---------------------------------------------------------------------------------!
 
@@ -861,13 +862,21 @@ module plant_hydro
 
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
-      ! 3.  Sanity check.  Stop the simulation in case anything went wrong. 
+      ! 3.  Sanity check.  Stop the simulation in case anything went wrong.   Sympotms for
+      !     things going wrong:
+      !     a.  NaN values --- Run the debugger
+      !     b.  Projected leaf/wood potential is positive
+      !     c.  Current leaf/wood potential is positive
+      !     d.  Projected leaf/wood potential is less than minimum acceptable
+      !     e.  Current leaf/wood potential is less than minimum acceptable
       !------------------------------------------------------------------------------------!
-      error_flag = (isnan(wflux_wl_d)  .or. isnan(wflux_gw_d) ) .or.  & ! NaN values
-                   (proj_leaf_psi > 0. .or. proj_wood_psi > 0.) .or.  & ! psi is positive
-                   (leaf_psi_d    > 0. .or. wood_psi_d    > 0.)       ! !
+      error_flag(1) = isnan(wflux_wl_d)              .or. isnan(wflux_gw_d)
+      error_flag(2) = proj_leaf_psi > 0.             .or. proj_wood_psi > 0.
+      error_flag(3) = leaf_psi_d    > 0.             .or. wood_psi_d    > 0.
+      error_flag(4) = proj_leaf_psi < leaf_psi_min_d .or. proj_wood_psi < wood_psi_min_d
+      error_flag(5) = leaf_psi_d    < leaf_psi_min_d .or. wood_psi_d    < wood_psi_min_d
 
-      if ( (debug_flag .and. (dco == 0 .or. ico == dco)) .or. error_flag) then
+      if ( (debug_flag .and. (dco == 0 .or. ico == dco)) .or. any(error_flag)) then
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(92a)') ('=',k=1,92)
          write (unit=*,fmt='(92a)') ('=',k=1,92)
@@ -892,6 +901,17 @@ module plant_hydro
          write (unit=*,fmt=efmt   ) ' + CROWN_AERA       =',crown_area
 
          write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=lfmt   ) ' + Finite fluxes     =',.not. error_flag(1)
+         write (unit=*,fmt=lfmt   ) ' + Negative Proj Psi =',.not. error_flag(2)
+         write (unit=*,fmt=lfmt   ) ' + Negative Curr Psi =',.not. error_flag(3)
+         write (unit=*,fmt=lfmt   ) ' + Bounded Proj Psi  =',.not. error_flag(4)
+         write (unit=*,fmt=lfmt   ) ' + Bounded Curr Psi  =',.not. error_flag(5)
+
+         write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=efmt   ) ' + LEAF_PSI_MIN      =',leaf_psi_min(ipft)
+         write (unit=*,fmt=efmt   ) ' + WOOD_PSI_MIN      =',wood_psi_min(ipft)
+
+         write (unit=*,fmt='(a)'  ) ' '
          write (unit=*,fmt=efmt   ) ' + TRANSP           =',transp
          write (unit=*,fmt=efmt   ) ' + LEAF_PSI (INPUT) =',leaf_psi
          write (unit=*,fmt=efmt   ) ' + WOOD_PSI (INPUT) =',wood_psi
@@ -912,7 +932,7 @@ module plant_hydro
          write (unit=*,fmt='(92a)') ('=',k=1,92)
          write (unit=*,fmt='(a)'  ) ' '
 
-         if (error_flag) then 
+         if (any(error_flag)) then 
             call fatal_error('Plant Hydrodynamics is off-track.'                           &
                             ,'calc_plant_water_flux','plant_hydro.f90')
          end if

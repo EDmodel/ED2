@@ -2528,6 +2528,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf surface water is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
@@ -2570,6 +2571,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf temperature is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
@@ -2613,6 +2615,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf internal water is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
@@ -2678,6 +2681,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Wood surface water is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
@@ -2721,6 +2725,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Wood temperature is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
@@ -2763,6 +2768,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Wood internal water is off-track...'
                write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
