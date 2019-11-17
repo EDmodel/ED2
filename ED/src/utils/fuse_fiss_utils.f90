@@ -1351,7 +1351,7 @@ module fuse_fiss_utils
                      .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
                      .and. cpatch%census_status   (donc) == cpatch%census_status(recc)     &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
-                     .and.  cpatch%is_small       (donc) == cpatch%is_small(recc)          &
+                     .and.  cpatch%is_small       (donc) .eqv. cpatch%is_small(recc)       &
                      ) then
 
 
