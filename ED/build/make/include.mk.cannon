@@ -45,6 +45,7 @@ CMACH=ODYSSEY
 #F_COMP=mpif90 -fc=ifort
 #C_COMP=mpicc -cc=icc
 #LOADER=mpif90 -fc=ifort
+FC_TYPE=INTEL
 F_COMP=mpif90
 C_COMP=mpicc
 LOADER=mpif90

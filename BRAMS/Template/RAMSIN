@@ -2556,10 +2556,10 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    !  PLANT_HYDRO_SCHEME -- Flag to set dynamic plant hydraulics.                          !
    !  0 - (ED-2.2 default) No dynamic hydraulics (leaf and wood are always saturated).     !
-   !  1 - (Beta) Track plant hydrodynamics using parameters from C16.                      !
-   !  2 - (ED-2.2 alternative) Track plant hydrodynamics using parameters from X16.        !
-   ! -1 - (Beta) Similar to 1 but leaf/wood heat capacity does not change.                 !
-   ! -2 - (Beta) Same as 2 but leaf/wood heat capacity does not change.                    !
+   !  1 - (ED-2.2 alternative) Track plant hydrodynamics.  Model framework from X16, using !
+   !      parameters from C16.                                                             !
+   !  2 - (Deprecated) Track plant hydrodynamics.  Model framework from X16, using         !
+   !      parameters from X16.                                                             !
    !                                                                                       !
    ! References:                                                                           !
    !                                                                                       !

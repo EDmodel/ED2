@@ -25,8 +25,7 @@ module ed_type_init
                                 , leaf_turnover_rate & ! intent(in)
                                 , Vm0                & ! intent(in)
                                 , sla                & ! intent(in)
-                                , leaf_rwc_min       & ! intent(in)
-                                , wood_rwc_min       ! ! intent(in)
+                                , small_psi_min      ! ! intent(in)
       use canopy_air_coms, only : f_bndlyr_init      ! ! intent(in)
       use rk4_coms       , only : effarea_transp     & ! intent(in)
                                 , tiny_offset        ! ! intent(in)
@@ -75,6 +74,13 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       cpatch%leaf_resolvable(ico) = .false.
       cpatch%wood_resolvable(ico) = .false.
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Set all cohorts to be small.  The code will update this every time step, but we !
+      ! must assign an initial value so the debugger won't complain.                       !
+      !------------------------------------------------------------------------------------!
+      cpatch%is_small(ico) = .true.
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -161,7 +167,8 @@ module ed_type_init
          call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)            &
                      ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
          !---------------------------------------------------------------------------------!
-      case (9999)
+
+      case default
          !---------------------------------------------------------------------------------!
          !     Start the water potential with the equivalent to field capacity (well-      !
          ! watered conditions).                                                            !
@@ -173,25 +180,16 @@ module ed_type_init
             slpotfc              = soil(ntext)%slpotfc
             cpatch%wood_psi(ico) = min(cpatch%wood_psi(ico),soil(ntext)%slpotfc)
          end do
-         cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%hite(ico) ! in m
+         cpatch%wood_psi(ico) = min( 0., max( cpatch%wood_psi(ico)                         &
+                                            , small_psi_min(ipft)+cpatch%hite(ico) )  )
+         cpatch%leaf_psi(ico) = min( 0., max( cpatch%wood_psi(ico) - cpatch%hite(ico)      &
+                                            , small_psi_min(ipft) )                   )
          !---------------------------------------------------------------------------------!
 
 
          !----- Convert water potential to relative water content. ------------------------!
          call psi2rwc(cpatch%leaf_psi(ico),cpatch%wood_psi(ico),cpatch%pft(ico)            &
                      ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
-         !---------------------------------------------------------------------------------!
-
-      case default
-         !----- Set water content to saturated conditions. --------------------------------!
-         cpatch%leaf_rwc(ico) = leaf_rwc_min(ipft) + 0.90 * (1.0 - leaf_rwc_min(ipft))
-         cpatch%wood_rwc(ico) = wood_rwc_min(ipft) + 0.90 * (1.0 - wood_rwc_min(ipft))
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Convert water potential to relative water content. ------------------------!
-         call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),cpatch%pft(ico)            &
-                     ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

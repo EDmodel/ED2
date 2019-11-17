@@ -192,6 +192,7 @@ USE_MPIWTIME=1
 
 #-----------------  LINUX INTEL FORTRAN-95 Compiler/GCC  ---------
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 C_COMP=mpicc
 LOADER=mpif90

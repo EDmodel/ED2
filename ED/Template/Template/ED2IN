@@ -8,8 +8,13 @@
 ! implementation using the following labels:                                               !
 !                                                                                          !
 ! ED-2.2 default.                                                                          !
-!    These are the options described in the ED-2.2 technical note and that have been       !
+!    These are the options described in the ED-2.2 technical note (L19) and that have been !
 !    thoroughly tested. When unsure, we recommend to use this option.                      !
+!                                                                                          !
+! ED-2.2 alternative.                                                                      !
+!    These are the options described either in the ED-2.2 or other publications (mostly    !
+!    X16), and should be fully functional.  Depending on the application, this may be the  !
+!    most appropriate option.                                                              !
 !                                                                                          !
 ! Legacy.                                                                                  !
 !    Older implementations that have been implemented in ED-1.0, ED-2.0, or ED-2.1. These  !
@@ -33,6 +38,18 @@
 ! Non-functional.                                                                          !
 !    Older implementations that have been discontinued or methods not yet implemented.     !
 !    Do not use these options.                                                             !
+!                                                                                          !
+! References:                                                                              !
+!                                                                                          !
+! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS, Zhang K,           !
+!    Rollinson CR, Bras RL, Wofsy SC, Moorcroft PR. 2019. The biophysics, ecology, and     !
+!    biogeochemistry of functionally diverse, vertically and horizontally heterogeneous    !
+!    ecosystems: the Ecosystem Demography model, version 2.2 ? part 1: Model description.  !
+!    Geosci. Model Dev. 12: 4309-4346, doi:10.5194/gmd-12-4309-2019 (L19).                 !
+!                                                                                          !
+! Xu X, Medvigy D, Powers JS, Becknell JM , Guan K. 2016. Diversity in plant hydraulic     !
+!    traits explains seasonal and inter-annual variations of vegetation dynamics in        !
+!    seasonally dry tropical forests. New Phytol. 212: 80-95, doi:10.1111/nph.14009 (X16). !
 !------------------------------------------------------------------------------------------!
 $ED_NL
 
@@ -1113,8 +1130,10 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    !  PLANT_HYDRO_SCHEME -- Flag to set dynamic plant hydraulics.                          !
    !  0 - (ED-2.2 default) No dynamic hydraulics (leaf and wood are always saturated).     !
-   !  1 - (Beta) Track plant hydrodynamics using parameters from C16.                      !
-   !  2 - (ED-2.2 alternative) Track plant hydrodynamics using parameters from X16.        !
+   !  1 - (ED-2.2 alternative) Track plant hydrodynamics.  Model framework from X16, using !
+   !      parameters from C16.                                                             !
+   !  2 - (Deprecated) Track plant hydrodynamics.  Model framework from X16, using         !
+   !      parameters from X16.                                                             !
    !                                                                                       !
    ! References:                                                                           !
    !                                                                                       !

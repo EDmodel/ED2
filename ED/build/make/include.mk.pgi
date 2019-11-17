@@ -86,6 +86,7 @@ USE_MPIWTIME=1
 
 #----------------- PGI Compiler on Linux x86_64 ----------------
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 F_OPTS=-O2
 #F_OPTS = -g -ffpe-trap=invalid,zero,underflow,overflow -fbounds-check

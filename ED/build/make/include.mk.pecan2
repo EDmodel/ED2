@@ -78,6 +78,7 @@ USE_MPIWTIME=1
 
 #----------------- gfortran on Linux -----------
 CMACH=PC_GFORTRAN
+FC_TYPE=GNU
 F_COMP=mpif90
 C_COMP=mpicc 
 LOADER=mpif90

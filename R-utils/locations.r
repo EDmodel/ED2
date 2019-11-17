@@ -556,8 +556,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- ivegt.dynamics is the flag for vegetation dynamics. -----------------------------#
    flagvar[["ivegt.dynamics"]]  = list( descr   = "Vegetation dynamics"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=1,by=1)
-                                      , names   = c("OFF","ON")
+                                      , values  = seq(from=0,to=2,by=1)
+                                      , names   = c("OFF","ON","Multi")
                                       )#end list
    #----- iphen.scheme is the phenology scheme for tropical broadleaf trees. --------------#
    flagvar[["iphen.scheme"]]    = list( descr   = "Phenology scheme"

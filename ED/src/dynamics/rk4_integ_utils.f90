@@ -732,7 +732,8 @@ module rk4_integ_utils
             !----- Copy the logical tests. ------------------------------------------------!
             yscal%leaf_resolvable(ico) = y%leaf_resolvable(ico)
             yscal%wood_resolvable(ico) = y%wood_resolvable(ico)
-            yscal%veg_resolvable(ico)  = y%veg_resolvable(ico)
+            yscal%veg_resolvable (ico) = y%veg_resolvable (ico)
+            yscal%is_small       (ico) = y%is_small       (ico)
             !------------------------------------------------------------------------------!
 
 
@@ -804,7 +805,8 @@ module rk4_integ_utils
             !----- Copy the logical tests. ------------------------------------------------!
             yscal%leaf_resolvable(ico) = y%leaf_resolvable(ico)
             yscal%wood_resolvable(ico) = y%wood_resolvable(ico)
-            yscal%veg_resolvable (ico) = y%veg_resolvable(ico)
+            yscal%veg_resolvable (ico) = y%veg_resolvable (ico)
+            yscal%is_small       (ico) = y%is_small       (ico)
             !------------------------------------------------------------------------------!
 
 

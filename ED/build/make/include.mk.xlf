@@ -117,6 +117,7 @@ USE_INTERF=1
 
 #----------------- XLF on MacOS -----------------
 CMACH=IBM 
+FC_TYPE=XLF
 F_COMP=xlf90_r -qmoddir=/tmp -I/tmp 
 F_OPTS= -qmaxmem=-1 -qsuffix=cpp=F90 -qarch=g5 \
 	-qsuffix=f=f90 -I/sw/mpich2-xlf/include \

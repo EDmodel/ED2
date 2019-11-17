@@ -40,6 +40,7 @@ endif
 
 #################################### COMPILER SETTINGS #####################################
 CMACH=PC_INTEL
+FC_TYPE=INTEL
 F_COMP=ifort
 C_COMP=icc
 LOADER=ifort

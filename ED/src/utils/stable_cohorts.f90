@@ -82,13 +82,23 @@ module stable_cohorts
    subroutine is_resolvable(csite,ipa,ico)
       use ed_state_vars  , only : sitetype               & ! structure
                                 , patchtype              ! ! structure
-      use pft_coms       , only : veg_hcap_min           & ! intent(in)
+      use pft_coms       , only : C2B                    & ! intent(in)
+                                , q                      & ! intent(in)
+                                , qsw                    & ! intent(in)
+                                , is_grass               & ! intent(in)
+                                , veg_hcap_min           & ! intent(in)
                                 , leaf_rwc_min           & ! intent(in)
-                                , wood_rwc_min           ! ! intent(in)
+                                , wood_rwc_min           & ! intent(in)
+                                , leaf_water_cap         & ! intent(in)
+                                , wood_water_cap         & ! intent(in)
+                                , hgt_min                ! ! intent(in)
       use ed_max_dims    , only : n_pft                  ! ! intent(in)
-      use physiology_coms, only : plant_hydro_scheme     ! ! intent(in)
-      use plant_hydro    , only : psi2rwc                & ! subroutine
-                                , rwc2psi                & ! subroutine
+      use physiology_coms, only : istomata_scheme        & ! function
+                                , plant_hydro_scheme     ! ! function
+      use allometry      , only : dbh2sf                 & ! function
+                                , size2bl                & ! function
+                                , size2bd                ! ! function
+      use plant_hydro    , only : rwc2psi                & ! subroutine
                                 , rwc2tw                 & ! subroutine
                                 , twi2twe                ! ! subroutine
       use ed_therm_lib   , only : update_veg_energy_cweh ! ! subroutine
@@ -111,6 +121,13 @@ module stable_cohorts
       real                        :: old_wood_hcap      ! Old wood heat capacity   [J/kg/K]
       real                        :: old_leaf_water_im2 ! Old leaf internal water  [ kg/m2]
       real                        :: old_wood_water_im2 ! Old wood internal water  [ kg/m2]
+      real                        :: c_leaf             ! Leaf water capacity      [  kg/m]
+      real                        :: c_stem             ! Stem water capacity      [  kg/m]
+      real                        :: sap_frac           ! Sapwood fraction         [   ---]
+      real                        :: bleafhydro         ! Hydro leaf biomass       [kgC/pl]
+      real                        :: broothydro         ! Hydro fine-root biomass  [kgC/pl]
+      real                        :: bsapwhydro         ! Hydro sapwood biomass    [kgC/pl]
+      real                        :: bdeadhydro         ! Hydro heartwood biomass  [kgC/pl]
       !------------------------------------------------------------------------------------!
 
 
@@ -255,6 +272,58 @@ module stable_cohorts
       end if
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Flag cohorts as small or large.  "Small" cohorts are only flagged when plant   !
+      ! hydraulics is on and stomatal conductance is calculated using methods based on     !
+      ! leaf water potential.                                                              !
+      !------------------------------------------------------------------------------------!
+      select case (istomata_scheme)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !     Stomatal conductance is not based on potential.  Ignore small/large cohort  !
+         ! flag.                                                                           !
+         !---------------------------------------------------------------------------------!
+         cpatch%is_small(ico) = .false.
+         !---------------------------------------------------------------------------------!
+      case default
+         select case (plant_hydro_scheme)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !     Plant hydraulics is not dynamic.  No need to distinguish small and large !
+            ! cohorts.                                                                     !
+            !------------------------------------------------------------------------------!
+            cpatch%is_small(ico) = .false.
+            !------------------------------------------------------------------------------!
+         case default
+            !------------------------------------------------------------------------------!
+            !      Check the relative magnitude of leaf and sapwood water pool.  In case   !
+            ! the cohort is a small tree/liana or a grass, then we flag them so we treat   !
+            ! their leaf and wood potential to be the same.  Cohorts are considered too    !
+            ! small when c_leaf is greater than half of c_stem, or if the cohort has not   !
+            ! grown since recruitment.  These are arbitrary thresholds.  Users are         !
+            ! welcome to modify this term in case leaf_psi shows strong oscillations from  !
+            ! each timestep to another.                                                    !
+            !------------------------------------------------------------------------------!
+            bleafhydro = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            broothydro = q(ipft) * bleafhydro
+            sap_frac   = dbh2sf(cpatch%dbh(ico),ipft)
+            bsapwhydro = qsw(ipft) * cpatch%hite(ico) * bleafhydro
+            bdeadhydro = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bsapwhydro = ( bsapwhydro + bdeadhydro ) * sap_frac
+            !----- Find leaf and stem capacities. -----------------------------------------!
+            c_leaf               = leaf_water_cap(ipft) * C2B * bleafhydro
+            c_stem               = wood_water_cap(ipft) * C2B * (broothydro  + bsapwhydro)
+            cpatch%is_small(ico) = is_grass(ipft)                     .or.                 &
+                                   c_leaf           >  (0.5 * c_stem) .or.                 &
+                                   cpatch%hite(ico) == hgt_min(ipft)
+            cpatch%is_small(ico) = .false.
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
       return
    end subroutine is_resolvable
    !=======================================================================================!

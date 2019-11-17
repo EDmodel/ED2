@@ -3790,8 +3790,8 @@ subroutine init_pft_alloc_params()
       !    und Landwirtschaft (BMVEL), Bonn, Germany, 2003.                                !
       !    URL http://www.wasklim.de/download/Methodenband.pdf.                            !
       !------------------------------------------------------------------------------------!
-      b1WAI(:) = merge(0.0,merge(0.0553*0.5,0.0192*0.5,is_conifer(:)),is_grass(:))
-      b2WAI(:) = merge(1.0,merge(    1.9769,    2.0947,is_conifer(:)),is_grass(:))
+      b1WAI(:) = merge(0.0 ,merge(0.0553*0.5,0.0192*0.5,is_conifer(:)),is_grass(:))
+      b2WAI(:) = merge(1.0 ,merge(    1.9769,    2.0947,is_conifer(:)),is_grass(:))
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -3803,7 +3803,7 @@ subroutine init_pft_alloc_params()
    ! twigs.  Here we must be careful to make sure that the fraction is 0 in case WAI is    !
    ! going to be zero (e.g. grasses).                                                      !
    !---------------------------------------------------------------------------------------!
-   brf_wd(:) = merge(0.0,0.16,is_grass(:))
+   brf_wd(:) = merge(0.00,0.16,is_grass(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -5332,10 +5332,12 @@ subroutine init_pft_hydro_params()
                              , wdns                 ! ! intent(in)
    use ed_max_dims    , only : n_pft                ! ! intent(in)
    use physiology_coms, only : plant_hydro_scheme   ! ! intent(in)
-   use plant_hydro    , only : rwc2psi              ! ! subroutine
+   use plant_hydro    , only : rwc2psi              & ! subroutine
+                             , psi2rwc              ! ! subroutine
    use ed_misc_coms   , only : economics_scheme     ! ! intent(in)
    use pft_coms       , only : is_grass             & ! intent(in)
                              , is_conifer           & ! intent(in)
+                             , is_liana             & ! intent(in)
                              , is_tropical          & ! intent(in)
                              , SLA                  & ! intent(in)
                              , rho                  & ! intent(in)
@@ -5373,10 +5375,12 @@ subroutine init_pft_hydro_params()
    real   , dimension(n_pft) :: LMA          ! leaf mass per area     [ g/m2]
    real   , dimension(n_pft) :: Amax_25      ! estimated max. photosynthetic rates at 25C
    real   , dimension(n_pft) :: rho_bnd      ! Bounded wood density, to avoid FPE.
+   logical, dimension(n_pft) :: is_troptree  ! Flag to select only tropical trees.
    !------ Local parameters. --------------------------------------------------------------!
    real   , parameter        :: MPa2m   = wdns / grav
    real   , parameter        :: rho_min = 0.35 ! Minimum wood density
    real   , parameter        :: rho_max = 0.95 ! Maximum wood density
+   real   , parameter        :: f_cap   = 0.07 ! Fraction of capillary water.
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -5442,6 +5446,12 @@ subroutine init_pft_hydro_params()
 
    !----- Bounded wood density. -----------------------------------------------------------!
    rho_bnd(:) = max(rho_min,min(rho_max,rho(:)))
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Flag for selecting tropical trees. ----------------------------------------------!
+   is_troptree(:) = is_tropical(:)        .and. (.not. is_grass(:)) .and.                  &
+                    (.not. is_conifer(:)) .and. (.not. is_liana(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -5513,8 +5523,11 @@ subroutine init_pft_hydro_params()
 
    !----- Sapwood minimum relative water content, or residual fraction. -------------------!
    rwc_tlp_wood(:) = 1. - (1.00 - 0.75 * rho_bnd(:)) / (2.74 + 2.01 * rho_bnd(:))
-   wood_rwc_min(:) = wood_elastic_mod(:) * (1. - rwc_tlp_wood(:))                          &
-                   / (wood_psi_osmotic(:) / MPa2M) + 1.  
+   wood_rwc_min(:) = max( leaf_rwc_min(:) + 0.1                                            &
+                        , wood_elastic_mod(:) * (1. - rwc_tlp_wood(:) - f_cap)             &
+                        / (wood_psi_osmotic(:) / MPa2M * (1. - f_cap) ) + 1. - f_cap )
+
+
    ! note that we set fcap to 0. in the original equation
    !---------------------------------------------------------------------------------------!
 
@@ -5548,11 +5561,14 @@ subroutine init_pft_hydro_params()
    ! Assume water retention curve is linear from 0. to 4 * turgor loss point               !
    ! [kg H2O / kg biomass / m].                                                            !
    !---------------------------------------------------------------------------------------!
-   leaf_water_cap(:) = (1. - leaf_psi_osmotic(:) / (4. * leaf_psi_tlp(:)))                 &
-                     * leaf_water_sat(:) / (4. * abs(leaf_psi_tlp(:)))
+   leaf_water_cap(:) = (1. - leaf_rwc_min(:))                                              &
+                     * (1. - leaf_psi_osmotic(:) / (4. * leaf_psi_tlp(:)) )                &
+                     * leaf_water_sat(:) / (4. * abs(leaf_psi_tlp(:)) )
 
-   wood_water_cap(:) = (1. - wood_psi_osmotic(:) / (4. * wood_psi_tlp(:)))                 &
-                     * wood_water_sat(:) / (4. * abs(wood_psi_tlp(:)))
+   wood_water_cap(:) = (1. - wood_rwc_min(:))                                              &
+                     * (1. - wood_psi_osmotic(:) / (4. * wood_psi_tlp(:)) )                &
+                     * wood_water_sat(:) / (4. * abs(wood_psi_tlp(:)) )
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -5593,7 +5609,8 @@ subroutine init_pft_hydro_params()
 
    !---------------------------------------------------------------------------------------!
    !      Overwrite some parameters if PLANT_HYDRO_SCHEME is 2, using the meta-analysis    !
-   ! from X16.  This is tested for tropical PFTs only.                                     !
+   ! from X16.  This is tested for tropical tree PFTs only, so we only update the values   !
+   ! for these trees.                                                                      !
    !---------------------------------------------------------------------------------------!
    select case (plant_hydro_scheme)
    case (2)
@@ -5603,34 +5620,45 @@ subroutine init_pft_hydro_params()
       ! capacitance (S03; S06).  Thus, here Cap_leaf is multiplied by 1/2 and Cap_stem     !
       ! is multipled by 1/3.                                                               !
       !------------------------------------------------------------------------------------!
-      leaf_water_cap(:) = 3.e-3 * SLA(:) / C2B / MPa2m / 2.
-      wood_water_cap(:) = min(400.,max(50., -700. * (rho_bnd(:) - 0.3) + 400.))            &
-                           / (rho_bnd(:) * 1.e3) / MPa2m / 3.
+      leaf_water_cap(:) = merge( 3.e-3 * SLA(:) / C2B / MPa2m / 2.                         &
+                               , leaf_water_cap(:)                                         &
+                               , is_troptree(:) )
+      wood_water_cap(:) = merge( min(400.,max(50., -700. * (rho_bnd(:) - 0.3) + 400.))     &
+                               / (rho_bnd(:) * 1.e3) / MPa2m / 3.                          &
+                               , wood_water_cap(:)                                         &
+                               , is_troptree(:) )
       !------------------------------------------------------------------------------------!
 
 
 
 
       !----- Copied from default values (G07). --------------------------------------------!
-      leaf_water_sat(:) = merge(1.85,2.50,is_tropical(:))
-      wood_water_sat(:) = 0.7
-      bark_water_sat(:) = 0.7
+      leaf_water_sat(:) = merge(1.85,leaf_water_sat(:),is_troptree(:))
+      wood_water_sat(:) = merge(0.70,wood_water_sat(:),is_troptree(:))
+      bark_water_sat(:) = merge(0.70,bark_water_sat(:),is_troptree(:))
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Set some rwc_min so that psi_min makes sense. --------------------------------!
-      leaf_rwc_min(:) = 0.5
-      wood_rwc_min(:) = 0.05
+      leaf_rwc_min(:) = merge(0.5 ,leaf_rwc_min(:),is_troptree(:))
+      wood_rwc_min(:) = merge(0.05,wood_rwc_min(:),is_troptree(:))
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Additional parameters. -------------------------------------------------------!
-      leaf_psi_tlp(:) = (-4.59 + 0.62 * log(SLA(:)) -1.15 * log(rho_bnd(:))) * MPa2m
-      wood_psi50  (:) = (-3. * rho_bnd(:) - 0.599) * MPa2m
-      wood_Kmax   (:) = exp(-2.455 * rho_bnd(:) + 2.348 + 0.5 * 0.6186) / MPa2m
-      wood_Kexp   (:) = 4.
+      leaf_psi_tlp(:) = merge( ( - 4.59 + 0.62 * log(SLA(:))                               &
+                               - 1.15 * log(rho_bnd(:)) ) * MPa2m                          &
+                             , leaf_psi_tlp(:)                                             &
+                             , is_troptree(:) )
+      wood_psi50  (:) = merge( (-3. * rho_bnd(:) - 0.599) * MPa2m                          &
+                             , wood_psi50(:)                                               &
+                             , is_troptree(:) )
+      wood_Kmax   (:) = merge( exp(-2.455 * rho_bnd(:) + 2.348 + 0.5 * 0.6186) / MPa2m     &
+                             , wood_Kmax   (:)                                             &
+                             , is_troptree(:) )
+      wood_Kexp   (:) = merge(4.,wood_Kexp(:),is_troptree(:))
       !------------------------------------------------------------------------------------!
    case (0)
       !------------------------------------------------------------------------------------!
@@ -5688,8 +5716,12 @@ subroutine init_pft_hydro_params()
    !     Equivalent leaf/wood minimum water potential calculated from leaf_rwc with the    !
    ! assumption of constant capacitance [m].                                               !
    !---------------------------------------------------------------------------------------!
-   leaf_psi_min(:) = (leaf_rwc_min(:) - 1.) * leaf_water_sat(:) / leaf_water_cap(:)
-   wood_psi_min(:) = (wood_rwc_min(:) - 1.) * wood_water_sat(:) / wood_water_cap(:)
+   do ipft=1,n_pft
+      !----- Make minimum water potential consistent with relative water content. ---------!
+      call rwc2psi(leaf_rwc_min(ipft),wood_rwc_min(ipft),ipft,leaf_psi_min(ipft)        &
+                  ,wood_psi_min(ipft))
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -7574,7 +7606,9 @@ subroutine init_derived_params_after_xml()
                                    , le_mask_lut               & ! intent(out)
                                    , ge_mask_lut               & ! intent(out)
                                    , Vcmax25                   & ! intent(out)
-                                   , Jmax25                    ! ! intent(out)
+                                   , Jmax25                    & ! intent(out)
+                                   , small_rwc_min             & ! intent(out)
+                                   , small_psi_min             ! ! intent(out)
    use fusion_fission_coms  , only : ifusion                   & ! intent(in)
                                    , ff_nhgt                   & ! intent(in)
                                    , hgt_class                 ! ! intent(out)
@@ -7618,6 +7652,8 @@ subroutine init_derived_params_after_xml()
                                    , f0_ssc                    ! ! intent(out)
    use farq_leuning         , only : arrhenius                 & ! function
                                    , collatz                   ! ! function
+   use plant_hydro          , only : psi2rwc                   & ! function
+                                   , rwc2psi                   ! ! function
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=2)                  :: char_pathway
@@ -7665,6 +7701,10 @@ subroutine init_derived_params_after_xml()
    real                              :: lai_min
    real                              :: nplant_res_min
    real                              :: max_hgt_max
+   real                              :: leaf_psi_swap
+   real                              :: wood_psi_swap
+   real                              :: leaf_rwc_small
+   real                              :: wood_rwc_small
    real(kind=8)                      :: temp25C8
    real(kind=8)                      :: Vcmax258
    real(kind=8)                      :: Jmax258
@@ -8522,6 +8562,19 @@ subroutine init_derived_params_after_xml()
          kplastic_LL(ipft) = 0.0
       end if
       !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Make safe small-tree thresholds.                                               !
+      !------------------------------------------------------------------------------------!
+      !----- Find the "swapped" minimum psi (the swapped order below is not a bug). -------!
+      call rwc2psi(wood_rwc_min(ipft),leaf_rwc_min(ipft),ipft,leaf_psi_swap,wood_psi_swap)
+      small_psi_min(ipft) = max( leaf_psi_min(ipft),wood_psi_min(ipft)                     &
+                               , leaf_psi_swap     ,wood_psi_swap      )
+      call psi2rwc(small_psi_min(ipft),small_psi_min(ipft),ipft                            &
+                  ,leaf_rwc_small,wood_rwc_small)
+      small_rwc_min(ipft) = min(leaf_rwc_small,wood_rwc_small)
+      !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -8713,7 +8766,7 @@ subroutine init_derived_params_after_xml()
    !----- Print trait coefficients. -------------------------------------------------------!
    if (print_zero_table) then
       open (unit=19,file=trim(strat_file),status='replace',action='write')
-      write(unit=19,fmt='(100(1x,a))') '          PFT','     TROPICAL','        GRASS'      &
+      write(unit=19,fmt='(102(1x,a))') '          PFT','     TROPICAL','        GRASS'      &
                                       ,'      CONIFER','     SAVANNAH','        LIANA'     &
                                       ,'       R_BANG','          RHO','          SLA'     &
                                       ,'          SRA','    ROOT_BETA','          VM0'     &
@@ -8740,16 +8793,16 @@ subroutine init_derived_params_after_xml()
                                       ,'  C2N_STORAGE','  C2N_RECRUIT',' LEAF_SHED_RT'     &
                                       ,' LEAF_GROW_RT','  VESSEL_CURL',' LEAF_H2O_CAP'     &
                                       ,' WOOD_H2O_CAP',' LEAF_H2O_SAT',' WOOD_H2O_SAT'     &
-                                      ,' LEAF_RWC_MIN',' WOOD_RWC_MIN',' LEAF_PSI_MIN'     &
-                                      ,' WOOD_PSI_MIN',' LEAF_PSI_OSM',' WOOD_PSI_OSM'     &
-                                      ,' LEAF_ELA_MOD',' WOOD_ELA_MOD',' LEAF_PSI_TLP'     &
-                                      ,' WOOD_PSI_TLP','    WOOD_KMAX','    WOOD_KEXP'     &
-                                      ,'   WOOD_PSI50',' STOMA_LAMBDA','   STOMA_BETA'     &
-                                      ,'  STOMA_PSI_B','  STOMA_PSI_C',' HIGH_PSI_THR'     &
-                                      ,'  LOW_PSI_THR'
+                                      ,' LEAF_RWC_MIN',' WOOD_RWC_MIN','SMALL_RWC_MIN'     &
+                                      ,' LEAF_PSI_MIN',' WOOD_PSI_MIN','SMALL_PSI_MIN'     &
+                                      ,' LEAF_PSI_OSM',' WOOD_PSI_OSM',' LEAF_ELA_MOD'     &
+                                      ,' WOOD_ELA_MOD',' LEAF_PSI_TLP',' WOOD_PSI_TLP'     &
+                                      ,'    WOOD_KMAX','    WOOD_KEXP','   WOOD_PSI50'     &
+                                      ,' STOMA_LAMBDA','   STOMA_BETA','  STOMA_PSI_B'     &
+                                      ,'  STOMA_PSI_C',' HIGH_PSI_THR','  LOW_PSI_THR'
 
       do ipft=1,n_pft
-         write (unit=19,fmt='(9x,i5,6(13x,l1),91(1x,f13.6),2(1x,i13))')                    &
+         write (unit=19,fmt='(9x,i5,6(13x,l1),93(1x,f13.6),2(1x,i13))')                    &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),r_bang(ipft),rho(ipft),SLA(ipft)  &
                        ,SRA(ipft),root_beta(ipft),Vm0(ipft),dark_respiration_factor(ipft)  &
@@ -8777,13 +8830,13 @@ subroutine init_derived_params_after_xml()
                        ,c2n_recruit(ipft),leaf_shed_rate(ipft),leaf_grow_rate(ipft)        &
                        ,vessel_curl_factor(ipft),leaf_water_cap(ipft),wood_water_cap(ipft) &
                        ,leaf_water_sat(ipft),wood_water_sat(ipft),leaf_rwc_min(ipft)       &
-                       ,wood_rwc_min(ipft),leaf_psi_min(ipft),wood_psi_min(ipft)           &
-                       ,leaf_psi_osmotic(ipft),wood_psi_osmotic(ipft)                      &
-                       ,leaf_elastic_mod(ipft),wood_elastic_mod(ipft),leaf_psi_tlp(ipft)   &
-                       ,wood_psi_tlp(ipft),wood_Kmax(ipft),wood_Kexp(ipft)                 &
-                       ,wood_psi50(ipft),stoma_lambda(ipft),stoma_beta(ipft)               &
-                       ,stoma_psi_b(ipft),stoma_psi_c(ipft),high_psi_threshold(ipft)       &
-                       ,low_psi_threshold(ipft)
+                       ,wood_rwc_min(ipft),small_rwc_min(ipft),leaf_psi_min(ipft)          &
+                       ,wood_psi_min(ipft),small_psi_min(ipft),leaf_psi_osmotic(ipft)      &
+                       ,wood_psi_osmotic(ipft),leaf_elastic_mod(ipft)                      &
+                       ,wood_elastic_mod(ipft),leaf_psi_tlp(ipft),wood_psi_tlp(ipft)       &
+                       ,wood_Kmax(ipft),wood_Kexp(ipft),wood_psi50(ipft)                   &
+                       ,stoma_lambda(ipft),stoma_beta(ipft),stoma_psi_b(ipft)              &
+                       ,stoma_psi_c(ipft),high_psi_threshold(ipft),low_psi_threshold(ipft)
       end do
       close(unit=19,status='keep')
    end if

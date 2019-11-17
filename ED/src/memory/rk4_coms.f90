@@ -220,6 +220,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: veg_water_im2   ! Water mass (int) [    kg/m2]
       real(kind=8), pointer, dimension(:) :: veg_hcap        ! Heat capacity    [   J/m2/K]
       logical     , pointer, dimension(:) :: veg_resolvable  ! resolve leaves?  [      T|F]
+      logical     , pointer, dimension(:) :: is_small        ! resolve leaves?  [      T|F]
       !------------------------------------------------------------------------------------!
 
 
@@ -1253,6 +1254,7 @@ module rk4_coms
       allocate(y%veg_water_im2      (    maxcohort))
       allocate(y%veg_hcap           (    maxcohort))
       allocate(y%veg_resolvable     (    maxcohort))
+      allocate(y%is_small           (    maxcohort))
       allocate(y%nplant             (    maxcohort))
       allocate(y%veg_wind           (    maxcohort))
       allocate(y%lai                (    maxcohort))
@@ -1383,6 +1385,7 @@ module rk4_coms
       nullify(y%veg_water_im2      )
       nullify(y%veg_hcap           )
       nullify(y%veg_resolvable     )
+      nullify(y%is_small           )
       nullify(y%nplant             )
       nullify(y%veg_wind           )
       nullify(y%lai                )
@@ -1487,6 +1490,7 @@ module rk4_coms
       if (associated(y%veg_water_im2      )) y%veg_water_im2       = 0.d0
       if (associated(y%veg_hcap           )) y%veg_hcap            = 0.d0
       if (associated(y%veg_resolvable     )) y%veg_resolvable      = .false.
+      if (associated(y%is_small           )) y%is_small            = .false.
       if (associated(y%nplant             )) y%nplant              = 0.d0
       if (associated(y%veg_wind           )) y%veg_wind            = 0.d0
       if (associated(y%lai                )) y%lai                 = 0.d0
@@ -1564,6 +1568,7 @@ module rk4_coms
       if (associated(y%leaf_nussforc      )) deallocate(y%leaf_nussforc      )
       if (associated(y%lint_shv           )) deallocate(y%lint_shv           )
       if (associated(y%leaf_resolvable    )) deallocate(y%leaf_resolvable    )
+      if (associated(y%leaf_resolvable    )) deallocate(y%leaf_resolvable    )
       if (associated(y%leaf_gbh           )) deallocate(y%leaf_gbh           )
       if (associated(y%leaf_gbw           )) deallocate(y%leaf_gbw           )
       if (associated(y%gsw_open           )) deallocate(y%gsw_open           )
@@ -1590,6 +1595,7 @@ module rk4_coms
       if (associated(y%veg_water_im2      )) deallocate(y%veg_water_im2      )
       if (associated(y%veg_hcap           )) deallocate(y%veg_hcap           )
       if (associated(y%veg_resolvable     )) deallocate(y%veg_resolvable     )
+      if (associated(y%is_small           )) deallocate(y%is_small           )
       if (associated(y%nplant             )) deallocate(y%nplant             )
       if (associated(y%veg_wind           )) deallocate(y%veg_wind           )
       if (associated(y%lai                )) deallocate(y%lai                )

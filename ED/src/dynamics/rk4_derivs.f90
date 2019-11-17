@@ -944,7 +944,9 @@ module rk4_derivs
       use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
       use budget_utils          , only : compute_netrad       ! ! function
       use physiology_coms       , only : plant_hydro_scheme   ! ! intent(in)
-      use pft_coms              , only : leaf_psi_min         ! ! intent(in)
+      use plant_hydro           , only : om_buff_d            ! ! intent(in)
+      use pft_coms              , only : leaf_psi_min         & ! intent(in)
+                                       , small_psi_min        ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -975,10 +977,13 @@ module rk4_derivs
       type(patchtype), pointer     :: cpatch            ! Current patch
       logical                      :: is_dew_cp         ! Test whether to add dew to TSW
       logical                      :: is_dew_cs         ! Test whether to add dew to soil
+      logical                      :: transp_fine       ! Test whether to allow transpir.
       integer                      :: ico               ! Current cohort ID
       integer                      :: ksn               ! Number of TSW layers
       integer                      :: ipft              ! Shortcut for PFT type
       integer                      :: kroot             ! Level of the bottom of root is
+      real(kind=8)                 :: leaf_psi_lwr      ! Lowest psi at which transp > 0
+      real(kind=8)                 :: small_psi_lwr     ! Lowest psi at which transp > 0
       real(kind=8)                 :: closedcan_frac    ! total fractional canopy coverage
       real(kind=8)                 :: transp            ! Cohort transpiration
       real(kind=8)                 :: wflux_wl          ! Wood-leaf water flow (sapflow)
@@ -1473,10 +1478,32 @@ module rk4_derivs
                   ! be Turned off. Instead, we use leaf water potential as water avail-    !
                   ! ability for transpiration.                                             !
                   !------------------------------------------------------------------------!
-                  if ( ( plant_hydro_scheme                 == 0    .and.                  &
-                         rk4aux(ibuff)%avail_h2o_int(kroot) >  0.d0              ) .or.    &
-                       ( plant_hydro_scheme                 /= 0    .and.                  &
-                       cpatch%leaf_psi(ico)                 > leaf_psi_min(ipft) ) ) then
+                  select case (plant_hydro_scheme)
+                  case (0)
+                     !----- Static plant hydraulics.  Check soil water availability. ------!
+                     transp_fine = rk4aux(ibuff)%avail_h2o_int(kroot) >  0.d0
+                     !---------------------------------------------------------------------!
+                  case default
+                     !----- Dynamic plant hydraulics. Check leaf water potential. ---------!
+                     small_psi_lwr = om_buff_d * dble(small_psi_min(ipft))
+                     leaf_psi_lwr  = om_buff_d * dble(leaf_psi_min (ipft))
+                     transp_fine   = merge( cpatch%leaf_psi(ico) > small_psi_lwr .and.     &
+                                            cpatch%wood_psi(ico) > small_psi_lwr           &
+                                          , cpatch%leaf_psi(ico) > leaf_psi_lwr            &
+                                          , cpatch%is_small(ico)                       )
+                     !---------------------------------------------------------------------!
+                  end select
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Update leaf-level and patch-level transpiration rates.             !
+                  !------------------------------------------------------------------------!
+                  if (transp_fine) then
+                     !---------------------------------------------------------------------!
+                     !    Transpiration can occur, use stomatal conductance and leaf-level !
+                     ! specific humidity deficit to obtain transpiration.                  !
+                     !---------------------------------------------------------------------!
                      gleaf_open   = effarea_transp(ipft)                                   &
                                   * initp%leaf_gbw(ico) * initp%gsw_open(ico)              &
                                   / (initp%leaf_gbw(ico) + initp%gsw_open(ico) )
@@ -1491,11 +1518,20 @@ module rk4_derivs
                      transp = initp%lai(ico) * ( initp%fs_open(ico) * dinitp%psi_open(ico) &
                                                + (1.0d0 - initp%fs_open(ico))              &
                                                * dinitp%psi_closed(ico) )
+                     !---------------------------------------------------------------------!
                   else
+                     !---------------------------------------------------------------------!
+                     !     Too dry for transpiration, shut down transpiration completely.  !
+                     !---------------------------------------------------------------------!
                      dinitp%psi_open(ico)   = 0.d0
                      dinitp%psi_closed(ico) = 0.d0
                      transp                 = 0.d0
+                     !---------------------------------------------------------------------!
                   end if
+                  !------------------------------------------------------------------------!
+
+
+
                   !------------------------------------------------------------------------!
                   !    Only liquid water is transpired, thus this is always the            !
                   ! condensation latent heat.                                              !

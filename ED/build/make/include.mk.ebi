@@ -102,6 +102,7 @@ USE_MPIWTIME=0
 
 #-----------------  LINUX G95 compiler g95/gcc  ------------------
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 #F_COMP=/home/mdietze/bin/gcc-build/bin/gfortran \
 #	-I/usr/include/openmpi/1.2.3-gcc/64 \

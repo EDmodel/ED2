@@ -25,6 +25,7 @@ USE_MPIWTIME=1
 
 # gfortran
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 F_OPTS=-O3 -ffree-line-length-none  -fno-whole-file
 C_COMP=mpicc

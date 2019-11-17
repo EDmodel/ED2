@@ -234,9 +234,11 @@ module ed_state_vars
       !<Crown area (m2 crown / m2 ground)
 
       logical, pointer, dimension(:) :: leaf_resolvable
-      !<Logical test to check whether the cohort leaves can be resolved...
+      !<Logical test to check whether the cohort leaves can be resolved.
       logical, pointer, dimension(:) :: wood_resolvable
-      !<Logical test to check whether the cohort wood can be resolved...
+      !<Logical test to check whether the cohort wood can be resolved.
+      logical, pointer, dimension(:) :: is_small
+      !<Logical test to check whether the cohort is considered small for plant hydro.
      
       logical, pointer, dimension(:) :: is_viable
       !< Logical test to check whether the cohort should be terminated because it is
@@ -5524,6 +5526,7 @@ module ed_state_vars
       allocate(cpatch%crown_area                   (                    ncohorts))
       allocate(cpatch%leaf_resolvable              (                    ncohorts))
       allocate(cpatch%wood_resolvable              (                    ncohorts))
+      allocate(cpatch%is_small                     (                    ncohorts))
       allocate(cpatch%is_viable                    (                    ncohorts))
       allocate(cpatch%cb                           (                 13,ncohorts))
       allocate(cpatch%cb_lightmax                  (                 13,ncohorts))
@@ -7693,6 +7696,7 @@ module ed_state_vars
       nullify(cpatch%crown_area              )
       nullify(cpatch%leaf_resolvable         )
       nullify(cpatch%wood_resolvable         )
+      nullify(cpatch%is_small                )
       nullify(cpatch%is_viable               )
       nullify(cpatch%cb                      )
       nullify(cpatch%cb_lightmax             )
@@ -8845,6 +8849,7 @@ module ed_state_vars
       if(associated(cpatch%crown_area              )) deallocate(cpatch%crown_area              )
       if(associated(cpatch%leaf_resolvable         )) deallocate(cpatch%leaf_resolvable         )
       if(associated(cpatch%wood_resolvable         )) deallocate(cpatch%wood_resolvable         )
+      if(associated(cpatch%is_small                )) deallocate(cpatch%is_small                )
       if(associated(cpatch%is_viable               )) deallocate(cpatch%is_viable               )
       if(associated(cpatch%cb                      )) deallocate(cpatch%cb                      )
       if(associated(cpatch%cb_lightmax             )) deallocate(cpatch%cb_lightmax             )
@@ -11022,6 +11027,7 @@ module ed_state_vars
          opatch%crown_area              (oco) = ipatch%crown_area              (ico)
          opatch%leaf_resolvable         (oco) = ipatch%leaf_resolvable         (ico)
          opatch%wood_resolvable         (oco) = ipatch%wood_resolvable         (ico)
+         opatch%is_small                (oco) = ipatch%is_small                (ico)
          opatch%is_viable               (oco) = ipatch%is_viable               (ico)
          opatch%cbr_bar                 (oco) = ipatch%cbr_bar                 (ico)
          opatch%leaf_energy             (oco) = ipatch%leaf_energy             (ico)
@@ -11751,6 +11757,7 @@ module ed_state_vars
       opatch%crown_area            (1:z) = pack(ipatch%crown_area                ,lmask)
       opatch%leaf_resolvable       (1:z) = pack(ipatch%leaf_resolvable           ,lmask)
       opatch%wood_resolvable       (1:z) = pack(ipatch%wood_resolvable           ,lmask)
+      opatch%is_small              (1:z) = pack(ipatch%is_small                  ,lmask)
       opatch%is_viable             (1:z) = pack(ipatch%is_viable                 ,lmask)
       opatch%cbr_bar               (1:z) = pack(ipatch%cbr_bar                   ,lmask)
       opatch%leaf_energy           (1:z) = pack(ipatch%leaf_energy               ,lmask)

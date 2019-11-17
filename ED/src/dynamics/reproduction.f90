@@ -493,19 +493,19 @@ module reproduction
                         ! ensure that leaf and wood liquid water fractions are consistent  !
                         ! with temperature.                                                !
                         !------------------------------------------------------------------!
-                        if ( cpatch%leaf_temp(ico) > t3ple) then
-                           cpatch%leaf_fliq (ico) = 1.0
-                        elseif ( cpatch%leaf_temp(ico) < t3ple) then
-                           cpatch%leaf_fliq (ico) = 0.0
-                        else
+                        if ( cpatch%leaf_temp(ico) == t3ple) then
                            cpatch%leaf_fliq (ico) = 0.5
-                        end if
-                        if ( cpatch%wood_temp(ico) > t3ple) then
-                           cpatch%wood_fliq (ico) = 1.0
-                        elseif ( cpatch%wood_temp(ico) < t3ple) then
-                           cpatch%wood_fliq (ico) = 0.0
+                        elseif ( cpatch%leaf_temp(ico) > t3ple) then
+                           cpatch%leaf_fliq (ico) = 1.0
                         else
+                           cpatch%leaf_fliq (ico) = 0.0
+                        end if
+                        if ( cpatch%wood_temp(ico) == t3ple) then
                            cpatch%wood_fliq (ico) = 0.5
+                        elseif ( cpatch%wood_temp(ico) > t3ple) then
+                           cpatch%wood_fliq (ico) = 1.0
+                        else
+                           cpatch%wood_fliq (ico) = 0.0
                         end if
                         !------------------------------------------------------------------!
 

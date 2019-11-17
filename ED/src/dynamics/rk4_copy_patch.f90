@@ -168,6 +168,7 @@ module rk4_copy_patch
          targetp%veg_water_im2     (ico) = sourcep%veg_water_im2     (ico)
          targetp%veg_hcap          (ico) = sourcep%veg_hcap          (ico)
 
+         targetp%is_small          (ico) = sourcep%is_small          (ico)
          targetp%veg_wind          (ico) = sourcep%veg_wind          (ico)
          targetp%lint_shv          (ico) = sourcep%lint_shv          (ico)
          targetp%nplant            (ico) = sourcep%nplant            (ico)

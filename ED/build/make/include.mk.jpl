@@ -42,6 +42,7 @@ USE_COLLECTIVE_MPIO=0
 
 #################################### COMPILER SETTINGS #####################################
 CMACH=ODYSSEY
+FC_TYPE=INTEL
 F_COMP=ifort
 C_COMP=icc
 LOADER=ifort

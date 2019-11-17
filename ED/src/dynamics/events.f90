@@ -615,7 +615,7 @@ subroutine event_irrigate(rval8)
        edtype,polygontype,sitetype, &
        patchtype
   use therm_lib, only: uint2tl,tl2uint
-  use consts_coms, only : wdns,wdnsi,t00
+  use consts_coms, only : wdns,wdnsi,t3ple
   implicit none
   real(kind=8),intent(in) :: rval8
 
@@ -660,7 +660,9 @@ subroutine event_irrigate(rval8)
               cpatch => csite%patch(ipa)
 
               !! note, assume irrigation water is at same temperature as soil
-              if(csite%soil_tempk(nzg,ipa) > t00)then
+              if (csite%soil_tempk(nzg,ipa) == t3ple)then
+                 fliq = 0.5
+              elseif (csite%soil_tempk(nzg,ipa) > t3ple)then
                  fliq = 1.0
               else
                  fliq = 0.0
@@ -724,6 +726,7 @@ subroutine event_till(rval8)
   use ed_therm_lib, only : calc_veg_hcap
   use therm_lib        , only : cmtl2uext
   use plant_hydro,     only : rwc2tw, twi2twe       ! ! sub-routine
+  use consts_coms,     only : t3ple ! ! intent(in)
   implicit none
   real(kind=8),intent(in) :: rval8
 
@@ -837,12 +840,28 @@ subroutine event_till(rval8)
                  cpatch%crown_area(ico)       = 0.0
                  cpatch%bleaf(ico)            = 0.0
                  cpatch%leaf_water(ico)       = 0.0
-                 cpatch%leaf_fliq(ico)        = 0.0
                  cpatch%leaf_temp(ico)        = csite%can_temp(ipa)
+                 cpatch%leaf_temp_pv(ico)     = csite%can_temp(ipa)
                  cpatch%leaf_vpdef(ico)       = csite%can_vpdef(ipa)
                  cpatch%wood_water(ico)       = 0.0
-                 cpatch%wood_fliq(ico)        = 0.0
                  cpatch%wood_temp(ico)        = csite%can_temp(ipa)
+                 cpatch%wood_temp_pv(ico)     = csite%can_temp(ipa)
+
+
+                 if (cpatch%leaf_temp(ico) == t3ple) then
+                    cpatch%leaf_fliq(ico) = 0.5
+                 elseif (cpatch%leaf_temp(ico) > t3ple) then
+                    cpatch%leaf_fliq(ico) = 1.0
+                 else
+                    cpatch%leaf_fliq(ico) = 0.0
+                 end if
+                 if (cpatch%wood_temp(ico) == t3ple) then
+                    cpatch%wood_fliq(ico) = 0.5
+                 elseif (cpatch%wood_temp(ico) > t3ple) then
+                    cpatch%wood_fliq(ico) = 1.0
+                 else
+                    cpatch%wood_fliq(ico) = 0.0
+                 end if
                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                   &
                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)               &
                                    ,cpatch%nplant(ico),cpatch%pft(ico)                     &

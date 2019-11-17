@@ -841,10 +841,10 @@ module rk4_driver
             !      Update rwc since it will be used to update leaf/wood heat capacity.     !
             !------------------------------------------------------------------------------!
             call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)              &
-                       ,cpatch%bleaf(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)      &
-                       ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)            &
-                       ,cpatch%dbh(ico),cpatch%pft(ico),cpatch%leaf_rwc(ico)               &
-                       ,cpatch%wood_rwc(ico))
+                       ,cpatch%is_small(ico),cpatch%bleaf(ico),cpatch%bsapwooda(ico)       &
+                       ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)        &
+                       ,cpatch%broot(ico),cpatch%dbh(ico),cpatch%pft(ico)                  &
+                       ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
             !------------------------------------------------------------------------------!
 
 

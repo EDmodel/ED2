@@ -50,6 +50,7 @@ USE_INTERF=1
 
 #################################### COMPILER SETTINGS #####################################
 CMACH=MAC_OS_X
+FC_TYPE=GNU
 F_COMP=gfortran
 C_COMP=gcc
 LOADER=gfortran

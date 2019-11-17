@@ -124,6 +124,7 @@ USE_MPIWTIME=0
 
 #----------------- Absoft Pro-Fortran on MacOS -----------------
 CMACH=PC_LINUX1     #THE UNDERSCORING IS VER LINUX LIKE
+FC_TYPE=GNU
 F_COMP=mpif77
 #F_OPTS= -g -fbounds-check -ffpe-trap=zero#,invalid,overflow
 F_OPTS= -O3

@@ -773,6 +773,7 @@ module fuse_fiss_utils
       use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap       ! ! subroutine
+      use physiology_coms     , only : plant_hydro_scheme  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -788,8 +789,9 @@ module fuse_fiss_utils
       integer      :: recc            ! Index: receptor cohort
       logical      :: donc_resolv     ! Donor cohort is resolvable
       logical      :: dr_may_fuse     ! Donor and receptor may be fused.
-      logical      :: dr_eqv_recruit  ! Donor and receptor have same recruitmentstatus.
-      logical      :: dr_eqv_phen     ! Donor and receptor have same phenology status.
+      logical      :: dr_eqv_recruit  ! Donor and receptor have the same recruit status.
+      logical      :: dr_eqv_phen     ! Donor and receptor have the same phenology status.
+      logical      :: dr_eqv_small    ! Donor and receptor have the same hydro-size status.
       logical      :: dr_le_lai_max   ! Donor and receptordo not exceed maximum LAI.
       real         :: newn            ! New nplants of merged coh.
       real         :: donc_lai_max    ! Maximum LAI: donor cohort
@@ -907,8 +909,16 @@ module fuse_fiss_utils
                      cpatch%census_status   (donc) == cpatch%census_status   (recc)
                   dr_eqv_phen    =                                                         &
                      cpatch%phenology_status(donc) == cpatch%phenology_status(recc)
+
+                  select case (plant_hydro_scheme)
+                  case (0)
+                     dr_eqv_small = .true.
+                  case default
+                     dr_eqv_small = cpatch%is_small(donc) == cpatch%is_small(recc)
+                  end select
                   if (.not. dr_eqv_recruit) cycle donloop
                   if (.not. dr_eqv_phen   ) cycle donloop
+                  if (.not. dr_eqv_small  ) cycle donloop
                end if
                !---------------------------------------------------------------------------!
 
@@ -1182,6 +1192,7 @@ module fuse_fiss_utils
       use mem_polygons        , only : maxcohort           ! ! intent(in)
       use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
+      use physiology_coms     , only : plant_hydro_scheme  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -1338,6 +1349,8 @@ module fuse_fiss_utils
                   ! 6. Both cohorts must have the same recruitment status with respect to  !
                   !    the census.                                                         !
                   ! 7. Both cohorts must have the same phenology status.                   !
+                  ! 8. Both cohorts must have the same small/large plant size status if    !
+                  !    dynamic plant hydraulics is active.                                 !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
@@ -1346,7 +1359,11 @@ module fuse_fiss_utils
                      .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
                      .and. cpatch%census_status   (donc) == cpatch%census_status(recc)     &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
+                     .and. (    plant_hydro_scheme == 0                                    &
+                           .or. cpatch%is_small   (donc) == cpatch%is_small(recc) )        &
                      ) then
+
+
 
                      !----- Proceed with fusion -------------------------------------------!
                      call fuse_2_cohorts(cpatch,donc,recc,csite%can_prss(ipa)              &
@@ -1774,7 +1791,8 @@ module fuse_fiss_utils
                                     , writing_dcyc           & ! intent(in)
                                     , ndcycle                & ! intent(in)
                                     , igrass                 ! ! intent(in)
-      use consts_coms        , only : lnexp_min              & ! intent(in)
+      use consts_coms        , only : t3ple                  & ! intent(in)
+                                    , lnexp_min              & ! intent(in)
                                     , lnexp_max              & ! intent(in)
                                     , tiny_num               ! ! intent(in)
       use fusion_fission_coms, only : corr_cohort            ! ! intent(in)
@@ -2421,15 +2439,30 @@ module fuse_fiss_utils
                        , cpatch%leaf_hcap     (recc)                                       &
                        , cpatch%leaf_temp     (recc)                                       &
                        , cpatch%leaf_fliq     (recc) )
+         !---------------------------------------------------------------------------------!
       else 
          !----- Leaf temperature cannot be found using uextcm2tl, this is a singularity. --!
          cpatch%leaf_temp(recc)  = cpatch%leaf_temp(recc) * rnplant                        &
                                  + cpatch%leaf_temp(donc) * dnplant
-         cpatch%leaf_fliq(recc)  = 0.0
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Always make liquid fraction consistent with temperature.                    !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%leaf_temp(recc) == t3ple) then
+            cpatch%leaf_fliq(recc) = 0.5
+         elseif (cpatch%leaf_temp(recc) > t3ple) then
+            cpatch%leaf_fliq(recc) = 1.0
+         else
+            cpatch%leaf_fliq(recc) = 0.0
+         end if
+         !---------------------------------------------------------------------------------!
       end if
 
 
-      if ( cpatch%wood_hcap(recc) > 0. ) then
+      if ( cpatch%wood_hcap(recc) > 0. .or. cpatch%wood_water_im2(recc) > 0.) then
          !----- Update temperature using the standard thermodynamics. ---------------------!
          call uextcm2tl( cpatch%wood_energy   (recc)                                       &
                        , cpatch%wood_water    (recc)                                       &
@@ -2437,11 +2470,26 @@ module fuse_fiss_utils
                        , cpatch%wood_hcap     (recc)                                       &
                        , cpatch%wood_temp     (recc)                                       &
                        , cpatch%wood_fliq     (recc) )
+         !---------------------------------------------------------------------------------!
       else 
          !----- Wood temperature cannot be found using uextcm2tl, this is a singularity. --!
          cpatch%wood_temp(recc)  = cpatch%wood_temp(recc) * rnplant                        &
                                  + cpatch%wood_temp(donc) * dnplant
-         cpatch%wood_fliq(recc)  = 0.0
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Always make liquid fraction consistent with temperature.                    !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%wood_temp(recc) == t3ple) then
+            cpatch%wood_fliq(recc) = 0.5
+         elseif (cpatch%wood_temp(recc) > t3ple) then
+            cpatch%wood_fliq(recc) = 1.0
+         else
+            cpatch%wood_fliq(recc) = 0.0
+         end if
+         !---------------------------------------------------------------------------------!
       end if
       
       !----- Set time-steps temperatures as the current. ----------------------------------!
@@ -2467,10 +2515,10 @@ module fuse_fiss_utils
                   ,cpatch%nplant(recc),cpatch%leaf_water_int(recc)                         &
                   ,cpatch%wood_water_int(recc))
       call tw2rwc(cpatch%leaf_water_int(recc),cpatch%wood_water_int(recc)                  &
-                 ,cpatch%bleaf(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)         &
-                 ,cpatch%bdeada(recc),cpatch%bdeadb(recc),cpatch%broot(recc)               &
-                 ,cpatch%dbh(recc),cpatch%pft(recc),cpatch%leaf_rwc(recc)                  &
-                 ,cpatch%wood_rwc(recc))
+                 ,cpatch%is_small(recc),cpatch%bleaf(recc),cpatch%bsapwooda(recc)          &
+                 ,cpatch%bsapwoodb(recc),cpatch%bdeada(recc),cpatch%bdeadb(recc)           &
+                 ,cpatch%broot(recc),cpatch%dbh(recc),cpatch%pft(recc)                     &
+                 ,cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc))
       call rwc2psi(cpatch%leaf_rwc(recc),cpatch%wood_rwc(recc),cpatch%pft(recc)            &
                   ,cpatch%leaf_psi(recc),cpatch%wood_psi(recc))
       !------------------------------------------------------------------------------------!
@@ -2741,10 +2789,10 @@ module fuse_fiss_utils
 
          !----- Recalculate psi from water_int. -------------------------------------------!
          call tw2psi(cpatch%fmean_leaf_water_int(recc),cpatch%fmean_wood_water_int(recc)   &
-                    ,cpatch%bleaf(recc),cpatch%bsapwooda(recc),cpatch%bsapwoodb(recc)      &
-                    ,cpatch%bdeada(recc),cpatch%bdeadb(recc),cpatch%broot(recc)            &
-                    ,cpatch%dbh(recc),cpatch%pft(recc),cpatch%fmean_leaf_psi(recc)         &
-                    ,cpatch%fmean_wood_psi(recc) )
+                    ,cpatch%is_small(recc),cpatch%bleaf(recc),cpatch%bsapwooda(recc)       &
+                    ,cpatch%bsapwoodb(recc),cpatch%bdeada(recc),cpatch%bdeadb(recc)        &
+                    ,cpatch%broot(recc),cpatch%dbh(recc),cpatch%pft(recc)                  &
+                    ,cpatch%fmean_leaf_psi(recc),cpatch%fmean_wood_psi(recc) )
          !---------------------------------------------------------------------------------!
 
 
@@ -2775,13 +2823,27 @@ module fuse_fiss_utils
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
             cpatch%fmean_leaf_temp (recc) = cpatch%fmean_leaf_temp (recc) * rnplant        &
                                           + cpatch%fmean_leaf_temp (donc) * dnplant
-            cpatch%fmean_leaf_fliq (recc) = 0.0
             cpatch%fmean_leaf_vpdef(recc) = cpatch%fmean_leaf_vpdef(recc) * rnplant        &
                                           + cpatch%fmean_leaf_vpdef(donc) * dnplant
             !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Always make liquid fraction consistent with temperature.                 !
+            !------------------------------------------------------------------------------!
+            if (cpatch%fmean_leaf_temp(recc) == t3ple) then
+               cpatch%fmean_leaf_fliq(recc) = 0.5
+            elseif (cpatch%fmean_leaf_temp(recc) > t3ple) then
+               cpatch%fmean_leaf_fliq(recc) = 1.0
+            else
+               cpatch%fmean_leaf_fliq(recc) = 0.0
+            end if
+            !------------------------------------------------------------------------------!
          end if
          !------ Wood. --------------------------------------------------------------------!
-         if ( cpatch%fmean_wood_hcap(recc) > 0. ) then
+         if ( cpatch%fmean_wood_hcap     (recc) > 0. .or.                                  &
+              cpatch%fmean_wood_water_im2(recc) > 0.      ) then
             !----- Update temperature using the standard thermodynamics. ------------------!
             call uextcm2tl( cpatch%fmean_wood_energy   (recc)                              &
                           , cpatch%fmean_wood_water    (recc)                              &
@@ -2794,7 +2856,20 @@ module fuse_fiss_utils
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
             cpatch%fmean_wood_temp(recc) = cpatch%fmean_wood_temp(recc) * rnplant          &
                                          + cpatch%fmean_wood_temp(donc) * dnplant
-            cpatch%fmean_wood_fliq(recc) = 0.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Always make liquid fraction consistent with temperature.                 !
+            !------------------------------------------------------------------------------!
+            if (cpatch%fmean_wood_temp(recc) == t3ple) then
+               cpatch%fmean_wood_fliq(recc) = 0.5
+            elseif (cpatch%fmean_wood_temp(recc) > t3ple) then
+               cpatch%fmean_wood_fliq(recc) = 1.0
+            else
+               cpatch%fmean_wood_fliq(recc) = 0.0
+            end if
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -3092,13 +3167,27 @@ module fuse_fiss_utils
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
             cpatch%dmean_leaf_temp (recc) = cpatch%dmean_leaf_temp (recc) * rnplant        &
                                           + cpatch%dmean_leaf_temp (donc) * dnplant
-            cpatch%dmean_leaf_fliq (recc) = 0.0
             cpatch%dmean_leaf_vpdef(recc) = cpatch%dmean_leaf_vpdef(recc) * rnplant        &
                                           + cpatch%dmean_leaf_vpdef(donc) * dnplant
             !------------------------------------------------------------------------------!
-         end if                                                                            
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Always make liquid fraction consistent with temperature.                 !
+            !------------------------------------------------------------------------------!
+            if (cpatch%dmean_leaf_temp(recc) == t3ple) then
+               cpatch%dmean_leaf_fliq(recc) = 0.5
+            elseif (cpatch%dmean_leaf_temp(recc) > t3ple) then
+               cpatch%dmean_leaf_fliq(recc) = 1.0
+            else
+               cpatch%dmean_leaf_fliq(recc) = 0.0
+            end if
+            !------------------------------------------------------------------------------!
+         end if
          !------ Wood. --------------------------------------------------------------------!
-         if ( cpatch%dmean_wood_hcap(recc) > 0. ) then                                     
+         if ( cpatch%dmean_wood_hcap     (recc) > 0. .or.                                  &
+              cpatch%dmean_wood_water_im2(recc) > 0.      ) then
             !----- Update temperature using the standard thermodynamics. ------------------!
             call uextcm2tl( cpatch%dmean_wood_energy   (recc)                              &
                           , cpatch%dmean_wood_water    (recc)                              &
@@ -3111,7 +3200,20 @@ module fuse_fiss_utils
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
             cpatch%dmean_wood_temp(recc) = cpatch%dmean_wood_temp(recc) * rnplant          &
                                          + cpatch%dmean_wood_temp(donc) * dnplant
-            cpatch%dmean_wood_fliq(recc) = 0.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Always make liquid fraction consistent with temperature.                 !
+            !------------------------------------------------------------------------------!
+            if (cpatch%dmean_wood_temp(recc) == t3ple) then
+               cpatch%dmean_wood_fliq(recc) = 0.5
+            elseif (cpatch%dmean_wood_temp(recc) > t3ple) then
+               cpatch%dmean_wood_fliq(recc) = 1.0
+            else
+               cpatch%dmean_wood_fliq(recc) = 0.0
+            end if
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -3550,13 +3652,27 @@ module fuse_fiss_utils
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
             cpatch%mmean_leaf_temp (recc) = cpatch%mmean_leaf_temp (recc) * rnplant        &
                                           + cpatch%mmean_leaf_temp (donc) * dnplant
-            cpatch%mmean_leaf_fliq (recc) = 0.0
             cpatch%mmean_leaf_vpdef(recc) = cpatch%mmean_leaf_vpdef(recc) * rnplant        &
                                           + cpatch%mmean_leaf_vpdef(donc) * dnplant
             !------------------------------------------------------------------------------!
-         end if                                                                            
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Always make liquid fraction consistent with temperature.                 !
+            !------------------------------------------------------------------------------!
+            if (cpatch%mmean_leaf_temp(recc) == t3ple) then
+               cpatch%mmean_leaf_fliq(recc) = 0.5
+            elseif (cpatch%mmean_leaf_temp(recc) > t3ple) then
+               cpatch%mmean_leaf_fliq(recc) = 1.0
+            else
+               cpatch%mmean_leaf_fliq(recc) = 0.0
+            end if
+            !------------------------------------------------------------------------------!
+         end if
          !------ Wood. --------------------------------------------------------------------!
-         if ( cpatch%mmean_wood_hcap(recc) > 0. ) then                                     
+         if ( cpatch%mmean_wood_hcap     (recc) > 0. .or.                                  &
+              cpatch%mmean_wood_water_im2(recc) > 0.      ) then
             !----- Update temperature using the standard thermodynamics. ------------------!
             call uextcm2tl( cpatch%mmean_wood_energy   (recc)                              &
                           , cpatch%mmean_wood_water    (recc)                              &
@@ -3569,7 +3685,20 @@ module fuse_fiss_utils
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
             cpatch%mmean_wood_temp(recc) = cpatch%mmean_wood_temp(recc) * rnplant          &
                                          + cpatch%mmean_wood_temp(donc) * dnplant
-            cpatch%mmean_wood_fliq(recc) = 0.0
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Always make liquid fraction consistent with temperature.                 !
+            !------------------------------------------------------------------------------!
+            if (cpatch%mmean_wood_temp(recc) == t3ple) then
+               cpatch%mmean_wood_fliq(recc) = 0.5
+            elseif (cpatch%mmean_wood_temp(recc) > t3ple) then
+               cpatch%mmean_wood_fliq(recc) = 1.0
+            else
+               cpatch%mmean_wood_fliq(recc) = 0.0
+            end if
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -3953,7 +4082,9 @@ module fuse_fiss_utils
          do t=1,ndcycle
             !------ Leaf. -----------------------------------------------------------------!
             if ( cpatch%qmean_leaf_hcap(t,recc) > 0. ) then
-               !----- Update temperature and liquid fraction. -----------------------------!
+               !---------------------------------------------------------------------------!
+               !    Update temperature and liquid fraction using standard thermodynamics.  !
+               !---------------------------------------------------------------------------!
                call uextcm2tl( cpatch%qmean_leaf_energy   (t,recc)                         &
                              , cpatch%qmean_leaf_water    (t,recc)                         &
                              + cpatch%qmean_leaf_water_im2(t,recc)                         &
@@ -3964,21 +4095,35 @@ module fuse_fiss_utils
 
 
                !----- Scale vapour pressure deficit using LAI. ----------------------------!
-               cpatch%qmean_leaf_vpdef (t,recc) = cpatch%qmean_leaf_vpdef  (t,recc) * rlai &
-                                                + cpatch%qmean_leaf_vpdef  (t,donc) * dlai
-               !---------------------------------------------------------------------------!
+               cpatch%qmean_leaf_vpdef   (t,recc) = cpatch%qmean_leaf_vpdef(t,recc) * rlai &
+                                                  + cpatch%qmean_leaf_vpdef(t,donc) * dlai
+               !------------------------------------------------------------------------------!
             else
                !----- None of the cohorts has leaf biomass use nplant to scale them. ------!
                cpatch%qmean_leaf_temp (t,recc) = cpatch%qmean_leaf_temp (t,recc) * rnplant &
                                                + cpatch%qmean_leaf_temp (t,donc) * dnplant
-               cpatch%qmean_leaf_fliq (t,recc) = 0.0
                cpatch%qmean_leaf_vpdef(t,recc) = cpatch%qmean_leaf_vpdef(t,recc) * rnplant &
                                                + cpatch%qmean_leaf_vpdef(t,donc) * dnplant
+               !------------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Always make liquid fraction consistent with temperature.              !
+               !---------------------------------------------------------------------------!
+               if (cpatch%qmean_leaf_temp(t,recc) == t3ple) then
+                  cpatch%qmean_leaf_fliq(t,recc) = 0.5
+               elseif (cpatch%qmean_leaf_temp(t,recc) > t3ple) then
+                  cpatch%qmean_leaf_fliq(t,recc) = 1.0
+               else
+                  cpatch%qmean_leaf_fliq(t,recc) = 0.0
+               end if
                !---------------------------------------------------------------------------!
             end if
-            !------ Wood. -----------------------------------------------------------------!
-            if ( cpatch%qmean_wood_hcap(t,recc) > 0. ) then
-               !----- Update temperature and liquid fraction. -----------------------------!
+            !------ Wood. --------------------------------------------------------------------!
+            if ( cpatch%qmean_wood_hcap     (t,recc) > 0. .or.                                  &
+                 cpatch%qmean_wood_water_im2(t,recc) > 0.      ) then
+               !----- Update temperature using the standard thermodynamics. ---------------!
                call uextcm2tl( cpatch%qmean_wood_energy   (t,recc)                         &
                              , cpatch%qmean_wood_water    (t,recc)                         &
                              + cpatch%qmean_wood_water_im2(t,recc)                         &
@@ -3987,10 +4132,23 @@ module fuse_fiss_utils
                              , cpatch%qmean_wood_fliq     (t,recc) )
                !---------------------------------------------------------------------------!
             else
-               !----- None of the cohorts has leaf biomass use nplant to scale them. ------!
-               cpatch%qmean_wood_temp (t,recc) = cpatch%qmean_wood_temp (t,recc) * rnplant &
-                                               + cpatch%qmean_wood_temp (t,donc) * dnplant
-               cpatch%qmean_wood_fliq (t,recc) = 0.0
+               !----- Wood temperature can't be found using uextcm2tl (singularity). ------!
+               cpatch%qmean_wood_temp(t,recc) = cpatch%qmean_wood_temp(t,recc) * rnplant   &
+                                              + cpatch%qmean_wood_temp(t,donc) * dnplant
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Always make liquid fraction consistent with temperature.              !
+               !---------------------------------------------------------------------------!
+               if (cpatch%qmean_wood_temp(t,recc) == t3ple) then
+                  cpatch%qmean_wood_fliq(t,recc) = 0.5
+               elseif (cpatch%qmean_wood_temp(t,recc) > t3ple) then
+                  cpatch%qmean_wood_fliq(t,recc) = 1.0
+               else
+                  cpatch%qmean_wood_fliq(t,recc) = 0.0
+               end if
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!

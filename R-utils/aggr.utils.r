@@ -64,3 +64,36 @@ get.last <<- function(x,na.rm=FALSE){
 }#end get.last
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Function that aggregate the elements of vector x between element i-lag and i.  For  #
+# the first few elements, it either assumes circular (take the last elements) or adds NA   #
+# entries.                                                                                 #
+#------------------------------------------------------------------------------------------#
+moving.aggr <<- function(x,pad,fun=mean,circular=FALSE,...){
+   nx   = length(x)
+   iseq = seq_along(x)
+
+   if (circular){
+      ipad = nx - rev(sequence(pad-1) - 1)
+      xpad = x[ipad]
+   }else{
+      xpad = rep(NA_real_,times=pad-1)
+   }#end if (circular)
+
+   xmat = embed(x=c(xpad,x),dimension=pad)
+
+   ans  = apply( X = xmat
+               , MARGIN = 1
+               , FUN    = fun
+               , ...
+               )#end apply
+   return(ans)
+}#end moving.aggr
+#==========================================================================================#
+#==========================================================================================#

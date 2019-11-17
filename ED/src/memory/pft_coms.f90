@@ -519,6 +519,12 @@ module pft_coms
    real, dimension(n_pft) :: wood_psi_min
    !< Sapwood minimum water potential based on leaf_rwc_min [m]
 
+   real, dimension(n_pft) :: small_rwc_min  
+   !< Small-tree minimum relative water content or small-tree residual fraction [-]
+
+   real, dimension(n_pft) :: small_psi_min
+   !< Small-tree minimum water potential based on small_rwc_min [m]
+
    real, dimension(n_pft) :: leaf_psi_tlp
    !< Leaf water potential at turgor loss point [m]
 

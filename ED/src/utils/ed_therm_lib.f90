@@ -162,6 +162,7 @@ module ed_therm_lib
                               , tq2enthalpy  ! ! function
       use ed_misc_coms , only : frqsumi      & ! intent(in)
                               , current_time ! ! intent(in)
+      use consts_coms  , only : t3ple        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)   , target     :: csite
@@ -218,7 +219,6 @@ module ed_therm_lib
          cpatch%leaf_water    (ico) = 0.
          cpatch%leaf_water_int(ico) = 0.
          cpatch%leaf_water_im2(ico) = 0.
-         cpatch%leaf_fliq     (ico) = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%leaf_temp(ico) = csite%can_temp(ipa)
@@ -234,6 +234,19 @@ module ed_therm_lib
          end if
          !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     Always make liquid fraction consistent with temperature.                    !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%leaf_temp(ico) == t3ple) then
+            cpatch%leaf_fliq(ico) = 0.5
+         elseif (cpatch%leaf_temp(ico) > t3ple) then
+            cpatch%leaf_fliq(ico) = 1.0
+         else
+            cpatch%leaf_fliq(ico) = 0.0
+         end if
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !     Heat capacity is not zero.  Since we track leaf temperature and liquid      !
@@ -285,6 +298,8 @@ module ed_therm_lib
             write(unit=*,fmt='(a)') ' '
             write(unit=*,fmt=efmt ) ' Old temperature:     ',cpatch%leaf_temp     (ico)
             write(unit=*,fmt=efmt ) ' New temperature:     ',new_temp
+            write(unit=*,fmt=efmt ) ' Old liquid fraction: ',cpatch%leaf_fliq     (ico)
+            write(unit=*,fmt=efmt ) ' New liquid fraction: ',new_fliq
             write(unit=*,fmt=efmt ) ' Old heat capacity:   ',old_leaf_hcap
             write(unit=*,fmt=efmt ) ' New heat capacity:   ',cpatch%leaf_hcap     (ico)
             write(unit=*,fmt=efmt ) ' Old leaf energy:     ',old_leaf_energy
@@ -309,14 +324,15 @@ module ed_therm_lib
 
 
       !------------------------------------------------------------------------------------!
-      !     Wood.  Check whether heat capacity is zero or not.                             !
+      !     Wood.  Because we are currently tracking oven-dry biomass from branches only,  !
+      ! but all internal water, it is possible to have zero heat capacity but non-zero     !
+      ! energy (e.g. grasses).  True singularities occur only when both are zero, in which !
+      ! case the cohort shouldn't even exist...                                            !
       !------------------------------------------------------------------------------------!
-      if (cpatch%wood_hcap(ico) == 0. ) then
+      if ((cpatch%wood_hcap(ico) == 0.) .and. (cpatch%wood_water_im2(ico) == 0.) ) then
          cpatch%wood_energy   (ico) = 0.
          cpatch%wood_water    (ico) = 0.
-         cpatch%wood_water_im2(ico) = 0.
          cpatch%wood_water_int(ico) = 0.
-         cpatch%wood_fliq     (ico) = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%wood_temp(ico) = csite%can_temp(ipa)
@@ -329,6 +345,20 @@ module ed_therm_lib
                end if
             end do
             cpatch%wood_temp(ico) = csite%sfcwater_tempk(kclosest,ipa)
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Always make liquid fraction consistent with temperature.                    !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%wood_temp(ico) == t3ple) then
+            cpatch%wood_fliq(ico) = 0.5
+         elseif (cpatch%wood_temp(ico) > t3ple) then
+            cpatch%wood_fliq(ico) = 1.0
+         else
+            cpatch%wood_fliq(ico) = 0.0
          end if
          !---------------------------------------------------------------------------------!
 
@@ -384,6 +414,8 @@ module ed_therm_lib
             write(unit=*,fmt='(a)') ' '
             write(unit=*,fmt=efmt ) ' Old temperature:     ',cpatch%wood_temp     (ico)
             write(unit=*,fmt=efmt ) ' New temperature:     ',new_temp
+            write(unit=*,fmt=efmt ) ' Old liquid fraction: ',cpatch%wood_fliq     (ico)
+            write(unit=*,fmt=efmt ) ' New liquid fraction: ',new_fliq
             write(unit=*,fmt=efmt ) ' Old heat capacity:   ',old_wood_hcap
             write(unit=*,fmt=efmt ) ' New heat capacity:   ',cpatch%wood_hcap     (ico)
             write(unit=*,fmt=efmt ) ' Old wood energy:     ',old_wood_energy

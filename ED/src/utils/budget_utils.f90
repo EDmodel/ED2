@@ -75,8 +75,6 @@ module budget_utils
                ! the initialisation step, or if the patch has age zero (just created).     !
                !---------------------------------------------------------------------------!
                if (initial .or. (csite%age(ipa) < age_min)) then
-                  write (unit=*,fmt='(a,1x,i5,a)')                                         &
-                                          ' --> Update budget variables for patch',ipa,'.'
                   !---- Reset patch budget variables. -------------------------------------!
                   call initial_patch_budget(csite,lsl,ipa)
                   !------------------------------------------------------------------------!

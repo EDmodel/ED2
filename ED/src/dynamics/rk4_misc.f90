@@ -280,6 +280,11 @@ module rk4_misc
             rk4aux(ibuff)%any_resolvable = .true.
          end if
          !---------------------------------------------------------------------------------!
+
+
+         !----- Small/large tree flag. ----------------------------------------------------!
+         targetp%is_small(ico) = cpatch%is_small(ico)
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
@@ -4446,6 +4451,7 @@ module rk4_misc
       integer                            :: ico
       integer                            :: leaf_resolve
       integer                            :: wood_resolve
+      integer                            :: is_small
       logical                            :: isthere
       real(kind=8)                       :: sum_leaf_energy
       real(kind=8)                       :: sum_leaf_water
@@ -4476,9 +4482,9 @@ module rk4_misc
       character(len=10), parameter :: phfmt='(91(a,1x))'
       character(len=48), parameter ::                                                      &
                                    pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),81(es13.6,1x))'
-      character(len=10), parameter :: chfmt='(56(a,1x))'
+      character(len=10), parameter :: chfmt='(57(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),47(es13.6,1x))'
+                                   cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),48(es13.6,1x))'
       !------------------------------------------------------------------------------------!
 
 
@@ -4521,8 +4527,8 @@ module rk4_misc
          if (initp%wood_resolvable(ico)) then
             !----- Integrate vegetation properties using m2gnd rather than plant. ---------!
             sum_wood_energy    = sum_wood_energy    + initp%wood_energy   (ico)
-            sum_wood_water     = sum_wood_water     + initp%wood_water_im2(ico)
-            sum_wood_water_im2 = sum_wood_water_im2 + initp%wood_water    (ico)
+            sum_wood_water     = sum_wood_water     + initp%wood_water    (ico)
+            sum_wood_water_im2 = sum_wood_water_im2 + initp%wood_water_im2(ico)
             sum_wood_hcap      = sum_wood_hcap      + initp%wood_hcap     (ico)
          end if
 
@@ -4695,7 +4701,7 @@ module rk4_misc
       !------------------------------------------------------------------------------------!
       do ico=1, cpatch%ncohorts
 
-         !----- Find the integer version of "resolvable". ---------------------------------!
+         !----- Find the integer version of logical flags. --------------------------------!
          if (initp%leaf_resolvable(ico)) then
             leaf_resolve = 1
          else
@@ -4706,9 +4712,16 @@ module rk4_misc
          else
             wood_resolve = 0
          end if
+         if (initp%is_small(ico)) then
+            is_small = 1
+         else
+            is_small = 0
+         end if
+         !---------------------------------------------------------------------------------!
 
          !----- Copy intercepted water. ---------------------------------------------------!
          qintercepted = fluxp%cfx_qintercepted(ico)
+         !---------------------------------------------------------------------------------!
 
          !----- Create the file name. -----------------------------------------------------!
          write (detail_fout,fmt='(2a,3(i4.4,a))')                                          &
@@ -4727,24 +4740,23 @@ module rk4_misc
             write (unit=84,fmt=chfmt)                                                      &
                             '             YEAR', '            MONTH', '              DAY'  &
                           , '             TIME', '             HDID', '              PFT'  &
-                          , '     LEAF_RESOLVE', '     WOOD_RESOLVE', '           NPLANT'  &
-                          , '           HEIGHT', '              LAI', '              WAI'  &
-                          , '       CROWN_AREA', '      LEAF_ENERGY', '       LEAF_WATER'  &
-                          , '   LEAF_WATER_IM2', '        LEAF_HCAP', '        LEAF_TEMP'  &
-                          , '        LEAF_FLIQ', '      WOOD_ENERGY', '       WOOD_WATER'  &
-                          , '   WOOD_WATER_IM2', '        WOOD_HCAP', '        WOOD_TEMP'  &
-                          , '        WOOD_FLIQ', '         VEG_WIND', '          FS_OPEN'  &
-                          , '       LEAF_REYNO', '     LEAF_GRASHOF', '      LEAF_NUFREE'  &
-                          , '      LEAF_NUFORC', '       WOOD_REYNO', '     WOOD_GRASHOF'  &
-                          , '      WOOD_NUFREE', '      WOOD_NUFORC', '         LINT_SHV'  &
-                          , '         LEAF_GBH', '         LEAF_GBW', '         WOOD_GBH'  &
-                          , '         WOOD_GBW', '         GSW_OPEN', '         GSW_CLOS'  &
-                          , '              GPP', '        LEAF_RESP', '        ROOT_RESP'  &
-                          , '         RSHORT_L', '          RLONG_L', '         RSHORT_W'  &
-                          , '          RLONG_W', '           HFLXLC', '           HFLXWC'  &
-                          , '          QWFLXLC', '          QWFLXWC', '           QWSHED'  &
-                          , '          QTRANSP', '     QINTERCEPTED'
-                          
+                          , '     LEAF_RESOLVE', '     WOOD_RESOLVE', '         IS_SMALL'  &
+                          , '           NPLANT', '           HEIGHT', '              LAI'  &
+                          , '              WAI', '       CROWN_AREA', '      LEAF_ENERGY'  &
+                          , '       LEAF_WATER', '   LEAF_WATER_IM2', '        LEAF_HCAP'  &
+                          , '        LEAF_TEMP', '        LEAF_FLIQ', '      WOOD_ENERGY'  &
+                          , '       WOOD_WATER', '   WOOD_WATER_IM2', '        WOOD_HCAP'  &
+                          , '        WOOD_TEMP', '        WOOD_FLIQ', '         VEG_WIND'  &
+                          , '          FS_OPEN', '       LEAF_REYNO', '     LEAF_GRASHOF'  &
+                          , '      LEAF_NUFREE', '      LEAF_NUFORC', '       WOOD_REYNO'  &
+                          , '     WOOD_GRASHOF', '      WOOD_NUFREE', '      WOOD_NUFORC'  &
+                          , '         LINT_SHV', '         LEAF_GBH', '         LEAF_GBW'  &
+                          , '         WOOD_GBH', '         WOOD_GBW', '         GSW_OPEN'  &
+                          , '         GSW_CLOS', '              GPP', '        LEAF_RESP'  &
+                          , '        ROOT_RESP', '         RSHORT_L', '          RLONG_L'  &
+                          , '         RSHORT_W', '          RLONG_W', '           HFLXLC'  &
+                          , '           HFLXWC', '          QWFLXLC', '          QWFLXWC'  &
+                          , '           QWSHED', '          QTRANSP', '     QINTERCEPTED'
             close (unit=84,status='keep')
          end if
          !---------------------------------------------------------------------------------!
@@ -4761,30 +4773,31 @@ module rk4_misc
                       , current_time%date             , elapsec                            &
                       , hdid                          , cpatch%pft(ico)                    &
                       , leaf_resolve                  , wood_resolve                       &
-                      , initp%nplant(ico)             , cpatch%hite(ico)                   &
-                      , initp%lai(ico)                , initp%wai(ico)                     &
-                      , initp%crown_area(ico)         , initp%leaf_energy(ico)             &
-                      , initp%leaf_water(ico)         , initp%leaf_water_im2(ico)          &
-                      , initp%leaf_hcap(ico)          , initp%leaf_temp(ico)               &
-                      , initp%leaf_fliq(ico)          , initp%wood_energy(ico)             &
-                      , initp%wood_water(ico)         , initp%wood_water_im2(ico)          &
-                      , initp%wood_hcap(ico)          , initp%wood_temp(ico)               &
-                      , initp%wood_fliq(ico)          , initp%veg_wind(ico)                &
-                      , initp%fs_open(ico)            , initp%leaf_reynolds(ico)           &
-                      , initp%leaf_grashof(ico)       , initp%leaf_nussfree(ico)           &
-                      , initp%leaf_nussforc(ico)      , initp%wood_reynolds(ico)           &
-                      , initp%wood_grashof(ico)       , initp%wood_nussfree(ico)           &
-                      , initp%wood_nussforc(ico)      , initp%lint_shv(ico)                &
-                      , initp%leaf_gbh(ico)           , initp%leaf_gbw(ico)                &
-                      , initp%wood_gbh(ico)           , initp%wood_gbw(ico)                &
-                      , initp%gsw_open(ico)           , initp%gsw_closed(ico)              &
-                      , initp%gpp(ico)                , initp%leaf_resp(ico)               &
-                      , initp%root_resp(ico)          , initp%rshort_l(ico)                &
-                      , initp%rlong_l(ico)            , initp%rshort_w(ico)                &
-                      , initp%rlong_w(ico)            , fluxp%cfx_hflxlc(ico)              &
-                      , fluxp%cfx_hflxwc(ico)         , fluxp%cfx_qwflxlc(ico)             &
-                      , fluxp%cfx_qwflxwc(ico)        , fluxp%cfx_qwshed(ico)              &
-                      , fluxp%cfx_qtransp(ico)        , qintercepted
+                      , is_small                      , initp%nplant(ico)                  &
+                      , cpatch%hite(ico)              , initp%lai(ico)                     &
+                      , initp%wai(ico)                , initp%crown_area(ico)              &
+                      , initp%leaf_energy(ico)        , initp%leaf_water(ico)              &
+                      , initp%leaf_water_im2(ico)     , initp%leaf_hcap(ico)               &
+                      , initp%leaf_temp(ico)          , initp%leaf_fliq(ico)               &
+                      , initp%wood_energy(ico)        , initp%wood_water(ico)              &
+                      , initp%wood_water_im2(ico)     , initp%wood_hcap(ico)               &
+                      , initp%wood_temp(ico)          , initp%wood_fliq(ico)               &
+                      , initp%veg_wind(ico)           , initp%fs_open(ico)                 &
+                      , initp%leaf_reynolds(ico)      , initp%leaf_grashof(ico)            &
+                      , initp%leaf_nussfree(ico)      , initp%leaf_nussforc(ico)           &
+                      , initp%wood_reynolds(ico)      , initp%wood_grashof(ico)            &
+                      , initp%wood_nussfree(ico)      , initp%wood_nussforc(ico)           &
+                      , initp%lint_shv(ico)           , initp%leaf_gbh(ico)                &
+                      , initp%leaf_gbw(ico)           , initp%wood_gbh(ico)                &
+                      , initp%wood_gbw(ico)           , initp%gsw_open(ico)                &
+                      , initp%gsw_closed(ico)         , initp%gpp(ico)                     &
+                      , initp%leaf_resp(ico)          , initp%root_resp(ico)               &
+                      , initp%rshort_l(ico)           , initp%rlong_l(ico)                 &
+                      , initp%rshort_w(ico)           , initp%rlong_w(ico)                 &
+                      , fluxp%cfx_hflxlc(ico)         , fluxp%cfx_hflxwc(ico)              &
+                      , fluxp%cfx_qwflxlc(ico)        , fluxp%cfx_qwflxwc(ico)             &
+                      , fluxp%cfx_qwshed(ico)         , fluxp%cfx_qtransp(ico)             &
+                      , qintercepted
          close(unit=84,status='keep')
          !---------------------------------------------------------------------------------!
       end do
@@ -4991,7 +5004,8 @@ module rk4_misc
       use soil_coms      , only : soil8              ! ! intent(in)
       use ed_misc_coms   , only : current_time       ! ! intent(in)
       use pft_coms       , only : leaf_rwc_min       & ! intent(in)
-                                , wood_rwc_min       ! ! intent(in)
+                                , wood_rwc_min       & ! intent(in)
+                                , small_rwc_min      ! ! intent(in)
       use physiology_coms, only : plant_hydro_scheme ! ! intent(in)
       use plant_hydro    , only : rwc2tw             & ! subroutine
                                 , twi2twe            ! ! subroutine
@@ -5159,10 +5173,21 @@ module rk4_misc
             if (cpatch%leaf_resolvable(ico)) then
 
                !----- Find the lower limits. ----------------------------------------------!
-               call rwc2tw(leaf_rwc_min(ipft),wood_rwc_min(ipft),cpatch%bleaf(ico)         &
-                          ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico),cpatch%bdeada(ico)  &
-                          ,cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)            &
-                          ,ipft,leaf_water_int_4,wood_water_int_4)
+               if (cpatch%is_small(ico)) then
+                  !----- Small plant.  Use the small-cohort limits. -----------------------!
+                  call rwc2tw(small_rwc_min(ipft),small_rwc_min(ipft),cpatch%bleaf(ico)    &
+                             ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)                  &
+                             ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)      &
+                             ,cpatch%dbh(ico),ipft,leaf_water_int_4,wood_water_int_4)
+                  !------------------------------------------------------------------------!
+               else
+                  !----- Large plant.  Use the leaf and wood limits. ----------------------!
+                  call rwc2tw(leaf_rwc_min(ipft),wood_rwc_min(ipft),cpatch%bleaf(ico)      &
+                             ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)                  &
+                             ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)      &
+                             ,cpatch%dbh(ico),ipft,leaf_water_int_4,wood_water_int_4)
+                  !------------------------------------------------------------------------!
+               end if
                call twi2twe(leaf_water_int_4,wood_water_int_4,cpatch%nplant(ico)           &
                            ,leaf_water_im2_4,wood_water_im2_4)
                rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = dble(leaf_water_im2_4)

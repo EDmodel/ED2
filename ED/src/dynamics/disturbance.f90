@@ -3964,12 +3964,31 @@ module disturbance
       cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
       cpatch%leaf_water   (nc) = 0.0
       cpatch%leaf_vpdef   (nc) = csite%can_vpdef (np)
-      cpatch%leaf_fliq    (nc) = 0.0
       cpatch%wood_temp    (nc) = csite%can_temp  (np)
       cpatch%wood_temp_pv (nc) = csite%can_temp  (np)
       cpatch%wood_water   (nc) = 0.0
-      cpatch%wood_fliq    (nc) = 0.0
       !------------------------------------------------------------------------------------!
+
+
+
+      !----- Make leaf and wood leaf fractions consistent. --------------------------------!
+      if (cpatch%leaf_temp(nc) == t3ple) then
+         cpatch%leaf_fliq(nc) = 0.5
+      else if (cpatch%leaf_temp(nc) > t3ple) then
+         cpatch%leaf_fliq(nc) = 1.0
+      else
+         cpatch%leaf_fliq(nc) = 0.0
+      end if
+      if (cpatch%wood_temp(nc) == t3ple) then
+         cpatch%wood_fliq(nc) = 0.5
+      else if (cpatch%wood_temp(nc) > t3ple) then
+         cpatch%wood_fliq(nc) = 1.0
+      else
+         cpatch%wood_fliq(nc) = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
       call calc_veg_hcap(cpatch%bleaf (nc),cpatch%bdeada(nc),cpatch%bsapwooda(nc)          &

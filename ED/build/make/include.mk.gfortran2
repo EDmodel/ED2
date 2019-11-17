@@ -106,6 +106,7 @@ USE_MPIWTIME=1
 
 #----------------- gfortran on Linux (optimized build)-----------
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 F_OPTS=-O3 -ffree-line-length-none
 C_COMP=mpicc
