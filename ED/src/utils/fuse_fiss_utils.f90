@@ -773,7 +773,6 @@ module fuse_fiss_utils
       use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap       ! ! subroutine
-      use physiology_coms     , only : plant_hydro_scheme  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -909,13 +908,8 @@ module fuse_fiss_utils
                      cpatch%census_status   (donc) == cpatch%census_status   (recc)
                   dr_eqv_phen    =                                                         &
                      cpatch%phenology_status(donc) == cpatch%phenology_status(recc)
-
-                  select case (plant_hydro_scheme)
-                  case (0)
-                     dr_eqv_small = .true.
-                  case default
-                     dr_eqv_small = cpatch%is_small(donc) == cpatch%is_small(recc)
-                  end select
+                  dr_eqv_small   =                                                         &
+                     cpatch%is_small        (donc) == cpatch%is_small        (recc)
                   if (.not. dr_eqv_recruit) cycle donloop
                   if (.not. dr_eqv_phen   ) cycle donloop
                   if (.not. dr_eqv_small  ) cycle donloop
@@ -1192,7 +1186,6 @@ module fuse_fiss_utils
       use mem_polygons        , only : maxcohort           ! ! intent(in)
       use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
-      use physiology_coms     , only : plant_hydro_scheme  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -1349,8 +1342,7 @@ module fuse_fiss_utils
                   ! 6. Both cohorts must have the same recruitment status with respect to  !
                   !    the census.                                                         !
                   ! 7. Both cohorts must have the same phenology status.                   !
-                  ! 8. Both cohorts must have the same small/large plant size status if    !
-                  !    dynamic plant hydraulics is active.                                 !
+                  ! 8. Both cohorts must have the same small/large plant size status.       !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
@@ -1359,8 +1351,7 @@ module fuse_fiss_utils
                      .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
                      .and. cpatch%census_status   (donc) == cpatch%census_status(recc)     &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
-                     .and. (    plant_hydro_scheme == 0                                    &
-                           .or. cpatch%is_small   (donc) == cpatch%is_small(recc) )        &
+                     .and.  cpatch%is_small       (donc) == cpatch%is_small(recc)          &
                      ) then
 
 
