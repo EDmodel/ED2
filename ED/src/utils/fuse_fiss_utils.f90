@@ -909,7 +909,7 @@ module fuse_fiss_utils
                   dr_eqv_phen    =                                                         &
                      cpatch%phenology_status(donc) == cpatch%phenology_status(recc)
                   dr_eqv_small   =                                                         &
-                     cpatch%is_small        (donc) == cpatch%is_small        (recc)
+                     cpatch%is_small        (donc) .eqv. cpatch%is_small     (recc)
                   if (.not. dr_eqv_recruit) cycle donloop
                   if (.not. dr_eqv_phen   ) cycle donloop
                   if (.not. dr_eqv_small  ) cycle donloop
