@@ -28,7 +28,28 @@
 #------------------------------------------------------------------------------------------#
 
 
-#----- wr is short for "within range", ir is short for inside range (excluding edges). ----#
-'%wr%' <<- function(x,y) is.finite(x) & x %>=% min(y,na.rm=TRUE) & x %<=% max(y,na.rm=TRUE)
-'%ir%' <<- function(x,y) is.finite(x) & x %>%  min(y,na.rm=TRUE) & x %<%  max(y,na.rm=TRUE)
+#------------------------------------------------------------------------------------------#
+#     Operators to test whether the values are within range or outside range.              #
+#                                                                                          #
+# x %wr% y -- TRUE when x is within range of y     (x exactly at bounds returns TRUE )     #
+# x %ir% y -- TRUE when x is inside range of y     (x exactly at bounds returns FALSE)     #
+# x %or% y -- TRUE when x is outside range of y    (x exactly at bounds returns FALSE)     #
+# x %nr% y -- TRUE when x is not inside range of y (x exactly at bounds returns TRUE )     #
+#------------------------------------------------------------------------------------------#
+'%wr%' <<- function(x,y){
+   ans = (! (is.na(x) | is.nan(x))) & ( x >= min(y,na.rm=TRUE) & x <= max(y,na.rm=TRUE) )
+   return(ans)
+}#end function
+'%ir%' <<- function(x,y){
+   ans = (! (is.na(x) | is.nan(x))) & ( x >  min(y,na.rm=TRUE) & x <  max(y,na.rm=TRUE) )
+   return(ans)
+}#end function
+'%or%' <<- function(x,y){
+   ans = (! (is.na(x) | is.nan(x))) & ( x <  min(y,na.rm=TRUE) | x >  max(y,na.rm=TRUE) )
+   return(ans)
+}#end function
+'%nr%' <<- function(x,y){
+   ans = (! (is.na(x) | is.nan(x))) & ( x <= min(y,na.rm=TRUE) | x >= max(y,na.rm=TRUE) )
+   return(ans)
+}#end function
 #------------------------------------------------------------------------------------------#

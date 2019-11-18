@@ -128,16 +128,16 @@ if nsite>0
             setParent(rptgen_cfr_stateimage(is),rptgen_cfr_section12(is));
              
             % Subsection Succession
-            if(pftsucc_plt(is)>0)
+            if(plongterm_plt(is)>0)
                 rptgen_cfr_section2(is) = rptgen.cfr_section('SectionTitle','Succession');
                 setParent(rptgen_cfr_section2(is),rptgen_cfr_section(is));
                 
                 % Create rptgen.cfr_image
-                rptgen_cfr_succimage(is) = rptgen.cfr_image('FileName',pftsucc_img{is},...
+                rptgen_cfr_ltermimage(is) = rptgen.cfr_image('FileName',longterm_img{is},...
                     'DocHorizAlign','center'); %...
  %                   'ViewPortType','fixed',...
  %                   'ViewPortSize',[8*1.4 6*1.4]);
-                setParent(rptgen_cfr_succimage(is),rptgen_cfr_section2(is));
+                setParent(rptgen_cfr_ltermimage(is),rptgen_cfr_section2(is));
                 
             end
             

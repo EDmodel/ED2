@@ -5,3 +5,4 @@ rpostsrc="${rpostroot}/src/*/*.f90 ${rpostroot}/src/*/*.F90 ${rpostroot}/src/*/*
 rm -f dependency.mk
 ./sfmakedepend.pl ${includes} -f dependency.mk ${rpostsrc} 2> /dev/null
 sed -i~ s@hdf5.mod@@g dependency.mk
+sed -i~ s@ifport.mod@@g dependency.mk

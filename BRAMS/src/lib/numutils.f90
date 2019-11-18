@@ -887,7 +887,7 @@ end subroutine sort_down
 !==========================================================================================!
 !     This sub-routine ranks the elements of vector a from smallest to largest.            !
 !------------------------------------------------------------------------------------------!
-subroutine rank_up(nmax,variable,ranking)
+subroutine rank_up_r(nmax,variable,ranking)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer , intent(in)                    :: nmax
@@ -908,7 +908,7 @@ subroutine rank_up(nmax,variable,ranking)
    end do
 
    return
-end subroutine rank_up
+end subroutine rank_up_r
 !==========================================================================================!
 !==========================================================================================!
 
@@ -921,7 +921,7 @@ end subroutine rank_up
 !==========================================================================================!
 !     This sub-routine ranks the elements of vector a from largest to smallest.            !
 !------------------------------------------------------------------------------------------!
-subroutine rank_down(nmax,variable,ranking)
+subroutine rank_down_r(nmax,variable,ranking)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer , intent(in)                    :: nmax
@@ -942,7 +942,75 @@ subroutine rank_down(nmax,variable,ranking)
    end do
 
    return
-end subroutine rank_down
+end subroutine rank_down_r
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine ranks the elements of vector a from smallest to largest.            !
+!------------------------------------------------------------------------------------------!
+subroutine rank_up_i(nmax,variable,ranking)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer , intent(in)                    :: nmax
+   integer , intent(in)  , dimension(nmax) :: variable
+   integer , intent(out) , dimension(nmax) :: ranking
+   !----- Local variables. ----------------------------------------------------------------!
+   logical ,               dimension(nmax) :: unlocked
+   integer                                 :: n
+   integer                                 :: locmin
+   !---------------------------------------------------------------------------------------!
+
+   unlocked(:) = .true.
+   ranking (:) = 0
+   do n=1,nmax
+     locmin           = minloc(variable,1,unlocked)
+     unlocked(locmin) = .false.
+     ranking (locmin) = n
+   end do
+
+   return
+end subroutine rank_up_i
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine ranks the elements of vector a from largest to smallest.            !
+!------------------------------------------------------------------------------------------!
+subroutine rank_down_i(nmax,variable,ranking)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer , intent(in)                    :: nmax
+   integer , intent(in)  , dimension(nmax) :: variable
+   integer , intent(out) , dimension(nmax) :: ranking
+   !----- Local variables. ----------------------------------------------------------------!
+   logical ,               dimension(nmax) :: unlocked
+   integer                                 :: n
+   integer                                 :: locmax
+   !---------------------------------------------------------------------------------------!
+
+   unlocked(:) = .true.
+   ranking (:) = 0
+   do n=1,nmax
+     locmax           = maxloc(variable,1,unlocked)
+     unlocked(locmax) = .false.
+     ranking (locmax) = n
+   end do
+
+   return
+end subroutine rank_down_i
 !==========================================================================================!
 !==========================================================================================!
 

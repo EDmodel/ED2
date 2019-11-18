@@ -9,7 +9,6 @@ BASE=$(ED_ROOT)/build/
 
 # HDF 5  Libraries
 HDF5_HOME=/data/software/hdf5/1.8.19-gcc540
-USE_HDF5=1
 HDF5_INCS=-I${HDF5_HOME}/include
 HDF5_LIBS=-L${HDF5_HOME}/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 USE_COLLECTIVE_MPIO=0
@@ -26,6 +25,7 @@ USE_MPIWTIME=1
 
 # gfortran
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 F_OPTS=-O3 -ffree-line-length-none  -fno-whole-file
 C_COMP=mpicc

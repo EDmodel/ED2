@@ -15,6 +15,7 @@ module ed_para_coms
   integer                             :: mainnum,nmachs,iparallel,machsize
   integer, dimension(maxmach)         :: machnum
   integer                             :: loadmeth
+  integer                             :: nthreads
   !---------------------------------------------------------------------------
 
 end module ed_para_coms

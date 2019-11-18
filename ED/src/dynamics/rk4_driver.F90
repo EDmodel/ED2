@@ -12,29 +12,31 @@ module rk4_driver
    !      for the land surface model.                                                      !
    !---------------------------------------------------------------------------------------!
    subroutine rk4_timestep(cgrid)
-      use rk4_integ_utils
-      use soil_respiration_module
-      use photosyn_driv
-      use plant_hydro
-      use rk4_misc
-      use update_derived_props_module
-      use rk4_coms               , only : integration_vars     & ! structure
-                                        , rk4patchtype         & ! structure
-                                        , zero_rk4_patch       & ! subroutine
-                                        , zero_rk4_cohort      & ! subroutine
-                                        , integration_buff     ! ! intent(out)
-      use ed_state_vars          , only : edtype               & ! structure
-                                        , polygontype          & ! structure
-                                        , sitetype             & ! structure
-                                        , patchtype            ! ! structure
-      use met_driver_coms        , only : met_driv_state       ! ! structure
-      use grid_coms              , only : nzg                  & ! intent(in)
-                                        , nzs                  ! ! intent(in)
-      use ed_misc_coms           , only : current_time         & ! intent(in)
-                                        , dtlsm                ! ! intent(in)
-      use therm_lib              , only : tq2enthalpy          ! ! function
-      use budget_utils           , only : update_budget        & ! function
-                                        , compute_budget       ! ! function
+      use rk4_coms               , only : integration_vars           & ! structure
+                                        , rk4patchtype               & ! structure
+                                        , zero_rk4_patch             & ! subroutine
+                                        , zero_rk4_cohort            & ! subroutine
+                                        , integration_buff           ! ! intent(out)
+      use ed_para_coms           , only : nthreads                   ! ! intent(in)
+      use ed_state_vars          , only : edtype                     & ! structure
+                                        , polygontype                & ! structure
+                                        , sitetype                   ! ! structure
+      use met_driver_coms        , only : met_driv_state             ! ! structure
+      use grid_coms              , only : nzg                        & ! intent(in)
+                                        , nzs                        ! ! intent(in)
+      use ed_misc_coms           , only : current_time               & ! intent(in)
+                                        , dtlsm                      ! ! intent(in)
+      use budget_utils           , only : update_cbudget_committed   & ! function
+                                        , compute_budget             ! ! function
+      use soil_respiration       , only : soil_respiration_driver    ! ! sub-routine
+      use photosyn_driv          , only : canopy_photosynthesis      ! ! sub-routine
+      use rk4_misc               , only : sanity_check_veg_energy    & ! sub-routine
+                                        , copy_patch_init            ! ! sub-routine
+      use rk4_integ_utils        , only : copy_met_2_rk4site         ! ! sub-routine
+      use update_derived_utils   , only : update_patch_thermo_props  & ! sub-routine
+                                        , update_patch_derived_props ! ! sub-routine
+      use plant_hydro            , only : plant_hydro_driver         ! ! sub-routine
+      use therm_lib              , only : tq2enthalpy                ! ! function
       !$ use omp_lib
       implicit none
 
@@ -43,7 +45,6 @@ module rk4_driver
       !----- Local variables --------------------------------------------------------------!
       type(polygontype)         , pointer     :: cpoly
       type(sitetype)            , pointer     :: csite
-      type(patchtype)           , pointer     :: cpatch
       type(met_driv_state)      , pointer     :: cmet
 
       type(rk4patchtype)       , pointer      :: initp
@@ -71,20 +72,24 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
+      real                                    :: old_can_prss
       real                                    :: old_can_enthalpy
+      real                                    :: old_can_temp
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
-      real                                    :: old_can_temp
-      real                                    :: old_can_prss
+      real                                    :: old_can_dmol
+      real                                    :: mid_can_rhos
+      real                                    :: mid_can_dmol
       real                                    :: patch_vels
       integer                                 :: ibuff
+      integer                                 :: npa_thread
+      integer                                 :: ita
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter   :: test_energy_sanity = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
-
 
 
 
@@ -94,6 +99,12 @@ module rk4_driver
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
             cmet  => cpoly%met(isi)
+
+
+            !----- Find the number of patches per thread. ---------------------------------!
+            npa_thread = ceiling(real(csite%npatches) / real(nthreads))
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !     Update the monthly rainfall.                                             !
@@ -118,23 +129,19 @@ module rk4_driver
                                    ,cgrid%lat(ipy),cgrid%cosz(ipy))
             !------------------------------------------------------------------------------!
 
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(      &
-            !$OMP initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,    &
-            !$OMP ak4,ak5,ak6,ak7,cpatch,patch_vels,        &
-            !$OMP old_can_co2,old_can_rhos,old_can_temp,    &
-            !$OMP old_can_prss,old_can_enthalpy,            &
-            !$OMP old_can_shv,ecurr_netrad,                 &
-            !$OMP wcurr_loss2atm,ecurr_loss2atm,            &
-            !$OMP co2curr_loss2atm,                         &
-            !$OMP wcurr_loss2drainage,ecurr_loss2drainage,  &
-            !$OMP wcurr_loss2runoff,ecurr_loss2runoff,nsteps )
-
-            patchloop: do ipa = 1,csite%npatches
-               cpatch => csite%patch(ipa)
-
-               ibuff = 1
-               !$ ibuff = OMP_get_thread_num()+1
-
+            !------------------------------------------------------------------------------!
+            !  MLO - Changed the parallel do loop to account for cases in which the number !
+            !        of threads is less than the number of patches.                        !
+            !------------------------------------------------------------------------------!
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
+            !$OMP  ipa,ita,initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,ak4,ak5,ak6,ak7           &
+            !$OMP ,patch_vels,old_can_prss,old_can_enthalpy,old_can_temp,old_can_shv       &
+            !$OMP ,old_can_co2,old_can_rhos,old_can_dmol,mid_can_rhos,mid_can_dmol         &
+            !$OMP ,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm             &
+            !$OMP ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff               &
+            !$OMP ,ecurr_loss2runoff,nsteps)
+            threadloop: do ibuff=1,nthreads
+               !------ Update pointers. ---------------------------------------------------!
                initp => integration_buff(ibuff)%initp
                yscal => integration_buff(ibuff)%yscal
                y     => integration_buff(ibuff)%y
@@ -147,145 +154,176 @@ module rk4_driver
                ak5   => integration_buff(ibuff)%ak5
                ak6   => integration_buff(ibuff)%ak6
                ak7   => integration_buff(ibuff)%ak7
-
-
-
-               !----- Reset all buffers to zero, as a safety measure. ---------------------!
-               call zero_rk4_patch(initp)
-               call zero_rk4_patch(yscal)
-               call zero_rk4_patch(y)
-               call zero_rk4_patch(dydx)
-               call zero_rk4_patch(yerr)
-               call zero_rk4_patch(ytemp)
-               call zero_rk4_patch(ak2)
-               call zero_rk4_patch(ak3)
-               call zero_rk4_patch(ak4)
-               call zero_rk4_patch(ak5)
-               call zero_rk4_patch(ak6)
-               call zero_rk4_patch(ak7)
-               call zero_rk4_cohort(initp)
-               call zero_rk4_cohort(yscal)
-               call zero_rk4_cohort(y)
-               call zero_rk4_cohort(dydx)
-               call zero_rk4_cohort(yerr)
-               call zero_rk4_cohort(ytemp)
-               call zero_rk4_cohort(ak2)
-               call zero_rk4_cohort(ak3)
-               call zero_rk4_cohort(ak4)
-               call zero_rk4_cohort(ak5)
-               call zero_rk4_cohort(ak6)
-               call zero_rk4_cohort(ak7)
-
-               !----- Get velocity for aerodynamic resistance. ----------------------------!
-               if (csite%can_theta(ipa) < cmet%atm_theta) then
-                  patch_vels = cmet%vels_stab
-               else
-                  patch_vels = cmet%vels_unstab
-               end if
-               !---------------------------------------------------------------------------!
-
-               !---------------------------------------------------------------------------!
-               !    Update roughness and canopy depth.                                     !
-               !---------------------------------------------------------------------------!
-               call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                        &
-                                             ,cpoly%ntext_soil(:,isi))
-               call update_patch_derived_props(csite,ipa)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Save the previous thermodynamic state. ------------------------------!
-               old_can_shv      = csite%can_shv  (ipa)
-               old_can_co2      = csite%can_co2  (ipa)
-               old_can_rhos     = csite%can_rhos (ipa)
-               old_can_temp     = csite%can_temp (ipa)
-               old_can_prss     = csite%can_prss (ipa)
-               old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
-               !---------------------------------------------------------------------------!
-
-               !----- Compute current storage terms. --------------------------------------!
-               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
 
 
 
                !---------------------------------------------------------------------------!
-               !      Test whether temperature and energy are reasonable.                  !
+               !     Loop through tasks.  We don't assign contiguous blocks of patches to  !
+               ! each thread because patches are sorted by age and older patches have more !
+               ! cohorts and are likely to be slower.                                      !
                !---------------------------------------------------------------------------!
-               if (test_energy_sanity) then
-                  call sanity_check_veg_energy(csite,ipa)
-               end if
-               !---------------------------------------------------------------------------!
+               taskloop: do ita=1,npa_thread
+                  !------------------------------------------------------------------------!
+                  !     Find out which patch to solve.  In case the number of patches      !
+                  ! is not a perfect multiple of number of threads, some patch numbers     !
+                  ! will exceed csite%npatches in the last iteration, in which we can      !
+                  ! terminate the loop.                                                    !
+                  !------------------------------------------------------------------------!
+                  ipa = ibuff + (ita - 1) * nthreads
+                  if (ipa > csite%npatches) exit taskloop
+                  !------------------------------------------------------------------------!
+
+                  !----- Reset all buffers to zero, as a safety measure. ------------------!
+                  call zero_rk4_patch(initp)
+                  call zero_rk4_patch(yscal)
+                  call zero_rk4_patch(y)
+                  call zero_rk4_patch(dydx)
+                  call zero_rk4_patch(yerr)
+                  call zero_rk4_patch(ytemp)
+                  call zero_rk4_patch(ak2)
+                  call zero_rk4_patch(ak3)
+                  call zero_rk4_patch(ak4)
+                  call zero_rk4_patch(ak5)
+                  call zero_rk4_patch(ak6)
+                  call zero_rk4_patch(ak7)
+                  call zero_rk4_cohort(initp)
+                  call zero_rk4_cohort(yscal)
+                  call zero_rk4_cohort(y)
+                  call zero_rk4_cohort(dydx)
+                  call zero_rk4_cohort(yerr)
+                  call zero_rk4_cohort(ytemp)
+                  call zero_rk4_cohort(ak2)
+                  call zero_rk4_cohort(ak3)
+                  call zero_rk4_cohort(ak4)
+                  call zero_rk4_cohort(ak5)
+                  call zero_rk4_cohort(ak6)
+                  call zero_rk4_cohort(ak7)
+                  !------------------------------------------------------------------------!
+
+                  !----- Get velocity for aerodynamic resistance. -------------------------!
+                  if (csite%can_theta(ipa) < cmet%atm_theta) then
+                     patch_vels = cmet%vels_stab
+                  else
+                     patch_vels = cmet%vels_unstab
+                  end if
+                  !------------------------------------------------------------------------!
 
 
-               !----- Get plant water flow driven by plant hydraulics ---------------------!
-               !     This must be placed before canopy_photosynthesis because              !
-               !  plant_hydro_driver needs fs_open from last timestep                      !
-               call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
-               !---------------------------------------------------------------------------!
+                  !----- Save the previous thermodynamic state. ---------------------------!
+                  old_can_prss     = csite%can_prss(ipa)
+                  old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa)    &
+                                                ,.true.)
+                  old_can_temp     = csite%can_temp(ipa)
+                  old_can_shv      = csite%can_shv (ipa)
+                  old_can_co2      = csite%can_co2 (ipa)
+                  old_can_rhos     = csite%can_rhos(ipa)
+                  old_can_dmol     = csite%can_dmol(ipa)
+                  !------------------------------------------------------------------------!
 
 
-               !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%ntext_soil(:,isi)       &
-                                         ,cpoly%leaf_aging_factor(:,isi)                   &
-                                         ,cpoly%green_leaf_factor(:,isi))
-               !---------------------------------------------------------------------------!
 
 
-               !----- Compute root and heterotrophic respiration. -------------------------!
-               call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
-               !---------------------------------------------------------------------------!
-
-               !---------------------------------------------------------------------------!
-               !     Set up the integration patch.                                         !
-               !---------------------------------------------------------------------------!
-               call copy_patch_init(csite,ipa,initp,patch_vels)
-               !---------------------------------------------------------------------------!
-
-               !---------------------------------------------------------------------------!
-               !     Set up the integration patch.                                         !
-               !---------------------------------------------------------------------------!
-               call copy_patch_init_carbon(csite,ipa,initp)
-               !---------------------------------------------------------------------------!
+                  !------------------------------------------------------------------------!
+                  !      Test whether temperature and energy are reasonable.               !
+                  !------------------------------------------------------------------------!
+                  if (test_energy_sanity) then
+                     call sanity_check_veg_energy(csite,ipa)
+                  end if
+                  !------------------------------------------------------------------------!
 
 
-               !---------------------------------------------------------------------------!
-               !    This is the driver for the integration process...                      !
-               !---------------------------------------------------------------------------!
-               call integrate_patch_rk4(csite,initp,ipa,isi                                &
-                                       ,cpoly%nighttime(isi),wcurr_loss2atm                &
-                                       ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm       &
-                                       ,wcurr_loss2drainage,ecurr_loss2drainage            &
-                                       ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
-               !---------------------------------------------------------------------------!
+                  !------------------------------------------------------------------------!
+                  !     Get plant water flow driven by plant hydraulics.  This must be     !
+                  ! placed before canopy_photosynthesis, because plant_hydro_driver needs  !
+                  ! fs_open from the previous timestep.                                    !
+                  !------------------------------------------------------------------------!
+                  call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
+                  !------------------------------------------------------------------------!
 
 
-               !----- Add the number of steps into the step counter. ----------------------!
-               !----- workload accumulation is order-independent, so this can stay shared
-               cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
-               !---------------------------------------------------------------------------!
+                  !----- Get photosynthesis, stomatal conductance, and transpiration. -----!
+                  call canopy_photosynthesis(csite,cmet,nzg,ipa,ibuff                      &
+                                            ,cpoly%ntext_soil(:,isi)                       &
+                                            ,cpoly%leaf_aging_factor(:,isi)                &
+                                            ,cpoly%green_leaf_factor(:,isi))
+                  !------------------------------------------------------------------------!
 
 
-               !---------------------------------------------------------------------------!
-               !    Update the minimum monthly temperature, based on canopy temperature.   !
-               !---------------------------------------------------------------------------!
-               if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
-                  cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
-               end if
-               !---------------------------------------------------------------------------!
+                  !----- Compute root and heterotrophic respiration. ----------------------!
+                  call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+                  !------------------------------------------------------------------------!
 
 
+                  !----- Update the committed carbon change pool. -------------------------!
+                  call update_cbudget_committed(csite,ipa)
+                  !------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !     Set up the integration patch.                                      !
+                  !------------------------------------------------------------------------!
+                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels,mid_can_rhos       &
+                                      ,mid_can_dmol)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !    This is the driver for the integration process...                   !
+                  !------------------------------------------------------------------------!
+                  call integrate_patch_rk4(csite,initp,ipa,isi,ibuff                       &
+                                          ,cpoly%nighttime(isi),wcurr_loss2atm             &
+                                          ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm    &
+                                          ,wcurr_loss2drainage,ecurr_loss2drainage         &
+                                          ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Add the number of steps into the step counter. Workload            !
+                  ! accumulation is order-independent, so this can stay shared.            !
+                  !------------------------------------------------------------------------!
+                  cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !   Update the minimum monthly temperature, based on canopy temperature. !
+                  !------------------------------------------------------------------------!
+                  if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
+                     cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !    Update roughness and canopy depth.  This should be done after the   !
+                  ! integration.                                                           !
+                  !------------------------------------------------------------------------!
+                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
+                                                ,cpoly%ntext_soil(:,isi))
+                  call update_patch_derived_props(csite,ipa,.false.)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Compute the residuals.                                             !
+                  !------------------------------------------------------------------------!
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa        &
+                                     ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm           &
+                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
+                                     ,ecurr_loss2drainage,wcurr_loss2runoff                &
+                                     ,ecurr_loss2runoff,cpoly%area(isi)                    &
+                                     ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy &
+                                     ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos    &
+                                     ,old_can_dmol,mid_can_rhos,mid_can_dmol)
+                  !------------------------------------------------------------------------!
+
+               end do taskloop
                !---------------------------------------------------------------------------!
-               !     Compute the residuals.                                                !
-               !---------------------------------------------------------------------------!
-               call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa           &
-                                  ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm              &
-                                  ,co2curr_loss2atm,wcurr_loss2drainage                    &
-                                  ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
-                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_enthalpy &
-                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_prss)
-               !---------------------------------------------------------------------------!
-            end do patchloop
+            end do threadloop
             !$OMP END PARALLEL DO
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
          end do siteloop
@@ -307,11 +345,11 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_rk4(csite,initp,ipa,isi,nighttime,wcurr_loss2atm             &
+   subroutine integrate_patch_rk4(csite,initp,ipa,isi,ibuff,nighttime,wcurr_loss2atm       &
                                  ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm             &
                                  ,wcurr_loss2drainage,ecurr_loss2drainage                  &
                                  ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
-      use rk4_integ_utils
+      use rk4_integ_utils , only : odeint               ! ! sub-routine
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use rk4_coms        , only : integration_vars     & ! structure
@@ -327,6 +365,7 @@ module rk4_driver
       type(rk4patchtype)    , target      :: initp
       integer               , intent(in)  :: ipa
       integer               , intent(in)  :: isi
+      integer               , intent(in)  :: ibuff
       logical               , intent(in)  :: nighttime
       real                  , intent(out) :: wcurr_loss2atm
       real                  , intent(out) :: ecurr_netrad
@@ -337,15 +376,7 @@ module rk4_driver
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
       integer               , intent(out) :: nsteps
-      !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                        :: hbeg
       !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !      Initial step size.  Experience has shown that giving this too large a value   !
-      ! causes the integrator to fail (e.g., soil layers become supersaturated).           !
-      !------------------------------------------------------------------------------------!
-      hbeg = dble(csite%htry(ipa))
 
 
       !------------------------------------------------------------------------------------!
@@ -359,8 +390,7 @@ module rk4_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-
-      call odeint(hbeg,csite,ipa,isi,nsteps)
+      call odeint(csite,ipa,isi,ibuff,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -369,7 +399,7 @@ module rk4_driver
       initp%upwp = initp%can_rhos * initp%upwp * dtrk4i
       initp%tpwp = initp%can_rhos * initp%tpwp * dtrk4i
       initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
-      initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
+      initp%cpwp = initp%can_dmol * initp%cpwp * dtrk4i
       initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
 
 
@@ -379,6 +409,8 @@ module rk4_driver
       call initp2modelp(tend-tbeg,initp,csite,ipa,nighttime,wcurr_loss2atm,ecurr_netrad    &
                        ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
                        ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+      !------------------------------------------------------------------------------------!
+
 
       return
    end subroutine integrate_patch_rk4
@@ -398,7 +430,6 @@ module rk4_driver
    subroutine initp2modelp(hdid,initp,csite,ipa,nighttime,wbudget_loss2atm,ebudget_netrad  &
                           ,ebudget_loss2atm,co2budget_loss2atm,wbudget_loss2drainage       &
                           ,ebudget_loss2drainage,wbudget_loss2runoff,ebudget_loss2runoff)
-      use rk4_misc
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -408,15 +439,16 @@ module rk4_driver
                                       , ibranch_thermo       ! ! intent(in)
       use ed_state_vars        , only : sitetype             & ! structure
                                       , patchtype            ! ! structure
+      use canopy_air_coms      , only : f_bndlyr_init        ! ! intent(in)
       use consts_coms          , only : day_sec              & ! intent(in)
+                                      , cpdry                & ! intent(in)
                                       , t3ple                & ! intent(in)
                                       , t3ple8               & ! intent(in)
-                                      , wdns8                & ! intent(in)
-                                      , cliq8                ! ! intent(in)
+                                      , wdns8                ! ! intent(in)
       use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
                                       , writing_long         & ! intent(in)
                                       , dtlsm                & ! intent(in)
-                                      , frqsum               ! ! intent(in)
+                                      , dtlsm_o_frqsum       ! ! intent(in)
       use soil_coms            , only : soil8                & ! intent(in)
                                       , dslz8                & ! intent(in)
                                       , slz8                 & ! intent(in)
@@ -429,12 +461,14 @@ module rk4_driver
                                       , cmtl2uext            & ! subroutine
                                       , qslif                ! ! function
       use phenology_coms       , only : spot_phen            ! ! intent(in)
-      use allometry            , only : h2crownbh            & ! function
-                                      , dbh2sf               ! ! function
+      use physiology_coms      , only : plant_hydro_scheme   & ! intent(in)
+                                      , gbh_2_gbw            ! ! intent(in)
+      use allometry            , only : h2crownbh            ! ! function
       use disturb_coms         , only : include_fire         & ! intent(in)
                                       , k_fire_first         ! ! intent(in)
-      use plant_hydro          , only : tw2rwc               ! ! subroutine
-      use physiology_coms      , only : plant_hydro_scheme
+      use plant_hydro          , only : twe2twi              & ! subroutine
+                                      , tw2rwc               ! ! subroutine
+      use rk4_misc             , only : print_rk4patch       ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -471,17 +505,6 @@ module rk4_driver
       real        , parameter         :: thirtydays_sec = 30. * day_sec
       !----- External function ------------------------------------------------------------!
       real        , external          :: sngloff
-      !----- Locally saved variables. -----------------------------------------------------!
-      real        , save              :: dtlsm_o_frqsum
-      logical     , save              :: first_time = .true.
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Assign the constant scaling factor. ------------------------------------------!
-      if (first_time) then
-         first_time     = .false.
-         dtlsm_o_frqsum = dtlsm / frqsum
-      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -495,16 +518,17 @@ module rk4_driver
       ! those in which this is not true.  All floating point variables are converted back  !
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_theta(ipa)        = sngloff(initp%can_theta       ,tiny_offset)
-      csite%can_prss(ipa)         = sngloff(initp%can_prss        ,tiny_offset)
-      csite%can_temp(ipa)         = sngloff(initp%can_temp        ,tiny_offset)
-      csite%can_shv(ipa)          = sngloff(initp%can_shv         ,tiny_offset)
-      csite%can_co2(ipa)          = sngloff(initp%can_co2         ,tiny_offset)
-      csite%can_rhos(ipa)         = sngloff(initp%can_rhos        ,tiny_offset)
-      csite%can_depth(ipa)        = sngloff(initp%can_depth       ,tiny_offset)
-      csite%veg_displace(ipa)     = sngloff(initp%veg_displace    ,tiny_offset)
-      csite%rough(ipa)            = sngloff(initp%rough           ,tiny_offset)
-      csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
+      csite%can_theta       (ipa) = sngloff(initp%can_theta       ,tiny_offset)
+      csite%can_prss        (ipa) = sngloff(initp%can_prss        ,tiny_offset)
+      csite%can_temp        (ipa) = sngloff(initp%can_temp        ,tiny_offset)
+      csite%can_shv         (ipa) = sngloff(initp%can_shv         ,tiny_offset)
+      csite%can_co2         (ipa) = sngloff(initp%can_co2         ,tiny_offset)
+      csite%can_rhos        (ipa) = sngloff(initp%can_rhos        ,tiny_offset)
+      csite%can_dmol        (ipa) = sngloff(initp%can_dmol        ,tiny_offset)
+      csite%can_depth       (ipa) = sngloff(initp%can_depth       ,tiny_offset)
+      csite%veg_displace    (ipa) = sngloff(initp%veg_displace    ,tiny_offset)
+      csite%rough           (ipa) = sngloff(initp%rough           ,tiny_offset)
+      csite%snowfac         (ipa) = sngloff(initp%snowfac         ,tiny_offset)
       csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
 
       !------------------------------------------------------------------------------------!
@@ -585,24 +609,41 @@ module rk4_driver
          !     Cohort-level variables.                                                     !
          !---------------------------------------------------------------------------------!
          do ico=1,cpatch%ncohorts
-            cpatch%fmean_sensible_lc   (ico) = sngloff(initp%avg_sensible_lc    (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_sensible_wc   (ico) = sngloff(initp%avg_sensible_wc    (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_vapor_lc      (ico) = sngloff(initp%avg_vapor_lc       (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_vapor_wc      (ico) = sngloff(initp%avg_vapor_wc       (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_transp        (ico) = sngloff(initp%avg_transp         (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_intercepted_al(ico) = sngloff(initp%avg_intercepted_al (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_intercepted_aw(ico) = sngloff(initp%avg_intercepted_aw (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_wshed_lg      (ico) = sngloff(initp%avg_wshed_lg       (ico)      &
-                                                     ,tiny_offset)
-            cpatch%fmean_wshed_wg      (ico) = sngloff(initp%avg_wshed_wg       (ico)      &
-                                                     ,tiny_offset)
+            cpatch%fmean_sensible_lc   (ico) = sngloff( initp%avg_sensible_lc   (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_sensible_wc   (ico) = sngloff( initp%avg_sensible_wc   (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_vapor_lc      (ico) = sngloff( initp%avg_vapor_lc      (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_vapor_wc      (ico) = sngloff( initp%avg_vapor_wc      (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_transp        (ico) = sngloff( initp%avg_transp        (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_intercepted_al(ico) = sngloff( initp%avg_intercepted_al(ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_intercepted_aw(ico) = sngloff( initp%avg_intercepted_aw(ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_wshed_lg      (ico) = sngloff( initp%avg_wshed_lg      (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_wshed_wg      (ico) = sngloff( initp%avg_wshed_wg      (ico)      &
+                                                      , tiny_offset)
+            !------------------------------------------------------------------------------!
+            !     Plant hydraulic fluxes.  Convert them to kg/pl/s.                        !
+            ! MLO: I kept the original units, although I would prefer to standardise all   !
+            !      the fluxes to kg/m2/s.                                                  !
+            !------------------------------------------------------------------------------!
+            cpatch%fmean_wflux_wl      (ico) = sngloff( initp%avg_wflux_wl      (ico)      &
+                                                      / initp%nplant            (ico)      &
+                                                      , tiny_offset)
+            cpatch%fmean_wflux_gw      (ico) = sngloff( initp%avg_wflux_gw      (ico)      &
+                                                      / initp%nplant            (ico)      &
+                                                      , tiny_offset)
+            do k = rk4site%lsl, nzg
+               cpatch%fmean_wflux_gw_layer(k,ico) =                                        &
+                  sngloff( initp%avg_wflux_gw_layer(k,ico) / initp%nplant(ico)             &
+                         , tiny_offset )
+            end do
+            !------------------------------------------------------------------------------!
          end do
          !---------------------------------------------------------------------------------!
       end if
@@ -618,14 +659,14 @@ module rk4_driver
          wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
          wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
       else
-         co2budget_loss2atm             = 0.
-         ebudget_netrad                 = 0.
-         ebudget_loss2atm               = 0.
-         ebudget_loss2drainage          = 0.
-         ebudget_loss2runoff            = 0.
-         wbudget_loss2atm               = 0.
-         wbudget_loss2drainage          = 0.
-         wbudget_loss2runoff            = 0.
+         co2budget_loss2atm    = 0.
+         ebudget_netrad        = 0.
+         ebudget_loss2atm      = 0.
+         ebudget_loss2drainage = 0.
+         ebudget_loss2runoff   = 0.
+         wbudget_loss2atm      = 0.
+         wbudget_loss2drainage = 0.
+         wbudget_loss2runoff   = 0.
       end if
       !------------------------------------------------------------------------------------!
 
@@ -772,42 +813,49 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
          !---------------------------------------------------------------------------------!
-         ! First, update variables related with plant hydrodynamics because it can 
-         ! change leaf/wood heat capacity, which will be used later 
+         !      First, update variables related with plant hydrodynamics because it can    !
+         ! change leaf/wood heat capacity, which will be used later.                       !
          !---------------------------------------------------------------------------------!
          select case (plant_hydro_scheme)
-         case (-2,-1,1,2)
-             ! Need to update leaf_water_int and wood_water_int 
-             cpatch%leaf_water_int(ico) = sngloff( initp%leaf_water_int(ico)               &
-                                                 / dble(cpatch%nplant(ico)),tiny_offset)
-             cpatch%wood_water_int(ico) = sngloff( initp%wood_water_int(ico)               &
-                                                 / dble(cpatch%nplant(ico)),tiny_offset)
-
-             ! update heat capacity only when plant_hydro_scheme > 0
-             if (plant_hydro_scheme > 0) then
-                 cpatch%leaf_hcap(ico) = sngloff(initp%leaf_hcap(ico),tiny_offset)
-                 cpatch%wood_hcap(ico) = sngloff(initp%wood_hcap(ico),tiny_offset)
-             endif
+         case (0)
+            continue
+         case default
+            !----- Need to update leaf_water_im2 and wood_water_im2. ----------------------!
+            cpatch%leaf_water_im2(ico) = sngloff(initp%leaf_water_im2(ico),tiny_offset)
+            cpatch%wood_water_im2(ico) = sngloff(initp%wood_water_im2(ico),tiny_offset)
+            !------------------------------------------------------------------------------!
 
 
-             !----------------------------------------------------------------------!
-             ! update rwc since it will be used to update leaf/wood hcap
-             !----------------------------------------------------------------------!
 
-             call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)       &
-                        ,cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%broot(ico)       &
-                        ,dbh2sf(cpatch%dbh(ico),cpatch%pft(ico)),cpatch%pft(ico)     &
-                        ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+            !------------------------------------------------------------------------------!
+            !      Update intensive internal water content.                                !
+            !------------------------------------------------------------------------------!
+            call twe2twi(cpatch%leaf_water_im2(ico),cpatch%wood_water_im2(ico)             &
+                        ,cpatch%nplant(ico),cpatch%leaf_water_int(ico)                     &
+                        ,cpatch%wood_water_int(ico))
+            !------------------------------------------------------------------------------!
 
-             
-             ! leaf and wood psi are updated in plant_hydro_driver of 
-             ! dynamics/plant_hydro.f90 for consistency reasons, see the file
-             ! for details
-             ! 
 
+
+            !------------------------------------------------------------------------------!
+            !      Update rwc since it will be used to update leaf/wood heat capacity.     !
+            !------------------------------------------------------------------------------!
+            call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)              &
+                       ,cpatch%is_small(ico),cpatch%bleaf(ico),cpatch%bsapwooda(ico)       &
+                       ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)        &
+                       ,cpatch%broot(ico),cpatch%dbh(ico),cpatch%pft(ico)                  &
+                       ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Leaf and wood psi are updated in plant_hydro_driver of file             !
+            ! ED/src/dynamics/plant_hydro.f90 for consistency reasons.  See that file for  !
+            ! details.                                                                     !
+            !------------------------------------------------------------------------------!
          end select
-
-
+         !---------------------------------------------------------------------------------!
 
 
          select case (ibranch_thermo)
@@ -832,6 +880,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                cpatch%leaf_water (ico) = sngloff(initp%leaf_water (ico) , tiny_offset)
                cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico) , tiny_offset)
+               !---------------------------------------------------------------------------!
 
 
                if (initp%leaf_resolvable(ico)) then
@@ -839,7 +888,8 @@ module rk4_driver
                   !    Leaves were solved, find the temperature and liquid fraction from   !
                   ! internal energy.                                                       !
                   !------------------------------------------------------------------------!
-                  call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)            &
+                  call uextcm2tl(cpatch%leaf_energy(ico)                                   &
+                                ,cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)       &
                                 ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)               &
                                 ,cpatch%leaf_fliq(ico))
                   !------------------------------------------------------------------------!
@@ -913,11 +963,15 @@ module rk4_driver
                   !------------------------------------------------------------------------!
 
 
-                  !----- Set water demand and conductances to zero. -----------------------!
+                  !----- Set water demand to zero. ----------------------------------------!
                   cpatch%psi_open  (ico) = 0.0
                   cpatch%psi_closed(ico) = 0.0
-                  cpatch%leaf_gbh  (ico) = 0.0
-                  cpatch%leaf_gbw  (ico) = 0.0
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Leaf conductances cannot be zero.  Set to non-zero defaults. -----!
+                  cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+                  cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -936,7 +990,8 @@ module rk4_driver
                   !    Branches were solved, find the temperature and liquid fraction from !
                   ! internal energy.                                                       !
                   !------------------------------------------------------------------------!
-                  call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)            &
+                  call uextcm2tl(cpatch%wood_energy(ico)                                   &
+                                ,cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)       &
                                 ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)               &
                                 ,cpatch%wood_fliq(ico))
                   !------------------------------------------------------------------------!
@@ -960,9 +1015,9 @@ module rk4_driver
                   !------------------------------------------------------------------------!
 
 
-                  !----- Set the conductances to zero. ------------------------------------!
-                  cpatch%wood_gbh(ico) = 0.0
-                  cpatch%wood_gbw(ico) = 0.0
+                  !----- Wood conductances cannot be zero.  Set to non-zero defaults. -----!
+                  cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+                  cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -997,14 +1052,16 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Find the internal energy diagnostically...                            !
                !---------------------------------------------------------------------------!
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
                !---------------------------------------------------------------------------!
 
 
@@ -1029,13 +1086,20 @@ module rk4_driver
 
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
-               cpatch%wood_gbh  (ico) = 0.0
-               cpatch%wood_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+               cpatch%wood_gbw(ico) = cpatch%leaf_gbw(ico)
+               cpatch%wood_gbh(ico) = cpatch%leaf_gbh(ico)
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!
@@ -1064,14 +1128,16 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Find the internal energy diagnostically...                            !
                !---------------------------------------------------------------------------!
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
                !---------------------------------------------------------------------------!
 
 
@@ -1094,15 +1160,23 @@ module rk4_driver
                                                , csite%can_shv   (ipa), .true.)
                !---------------------------------------------------------------------------!
 
+
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
-               cpatch%wood_gbh  (ico) = 0.0
-               cpatch%wood_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
+               cpatch%wood_gbw(ico) = cpatch%leaf_gbw(ico)
+               cpatch%wood_gbh(ico) = cpatch%leaf_gbh(ico)
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -1126,7 +1200,8 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                cpatch%leaf_water(ico)  = sngloff(initp%leaf_water(ico) , tiny_offset)
                cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico), tiny_offset)
-               call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)               &
+               call uextcm2tl(cpatch%leaf_energy(ico)                                      &
+                             ,cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)          &
                              ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)                  &
                              ,cpatch%leaf_fliq(ico))
 
@@ -1192,10 +1267,11 @@ module rk4_driver
                   cpatch%leaf_fliq(ico)   = 0.0
                end if
                cpatch%leaf_water(ico)  = 0.
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
                !---------------------------------------------------------------------------!
                !     The intercellular specific humidity is always assumed to be at        !
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
@@ -1217,11 +1293,18 @@ module rk4_driver
 
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
 
             else
@@ -1238,10 +1321,11 @@ module rk4_driver
                   cpatch%leaf_fliq(ico)   = 0.0
                end if
                cpatch%leaf_water(ico)  = 0.
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap (ico)                 &
-                                                  , cpatch%leaf_water(ico)                 &
-                                                  , cpatch%leaf_temp (ico)                 &
-                                                  , cpatch%leaf_fliq (ico)                 )
+               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
+                                                  , cpatch%leaf_water    (ico)             &
+                                                  + cpatch%leaf_water_im2(ico)             &
+                                                  , cpatch%leaf_temp     (ico)             &
+                                                  , cpatch%leaf_fliq     (ico)             )
                !---------------------------------------------------------------------------!
                !     The intercellular specific humidity is always assumed to be at        !
                ! saturation for a given temperature.  Find the saturation mixing ratio,    !
@@ -1263,11 +1347,18 @@ module rk4_driver
 
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind  (ico) = sngloff(initp%vels, tiny_offset)
-               !----- Set water demand and conductances to zero. --------------------------!
+               !---------------------------------------------------------------------------!
+
+
+               !----- Set water demand to zero. -------------------------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
-               cpatch%leaf_gbh  (ico) = 0.0
-               cpatch%leaf_gbw  (ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -1287,7 +1378,8 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                cpatch%wood_water(ico)  = sngloff(initp%wood_water(ico) , tiny_offset)
                cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico), tiny_offset)
-               call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)               &
+               call uextcm2tl(cpatch%wood_energy(ico)                                      &
+                             ,cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)          &
                              ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)                  &
                              ,cpatch%wood_fliq(ico))
 
@@ -1321,10 +1413,11 @@ module rk4_driver
                   cpatch%wood_fliq(ico)   = 0.0
                end if
                cpatch%wood_water(ico)  = 0.
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
                !---------------------------------------------------------------------------!
 
                !----- Copy the meteorological wind to here. -------------------------------!
@@ -1332,9 +1425,9 @@ module rk4_driver
                !---------------------------------------------------------------------------!
 
 
-               !----- Set the conductances to zero. ---------------------------------------!
-               cpatch%wood_gbh(ico) = 0.0
-               cpatch%wood_gbw(ico) = 0.0
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
 
             else
@@ -1352,15 +1445,17 @@ module rk4_driver
                   cpatch%wood_fliq(ico)   = 0.0
                end if
                cpatch%wood_water(ico)  = 0.
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap (ico)                 &
-                                                  , cpatch%wood_water(ico)                 &
-                                                  , cpatch%wood_temp (ico)                 &
-                                                  , cpatch%wood_fliq (ico)                 )
+               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
+                                                  , cpatch%wood_water    (ico)             &
+                                                  + cpatch%wood_water_im2(ico)             &
+                                                  , cpatch%wood_temp     (ico)             &
+                                                  , cpatch%wood_fliq     (ico)             )
+               !---------------------------------------------------------------------------!
 
 
-               !----- Set the conductances to zero. ---------------------------------------!
-               cpatch%wood_gbh(ico) = 0.0
-               cpatch%wood_gbw(ico) = 0.0
+               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
+               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
+               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
                !---------------------------------------------------------------------------!
 
 
@@ -1385,25 +1480,27 @@ module rk4_driver
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
             write (unit=*,fmt='(a)')           'FINAL LEAF_TEMP IS WRONG IN INITP2MODELP'
             write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4site%lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
-            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
-            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
-            write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
-            write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',rk4site%lon
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',rk4site%lat
+            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:       ',ipa
+            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:      ',ico
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:   '
+            write (unit=*,fmt='(a,1x,es12.4)') '  - AGE:        ',csite%age(ipa)
+            write (unit=*,fmt='(a,1x,i6)')     '  - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%leaf_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%leaf_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%leaf_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%leaf_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%leaf_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',initp%leaf_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',initp%leaf_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',initp%leaf_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',initp%leaf_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',initp%leaf_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',initp%leaf_hcap(ico)
             write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%leaf_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%leaf_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%leaf_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%leaf_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%leaf_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',cpatch%leaf_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',cpatch%leaf_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',cpatch%leaf_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',cpatch%leaf_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',cpatch%leaf_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',cpatch%leaf_hcap(ico)
             write (unit=*,fmt='(80a)') ('-',k=1,80)
             call print_rk4patch(initp, csite,ipa)
             call fatal_error('extreme vegetation temperature','initp2modelp'               &
@@ -1414,25 +1511,27 @@ module rk4_driver
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
             write (unit=*,fmt='(a)')           'FINAL WOOD_TEMP IS WRONG IN INITP2MODELP'
             write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4site%lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
-            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
-            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:    '
-            write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
-            write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',rk4site%lon
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',rk4site%lat
+            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:       ',ipa
+            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:      ',ico
+            write (unit=*,fmt='(a)')           ' + PATCH AGE:   '
+            write (unit=*,fmt='(a,1x,es12.4)') '  - AGE:        ',csite%age(ipa)
+            write (unit=*,fmt='(a,1x,i6)')     '  - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%wood_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%wood_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%wood_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%wood_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%wood_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',initp%wood_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',initp%wood_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',initp%wood_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',initp%wood_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',initp%wood_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',initp%wood_hcap(ico)
             write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%wood_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%wood_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%wood_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%wood_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%wood_hcap(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',cpatch%wood_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',cpatch%wood_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',cpatch%wood_water_im2(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',cpatch%wood_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',cpatch%wood_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',cpatch%wood_hcap(ico)
             write (unit=*,fmt='(80a)') ('-',k=1,80)
             call print_rk4patch(initp, csite,ipa)
             call fatal_error('extreme vegetation temperature','initp2modelp'               &
@@ -1450,24 +1549,28 @@ module rk4_driver
       ! we find the averaged value after we normalise the average of the prognostic        !
       ! variables.  Same thing for aggregated variables at the patch level.                !
       !------------------------------------------------------------------------------------!
-      csite%fmean_can_theiv  (ipa) = csite%fmean_can_theiv  (ipa)                          &
-                                   + csite%can_theiv        (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_theta  (ipa) = csite%fmean_can_theta  (ipa)                          &
-                                   + csite%can_theta        (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_vpdef  (ipa) = csite%fmean_can_vpdef  (ipa)                          &
-                                   + csite%can_vpdef        (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_shv    (ipa) = csite%fmean_can_shv    (ipa)                          &
-                                   + csite%can_shv          (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_co2    (ipa) = csite%fmean_can_co2    (ipa)                          &
-                                   + csite%can_co2          (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_prss   (ipa) = csite%fmean_can_prss   (ipa)                          &
-                                   + csite%can_prss         (ipa) * dtlsm_o_frqsum
-      csite%fmean_gnd_temp   (ipa) = csite%fmean_gnd_temp   (ipa)                          &
-                                   + csite%ground_temp      (ipa) * dtlsm_o_frqsum
-      csite%fmean_gnd_shv    (ipa) = csite%fmean_gnd_shv    (ipa)                          &
-                                   + csite%ground_shv       (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_ggnd   (ipa) = csite%fmean_can_ggnd   (ipa)                          &
-                                   + csite%ggnet            (ipa) * dtlsm_o_frqsum
+      csite%fmean_veg_displace(ipa) = csite%fmean_veg_displace(ipa)                        &
+                                    + csite%veg_displace      (ipa) * dtlsm_o_frqsum
+      csite%fmean_rough       (ipa) = csite%fmean_rough       (ipa)                        &
+                                    + csite%rough             (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_theiv   (ipa) = csite%fmean_can_theiv   (ipa)                        &
+                                    + csite%can_theiv         (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_theta   (ipa) = csite%fmean_can_theta   (ipa)                        &
+                                    + csite%can_theta         (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_vpdef   (ipa) = csite%fmean_can_vpdef   (ipa)                        &
+                                    + csite%can_vpdef         (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_shv     (ipa) = csite%fmean_can_shv     (ipa)                        &
+                                    + csite%can_shv           (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_co2     (ipa) = csite%fmean_can_co2     (ipa)                        &
+                                    + csite%can_co2           (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_prss    (ipa) = csite%fmean_can_prss    (ipa)                        &
+                                    + csite%can_prss          (ipa) * dtlsm_o_frqsum
+      csite%fmean_gnd_temp    (ipa) = csite%fmean_gnd_temp    (ipa)                        &
+                                    + csite%ground_temp       (ipa) * dtlsm_o_frqsum
+      csite%fmean_gnd_shv     (ipa) = csite%fmean_gnd_shv     (ipa)                        &
+                                    + csite%ground_shv        (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_ggnd    (ipa) = csite%fmean_can_ggnd    (ipa)                        &
+                                    + csite%ggnet             (ipa) * dtlsm_o_frqsum
       !------------------------------------------------------------------------------------!
       !       Snow/pounding layers.  We keep track of the total, not individual layers.    !
       ! Energy will be integrated as an extensive variable, we will convert it by the      !
@@ -1484,51 +1587,78 @@ module rk4_driver
       end do
       !------ Cohort-level variables. -----------------------------------------------------!
       do ico=1,cpatch%ncohorts
-         cpatch%fmean_leaf_energy(ico) = cpatch%fmean_leaf_energy(ico)                     &
-                                       + cpatch%leaf_energy      (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_water (ico) = cpatch%fmean_leaf_water (ico)                     &
-                                       + cpatch%leaf_water       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_hcap  (ico) = cpatch%fmean_leaf_hcap  (ico)                     &
-                                       + cpatch%leaf_hcap        (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_vpdef (ico) = cpatch%fmean_leaf_vpdef (ico)                     &
-                                       + cpatch%leaf_vpdef       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_energy(ico) = cpatch%fmean_wood_energy(ico)                     &
-                                       + cpatch%wood_energy      (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_water (ico) = cpatch%fmean_wood_water (ico)                     &
-                                       + cpatch%wood_water       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_hcap  (ico) = cpatch%fmean_wood_hcap  (ico)                     &
-                                       + cpatch%wood_hcap        (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_gsw   (ico) = cpatch%fmean_leaf_gsw   (ico)                     &
-                                       + cpatch%leaf_gsw         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_leaf_gbw   (ico) = cpatch%fmean_leaf_gbw   (ico)                     &
-                                       + cpatch%leaf_gbw         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_wood_gbw   (ico) = cpatch%fmean_wood_gbw   (ico)                     &
-                                       + cpatch%wood_gbw         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_psi_open   (ico) = cpatch%fmean_psi_open   (ico)                     &
-                                       + cpatch%psi_open         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_psi_closed (ico) = cpatch%fmean_psi_closed (ico)                     &
-                                       + cpatch%psi_closed       (ico) * dtlsm_o_frqsum
-         cpatch%fmean_fs_open    (ico) = cpatch%fmean_fs_open    (ico)                     &
-                                       + cpatch%fs_open          (ico) * dtlsm_o_frqsum
-         cpatch%fmean_fsw        (ico) = cpatch%fmean_fsw        (ico)                     &
-                                       + cpatch%fsw              (ico) * dtlsm_o_frqsum
-         cpatch%fmean_fsn        (ico) = cpatch%fmean_fsn        (ico)                     &
-                                       + cpatch%fsn              (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_open     (ico) = cpatch%fmean_A_open     (ico)                     &
-                                       + cpatch%A_open           (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_closed   (ico) = cpatch%fmean_A_closed   (ico)                     &
-                                       + cpatch%A_closed         (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_net      (ico) = cpatch%fmean_A_net      (ico)                     &
-                                       + ( ( 1. - cpatch%fs_open (ico) )                   &
-                                         * cpatch%A_closed       (ico)                     &
-                                         + cpatch%fs_open        (ico)                     &
-                                         * cpatch%A_open         (ico) ) * dtlsm_o_frqsum
-         cpatch%fmean_A_light    (ico) = cpatch%fmean_A_light    (ico)                     &
-                                       + cpatch%A_light          (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_rubp     (ico) = cpatch%fmean_A_rubp     (ico)                     &
-                                       + cpatch%A_rubp           (ico) * dtlsm_o_frqsum
-         cpatch%fmean_A_co2      (ico) = cpatch%fmean_A_co2      (ico)                     &
-                                       + cpatch%A_co2            (ico) * dtlsm_o_frqsum
+         cpatch%fmean_leaf_energy   (ico) = cpatch%fmean_leaf_energy   (ico)               &
+                                          + cpatch%leaf_energy         (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_water    (ico) = cpatch%fmean_leaf_water    (ico)               &
+                                          + cpatch%leaf_water          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_water_im2(ico) = cpatch%fmean_leaf_water_im2(ico)               &
+                                          + cpatch%leaf_water_im2      (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_hcap     (ico) = cpatch%fmean_leaf_hcap     (ico)               &
+                                          + cpatch%leaf_hcap           (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_vpdef    (ico) = cpatch%fmean_leaf_vpdef    (ico)               &
+                                          + cpatch%leaf_vpdef          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_energy   (ico) = cpatch%fmean_wood_energy   (ico)               &
+                                          + cpatch%wood_energy         (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_water    (ico) = cpatch%fmean_wood_water    (ico)               &
+                                          + cpatch%wood_water          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_water_im2(ico) = cpatch%fmean_wood_water_im2(ico)               &
+                                          + cpatch%wood_water_im2      (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_hcap     (ico) = cpatch%fmean_wood_hcap     (ico)               &
+                                          + cpatch%wood_hcap           (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_gsw      (ico) = cpatch%fmean_leaf_gsw      (ico)               &
+                                          + cpatch%leaf_gsw            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_leaf_gbw      (ico) = cpatch%fmean_leaf_gbw      (ico)               &
+                                          + cpatch%leaf_gbw            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_wood_gbw      (ico) = cpatch%fmean_wood_gbw      (ico)               &
+                                          + cpatch%wood_gbw            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_psi_open      (ico) = cpatch%fmean_psi_open      (ico)               &
+                                          + cpatch%psi_open            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_psi_closed    (ico) = cpatch%fmean_psi_closed    (ico)               &
+                                          + cpatch%psi_closed          (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_fs_open       (ico) = cpatch%fmean_fs_open       (ico)               &
+                                          + cpatch%fs_open             (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_fsw           (ico) = cpatch%fmean_fsw           (ico)               &
+                                          + cpatch%fsw                 (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_fsn           (ico) = cpatch%fmean_fsn           (ico)               &
+                                          + cpatch%fsn                 (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_open        (ico) = cpatch%fmean_A_open        (ico)               &
+                                          + cpatch%A_open              (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_closed      (ico) = cpatch%fmean_A_closed      (ico)               &
+                                          + cpatch%A_closed            (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_net         (ico) = cpatch%fmean_A_net         (ico)               &
+                                          + ( ( 1. - cpatch%fs_open    (ico) )             &
+                                            * cpatch%A_closed          (ico)               &
+                                            + cpatch%fs_open           (ico)               &
+                                            * cpatch%A_open            (ico) )               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_light       (ico) = cpatch%fmean_A_light       (ico)               &
+                                          + cpatch%A_light             (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_rubp        (ico) = cpatch%fmean_A_rubp        (ico)               &
+                                          + cpatch%A_rubp              (ico)               &
+                                          * dtlsm_o_frqsum
+         cpatch%fmean_A_co2         (ico) = cpatch%fmean_A_co2         (ico)               &
+                                          + cpatch%A_co2               (ico)               &
+                                          * dtlsm_o_frqsum
          !---------------------------------------------------------------------------------!
          !     The penalty factor for water and nitrogen are meaningful only during the    !
          ! day.  For the daily means we must add only when it is daytime, so we integrate  !

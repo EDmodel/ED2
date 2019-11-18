@@ -64,12 +64,13 @@ end subroutine lastmonthdate
 !==========================================================================================!
 !      Function that determines the inverse of the number of days of the previous day.     !
 !------------------------------------------------------------------------------------------!
-subroutine yesterday_info(au_jour_d_hui,hier,maxjoursi)
+subroutine yesterday_info(au_jour_d_hui,hier,maxjours,maxjoursi)
    use ed_misc_coms, only: simtime
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(simtime)               , intent(in)  :: au_jour_d_hui
    type(simtime)               , intent(out) :: hier
+   integer                     , intent(out) :: maxjours
    real                        , intent(out) :: maxjoursi
    !----- Local variables. ----------------------------------------------------------------!
    integer      , dimension(12)              :: maxdays
@@ -107,7 +108,8 @@ subroutine yesterday_info(au_jour_d_hui,hier,maxjoursi)
    if (isleap(hier%year)) maxdays(2)=29
    !---------------------------------------------------------------------------------------!
 
-   maxjoursi = 1.0 / real(maxdays(hier%month))
+   maxjours  = maxdays(hier%month)
+   maxjoursi = 1.0 / real(maxjours)
    return
 end subroutine yesterday_info
 !==========================================================================================!

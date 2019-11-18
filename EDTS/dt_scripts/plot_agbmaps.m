@@ -1,8 +1,12 @@
 function plot_agbmaps(usepft,agb_gt,agb_gc,lon_gc,...
-    lat_gc,npoly,agbmap_img,visible,grid_name)
+    lat_gc,npoly,agbmap_pref,visible,grid_name)
 
 global fasz;
 global pftname;
+global actcmap;
+global diffcmap;
+
+
 load rywcbmap.mat;
 load wygmap.mat;
 
@@ -66,8 +70,8 @@ for ipy=1:npoly
     if (tot_agb_gc == 0. && tot_agb_gt == 0.)
        patch_agb_dgt(:,ipy) = 0.;
     else
-       patch_agb_dgt(:,ipy) = 200.*(sum(agb_gt(ipy,:))-sum(agb_gc(ipy,:)))...
-                            ./(tot_agb_gc+tot_agb_gt);
+       patch_agb_dgt(:,ipy) = 200.*(tot_agb_gc-tot_agb_gt)...
+                              ./(tot_agb_gc+tot_agb_gt);
     end
     patch_agb_gc(:,ipy) = sum(agb_gc(ipy,:));
 end
@@ -78,7 +82,7 @@ ax1 = axes;
 set(ax1,'Position',[bx by+dy+my dx dy],'FontSize',fasz);
 hold on;
 patch(lonpcrns,latpcrns,patch_agb_gc);
-colormap(wygmap);
+colormap(actcmap);
 grid on; box on;
 caxis([minc maxc]);
 shading flat;
@@ -97,7 +101,7 @@ freezeColors;
 cbfreeze;
 
 
-maxdc = max([1,abs(max(max(patch_agb_dgt)))]);
+maxdc = max([1,max(max(abs(patch_agb_dgt)))]);
 mindc = -maxdc;
 
 
@@ -105,7 +109,7 @@ ax2 = axes;
 set(ax2,'Position',[bx by dx dy],'FontSize',fasz);
 hold on;
 patch(lonpcrns,latpcrns,patch_agb_dgt);
-colormap(rywcbmap);
+colormap(diffcmap);
 grid on; box on;
 caxis([mindc maxdc]);
 shading flat;
@@ -116,7 +120,7 @@ end
 hold off;
 xlim([minlon maxlon])
 ylim([minlat maxlat]);
-ylabel('100(Test-Main)/(Test+Main)','FontSize',fasz);
+ylabel('200(T-M)/(T+M)','FontSize',fasz);
 freezeColors;
 cbfreeze;
 
@@ -150,7 +154,7 @@ ax = axes; %#ok<LAXES>
 set(ax,'Position',[bx+ip*(dx+mx) by+my+dy dx dy],'FontSize',fasz);
 hold on;
 patch(lonpcrns,latpcrns,patch_agb_gc);
-colormap(wygmap);
+colormap(actcmap);
 grid on; box on;
 caxis([minc maxc]);
 shading flat;
@@ -168,7 +172,7 @@ hold off;
 xlim([minlon maxlon]);
 ylim([minlat maxlat]);
 
-maxdc = max([1,abs(max(max(patch_agb_dgt)))]);
+maxdc = max([1,max(max(abs(patch_agb_dgt)))]);
 mindc = -maxdc;
 
 %maxdc = max([0.001*maxc  ,max(max(abs(patch_agb_dgt)))]);
@@ -178,7 +182,7 @@ ax = axes; %#ok<LAXES>
 set(ax,'Position',[bx+ip*(dx+mx) by dx dy],'FontSize',fasz);
 hold on;
 patch(lonpcrns,latpcrns,patch_agb_dgt);
-colormap(rywcbmap);
+colormap(diffcmap);
 grid on; box on;
 caxis([mindc maxdc]);
 shading flat;
@@ -204,7 +208,8 @@ scrpos = get(gcf,'Position');
 newpos = scrpos/100;
 set(gcf,'PaperUnits','inches',...
 'PaperPosition',newpos)
-print('-depsc', agbmap_img, '-r200');
+print('-depsc', sprintf('%s.eps',agbmap_pref), '-r300');
+print('-dpng', sprintf('%s.png',agbmap_pref), '-r300');
 drawnow
 set(gcf,'Units',oldscreenunits,...
 'PaperUnits',oldpaperunits,...

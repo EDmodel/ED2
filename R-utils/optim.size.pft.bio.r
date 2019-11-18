@@ -14,6 +14,7 @@ optim.size.pft.bio <<- function( logdbh.minus.min   # Log of DBH above minimum
                                , tiny.off  = 1.e-20 # Tiny offset
                                ){
 
+
    #----- Revert back to DBH. -------------------------------------------------------------#
    dbh.now     = dbh.min + exp(logdbh.minus.min)
    pft.now     = rownames(dbh.table)
@@ -66,6 +67,7 @@ optim.size.pft.bio <<- function( logdbh.minus.min   # Log of DBH above minimum
                        + length(rmse.bsa  ) * rmse.bsa^2
                        + length(rmse.class) * rmse.class^2 )
                      / ( length(rmse.size) + length(rmse.bsa) + length(rmse.class) ) )
+
    return(rmse)
 }#end function
 #==========================================================================================#

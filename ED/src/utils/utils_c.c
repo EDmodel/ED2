@@ -20,6 +20,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef MAC_OS_X
+#include <stdlib.h>
+#endif
+
 #ifdef SUNHPC
 #include <sched.h>
 #include <syscall.h>
@@ -313,7 +317,7 @@ int vfscale(float *a,int n,double *min,double *max )
 #include <dirent.h>
 #include <string.h>
 
-void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirlen, int charlen ){
+void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
   
 
   struct dirent **nameout;
@@ -338,11 +342,11 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
 
   /* Then we have an absolute path */
   if(strncmp(prefix,"/",1)==0){strcpy(tmpdir,"/\0");}
-
+   
   
   token = strtok (prefix, delim);
   tfound=0;
-  while (token !=  '\0') {
+  while (token != '\0') {
     tfound += 1;
 
     strcpy(dir,tmpdir);
@@ -351,7 +355,8 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
     strcpy(fpref0,token);
 
     // Fetch next token
-    token = strtok('\0', delim);
+    token = strtok(NULL, delim);
+    // printf("%4i %s %s %s\n",tfound,delim,token,tmpdir);
   }
 
   /* Now we have the string parsed into the file prefix and the directory. 
@@ -371,7 +376,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
     tfound=1;
     
     /* Try the next token */
-    token = strtok('\0',delim2);
+    token = strtok(NULL,delim2);
     if (token != '\0'){
       tfound=2;
       strcpy(fpref2,token);
@@ -390,7 +395,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
     }
     
     /* Try the next token */
-    token = strtok('\0',delim2);
+    token = strtok(NULL,delim2);
     if (token != '\0'){
       tfound=2;
       strcpy(fpref2,token);

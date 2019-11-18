@@ -29,10 +29,10 @@ INCLUDES         = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS)
 F90_COMMAND      = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 F90_LOWO_COMMAND = $(F_COMP) -c $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND      = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
-                   -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)     \
+                   -D$(FC_TYPE) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)               \
                    -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_LOWO_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
-                   -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)     \
+                   -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)                            \
                    -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
 CXX_COMMAND      = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)
 #------------------------------------------------------------------------------------------#
@@ -47,8 +47,24 @@ include objects.mk
 
 #----- Define targets. --------------------------------------------------------------------#
 
+#------------------------------------------------------------------------------------------#
+#     MLO.  The six "make $(EXE)" below may look like a typo, but it is actually a rather  #
+#           ugly solution for a problem with make. When someone changes a fortran file     #
+#           that is a module, all files that use the module must be recompiled too. Some   #
+#           files are updated in the first pass, but not all of them are recompiled, and   #
+#           nested modules (a module used by another module) may require multiple          #
+#           compilations so the final executable is consistent.  Failing to do so may      #
+#           cause the executable to be inconsistent, with dangerous results.  If anyone    #
+#           knows a better way to ensure all dependencies are recompiled, feel free to     #
+#           implement, but for the time being please keep all the "make $(EXE)" calls.     #
+#------------------------------------------------------------------------------------------#
 all:
 	make gendep
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
 	make $(EXE)
 
 gendep:
