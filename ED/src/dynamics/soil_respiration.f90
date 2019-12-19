@@ -420,7 +420,7 @@ subroutine organic_layer_depth(cgrid)
              select case (isoiltext)
                case (1)
                  if (csite%litter_depth(k,ipa) .lt. 0.05) then
-                   cpoly%ntext_soil(k,isi) = cpoly%ntex_soil(1,isi)
+                   cpoly%ntext_soil(k,isi) = cpoly%ntext_soil(1,isi)
                  endif
                 if (csite%litter_depth(k,ipa) .ge. 0.05) then
                    cpoly%ntext_soil(k,isi) = organic_soil_texture(1)

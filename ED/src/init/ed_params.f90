@@ -1777,15 +1777,15 @@ subroutine init_decomp_params()
    r_stsc                    = 0.3
    r_ssc                     = 1.0
    organic_soil_texture(1)   = 18
-   organic_soil_texture(1)   = 19
-   organic_soil_texture(1)   = 20
-   organic_soil_texture(1)   = 21
-   organic_soil_texture(1)   = 22
-   organic_soil_texture(1)   = 23
-   organic_soil_texture(1)   = 24
-   organic_soil_texture(1)   = 25
-   organic_soil_texture(1)   = 26
-   organic_soil_texture(1)   = 12
+   organic_soil_texture(2)   = 19
+   organic_soil_texture(3)   = 20
+   organic_soil_texture(4)   = 21
+   organic_soil_texture(5)   = 22
+   organic_soil_texture(6)   = 23
+   organic_soil_texture(7)   = 24
+   organic_soil_texture(8)   = 25
+   organic_soil_texture(9)   = 26
+   organic_soil_texture(10)   = 12
    !---------------------------------------------------------------------------------------!
    ! MLO.  After talking to Paul, it seems the decay rate for the slow carbon pool is      !
    !       artificially high for when nitrogen limitation is turned on.  If it is turned   !

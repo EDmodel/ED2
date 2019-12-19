@@ -31,7 +31,7 @@ module soil_coms
    integer, parameter :: ed_nscol = nscol          ! total # of soil colour classes
    integer, parameter :: ed_nvtyp = nvtyp+nvtyp_teb
 #else
-   integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
+   integer, parameter :: ed_nstyp = 26             ! total # of soil textural classes
    integer, parameter :: ed_nscol = 21             ! total # of soil colour classes
    integer, parameter :: ed_nvtyp = 21
 #endif
