@@ -1197,7 +1197,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
       ! the user is fine with super-saturation).                                           !
       !------------------------------------------------------------------------------------!
       wflxgc            = ( 1.d0 - initp%snowfac ) * initp%ggnet * initp%can_rhos          &
-                        * ( initp%ground_ssh - initp%can_shv )                             &
+                        * ( initp%ground_shv - initp%can_shv )                             &
                         * ( 1.d0 / (1.d0 + initp%ggnet / initp%ggsoil) )
       qwflxgc           = wflxgc * tq2enthalpy8(initp%ground_temp,1.d0,.true.)
       !----- Set flux flag. ---------------------------------------------------------------!

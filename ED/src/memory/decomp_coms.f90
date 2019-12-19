@@ -116,7 +116,7 @@ Module decomp_coms
    !-----------------------
    !     Organic soil texture to use in peat layers
    !----------------------
-   real :: organic_soil_texture
+   real,dimension(10) :: organic_soil_texture
    !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of structural pool soil carbon (1/days); this is modulated   !
    ! by Lc.                                                                                !

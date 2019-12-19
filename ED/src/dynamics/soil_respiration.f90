@@ -419,11 +419,39 @@ subroutine organic_layer_depth(cgrid)
 
              select case (isoiltext)
                case (1)
-                 if (csite%litter_depth(k,ipa) .gt. 0.51) then 
-                   cpoly%ntext_soil(k,isi) = organic_soil_texture
-                 else
-                 cpoly%ntext_soil(k,isi) = cpoly%ntext_soil(1,isi)
-                 end if
+                 if (csite%litter_depth(k,ipa) .lt. 0.05) then
+                   cpoly%ntext_soil(k,isi) = cpoly%ntex_soil(1,isi)
+                 endif
+                if (csite%litter_depth(k,ipa) .ge. 0.05) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(1)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.15) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(2)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.25) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(3)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.35) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(4)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.45) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(5)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.55) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(6)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.65) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(7)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.75) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(8)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.85) then
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(9)
+                 endif
+                 if (csite%litter_depth(k,ipa) .gt. 0.95) then 
+                   cpoly%ntext_soil(k,isi) = organic_soil_texture(10)
+                 endif
                case (0)
              end select
            end do
