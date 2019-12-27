@@ -146,6 +146,7 @@ R-utils/read.q.temporary.r
 ED/m61build
 #Manfredo ignores
 .*
+!.github/
 !.gitignore
 !.travis.yml
 !.gitattributes
@@ -162,4 +163,3 @@ ED/build/allom_param.txt
 ED/build/pft_sizes.txt
 R-utils/quick.template.r
 R-utils/read.q.quick.r
-
