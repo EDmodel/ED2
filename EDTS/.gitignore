@@ -1,0 +1,13 @@
+.DS_Store
+.idea
+*.log
+tmp/
+
+# Common inputs
+common/
+
+# Specific site inputs
+umbs/
+
+test-logs/
+test-outputs/
