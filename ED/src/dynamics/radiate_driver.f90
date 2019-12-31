@@ -617,8 +617,10 @@ module radiate_driver
       !------------------------------------------------------------------------------------!
       csite%rshort_s_diffuse(:,ipa) = 0.0
       csite%rshort_s_beam   (:,ipa) = 0.0
+      csite%rshort_s        (:,ipa) = 0.0
       csite%par_s_diffuse   (:,ipa) = 0.0
       csite%par_s_beam      (:,ipa) = 0.0
+      csite%par_s           (:,ipa) = 0.0
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -1041,9 +1043,11 @@ module radiate_driver
                                                      , tiny_offset                       )
             downward_rshort_below_diffuse   = sngloff( par_diff_norm + nir_diff_norm       &
                                                      , tiny_offset                       )
-            upward_par_above_diffuse        = sngloff( albedo_ground_par * par_diff_norm   &
+            upward_par_above_diffuse        = sngloff( albedo_ground_par                   &
+                                                     * ( par_diff_norm + par_beam_norm )   &
                                                      , tiny_offset                       )
-            upward_nir_above_diffuse        = sngloff( albedo_ground_nir * nir_diff_norm   &
+            upward_nir_above_diffuse        = sngloff( albedo_ground_nir                   &
+                                                     * ( nir_diff_norm + nir_beam_norm)    &
                                                      , tiny_offset                       )
             upward_rshort_above_diffuse     = upward_par_above_diffuse                     &
                                             + upward_nir_above_diffuse
@@ -1301,9 +1305,11 @@ module radiate_driver
                                                   , tiny_offset                       )
          downward_rshort_below_diffuse   = sngloff( par_diff_norm + nir_diff_norm          &
                                                   , tiny_offset                       )
-         upward_par_above_diffuse        = sngloff( albedo_ground_par * par_diff_norm      &
+         upward_par_above_diffuse        = sngloff( albedo_ground_par                      &
+                                                  * ( par_diff_norm + par_beam_norm )      &
                                                   , tiny_offset                       )
-         upward_nir_above_diffuse        = sngloff( albedo_ground_nir * nir_diff_norm      &
+         upward_nir_above_diffuse        = sngloff( albedo_ground_nir                      &
+                                                  * ( nir_diff_norm + nir_beam_norm)       &
                                                   , tiny_offset                       )
          upward_rshort_above_diffuse     = upward_par_above_diffuse                        &
                                          + upward_nir_above_diffuse
@@ -1319,8 +1325,11 @@ module radiate_driver
 
          !------ Long wave variables. -----------------------------------------------------!
          surface_netabs_longwave         = emissivity * (rlong - stefan * T_surface**4 )
+         csite%rlongup             (ipa) = (1.0 - emissivity) * rlong                      &
+                                         + emissivity * stefan * T_surface**4
          csite%rlong_albedo        (ipa) = csite%rlongup(ipa) / rlong
          !---------------------------------------------------------------------------------!
+
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1346,7 +1355,7 @@ module radiate_driver
          csite%rshort_s_beam   (k,ipa) = downward_par_below_beam    * abs_sfcw_par(k)      &
                                        + downward_nir_below_beam    * abs_sfcw_nir(k)
          csite%rshort_s_diffuse(k,ipa) = downward_par_below_diffuse * abs_sfcw_par(k)      &
-                                       + downward_nir_below_beam    * abs_sfcw_nir(k)
+                                       + downward_nir_below_diffuse * abs_sfcw_nir(k)
          csite%par_s_beam      (k,ipa) = downward_par_below_beam    * abs_sfcw_par(k)
          csite%par_s_diffuse   (k,ipa) = downward_par_below_diffuse * abs_sfcw_par(k)
       end do

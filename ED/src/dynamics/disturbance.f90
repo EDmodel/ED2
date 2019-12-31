@@ -2045,6 +2045,9 @@ module disturbance
       csite%wbudget_zcaneffect      (np) = csite%wbudget_zcaneffect      (np)              &
                                          + csite%wbudget_zcaneffect      (cp)              &
                                          * area_fac
+      csite%wbudget_pheneffect      (np) = csite%wbudget_pheneffect      (np)              &
+                                         + csite%wbudget_pheneffect      (cp)              &
+                                         * area_fac
       csite%wbudget_residual        (np) = csite%wbudget_residual        (np)              &
                                          + csite%wbudget_residual        (cp)              &
                                          * area_fac
@@ -2077,6 +2080,9 @@ module disturbance
                                          * area_fac
       csite%ebudget_zcaneffect      (np) = csite%ebudget_zcaneffect      (np)              &
                                          + csite%ebudget_zcaneffect      (cp)              &
+                                         * area_fac
+      csite%ebudget_pheneffect      (np) = csite%ebudget_pheneffect      (np)              &
+                                         + csite%ebudget_pheneffect      (cp)              &
                                          * area_fac
       csite%ebudget_residual        (np) = csite%ebudget_residual        (np)              &
                                          + csite%ebudget_residual        (cp)              &
@@ -3344,6 +3350,7 @@ module disturbance
 
 
 
+
       !------------------------------------------------------------------------------------!
       !     If the new patch has received survivors from a donor already, then it should   !
       ! have cohorts.  So the temporary patch vector will be the sum of the new cohorts    !
@@ -4005,7 +4012,7 @@ module disturbance
                                         + cpatch%wood_water_im2(nc)                        &
                                         , cpatch%wood_temp     (nc)                        &
                                         , cpatch%wood_fliq     (nc) )
-      call is_resolvable(csite,np,nc)
+      call is_resolvable(csite,np,nc,.true.,'plant_patch')
       !------------------------------------------------------------------------------------!
 
       !----- Should plantations be considered recruits? -----------------------------------!
@@ -4082,6 +4089,8 @@ module disturbance
       real                                         :: bbarka_in
       real                                         :: old_leaf_hcap
       real                                         :: old_wood_hcap
+      real                                         :: old_leaf_water
+      real                                         :: old_wood_water
       real                                         :: old_leaf_water_im2
       real                                         :: old_wood_water_im2
       real                                         :: bleaf_max
@@ -4132,6 +4141,8 @@ module disturbance
             bbarka_in          = cpatch%bbarka        (ico)
             old_leaf_hcap      = cpatch%leaf_hcap     (ico)
             old_wood_hcap      = cpatch%wood_hcap     (ico)
+            old_leaf_water     = cpatch%leaf_water    (ico)
+            old_wood_water     = cpatch%wood_water    (ico)
             old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
             old_wood_water_im2 = cpatch%wood_water_im2(ico)
             !add the agb_f to bdead
@@ -4179,9 +4190,10 @@ module disturbance
                         ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                     &
                         ,cpatch%wood_water_im2(ico))
             call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap           &
-                                       ,old_leaf_water_im2,old_wood_water_im2,.true.)
+                                       ,old_leaf_water,old_wood_water,old_leaf_water_im2   &
+                                       ,old_wood_water_im2,.true.)
             !----- Update the stability status. -------------------------------------------!
-            call is_resolvable(csite,np,ico)
+            call is_resolvable(csite,np,ico,.false.,'prune_lianas')
             !------------------------------------------------------------------------------!
 
 

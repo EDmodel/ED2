@@ -308,6 +308,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   real :: old_leaf_hcap
   real :: old_wood_hcap
+  real :: old_leaf_water
+  real :: old_wood_water
   real :: old_leaf_water_im2
   real :: old_wood_water_im2
   real :: elim_nplant
@@ -434,6 +436,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !-------------------------------------------------------------------------!
                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
                  old_wood_hcap      = cpatch%wood_hcap     (ico)
+                 old_leaf_water     = cpatch%leaf_water    (ico)
+                 old_wood_water     = cpatch%wood_water    (ico)
                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                   &
@@ -449,11 +453,12 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                              ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                &
                              ,cpatch%wood_water_im2(ico))
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap     &
+                                            ,old_leaf_water,old_wood_water                 &
                                             ,old_leaf_water_im2,old_wood_water_im2         &
                                             ,.true.)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
-                 call is_resolvable(csite,ipa,ico)
+                 call is_resolvable(csite,ipa,ico,.false.,'event_harvest')
 
               enddo
 

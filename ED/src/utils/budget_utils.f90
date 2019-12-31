@@ -139,6 +139,7 @@ module budget_utils
       csite%ebudget_hcapeffect   (ipa) = 0.0
       csite%ebudget_wcapeffect   (ipa) = 0.0
       csite%ebudget_zcaneffect   (ipa) = 0.0
+      csite%ebudget_pheneffect   (ipa) = 0.0
       csite%ebudget_residual     (ipa) = 0.0
       csite%wbudget_precipgain   (ipa) = 0.0
       csite%wbudget_loss2atm     (ipa) = 0.0
@@ -147,6 +148,7 @@ module budget_utils
       csite%wbudget_denseffect   (ipa) = 0.0
       csite%wbudget_wcapeffect   (ipa) = 0.0
       csite%wbudget_zcaneffect   (ipa) = 0.0
+      csite%wbudget_pheneffect   (ipa) = 0.0
       csite%wbudget_residual     (ipa) = 0.0
       !------------------------------------------------------------------------------------!
 
@@ -501,12 +503,13 @@ module budget_utils
    !               carbon, and CO2) due to changes in canopy air space depth (also linked  !
    !               to growth and mortality).                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad          &
-                            ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage           &
-                            ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff       &
-                            ,site_area,cbudget_nep,old_can_prss,old_can_enthalpy           &
-                            ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos             &
-                            ,old_can_dmol,mid_can_rhos,mid_can_dmol)
+   subroutine compute_budget(csite,lsl,pcpg,qpcpg,rshort,rlong,ipa,wcurr_loss2atm          &
+                            ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm                  &
+                            ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff     &
+                            ,ecurr_loss2runoff,co2curr_denseffect,ecurr_denseffect         &
+                            ,wcurr_denseffect,ecurr_prsseffect,site_area,cbudget_nep       &
+                            ,old_can_prss,old_can_enthalpy,old_can_temp,old_can_shv        &
+                            ,old_can_co2,old_can_rhos,old_can_dmol)
       use ed_state_vars, only : sitetype           & ! structure
                               , patchtype          ! ! structure
       use ed_max_dims  , only : str_len            ! ! intent(in)
@@ -523,16 +526,22 @@ module budget_utils
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target        :: csite
-      real                  , intent(inout) :: pcpg
-      real                  , intent(inout) :: qpcpg
+      real                  , intent(in)    :: pcpg
+      real                  , intent(in)    :: qpcpg
+      real                  , intent(in)    :: rshort
+      real                  , intent(in)    :: rlong
       real                  , intent(inout) :: co2curr_loss2atm
+      real                  , intent(inout) :: co2curr_denseffect
       real                  , intent(inout) :: ecurr_netrad
       real                  , intent(inout) :: ecurr_loss2atm
       real                  , intent(inout) :: ecurr_loss2drainage
       real                  , intent(inout) :: ecurr_loss2runoff
+      real                  , intent(inout) :: ecurr_denseffect
+      real                  , intent(inout) :: ecurr_prsseffect
       real                  , intent(inout) :: wcurr_loss2atm
       real                  , intent(inout) :: wcurr_loss2drainage
       real                  , intent(inout) :: wcurr_loss2runoff
+      real                  , intent(inout) :: wcurr_denseffect
       integer               , intent(in)    :: lsl
       integer               , intent(in)    :: ipa
       real                  , intent(in)    :: site_area
@@ -544,8 +553,6 @@ module budget_utils
       real                  , intent(in)    :: old_can_co2
       real                  , intent(in)    :: old_can_rhos
       real                  , intent(in)    :: old_can_dmol
-      real                  , intent(in)    :: mid_can_rhos
-      real                  , intent(in)    :: mid_can_dmol
 
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)       , pointer       :: cpatch
@@ -563,7 +570,6 @@ module budget_utils
       real                                  :: co2curr_hetresp
       real                                  :: co2curr_nee
       real                                  :: co2curr_nep
-      real                                  :: co2curr_denseffect
       real                                  :: co2curr_zcaneffect
       real                                  :: co2curr_residual
       real                                  :: cbudget_initialstorage
@@ -584,22 +590,36 @@ module budget_utils
       real                                  :: ebudget_tolerance
       real                                  :: ebudget_scale
       real                                  :: ecurr_precipgain
-      real                                  :: ecurr_denseffect
-      real                                  :: ecurr_prsseffect
       real                                  :: ecurr_hcapeffect
       real                                  :: ecurr_wcapeffect
       real                                  :: ecurr_zcaneffect
+      real                                  :: ecurr_pheneffect
       real                                  :: ecurr_residual
       real                                  :: wbudget_initialstorage
       real                                  :: wbudget_finalstorage
       real                                  :: wbudget_deltastorage
       real                                  :: wbudget_tolerance
       real                                  :: wbudget_scale
+      real                                  :: rbudget_tolerance
+      real                                  :: rbudget_scale
       real                                  :: wcurr_precipgain
-      real                                  :: wcurr_denseffect
       real                                  :: wcurr_wcapeffect
       real                                  :: wcurr_zcaneffect
+      real                                  :: wcurr_pheneffect
       real                                  :: wcurr_residual
+      real                                  :: rcurr_rshort_in
+      real                                  :: rcurr_rshort_out
+      real                                  :: rcurr_rlong_in
+      real                                  :: rcurr_rlong_out
+      real                                  :: rcurr_soil_rshort_net
+      real                                  :: rcurr_soil_rlong_net
+      real                                  :: rcurr_sfcw_rshort_net
+      real                                  :: rcurr_sfcw_rlong_net
+      real                                  :: rcurr_leaf_rshort_net
+      real                                  :: rcurr_leaf_rlong_net
+      real                                  :: rcurr_wood_rshort_net
+      real                                  :: rcurr_wood_rlong_net
+      real                                  :: rcurr_residual
       real                                  :: curr_can_enthalpy
       real                                  :: gpp
       real                                  :: leaf_resp
@@ -614,18 +634,22 @@ module budget_utils
       real                                  :: patch_wai
       integer                               :: jpa
       integer                               :: ico
+      integer                               :: ksn
+      integer                               :: nco_leaf
+      integer                               :: nco_wood
       logical                               :: isthere
       logical                               :: budget_fine
       logical                               :: co2_fine
       logical                               :: carbon_fine
       logical                               :: enthalpy_fine
+      logical                               :: radiation_fine
       logical                               :: water_fine
       !----- Local constants. -------------------------------------------------------------!
       character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
       character(len= 9)     , parameter     :: fmti='(a,1x,i7)'
       character(len= 9)     , parameter     :: fmtl='(a,1x,l1)'
-      character(len=10)     , parameter     :: bhfmt='(46(a,1x))'
-      character(len=48)     , parameter     :: bbfmt='(3(i14,1x),43(es14.7,1x))'
+      character(len=10)     , parameter     :: bhfmt='(48(a,1x))'
+      character(len=48)     , parameter     :: bbfmt='(3(i14,1x),45(es14.7,1x))'
       !----- Locally saved variables. -----------------------------------------------------!
       logical               , save          :: first_time = .true.
       !------------------------------------------------------------------------------------!
@@ -665,18 +689,35 @@ module budget_utils
                                         , '    ENT.PRECIP' , '    ENT.NETRAD'              &
                                         , '  ENT.DENS.EFF' , '  ENT.PRSS.EFF'              &
                                         , '  ENT.HCAP.EFF' , '  ENT.WCAP.EFF'              &
-                                        , '  ENT.ZCAN.EFF' , '  ENT.LOSS2ATM'              &
-                                        , '  ENT.DRAINAGE' , '    ENT.RUNOFF'              &
-                                        , '   H2O.STORAGE' , '  H2O.RESIDUAL'              &
-                                        , '  H2O.DSTORAGE' , '    H2O.PRECIP'              &
-                                        , '  H2O.DENS.EFF' , '  H2O.WCAP.EFF'              &
-                                        , '  H2O.ZCAN.EFF' , '  H2O.LOSS2ATM'              &
+                                        , '  ENT.ZCAN.EFF' , '  ENT.PHEN.EFF'              &
+                                        , '  ENT.LOSS2ATM' , '  ENT.DRAINAGE'              &
+                                        , '    ENT.RUNOFF' , '   H2O.STORAGE'              &
+                                        , '  H2O.RESIDUAL' , '  H2O.DSTORAGE'              &
+                                        , '    H2O.PRECIP' , '  H2O.DENS.EFF'              &
+                                        , '  H2O.WCAP.EFF' , '  H2O.ZCAN.EFF'              &
+                                        , '  H2O.PHEN.EFF' , '  H2O.LOSS2ATM'              &
                                         , '  H2O.DRAINAGE' , '    H2O.RUNOFF'
                close(unit=86,status='keep')
             end if
          end do
          first_time = .false.
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find indices (used for reporting only).                                         !
+      !------------------------------------------------------------------------------------!
+      ksn      = csite%nlev_sfcwater(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the current enthalpy (for reporting).                                     !
+      !------------------------------------------------------------------------------------!
+      curr_can_enthalpy   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
       !------------------------------------------------------------------------------------!
 
 
@@ -691,54 +732,38 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     Compute the density effect.  This term corrects for the fact that air expands  !
-      ! or contracts as pressure or temperature changes.  Because we impose constant CAS   !
-      ! depth, some mass may leak in or out of this somewhat arbitrary layer.  For any     !
-      ! extensive [X/m2] property X [X/m2], defined as X = x*z*rho, where x is the         !
-      ! intensive property [X/kg or X/mol]], and z is the canopy air space depth, the      !
-      ! budget can be written as:                                                          !
-      !                                                                                    !
-      !    dX                  d(rho)                                                      !
-      !   ---- = I - L + x*z ----------                                                    !
-      !    dt                    dt                                                        !
-      !                                                                                    !
-      ! where I is the input flux, L is the loss flux, and rho is the density [kg/m3 or    !
-      ! mol/m3].  The density effect is the third term of the right-hand side.             !
+      !     Decompose the radiation budget.                                                !
       !------------------------------------------------------------------------------------!
-      !------ CO2. ------------------------------------------------------------------------!
-      co2curr_denseffect  = ddens_dt_effect(csite%can_depth(ipa),old_can_dmol,mid_can_dmol &
-                                           ,csite%can_dmol(ipa),old_can_co2                &
-                                           ,csite%can_co2(ipa) )
-      !------ Carbon.  Derive it from CO2. ------------------------------------------------!
+      call compute_netrad_detail(csite,ipa,rcurr_soil_rshort_net,rcurr_soil_rlong_net      &
+                                ,rcurr_sfcw_rshort_net,rcurr_sfcw_rlong_net                &
+                                ,rcurr_leaf_rshort_net,rcurr_leaf_rlong_net                &
+                                ,rcurr_wood_rshort_net,rcurr_wood_rlong_net )
+      rcurr_rshort_in       = rshort                * frqsum
+      rcurr_rshort_out      = csite%rshortup(ipa)   * frqsum
+      rcurr_rlong_in        = rlong                 * frqsum
+      rcurr_rlong_out       = csite%rlongup (ipa)   * frqsum
+      rcurr_soil_rshort_net = rcurr_soil_rshort_net * frqsum
+      rcurr_sfcw_rshort_net = rcurr_sfcw_rshort_net * frqsum
+      rcurr_leaf_rshort_net = rcurr_leaf_rshort_net * frqsum
+      rcurr_wood_rshort_net = rcurr_wood_rshort_net * frqsum
+      rcurr_soil_rlong_net  = rcurr_soil_rlong_net  * frqsum
+      rcurr_sfcw_rlong_net  = rcurr_sfcw_rlong_net  * frqsum
+      rcurr_leaf_rlong_net  = rcurr_leaf_rlong_net  * frqsum
+      rcurr_wood_rlong_net  = rcurr_wood_rlong_net  * frqsum
+      rcurr_residual     = rcurr_rshort_in + rcurr_rlong_in                                &
+                         - ( rcurr_rshort_out  + rcurr_rlong_out                           &
+                           + rcurr_soil_rshort_net + rcurr_soil_rlong_net                  &
+                           + rcurr_sfcw_rshort_net + rcurr_sfcw_rlong_net                  &
+                           + rcurr_leaf_rshort_net + rcurr_leaf_rlong_net                  &
+                           + rcurr_wood_rshort_net + rcurr_wood_rlong_net )
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Compute the density effect for carbon, using the CO2 effect.                   !
+      !------------------------------------------------------------------------------------!
       ccurr_denseffect    = co2curr_denseffect * umol_2_kgC
-      !------ Water. ----------------------------------------------------------------------!
-      wcurr_denseffect    = ddens_dt_effect(csite%can_depth(ipa),old_can_rhos,mid_can_rhos &
-                                           ,csite%can_rhos(ipa),old_can_shv                &
-                                           ,csite%can_shv(ipa))
-      !------ Enthalpy.  ------------------------------------------------------------------!
-      curr_can_enthalpy   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
-      ecurr_denseffect    = ddens_dt_effect(csite%can_depth(ipa),old_can_rhos,mid_can_rhos &
-                                           ,csite%can_rhos(ipa),old_can_enthalpy           &
-                                           ,curr_can_enthalpy)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    For the specific case of enthalpy, we also compute the pressure effect between  !
-      ! time steps.  We cannot guarantee conservation of enthalpy when we update pressure, !
-      ! because of the first law of thermodynamics (the way to address this would be to    !
-      ! use equivalent potential temperature, which is enthalpy plus pressure effect).     !
-      ! Enthalpy is preserved within one time step, once pressure is updated and remains   !
-      ! constant.                                                                          !
-      !                                                                                    !
-      !   dH             dp                                                                !
-      !  ---- = Q + z * ----                                                               !
-      !   dt             dt                                                                !
-      !                                                                                    !
-      ! where p is the canopy air space pressure, Q is the net heat exchange, z is the     !
-      ! volume per unit area (aka depth) of the canopy air space.                          !
-      !------------------------------------------------------------------------------------!
-      ecurr_prsseffect    = csite%can_depth(ipa) * (csite%can_prss(ipa) - old_can_prss)
       !------------------------------------------------------------------------------------!
 
 
@@ -753,11 +778,13 @@ module budget_utils
       ccurr_zcaneffect   = csite%cbudget_zcaneffect  (ipa) * frqsum
       ccurr_loss2yield   = csite%cbudget_loss2yield  (ipa) * frqsum
       ccurr_seedrain     = csite%cbudget_seedrain    (ipa) * frqsum
-      wcurr_wcapeffect   = csite%wbudget_wcapeffect  (ipa) * frqsum
-      wcurr_zcaneffect   = csite%wbudget_zcaneffect  (ipa) * frqsum
       ecurr_hcapeffect   = csite%ebudget_hcapeffect  (ipa) * frqsum
       ecurr_wcapeffect   = csite%ebudget_wcapeffect  (ipa) * frqsum
       ecurr_zcaneffect   = csite%ebudget_zcaneffect  (ipa) * frqsum
+      ecurr_pheneffect   = csite%ebudget_pheneffect  (ipa) * frqsum
+      wcurr_wcapeffect   = csite%wbudget_wcapeffect  (ipa) * frqsum
+      wcurr_zcaneffect   = csite%wbudget_zcaneffect  (ipa) * frqsum
+      wcurr_pheneffect   = csite%wbudget_pheneffect  (ipa) * frqsum
       !------------------------------------------------------------------------------------!
 
 
@@ -844,12 +871,13 @@ module budget_utils
                        - ( ecurr_precipgain    - ecurr_loss2atm    - ecurr_loss2drainage   &
                          - ecurr_loss2runoff   + ecurr_netrad      + ecurr_prsseffect      &
                          + ecurr_denseffect    + ecurr_hcapeffect  + ecurr_wcapeffect      &
-                         + ecurr_zcaneffect    )
+                         + ecurr_zcaneffect    + ecurr_pheneffect  )
       !----- 4. Water. --------------------------------------------------------------------!
       wcurr_residual   = wbudget_deltastorage                                              &
                        - ( wcurr_precipgain    - wcurr_loss2atm                            &
                          - wcurr_loss2drainage - wcurr_loss2runoff                         &
-                         + wcurr_denseffect    + wcurr_wcapeffect  + wcurr_zcaneffect  )
+                         + wcurr_denseffect    + wcurr_wcapeffect                          &
+                         + wcurr_zcaneffect    + wcurr_pheneffect )
       !------------------------------------------------------------------------------------!
 
 
@@ -893,7 +921,8 @@ module budget_utils
                             , abs(ecurr_denseffect        )                                &
                             , abs(ecurr_hcapeffect        )                                &
                             , abs(ecurr_wcapeffect        )                                &
-                            , abs(ecurr_zcaneffect        ) )
+                            , abs(ecurr_zcaneffect        )                                &
+                            , abs(ecurr_pheneffect        ) )
       !----- 4. Water. --------------------------------------------------------------------!
       wbudget_scale    = max( abs(wbudget_initialstorage  )                                &
                             , abs(wbudget_finalstorage    ) )                              &
@@ -904,7 +933,21 @@ module budget_utils
                             , abs(wcurr_loss2runoff       )                                &
                             , abs(wcurr_denseffect        )                                &
                             , abs(wcurr_wcapeffect        )                                &
-                            , abs(wcurr_zcaneffect        ) )
+                            , abs(wcurr_zcaneffect        )                                &
+                            , abs(wcurr_pheneffect        ) )
+      !----- 5. Radiation. ----------------------------------------------------------------!
+      rbudget_scale   = max ( abs(rcurr_rshort_in         )                                &
+                            , abs(rcurr_rshort_out        )                                &
+                            , abs(rcurr_rlong_in          )                                &
+                            , abs(rcurr_rlong_out         )                                &
+                            , abs(rcurr_soil_rshort_net   )                                &
+                            , abs(rcurr_sfcw_rshort_net   )                                &
+                            , abs(rcurr_leaf_rshort_net   )                                &
+                            , abs(rcurr_wood_rshort_net   )                                &
+                            , abs(rcurr_soil_rlong_net    )                                &
+                            , abs(rcurr_sfcw_rlong_net    )                                &
+                            , abs(rcurr_leaf_rlong_net    )                                &
+                            , abs(rcurr_wood_rlong_net    ) )
       !------------------------------------------------------------------------------------!
 
 
@@ -985,8 +1028,10 @@ module budget_utils
       csite%ebudget_hcapeffect  (ipa) = 0.0
       csite%ebudget_wcapeffect  (ipa) = 0.0
       csite%ebudget_zcaneffect  (ipa) = 0.0
+      csite%ebudget_pheneffect  (ipa) = 0.0
       csite%wbudget_wcapeffect  (ipa) = 0.0
       csite%wbudget_zcaneffect  (ipa) = 0.0
+      csite%wbudget_pheneffect  (ipa) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -996,21 +1041,25 @@ module budget_utils
       ! some significant leak of CO2, water, or energy.                                    !
       !------------------------------------------------------------------------------------!
       if (checkbudget) then
+
          !----- Look for violation of conservation in all quantities. ---------------------!
          co2budget_tolerance = tol_subday_budget * co2budget_scale
          cbudget_tolerance   = tol_carbon_budget * cbudget_scale
          ebudget_tolerance   = tol_subday_budget * ebudget_scale
          wbudget_tolerance   = tol_subday_budget * wbudget_scale
+         rbudget_tolerance   = tol_carbon_budget * rbudget_scale
          !---------------------------------------------------------------------------------!
 
 
 
          !----- Look for violation of conservation in all quantities. ---------------------!
-         co2_fine      = abs(co2curr_residual) <= co2budget_tolerance
-         carbon_fine   = abs(ccurr_residual)   <= cbudget_tolerance
-         enthalpy_fine = abs(ecurr_residual)   <= ebudget_tolerance
-         water_fine    = abs(wcurr_residual)   <= wbudget_tolerance
-         budget_fine   = co2_fine .and. carbon_fine .and. enthalpy_fine .and. water_fine
+         co2_fine       = abs(co2curr_residual) <= co2budget_tolerance
+         carbon_fine    = abs(ccurr_residual  ) <= cbudget_tolerance
+         enthalpy_fine  = abs(ecurr_residual  ) <= ebudget_tolerance
+         water_fine     = abs(wcurr_residual  ) <= wbudget_tolerance
+         radiation_fine = abs(rcurr_residual  ) <= rbudget_tolerance
+         budget_fine    =      co2_fine       .and. carbon_fine    .and. enthalpy_fine     &
+                         .and. water_fine     .and. radiation_fine
          !---------------------------------------------------------------------------------!
 
 
@@ -1021,9 +1070,13 @@ module budget_utils
             cpatch => csite%patch(ipa)
             patch_lai = 0.0
             patch_wai = 0.0
+            nco_leaf  = 0
+            nco_wood  = 0
             do ico=1,cpatch%ncohorts
                patch_lai = patch_lai + cpatch%lai(ico)
                patch_wai = patch_wai + cpatch%wai(ico)
+               if ( cpatch%leaf_resolvable(ico)) nco_leaf = nco_leaf + 1
+               if ( cpatch%wood_resolvable(ico)) nco_wood = nco_wood + 1
             end do
          end if
          !---------------------------------------------------------------------------------!
@@ -1040,10 +1093,18 @@ module budget_utils
                current_time%year,current_time%month,current_time%date ,current_time%time
             write (unit=*,fmt=fmti ) ' IPA               : ',ipa
             write (unit=*,fmt=fmti ) ' DIST_TYPE         : ',csite%dist_type(ipa)
+            write (unit=*,fmt=fmti ) ' N_LEAF_RESOLVABLE : ',nco_leaf
+            write (unit=*,fmt=fmti ) ' N_WOOD_RESOLVABLE : ',nco_wood
+            write (unit=*,fmt=fmti ) ' NLEV_SFCWATER     : ',ksn
+            write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt=fmtf ) ' AGE               : ',csite%age(ipa)
             write (unit=*,fmt=fmtf ) ' LAI               : ',patch_lai
             write (unit=*,fmt=fmtf ) ' WAI               : ',patch_wai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT        : ',csite%veg_height(ipa)
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') '  Canopy air space properties'
+            write (unit=*,fmt='(a)') ' .................................................. '
             write (unit=*,fmt=fmtf ) ' CAN_DEPTH         : ',csite%can_depth(ipa)
             write (unit=*,fmt=fmtf ) ' OLD_CAN_PRSS      : ',old_can_prss
             write (unit=*,fmt=fmtf ) ' CAN_PRSS          : ',csite%can_prss(ipa)
@@ -1056,10 +1117,8 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' CAN_CO2           : ',csite%can_co2 (ipa)
             write (unit=*,fmt=fmtf ) ' OLD_CAN_CO2       : ',old_can_co2
             write (unit=*,fmt=fmtf ) ' OLD_CAN_RHOS      : ',old_can_rhos
-            write (unit=*,fmt=fmtf ) ' MID_CAN_RHOS      : ',mid_can_rhos
             write (unit=*,fmt=fmtf ) ' CAN_RHOS          : ',csite%can_rhos(ipa)
             write (unit=*,fmt=fmtf ) ' OLD_CAN_DMOL      : ',old_can_dmol
-            write (unit=*,fmt=fmtf ) ' MID_CAN_DMOL      : ',mid_can_dmol
             write (unit=*,fmt=fmtf ) ' CAN_DMOL          : ',csite%can_dmol(ipa)
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') ' '
@@ -1069,7 +1128,9 @@ module budget_utils
             write (unit=*,fmt=fmtl ) ' CARBON_FINE       : ',carbon_fine
             write (unit=*,fmt=fmtl ) ' ENTHALPY_FINE     : ',enthalpy_fine
             write (unit=*,fmt=fmtl ) ' WATER_FINE        : ',water_fine
-            write (unit=*,fmt=fmtf ) ' REL_TOLERANCE     : ',tol_subday_budget
+            write (unit=*,fmt=fmtl ) ' RADIATION_FINE    : ',radiation_fine
+            write (unit=*,fmt=fmtf ) ' REL_TOLER_SUBDAY  : ',tol_subday_budget
+            write (unit=*,fmt=fmtf ) ' REL_TOLER_CARBON  : ',tol_carbon_budget
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '  CO2 Budget'
@@ -1108,37 +1169,57 @@ module budget_utils
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '  Enthalpy budget'
             write (unit=*,fmt='(a)') ' .................................................. '
-            write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',ebudget_tolerance
-            write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',ecurr_residual
-            write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',ebudget_initialstorage
-            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE   : ',ebudget_finalstorage
-            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE   : ',ebudget_deltastorage
-            write (unit=*,fmt=fmtf ) ' PRECIPGAIN      : ',ecurr_precipgain
-            write (unit=*,fmt=fmtf ) ' NETRAD          : ',ecurr_netrad
-            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT  : ',ecurr_denseffect
-            write (unit=*,fmt=fmtf ) ' PRESSURE_EFFECT : ',ecurr_prsseffect
-            write (unit=*,fmt=fmtf ) ' VEG_HCAP_EFFECT : ',ecurr_hcapeffect
-            write (unit=*,fmt=fmtf ) ' CAPACITY_EFFECT : ',ecurr_wcapeffect
-            write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT : ',ecurr_zcaneffect
-            write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',ecurr_loss2atm
-            write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE   : ',ecurr_loss2drainage
-            write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF     : ',ecurr_loss2runoff
+            write (unit=*,fmt=fmtf ) ' TOLERANCE        : ',ebudget_tolerance
+            write (unit=*,fmt=fmtf ) ' RESIDUAL         : ',ecurr_residual
+            write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE  : ',ebudget_initialstorage
+            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE    : ',ebudget_finalstorage
+            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE    : ',ebudget_deltastorage
+            write (unit=*,fmt=fmtf ) ' PRECIPGAIN       : ',ecurr_precipgain
+            write (unit=*,fmt=fmtf ) ' NETRAD           : ',ecurr_netrad
+            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT   : ',ecurr_denseffect
+            write (unit=*,fmt=fmtf ) ' PRESSURE_EFFECT  : ',ecurr_prsseffect
+            write (unit=*,fmt=fmtf ) ' VEG_HCAP_EFFECT  : ',ecurr_hcapeffect
+            write (unit=*,fmt=fmtf ) ' CAPACITY_EFFECT  : ',ecurr_wcapeffect
+            write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT  : ',ecurr_zcaneffect
+            write (unit=*,fmt=fmtf ) ' PHENOLOGY_EFFECT : ',ecurr_pheneffect
+            write (unit=*,fmt=fmtf ) ' LOSS2ATM         : ',ecurr_loss2atm
+            write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE    : ',ecurr_loss2drainage
+            write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF      : ',ecurr_loss2runoff
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '  Water budget'
             write (unit=*,fmt='(a)') ' .................................................. '
-            write (unit=*,fmt=fmtf ) ' TOLERANCE       : ',wbudget_tolerance
-            write (unit=*,fmt=fmtf ) ' RESIDUAL        : ',wcurr_residual
-            write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE : ',wbudget_initialstorage
-            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE   : ',wbudget_finalstorage
-            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE   : ',wbudget_deltastorage
-            write (unit=*,fmt=fmtf ) ' PRECIPGAIN      : ',wcurr_precipgain
-            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT  : ',wcurr_denseffect
-            write (unit=*,fmt=fmtf ) ' CAPACITY_EFFECT : ',wcurr_wcapeffect
-            write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT : ',wcurr_zcaneffect
-            write (unit=*,fmt=fmtf ) ' LOSS2ATM        : ',wcurr_loss2atm
-            write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE   : ',wcurr_loss2drainage
-            write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF     : ',wcurr_loss2runoff
+            write (unit=*,fmt=fmtf ) ' TOLERANCE        : ',wbudget_tolerance
+            write (unit=*,fmt=fmtf ) ' RESIDUAL         : ',wcurr_residual
+            write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE  : ',wbudget_initialstorage
+            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE    : ',wbudget_finalstorage
+            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE    : ',wbudget_deltastorage
+            write (unit=*,fmt=fmtf ) ' PRECIPGAIN       : ',wcurr_precipgain
+            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT   : ',wcurr_denseffect
+            write (unit=*,fmt=fmtf ) ' CAPACITY_EFFECT  : ',wcurr_wcapeffect
+            write (unit=*,fmt=fmtf ) ' CANDEPTH_EFFECT  : ',wcurr_zcaneffect
+            write (unit=*,fmt=fmtf ) ' PHENOLOGY_EFFECT : ',wcurr_pheneffect
+            write (unit=*,fmt=fmtf ) ' LOSS2ATM         : ',wcurr_loss2atm
+            write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE    : ',wcurr_loss2drainage
+            write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF      : ',wcurr_loss2runoff
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') ' '
+            write (unit=*,fmt='(a)') '  Radiation budget'
+            write (unit=*,fmt='(a)') ' .................................................. '
+            write (unit=*,fmt=fmtf ) ' TOLERANCE         : ',rbudget_tolerance
+            write (unit=*,fmt=fmtf ) ' RESIDUAL          : ',rcurr_residual
+            write (unit=*,fmt=fmtf ) ' RSHORT_IN         : ',rcurr_rshort_in
+            write (unit=*,fmt=fmtf ) ' RSHORT_OUT        : ',rcurr_rshort_out
+            write (unit=*,fmt=fmtf ) ' SOIL_RSHORT_NET   : ',rcurr_soil_rshort_net
+            write (unit=*,fmt=fmtf ) ' SFCW_RSHORT_NET   : ',rcurr_sfcw_rshort_net
+            write (unit=*,fmt=fmtf ) ' LEAF_RSHORT_NET   : ',rcurr_leaf_rshort_net
+            write (unit=*,fmt=fmtf ) ' WOOD_RSHORT_NET   : ',rcurr_wood_rshort_net
+            write (unit=*,fmt=fmtf ) ' RLONG_IN          : ',rcurr_rlong_in
+            write (unit=*,fmt=fmtf ) ' RLONG_OUT         : ',rcurr_rlong_out
+            write (unit=*,fmt=fmtf ) ' SOIL_RLONG_NET    : ',rcurr_soil_rlong_net
+            write (unit=*,fmt=fmtf ) ' SFCW_RLONG_NET    : ',rcurr_sfcw_rlong_net
+            write (unit=*,fmt=fmtf ) ' LEAF_RLONG_NET    : ',rcurr_leaf_rlong_net
+            write (unit=*,fmt=fmtf ) ' WOOD_RLONG_NET    : ',rcurr_wood_rlong_net
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') ' '
             write (unit=*,fmt='(a)') '  A note on budget check'
@@ -1198,6 +1279,7 @@ module budget_utils
             ecurr_hcapeffect       = ecurr_hcapeffect       * ent_factor
             ecurr_wcapeffect       = ecurr_wcapeffect       * ent_factor
             ecurr_zcaneffect       = ecurr_zcaneffect       * ent_factor
+            ecurr_pheneffect       = ecurr_pheneffect       * ent_factor
             ecurr_loss2atm         = ecurr_loss2atm         * ent_factor
             ecurr_loss2drainage    = ecurr_loss2drainage    * ent_factor
             ecurr_loss2runoff      = ecurr_loss2runoff      * ent_factor
@@ -1207,6 +1289,7 @@ module budget_utils
             wcurr_denseffect       = wcurr_denseffect       * h2o_factor
             wcurr_wcapeffect       = wcurr_wcapeffect       * h2o_factor
             wcurr_zcaneffect       = wcurr_zcaneffect       * h2o_factor
+            wcurr_pheneffect       = wcurr_pheneffect       * h2o_factor
             wcurr_loss2atm         = wcurr_loss2atm         * h2o_factor
             wcurr_loss2drainage    = wcurr_loss2drainage    * h2o_factor
             wcurr_loss2runoff      = wcurr_loss2runoff      * h2o_factor
@@ -1231,11 +1314,11 @@ module budget_utils
                , ecurr_residual         , ebudget_deltastorage   , ecurr_precipgain        &
                , ecurr_netrad           , ecurr_denseffect       , ecurr_prsseffect        &
                , ecurr_hcapeffect       , ecurr_wcapeffect       , ecurr_zcaneffect        &
-               , ecurr_loss2atm         , ecurr_loss2drainage    , ecurr_loss2runoff       &
-               , wbudget_finalstorage   , wcurr_residual         , wbudget_deltastorage    &
-               , wcurr_precipgain       , wcurr_denseffect       , wcurr_wcapeffect        &
-               , wcurr_zcaneffect       , wcurr_loss2atm         , wcurr_loss2drainage     &
-               , wcurr_loss2runoff
+               , ecurr_pheneffect       , ecurr_loss2atm         , ecurr_loss2drainage     &
+               , ecurr_loss2runoff      , wbudget_finalstorage   , wcurr_residual          &
+               , wbudget_deltastorage   , wcurr_precipgain       , wcurr_denseffect        &
+               , wcurr_wcapeffect       , wcurr_zcaneffect       , wcurr_pheneffect        &
+               , wcurr_loss2atm         , wcurr_loss2drainage    , wcurr_loss2runoff
             close(unit=86,status='keep')
             !------------------------------------------------------------------------------!
          end if
@@ -1281,32 +1364,73 @@ module budget_utils
       type(patchtype), pointer    :: cpatch
       integer                     :: k
       integer                     :: ico
+      real                        :: soil_storage
+      real                        :: sfcwater_storage
+      real                        :: cas_storage
+      real                        :: veg_storage
       !------------------------------------------------------------------------------------!
 
 
-      compute_water_storage = 0.0
+      !----- Alias for current patch. -----------------------------------------------------!
       cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
 
-      !----- 1. Add the water stored in the soil. -----------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      ! 1.  Water stored at the soil.                                                      !
+      !------------------------------------------------------------------------------------!
+      soil_storage = 0.0
       do k = lsl, nzg
-         compute_water_storage = compute_water_storage                                     &
-                               + csite%soil_water(k,ipa) * dslz(k) * wdns
+         soil_storage = soil_storage + csite%soil_water(k,ipa) * dslz(k) * wdns
       end do
-      !----- 2. Add the water stored in the temporary surface water/snow. -----------------!
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 2.  Water stored at the temporary snow/water surface layer.                        !
+      !------------------------------------------------------------------------------------!
+      sfcwater_storage = 0.0
       do k = 1, csite%nlev_sfcwater(ipa)
-         compute_water_storage = compute_water_storage + csite%sfcwater_mass(k,ipa)
+         sfcwater_storage = sfcwater_storage + csite%sfcwater_mass(k,ipa)
       end do
-      !----- 3. Add the water vapour in the canopy air space. -----------------------------!
-      compute_water_storage = compute_water_storage                                        &
-                            + csite%can_shv(ipa) * csite%can_depth(ipa)                    &
-                            * csite%can_rhos(ipa)
-      !----- 4. Add the water on the leaf and wood (surface and internal water). ----------!
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 3.  Convert specific humidty to water storage in the canopy air space.             !
+      !------------------------------------------------------------------------------------!
+      cas_storage = csite%can_rhos(ipa) * csite%can_depth(ipa) * csite%can_shv(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 4. Compute the water stored in the plants.  Because we do not solve the water      !
+      !    cycle for small cohorts, we ignore them -- but we ought to account for these    !
+      !    switches when we update the cohort status.                                      !
+      !------------------------------------------------------------------------------------!
+      veg_storage = 0.0
       do ico = 1,cpatch%ncohorts
-         compute_water_storage = compute_water_storage + cpatch%leaf_water    (ico)        &
-                                                       + cpatch%leaf_water_im2(ico)        &
-                                                       + cpatch%wood_water    (ico)        &
-                                                       + cpatch%wood_water_im2(ico)
+         !----- Leaves. -------------------------------------------------------------------!
+         if (cpatch%leaf_resolvable(ico)) then
+            veg_storage = veg_storage + cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !----- Wood. ---------------------------------------------------------------------!
+         if (cpatch%wood_resolvable(ico)) then
+            veg_storage = veg_storage + cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)
+         end if
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
+
+
+      !----- 5. Integrate the total water in ED-2.2. --------------------------------------!
+      compute_water_storage = soil_storage + sfcwater_storage + cas_storage + veg_storage
+      !------------------------------------------------------------------------------------!
 
       return
    end function compute_water_storage
@@ -1323,7 +1447,102 @@ module budget_utils
    !    This function computs the total net radiation, by adding the radiation that        !
    ! interacts with the different surfaces.                                                !
    !---------------------------------------------------------------------------------------!
-   real function compute_netrad(csite,ipa)
+   subroutine compute_netrad_detail(csite,ipa,soil_rshort_net,soil_rlong_net               &
+                                   ,sfcw_rshort_net,sfcw_rlong_net,leaf_rshort_net         &
+                                   ,leaf_rlong_net,wood_rshort_net,wood_rlong_net )
+      use grid_coms     , only : nzs       ! ! intent(in)
+      use ed_state_vars , only : sitetype  & ! structure
+                               , patchtype ! ! structure
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype) , target      :: csite
+      integer        , intent(in)  :: ipa
+      real           , intent(out) :: soil_rshort_net
+      real           , intent(out) :: soil_rlong_net
+      real           , intent(out) :: sfcw_rshort_net
+      real           , intent(out) :: sfcw_rlong_net
+      real           , intent(out) :: leaf_rshort_net
+      real           , intent(out) :: leaf_rlong_net
+      real           , intent(out) :: wood_rshort_net
+      real           , intent(out) :: wood_rlong_net
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype), pointer     :: cpatch
+      integer                      :: k
+      integer                      :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Alias for current patch. -----------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      ! 1.  Soil.                                                                          !
+      !------------------------------------------------------------------------------------!
+      soil_rshort_net = csite%rshort_g(ipa)
+      soil_rlong_net  = csite%rlong_g (ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      ! 2.  Surface water.                                                                 !
+      !------------------------------------------------------------------------------------!
+      sfcw_rshort_net = 0.0
+      sfcw_rlong_net  = csite%rlong_s(ipa)
+      do k = 1,nzs
+         sfcw_rshort_net = sfcw_rshort_net + csite%rshort_s(k,ipa)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      ! 3.  Leaf.  Skip cohorts when they are not resolvable.                              !
+      !------------------------------------------------------------------------------------!
+      leaf_rshort_net = 0.0
+      leaf_rlong_net  = 0.0
+      do ico = 1,cpatch%ncohorts
+         !------ Leaves. ------------------------------------------------------------------!
+         if (cpatch%leaf_resolvable(ico)) then
+            leaf_rshort_net = leaf_rshort_net + cpatch%rshort_l(ico)
+            leaf_rlong_net  = leaf_rlong_net  + cpatch%rlong_l (ico)
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      ! 4.  Wood.  Skip cohorts when they are not resolvable.                              !
+      !------------------------------------------------------------------------------------!
+      wood_rshort_net = 0.0
+      wood_rlong_net  = 0.0
+      do ico = 1,cpatch%ncohorts
+         !------ Wood. --------------------------------------------------------------------!
+         if (cpatch%wood_resolvable(ico)) then
+            wood_rshort_net = wood_rshort_net + cpatch%rshort_w(ico)
+            wood_rlong_net  = wood_rlong_net  + cpatch%rlong_w (ico)
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine compute_netrad_detail
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This function computs the total net radiation, by adding the radiation that        !
+   ! interacts with the different surfaces.                                                !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function compute_netrad8(csite,ipa)
       use ed_state_vars , only : sitetype  & ! structure
                                , patchtype ! ! structure
       implicit none
@@ -1332,25 +1551,63 @@ module budget_utils
       integer        , intent(in) :: ipa
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer    :: cpatch
+      integer                     :: ksn
       integer                     :: k
       integer                     :: ico
+      real(kind=8)                :: soil_netrad
+      real(kind=8)                :: sfcwater_netrad
+      real(kind=8)                :: veg_netrad
       !------------------------------------------------------------------------------------!
 
-      cpatch => csite%patch(ipa)
 
-      !----- 1. Add the ground components -------------------------------------------------!
-      compute_netrad = csite%rshort_g(ipa) + csite%rlong_g(ipa) + csite%rlong_s(ipa)
-      !----- 2. Add the shortwave radiation that reaches each snow/water layer ------------!
-      do k = 1, csite%nlev_sfcwater(ipa)
-         compute_netrad = compute_netrad + csite%rshort_s(k,ipa)
+      !----- Alias for current patch and number of snow/surface water layers. -------------!
+      cpatch => csite%patch(ipa)
+      ksn = csite%nlev_sfcwater(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      ! 1.  Soil.                                                                          !
+      !------------------------------------------------------------------------------------!
+      soil_netrad = dble(csite%rshort_g(ipa)) + dble(csite%rlong_g(ipa))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      ! 2.  Surface water.                                                                 !
+      !------------------------------------------------------------------------------------!
+      sfcwater_netrad = dble(csite%rlong_s(ipa))
+      do k = 1,ksn
+         sfcwater_netrad = sfcwater_netrad + dble(csite%rshort_s(k,ipa))
       end do
-      !----- 3. Add the radiation components that is absorbed by leaves and branches. -----!
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      ! 3.  Vegetation.  Skip cohorts when they are not resolvable.                        !
+      !------------------------------------------------------------------------------------!
+      veg_netrad = 0.d0
       do ico = 1,cpatch%ncohorts
-         compute_netrad = compute_netrad + cpatch%rshort_l(ico) + cpatch%rlong_l(ico)      &
-                                         + cpatch%rshort_w(ico) + cpatch%rlong_w(ico)
+         !------ Leaves. ------------------------------------------------------------------!
+         if (cpatch%leaf_resolvable(ico)) then
+            veg_netrad = veg_netrad                                                        &
+                       + dble(cpatch%rshort_l(ico)) + dble(cpatch%rlong_l(ico))
+         end if
+         !------ Wood. --------------------------------------------------------------------!
+         if (cpatch%wood_resolvable(ico)) then
+            veg_netrad = veg_netrad                                                        &
+                       + dble(cpatch%rshort_w(ico)) + dble(cpatch%rlong_w(ico))
+         end if
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
+
+      !------ Aggregate radiation. --------------------------------------------------------!
+      compute_netrad8 = soil_netrad + sfcwater_netrad + veg_netrad
+      !------------------------------------------------------------------------------------!
+
       return
-   end function compute_netrad
+   end function compute_netrad8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1388,9 +1645,14 @@ module budget_utils
       !------------------------------------------------------------------------------------!
 
 
+      !----- Alias for current patch. -----------------------------------------------------!
       cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
 
-      !----- 1. Computing internal energy stored at the soil. -----------------------------!
+
+      !------------------------------------------------------------------------------------!
+      ! 1.  Internal energy stored at the soil.                                            !
+      !------------------------------------------------------------------------------------!
       soil_storage = 0.0
       do k = lsl, nzg
          soil_storage = soil_storage + csite%soil_energy(k,ipa) * dslz(k)
@@ -1399,8 +1661,8 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
-      !   2. Computing internal energy stored at the temporary snow/water sfc. layer.      !
-      !      Converting it to J/m2. 
+      ! 2.  Internal energy stored at the temporary snow/water surface layer.              !
+      !     Convert units to J/m2.                                                         !
       !------------------------------------------------------------------------------------!
       sfcwater_storage = 0.0
       do k = 1, csite%nlev_sfcwater(ipa)
@@ -1411,7 +1673,7 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
-      ! 3. Find canopy air specific enthalpy then compute total enthalpy storage.          !
+      ! 3.  Find canopy air specific enthalpy then compute total enthalpy storage.         !
       !------------------------------------------------------------------------------------!
       can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
       cas_storage  = csite%can_rhos(ipa) * csite%can_depth(ipa) * can_enthalpy
@@ -1419,16 +1681,28 @@ module budget_utils
 
 
       !------------------------------------------------------------------------------------!
-      ! 4. Compute the internal energy stored in the plants.                               !
+      ! 4.  Compute the internal energy stored in the plants.  Because we do not solve the !
+      !     energy cycle for small cohorts, we ignore them -- but we ought to account for  !
+      !     these switches when we update the cohort status.                               !
       !------------------------------------------------------------------------------------!
       veg_storage = 0.0
       do ico = 1,cpatch%ncohorts
-         veg_storage = veg_storage + cpatch%leaf_energy(ico) + cpatch%wood_energy(ico)
+         !----- Leaves. -------------------------------------------------------------------!
+         if (cpatch%leaf_resolvable(ico)) then
+            veg_storage = veg_storage + cpatch%leaf_energy(ico)
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !----- Wood. ---------------------------------------------------------------------!
+         if (cpatch%wood_resolvable(ico)) then
+            veg_storage = veg_storage + cpatch%wood_energy(ico)
+         end if
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
 
-      !----- 5. Integrating the total energy in ED. ---------------------------------------!
+      !----- 5. Integrate the total enthalpy in ED-2.2. -----------------------------------!
       compute_enthalpy_storage = soil_storage + sfcwater_storage + cas_storage + veg_storage
       !------------------------------------------------------------------------------------!
 
@@ -1618,15 +1892,13 @@ module budget_utils
    ! changes in density associated with changes in pressure, temperature, and humidity,    !
    ! in order to satisfy the ideal gas law.                                                !
    !---------------------------------------------------------------------------------------!
-   real function ddens_dt_effect(depth,old_dens,mid_dens,now_dens,old_prop,now_prop)
+   real(kind=8) function ddens_dt_effect8(depth,old_dens,now_dens,now_prop)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real, intent(in) :: depth      ! Depth (volume per unit area)
-      real, intent(in) :: old_dens   ! Density before met update
-      real, intent(in) :: mid_dens   ! Density after met update
-      real, intent(in) :: now_dens   ! Current density
-      real, intent(in) :: old_prop   ! Property before met update
-      real, intent(in) :: now_prop   ! Property before met update
+      real(kind=8), intent(in) :: depth      ! Depth (volume per unit area)
+      real(kind=8), intent(in) :: old_dens   ! Density before met update
+      real(kind=8), intent(in) :: now_dens   ! Current density
+      real(kind=8), intent(in) :: now_prop   ! Current property
       !------------------------------------------------------------------------------------!
 
 
@@ -1634,12 +1906,61 @@ module budget_utils
       !     We use the new value of the property because density is updated the property   !
       ! has been updated.                                                                  !
       !------------------------------------------------------------------------------------!
-      ddens_dt_effect = depth * ( (mid_dens - old_dens) * old_prop                         &
-                                + (now_dens - mid_dens) * now_prop )
+      ddens_dt_effect8 = depth * ( now_dens - old_dens ) * now_prop
       !------------------------------------------------------------------------------------!
 
       return
-   end function ddens_dt_effect
+   end function ddens_dt_effect8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the change of enthalpy in the canopy air space due to      !
+   ! changes in pressure.  We cannot guarantee conservation of enthalpy when we update     !
+   ! pressure, because of the first law of thermodynamics.  The bulk enthalpy budget is    !
+   !                                                                                       !
+   !   dH             dp                                                                   !
+   !  ---- = Q + z * ----                                                                  !
+   !   dt             dt                                                                   !
+   !                                                                                       !
+   ! where p is the canopy air space pressure, Q is the net heat exchange, z is the        !
+   ! volume per unit area (aka depth) of the canopy air space.  We don't calculate the     !
+   ! pressure effect directly from the equation above, because we back-calculate enthalpy  !
+   ! changes from potential temperature.   Instead, we use that H = r * z * h, and assume  !
+   ! that z does not vary within one time step.  Also, because the change in enthalpy is   !
+   ! adiabatic when we update pressure, Q = 0, yielding:                                   !
+   !                                                                                       !
+   !  d(r*h)     dp                                                                        !
+   ! -------- = ----                                                                       !
+   !    dt       dt                                                                        !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function find_prss_effect8(depth,old_dens,now_dens,old_enthalpy            &
+                                          ,now_enthalpy)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: depth        ! Depth (volume per unit area)
+      real(kind=8), intent(in) :: old_dens     ! Density before met update
+      real(kind=8), intent(in) :: now_dens     ! Current density
+      real(kind=8), intent(in) :: old_enthalpy ! Previous specific enthalpy
+      real(kind=8), intent(in) :: now_enthalpy ! Current specific enthalpy
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     We assume pressure effect to be the change in enthalpy before we update        !
+      ! density.                                                                           !
+      !------------------------------------------------------------------------------------!
+      find_prss_effect8 = depth * ( now_dens * now_enthalpy - old_dens * old_enthalpy )
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function find_prss_effect8
    !=======================================================================================!
    !=======================================================================================!
 end module budget_utils

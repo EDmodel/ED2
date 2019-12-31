@@ -7088,7 +7088,7 @@ subroutine init_dt_thermo_params()
    !      Tolerances.  Following Stefan Olin's suggestion on the ED-2.2 model description  !
    ! paper, we use a stricter tolerance, by default the truncation tolerance (about 1e-5). !
    ! For carbon, we use 10 times the the values for the energy and water because the       !
-   ! solver uses single-precision.
+   ! solver uses single-precision.                                                         !
    !---------------------------------------------------------------------------------------!
    tol_subday_budget = r_tol_trunc
    tol_carbon_budget = 10. * r_tol_trunc
@@ -7396,6 +7396,7 @@ subroutine init_derived_params_after_xml()
    use detailed_coms        , only : idetailed                 ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf                  & ! intent(in)
                                    , iallom                    & ! intent(in)
+                                   , ivegt_dynamics            & ! intent(in)
                                    , lianas_included           ! ! intent(out)
    use ed_max_dims          , only : n_pft                     & ! intent(in)
                                    , str_len                   & ! intent(in)
@@ -7646,6 +7647,7 @@ subroutine init_derived_params_after_xml()
    use decomp_coms          , only : f0_msc                    & ! intent(in)
                                    , f0_psc                    & ! intent(in)
                                    , f0_ssc                    ! ! intent(out)
+   use phenology_coms      , only : repro_scheme                ! ! intent(in)
    use farq_leuning         , only : arrhenius                 & ! function
                                    , collatz                   ! ! function
    use plant_hydro          , only : psi2rwc                   & ! function
@@ -7817,6 +7819,17 @@ subroutine init_derived_params_after_xml()
       repro_min_dbh(ipft) = h2dbh(repro_min_h(ipft),ipft)
    end do
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    In case the user does not want reproduction (or in case vegetation dynamics is set !
+   ! to zero, set seedling mortality to one, so nothing will become recruit.               !
+   !---------------------------------------------------------------------------------------!
+   if ( repro_scheme == 0 .or. ivegt_dynamics == 0 ) then
+      seedling_mortality(:) = 1.0
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!

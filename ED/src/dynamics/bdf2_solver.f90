@@ -23,10 +23,10 @@ module bdf2_solver
    !
    !==============================================================================
 
-   subroutine bdf2_integ(ibuff,cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
+   subroutine bdf2_integ(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
      use grid_coms,only         : nzg
-     use rk4_coms,only          : effarea_heat,rk4site,rk4patchtype,rk4aux &
+     use rk4_coms,only          : effarea_heat,rk4site,rk4patchtype &
                                 , bdf2patchtype,checkbudget,ibranch_thermo
      use ed_misc_coms,only    : fast_diagnostics
      use ed_state_vars,only   : patchtype
@@ -40,7 +40,6 @@ module bdf2_solver
      implicit none
      
      ! define the previous,current and next patch states
-     integer, intent(in)                        :: ibuff
      integer                                    :: nstate
      real(kind=8),pointer,dimension(:)          :: Y
      real(kind=8),pointer,dimension(:)          :: Yf
@@ -708,7 +707,7 @@ module bdf2_solver
      ! ============================================================
      
 
-     eflxac = rk4aux(ibuff)%hcapcan*(ynext%can_enthalpy-ycurr%can_enthalpy)/dtf  - &
+     eflxac = ycurr%hcapcan*(ynext%can_enthalpy-ycurr%can_enthalpy)/dtf  - &
           (dydt%avg_sensible_gc + ycurr%qwflxsc + ycurr%qwflxgc    + &
           hflxlc_tot + qwflxlc_tot + qtransp_tot + hflxwc_tot + qwflxwc_tot)
 

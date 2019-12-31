@@ -1348,6 +1348,10 @@ module ed_state_vars
       !<Contribution of CAS depth change on change in the final storage
       !<(kg_H2O/m2/s)
 
+      real , pointer,dimension(:) :: wbudget_pheneffect
+      !<Effect of phenology status (resolvable flag) on change in the final storage
+      !<(kg_H2O/m2/s)
+
       real , pointer,dimension(:) :: wbudget_precipgain
       !<Precipitation [kg_H2O/m2/s]
 
@@ -1386,6 +1390,10 @@ module ed_state_vars
 
       real , pointer,dimension(:) :: ebudget_zcaneffect
       !<Mean change in storage due to CAS depth change
+      !<(J/m2/s)
+
+      real , pointer,dimension(:) :: ebudget_pheneffect
+      !<Effect of phenology status (resolvable flag) on change in the final storage
       !<(J/m2/s)
 
       real , pointer,dimension(:) :: ebudget_loss2runoff
@@ -4966,6 +4974,7 @@ module ed_state_vars
       allocate(csite%wbudget_denseffect            (              npatches))
       allocate(csite%wbudget_wcapeffect            (              npatches))
       allocate(csite%wbudget_zcaneffect            (              npatches))
+      allocate(csite%wbudget_pheneffect            (              npatches))
       allocate(csite%wbudget_precipgain            (              npatches))
       allocate(csite%wbudget_loss2runoff           (              npatches))
       allocate(csite%wbudget_loss2drainage         (              npatches))
@@ -4977,6 +4986,7 @@ module ed_state_vars
       allocate(csite%ebudget_hcapeffect            (              npatches))
       allocate(csite%ebudget_wcapeffect            (              npatches))
       allocate(csite%ebudget_zcaneffect            (              npatches))
+      allocate(csite%ebudget_pheneffect            (              npatches))
       allocate(csite%ebudget_loss2runoff           (              npatches))
       allocate(csite%ebudget_loss2drainage         (              npatches))
       allocate(csite%ebudget_netrad                (              npatches))
@@ -7164,6 +7174,7 @@ module ed_state_vars
       nullify(csite%wbudget_denseffect         )
       nullify(csite%wbudget_wcapeffect         )
       nullify(csite%wbudget_zcaneffect         )
+      nullify(csite%wbudget_pheneffect         )
       nullify(csite%wbudget_precipgain         )
       nullify(csite%wbudget_loss2runoff        )
       nullify(csite%wbudget_loss2drainage      )
@@ -7175,6 +7186,7 @@ module ed_state_vars
       nullify(csite%ebudget_hcapeffect         )
       nullify(csite%ebudget_wcapeffect         )
       nullify(csite%ebudget_zcaneffect         )
+      nullify(csite%ebudget_pheneffect         )
       nullify(csite%ebudget_loss2runoff        )
       nullify(csite%ebudget_loss2drainage      )
       nullify(csite%ebudget_netrad             )
@@ -8312,6 +8324,7 @@ module ed_state_vars
       if(associated(csite%wbudget_denseffect         )) deallocate(csite%wbudget_denseffect         )
       if(associated(csite%wbudget_wcapeffect         )) deallocate(csite%wbudget_wcapeffect         )
       if(associated(csite%wbudget_zcaneffect         )) deallocate(csite%wbudget_zcaneffect         )
+      if(associated(csite%wbudget_pheneffect         )) deallocate(csite%wbudget_pheneffect         )
       if(associated(csite%wbudget_precipgain         )) deallocate(csite%wbudget_precipgain         )
       if(associated(csite%wbudget_loss2runoff        )) deallocate(csite%wbudget_loss2runoff        )
       if(associated(csite%wbudget_loss2drainage      )) deallocate(csite%wbudget_loss2drainage      )
@@ -8323,6 +8336,7 @@ module ed_state_vars
       if(associated(csite%ebudget_hcapeffect         )) deallocate(csite%ebudget_hcapeffect         )
       if(associated(csite%ebudget_wcapeffect         )) deallocate(csite%ebudget_wcapeffect         )
       if(associated(csite%ebudget_zcaneffect         )) deallocate(csite%ebudget_zcaneffect         )
+      if(associated(csite%ebudget_pheneffect         )) deallocate(csite%ebudget_pheneffect         )
       if(associated(csite%ebudget_loss2runoff        )) deallocate(csite%ebudget_loss2runoff        )
       if(associated(csite%ebudget_loss2drainage      )) deallocate(csite%ebudget_loss2drainage      )
       if(associated(csite%ebudget_netrad             )) deallocate(csite%ebudget_netrad             )
@@ -9486,6 +9500,7 @@ module ed_state_vars
          osite%wbudget_denseffect         (opa) = isite%wbudget_denseffect         (ipa)
          osite%wbudget_wcapeffect         (opa) = isite%wbudget_wcapeffect         (ipa)
          osite%wbudget_zcaneffect         (opa) = isite%wbudget_zcaneffect         (ipa)
+         osite%wbudget_pheneffect         (opa) = isite%wbudget_pheneffect         (ipa)
          osite%wbudget_precipgain         (opa) = isite%wbudget_precipgain         (ipa)
          osite%wbudget_loss2runoff        (opa) = isite%wbudget_loss2runoff        (ipa)
          osite%wbudget_loss2drainage      (opa) = isite%wbudget_loss2drainage      (ipa)
@@ -9497,6 +9512,7 @@ module ed_state_vars
          osite%ebudget_hcapeffect         (opa) = isite%ebudget_hcapeffect         (ipa)
          osite%ebudget_wcapeffect         (opa) = isite%ebudget_wcapeffect         (ipa)
          osite%ebudget_zcaneffect         (opa) = isite%ebudget_zcaneffect         (ipa)
+         osite%ebudget_pheneffect         (opa) = isite%ebudget_pheneffect         (ipa)
          osite%ebudget_loss2runoff        (opa) = isite%ebudget_loss2runoff        (ipa)
          osite%ebudget_loss2drainage      (opa) = isite%ebudget_loss2drainage      (ipa)
          osite%ebudget_netrad             (opa) = isite%ebudget_netrad             (ipa)
@@ -10241,6 +10257,7 @@ module ed_state_vars
       osite%wbudget_denseffect         (1:z) = pack(isite%wbudget_denseffect         ,lmask)
       osite%wbudget_wcapeffect         (1:z) = pack(isite%wbudget_wcapeffect         ,lmask)
       osite%wbudget_zcaneffect         (1:z) = pack(isite%wbudget_zcaneffect         ,lmask)
+      osite%wbudget_pheneffect         (1:z) = pack(isite%wbudget_pheneffect         ,lmask)
       osite%wbudget_precipgain         (1:z) = pack(isite%wbudget_precipgain         ,lmask)
       osite%wbudget_loss2runoff        (1:z) = pack(isite%wbudget_loss2runoff        ,lmask)
       osite%wbudget_loss2drainage      (1:z) = pack(isite%wbudget_loss2drainage      ,lmask)
@@ -10252,6 +10269,7 @@ module ed_state_vars
       osite%ebudget_hcapeffect         (1:z) = pack(isite%ebudget_hcapeffect         ,lmask)
       osite%ebudget_wcapeffect         (1:z) = pack(isite%ebudget_wcapeffect         ,lmask)
       osite%ebudget_zcaneffect         (1:z) = pack(isite%ebudget_zcaneffect         ,lmask)
+      osite%ebudget_pheneffect         (1:z) = pack(isite%ebudget_pheneffect         ,lmask)
       osite%ebudget_loss2runoff        (1:z) = pack(isite%ebudget_loss2runoff        ,lmask)
       osite%ebudget_loss2drainage      (1:z) = pack(isite%ebudget_loss2drainage      ,lmask)
       osite%ebudget_netrad             (1:z) = pack(isite%ebudget_netrad             ,lmask)
@@ -23840,6 +23858,16 @@ module ed_state_vars
                            ,'[  kgW/m2/s]','NA') 
       end if
 
+      if (associated(csite%wbudget_pheneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_pheneffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_PHENEFFECT :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: change in storage due to phenology status'      &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
       if (associated(csite%wbudget_precipgain)) then
          nvar=nvar+1
          call vtable_edio_r(npts,csite%wbudget_precipgain                                  &
@@ -23947,6 +23975,16 @@ module ed_state_vars
                            ,'EBUDGET_ZCANEFFECT :31:hist')
          call metadata_edio(nvar,igr                                                       &
                            ,'Enthalpy budget: change in storage due to change in CAS depth'&
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_pheneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_pheneffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_PHENEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: change in storage due to phenology status'   &
                            ,'[    J/m2/s]','NA') 
       end if
 

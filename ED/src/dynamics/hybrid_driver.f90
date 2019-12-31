@@ -7,85 +7,86 @@ module hybrid_driver
    !     Euler integration scheme.                                                         !
    !---------------------------------------------------------------------------------------!
    subroutine hybrid_timestep(cgrid)
-     use rk4_coms              , only : integration_vars           & ! structure
-                                      , rk4patchtype               & ! structure
-                                      , zero_rk4_patch             & ! subroutine
-                                      , zero_rk4_cohort            & ! subroutine
-                                      , zero_bdf2_patch            &
-                                      , integration_buff           & ! intent(out)
-                                      , bdf2patchtype              &
-                                      , tbeg                       &
-                                      , tend                       &
-                                      , dtrk4i                     !
-     use ed_para_coms          , only : nthreads                   ! ! intent(in)
-     use rk4_driver            , only : initp2modelp
-     use ed_state_vars         , only : edtype                     & ! structure
-                                      , polygontype                & ! structure
-                                      , sitetype                   ! ! structure
-     use met_driver_coms       , only : met_driv_state             ! ! structure
-     use grid_coms             , only : nzg                        & ! intent(in)
-                                      , nzs                        ! ! intent(in)
-     use ed_misc_coms          , only : current_time               & ! intent(in)
-                                      , dtlsm                      ! ! intent(in)
-     use budget_utils          , only : update_cbudget_committed   & ! function
-                                      , compute_budget             ! ! function
-     use soil_respiration      , only : soil_respiration_driver    ! ! function
-     use photosyn_driv         , only : canopy_photosynthesis      ! ! function
-     use update_derived_utils  , only : update_patch_thermo_props  & ! subroutine
-                                      , update_patch_derived_props ! ! subroutine
-     use rk4_integ_utils       , only : copy_met_2_rk4site         & ! subroutine
-                                      , rk4_sanity_check           ! ! subroutine
-     use rk4_misc              , only : copy_patch_init            & ! subroutine
-                                      , sanity_check_veg_energy    ! ! subroutine
-     use plant_hydro           , only : plant_hydro_driver         ! ! subroutine
-     use rk4_copy_patch        , only : copy_rk4_patch             ! ! subroutine
-     use therm_lib             , only : tq2enthalpy                ! ! function
+     use rk4_coms               , only : integration_vars           & ! structure
+                                       , rk4patchtype               & ! structure
+                                       , zero_rk4_patch             & ! subroutine
+                                       , zero_rk4_cohort            & ! subroutine
+                                       , zero_bdf2_patch            &
+                                       , integration_buff           & ! intent(out)
+                                       , bdf2patchtype              &
+                                       , tbeg                       &
+                                       , tend                       &
+                                       , dtrk4i                     !
+     use ed_para_coms           , only : nthreads                   ! ! intent(in)
+     use rk4_copy_patch         , only : initp2modelp               ! ! sub-routine
+     use ed_state_vars          , only : edtype                     & ! structure
+                                       , polygontype                & ! structure
+                                       , sitetype                   ! ! structure
+     use met_driver_coms        , only : met_driv_state             ! ! structure
+     use grid_coms              , only : nzg                        ! ! intent(in)
+     use ed_misc_coms           , only : current_time               & ! intent(in)
+                                       , dtlsm                      ! ! intent(in)
+     use budget_utils           , only : update_cbudget_committed   & ! function
+                                       , compute_budget             ! ! function
+     use soil_respiration       , only : soil_respiration_driver    ! ! function
+     use photosyn_driv          , only : canopy_photosynthesis      ! ! function
+     use update_derived_utils   , only : update_patch_derived_props ! ! subroutine
+     use rk4_integ_utils        , only : copy_met_2_rk4site         & ! subroutine
+                                       , rk4_sanity_check           ! ! subroutine
+     use rk4_misc               , only : sanity_check_veg_energy    ! ! sub-routine
+     use rk4_copy_patch         , only : copy_rk4patch_init         ! ! sub-routine
+     use plant_hydro            , only : plant_hydro_driver         ! ! subroutine
+     use rk4_copy_patch         , only : copy_rk4_patch             ! ! subroutine
+     use therm_lib              , only : tq2enthalpy                ! ! function
 
      !$  use omp_lib
 
      implicit none
      !----- Arguments ---------------------------------------------------------------------!
-     type(edtype)             , target      :: cgrid
+     type(edtype)             , target       :: cgrid
      !----- Local variables ---------------------------------------------------------------!
-     type(polygontype)        , pointer     :: cpoly
-     type(sitetype)           , pointer     :: csite
-     type(met_driv_state)     , pointer     :: cmet
-     type(rk4patchtype)       , pointer     :: initp
-     type(rk4patchtype)       , pointer     :: dinitp
-     type(rk4patchtype)       , pointer     :: ytemp
-     type(bdf2patchtype)      , pointer     :: yprev
-     integer                                :: ipy
-     integer                                :: isi
-     integer                                :: ipa
-     integer                                :: imon
-     integer                                :: nsteps
-     real                                   :: patch_vels
-     real                                   :: wcurr_loss2atm
-     real                                   :: ecurr_loss2atm
-     real                                   :: co2curr_loss2atm
-     real                                   :: ecurr_netrad
-     real                                   :: wcurr_loss2drainage
-     real                                   :: ecurr_loss2drainage
-     real                                   :: wcurr_loss2runoff
-     real                                   :: ecurr_loss2runoff
-     real                                   :: old_can_prss
-     real                                   :: old_can_enthalpy
-     real                                   :: old_can_temp
-     real                                   :: old_can_shv
-     real                                   :: old_can_co2
-     real                                   :: old_can_rhos
-     real                                   :: old_can_dmol
-     real                                   :: mid_can_rhos
-     real                                   :: mid_can_dmol
-     real                                   :: wtime0
-     real(kind=8)                           :: hbeg
-     integer                                :: ibuff
-     integer                                :: npa_thread
-     integer                                :: ita
+     type(polygontype)        , pointer      :: cpoly
+     type(sitetype)           , pointer      :: csite
+     type(met_driv_state)     , pointer      :: cmet
+     type(rk4patchtype)       , pointer      :: initp
+     type(rk4patchtype)       , pointer      :: dinitp
+     type(rk4patchtype)       , pointer      :: ytemp
+     type(bdf2patchtype)      , pointer      :: yprev
+     integer                                 :: ipy
+     integer                                 :: isi
+     integer                                 :: ipa
+     integer                                 :: imon
+     integer                                 :: nsteps
+     real                                    :: patch_vels
+     real                                    :: wcurr_loss2atm
+     real                                    :: ecurr_loss2atm
+     real                                    :: co2curr_loss2atm
+     real                                    :: ecurr_netrad
+     real                                    :: wcurr_loss2drainage
+     real                                    :: ecurr_loss2drainage
+     real                                    :: wcurr_loss2runoff
+     real                                    :: ecurr_loss2runoff
+     real                                    :: co2curr_denseffect
+     real                                    :: ecurr_denseffect
+     real                                    :: wcurr_denseffect
+     real                                    :: ecurr_prsseffect
+     real                                    :: old_can_prss
+     real                                    :: old_can_enthalpy
+     real                                    :: old_can_temp
+     real                                    :: old_can_shv
+     real                                    :: old_can_co2
+     real                                    :: old_can_rhos
+     real                                    :: old_can_dmol
+     real                                    :: wtime0
+     real(kind=8)                            :: hbeg
+     real                                    :: rshort_tot
+     integer                                 :: ibuff
+     integer                                 :: npa_thread
+     integer                                 :: ita
      !----- Local constants. -----------------------------------------------!
-     logical                  , parameter   :: test_energy_sanity = .false.
+     logical                  , parameter    :: test_energy_sanity = .false.
      !----- External functions. --------------------------------------------!
-     real, external                         :: walltime
+     real, external                          :: walltime
      !----------------------------------------------------------------------!
 
      polyloop: do ipy = 1,cgrid%npolygons
@@ -133,11 +134,12 @@ module hybrid_driver
            !$OMP  ita,ipa,initp,ytemp,dinitp,yprev,hbeg,nsteps &
            !$OMP ,patch_vels,old_can_prss,old_can_enthalpy     &
            !$OMP ,old_can_temp,old_can_shv,old_can_co2         &
-           !$OMP ,old_can_rhos,old_can_dmol,mid_can_rhos       &
-           !$OMP ,mid_can_dmol,wcurr_loss2atm,ecurr_netrad     &
-           !$OMP ,ecurr_loss2atm,co2curr_loss2atm              &
+           !$OMP ,old_can_rhos,old_can_dmol,wcurr_loss2atm     &
+           !$OMP ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm &
            !$OMP ,wcurr_loss2drainage,ecurr_loss2drainage      &
-           !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff)
+           !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff          &
+           !$OMP ,co2curr_denseffect,ecurr_denseffect          &
+           !$OMP ,wcurr_denseffect,ecurr_prsseffect,rshort_tot)
            threadloop: do ibuff=1,nthreads
               initp => integration_buff(ibuff)%initp
               ytemp => integration_buff(ibuff)%ytemp
@@ -196,6 +198,19 @@ module hybrid_driver
 
 
 
+                  !----- Find incoming radiation used by the radiation driver. -----!
+                  if (cpoly%nighttime(isi)) then
+                     rshort_tot = 0.0
+                  else
+                     rshort_tot = cmet%par_beam * csite%fbeam(ipa)                  &
+                                + cmet%par_diffuse                                  &
+                                + cmet%nir_beam * csite%fbeam(ipa)                  &
+                                + cmet%nir_diffuse
+                  end if
+                  !-----------------------------------------------------------------!
+
+
+
                  !------------------------------------------------------------------!
                  !      Test whether temperature and energy are reasonable.         !
                  !------------------------------------------------------------------!
@@ -235,8 +250,9 @@ module hybrid_driver
                  !------------------------------------------------------------------!
                  !     Set up the integration patch.                                !
                  !------------------------------------------------------------------!
-                 call copy_patch_init(csite,ipa,ibuff,initp,patch_vels,mid_can_rhos &
-                                     ,mid_can_dmol)
+                  call copy_rk4patch_init(csite,ipa,ibuff,initp,patch_vels          &
+                                         ,old_can_enthalpy,old_can_rhos             &
+                                         ,old_can_dmol,ecurr_prsseffect)
                  !------------------------------------------------------------------!
 
                  !------------------------------------------------------------------!
@@ -294,7 +310,8 @@ module hybrid_driver
                                    ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm       &
                                    ,co2curr_loss2atm,wcurr_loss2drainage             &
                                    ,ecurr_loss2drainage,wcurr_loss2runoff            &
-                                   ,ecurr_loss2runoff)
+                                   ,ecurr_loss2runoff,co2curr_denseffect             &
+                                   ,ecurr_denseffect,wcurr_denseffect)
 
 
                   !----- Add the number of steps into the step counter. -------------!
@@ -315,22 +332,23 @@ module hybrid_driver
                  !    Update roughness and canopy depth.  This should be done after !
                  ! the integration.                                                 !
                  !------------------------------------------------------------------!
-                 call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,&
-                      cpoly%ntext_soil(:,isi))
                  call update_patch_derived_props(csite,ipa,.false.)
                  !------------------------------------------------------------------!
 
                   !------------------------------------------------------------------!
                   !     Compute the residuals.                                       !
                   !------------------------------------------------------------------!
-
-                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa  &
-                       ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                   &
-                       ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
-                       ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)          &
-                       ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy         &
-                       ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos            &
-                       ,old_can_dmol,mid_can_rhos,mid_can_dmol)
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg      &
+                                     ,rshort_tot,cmet%rlong,ipa,wcurr_loss2atm       &
+                                     ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm   &
+                                     ,wcurr_loss2drainage,ecurr_loss2drainage        &
+                                     ,wcurr_loss2runoff,ecurr_loss2runoff            &
+                                     ,co2curr_denseffect,ecurr_denseffect            &
+                                     ,wcurr_denseffect,ecurr_prsseffect              &
+                                     ,cpoly%area(isi),cgrid%cbudget_nep(ipy)         &
+                                     ,old_can_prss,old_can_enthalpy,old_can_temp     &
+                                     ,old_can_shv,old_can_co2,old_can_rhos           &
+                                     ,old_can_dmol)
                end do taskloop
                !---------------------------------------------------------------------------!
             end do threadloop
@@ -393,6 +411,7 @@ module hybrid_driver
                                 , adjust_topsoil_properties & ! sub-routine
                                 , adjust_sfcw_properties    & ! sub-routine
                                 , update_diagnostic_vars    & ! sub-routine
+                                , update_density_vars       & ! sub-routine
                                 , print_rk4_state           ! ! sub-routine
       use ed_misc_coms   , only : fast_diagnostics          & ! intent(in)
                                 , dtlsm                     ! ! intent(in)
@@ -403,9 +422,11 @@ module hybrid_driver
                                 , simplerunoff              ! ! intent(in)
       use consts_coms    , only : cliq8                     & ! intent(in)
                                 , t3ple8                    & ! intent(in)
-                                , tsupercool_liq8               & ! intent(in)
+                                , tsupercool_liq8           & ! intent(in)
                                 , wdnsi8                    ! ! intent(in)
       use bdf2_solver    , only : bdf2_integ                ! ! sub-routine
+      use therm_lib8     , only : tl2uint8                  ! ! intent(in)
+
       implicit none
       !----- Arguments ----------------------------------------------------------!
       type(sitetype)            , target      :: csite   ! Current site
@@ -541,8 +562,7 @@ module hybrid_driver
             !--------------------------------------------------------------------!
             !   Integrate the implicit/backwards step                            !
             !--------------------------------------------------------------------!
-            call bdf2_integ(ibuff,cpatch,yprev,initp,ytemp,dinitp,h, &
-                 dble(csite%hprev(ipa)))
+            call bdf2_integ(cpatch,yprev,initp,ytemp,dinitp,h,dble(csite%hprev(ipa)))
 
             !----- Perform a sanity check on canopy,leaf and wood stuff ---------!
             call rk4_sanity_check(ibuff,ytemp,reject_step,csite,ipa,dinitp,h,print_diags)
@@ -639,13 +659,17 @@ module hybrid_driver
                call adjust_veg_properties(ytemp,h,csite,ipa,ibuff)
 
                !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-               call adjust_topsoil_properties(ytemp,h,ibuff)
+               call adjust_topsoil_properties(ytemp,h)
 
                !----- ii. Make temporary surface water stable and positively defined. --------!
-               call adjust_sfcw_properties(nzg,nzs,ytemp,h,ibuff)
+               call adjust_sfcw_properties(nzg,nzs,ytemp,h,csite,ipa)
 
                !----- iii.  Update the diagnostic variables. ---------------------------------!
                call update_diagnostic_vars(ytemp, csite,ipa,ibuff)
+               !------------------------------------------------------------------------------!
+
+               !----- iv.  Update the density variables. -------------------------------------!
+               call update_density_vars(ytemp,initp)
                !------------------------------------------------------------------------------!
 
                !------------------------------------------------------------------------------!
@@ -689,77 +713,117 @@ module hybrid_driver
 
                exit hstep
             end if
+            !------------------------------------------------------------------------------!
          end do hstep
+         !---------------------------------------------------------------------------------!
 
 
-         !----- If the integration reached the next step, make some final adjustments --------!
+         !----- If the integration reached the next step, make some final adjustments -----!
          if((x-tend)*dtrk4 >= 0.d0)then
 
+
+            !------ Copy the temporary patch to the next intermediate step ----------------!
+            call copy_rk4_patch(initp,ytemp,cpatch)
+            !------------------------------------------------------------------------------!
+
+            !----- Number of temporary surface water layers. ------------------------------!
             ksn = initp%nlev_sfcwater
+            !------------------------------------------------------------------------------!
 
-            !---------------------------------------------------------------------------------!
-            !   Make temporary surface liquid water disappear.  This will not happen          !
-            ! immediately, but liquid water will decay with the time scale defined by         !
-            ! runoff_time scale. If the time scale is too tiny, then it will be forced to be  !
-            ! hdid (no reason to be faster than that).                                        !
-            !---------------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !   Make temporary surface liquid water disappear.  This will not happen       !
+            ! immediately, but liquid water will decay with the time scale defined by      !
+            ! runoff_time scale.                                                           !
+            !------------------------------------------------------------------------------!
             if (simplerunoff .and. ksn >= 1) then
+               !---------------------------------------------------------------------------!
+               !    Test mass and liquid fraction inside the if block to avoid bound       !
+               ! check errors.                                                             !
+               !---------------------------------------------------------------------------!
+               if ( initp%sfcwater_mass(ksn)    > 0.d0   .and.                             &
+                    initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
 
-               if (initp%sfcwater_mass(ksn)    > 0.d0           .and.                         &
-                   initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
-
-                  wfreeb = min(1.d0,dtrk4*runoff_time_i) * initp%sfcwater_mass(ksn)           &
+                  !----- Find the amount of water to be lost as runoff. -------------------!
+                  wfreeb = min(1.d0, dtrk4 * runoff_time_i) * initp%sfcwater_mass(ksn)     &
                          * (initp%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
+                  qwfree = wfreeb * tl2uint8(initp%sfcwater_tempk(ksn),1.d0)
+                  !------------------------------------------------------------------------!
 
-                  qwfree = wfreeb * cliq8 * (initp%sfcwater_tempk(ksn) - tsupercool_liq8 )
 
-                  initp%sfcwater_mass(ksn) = initp%sfcwater_mass(ksn)   - wfreeb
 
-                  initp%sfcwater_depth(ksn) = initp%sfcwater_depth(ksn) - wfreeb * wdnsi8
-
-                  !----- Recompute the energy removing runoff --------------------------------!
+                  !----- Update the state variables. --------------------------------------!
+                  initp%sfcwater_mass  (ksn) = initp%sfcwater_mass  (ksn) - wfreeb
+                  initp%sfcwater_depth (ksn) = initp%sfcwater_depth (ksn) - wfreeb * wdnsi8
                   initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
+                  !------------------------------------------------------------------------!
 
-                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,ibuff)
-                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
 
-                  !----- Compute runoff for output -------------------------------------------!
+
+                  !----- Compute runoff for output ----------------------------------------!
                   if (fast_diagnostics) then
-                     csite%runoff       (ipa) = csite%runoff(ipa)                             &
+                     !---------------------------------------------------------------------!
+                     !      There is no need to divide wfreeb and qwfree  by time step,    !
+                     ! which will be done in subroutine normalize_averaged_vars.           !
+                     !---------------------------------------------------------------------!
+                     csite%runoff       (ipa) = csite%runoff(ipa)                          &
                                               + sngloff(wfreeb * dtrk4i,tiny_offset)
-                     csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                       &
-                                              + sngloff(wfreeb * dtrk4i,tiny_offset)
-                     csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                      &
-                                              + sngloff(qwfree * dtrk4i,tiny_offset)
+                     csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                    &
+                                              + sngloff(wfreeb,tiny_offset)
+                     csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                   &
+                                              + sngloff(qwfree,tiny_offset)
                   end if
                   if (checkbudget) then
+                     !---------------------------------------------------------------------!
+                     !      To make sure that the previous values of wbudget_loss2runoff   !
+                     ! and ebudget_loss2runoff are accumulated to the next time step.      !
+                     !---------------------------------------------------------------------!
                      initp%wbudget_loss2runoff = initp%wbudget_loss2runoff + wfreeb
                      initp%ebudget_loss2runoff = initp%ebudget_loss2runoff + qwfree
-                     initp%wbudget_storage     = initp%wbudget_storage - wfreeb
-                     initp%ebudget_storage     = initp%ebudget_storage - qwfree
+                     initp%wbudget_storage     = initp%wbudget_storage     - wfreeb
+                     initp%ebudget_storage     = initp%ebudget_storage     - qwfree
+                     !---------------------------------------------------------------------!
                   end if
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Make sure all diagnostic variables are consistent and bounded. ---!
+                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,csite,ipa)
+                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
+                  call update_density_vars   (initp,ytemp)
+                  !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
             end if
+            !------------------------------------------------------------------------------!
 
-            !------ Update the substep for next time and leave -------------------------------!
 
+
+            !------ Update the substep for next time and leave ----------------------------!
             csite%htry(ipa)  = sngl(hnext)
+            !------------------------------------------------------------------------------!
 
+
+            !----- Copy previous information. ---------------------------------------------!
             call copy_prev2patch(yprev,csite,ipa)
+            !------------------------------------------------------------------------------!
 
-            !---------------------------------------------------------------------------------!
-            !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed    !
-            ! because we will divide this by the time between t0 and t0+frqsum.               !
-            !---------------------------------------------------------------------------------!
-            csite%fmean_rk4step(ipa) = csite%fmean_rk4step(ipa)                               &
+            !------------------------------------------------------------------------------!
+            !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed !
+            ! because we will divide this by the time between t0 and t0+frqsum.            !
+            !------------------------------------------------------------------------------!
+            csite%fmean_rk4step(ipa) = csite%fmean_rk4step(ipa)                            &
                  + sngl((tend-tbeg)*(tend-tbeg))/real(i)
             nsteps = i
+            !------------------------------------------------------------------------------!
             return
          end if
+         !---------------------------------------------------------------------------------!
 
-         !----- Use hnext as the next substep ------------------------------------------------!
+         !----- Use hnext as the next substep ---------------------------------------------!
          h = hnext
+         !---------------------------------------------------------------------------------!
       end do timesteploop
+      !------------------------------------------------------------------------------------!
 
       !----- If it reached this point, that is really bad news... ----------------------------!
       write (unit=*,fmt='(a)') ' ==> Too many steps in routine euler_integ'

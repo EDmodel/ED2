@@ -23,7 +23,6 @@ module reproduction
       use pft_coms            , only : recruittype                 & ! structure
                                      , zero_recruit                & ! subroutine
                                      , copy_recruit                & ! subroutine
-                                     , seedling_mortality          & ! intent(in)
                                      , min_recruit_size            & ! intent(in)
                                      , one_plant_c                 & ! intent(in)
                                      , c2n_recruit                 & ! intent(in)
@@ -115,15 +114,10 @@ module reproduction
 
 
       !------------------------------------------------------------------------------------!
-      !    If this is the first time, check whether the user wants reproduction.  If not,  !
-      ! kill all potential recruits and send their biomass to the litter pool.             !
+      !    If this is the first time, check whether to write a log with reproduction       !
+      ! details.                                                                           !
       !------------------------------------------------------------------------------------!
       if (first_time) then
-         !---- Halt reproduction by killing all seedlings. --------------------------------!
-         if (repro_scheme == 0 .or. (.not. veget_dyn_on)) then
-            seedling_mortality(1:n_pft) = 1.0
-         end if
-         !---------------------------------------------------------------------------------!
 
          !----- Make the header. ----------------------------------------------------------!
          if (printout .and. veget_dyn_on) then
@@ -591,9 +585,10 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,.false.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.,.false.)
                         !----- Update flags for the biophysical integrator. ---------------!
-                        call is_resolvable(csite,ipa,ico)
+                        call is_resolvable(csite,ipa,ico,.false.                           &
+                                          ,'reproduction_driver (SAS)')
                         !------------------------------------------------------------------!
 
                         !----- Update number of cohorts in this site. ---------------------!
@@ -829,9 +824,10 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,.false.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.,.false.)
                         !----- Update flags for the biophysical integrator. ---------------!
-                        call is_resolvable(csite,ipa,ico)
+                        call is_resolvable(csite,ipa,ico,.false.                           &
+                                          ,'reproduction_driver (BLE)')
                         !------------------------------------------------------------------!
                      else
                         !------------------------------------------------------------------!

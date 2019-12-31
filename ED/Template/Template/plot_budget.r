@@ -600,11 +600,12 @@ for (place in myplaces){
       cpatch$ent.eddy.flux = - cpatch$ent.loss2atm
       cpatch$ent.runoff    = - cpatch$ent.runoff   - cpatch$ent.drainage
       cpatch$ent.veg.dyn   = ( cpatch$ent.zcan.eff + cpatch$ent.hcap.eff
-                             + cpatch$ent.wcap.eff )
+                             + cpatch$ent.wcap.eff + cpatch$ent.phen.eff )
       #----- Water. -----------------------------------------------------------------------#
       cpatch$h2o.eddy.flux = - cpatch$h2o.loss2atm
       cpatch$h2o.runoff    = - cpatch$h2o.runoff   - cpatch$h2o.drainage
-      cpatch$h2o.veg.dyn   =   cpatch$h2o.zcan.eff + cpatch$h2o.wcap.eff
+      cpatch$h2o.veg.dyn   = ( cpatch$h2o.zcan.eff + cpatch$h2o.wcap.eff
+                             + cpatch$h2o.phen.eff )
       #------------------------------------------------------------------------------------#
 
 

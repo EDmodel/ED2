@@ -150,9 +150,10 @@ module fuse_fiss_utils
       real                               :: elim_e_hcap    ! Heat capacity loss  (energy)
       real                               :: elim_e_wcap    ! Water capacity loss (energy)
       real                               :: elim_w_wcap    ! Water capacity loss (water )
+      real                               :: veg_energy_tot ! Total internal energy (cohort)
       real                               :: veg_energy_im2 ! Internal water energy (cohort)
       real                               :: veg_water_im2  ! Internal water mass (cohort)
-      real                               :: veg_qboil     ! Leaf energy transferred to CAS
+      real                               :: veg_qboil      ! Leaf energy transferred to CAS
       real                               :: veg_boil_tot   ! Water transferred to CAS
       real                               :: can_prss       ! CAS pressure
       real                               :: can_rhos       ! CAS density
@@ -188,16 +189,28 @@ module fuse_fiss_utils
             remain_table(ico) = .false.
             elim_nplant    = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
             elim_lai       = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
+            !------------------------------------------------------------------------------!
 
 
 
-            !------ Internal and surface water will also be eliminated. -------------------!
-            veg_water_im2  = cpatch%leaf_water_im2(ico)                                    &
-                           + cpatch%wood_water_im2(ico)
-            veg_energy_im2 = cpatch%leaf_water_im2(ico)                                    &
-                           * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)                 &
-                           + cpatch%wood_water_im2(ico)                                    &
-                           * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
+            !------------------------------------------------------------------------------!
+            !     Check whether to eliminate internal and surface water (this is necessary !
+            ! only if the cohort was flagged as resolvable).                               !
+            !------------------------------------------------------------------------------!
+            veg_water_im2  = 0.0
+            veg_energy_im2 = 0.0
+            !----- Leaves. ----------------------------------------------------------------!
+            if (cpatch%leaf_resolvable(ico)) then
+               veg_water_im2  = veg_water_im2  + cpatch%leaf_water_im2(ico)
+               veg_energy_im2 = veg_energy_im2 + cpatch%leaf_water_im2(ico)                &
+                              * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
+            end if
+            !----- Wood. ------------------------------------------------------------------!
+            if (cpatch%wood_resolvable(ico)) then
+               veg_water_im2  = veg_water_im2  + cpatch%wood_water_im2(ico)
+               veg_energy_im2 = veg_energy_im2 + cpatch%wood_water_im2(ico)                &
+                              * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
+            end if
             !------------------------------------------------------------------------------!
 
 
@@ -207,26 +220,44 @@ module fuse_fiss_utils
             ! canopy air space by donating the total amount as "boiling" (fast evaporation !
             ! or sublimation).                                                             !
             !------------------------------------------------------------------------------!
-            if ( (cpatch%leaf_water(ico) + cpatch%wood_water(ico) ) > 0.0 ) then
-               !----- Find the water and enthalpy to be transferred to the CAS. -----------!
-               veg_boil_tot  = veg_boil_tot                                                &
-                             + cpatch%leaf_water(ico) + cpatch%wood_water(ico)
-               veg_qboil     = cpatch%leaf_water(ico)                                      &
-                             * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)               &
-                             + cpatch%wood_water(ico)                                      &
-                             * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
-               !---------------------------------------------------------------------------!
-            else
-               !----- Vegetation surface is dry. No need to boil anything. ----------------!
-               veg_qboil     = 0.0
-               !---------------------------------------------------------------------------!
+            veg_qboil = 0.0
+            !----- Leaves. ----------------------------------------------------------------!
+            if (cpatch%leaf_resolvable(ico)) then
+               veg_boil_tot = veg_boil_tot + cpatch%leaf_water(ico)
+               veg_qboil    = veg_qboil    + cpatch%leaf_water(ico)                        &
+                                           * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
+            end if
+            !----- Wood. ------------------------------------------------------------------!
+            if (cpatch%wood_resolvable(ico)) then
+               veg_boil_tot = veg_boil_tot + cpatch%wood_water(ico)
+               veg_qboil    = veg_qboil    + cpatch%wood_water(ico)                        &
+                                           * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
             end if
             !------------------------------------------------------------------------------!
 
 
-            !----- Update the total water and energy losses due to termination. -----------!
-            elim_e_hcap = elim_e_hcap + cpatch%leaf_energy(ico) + cpatch%wood_energy(ico)  &
-                        - veg_energy_im2 - veg_qboil
+
+            !------------------------------------------------------------------------------!
+            !     Account for loss of internal energy stored in oven-dry biomass.          !
+            !------------------------------------------------------------------------------!
+            veg_energy_tot = 0.0
+            !----- Leaves. ----------------------------------------------------------------!
+            if (cpatch%leaf_resolvable(ico)) then
+               veg_energy_tot = veg_energy_tot + cpatch%leaf_energy(ico)
+            end if
+            !----- Wood. ------------------------------------------------------------------!
+            if (cpatch%wood_resolvable(ico)) then
+               veg_energy_tot = veg_energy_tot + cpatch%wood_energy(ico)
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Update the total water and energy losses due to termination.  Do this    !
+            ! only if cohort was somehow still resolvable, otherwise the cohort was        !
+            ! already out of the budget.                                                   !
+            !------------------------------------------------------------------------------!
+            elim_e_hcap = elim_e_hcap + veg_energy_tot - veg_energy_im2 - veg_qboil
             elim_e_wcap = elim_e_wcap + veg_energy_im2
             elim_w_wcap = elim_w_wcap + veg_water_im2
             !------------------------------------------------------------------------------!
@@ -1515,6 +1546,8 @@ module fuse_fiss_utils
       real                                 :: tai_mp             ! Maximum possible TAI
       real                                 :: old_leaf_hcap      ! Old heat capacity (leaf)
       real                                 :: old_wood_hcap      ! Old heat capacity (wood)
+      real                                 :: old_leaf_water     ! Old sfc. water (leaf)
+      real                                 :: old_wood_water     ! Old sfc. water (wood)
       real                                 :: old_leaf_water_im2 ! Old int. water (leaf)
       real                                 :: old_wood_water_im2 ! Old int. water (wood)
       real                                 :: old_nplant         ! Old nplant
@@ -1667,8 +1700,10 @@ module fuse_fiss_utils
                   ! water, and account for these changes in the heat capacity effect.      !
                   !------------------------------------------------------------------------!
                   !----- Original cohort. -------------------------------------------------!
-                  old_leaf_hcap      = cpatch%leaf_hcap(ico)
-                  old_wood_hcap      = cpatch%wood_hcap(ico)
+                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
+                  old_wood_hcap      = cpatch%wood_hcap     (ico)
+                  old_leaf_water     = cpatch%leaf_water    (ico)
+                  old_wood_water     = cpatch%wood_water    (ico)
                   old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
                   old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdeada(ico)                 &
@@ -1684,11 +1719,14 @@ module fuse_fiss_utils
                               ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
                               ,cpatch%wood_water_im2(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
+                                             ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
                                              ,.true.)
                   !----- New cohort. ------------------------------------------------------!
-                  old_leaf_hcap      = cpatch%leaf_hcap(inew)
-                  old_wood_hcap      = cpatch%wood_hcap(inew)
+                  old_leaf_hcap      = cpatch%leaf_hcap     (inew)
+                  old_wood_hcap      = cpatch%wood_hcap     (inew)
+                  old_leaf_water     = cpatch%leaf_water    (inew)
+                  old_wood_water     = cpatch%wood_water    (inew)
                   old_leaf_water_im2 = cpatch%leaf_water_im2(inew)
                   old_wood_water_im2 = cpatch%wood_water_im2(inew)
                   call calc_veg_hcap(cpatch%bleaf(inew) ,cpatch%bdeada(inew)               &
@@ -1705,11 +1743,12 @@ module fuse_fiss_utils
                               ,cpatch%nplant(inew),cpatch%leaf_water_im2(inew)             &
                               ,cpatch%wood_water_im2(inew))
                   call update_veg_energy_cweh(csite,ipa,inew,old_leaf_hcap,old_wood_hcap   &
+                                             ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
                                              ,.true.)
                   !----- Update the stability status. -------------------------------------!
-                  call is_resolvable(csite,ipa,ico )
-                  call is_resolvable(csite,ipa,inew)
+                  call is_resolvable(csite,ipa,ico ,.false.,'split_cohorts (old)')
+                  call is_resolvable(csite,ipa,inew,.false.,'split_cohorts (new)')
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -7085,6 +7124,11 @@ module fuse_fiss_utils
                                              + csite%ebudget_zcaneffect          (donp)    &
                                              * csite%area                        (donp) )  &
                                            * newareai
+      csite%ebudget_pheneffect      (recp) = ( csite%ebudget_pheneffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%ebudget_pheneffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
       csite%ebudget_loss2runoff     (recp) = ( csite%ebudget_loss2runoff         (recp)    &
                                              * csite%area                        (recp)    &
                                              + csite%ebudget_loss2runoff         (donp)    &
@@ -7128,6 +7172,11 @@ module fuse_fiss_utils
       csite%wbudget_zcaneffect      (recp) = ( csite%wbudget_zcaneffect          (recp)    &
                                              * csite%area                        (recp)    &
                                              + csite%wbudget_zcaneffect          (donp)    &
+                                             * csite%area                        (donp) )  &
+                                           * newareai
+      csite%wbudget_pheneffect      (recp) = ( csite%wbudget_pheneffect          (recp)    &
+                                             * csite%area                        (recp)    &
+                                             + csite%wbudget_pheneffect          (donp)    &
                                              * csite%area                        (donp) )  &
                                            * newareai
       csite%wbudget_loss2runoff     (recp) = ( csite%wbudget_loss2runoff         (recp)    &

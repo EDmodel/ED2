@@ -154,12 +154,13 @@ module ed_therm_lib
    !    The "cweh" acronym means "consistent water, energy, and heat-capacity" approach.   !
    !---------------------------------------------------------------------------------------!
    subroutine update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap             &
-                                    ,old_leaf_water_im2,old_wood_water_im2,check_leaks)
+                                    ,old_leaf_water,old_wood_water,old_leaf_water_im2      &
+                                    ,old_wood_water_im2,check_leaks)
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
       use therm_lib    , only : uextcm2tl    & ! subroutine
                               , cmtl2uext    & ! function
-                              , tq2enthalpy  ! ! function
+                              , tl2uint      ! ! function
       use ed_misc_coms , only : frqsumi      & ! intent(in)
                               , current_time ! ! intent(in)
       use consts_coms  , only : t3ple        ! ! intent(in)
@@ -170,6 +171,8 @@ module ed_therm_lib
       integer          , intent(in) :: ico
       real             , intent(in) :: old_leaf_hcap
       real             , intent(in) :: old_wood_hcap
+      real             , intent(in) :: old_leaf_water
+      real             , intent(in) :: old_wood_water
       real             , intent(in) :: old_leaf_water_im2
       real             , intent(in) :: old_wood_water_im2
       logical          , intent(in) :: check_leaks
@@ -181,10 +184,10 @@ module ed_therm_lib
       integer                       :: k
       real                          :: old_leaf_energy
       real                          :: old_wood_energy
-      real                          :: old_leaf_energy_im2
-      real                          :: old_wood_energy_im2
-      real                          :: new_leaf_energy_im2
-      real                          :: new_wood_energy_im2
+      real                          :: old_leaf_energy_wat
+      real                          :: old_wood_energy_wat
+      real                          :: new_leaf_energy_wat
+      real                          :: new_wood_energy_wat
       !----- Local constants. -------------------------------------------------------------!
       character(len=13), parameter  :: efmt='(a,1x,es12.5)'
       character(len=10), parameter  :: ifmt='(a,1x,i12)'
@@ -203,10 +206,10 @@ module ed_therm_lib
       !------------------------------------------------------------------------------------!
       old_leaf_energy     = cpatch%leaf_energy   (ico)
       old_wood_energy     = cpatch%wood_energy   (ico)
-      old_leaf_energy_im2 = old_leaf_water_im2                                             &
-                          * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
-      old_wood_energy_im2 = old_wood_water_im2                                             &
-                          * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
+      old_leaf_energy_wat = ( old_leaf_water + old_leaf_water_im2 )                        &
+                          * tl2uint(cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico))
+      old_wood_energy_wat = ( old_wood_water + old_wood_water_im2 )                        &
+                          * tl2uint(cpatch%wood_temp(ico),cpatch%wood_fliq(ico))
       !------------------------------------------------------------------------------------!
 
 
@@ -219,6 +222,7 @@ module ed_therm_lib
          cpatch%leaf_water    (ico) = 0.
          cpatch%leaf_water_int(ico) = 0.
          cpatch%leaf_water_im2(ico) = 0.
+         new_leaf_energy_wat        = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%leaf_temp(ico) = csite%can_temp(ipa)
@@ -274,6 +278,15 @@ module ed_therm_lib
 
 
          !---------------------------------------------------------------------------------!
+         !    Find the current internal energy stored in water.                            !
+         !---------------------------------------------------------------------------------!
+         new_leaf_energy_wat = ( cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico) )     &
+                             * tl2uint(cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
          !     In case the temperature is different, give the user the bad news...         !
          !---------------------------------------------------------------------------------!
          if (check_leaks .and. (abs(new_temp - cpatch%leaf_temp(ico)) > 0.1)) then
@@ -284,31 +297,32 @@ module ed_therm_lib
                 'Time:',current_time%month,'/',current_time%date,'/',current_time%year     &
                        ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
             write(unit=*,fmt='(a)') ' '
-            write(unit=*,fmt=ifmt ) ' Patch:               ',ipa
-            write(unit=*,fmt=ifmt ) ' Dist_type:           ',csite%dist_type      (ipa)
-            write(unit=*,fmt=efmt ) ' Age:                 ',csite%age            (ipa)
+            write(unit=*,fmt=ifmt ) ' Patch:                   ',ipa
+            write(unit=*,fmt=ifmt ) ' Dist_type:               ',csite%dist_type      (ipa)
+            write(unit=*,fmt=efmt ) ' Age:                     ',csite%age            (ipa)
             write(unit=*,fmt='(a)') ' '
-            write(unit=*,fmt=ifmt ) ' Cohort:              ',ico
-            write(unit=*,fmt=ifmt ) ' PFT:                 ',cpatch%pft           (ico)
-            write(unit=*,fmt=efmt ) ' Height:              ',cpatch%hite          (ico)
-            write(unit=*,fmt=efmt ) ' DBH:                 ',cpatch%dbh           (ico)
-            write(unit=*,fmt=efmt ) ' NPlant:              ',cpatch%nplant        (ico)
-            write(unit=*,fmt=efmt ) ' LAI:                 ',cpatch%lai           (ico)
-            write(unit=*,fmt=efmt ) ' WAI:                 ',cpatch%wai           (ico)
+            write(unit=*,fmt=ifmt ) ' Cohort:                  ',ico
+            write(unit=*,fmt=ifmt ) ' PFT:                     ',cpatch%pft           (ico)
+            write(unit=*,fmt=efmt ) ' Height:                  ',cpatch%hite          (ico)
+            write(unit=*,fmt=efmt ) ' DBH:                     ',cpatch%dbh           (ico)
+            write(unit=*,fmt=efmt ) ' NPlant:                  ',cpatch%nplant        (ico)
+            write(unit=*,fmt=efmt ) ' LAI:                     ',cpatch%lai           (ico)
+            write(unit=*,fmt=efmt ) ' WAI:                     ',cpatch%wai           (ico)
             write(unit=*,fmt='(a)') ' '
-            write(unit=*,fmt=efmt ) ' Old temperature:     ',cpatch%leaf_temp     (ico)
-            write(unit=*,fmt=efmt ) ' New temperature:     ',new_temp
-            write(unit=*,fmt=efmt ) ' Old liquid fraction: ',cpatch%leaf_fliq     (ico)
-            write(unit=*,fmt=efmt ) ' New liquid fraction: ',new_fliq
-            write(unit=*,fmt=efmt ) ' Old heat capacity:   ',old_leaf_hcap
-            write(unit=*,fmt=efmt ) ' New heat capacity:   ',cpatch%leaf_hcap     (ico)
-            write(unit=*,fmt=efmt ) ' Old leaf energy:     ',old_leaf_energy
-            write(unit=*,fmt=efmt ) ' New leaf energy:     ',cpatch%leaf_energy   (ico)
-            write(unit=*,fmt=efmt ) ' Old leaf IM2 energy: ',old_leaf_energy_im2
-            write(unit=*,fmt=efmt ) ' New leaf IM2 energy: ',cpatch%leaf_energy   (ico)
-            write(unit=*,fmt=efmt ) ' Leaf surface water:  ',cpatch%leaf_water    (ico)
-            write(unit=*,fmt=efmt ) ' New leaf int. water: ',cpatch%leaf_water_im2(ico)
-            write(unit=*,fmt=efmt ) ' Old leaf int. water: ',old_leaf_water_im2
+            write(unit=*,fmt=efmt ) ' Old temperature:         ',cpatch%leaf_temp     (ico)
+            write(unit=*,fmt=efmt ) ' New temperature:         ',new_temp
+            write(unit=*,fmt=efmt ) ' Old liquid fraction:     ',cpatch%leaf_fliq     (ico)
+            write(unit=*,fmt=efmt ) ' New liquid fraction:     ',new_fliq
+            write(unit=*,fmt=efmt ) ' Old heat capacity:       ',old_leaf_hcap
+            write(unit=*,fmt=efmt ) ' New heat capacity:       ',cpatch%leaf_hcap     (ico)
+            write(unit=*,fmt=efmt ) ' Old leaf total energy:   ',old_leaf_energy
+            write(unit=*,fmt=efmt ) ' New leaf total energy:   ',cpatch%leaf_energy   (ico)
+            write(unit=*,fmt=efmt ) ' Old leaf water energy:   ',old_leaf_energy_wat
+            write(unit=*,fmt=efmt ) ' New leaf water energy:   ',new_leaf_energy_wat
+            write(unit=*,fmt=efmt ) ' Old leaf surface water:  ',old_leaf_water
+            write(unit=*,fmt=efmt ) ' New leaf surface water:  ',cpatch%leaf_water    (ico)
+            write(unit=*,fmt=efmt ) ' New leaf internal water: ',cpatch%leaf_water_im2(ico)
+            write(unit=*,fmt=efmt ) ' Old leaf internal water: ',old_leaf_water_im2
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             k = 0
             k = 1 / k
@@ -333,6 +347,7 @@ module ed_therm_lib
          cpatch%wood_energy   (ico) = 0.
          cpatch%wood_water    (ico) = 0.
          cpatch%wood_water_int(ico) = 0.
+         new_wood_energy_wat        = 0.
          if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%wood_temp(ico) = csite%can_temp(ipa)
@@ -390,6 +405,16 @@ module ed_therm_lib
 
 
          !---------------------------------------------------------------------------------!
+         !    Find the current internal energy stored in water.                            !
+         !---------------------------------------------------------------------------------!
+         new_wood_energy_wat = ( cpatch%wood_water(ico) + cpatch%wood_water_im2(ico) )     &
+                             * tl2uint(cpatch%wood_temp(ico),cpatch%wood_fliq(ico))
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
          !     In case the temperature is different, give the user the bad news...         !
          !---------------------------------------------------------------------------------!
          if (check_leaks .and. (abs(new_temp - cpatch%wood_temp(ico)) > 0.1)) then
@@ -400,29 +425,32 @@ module ed_therm_lib
                 'Time:',current_time%month,'/',current_time%date,'/',current_time%year     &
                        ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
             write(unit=*,fmt='(a)') ' '
-            write(unit=*,fmt=ifmt ) ' Patch:               ',ipa
-            write(unit=*,fmt=ifmt ) ' Dist_type:           ',csite%dist_type      (ipa)
-            write(unit=*,fmt=efmt ) ' Age:                 ',csite%age            (ipa)
+            write(unit=*,fmt=ifmt ) ' Patch:                   ',ipa
+            write(unit=*,fmt=ifmt ) ' Dist_type:               ',csite%dist_type      (ipa)
+            write(unit=*,fmt=efmt ) ' Age:                     ',csite%age            (ipa)
             write(unit=*,fmt='(a)') ' '
-            write(unit=*,fmt=ifmt ) ' Cohort:              ',ico
-            write(unit=*,fmt=ifmt ) ' PFT:                 ',cpatch%pft           (ico)
-            write(unit=*,fmt=efmt ) ' Height:              ',cpatch%hite          (ico)
-            write(unit=*,fmt=efmt ) ' DBH:                 ',cpatch%dbh           (ico)
-            write(unit=*,fmt=efmt ) ' NPlant:              ',cpatch%nplant        (ico)
-            write(unit=*,fmt=efmt ) ' LAI:                 ',cpatch%lai           (ico)
-            write(unit=*,fmt=efmt ) ' WAI:                 ',cpatch%wai           (ico)
+            write(unit=*,fmt=ifmt ) ' Cohort:                  ',ico
+            write(unit=*,fmt=ifmt ) ' PFT:                     ',cpatch%pft           (ico)
+            write(unit=*,fmt=efmt ) ' Height:                  ',cpatch%hite          (ico)
+            write(unit=*,fmt=efmt ) ' DBH:                     ',cpatch%dbh           (ico)
+            write(unit=*,fmt=efmt ) ' NPlant:                  ',cpatch%nplant        (ico)
+            write(unit=*,fmt=efmt ) ' LAI:                     ',cpatch%lai           (ico)
+            write(unit=*,fmt=efmt ) ' WAI:                     ',cpatch%wai           (ico)
             write(unit=*,fmt='(a)') ' '
-            write(unit=*,fmt=efmt ) ' Old temperature:     ',cpatch%wood_temp     (ico)
-            write(unit=*,fmt=efmt ) ' New temperature:     ',new_temp
-            write(unit=*,fmt=efmt ) ' Old liquid fraction: ',cpatch%wood_fliq     (ico)
-            write(unit=*,fmt=efmt ) ' New liquid fraction: ',new_fliq
-            write(unit=*,fmt=efmt ) ' Old heat capacity:   ',old_wood_hcap
-            write(unit=*,fmt=efmt ) ' New heat capacity:   ',cpatch%wood_hcap     (ico)
-            write(unit=*,fmt=efmt ) ' Old wood energy:     ',old_wood_energy
-            write(unit=*,fmt=efmt ) ' New wood energy:     ',cpatch%wood_energy   (ico)
-            write(unit=*,fmt=efmt ) ' Wood surface water:  ',cpatch%wood_water    (ico)
-            write(unit=*,fmt=efmt ) ' Wood internal water: ',cpatch%wood_water_im2(ico)
-            write(unit=*,fmt=efmt ) ' Old wood int. water: ',old_wood_water_im2
+            write(unit=*,fmt=efmt ) ' Old temperature:         ',cpatch%wood_temp     (ico)
+            write(unit=*,fmt=efmt ) ' New temperature:         ',new_temp
+            write(unit=*,fmt=efmt ) ' Old liquid fraction:     ',cpatch%wood_fliq     (ico)
+            write(unit=*,fmt=efmt ) ' New liquid fraction:     ',new_fliq
+            write(unit=*,fmt=efmt ) ' Old heat capacity:       ',old_wood_hcap
+            write(unit=*,fmt=efmt ) ' New heat capacity:       ',cpatch%wood_hcap     (ico)
+            write(unit=*,fmt=efmt ) ' Old wood total energy:   ',old_wood_energy
+            write(unit=*,fmt=efmt ) ' New wood total energy:   ',cpatch%wood_energy   (ico)
+            write(unit=*,fmt=efmt ) ' Old wood water energy:   ',old_wood_energy_wat
+            write(unit=*,fmt=efmt ) ' New wood water energy:   ',new_wood_energy_wat
+            write(unit=*,fmt=efmt ) ' Old wood surface water:  ',old_wood_water
+            write(unit=*,fmt=efmt ) ' New wood surface water:  ',cpatch%wood_water    (ico)
+            write(unit=*,fmt=efmt ) ' New wood internal water: ',cpatch%wood_water_im2(ico)
+            write(unit=*,fmt=efmt ) ' Old wood internal water: ',old_wood_water_im2
             write(unit=*,fmt='(a)') '-----------------------------------------------------'
             k = 0
             k = 1 / k
@@ -433,30 +461,37 @@ module ed_therm_lib
       end if
       !------------------------------------------------------------------------------------!
 
-
-
       !------------------------------------------------------------------------------------!
       !    Integrate the "heat capacity effect", i.e. the change in total internal energy  !
-      ! in vegetation due to change in vegetation biomass.                                 !
+      ! in vegetation due to change in vegetation biomass.  We only do this in case the    !
+      ! vegetation was previously set as resolvable, to avoid double counting.             !
       !------------------------------------------------------------------------------------!
-      new_leaf_energy_im2           = cpatch%leaf_water_im2(ico)                           &
-                                    * tq2enthalpy(cpatch%leaf_temp(ico),1.0,.true.)
-      new_wood_energy_im2           = cpatch%wood_water_im2(ico)                           &
-                                    * tq2enthalpy(cpatch%wood_temp(ico),1.0,.true.)
-      csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                        &
-                                    + ( cpatch%leaf_energy(ico) - new_leaf_energy_im2      &
-                                      - old_leaf_energy         + old_leaf_energy_im2      &
-                                      + cpatch%wood_energy(ico) - new_wood_energy_im2      &
-                                      - old_wood_energy         + old_wood_energy_im2 )    &
-                                    * frqsumi
-      csite%ebudget_wcapeffect(ipa) = csite%ebudget_wcapeffect(ipa)                        &
-                                    + ( new_leaf_energy_im2 - old_leaf_energy_im2          &
-                                      + new_wood_energy_im2 - old_wood_energy_im2 )        &
-                                    * frqsumi
-      csite%wbudget_wcapeffect(ipa) = csite%wbudget_wcapeffect(ipa)                        &
-                                    + ( cpatch%leaf_water_im2(ico) - old_leaf_water_im2    &
-                                      + cpatch%wood_water_im2(ico) - old_wood_water_im2 )  &
-                                    * frqsumi
+      if (cpatch%leaf_resolvable(ico)) then
+         csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                     &
+                                       + ( cpatch%leaf_energy(ico) - new_leaf_energy_wat   &
+                                         - old_leaf_energy         + old_leaf_energy_wat ) &
+                                       * frqsumi
+         csite%ebudget_wcapeffect(ipa) = csite%ebudget_wcapeffect(ipa)                     &
+                                       + ( new_leaf_energy_wat - old_leaf_energy_wat )     &
+                                       * frqsumi
+         csite%wbudget_wcapeffect(ipa) = csite%wbudget_wcapeffect(ipa)                     &
+                                       + ( cpatch%leaf_water    (ico)                      &
+                                         + cpatch%leaf_water_im2(ico)                      &
+                                         - old_leaf_water - old_leaf_water_im2 ) * frqsumi
+      end if
+      if (cpatch%wood_resolvable(ico)) then
+         csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                     &
+                                       + ( cpatch%wood_energy(ico) - new_wood_energy_wat   &
+                                         - old_wood_energy         + old_wood_energy_wat ) &
+                                       * frqsumi
+         csite%ebudget_wcapeffect(ipa) = csite%ebudget_wcapeffect(ipa)                     &
+                                       + ( new_wood_energy_wat - old_wood_energy_wat )     &
+                                       * frqsumi
+         csite%wbudget_wcapeffect(ipa) = csite%wbudget_wcapeffect(ipa)                     &
+                                       + ( cpatch%wood_water    (ico)                      &
+                                         + cpatch%wood_water_im2(ico)                      &
+                                         - old_wood_water - old_wood_water_im2 ) * frqsumi
+      end if
       !------------------------------------------------------------------------------------!
 
 

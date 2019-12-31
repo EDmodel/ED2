@@ -335,7 +335,7 @@ module phenology_aux
    !      This sub-routine will assign the initial potential available water and the       !
    ! initial leaf phenology.  This sub-routine should be called at the beginning of the    !
    ! simulation, except when this is a full history restart.  The initial running average  !
-   ! is simply the the instantaneous soil moisture variable.  For plants other than the    !
+   ! is simply the instantaneous soil moisture variable.  For plants other than the        !
    ! drought-deciduous, the potential available water is found but it doesn't control the  !
    ! phenology, so we assign fully flushed leaves.                                         !
    !---------------------------------------------------------------------------------------!
@@ -440,7 +440,7 @@ module phenology_aux
                                                      + cpatch%wood_water_im2(ico)          &
                                                      , cpatch%wood_temp     (ico)          &
                                                      , cpatch%wood_fliq     (ico) )
-                  call is_resolvable(csite,ipa,ico)
+                  call is_resolvable(csite,ipa,ico,.true.,'first_phenology')
                   !------------------------------------------------------------------------!
 
 

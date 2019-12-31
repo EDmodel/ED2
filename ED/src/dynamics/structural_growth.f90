@@ -141,6 +141,8 @@ module structural_growth
       real                          :: net_stem_N_uptake
       real                          :: old_leaf_hcap
       real                          :: old_wood_hcap
+      real                          :: old_leaf_water
+      real                          :: old_wood_water
       real                          :: old_leaf_water_im2
       real                          :: old_wood_water_im2
       logical          , parameter  :: printout  = .false.
@@ -290,6 +292,21 @@ module structural_growth
                   pat_balive_in   = pat_balive_in   + nplant_in * balive_in
                   pat_bdead_in    = pat_bdead_in    + nplant_in * (bdeada_in + bdeadb_in)
                   pat_bstorage_in = pat_bstorage_in + nplant_in * bstorage_in
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !      Save original heat capacitiy and water content for both leaves    !
+                  ! and wood.  These are used to track changes in energy and water         !
+                  ! storage due to vegetation dynamics.                                    !
+                  !------------------------------------------------------------------------!
+                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
+                  old_wood_hcap      = cpatch%wood_hcap     (ico)
+                  old_leaf_water     = cpatch%leaf_water    (ico)
+                  old_wood_water     = cpatch%wood_water    (ico)
+                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   !------------------------------------------------------------------------!
 
 
@@ -747,10 +764,6 @@ module structural_growth
                   !      as before.  Internal energy is an extensive variable, we just     !
                   !      account for the difference in the heat capacity to update it.     !
                   !------------------------------------------------------------------------!
-                  old_leaf_hcap      = cpatch%leaf_hcap(ico)
-                  old_wood_hcap      = cpatch%wood_hcap(ico)
-                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
-                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                  &
                                     ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
@@ -764,9 +777,10 @@ module structural_growth
                               ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
                               ,cpatch%wood_water_im2(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
+                                             ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
                                              ,.true.)
-                  call is_resolvable(csite,ipa,ico)
+                  call is_resolvable(csite,ipa,ico,.false.,'dbstruct_dt')
                   !------------------------------------------------------------------------!
 
 

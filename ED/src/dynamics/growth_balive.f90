@@ -125,6 +125,8 @@ module growth_balive
       real                             :: dlnndt
       real                             :: old_leaf_hcap
       real                             :: old_wood_hcap
+      real                             :: old_leaf_water
+      real                             :: old_wood_water
       real                             :: old_leaf_water_im2
       real                             :: old_wood_water_im2
       real                             :: nitrogen_uptake
@@ -244,6 +246,21 @@ module growth_balive
                   pat_balive_in   = pat_balive_in   + nplant_in * balive_in
                   pat_bdead_in    = pat_bdead_in    + nplant_in * (bdeada_in + bdeadb_in)
                   pat_bstorage_in = pat_bstorage_in + nplant_in * bstorage_in
+                  !------------------------------------------------------------------------!
+
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Save original heat capacities and water content (needed for the    !
+                  ! energy and water budget checks).                                       !
+                  !------------------------------------------------------------------------!
+                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
+                  old_wood_hcap      = cpatch%wood_hcap     (ico)
+                  old_leaf_water     = cpatch%leaf_water    (ico)
+                  old_wood_water     = cpatch%wood_water    (ico)
+                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   !------------------------------------------------------------------------!
 
 
@@ -491,10 +508,6 @@ module growth_balive
                   !     It is likely that biomass has changed, therefore, update           !
                   ! vegetation energy and heat capacity.                                   !
                   !------------------------------------------------------------------------!
-                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
-                  old_wood_hcap      = cpatch%wood_hcap     (ico)
-                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
-                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdeada(ico)                 &
                                     ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
@@ -508,10 +521,11 @@ module growth_balive
                               ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
                               ,cpatch%wood_water_im2(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
+                                             ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
                                              ,.true.)
                   !----- Update the stability status. -------------------------------------!
-                  call is_resolvable(csite,ipa,ico)
+                  call is_resolvable(csite,ipa,ico,.false.,'dbalive_dt')
                   !------------------------------------------------------------------------!
 
 
