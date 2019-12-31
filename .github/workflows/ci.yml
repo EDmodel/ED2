@@ -11,7 +11,6 @@ jobs:
       run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev
     - name: Install ED2
       run: |
-        which gcc
         which h5dump
         cd ED/build
         ./install.sh -g -p travisci -k A
