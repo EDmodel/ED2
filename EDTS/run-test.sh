@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 TESTNAME=$1
-ED2EXE=${2:-ed_2.1-dbg}
+ED2EXE=${2:-ed_2.2-dbg}
 
 if [ -z "$TESTNAME" ]; then
     echo "Please specify a test to run."
