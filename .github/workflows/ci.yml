@@ -11,13 +11,15 @@ jobs:
       run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev
     - name: Install ED2
       run: |
+        which gcc
+        which h5dump
         cd ED/build
         ./install.sh -g -p travisci -k A
     - name: Upload compiled ED2 binary
       uses: actions/upload-artifact@v1
       with:
         name: ed2-binary
-        path: ED/build/ed_2.1-dbg
+        path: ED/build/ed_2.2-dbg
 
   test-umbs-bg:
     needs: build
@@ -33,5 +35,5 @@ jobs:
     - name: Run ED2
       working-directory: ./EDTS/
       run: |
-        chmod +x "$GITHUB_WORKSPACE"/ed2-binary/ed_2.1-dbg
-        ./run-test.sh umbs.bg "$GITHUB_WORKSPACE/ed2-binary/ed_2.1-dbg"
+        chmod +x "$GITHUB_WORKSPACE"/ed2-binary/ed_2.2-dbg
+        ./run-test.sh umbs.bg "$GITHUB_WORKSPACE/ed2-binary/ed_2.2-dbg"
