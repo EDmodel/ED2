@@ -24,8 +24,8 @@ BASE=$(ED_ROOT)/build/
 # still be able to compile without HDF5 but the code is not going to run.                  #
 #------------------------------------------------------------------------------------------#
 HDF5_HOME=/usr
-HDF5_INCS=-I/usr/include/hdf5
-HDF5_LIBS=-lz -L/usr/lib/x86_64-linux-gnu/hdf5 -lhdf5 -lhdf5_fortran -lhdf5_hl
+HDF5_INCS=-I/usr/include/hdf5/openmpi
+HDF5_LIBS=-lz -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
 
 
