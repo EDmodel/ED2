@@ -245,7 +245,7 @@ module budget_utils
          today_leaf_resp     = today_leaf_resp     / kgCday_2_umols
          today_root_resp     = today_root_resp     / kgCday_2_umols
          today_het_resp      = csite%today_rh(ipa) / kgCday_2_umols
-         toler_committed     = tol_subday_budget                                           &
+         toler_committed     = tol_carbon_budget                                           &
                              * max(today_gpp,today_leaf_resp,today_root_resp,today_het_resp)
          resid_committed     = csite%cbudget_committed(ipa) - today_gpp                    &
                              + today_leaf_resp + today_root_resp + today_het_resp
