@@ -5081,14 +5081,6 @@ module average_utils
                csite%mmsqu_msc_rh           (ipa) = csite%mmsqu_msc_rh              (ipa)  &
                                                   + isqu_ftz(csite%dmean_msc_rh     (ipa)) &
                                                   * ndaysi
-               write (unit=*,fmt='(a)'          ) '----------------------------------------'
-               write (unit=*,fmt='(a,1x,i5)'    ) ' IPA          = ',ipa
-               write (unit=*,fmt='(a,1x,es12.5)') ' MMSQU_SSC_RH = ',csite%mmsqu_ssc_rh(ipa)
-               write (unit=*,fmt='(a,1x,es12.5)') ' DMEAN_SSH_RH = ',csite%dmean_ssc_rh(ipa)
-               write (unit=*,fmt='(a,1x,es12.5)') ' NDAYSI       = ',ndaysi
-               write (unit=*,fmt='(a)'          ) '----------------------------------------'
-               write (unit=*,fmt='(a)'          ) ' '
-               write (unit=*,fmt='(a)'          ) ' '
                csite%mmsqu_ssc_rh           (ipa) = csite%mmsqu_ssc_rh              (ipa)  &
                                                   + isqu_ftz(csite%dmean_ssc_rh     (ipa)) &
                                                   * ndaysi

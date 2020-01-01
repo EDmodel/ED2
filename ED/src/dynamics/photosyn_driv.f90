@@ -590,7 +590,9 @@ module photosyn_driv
                                          + cpatch%leaf_respiration(ico)                    &
                                          * dtlsm_o_frqsum * umols_2_kgCyr                  &
                                          / cpatch%nplant          (ico)
+            !------------------------------------------------------------------------------!
 
+            !----- Integrate available water. ---------------------------------------------!
             root_depth_indices(kroot) = .true.
             broot_tot                 = broot_tot + broot_loc
             pss_available_water       = pss_available_water                                &

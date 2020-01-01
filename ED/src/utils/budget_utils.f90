@@ -246,7 +246,9 @@ module budget_utils
          today_root_resp     = today_root_resp     / kgCday_2_umols
          today_het_resp      = csite%today_rh(ipa) / kgCday_2_umols
          toler_committed     = tol_carbon_budget                                           &
-                             * max(today_gpp,today_leaf_resp,today_root_resp,today_het_resp)
+                             * max(today_gpp,today_leaf_resp,today_root_resp               &
+                                  ,today_het_resp,csite%commit_storage_resp(ipa)           &
+                                  ,csite%commit_growth_resp (ipa))
          resid_committed     = csite%cbudget_committed(ipa) - today_gpp                    &
                              + today_leaf_resp + today_root_resp + today_het_resp
          committed_violation = abs(resid_committed) > toler_committed

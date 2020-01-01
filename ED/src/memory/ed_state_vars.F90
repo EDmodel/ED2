@@ -9766,7 +9766,7 @@ module ed_state_vars
             osite%dmean_stgc_rh        (opa) = isite%dmean_stgc_rh        (ipa)
             osite%dmean_stsc_rh        (opa) = isite%dmean_stsc_rh        (ipa)
             osite%dmean_msc_rh         (opa) = isite%dmean_msc_rh         (ipa)
-            osite%dmean_msc_rh         (opa) = isite%dmean_msc_rh         (ipa)
+            osite%dmean_ssc_rh         (opa) = isite%dmean_ssc_rh         (ipa)
             osite%dmean_psc_rh         (opa) = isite%dmean_psc_rh         (ipa)
             osite%dmean_nep            (opa) = isite%dmean_nep            (ipa)
             osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (ipa)
