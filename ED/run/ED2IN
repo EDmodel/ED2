@@ -489,7 +489,7 @@ $ED_NL
    !             N_POI.  Options are:                                                      !
    !             1 -- Read in soil textural class from the files set in SOIL_DATABASE.     !
    !             2 -- Assign either the value set by NSLCON (see below) or define soil     !
-   !                  texture from NL%SLXSAND and SLXCLAY.                                 !
+   !                  texture from SLXSAND and SLXCLAY.                                    !
    !---------------------------------------------------------------------------------------!
    NL%ISOILFLG = 2
    !---------------------------------------------------------------------------------------!

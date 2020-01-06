@@ -525,7 +525,7 @@ module growth_balive
                                              ,old_leaf_water_im2,old_wood_water_im2        &
                                              ,.true.)
                   !----- Update the stability status. -------------------------------------!
-                  call is_resolvable(csite,ipa,ico,.false.,'dbalive_dt')
+                  call is_resolvable(csite,ipa,ico,.false.,.false.,'dbalive_dt')
                   !------------------------------------------------------------------------!
 
 

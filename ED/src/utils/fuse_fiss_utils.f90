@@ -813,6 +813,7 @@ module fuse_fiss_utils
       use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       use ed_therm_lib        , only : calc_veg_hcap       ! ! subroutine
+      use stable_cohorts      , only : is_resolvable       ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -1088,6 +1089,21 @@ module fuse_fiss_utils
 
 
                   !------------------------------------------------------------------------!
+                  !    In case this is not initialisation, we must temporarily make both   !
+                  ! cohorts "resolvable".  This is to avoid energy/water leaks when a non- !
+                  ! -resolvable cohort is fused with a resolvable cohort.                  !
+                  !------------------------------------------------------------------------!
+                  if (.not. fuse_initial) then
+                     call is_resolvable(csite,ipa,recc,fuse_initial,.true.                 &
+                                       ,'new_fuse_cohorts (recc,before)')
+                     call is_resolvable(csite,ipa,donc,fuse_initial,.true.                 &
+                                       ,'new_fuse_cohorts (donc,before)')
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
                   !     Proceed with fusion.                                               !
                   !------------------------------------------------------------------------!
                   call fuse_2_cohorts(cpatch,donc,recc,csite%can_prss(ipa)                 &
@@ -1095,9 +1111,26 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
 
 
+
+                  !------------------------------------------------------------------------!
+                  !     In case this is not initialisation, we check whether the final     !
+                  ! fused cohort is resolvable.  In case it is not, then we must subtract  !
+                  ! the phenology effect that was temporarily added before fusing the      !
+                  ! cohorts.  Unlike the "before" calls, here we do not force cohorts to   !
+                  ! be resolvable.                                                         !
+                  !------------------------------------------------------------------------!
+                  if (.not. fuse_initial) then
+                     call is_resolvable(csite,ipa,recc,fuse_initial,.false.                &
+                                       ,'new_fuse_cohorts (recc,after)')
+                  end if
+                  !------------------------------------------------------------------------!
+
+
                   !----- Flag donating cohort as gone, so it won't be checked again. ------!
                   fuse_table(donc) = .false.
-                  
+                  !------------------------------------------------------------------------!
+
+
                   !----- Check whether total size and LAI are conserved. ------------------!
                   new_size = cpatch%nplant(recc) * ( cpatch%balive(recc)                   &
                                                    + cpatch%bdeada(recc)                   &
@@ -1226,6 +1259,7 @@ module fuse_fiss_utils
       use mem_polygons        , only : maxcohort           ! ! intent(in)
       use allometry           , only : size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
+      use stable_cohorts      , only : is_resolvable       ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -1395,10 +1429,41 @@ module fuse_fiss_utils
                      ) then
 
 
+                     !---------------------------------------------------------------------!
+                     !    In case this is not initialisation, we must temporarily make     !
+                     ! both cohorts "resolvable".  This is to avoid energy/water leaks     !
+                     ! when a non-resolvable cohort is fused with a resolvable cohort.     !
+                     !---------------------------------------------------------------------!
+                     if (.not. fuse_initial) then
+                        call is_resolvable(csite,ipa,recc,fuse_initial,.true.              &
+                                          ,'old_fuse_cohorts (recc,before)')
+                        call is_resolvable(csite,ipa,donc,fuse_initial,.true.              &
+                                          ,'old_fuse_cohorts (donc,before)')
+                     end if
+                     !---------------------------------------------------------------------!
+
 
                      !----- Proceed with fusion -------------------------------------------!
                      call fuse_2_cohorts(cpatch,donc,recc,csite%can_prss(ipa)              &
                                         ,csite%can_shv(ipa),lsl,fuse_initial)
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     In case this is not initialisation, we check whether the final  !
+                     ! fused cohort is resolvable.  In case it is not, then we must        !
+                     ! subtract the phenology effect that was temporarily added before     !
+                     ! fusing the cohorts.  Unlike the "before" calls, here we do not      !
+                     ! force cohorts to be resolvable.                                     !
+                     !---------------------------------------------------------------------!
+                     if (.not. fuse_initial) then
+                        call is_resolvable(csite,ipa,recc,fuse_initial,.false.             &
+                                          ,'old_fuse_cohorts (recc,after)')
+                     end if
+                     !---------------------------------------------------------------------!
+
+
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
                      fuse_table(donc) = .false.
@@ -1747,8 +1812,8 @@ module fuse_fiss_utils
                                              ,old_leaf_water_im2,old_wood_water_im2        &
                                              ,.true.)
                   !----- Update the stability status. -------------------------------------!
-                  call is_resolvable(csite,ipa,ico ,.false.,'split_cohorts (old)')
-                  call is_resolvable(csite,ipa,inew,.false.,'split_cohorts (new)')
+                  call is_resolvable(csite,ipa,ico ,.false.,.false.,'split_cohorts (old)')
+                  call is_resolvable(csite,ipa,inew,.false.,.false.,'split_cohorts (new)')
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!

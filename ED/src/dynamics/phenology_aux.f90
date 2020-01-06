@@ -440,7 +440,7 @@ module phenology_aux
                                                      + cpatch%wood_water_im2(ico)          &
                                                      , cpatch%wood_temp     (ico)          &
                                                      , cpatch%wood_fliq     (ico) )
-                  call is_resolvable(csite,ipa,ico,.true.,'first_phenology')
+                  call is_resolvable(csite,ipa,ico,.true.,.false.,'first_phenology')
                   !------------------------------------------------------------------------!
 
 

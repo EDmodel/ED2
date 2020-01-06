@@ -232,7 +232,7 @@ subroutine ed_init_atm()
                                                       , cpatch%wood_temp     (ico)         &
                                                       , cpatch%wood_fliq     (ico) )
 
-                  call is_resolvable(csite,ipa,ico,.true.,'ed_init_atm')
+                  call is_resolvable(csite,ipa,ico,.true.,.false.,'ed_init_atm')
 
                   !----- Initialise the leaf surface and intercellular properties. --------!
                   cpatch%lsfc_shv_open(ico)   = cmet%atm_shv

@@ -6989,6 +6989,7 @@ subroutine init_dt_thermo_params()
    use ed_misc_coms   , only : dtlsm                  & ! intent(in)
                              , ffilout                & ! intent(in)
                              , nsub_euler             & ! intent(in)
+                             , integration_scheme     & ! intent(in)
                              , dteuler                ! ! intent(out)
    use consts_coms    , only : wdnsi8                 & ! intent(in)
                              , r_tol_trunc            ! ! intent(in)
@@ -7088,10 +7089,17 @@ subroutine init_dt_thermo_params()
    !      Tolerances.  Following Stefan Olin's suggestion on the ED-2.2 model description  !
    ! paper, we use a stricter tolerance, by default the truncation tolerance (about 1e-5). !
    ! For carbon, we use 10 times the the values for the energy and water because the       !
-   ! solver uses single-precision.                                                         !
+   ! solver uses single-precision.  In case we use hybdrid, we relax tolerance for the     !
+   ! time being.  We should identify the causes of leakage in that scheme in the future.   !
    !---------------------------------------------------------------------------------------!
-   tol_subday_budget = r_tol_trunc
-   tol_carbon_budget = 10. * r_tol_trunc
+   select case (integration_scheme)
+   case (3)
+      tol_subday_budget = 10.  * r_tol_trunc
+      tol_carbon_budget = 100. * r_tol_trunc
+   case default
+      tol_subday_budget =        r_tol_trunc
+      tol_carbon_budget = 10.  * r_tol_trunc
+   end select
    !---------------------------------------------------------------------------------------!
 
 

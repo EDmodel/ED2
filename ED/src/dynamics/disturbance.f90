@@ -72,6 +72,7 @@ module disturbance
                                      , update_site_derived_props  ! ! subroutine
       use fusion_fission_coms , only : ifusion                    ! ! intent(in)
       use ed_type_init        , only : new_patch_sfc_props        ! ! subroutine
+      use stable_cohorts      , only : is_resolvable              ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                    , target      :: cgrid
@@ -1071,9 +1072,39 @@ module disturbance
                               do ico=2,cpatch%ncohorts
                                  new_nplant = cpatch%nplant(ico) + cpatch%nplant(1)
                                  ipft       = cpatch%pft(1)
+
+                                 !---------------------------------------------------------!
+                                 !    Temporarily make both cohorts "resolvable".  This is !
+                                 ! to avoid energy/water leaks when a non-resolvable       !
+                                 ! cohort is fused with a resolvable cohort.               !
+                                 !---------------------------------------------------------!
+                                 call is_resolvable(csite,ipa,ico,.false.,.true.           &
+                                                   ,'apply_disturbances (ico,BLE,before)')
+                                 call is_resolvable(csite,ipa,1,.false.,.true.             &
+                                                   ,'apply_disturbances (1,BLE,before)')
+                                 !---------------------------------------------------------!
+
+
+                                 !----- Fuse cohorts. -------------------------------------!
                                  call fuse_2_cohorts(cpatch,ico,1, csite%can_prss(ipa)     &
                                                     ,csite%can_shv (ipa),cpoly%lsl(isi)    &
                                                     ,.false.)
+                                 !---------------------------------------------------------!
+
+
+
+                                 !---------------------------------------------------------!
+                                 !     Check whether the final fused cohort is resolvable. !
+                                 ! In case it is not, then we must subtract the phenology  !
+                                 ! effect that was temporarily added before fusing the     !
+                                 ! cohorts.  Unlike the "before" calls, here we do not     !
+                                 ! force cohorts to be resolvable.                         !
+                                 !---------------------------------------------------------!
+                                 call is_resolvable(csite,ipa,1,.false.,.false.            &
+                                                   ,'apply_disturbances (1,BLE,after)')
+                                 !---------------------------------------------------------!
+
+
 
                                  !---------------------------------------------------------!
                                  !     Set nplant to a tiny number, we will delete this    !
@@ -4012,7 +4043,7 @@ module disturbance
                                         + cpatch%wood_water_im2(nc)                        &
                                         , cpatch%wood_temp     (nc)                        &
                                         , cpatch%wood_fliq     (nc) )
-      call is_resolvable(csite,np,nc,.true.,'plant_patch')
+      call is_resolvable(csite,np,nc,.true.,.false.,'plant_patch')
       !------------------------------------------------------------------------------------!
 
       !----- Should plantations be considered recruits? -----------------------------------!
@@ -4193,7 +4224,7 @@ module disturbance
                                        ,old_leaf_water,old_wood_water,old_leaf_water_im2   &
                                        ,old_wood_water_im2,.true.)
             !----- Update the stability status. -------------------------------------------!
-            call is_resolvable(csite,np,ico,.false.,'prune_lianas')
+            call is_resolvable(csite,np,ico,.false.,.false.,'prune_lianas')
             !------------------------------------------------------------------------------!
 
 

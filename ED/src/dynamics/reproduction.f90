@@ -587,7 +587,7 @@ module reproduction
                         cpatch%wood_energy(ico) = 0.0
                         call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.,.false.)
                         !----- Update flags for the biophysical integrator. ---------------!
-                        call is_resolvable(csite,ipa,ico,.false.                           &
+                        call is_resolvable(csite,ipa,ico,.false.,.false.                   &
                                           ,'reproduction_driver (SAS)')
                         !------------------------------------------------------------------!
 
@@ -826,7 +826,7 @@ module reproduction
                         cpatch%wood_energy(ico) = 0.0
                         call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.,.false.)
                         !----- Update flags for the biophysical integrator. ---------------!
-                        call is_resolvable(csite,ipa,ico,.false.                           &
+                        call is_resolvable(csite,ipa,ico,.false.,.false.                   &
                                           ,'reproduction_driver (BLE)')
                         !------------------------------------------------------------------!
                      else

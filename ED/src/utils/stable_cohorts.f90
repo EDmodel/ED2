@@ -48,7 +48,7 @@ module stable_cohorts
                cohortloop: do ico=1, cpatch%ncohorts
 
                   !----- Check whether we can resolve this cohort. ------------------------!
-                  call is_resolvable(csite,ipa,ico,.false.,'flag_stable_cohorts')
+                  call is_resolvable(csite,ipa,ico,.false.,.false.,'flag_stable_cohorts')
                   !------------------------------------------------------------------------!
 
                end do cohortloop
@@ -78,8 +78,12 @@ module stable_cohorts
    ! 2. The cohort is buried in snow or under water                                        !
    ! 3. The cohort is extremely sparse.                                                    !
    ! 4. The user doesn't want to solve wood thermodynamics (wood only).                    !
+   !                                                                                       !
+   !    The one exception is during cohort fusion (except during initialisation).  In this !
+   ! case we force cohorts to be resolvable to ensure water and energy changes are         !
+   ! accounted                                                                             !
    !---------------------------------------------------------------------------------------!
-   subroutine is_resolvable(csite,ipa,ico,is_initial,called_from)
+   subroutine is_resolvable(csite,ipa,ico,is_initial,force_resolvable,called_from)
       use ed_state_vars  , only : sitetype               & ! structure
                                 , patchtype              ! ! structure
       use pft_coms       , only : C2B                    & ! intent(in)
@@ -111,6 +115,7 @@ module stable_cohorts
       integer         , intent(in) :: ipa                ! Patch index
       integer         , intent(in) :: ico                ! Cohort index
       logical         , intent(in) :: is_initial         ! Initial assignment?
+      logical         , intent(in) :: force_resolvable   ! Impose resolvable?
       character(len=*), intent(in) :: called_from        ! Parent subroutine
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype) , pointer    :: cpatch             ! Current patch
@@ -127,12 +132,12 @@ module stable_cohorts
       logical                      :: switch_wood_on     ! Wood became resolvable   [   T|F]
       logical                      :: switch_leaf_off    ! Leaf became unresolvable [   T|F]
       logical                      :: switch_wood_off    ! Wood became unresolvable [   T|F]
-      real                         :: old_leaf_hcap      ! Old leaf heat capacity   [J/kg/K]
-      real                         :: old_wood_hcap      ! Old wood heat capacity   [J/kg/K]
-      real                         :: old_leaf_water     ! Old leaf surface water   [ kg/m2]
-      real                         :: old_wood_water     ! Old wood surface water   [ kg/m2]
-      real                         :: old_leaf_water_im2 ! Old leaf internal water  [ kg/m2]
-      real                         :: old_wood_water_im2 ! Old wood internal water  [ kg/m2]
+      real                         :: mid_leaf_hcap      ! Mid leaf heat capacity   [J/kg/K]
+      real                         :: mid_wood_hcap      ! Mid wood heat capacity   [J/kg/K]
+      real                         :: mid_leaf_water     ! Mid leaf surface water   [ kg/m2]
+      real                         :: mid_wood_water     ! Mid wood surface water   [ kg/m2]
+      real                         :: mid_leaf_water_im2 ! Mid leaf internal water  [ kg/m2]
+      real                         :: mid_wood_water_im2 ! Mid wood internal water  [ kg/m2]
       real                         :: c_leaf             ! Leaf water capacity      [  kg/m]
       real                         :: c_stem             ! Stem water capacity      [  kg/m]
       real                         :: sap_frac           ! Sapwood fraction         [   ---]
@@ -179,17 +184,11 @@ module stable_cohorts
 
 
       !------------------------------------------------------------------------------------!
-      !     Save previous condition, to avoid singularities for leaves and wood coming     !
-      ! out of senescence.                                                                 !
+      !     Save original "resolvable" condition.  These are used to decide whether to     !
+      ! update heat capacity, internal water, and the budget terms.                        !
       !------------------------------------------------------------------------------------!
       old_leaf_res       = cpatch%leaf_resolvable(ico)
       old_wood_res       = cpatch%wood_resolvable(ico)
-      old_leaf_hcap      = cpatch%leaf_hcap      (ico)
-      old_wood_hcap      = cpatch%wood_hcap      (ico)
-      old_leaf_water     = cpatch%leaf_water     (ico)
-      old_wood_water     = cpatch%wood_water     (ico)
-      old_leaf_water_im2 = cpatch%leaf_water_im2 (ico)
-      old_wood_water_im2 = cpatch%wood_water_im2 (ico)
       !------------------------------------------------------------------------------------!
 
 
@@ -231,8 +230,13 @@ module stable_cohorts
       !------------------------------------------------------------------------------------!
       !     Save the tests in the cohort variable, so the checks are done consistently.    !
       !------------------------------------------------------------------------------------!
-      cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough
-      cpatch%wood_resolvable(ico) = exposed .and. ( wood_enough .or. hydro_req )
+      if (force_resolvable) then
+         cpatch%leaf_resolvable(ico) = .true.
+         cpatch%wood_resolvable(ico) = .true.
+      else
+         cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough
+         cpatch%wood_resolvable(ico) = exposed .and. ( wood_enough .or. hydro_req )
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -298,9 +302,24 @@ module stable_cohorts
 
 
       !------------------------------------------------------------------------------------!
+      !     Before we move on, we save the heat capacity and water (surface and internal). !
+      ! In case we must update internal water, we will need these to adjust the budget     !
+      ! variables.                                                                         !
+      !------------------------------------------------------------------------------------!
+      mid_leaf_hcap      = cpatch%leaf_hcap      (ico)
+      mid_wood_hcap      = cpatch%wood_hcap      (ico)
+      mid_leaf_water     = cpatch%leaf_water     (ico)
+      mid_wood_water     = cpatch%wood_water     (ico)
+      mid_leaf_water_im2 = cpatch%leaf_water_im2 (ico)
+      mid_wood_water_im2 = cpatch%wood_water_im2 (ico)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
       !     Decide whether to update hydrology.                                            !
       !------------------------------------------------------------------------------------!
-      update_hydro = switch_leaf_on .or. switch_wood_on
+      update_hydro = ( switch_leaf_on .or. switch_wood_on ) .and. (.not. force_resolvable)
       !------------------------------------------------------------------------------------!
 
 
@@ -367,9 +386,9 @@ module stable_cohorts
 
 
          !----- Update internal energy. ---------------------------------------------------!
-         call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap             &
-                                    ,old_leaf_water,old_wood_water,old_leaf_water_im2      &
-                                    ,old_wood_water_im2,.true.)
+         call update_veg_energy_cweh(csite,ipa,ico,mid_leaf_hcap,mid_wood_hcap             &
+                                    ,mid_leaf_water,mid_wood_water,mid_leaf_water_im2      &
+                                    ,mid_wood_water_im2,.true.)
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -455,6 +474,7 @@ module stable_cohorts
          write(unit=53,fmt=fmtf ) ' WAI         = ', cpatch%wai   (ico)
          write(unit=53,fmt=fmtf ) ' ELONGF      = ', cpatch%elongf(ico)
          write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt=fmtl ) ' FORCE_RES   = ', force_resolvable
          write(unit=53,fmt=fmtl ) ' LEAF_ON     = ', switch_leaf_on
          write(unit=53,fmt=fmtl ) ' LEAF_OFF    = ', switch_leaf_off
          write(unit=53,fmt=fmtl ) ' WOOD_ON     = ', switch_wood_on

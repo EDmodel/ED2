@@ -458,7 +458,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                             ,.true.)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
-                 call is_resolvable(csite,ipa,ico,.false.,'event_harvest')
+                 call is_resolvable(csite,ipa,ico,.false.,.false.,'event_harvest')
 
               enddo
 

@@ -780,7 +780,7 @@ module structural_growth
                                              ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
                                              ,.true.)
-                  call is_resolvable(csite,ipa,ico,.false.,'dbstruct_dt')
+                  call is_resolvable(csite,ipa,ico,.false.,.false.,'dbstruct_dt')
                   !------------------------------------------------------------------------!
 
 

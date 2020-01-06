@@ -54,7 +54,7 @@ done
 #---- Ask user in case they didn't provide the platform. ----------------------------------#
 if [ "${PLATFORM}" == "" ]
 then
-   echo -n  "Which platform are you using? (e.g. odyssey, sdumont)   "
+   echo -n  "Which platform are you using? (e.g. cannon, sdumont)   "
    read PLATFORM
 fi
 #------------------------------------------------------------------------------------------#
@@ -88,10 +88,26 @@ sims="dbug test main"
 nsims=$(echo ${sims} | wc -w)
 #------------------------------------------------------------------------------------------#
 
+
+
+#----- Find the number of polygons to run. ------------------------------------------------#
 let nsuite=${nsites}*${nsims}
+if [ ${nsuite} -lt 100 ]
+then
+   ndig=2
+elif [ ${nsuite} -lt 1000 ]
+then
+   ndig=3
+elif [ ${nsuite} -lt 10000 ]
+then
+   ndig=4
+else
+   ndig=5
+fi
+pfmt="%${ndig}.${ndig}i"
+#------------------------------------------------------------------------------------------#
 
 #----- Go through all sites. --------------------------------------------------------------#
-ffout=
 for site in ${sites}
 do
 
@@ -103,18 +119,7 @@ do
       #------------------------------------------------------------------------------------#
       #    Format count.                                                                   #
       #------------------------------------------------------------------------------------#
-      if   [ ${nsuite} -ge 10   ] && [ ${nsuite} -lt 100   ]
-      then
-         ffout=$(printf '%2.2i' ${ff})
-      elif [ ${nsuite} -ge 100  ] && [ ${nsuite} -lt 1000  ]
-      then
-         ffout=$(printf '%2.2i' ${ff})
-      elif [ ${nsuite} -ge 100  ] && [ ${nsuite} -lt 10000 ]
-      then
-         ffout=$(printf '%2.2i' ${ff})
-      else
-         ffout=${ff}
-      fi
+      ffout=$(printf "${pfmt}" ${ff})
       #------------------------------------------------------------------------------------#
 
 
@@ -130,7 +135,7 @@ do
       if [ -s ${stdout} ]
       then
          case ${PLATFORM} in
-         odyssey|sdumont)
+         cannon|odyssey|sdumont)
             stask="stask --noheader -u ${USER} -j ${jobname} -t ${jobname}"
             running=$(${stask} -o "${OUTFORM}" | grep "RUNNING"   | wc -l)
             pending=$(${stask} -o "${OUTFORM}" | grep "PENDING"   | wc -l)
@@ -194,17 +199,10 @@ do
 
 
 
-         #----- Check whether met files are missing... (bad start) ------------------------#
-         metbs1=$(grep "Cannot open met driver input file" ${stdout} | wc -l)
-         metbs2=$(grep "Specify ED_MET_DRIVER_DB properly" ${stdout} | wc -l)
-         let metmiss=${metbs1}+${metbs2}
-         #---------------------------------------------------------------------------------#
-
-
-
          #----- Check for other possible outcomes. ----------------------------------------#
          stopped=$(grep "FATAL ERROR"                       ${stdout} | wc -l)
          crashed=$(grep "IFLAG1 problem."                   ${stdout} | wc -l)
+         badbdgt=$(grep "Budget check has failed"           ${stdout} | wc -l)
          bad_met=$(grep "Meteorological forcing has issues" ${stdout} | wc -l)
          the_end=$(grep "ED-2.2 execution ends"             ${stdout} | wc -l)
          #---------------------------------------------------------------------------------#
@@ -220,6 +218,9 @@ do
          elif [ ${crashed} -gt 0 ]
          then 
             echo  "    ${sim} HAS CRASHED (RK4 PROBLEM)."
+         elif [ ${badbdgt} -gt 0 ]
+         then
+            echo  "    ${sim} HAS CRASHED (BUDGET PROBLEM)."
          elif [ ${bad_met} -gt 0 ]
          then 
             echo  "    ${sim} HAS BAD MET DRIVERS."
@@ -250,6 +251,8 @@ do
             echo  "       METMISS -- ${metmiss}"
             echo  "       STOPPED -- ${stopped}"
             echo  "       CRASHED -- ${crashed}"
+            echo  "       BADBDGT -- ${badbdgt}"
+            echo  "       BAD_MET -- ${bad_met}"
             echo  "       THE_END -- ${the_end}"
          else
             echo  "    ${sim} status is UNKNOWN (Last time ${runtime})."
