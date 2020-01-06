@@ -422,7 +422,7 @@ SUBMIT_JOBS="n"
          agri="5"
          plantation="6"
          sl_pft="6,8,9,10,11"
-         sl_probharv="1.,1.,1..1.,1."
+         sl_probharv="1.,1.,1.,1.,1."
          sl_mindbh="0.,0.,0.,0.,0."
          ;;
       D)
@@ -440,7 +440,7 @@ SUBMIT_JOBS="n"
          agri="5"
          plantation="7"
          sl_pft="6,7,8,9,10,11"
-         sl_probharv="1.,1.,1..1.,1.,1."
+         sl_probharv="1.,1.,1.,1.,1.,1."
          sl_mindbh="0.,0.,0.,0.,0.,0."
          ;;
       esac
@@ -516,7 +516,7 @@ SUBMIT_JOBS="n"
          imetavg=1
          imetrad=2
          ;;
-      har|hih)
+      har|hih|hbg)
          metdriv="edts_datasets/met/har/HARVARD_MET_93_09_CO2"
          metcyca=1993
          metcycz=2009
@@ -606,7 +606,7 @@ SUBMIT_JOBS="n"
    function phenol_setting()
    {
       case "${1}" in
-         har|hih)
+         har|hih|hbg)
             phen_path="edts_datasets/phenology/HarOneCycle/phenology"
             iphenysa=1992
             iphenysz=2009
@@ -739,12 +739,6 @@ declare -a HIFRPFX=(HIP HIM HIG HIH)
 declare -a HIFRQ=(${Q_HIP} ${Q_HIM} ${Q_HIG} ${Q_HIH})
 declare -a HIFRMEM=(${MEM_HIP} ${MEM_HIM} ${MEM_HIG} ${MEM_HIH})
 declare -a HIFRCPU=(1 1 1 1)
-declare -a IYEARAH=(2000 2000 2000 2000)
-declare -a IYEARZH=(2000 2000 2000 2000)
-declare -a IMONTHAH=(10 01 05 02)
-declare -a IMONTHZH=(10 01 05 02)
-declare -a IDATEAH=(21 01 01 01)
-declare -a IDATEZH=(28 08 08 08)
 declare -a INITMDH=(6  5  5   6)
 declare -a RUNTYPH=(INITIAL INITIAL INITIAL INITIAL)
 #------------------------------------------------------------------------------------------#
@@ -825,7 +819,7 @@ declare -a SLXSANDH=(0.821 0.200 0.562 0.660)
 declare -a ISOILCOLH=(14 2 14 2)
 declare -a SDEPTHH=(C H G E)
 declare -a ISOILBCH=(2 1 1 0)
-declare -a INTEGRH=(1 3 1)
+declare -a INTEGRH=(1 3 1 1)
 declare -a IBRANCHH=(1 1 1 0)
 declare -a IPHYSIOLH=(2 2 2__3)
 declare -a IALLOMH=(2 2 3 0)
@@ -847,7 +841,7 @@ declare -a IPERCOLH=(0 0 0 1)
 declare -a PFTFLAGH=(B B B C)
 declare -a TREEFALLH=(0.014 0.014 0.014 0.0)
 declare -a IFUSIONH=(0 0 1 0)
-declare -a IVEGTDYNH=(0 0 0 0)
+declare -a IVEGTDYNH=(1 1 1 1)
 declare -a RK4TOLERH=(0.01 0.01 0.01 0.01)
 declare -a MAXSITEH=(1 1 1 1)
 #------------------------------------------------------------------------------------------#
@@ -911,13 +905,26 @@ rapid)
    echo " - Performing rapid tests (2 years for POI, 1 year for grid)"
 
    #----- POI tests will run for two years. -----------------------------------------------#
-   declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2007 2000 2011 2008 2007)
-   declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007 2009 2002 2013 2010 2009)
+   declare -a IYEARAS=(2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010)
+   declare -a IYEARZS=(2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012)
    declare -a INITMDS=(5    0    6    0    5    0    5    0    6    5    5    6    0    -1  )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
    #---------------------------------------------------------------------------------------#
 
+
+   #---------------------------------------------------------------------------------------#
+   #      High-frequency test will be run for a few days, and save the budget, the Runge-  #
+   # Kutta output and the photosynthesis output.                                           #
+   #---------------------------------------------------------------------------------------#
+   declare -a IYEARAH=(2010 2010 2010 2010)
+   declare -a IYEARZH=(2010 2010 2010 2010)
+   declare -a IMONTHAH=(10 01 05 02)
+   declare -a IMONTHZH=(10 01 05 02)
+   declare -a IDATEAH=(21 01 01 01)
+   declare -a IDATEZH=(28 08 08 08)
+   declare -a IDETAILEDH=(7 7 7 7)
+   #---------------------------------------------------------------------------------------#
 
 
    #----- Gridded tests will run for only 1 year. -----------------------------------------#
@@ -937,7 +944,7 @@ medium)
 
    echo " - Performing intermediate tests (125 years for POI, 15 years for grid)"
 
-   #----- POI tests will run for two years. -----------------------------------------------#
+   #----- POI tests will run for 125 years. -----------------------------------------------#
    declare -a IYEARAS=(1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975)
    declare -a IYEARZS=(2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100 2100)
    declare -a INITMDS=(5    0    6    0    5    0    5    0    6    5    5    6    0    -1  )
@@ -946,8 +953,22 @@ medium)
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #      High-frequency test will be run for 10 years, but we only save the budget        #
+   # output.                                                                               #
+   #---------------------------------------------------------------------------------------#
+   declare -a IYEARAH=(2005 2005 2005 2005)
+   declare -a IYEARZH=(2015 2015 2015 2015)
+   declare -a IMONTHAH=(01 01 01 01)
+   declare -a IMONTHZH=(01 01 01 01)
+   declare -a IDATEAH=(01 01 01 01)
+   declare -a IDATEZH=(01 01 01 01)
+   declare -a IDETAILEDH=(1 1 1 1)
+   #---------------------------------------------------------------------------------------#
 
-   #----- Gridded tests will run for only 1 year. -----------------------------------------#
+
+
+   #----- Gridded tests will run for 15 years. --------------------------------------------#
    declare -a IYEARAG=(1995)
    declare -a IYEARZG=(2010)
    declare -a INITMDG=(5)
@@ -970,6 +991,20 @@ long)
    declare -a INITMDS=(0    0    0    0    0    0    0    0    0    0    0    0    0    -1  )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      High-frequency test will be run for 50 years, but we only save the budget        #
+   # output.                                                                               #
+   #---------------------------------------------------------------------------------------#
+   declare -a IYEARAH=(2000 2000 2000 2000)
+   declare -a IYEARZH=(2050 2050 2050 2050)
+   declare -a IMONTHAH=(01 01 01 01)
+   declare -a IMONTHZH=(01 01 01 01)
+   declare -a IDATEAH=(01 01 01 01)
+   declare -a IDATEZH=(01 01 01 01)
+   declare -a IDETAILEDH=(1 1 1 1)
    #---------------------------------------------------------------------------------------#
 
 
@@ -2360,13 +2395,17 @@ do
       #      Detailed output settings.                                                     #
       #------------------------------------------------------------------------------------#
       #----- Detailed output list. --------------------------------------------------------#
-      sed -i '/NL%IDETAILED/c\   NL%IDETAILED = 7'                          ${FILEMAIN}
-      sed -i '/NL%IDETAILED/c\   NL%IDETAILED = 7'                          ${FILETEST}
-      sed -i '/NL%IDETAILED/c\   NL%IDETAILED = 7'                          ${FILEDBUG}
+      sed -i '/NL%IDETAILED/c\   NL%IDETAILED = '"${IDETAILEDH[i]}"            ${FILEMAIN}
+      sed -i '/NL%IDETAILED/c\   NL%IDETAILED = '"${IDETAILEDH[i]}"            ${FILETEST}
+      sed -i '/NL%IDETAILED/c\   NL%IDETAILED = '"${IDETAILEDH[i]}"            ${FILEDBUG}
       #----- Patches to keep. -------------------------------------------------------------#
-      sed -i '/NL%PATCH_KEEP/c\   NL%PATCH_KEEP = -1'                       ${FILEMAIN}
-      sed -i '/NL%PATCH_KEEP/c\   NL%PATCH_KEEP = -1'                       ${FILETEST}
-      sed -i '/NL%PATCH_KEEP/c\   NL%PATCH_KEEP = -1'                       ${FILEDBUG}
+      sed -i '/NL%PATCH_KEEP/c\   NL%PATCH_KEEP = -1'                          ${FILEMAIN}
+      sed -i '/NL%PATCH_KEEP/c\   NL%PATCH_KEEP = -1'                          ${FILETEST}
+      sed -i '/NL%PATCH_KEEP/c\   NL%PATCH_KEEP = -1'                          ${FILEDBUG}
+      #----- Maximum number of patches. ---------------------------------------------------#
+      sed -i '/NL%MAXPATCH/c\   NL%MAXPATCH = 1'                               ${FILEMAIN}
+      sed -i '/NL%MAXPATCH/c\   NL%MAXPATCH = 1'                               ${FILETEST}
+      sed -i '/NL%MAXPATCH/c\   NL%MAXPATCH = 1'                               ${FILEDBUG}
       #------------------------------------------------------------------------------------#
 
 

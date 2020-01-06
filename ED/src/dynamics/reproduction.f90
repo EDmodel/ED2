@@ -435,9 +435,10 @@ module reproduction
                         inew = inew + 1
 
                         !----- Copy from recruitment table (I). ---------------------------!
-                        cpatch%pft(ico)       = recruit(inew)%pft
-                        cpatch%hite(ico)      = recruit(inew)%hite
-                        cpatch%dbh(ico)       = recruit(inew)%dbh
+                        cpatch%pft   (ico)    = recruit(inew)%pft
+                        cpatch%hite  (ico)    = recruit(inew)%hite
+                        cpatch%dbh   (ico)    = recruit(inew)%dbh
+                        cpatch%nplant(ico)    = recruit(inew)%nplant 
                         !------------------------------------------------------------------!
 
                         !----- Carry out standard initialization. -------------------------!
@@ -447,7 +448,6 @@ module reproduction
 
 
                         !----- Copy from recruitment table (II). --------------------------!
-                        cpatch%nplant             (ico) = recruit(inew)%nplant 
                         cpatch%bdeada             (ico) = recruit(inew)%bdeada
                         cpatch%bdeadb             (ico) = recruit(inew)%bdeadb
                         cpatch%paw_avg            (ico) = recruit(inew)%paw_avg

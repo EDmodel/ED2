@@ -7818,8 +7818,19 @@ subroutine init_derived_params_after_xml()
    end where
    !---------------------------------------------------------------------------------------!
 
-   !------ Repro_min_h cannot be 0.  Make sure that height is at least hgt_min. -----------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Make sure that repro_min_h is bounded between hgt_min and hgt_max.  This will     !
+   ! avoid floating point exceptions, or surprises when the user only partially sets       !
+   ! allometry parameters with XML.                                                        !
+   !---------------------------------------------------------------------------------------!
    repro_min_h(:) = merge(repro_min_h(:),hgt_min(:),repro_min_h(:) >= hgt_min(:))
+   repro_min_h(:) = merge( repro_min_h(:)                                                  &
+                         , merge(hgt_max(:),0.5*(hgt_min(:)+hgt_max(:)),is_grass(:))       &
+                         , repro_min_h(:) <= hgt_max(:)                              )
+   !---------------------------------------------------------------------------------------!
+
+   !------ Repro_min_h cannot exceed hgt_max
    !---------------------------------------------------------------------------------------!
 
    !------ Find corresponding DBH. --------------------------------------------------------!
