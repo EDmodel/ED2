@@ -11277,6 +11277,7 @@ module ed_state_vars
 
          !------ Water absorption from each soil layer ------------------------------------!
          do m=1,nzg
+            opatch%wflux_gw_layer        (m,oco) = ipatch%wflux_gw_layer        (m,ico)
             opatch%fmean_wflux_gw_layer  (m,oco) = ipatch%fmean_wflux_gw_layer  (m,ico)
          end do
          !---------------------------------------------------------------------------------!
@@ -12054,11 +12055,11 @@ module ed_state_vars
 
 
 
-      !------ Water absorption from each soil layer ------------------------------------!
+      !------ Water absorption from each soil layer ---------------------------------------!
       do m=1,nzg
          opatch%fmean_wflux_gw_layer(m,1:z) = pack(ipatch%fmean_wflux_gw_layer(m,:),lmask)
       end do
-      !---------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
       !------ Radiation profile variables. ------------------------------------------------!

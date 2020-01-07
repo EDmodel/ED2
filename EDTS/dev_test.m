@@ -16,7 +16,7 @@ close all;
 %     User defined variables
 %==========================================================================
 
-test_name = '1d07ca0-mlo-700050e-v1_medium';
+test_name = '3e31dd3-xyz-b13aac2-v1_rapid';
 
 use_m34 = true;       % POI Manaus km34
 use_ata = true;       % POI Atacama
@@ -308,7 +308,7 @@ nsite = is;
 ngrid = ig;
 nhifr = ih;
 
-runstat = {'Pending','Running','SIGSEGV','CRASHED','BAD_MET','METMISS','STOPPED','Success'};
+runstat = {'Pending','Running','SIGSEGV','CRASHED','BADBDGT','BAD_MET','METMISS','STOPPED','Success'};
 pause(2);
 
 
@@ -347,16 +347,18 @@ if nsite>0
                spass(is,1) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                spass(is,1) = 3;
-            elseif (strfind(tline,'Meteorological forcing has issues'))
+            elseif (strfind(tline,'Budget check has failed.'))
                spass(is,1) = 4;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               spass(is,1) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               spass(is,1) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               spass(is,1) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                spass(is,1) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               spass(is,1) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                spass(is,1) = 7;
+            elseif (strfind(tline,'execution ends'))
+               spass(is,1) = 8;
             end
         end
         fclose(fid);
@@ -398,16 +400,18 @@ if nsite>0
                spass(is,2) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                spass(is,2) = 3;
-            elseif (strfind(tline,'Meteorological forcing has issues'))
+            elseif (strfind(tline,'Budget check has failed.'))
                spass(is,2) = 4;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               spass(is,2) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               spass(is,2) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               spass(is,2) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                spass(is,2) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               spass(is,2) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                spass(is,2) = 7;
+            elseif (strfind(tline,'execution ends'))
+               spass(is,2) = 8;
             end
         end
         fclose(fid);
@@ -450,16 +454,18 @@ if nsite>0
                spass(is,3) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                spass(is,3) = 3;
-            elseif (strfind(tline,'Meteorological forcing has issues'))
+            elseif (strfind(tline,'Budget check has failed.'))
                spass(is,3) = 4;
+            elseif (strfind(tline,'Meteorological forcing has issues'))
+               spass(is,3) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               spass(is,3) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               spass(is,3) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                spass(is,3) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               spass(is,3) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                spass(is,3) = 7;
+            elseif (strfind(tline,'execution ends'))
+               spass(is,3) = 8;
             end
         end
         fclose(fid);
@@ -517,16 +523,18 @@ if ngrid>0
                gpass(ig,1) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                gpass(ig,1) = 3;
+            elseif (strfind(tline,'Budget check has failed.'))
+               gpass(is,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
-               gpass(ig,1) = 4;
+               gpass(ig,1) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               gpass(ig,1) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               gpass(ig,1) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                gpass(ig,1) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               gpass(ig,1) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                gpass(ig,1) = 7;
+            elseif (strfind(tline,'execution ends'))
+               gpass(ig,1) = 8;
             end
         end
         fclose(fid);
@@ -568,16 +576,18 @@ if ngrid>0
                gpass(ig,2) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                gpass(ig,2) = 3;
+            elseif (strfind(tline,'Budget check has failed.'))
+               gpass(is,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
-               gpass(ig,2) = 4;
+               gpass(ig,2) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               gpass(ig,2) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               gpass(ig,2) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                gpass(ig,2) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               gpass(ig,2) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                gpass(ig,2) = 7;
+            elseif (strfind(tline,'execution ends'))
+               gpass(ig,2) = 8;
             end
         end
         fclose(fid);
@@ -617,16 +627,18 @@ if ngrid>0
                gpass(ig,3) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                gpass(ig,3) = 3;
+            elseif (strfind(tline,'Budget check has failed.'))
+               gpass(is,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
-               gpass(ig,3) = 4;
+               gpass(ig,3) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               gpass(ig,3) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               gpass(ig,3) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                gpass(ig,3) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               gpass(ig,3) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                gpass(ig,3) = 7;
+            elseif (strfind(tline,'execution ends'))
+               gpass(ig,3) = 8;
             end
         end
         fclose(fid);
@@ -682,16 +694,18 @@ if nhifr>0
                hpass(ih,1) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                hpass(ih,1) = 3;
+            elseif (strfind(tline,'Budget check has failed.'))
+               hpass(is,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
-               hpass(ih,1) = 4;
+               hpass(ih,1) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               hpass(ih,1) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               hpass(ih,1) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                hpass(ih,1) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               hpass(ih,1) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                hpass(ih,1) = 7;
+            elseif (strfind(tline,'execution ends'))
+               hpass(ih,1) = 8;
             end
         end
         fclose(fid);
@@ -734,16 +748,18 @@ if nhifr>0
                hpass(ih,2) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                hpass(ih,2) = 3;
+            elseif (strfind(tline,'Budget check has failed.'))
+               hpass(is,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
-               hpass(ih,2) = 4;
+               hpass(ih,2) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               hpass(ih,2) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               hpass(ih,2) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                hpass(ih,2) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               hpass(ih,2) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                hpass(ih,2) = 7;
+            elseif (strfind(tline,'execution ends'))
+               hpass(ih,2) = 8;
             end
         end
         fclose(fid);
@@ -786,16 +802,18 @@ if nhifr>0
                hpass(ih,3) = 2;
             elseif (strfind(tline,'IFLAG1 problem.'))
                hpass(ih,3) = 3;
+            elseif (strfind(tline,'Budget check has failed.'))
+               hpass(is,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
-               hpass(ih,3) = 4;
+               hpass(ih,3) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
-               hpass(ih,3) = 5;
-            elseif (strfind(tline,'Cannot open met driver input file'))
-               hpass(ih,3) = 5;
-            elseif(  strfind(tline,'FATAL ERROR'))
                hpass(ih,3) = 6;
-            elseif (strfind(tline,'ED-2.2 execution ends'))
+            elseif (strfind(tline,'Cannot open met driver input file'))
+               hpass(ih,3) = 6;
+            elseif(  strfind(tline,'FATAL ERROR'))
                hpass(ih,3) = 7;
+            elseif (strfind(tline,'execution ends'))
+               hpass(ih,3) = 8;
             end
         end
         fclose(fid);
@@ -840,8 +858,8 @@ latex_funit = {'$[mm/m^2]$','$[W/m^2]$','$[W/m^2]$','$[W/m^2]$'...
 
 for is = 1:nsite
     
-    if ( ( (spass(is,2) ~= 1) && (spass(is,2) ~= 7) ) || ...
-         ( (spass(is,3) ~= 1) && (spass(is,3) ~= 7) ) )
+    if ( ( (spass(is,2) ~= 1) && (spass(is,2) ~= 8) ) || ...
+         ( (spass(is,3) ~= 1) && (spass(is,3) ~= 8) ) )
        display(sprintf('Site %s (test/main/both) is pending or had problems.',siteid{is}));
     else
         
@@ -1281,16 +1299,19 @@ if nhifr>0
 display(sprintf('\nHigh Frequency Output'))
 display(sprintf('Checking: Patch Level Mass and Energy Conservation\n'));    
 
-latex_htab = zeros(10,nhifr);
+latex_htab = zeros(13,nhifr);
 
 latex_hname={'$\\Delta E$','$\\dot{E}_{Pcp}$','$\\dot{E}_{Rn}$', ...
-             '$\\dot{E}_{\\rho}$','$\\dot{E}_P$','$\\dot{H}+\\dot{L}$',...
-             '$\\dot{E}_{DR}$','$\\dot{E}_{RO}$','$\\Delta C$','$\\dot{C}_{NEP}$'};
-latex_hunit={'$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$GJ/m^2$', ...
-              '$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$GJ/m^2$','$umol/m^2$','$umol/m^2$'};
+             '$\\dot{E}_{\\rho}$','$\\dot{E}_P$','$\\dot{E}_{VD}$', ...
+             '$\\dot{E}_{EF}$','$\\dot{E}_{RO}$','$\\Delta C$', ...
+             '$\\dot{C}_{\\rho}$','$\\dot{C}_{VD}$','$\\dot{C}_{NS}$', ...
+             '$\\dot{C}_{EF}$'};
+latex_hunit={'$MJ/m^2$','$MJ/m^2$','$MJ/m^2$','$MJ/m^2$','$MJ/m^2$', ...
+              '$MJ/m^2$','$MJ/m^2$','$MJ/m^2$','kgC/m^2$','kgC/m^2$', ...
+              '$kgC/m^2$','kgC/m^2$','kgC/m^2$'};
 
 for ih = 1:nhifr
-    if( (hpass(ih,2) ~= 7) || (hpass(ih,3) ~= 7) )
+    if( (hpass(ih,2) ~= 8) || (hpass(ih,3) ~= 8) )
        display(sprintf('Site %s is not ready or had problems.',hifrid{ih}));
     else
         display(sprintf('%s\n',hifrid{ih}));
@@ -1345,13 +1366,13 @@ for ih = 1:nhifr
                 
                 % First pass, zero patch arrays
                 if(ipa==1)
-                    cbuds_t = zeros(ndat,5,npatch);
+                    cbuds_t = zeros(ndat,6,npatch);
                     ebuds_t = zeros(ndat,9,npatch);
                     wbuds_t = zeros(ndat,7,npatch);
                     cstors_t = zeros(ndat,npatch);
                     estors_t = zeros(ndat,npatch);
                     wstors_t = zeros(ndat,npatch);
-                    cbuds_c = zeros(ndat,5,npatch);
+                    cbuds_c = zeros(ndat,6,npatch);
                     ebuds_c = zeros(ndat,9,npatch);
                     wbuds_c = zeros(ndat,7,npatch);
                     cstors_c = zeros(ndat,npatch);
@@ -1374,9 +1395,9 @@ for ih = 1:nhifr
                 
                 dtfac = (dnv(2)-dnv(1))*86400.0;
                 ebud_cst=1e-6*dtfac*cumsum(ebud_t,1);
-                cbud_cst=dtfac*cumsum(cbud_t,1);
+                cbud_cst=1000*dtfac*cumsum(cbud_t,1);
                 ebud_csc=1e-6*dtfac*cumsum(ebud_c,1);
-                cbud_csc=dtfac*cumsum(cbud_c,1);
+                cbud_csc=1000*dtfac*cumsum(cbud_c,1);
                 
                 latex_htab(1,ih) = latex_htab(1,ih)+...
                     (ebud_cst(end,2)-ebud_csc(end,2))./npatch;
@@ -1398,8 +1419,13 @@ for ih = 1:nhifr
                     (cbud_cst(end,2)-cbud_csc(end,2))./npatch;
                 latex_htab(10,ih)= latex_htab(10,ih)+...
                     (cbud_cst(end,3)-cbud_csc(end,3))./npatch;
-                
-               
+                latex_htab(11,ih)= latex_htab(11,ih)+...
+                    (cbud_cst(end,4)-cbud_csc(end,4))./npatch;
+                latex_htab(12,ih)= latex_htab(12,ih)+...
+                    (cbud_cst(end,5)-cbud_csc(end,5))./npatch;
+                latex_htab(13,ih)= latex_htab(13,ih)+...
+                    (cbud_cst(end,6)-cbud_csc(end,6))./npatch;
+
                 ndat1=ndat;
             end
             
@@ -1458,8 +1484,8 @@ latex_gtab = zeros(2,ngrid);
    display('Assessing Gridded site(s)'); 
     for ig=1:ngrid
         
-        if( ( (gpass(ig,2) ~= 1) &&  (gpass(ig,2) ~= 7) ) || ...
-            ( (gpass(ig,3) ~= 1) &&  (gpass(ig,3) ~= 7) ) )
+        if( ( (gpass(ig,2) ~= 1) &&  (gpass(ig,2) ~= 8) ) || ...
+            ( (gpass(ig,3) ~= 1) &&  (gpass(ig,3) ~= 8) ) )
        display(sprintf('Site %s (test/main/both) is pending or had problems.',gridid{ig}));
         else
             

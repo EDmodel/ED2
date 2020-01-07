@@ -722,8 +722,8 @@ declare -a IDATEZS=(01 01 01 01 01 01 01 01 01 01 01 01 01 01)
 #     POI debug year and settings. We ought to run at least two years to ensure at least   #
 # one patch dynamics step is tested.                                                       #
 #------------------------------------------------------------------------------------------#
-declare -a D_IYEARAS=(2000 2000 2000 2000 2000 2000 2000 2000 2000 2000 2000 2000 2000 2000)
-declare -a D_IYEARZS=(2002 2002 2002 2002 2002 2002 2002 2002 2002 2002 2002 2002 2002 2002)
+declare -a D_IYEARAS=(2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010 2010)
+declare -a D_IYEARZS=(2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012 2012)
 declare -a D_INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6    0    -1  )
 declare -a D_RUNTYPS=( INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
@@ -923,6 +923,8 @@ rapid)
    declare -a IMONTHZH=(10 01 05 02)
    declare -a IDATEAH=(21 01 01 01)
    declare -a IDATEZH=(28 08 08 08)
+   declare -a D_IYEARAH=${D_IYEARAH}
+   declare -a D_IYEARZH=${D_IYEARZH}
    declare -a IDETAILEDH=(7 7 7 7)
    #---------------------------------------------------------------------------------------#
 
@@ -963,6 +965,8 @@ medium)
    declare -a IMONTHZH=(01 01 01 01)
    declare -a IDATEAH=(01 01 01 01)
    declare -a IDATEZH=(01 01 01 01)
+   declare -a D_IYEARAH=(2005 2005 2005 2005)
+   declare -a D_IYEARZH=(2006 2006 2006 2006)
    declare -a IDETAILEDH=(1 1 1 1)
    #---------------------------------------------------------------------------------------#
 
@@ -1004,6 +1008,8 @@ long)
    declare -a IMONTHZH=(01 01 01 01)
    declare -a IDATEAH=(01 01 01 01)
    declare -a IDATEZH=(01 01 01 01)
+   declare -a D_IYEARAH=(2000 2000 2000 2000)
+   declare -a D_IYEARZH=(2001 2001 2001 2001)
    declare -a IDETAILEDH=(1 1 1 1)
    #---------------------------------------------------------------------------------------#
 
@@ -2539,7 +2545,7 @@ do
       #----- Modify the ED2IN start times. ------------------------------------------------#
       sed -i '/NL%IYEARA/c\   NL%IYEARA   = '${IYEARAH[i]}    ${FILEMAIN}
       sed -i '/NL%IYEARA/c\   NL%IYEARA   = '${IYEARAH[i]}    ${FILETEST}
-      sed -i '/NL%IYEARA/c\   NL%IYEARA   = '${IYEARAH[i]}    ${FILEDBUG}
+      sed -i '/NL%IYEARA/c\   NL%IYEARA   = '${D_IYEARAH[i]}  ${FILEDBUG}
       sed -i '/NL%IMONTHA/c\   NL%IMONTHA   = '${IMONTHAH[i]} ${FILEMAIN}
       sed -i '/NL%IMONTHA/c\   NL%IMONTHA   = '${IMONTHAH[i]} ${FILETEST}
       sed -i '/NL%IMONTHA/c\   NL%IMONTHA   = '${IMONTHAH[i]} ${FILEDBUG}
