@@ -90,12 +90,12 @@ endif
 ifeq ($(KIND_COMP),A)
    F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
            -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
-           -fcheck=all -frecursive -fsignaling-nans -Werror -mmacosx-version-min=10.12     \
+           -fcheck=all -fsignaling-nans -Werror -mmacosx-version-min=10.12     \
            -fopenmp -static
    C_OPTS= -O0 -DLITTLE  -g -static
    LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
                 -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
-                -fcheck=all -frecursive -fsignaling-nans -Werror                           \
+                -fcheck=all -fsignaling-nans -Werror                           \
                 -mmacosx-version-min=10.12 -fopenmp
    #---------------------------------------------------------------------------------------#
 endif
