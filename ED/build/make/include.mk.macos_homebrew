@@ -95,15 +95,13 @@ ifeq ($(KIND_COMP),A)
    C_OPTS= -O0 -DLITTLE  -g -static
    LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
                 -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
-                -fcheck=all -fsignaling-nans -Werror                           \
-                -mmacosx-version-min=10.12
+                -fcheck=all -fsignaling-nans -Werror -mmacosx-version-min=10.12
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
-   F_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -fopenmp     \
-           -static
+   F_OPTS= -O3 -ffree-line-length-none -mmacosx-version-min=10.12 -static
    C_OPTS= -O0 -DLITTLE  -g  -static
-   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -fopenmp
+   LOADER_OPTS= -O3 -ffree-line-length-none -mmacosx-version-min=10.12
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#
