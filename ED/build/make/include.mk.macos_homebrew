@@ -1,6 +1,9 @@
 #==========================================================================================#
 #==========================================================================================#
-#     Make file include.mk.opt.embrapa                                                     #
+# ED2 installation options for MacOS with additional libraries installed via Homebrew.
+# Make sure you have the following libraries installed (`brew install <library>`):
+# - hdf5
+# - gfortran
 #------------------------------------------------------------------------------------------#
 
 
@@ -20,11 +23,10 @@ BASE=$(ED_ROOT)/build/
 # libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may still  #
 # be able to compile without HDF5 but it will not run.                                     #
 #------------------------------------------------------------------------------------------#
-ZLIB_PATH=/Users/mlongo/Util/ED2_Libs/zlib-1.2.11
-HDF5_PATH=/Users/mlongo/Util/ED2_Libs/hdf5-1.10.2
-HDF5_INCS=-I$(HDF5_PATH)/include
+BREW_PREFIX=/usr/local
+HDF5_INCS=-I$(BREW_PREFIX)/include
 HDF5C_INCS=$(HDF5_INCS)
-HDF5_LIBS=-L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl
+HDF5_LIBS=-L$(BREW_PREFIX)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 #------------------------------------------------------------------------------------------#
 
 
@@ -126,6 +128,5 @@ PAR_DEFS=
 #------------------------------------------------------------------------------------------#
 #      Archive options for Mac OS X.                                                       #
 #------------------------------------------------------------------------------------------#
-#ARCHIVE=libtool -c -static -stack_size 0x1000000 -o
 ARCHIVE=ar rs
 #------------------------------------------------------------------------------------------#
