@@ -14,7 +14,7 @@
     <b1Bl_small>0.158</b1Bl_small>
     <b2Bl_small>1</b2Bl_small>
     <b1Bs_small>0.0001</b1Bs_small>
-    <b2Bs_small>0.0001</b2Bs_small>
+    <b2Bs_small>1.0</b2Bs_small>
     <b1Ht>0.4778000116</b1Ht>
     <b2Ht>-0.75</b2Ht>
     <Vm0>20</Vm0>
