@@ -47,9 +47,11 @@ mkdir -p "$OUTDIR"
 mkdir -p "test-logs"
 LOGFILE="test-logs/$TESTNAME"
 
-# Remove the stack limit. Otherwise, ED2 will mysteriously segfault early in its
-# excution.
-ulimit -s unlimited
+if ! uname -a | grep -q -i "darwin"; then
+    # Remove the stack limit. Otherwise, ED2 will mysteriously segfault early in
+    # its excution. But don't do this check on MacOS.
+    ulimit -s unlimited
+fi
 
 # Run without OMP.
 # TODO: Test execution with OMP
