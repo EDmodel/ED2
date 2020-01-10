@@ -3609,7 +3609,7 @@ end subroutine libxml2f90__ll_report
 !====================================================================
 
 
-subroutine libxml2f90_ll_report_rec_wrap(LL_ID,nfil,nind)
+recursive subroutine libxml2f90_ll_report_rec_wrap(LL_ID,nfil,nind)
   implicit none
   character(*),intent(in)       :: ll_id !the id of the linklist
   integer(4),intent(in)         :: nfil !the file unit we report to
@@ -3623,7 +3623,7 @@ end subroutine libxml2f90_ll_report_rec_wrap
 !====================================================================
 
 
-subroutine libxml2f90_ll_report_rec(LL_ID,nfil,nind)
+recursive subroutine libxml2f90_ll_report_rec(LL_ID,nfil,nind)
   use ll_module
   use libxml2f90_module, only: twrite_paw,indstep 
   implicit none
