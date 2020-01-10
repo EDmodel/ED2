@@ -608,9 +608,9 @@ subroutine read_ed10_ed20_history_file
                   csite%mineralized_soil_N(ip) = msn (ip)
                   csite%fast_grnd_N       (ip) =        agf_fsc  * fsn (ip)
                   csite%fast_soil_N       (ip) = (1.0 - agf_fsc) * fsn (ip)
-                  csite%structural_grnd_N (ip) = csite%structural_grnd_N (ip)              &
+                  csite%structural_grnd_N (ip) = csite%structural_grnd_C (ip)              &
                                                / c2n_structural
-                  csite%structural_soil_N (ip) = csite%structural_soil_N (ip)              &
+                  csite%structural_soil_N (ip) = csite%structural_soil_C (ip)              &
                                                / c2n_structural
                   csite%pname             (ip) = trim(pname(ip))
                   csite%sum_dgd           (ip) = 0.0
