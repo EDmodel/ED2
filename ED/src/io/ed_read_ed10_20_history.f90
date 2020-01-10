@@ -893,9 +893,6 @@ subroutine read_ed10_ed20_history_file
                         cpatch%bbarkb(ic2)    = (1.-agf_bs(ipft(ic)))                      &
                                               * cpatch%bleaf(ic2)                          &
                                               * qbark(ipft(ic)) * cpatch%hite(ic2)
-                        cpatch%bstorage(ic2)  = max( almost_zero                           &
-                                                   , f_bstorage_init(ipft(ic)))     &
-                                              * cpatch%balive(ic2)
                         !------------------------------------------------------------------!
 
 
@@ -913,6 +910,12 @@ subroutine read_ed10_ed20_history_file
                         cpatch%balive(ic2) = ed_balive(cpatch, ic2)
                         !------------------------------------------------------------------!
 
+
+                        !----- Initialise storage biomass (after setting balive). ---------#
+                        cpatch%bstorage(ic2)  = max( almost_zero                           &
+                                                   , f_bstorage_init(ipft(ic)))            &
+                                              * cpatch%balive(ic2)
+                        !------------------------------------------------------------------!
 
 
                         !------------------------------------------------------------------!
