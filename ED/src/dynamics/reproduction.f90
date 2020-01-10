@@ -438,7 +438,14 @@ module reproduction
                         cpatch%pft   (ico)    = recruit(inew)%pft
                         cpatch%hite  (ico)    = recruit(inew)%hite
                         cpatch%dbh   (ico)    = recruit(inew)%dbh
-                        cpatch%nplant(ico)    = recruit(inew)%nplant 
+                        cpatch%nplant(ico)    = recruit(inew)%nplant
+
+                        cpatch%bleaf              (ico) = recruit(inew)%bleaf
+                        cpatch%bsapwooda          (ico) = recruit(inew)%bsapwooda
+                        cpatch%bsapwoodb          (ico) = recruit(inew)%bsapwoodb
+                        cpatch%bdeada             (ico) = recruit(inew)%bdeada
+                        cpatch%bdeadb             (ico) = recruit(inew)%bdeadb
+                        cpatch%broot              (ico) = recruit(inew)%broot
                         !------------------------------------------------------------------!
 
                         !----- Carry out standard initialization. -------------------------!
@@ -448,15 +455,9 @@ module reproduction
 
 
                         !----- Copy from recruitment table (II). --------------------------!
-                        cpatch%bdeada             (ico) = recruit(inew)%bdeada
-                        cpatch%bdeadb             (ico) = recruit(inew)%bdeadb
                         cpatch%paw_avg            (ico) = recruit(inew)%paw_avg
                         cpatch%elongf             (ico) = recruit(inew)%elongf
                         cpatch%phenology_status   (ico) = recruit(inew)%phenology_status
-                        cpatch%bleaf              (ico) = recruit(inew)%bleaf
-                        cpatch%broot              (ico) = recruit(inew)%broot
-                        cpatch%bsapwooda          (ico) = recruit(inew)%bsapwooda
-                        cpatch%bsapwoodb          (ico) = recruit(inew)%bsapwoodb
                         cpatch%bbarka             (ico) = recruit(inew)%bbarka
                         cpatch%bbarkb             (ico) = recruit(inew)%bbarkb
                         cpatch%balive             (ico) = recruit(inew)%balive
