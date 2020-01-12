@@ -6717,7 +6717,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     In case we are checking budget, make a copy of both receptor and donor sites.  !
       !------------------------------------------------------------------------------------!
-      if (checkbudget) then
+      if (checkbudget .and. (.not. fuse_initial)) then
          !----- Allocate site with 2 patches (1 = receptor; 2 = donor). -------------------!
          nullify (osite)
          allocate(osite)
@@ -8381,7 +8381,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Last, we make sure that fusion preserved energy, water, and carbon storage.    !
       !------------------------------------------------------------------------------------!
-      if (checkbudget) then
+      if (checkbudget .and. (.not. fuse_initial)) then
          !----- Call a separate routine that performs the check. --------------------------!
          call check_bfusion_patch(csite,osite,lsl,recp)
          !---------------------------------------------------------------------------------!

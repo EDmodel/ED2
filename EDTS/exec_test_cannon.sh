@@ -923,8 +923,8 @@ rapid)
    declare -a IMONTHZH=(10 01 05 02)
    declare -a IDATEAH=(21 01 01 01)
    declare -a IDATEZH=(28 08 08 08)
-   declare -a D_IYEARAH=${D_IYEARAH}
-   declare -a D_IYEARZH=${D_IYEARZH}
+   declare -a D_IYEARAH=${IYEARAH}
+   declare -a D_IYEARZH=${IYEARZH}
    declare -a IDETAILEDH=(7 7 7 7)
    #---------------------------------------------------------------------------------------#
 
