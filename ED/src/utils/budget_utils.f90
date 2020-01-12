@@ -164,9 +164,9 @@ module budget_utils
 
       !----- Compute current storage terms. -----------------------------------------------!
       csite%co2budget_initialstorage(ipa) = compute_co2_storage     (csite,ipa)
-      csite%cbudget_initialstorage  (ipa) = compute_carbon_storage  (csite,ipa)
-      csite%wbudget_initialstorage  (ipa) = compute_water_storage   (csite,lsl,ipa)
-      csite%ebudget_initialstorage  (ipa) = compute_enthalpy_storage(csite,lsl,ipa)
+      csite%cbudget_initialstorage  (ipa) = compute_carbon_storage  (csite,ipa,0)
+      csite%wbudget_initialstorage  (ipa) = compute_water_storage   (csite,lsl,ipa,0)
+      csite%ebudget_initialstorage  (ipa) = compute_enthalpy_storage(csite,lsl,ipa,0)
       !------------------------------------------------------------------------------------!
 
 
@@ -319,7 +319,7 @@ module budget_utils
       ! change even when NEP is non zero.                                                  !
       !------------------------------------------------------------------------------------!
       if (.not. check_budget) then
-         csite%cbudget_initialstorage(ipa) = compute_carbon_storage(csite,ipa)
+         csite%cbudget_initialstorage(ipa) = compute_carbon_storage(csite,ipa,0)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -840,9 +840,9 @@ module budget_utils
 
       !----- Compute current storage terms. -----------------------------------------------!
       co2budget_finalstorage = compute_co2_storage     (csite,ipa)
-      cbudget_finalstorage   = compute_carbon_storage  (csite,ipa)
-      wbudget_finalstorage   = compute_water_storage   (csite,lsl,ipa)
-      ebudget_finalstorage   = compute_enthalpy_storage(csite,lsl,ipa)
+      cbudget_finalstorage   = compute_carbon_storage  (csite,ipa,0)
+      wbudget_finalstorage   = compute_water_storage   (csite,lsl,ipa,0)
+      ebudget_finalstorage   = compute_enthalpy_storage(csite,lsl,ipa,0)
       !------------------------------------------------------------------------------------!
 
 
@@ -1351,7 +1351,7 @@ module budget_utils
    !   This function computes the total water stored in the system, in kg/m2.              !
    !   (soil + temporary pools + canopy air space + leaf surface).                         !
    !---------------------------------------------------------------------------------------!
-   real function compute_water_storage(csite, lsl,ipa)
+   real function compute_water_storage(csite, lsl,ipa,pool)
       use ed_state_vars , only  : sitetype              & ! structure
                                 , patchtype             ! ! structure
       use grid_coms      , only : nzg                   ! ! intent(in)
@@ -1362,6 +1362,7 @@ module budget_utils
       type(sitetype) , target     :: csite
       integer        , intent(in) :: ipa
       integer        , intent(in) :: lsl
+      integer        , intent(in) :: pool
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer    :: cpatch
       integer                     :: k
@@ -1369,8 +1370,11 @@ module budget_utils
       real                        :: soil_storage
       real                        :: sfcwater_storage
       real                        :: cas_storage
-      real                        :: veg_storage
+      real                        :: leaf_storage
+      real                        :: wood_storage
       !------------------------------------------------------------------------------------!
+
+
 
 
       !----- Alias for current patch. -----------------------------------------------------!
@@ -1413,25 +1417,58 @@ module budget_utils
       !    cycle for small cohorts, we ignore them -- but we ought to account for these    !
       !    switches when we update the cohort status.                                      !
       !------------------------------------------------------------------------------------!
-      veg_storage = 0.0
+      leaf_storage = 0.0
+      wood_storage = 0.0
       do ico = 1,cpatch%ncohorts
          !----- Leaves. -------------------------------------------------------------------!
          if (cpatch%leaf_resolvable(ico)) then
-            veg_storage = veg_storage + cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)
+            leaf_storage = leaf_storage                                                    &
+                         + cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)
          end if
          !---------------------------------------------------------------------------------!
 
          !----- Wood. ---------------------------------------------------------------------!
          if (cpatch%wood_resolvable(ico)) then
-            veg_storage = veg_storage + cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)
+            wood_storage = wood_storage                                                    &
+                         + cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)
          end if
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
 
-      !----- 5. Integrate the total water in ED-2.2. --------------------------------------!
-      compute_water_storage = soil_storage + sfcwater_storage + cas_storage + veg_storage
+      !------------------------------------------------------------------------------------!
+      !  5. Report water storage.  Most of the time, we report the sum of all pools, but   !
+      !     we call this routine to calculate the storage in individual pools when report- !
+      !     ing error messages.                                                            !
+      !------------------------------------------------------------------------------------!
+      select case (pool)
+      case (1)
+         !----- Soil storage. -------------------------------------------------------------!
+         compute_water_storage = soil_storage
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !----- Surface water storage. ----------------------------------------------------!
+         compute_water_storage = sfcwater_storage
+         !---------------------------------------------------------------------------------!
+      case (3)
+         !----- Leaf storage. -------------------------------------------------------------!
+         compute_water_storage = leaf_storage
+         !---------------------------------------------------------------------------------!
+      case (4)
+         !----- Wood storage. -------------------------------------------------------------!
+         compute_water_storage = wood_storage
+         !---------------------------------------------------------------------------------!
+      case (5)
+         !----- Canopy-air-space storage. -------------------------------------------------!
+         compute_water_storage = cas_storage
+         !---------------------------------------------------------------------------------!
+      case default
+         !----- Total water storage. ------------------------------------------------------!
+         compute_water_storage = soil_storage     + sfcwater_storage                       &
+                               + leaf_storage     + wood_storage     + cas_storage
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
       return
@@ -1624,7 +1661,7 @@ module budget_utils
    ! ED2 keeps track (soil, temporary surface water, vegetation, canopy air space).        !
    ! The result is given in J/m2.                                                          !
    !---------------------------------------------------------------------------------------!
-   real function compute_enthalpy_storage(csite, lsl, ipa)
+   real function compute_enthalpy_storage(csite, lsl, ipa, pool)
       use ed_state_vars        , only : sitetype              & ! structure
                                       , patchtype             ! ! structure
       use grid_coms            , only : nzg                   ! ! intent(in)
@@ -1635,6 +1672,7 @@ module budget_utils
       type(sitetype) , target     :: csite
       integer        , intent(in) :: ipa
       integer        , intent(in) :: lsl
+      integer        , intent(in) :: pool
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer    :: cpatch
       integer                     :: k
@@ -1642,7 +1680,8 @@ module budget_utils
       real                        :: soil_storage
       real                        :: sfcwater_storage
       real                        :: cas_storage
-      real                        :: veg_storage
+      real                        :: leaf_storage
+      real                        :: wood_storage
       real                        :: can_enthalpy
       !------------------------------------------------------------------------------------!
 
@@ -1687,25 +1726,56 @@ module budget_utils
       !     energy cycle for small cohorts, we ignore them -- but we ought to account for  !
       !     these switches when we update the cohort status.                               !
       !------------------------------------------------------------------------------------!
-      veg_storage = 0.0
+      leaf_storage = 0.0
+      wood_storage = 0.0
       do ico = 1,cpatch%ncohorts
          !----- Leaves. -------------------------------------------------------------------!
          if (cpatch%leaf_resolvable(ico)) then
-            veg_storage = veg_storage + cpatch%leaf_energy(ico)
+            leaf_storage = leaf_storage + cpatch%leaf_energy(ico)
          end if
          !---------------------------------------------------------------------------------!
 
          !----- Wood. ---------------------------------------------------------------------!
          if (cpatch%wood_resolvable(ico)) then
-            veg_storage = veg_storage + cpatch%wood_energy(ico)
+            wood_storage = wood_storage + cpatch%wood_energy(ico)
          end if
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
 
-      !----- 5. Integrate the total enthalpy in ED-2.2. -----------------------------------!
-      compute_enthalpy_storage = soil_storage + sfcwater_storage + cas_storage + veg_storage
+      !------------------------------------------------------------------------------------!
+      !  5. Report enthalpy storage.  Most of the time, we report the sum of all pools,    !
+      !     but we call this routine to calculate the storage in individual pools when     !
+      !     reporting error messages.                                                      !
+      !------------------------------------------------------------------------------------!
+      select case (pool)
+      case (1)
+         !----- Soil storage. -------------------------------------------------------------!
+         compute_enthalpy_storage = soil_storage
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !----- Surface water storage. ----------------------------------------------------!
+         compute_enthalpy_storage = sfcwater_storage
+         !---------------------------------------------------------------------------------!
+      case (3)
+         !----- Leaf storage. -------------------------------------------------------------!
+         compute_enthalpy_storage = leaf_storage
+         !---------------------------------------------------------------------------------!
+      case (4)
+         !----- Wood storage. -------------------------------------------------------------!
+         compute_enthalpy_storage = wood_storage
+         !---------------------------------------------------------------------------------!
+      case (5)
+         !----- Canopy-air-space storage. -------------------------------------------------!
+         compute_enthalpy_storage = cas_storage
+         !---------------------------------------------------------------------------------!
+      case default
+         !----- Total water storage. ------------------------------------------------------!
+         compute_enthalpy_storage = soil_storage     + sfcwater_storage                    &
+                                  + leaf_storage     + wood_storage     + cas_storage
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
       return
@@ -1815,7 +1885,7 @@ module budget_utils
    ! This includes carbon stocks from necromass, vegetation, seed bank, canopy air space   !
    ! and the committed changes in C stocks to be updated at the daily time step.           !
    !---------------------------------------------------------------------------------------!
-   real function compute_carbon_storage(csite,ipa)
+   real function compute_carbon_storage(csite,ipa,pool)
       use ed_state_vars  , only : sitetype              & ! structure
                                 , patchtype             ! ! structure
       use ed_max_dims    , only : n_pft                 ! ! intent(in)
@@ -1825,13 +1895,16 @@ module budget_utils
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype) , target      :: csite
       integer        , intent(in)  :: ipa
+      integer        , intent(in)  :: pool
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer     :: cpatch
       integer                      :: ico
       real                         :: necro_storage
       real                         :: repro_storage
+      real                         :: balive_storage
+      real                         :: bdead_storage
+      real                         :: bstorage_storage
       real                         :: cas_storage
-      real                         :: veg_storage
       !------------------------------------------------------------------------------------!
 
 
@@ -1864,18 +1937,60 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       ! 4. Compute the internal energy stored in the plants.                               !
       !------------------------------------------------------------------------------------!
-      veg_storage = 0.0
+      balive_storage   = 0.0
+      bdead_storage    = 0.0
+      bstorage_storage = 0.0
       do ico = 1,cpatch%ncohorts
-         veg_storage = veg_storage                                                         &
-                     + cpatch%nplant(ico) * ( cpatch%balive(ico) + cpatch%bdeada  (ico)    &
-                                            + cpatch%bdeadb(ico) + cpatch%bstorage(ico) )
+         balive_storage   = balive_storage   + cpatch%nplant(ico) * cpatch%balive(ico)
+         bdead_storage    = bdead_storage    + cpatch%nplant(ico)                          &
+                                             * ( cpatch%bdeada(ico) + cpatch%bdeadb(ico) )
+         bstorage_storage = bstorage_storage + cpatch%nplant(ico) * cpatch%bstorage(ico)
       end do
       !------------------------------------------------------------------------------------!
 
 
-      !----- 5. Integrate the total carbon in ED. -----------------------------------------!
-      compute_carbon_storage = necro_storage + repro_storage + cas_storage + veg_storage   &
-                             + csite%cbudget_committed(ipa)
+      !------------------------------------------------------------------------------------!
+      !  5. Report carbon storage.  Most of the time, we report the sum of all pools, but  !
+      !     we call this routine to calculate the storage in individual pools when report- !
+      !     ing error messages.                                                            !
+      !------------------------------------------------------------------------------------!
+      select case (pool)
+      case (1)
+         !----- Necromass storage. --------------------------------------------------------!
+         compute_carbon_storage = necro_storage
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !----- Reproduction storage. -----------------------------------------------------!
+         compute_carbon_storage = repro_storage
+         !---------------------------------------------------------------------------------!
+      case (3)
+         !----- Storage in living tissues. ------------------------------------------------!
+         compute_carbon_storage = balive_storage
+         !---------------------------------------------------------------------------------!
+      case (4)
+         !----- Storage in structural tissues. --------------------------------------------!
+         compute_carbon_storage = bdead_storage
+         !---------------------------------------------------------------------------------!
+      case (5)
+         !----- Storage in non-structural carbon. -----------------------------------------!
+         compute_carbon_storage = bstorage_storage
+         !---------------------------------------------------------------------------------!
+      case (6)
+         !----- Canopy-air-space storage. -------------------------------------------------!
+         compute_carbon_storage = cas_storage
+         !---------------------------------------------------------------------------------!
+      case (7)
+         !----- Committed pool (for decomposition) storage. -------------------------------!
+         compute_carbon_storage = csite%cbudget_committed(ipa)
+         !---------------------------------------------------------------------------------!
+      case default
+         !----- Total water storage. ------------------------------------------------------!
+         compute_carbon_storage = necro_storage                + repro_storage             &
+                                + balive_storage               + bdead_storage             &
+                                + bstorage_storage             + cas_storage               &
+                                + csite%cbudget_committed(ipa)
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
       return
