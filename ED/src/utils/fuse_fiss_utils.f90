@@ -117,7 +117,7 @@ module fuse_fiss_utils
    !> This is intended to eliminate cohorts that have little contribution
    !> and thus we can speed up the run.
    !---------------------------------------------------------------------------------------!
-   subroutine terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+   subroutine terminate_cohorts(csite,ipa,cmet,is_initial,elim_nplant,elim_lai)
       use pft_coms           , only : min_cohort_size  & ! intent(in)
                                     , l2n_stem         & ! intent(in)
                                     , c2n_stem         & ! intent(in)
@@ -127,6 +127,7 @@ module fuse_fiss_utils
                                     , f_labile_stem    & ! intent(in)
                                     , agf_bs           ! ! intent(in)
       use ed_misc_coms       , only : frqsumi          ! ! intent(in)
+      use rk4_coms           , only : checkbudget      ! ! intent(in)
       use ed_state_vars      , only : patchtype        & ! structure
                                     , sitetype         ! ! structure
       use met_driver_coms    , only : met_driv_state   ! ! structure
@@ -138,6 +139,7 @@ module fuse_fiss_utils
       type(sitetype)       , target      :: csite          ! Current site
       integer              , intent(in)  :: ipa            ! Current patch ID
       type(met_driv_state) , target      :: cmet           ! Current met forcing
+      logical              , intent(in)  :: is_initial     ! Initial call?
       real                 , intent(out) :: elim_nplant    ! Nplants eliminated here
       real                 , intent(out) :: elim_lai       ! LAI eliminated here
       !----- Local variables --------------------------------------------------------------!
@@ -346,12 +348,14 @@ module fuse_fiss_utils
       ! to the forced boiling will be consistently updated because the higher specific     !
       ! humidity will translate into more enthalpy.                                        !
       !------------------------------------------------------------------------------------!
-      csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                        &
-                                    - elim_e_hcap * frqsumi
-      csite%ebudget_wcapeffect(ipa) = csite%ebudget_wcapeffect(ipa)                        &
-                                    - elim_e_wcap * frqsumi
-      csite%wbudget_wcapeffect(ipa) = csite%wbudget_wcapeffect(ipa)                        &
-                                    - elim_w_wcap * frqsumi
+      if (checkbudget .and. (.not. is_initial)) then
+         csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                     &
+                                       - elim_e_hcap * frqsumi
+         csite%ebudget_wcapeffect(ipa) = csite%ebudget_wcapeffect(ipa)                     &
+                                       - elim_e_wcap * frqsumi
+         csite%wbudget_wcapeffect(ipa) = csite%wbudget_wcapeffect(ipa)                     &
+                                       - elim_w_wcap * frqsumi
+      end if
       if (veg_boil_tot > 0.0) then
          can_prss           = reducedpress(cmet%prss,cmet%atm_theta,cmet%atm_shv           &
                                           ,cmet%geoht,csite%can_theta(ipa)                 &
@@ -8338,7 +8342,7 @@ module fuse_fiss_utils
             case (1)
                call new_fuse_cohorts(csite,recp,lsl,fuse_initial)
             end select
-            call terminate_cohorts(csite,recp,cmet,elim_nplant,elim_lai)
+            call terminate_cohorts(csite,recp,cmet,fuse_initial,elim_nplant,elim_lai)
             call split_cohorts(csite,recp,green_leaf_factor)
          end if
          !---------------------------------------------------------------------------------!

@@ -878,7 +878,8 @@ module disturbance
                      case (1)
                         call new_fuse_cohorts(csite,onsp+new_lu,cpoly%lsl(isi),.false.)
                      end select
-                     call terminate_cohorts(csite,onsp+new_lu,cmet,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,onsp+new_lu,cmet,.false.                 &
+                                           ,elim_nplant,elim_lai)
                      call split_cohorts(csite,onsp+new_lu, cpoly%green_leaf_factor(:,isi))
                   end if
                   !------------------------------------------------------------------------!
@@ -1117,7 +1118,8 @@ module disturbance
 
 
                               !------ Remove emptied cohorts. -----------------------------!
-                              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                              call terminate_cohorts(csite,ipa,cmet,.false.                &
+                                                    ,elim_nplant,elim_lai)
                               !------------------------------------------------------------!
 
 

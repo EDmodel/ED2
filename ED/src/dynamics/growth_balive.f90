@@ -558,7 +558,7 @@ module growth_balive
                ! as height and biomass may change every day.                               !
                !---------------------------------------------------------------------------!
                if (veget_dyn_on .and. (igrass == 1)) then
-                  call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                  call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
                   call sort_cohorts(cpatch)
                end if
                !---------------------------------------------------------------------------!

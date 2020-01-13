@@ -625,7 +625,7 @@ module reproduction
                      case (1)
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
                      end select
-                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
                      call split_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi))
                   end if
                   !------------------------------------------------------------------------!

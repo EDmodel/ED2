@@ -162,7 +162,7 @@ MEM_HIP="1845"     # Petrolina High Frequency Detailed Short POI
 MEM_HIM="1845"     # Manaus High Frequency Detailed Short POI
 MEM_HIG="1845"     # Paracou High Frequency Detailed Short POI
 MEM_HIH="1845"     # Harvard High Frequency Detailed Short POI
-MEM_RJG="1845"     # Gridded 12x12 simulation centred on Reserva Jaru
+MEM_RJG="2000"     # Gridded 12x12 simulation centred on Reserva Jaru
 #------------------------------------------------------------------------------------------#
 
 
@@ -190,7 +190,7 @@ CPU_S83="12"   # Santarem Km 83 (logging) POI (MAXPATCH=20; RAPID_INIT_MODE=5)
 CPU_PRG="24"   # Paragominas (ALS init) POI (MAXPATCH=24; RAPID_INIT_MODE=6)
 CPU_TL2="12"   # Toolik (Boreal) POI (MAXPATCH=20; RAPID_INIT_MODE=0)
 CPU_HBG="1"    # Harvard (Bare Ground) POI (MAXPATCH=20; RAPID_INIT_MODE=-1)
-CPU_RJG="27"   # Gridded 12x12 simulation centred on Reserva Jaru (NPTS=144)
+CPU_RJG="16"   # Gridded 12x12 simulation centred on Reserva Jaru (NPTS=144)
 #------------------------------------------------------------------------------------------#
 
 
@@ -199,6 +199,14 @@ CPU_RJG="27"   # Gridded 12x12 simulation centred on Reserva Jaru (NPTS=144)
 #------------------------------------------------------------------------------------------#
 POI_TIME="Infinite"
 GRID_TIME="Infinite"
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Number of nodes for the gridded simulations.  Fewer nodes means that the CPUs will   #
+# be more clustered.  In case you don't mind how many nodes will be used, set it to 0.     #
+#------------------------------------------------------------------------------------------#
+GRID_NODE="1"
 #------------------------------------------------------------------------------------------#
 
 
@@ -923,8 +931,8 @@ rapid)
    declare -a IMONTHZH=(10 01 05 02)
    declare -a IDATEAH=(21 01 01 01)
    declare -a IDATEZH=(28 08 08 08)
-   declare -a D_IYEARAH=${IYEARAH}
-   declare -a D_IYEARZH=${IYEARZH}
+   declare -a D_IYEARAH=(2010 2010 2010 2010)
+   declare -a D_IYEARZH=(2010 2010 2010 2010)
    declare -a IDETAILEDH=(7 7 7 7)
    #---------------------------------------------------------------------------------------#
 
@@ -2561,7 +2569,7 @@ do
       #----- Modify the ED2IN end years. --------------------------------------------------#
       sed -i '/NL%IYEARZ/c\   NL%IYEARZ   = '${IYEARZH[i]}    ${FILEMAIN}
       sed -i '/NL%IYEARZ/c\   NL%IYEARZ   = '${IYEARZH[i]}    ${FILETEST}
-      sed -i '/NL%IYEARZ/c\   NL%IYEARZ   = '${IYEARZH[i]}    ${FILEDBUG}
+      sed -i '/NL%IYEARZ/c\   NL%IYEARZ   = '${D_IYEARZH[i]}  ${FILEDBUG}
       sed -i '/NL%IMONTHZ/c\   NL%IMONTHZ   = '${IMONTHZH[i]} ${FILEMAIN}
       sed -i '/NL%IMONTHZ/c\   NL%IMONTHZ   = '${IMONTHZH[i]} ${FILETEST}
       sed -i '/NL%IMONTHZ/c\   NL%IMONTHZ   = '${IMONTHZH[i]} ${FILEDBUG}
@@ -3321,6 +3329,16 @@ do
       #------------------------------------------------------------------------------------#
 
 
+      #------------------------------------------------------------------------------------#
+      #    Define the node settings.                                                       #
+      #------------------------------------------------------------------------------------#
+      case "${GRID_NODE}" in
+         0)  NNODES_REQ=""           ;;
+         *)  NNODES_REQ=${GRID_NODE} ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
 
       #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
@@ -3331,7 +3349,7 @@ do
          joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_main
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} ${NNODES_REQ}"
          jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
          jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
@@ -3356,7 +3374,7 @@ do
          joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_test
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} ${NNODES_REQ}"
          jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
          jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_TEST_EXE} -f ${FILETEST}"
@@ -3381,7 +3399,7 @@ do
          joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
          jobname=${VERSION}_${GRIDID[i]}_dbug
          jobopts="-t ${POI_TIME} --mem-per-cpu=${GRIDMEM[i]} --cpus-per-task=1"
-         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
+         jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]} ${NNODES_REQ}"
          jobwrap=". ${HOME}/.bashrc ${RC_OPTS}; cd ${HERE}/${VERSION}"
          jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
          jobwrap="${jobwrap}; ${MPI_COMM} ${LNK_DBUG_EXE} -f ${FILEDBUG}"

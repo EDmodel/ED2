@@ -463,7 +463,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               enddo
 
               !! remove small cohorts
-              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+              call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
 
               call update_patch_derived_props(csite,ipa,.true.)
             end if  !! check to make sure there ARE cohorts
@@ -894,7 +894,7 @@ subroutine event_till(rval8)
 
               enddo
               !! remove small cohorts
-              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+              call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
 
               !! update patch properties
               call update_patch_derived_props(csite,ipa,.true.)
