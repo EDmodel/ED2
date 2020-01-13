@@ -880,7 +880,8 @@ module disturbance
                      end select
                      call terminate_cohorts(csite,onsp+new_lu,cmet,.false.                 &
                                            ,elim_nplant,elim_lai)
-                     call split_cohorts(csite,onsp+new_lu, cpoly%green_leaf_factor(:,isi))
+                     call split_cohorts(csite,onsp+new_lu, cpoly%green_leaf_factor(:,isi)  &
+                                       ,.false.)
                   end if
                   !------------------------------------------------------------------------!
 
@@ -4224,7 +4225,7 @@ module disturbance
                         ,cpatch%wood_water_im2(ico))
             call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap           &
                                        ,old_leaf_water,old_wood_water,old_leaf_water_im2   &
-                                       ,old_wood_water_im2,.true.)
+                                       ,old_wood_water_im2,.true.,.false.)
             !----- Update the stability status. -------------------------------------------!
             call is_resolvable(csite,np,ico,.false.,.false.,'prune_lianas')
             !------------------------------------------------------------------------------!

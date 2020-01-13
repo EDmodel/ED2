@@ -523,7 +523,7 @@ module growth_balive
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
                                              ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
-                                             ,.true.)
+                                             ,.true.,.false.)
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico,.false.,.false.,'dbalive_dt')
                   !------------------------------------------------------------------------!

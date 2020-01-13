@@ -1576,7 +1576,7 @@ module fuse_fiss_utils
    !> \details This is only necessary when we solve radiation cohort by cohort rather
    !> than layer by layer.
    !---------------------------------------------------------------------------------------!
-   subroutine split_cohorts(csite,ipa,green_leaf_factor)
+   subroutine split_cohorts(csite,ipa,green_leaf_factor,is_initial)
       use update_derived_utils , only : update_cohort_extensive_props ! ! sub-routine
       use ed_state_vars        , only : sitetype                      & ! structure
                                       , patchtype                     & ! structure
@@ -1601,7 +1601,8 @@ module fuse_fiss_utils
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite              ! Current site
       integer                , intent(in)  :: ipa                ! Patch index
-      real, dimension(n_pft) , intent(in)  :: green_leaf_factor  !
+      real, dimension(n_pft) , intent(in)  :: green_leaf_factor  ! Elongation factor.
+      logical                , intent(in)  :: is_initial         ! Call from initialisation?
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer     :: cpatch             ! Current patch
       type(patchtype)        , pointer     :: temppatch          ! Temporary patch
@@ -1790,7 +1791,7 @@ module fuse_fiss_utils
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
                                              ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
-                                             ,.true.)
+                                             ,.true.,is_initial)
                   !----- New cohort. ------------------------------------------------------!
                   old_leaf_hcap      = cpatch%leaf_hcap     (inew)
                   old_wood_hcap      = cpatch%wood_hcap     (inew)
@@ -1814,10 +1815,12 @@ module fuse_fiss_utils
                   call update_veg_energy_cweh(csite,ipa,inew,old_leaf_hcap,old_wood_hcap   &
                                              ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
-                                             ,.true.)
+                                             ,.true.,.false.)
                   !----- Update the stability status. -------------------------------------!
-                  call is_resolvable(csite,ipa,ico ,.false.,.false.,'split_cohorts (old)')
-                  call is_resolvable(csite,ipa,inew,.false.,.false.,'split_cohorts (new)')
+                  call is_resolvable(csite,ipa,ico ,is_initial,.false.                     &
+                                    ,'split_cohorts (old)')
+                  call is_resolvable(csite,ipa,inew,is_initial,.false.                     &
+                                    ,'split_cohorts (new)')
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -8343,7 +8346,7 @@ module fuse_fiss_utils
                call new_fuse_cohorts(csite,recp,lsl,fuse_initial)
             end select
             call terminate_cohorts(csite,recp,cmet,fuse_initial,elim_nplant,elim_lai)
-            call split_cohorts(csite,recp,green_leaf_factor)
+            call split_cohorts(csite,recp,green_leaf_factor,fuse_initial)
          end if
          !---------------------------------------------------------------------------------!
       end if

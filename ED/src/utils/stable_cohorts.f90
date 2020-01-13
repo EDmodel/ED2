@@ -388,7 +388,7 @@ module stable_cohorts
          !----- Update internal energy. ---------------------------------------------------!
          call update_veg_energy_cweh(csite,ipa,ico,mid_leaf_hcap,mid_wood_hcap             &
                                     ,mid_leaf_water,mid_wood_water,mid_leaf_water_im2      &
-                                    ,mid_wood_water_im2,.true.)
+                                    ,mid_wood_water_im2,.true.,is_initial)
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!

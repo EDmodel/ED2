@@ -155,15 +155,16 @@ module ed_therm_lib
    !---------------------------------------------------------------------------------------!
    subroutine update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap             &
                                     ,old_leaf_water,old_wood_water,old_leaf_water_im2      &
-                                    ,old_wood_water_im2,check_leaks)
+                                    ,old_wood_water_im2,check_leaks,is_initial)
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
-      use therm_lib    , only : uextcm2tl    & ! subroutine
-                              , cmtl2uext    & ! function
-                              , tl2uint      ! ! function
       use ed_misc_coms , only : frqsumi      & ! intent(in)
                               , current_time ! ! intent(in)
       use consts_coms  , only : t3ple        ! ! intent(in)
+      use rk4_coms     , only : checkbudget  ! ! intent(in)
+      use therm_lib    , only : uextcm2tl    & ! subroutine
+                              , cmtl2uext    & ! function
+                              , tl2uint      ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)   , target     :: csite
@@ -176,6 +177,7 @@ module ed_therm_lib
       real             , intent(in) :: old_leaf_water_im2
       real             , intent(in) :: old_wood_water_im2
       logical          , intent(in) :: check_leaks
+      logical          , intent(in) :: is_initial
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)  , pointer    :: cpatch
       real                          :: new_temp
@@ -466,7 +468,7 @@ module ed_therm_lib
       ! in vegetation due to change in vegetation biomass.  We only do this in case the    !
       ! vegetation was previously set as resolvable, to avoid double counting.             !
       !------------------------------------------------------------------------------------!
-      if (cpatch%leaf_resolvable(ico)) then
+      if (checkbudget .and. (.not. is_initial) .and. cpatch%leaf_resolvable(ico)) then
          csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                     &
                                        + ( cpatch%leaf_energy(ico) - new_leaf_energy_wat   &
                                          - old_leaf_energy         + old_leaf_energy_wat ) &
@@ -479,7 +481,7 @@ module ed_therm_lib
                                          + cpatch%leaf_water_im2(ico)                      &
                                          - old_leaf_water - old_leaf_water_im2 ) * frqsumi
       end if
-      if (cpatch%wood_resolvable(ico)) then
+      if (checkbudget .and. (.not. is_initial) .and. cpatch%wood_resolvable(ico)) then
          csite%ebudget_hcapeffect(ipa) = csite%ebudget_hcapeffect(ipa)                     &
                                        + ( cpatch%wood_energy(ico) - new_wood_energy_wat   &
                                          - old_wood_energy         + old_wood_energy_wat ) &

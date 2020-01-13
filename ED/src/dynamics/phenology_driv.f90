@@ -968,7 +968,7 @@ module phenology_driv
                         ,cpatch%wood_water_im2(ico))
             call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap          &
                                        ,old_leaf_water,old_wood_water,old_leaf_water_im2   &
-                                       ,old_wood_water_im2,.true.)
+                                       ,old_wood_water_im2,.true.,.false.)
             call is_resolvable(csite,ipa,ico,.false.,.false.,'update_phenology')
             !------------------------------------------------------------------------------!
 

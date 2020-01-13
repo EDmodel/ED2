@@ -586,7 +586,8 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.,.false.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.        &
+                                                   ,.false.,.true.)
                         !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico,.false.,.false.                   &
                                           ,'reproduction_driver (SAS)')
@@ -626,7 +627,7 @@ module reproduction
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
                      end select
                      call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
-                     call split_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi))
+                     call split_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi),.false.)
                   end if
                   !------------------------------------------------------------------------!
 
@@ -825,7 +826,8 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.,.false.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.        &
+                                                   ,.false.,.true.)
                         !----- Update flags for the biophysical integrator. ---------------!
                         call is_resolvable(csite,ipa,ico,.false.,.false.                   &
                                           ,'reproduction_driver (BLE)')
