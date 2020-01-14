@@ -1815,7 +1815,7 @@ module fuse_fiss_utils
                   call update_veg_energy_cweh(csite,ipa,inew,old_leaf_hcap,old_wood_hcap   &
                                              ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
-                                             ,.true.,.false.)
+                                             ,.true.,is_initial)
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico ,is_initial,.false.                     &
                                     ,'split_cohorts (old)')
