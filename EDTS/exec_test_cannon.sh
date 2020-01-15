@@ -763,8 +763,8 @@ declare -a IMONTHAG=(01)
 declare -a IMONTHZG=(01)
 declare -a IDATEAG=(01)
 declare -a IDATEZG=(01)
-declare -a D_IYEARAG=(2000)
-declare -a D_IYEARZG=(2001)
+declare -a D_IYEARAG=(2010)
+declare -a D_IYEARZG=(2011)
 declare -a D_INITMDG=(5)
 declare -a D_RUNTYPG=(INITIAL)
 #------------------------------------------------------------------------------------------#
@@ -938,8 +938,8 @@ rapid)
 
 
    #----- Gridded tests will run for only 1 year. -----------------------------------------#
-   declare -a IYEARAG=(2008)
-   declare -a IYEARZG=(2008)
+   declare -a IYEARAG=(2010)
+   declare -a IYEARZG=(2011)
    declare -a INITMDG=(5)
    declare -a RUNTYPG=(INITIAL)
    #---------------------------------------------------------------------------------------#

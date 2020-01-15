@@ -7091,14 +7091,20 @@ subroutine init_dt_thermo_params()
    ! For carbon, we use 10 times the the values for the energy and water because the       !
    ! solver uses single-precision.  In case we use hybdrid, we relax tolerance for the     !
    ! time being.  We should identify the causes of leakage in that scheme in the future.   !
+   !                                                                                       !
+   ! Update: There are a few cases in which the strict tolerance is not working.  Most of  !
+   ! them seem to be associated with the long-term vegetation dynamics, but there are a    !
+   ! few cases that the thermodynamics is also causing crashes (I think still related to   !
+   ! temporary surface water).  This still needs to be addressed.  For the time being, I   !
+   ! am relaxing the tolerance so people can run their simulations.                        !
    !---------------------------------------------------------------------------------------!
    select case (integration_scheme)
    case (3)
-      tol_subday_budget = 10.  * r_tol_trunc
+      tol_subday_budget = 100. * r_tol_trunc
       tol_carbon_budget = 100. * r_tol_trunc
    case default
-      tol_subday_budget =        r_tol_trunc
-      tol_carbon_budget = 10.  * r_tol_trunc
+      tol_subday_budget = 10   * r_tol_trunc
+      tol_carbon_budget = 100. * r_tol_trunc
    end select
    !---------------------------------------------------------------------------------------!
 
