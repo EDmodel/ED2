@@ -187,7 +187,7 @@ if nsite>0
     fprintf(fid,textinsrt);
     fprintf(fid,'\\hline\n');
     for is=1:nsite
-	     if((spass(is,2) == 7) && (spass(is,3) == 7))
+	     if((spass(is,2) == 8) && (spass(is,3) == 8))
         fprintf(fid,'%s & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f \\\\ \n',...
             siteid{is},latex_ftab(1,is),latex_ftab(2,is),latex_ftab(3,is), ...
                        latex_ftab(3,is),latex_ftab(4,is),latex_ftab(5,is), ...
@@ -219,7 +219,7 @@ if nhifr>0
     fprintf(fid,textinsrt);
     fprintf(fid,'\\hline\n');
     for ih=1:nhifr
-		if((hpass(ih,2) == 7) && (hpass(ih,3) == 7))
+		if((hpass(ih,2) == 8) && (hpass(ih,3) == 8))
         fprintf(fid,'%s & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f\\\\ \n',...
             hifrid{ih},latex_htab(1,ih),latex_htab(2,ih),latex_htab(3,ih), ...
                        latex_htab(3,ih),latex_htab(4,ih),latex_htab(5,ih), ...
@@ -251,7 +251,7 @@ if ngrid>0
     fprintf(fid,textinsrt);
     fprintf(fid,'\\hline\n');
     for ig=1:ngrid
-	     if((gpass(ig,2) == 7) && (gpass(ig,3) == 7))
+	     if((gpass(ig,2) == 8) && (gpass(ig,3) == 8))
         fprintf(fid,'%s & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f\\\\ \n',...
             gridid{ig},latex_gtab(1,ig),latex_gtab(2,ig));
 end
@@ -278,8 +278,8 @@ if nsite>0
     fprintf(fid,'\\section{\nSite of Interest (SOI) Runs\n}\n');
     for is=1:nsite
         fprintf(fid,'\\subsection{%s}\n',site_name{is});
-        if( ( (spass(is,2) ~= 1) && (spass(is,2) ~= 7) ) || ...
-            ( (spass(is,3) ~= 1) && (spass(is,3) ~= 7) ) )
+        if( ( (spass(is,2) ~= 1) && (spass(is,2) ~= 8) ) || ...
+            ( (spass(is,3) ~= 1) && (spass(is,3) ~= 8) ) )
             fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION IS PENDING OR HAD PROBLEMS \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
         else
             
@@ -306,7 +306,7 @@ if nhifr>0
     fprintf(fid,'\\section{\nHigh Frequency Output\n}\n');
     for ih=1:nhifr
         fprintf(fid,'\\subsection{%s}\n',hifr_name{ih});
-        if ( (hpass(ih,2) ~= 7) || (hpass(ih,3) ~= 7) )
+        if ( (hpass(ih,2) ~= 8) || (hpass(ih,3) ~= 8) )
             fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION DID NOT COMPLETE \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
         else
 
@@ -330,8 +330,8 @@ if ngrid>0
     fprintf(fid,'\\section{\nGridded Output\n}\n');
     for ig=1:ngrid
         fprintf(fid,'\\subsection{%s}\n',grid_name{ig});
-        if( ( (gpass(ig,2) ~= 1) && (gpass(ig,2) ~= 7) ) || ...
-            ( (gpass(ig,3) ~= 1) && (gpass(ig,3) ~= 7) ) )
+        if( ( (gpass(ig,2) ~= 1) && (gpass(ig,2) ~= 8) ) || ...
+            ( (gpass(ig,3) ~= 1) && (gpass(ig,3) ~= 8) ) )
             fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION IS PENDING OR HAD PROBLEMS \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
         else
             % AGB Maps

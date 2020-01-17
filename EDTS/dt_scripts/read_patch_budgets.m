@@ -86,7 +86,7 @@ function [ndat,cbudget,ebudget,wbudget,cstorage,estorage,wstorage,dnv] ...
             cstorage(id)      = dvec(15)+dvec(16);
             cbudget(id,1:4)   = dvec(17:20);
             cbudget(id,5)     = dvec(21)-dvec(22);
-            cbudget(id,6)     = -dvec(23)
+            cbudget(id,6)     = -dvec(23);
             % Simplify energy output.
             estorage(id)      = dvec(24);
             ebudget(id,1:6)   = dvec(25:30);

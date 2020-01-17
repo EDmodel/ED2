@@ -336,9 +336,8 @@ module growth_balive
                                   ,tr_bbarkb,tr_bstorage,carbon_debt,flushing,balive_aim   &
                                   ,carbon_miss,xfer_case)
 
-                  call apply_c_xfers(cpatch,ico,npp_actual,tr_bleaf,tr_broot               &
-                                    ,tr_bsapwooda,tr_bsapwoodb,tr_bbarka,tr_bbarkb         &
-                                    ,tr_bstorage)
+                  call apply_c_xfers(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda             &
+                                    ,tr_bsapwoodb,tr_bbarka,tr_bbarkb,tr_bstorage)
                   
                   call update_today_npp_vars(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda     &
                                             ,tr_bsapwoodb,tr_bbarka,tr_bbarkb              &
@@ -953,6 +952,7 @@ module growth_balive
       ! bother checking the partition amongst tissues.                                     !
       !------------------------------------------------------------------------------------!
       if (growresp_actual < tiny_num) then
+         growresp_actual               = 0.0
          cpatch%leaf_growth_resp (ico) = 0.0
          cpatch%root_growth_resp (ico) = 0.0
          cpatch%sapa_growth_resp (ico) = 0.0
@@ -1099,7 +1099,7 @@ module growth_balive
       select case (iddmort_scheme)
       case (0) ! Storage is not accounted.
          total_maintenance = tissue_maintenance
-      case (1) ! Storage is not accounted.
+      case (1) ! Storage is accounted.
          total_maintenance = tissue_maintenance + storage_maintenance
       end select
       !------------------------------------------------------------------------------------!
@@ -1687,15 +1687,14 @@ module growth_balive
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine apply_c_xfers(cpatch,ico,npp_actual,tr_bleaf,tr_broot,tr_bsapwooda           &
-                           ,tr_bsapwoodb,tr_bbarka,tr_bbarkb,tr_bstorage)
+   subroutine apply_c_xfers(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb         &
+                           ,tr_bbarka,tr_bbarkb,tr_bstorage)
       use ed_state_vars , only : patchtype  ! ! structure
       use allometry     , only : ed_balive  ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target        :: cpatch
       integer        , intent(in)    :: ico
-      real           , intent(in)    :: npp_actual
       real           , intent(in)    :: tr_bleaf
       real           , intent(in)    :: tr_broot
       real           , intent(in)    :: tr_bsapwooda
@@ -1716,15 +1715,6 @@ module growth_balive
       cpatch%bbarka   (ico) = cpatch%bbarka   (ico) + tr_bbarka
       cpatch%bbarkb   (ico) = cpatch%bbarkb   (ico) + tr_bbarkb
       cpatch%balive   (ico) = ed_balive(cpatch,ico)
-      !------------------------------------------------------------------------------------!
-
-
-      !----- NPP allocation in diff pools in KgC/m2/day. ----------------------------------!
-      cpatch%today_nppleaf(ico)    = tr_bleaf                      * cpatch%nplant(ico)
-      cpatch%today_nppfroot(ico)   = tr_broot                      * cpatch%nplant(ico)
-      cpatch%today_nppsapwood(ico) = (tr_bsapwooda + tr_bsapwoodb) * cpatch%nplant(ico)
-      cpatch%today_nppbark(ico)    = (tr_bbarka    + tr_bbarkb   ) * cpatch%nplant(ico)
-      cpatch%today_nppdaily(ico)   = npp_actual                    * cpatch%nplant(ico)
       !------------------------------------------------------------------------------------!
 
 

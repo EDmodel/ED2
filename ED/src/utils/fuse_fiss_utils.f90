@@ -118,22 +118,24 @@ module fuse_fiss_utils
    !> and thus we can speed up the run.
    !---------------------------------------------------------------------------------------!
    subroutine terminate_cohorts(csite,ipa,cmet,is_initial,elim_nplant,elim_lai)
-      use pft_coms           , only : min_cohort_size  & ! intent(in)
-                                    , l2n_stem         & ! intent(in)
-                                    , c2n_stem         & ! intent(in)
-                                    , c2n_storage      & ! intent(in)
-                                    , c2n_leaf         & ! intent(in)
-                                    , f_labile_leaf    & ! intent(in)
-                                    , f_labile_stem    & ! intent(in)
-                                    , agf_bs           ! ! intent(in)
-      use ed_misc_coms       , only : frqsumi          ! ! intent(in)
-      use rk4_coms           , only : checkbudget      ! ! intent(in)
-      use ed_state_vars      , only : patchtype        & ! structure
-                                    , sitetype         ! ! structure
-      use met_driver_coms    , only : met_driv_state   ! ! structure
-      use therm_lib          , only : tq2enthalpy      & ! function
-                                    , idealdenssh      & ! function
-                                    , reducedpress     ! ! function
+      use pft_coms           , only : min_cohort_size     & ! intent(in)
+                                    , l2n_stem            & ! intent(in)
+                                    , c2n_stem            & ! intent(in)
+                                    , c2n_storage         & ! intent(in)
+                                    , c2n_leaf            & ! intent(in)
+                                    , f_labile_leaf       & ! intent(in)
+                                    , f_labile_stem       & ! intent(in)
+                                    , agf_bs              ! ! intent(in)
+      use fusion_fission_coms, only : print_fuse_details  ! ! intent(in)
+      use ed_misc_coms       , only : current_time        & ! intent(in)
+                                    , frqsumi             ! ! intent(in)
+      use rk4_coms           , only : checkbudget         ! ! intent(in)
+      use ed_state_vars      , only : patchtype           & ! structure
+                                    , sitetype            ! ! structure
+      use met_driver_coms    , only : met_driv_state      ! ! structure
+      use therm_lib          , only : tq2enthalpy         & ! function
+                                    , idealdenssh         & ! function
+                                    , reducedpress        ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)       , target      :: csite          ! Current site
@@ -146,6 +148,7 @@ module fuse_fiss_utils
       type(patchtype)      , pointer     :: cpatch         ! Current patch
       type(patchtype)      , pointer     :: temppatch      ! Scratch patch structure
       logical, dimension(:), allocatable :: remain_table   ! Flag: this cohort will remain
+      logical                            :: is_tiny        ! Cohort is too tiny.
       integer                            :: ico            ! Counter
       integer                            :: ipft           ! PFT size
       real                               :: csize          ! Size of current cohort
@@ -159,6 +162,14 @@ module fuse_fiss_utils
       real                               :: veg_boil_tot   ! Water transferred to CAS
       real                               :: can_prss       ! CAS pressure
       real                               :: can_rhos       ! CAS density
+      !------ Debugging variables. --------------------------------------------------------!
+      logical          , save      :: first_time    = .true.
+      character(len=18), parameter :: terminate_log = 'end_cohort_log.txt'
+      character(len=10), parameter :: fmti          = '(a,1x,i14)'
+      character(len=13), parameter :: fmtf          = '(a,1x,es12.5)'
+      character(len=12), parameter :: fmth          = '(a,11(1x,a))'
+      character(len=27), parameter :: fmtt          = '(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      character(len=35), parameter :: fmtc          = '(i12,1x,i12,2(11x,l1),8(1x,es12.5))'
       !------------------------------------------------------------------------------------!
 
       cpatch        => csite%patch(ipa)
@@ -174,7 +185,52 @@ module fuse_fiss_utils
       allocate(temppatch)
       allocate(remain_table(cpatch%ncohorts))
       remain_table(:) = .true.
-     
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Debugging message. -----------------------------------------------------------!
+      if (first_time) then
+         if (print_fuse_details) then
+            open (unit=23,file=terminate_log,status='replace',action='write')
+            write(unit=23,fmt='(a)') ' Cohort termination log'
+            write(unit=23,fmt='(a)') ' '
+            close(unit=23,status='keep')
+         end if
+         first_time = .false.
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Debugging message. -----------------------------------------------------------!
+      if (print_fuse_details) then
+         open (unit=23,file=terminate_log,status='replace',action='write')
+         write(unit=23,fmt='(a)') '======================================================='
+         write(unit=23,fmt='(a)') '======================================================='
+         write(unit=23,fmt=fmtt ) ' TIME               : ',current_time%year                &
+                                                         ,current_time%month               &
+                                                         ,current_time%date                &
+                                                         ,current_time%time
+         write(unit=23,fmt=fmti ) ' PATCH              : ',ipa
+         write(unit=23,fmt=fmti ) ' DIST_TYPE          : ',csite%dist_type(ipa)
+         write(unit=23,fmt=fmtf ) ' AGE                : ',csite%age      (ipa)
+         write(unit=23,fmt='(a)') ' '
+         write(unit=23,fmt='(a)') ' '
+         write(unit=23,fmt='(a)') ' ----------------------------'
+         write(unit=23,fmt='(a)') '  List of eliminated cohorts'
+         write(unit=23,fmt='(a)') ' ----------------------------'
+
+         write(unit=23,fmt=fmth ) '         ICO','        IPFT','     IS_TINY'             &
+                                 ,' IS_INVIABLE','         LAI','      NPLANT'             &
+                                 ,'      BALIVE','      BDEADA','      BDEADB'             &
+                                 ,'    BSTORAGE','       CSIZE','MIN_COH_SIZE'
+
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Main loop --------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
 
@@ -185,12 +241,26 @@ module fuse_fiss_utils
          csize = cpatch%nplant(ico)                                                        &
                * ( cpatch%balive(ico) + cpatch%bstorage(ico)                               &
                  + cpatch%bdeada(ico) + cpatch%bdeadb  (ico) )
+         is_tiny = csize < min_cohort_size(ipft)
+         !---------------------------------------------------------------------------------!
 
-         if ( (csize < min_cohort_size(ipft)) .or. (.not. cpatch%is_viable(ico)) ) then
+         if ( is_tiny .or. (.not. cpatch%is_viable(ico)) ) then
             !----- Cohort is indeed too small or it is not viable, terminate it. ----------!
             remain_table(ico) = .false.
-            elim_nplant    = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
-            elim_lai       = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
+            elim_nplant       = elim_nplant + cpatch%nplant(ico) * csite%area(ipa)
+            elim_lai          = elim_lai    + cpatch%lai(ico)    * csite%area(ipa)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Debugging message. -----------------------------------------------------!
+            if (print_fuse_details) then
+               write(unit=23,fmt=fmtc )  ico,ipft,is_tiny, .not. cpatch%is_viable(ico)     &
+                                        ,cpatch%lai(ico),cpatch%nplant(ico)                &
+                                        ,cpatch%balive(ico),cpatch%bdeada(ico)             &
+                                        ,cpatch%bdeadb(ico),cpatch%bstorage(ico)           &
+                                        ,csize,min_cohort_size(ipft)
+            end if
             !------------------------------------------------------------------------------!
 
 
@@ -339,6 +409,21 @@ module fuse_fiss_utils
       end do
       !------------------------------------------------------------------------------------!
 
+
+
+
+      !----- Debugging message. -----------------------------------------------------------!
+      if (print_fuse_details) then
+         write(unit=23,fmt='(a)') '======================================================='
+         write(unit=23,fmt='(a)') '======================================================='
+         write(unit=23,fmt='(a)') ' '
+         write(unit=23,fmt='(a)') ' '
+         write(unit=23,fmt='(a)') ' '
+         write(unit=23,fmt='(a)') ' '
+         write(unit=23,fmt='(a)') ' '
+         close(unit=23,status='keep')
+      end if
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -947,10 +1032,10 @@ module fuse_fiss_utils
                if (dpft /= rpft) cycle donloop
                if (donc_resolv .or. (.not. fuse_initial)) then
                   dr_eqv_recruit =                                                         &
-                     cpatch%first_census    (donc) == cpatch%first_census    (recc) .and.  &
-                     cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc) .and.  &
-                     cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh     (recc) .and.  &
-                     cpatch%census_status   (donc) == cpatch%census_status   (recc)
+                    (cpatch%first_census    (donc) == cpatch%first_census    (recc)) .and. &
+                    (cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)) .and. &
+                    (cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh     (recc)) .and. &
+                    (cpatch%census_status   (donc) == cpatch%census_status   (recc))
                   dr_eqv_phen    =                                                         &
                      cpatch%phenology_status(donc) == cpatch%phenology_status(recc)
                   dr_eqv_small   =                                                         &
@@ -1420,18 +1505,17 @@ module fuse_fiss_utils
                   ! 6. Both cohorts must have the same recruitment status with respect to  !
                   !    the census.                                                         !
                   ! 7. Both cohorts must have the same phenology status.                   !
-                  ! 8. Both cohorts must have the same small/large plant size status.       !
+                  ! 8. Both cohorts must have the same small/large plant size status.      !
                   !------------------------------------------------------------------------!
-                  if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
-                     .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
-                     .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
-                     .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
-                     .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
-                     .and. cpatch%census_status   (donc) == cpatch%census_status(recc)     &
-                     .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
-                     .and.  cpatch%is_small       (donc) .eqv. cpatch%is_small(recc)       &
+                  if (    (cpatch%pft(donc)              == cpatch%pft             (recc)) &
+                    .and. (lai_max                        < lai_fuse_tol*tolerance_mult  ) &
+                    .and. (cpatch%first_census    (donc) == cpatch%first_census    (recc)) &
+                    .and. (cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)) &
+                    .and. (cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh     (recc)) &
+                    .and. (cpatch%census_status   (donc) == cpatch%census_status   (recc)) &
+                    .and. (cpatch%phenology_status(donc) == cpatch%phenology_status(recc)) &
+                    .and. (cpatch%is_small        (donc) .eqv. cpatch%is_small     (recc)) &
                      ) then
-
 
                      !---------------------------------------------------------------------!
                      !    In case this is not initialisation, we must temporarily make     !

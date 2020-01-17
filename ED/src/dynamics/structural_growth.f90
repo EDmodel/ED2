@@ -192,17 +192,19 @@ module structural_growth
          cpoly => cgrid%polygon(ipy)
 
 
-        !----- Initialization. ------------------------------------------------------------!
-        cgrid%crop_yield(prev_month,ipy) = 0.0
+         !----- Initialization. -----------------------------------------------------------!
+         cgrid%crop_yield(prev_month,ipy) = 0.0
+         !---------------------------------------------------------------------------------!
 
-         
+
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
             !----- Initialization. --------------------------------------------------------!
-            cpoly%basal_area(:,:,isi)       = 0.0
-            cpoly%agb(:,:,isi)               = 0.0
+            cpoly%basal_area       (:,:,isi) = 0.0
+            cpoly%agb              (:,:,isi) = 0.0
             cpoly%crop_yield(prev_month,isi) = 0.0
+            !------------------------------------------------------------------------------!
 
             patchloop: do ipa=1,csite%npatches
                cpatch => csite%patch(ipa)
