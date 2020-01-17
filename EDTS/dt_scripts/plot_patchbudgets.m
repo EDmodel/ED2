@@ -32,8 +32,8 @@ wbud_cols=[203     0   61;    ... % Residual
            127   127  127;    ... % Delta S
             43   210  219;    ... % Rainfall
            151   228  125;    ... % Density
-            27   162  247;    ... % Eddy flux
             16   124  146;    ... % Veg Dyn
+            27   162  247;    ... % Eddy flux
            129    31  158]./255.; % Runoff
 
 cbud_names = {'Residual','\Delta S','Density','Veg Dyn','Net Seed','Eddy Flux'};
@@ -182,7 +182,7 @@ hold off;
 datetick;
 grid on;
 box on;
-ylabel(sprintf('Instananeous\n[kg/m2/hr]'),'FontSize',fasz_l);
+ylabel(sprintf('Instantaneous\n[kg/m2/hr]'),'FontSize',fasz_l);
 set(ax2,'XtickLabel',{});
 
 
