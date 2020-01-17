@@ -308,7 +308,7 @@ nsite = is;
 ngrid = ig;
 nhifr = ih;
 
-runstat = {'Pending','Running','SIGSEGV','CRASHED','BADBDGT','BAD_MET','METMISS','STOPPED','Success'};
+runstat = {'Pending','Running','SIGSEGV','CRASHED','BADBDGT','BADMETD','METMISS','STOPPED','Success'};
 pause(2);
 
 
@@ -319,8 +319,8 @@ pause(2);
 display(sprintf('\nChecking Simulations for Completion\n'));
 
 if nsite>0; spass=zeros(nsite,3);end
-if ngrid>0; gpass=zeros(nsite,3);end
-if nhifr>0; hpass=zeros(nsite,3);end
+if ngrid>0; gpass=zeros(ngrid,3);end
+if nhifr>0; hpass=zeros(nhifr,3);end
 
 
 % -----------------------------------------------------------------------------
@@ -339,15 +339,18 @@ if nsite>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            spass(is,1) = 1;
+            if ~ischar(tline)
+               break
+            elseif (spass(is,1) == 0)
+               spass(is,1) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                spass(is,1) = 2;
             elseif (strfind(tline,'segmentation fault'))
                spass(is,1) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                spass(is,1) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
+            elseif (strfind(tline,'Budget check has failed'))
                spass(is,1) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                spass(is,1) = 5;
@@ -392,15 +395,18 @@ if nsite>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            spass(is,2) = 1;
+            if ~ischar(tline)
+               break
+            elseif (spass(is,2) == 0)
+               spass(is,2) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                spass(is,2) = 2;
             elseif (strfind(tline,'segmentation fault'))
                spass(is,2) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                spass(is,2) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
+            elseif (strfind(tline,'Budget check has failed'))
                spass(is,2) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                spass(is,2) = 5;
@@ -446,15 +452,18 @@ if nsite>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            spass(is,3) = 1;
+            if ~ischar(tline)
+               break
+            elseif (spass(is,3) == 0)
+               spass(is,3) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                spass(is,3) = 2;
             elseif (strfind(tline,'segmentation fault'))
                spass(is,3) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                spass(is,3) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
+            elseif (strfind(tline,'Budget check has failed'))
                spass(is,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                spass(is,3) = 5;
@@ -515,16 +524,19 @@ if ngrid>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            gpass(ig,1) = 1;
+            if ~ischar(tline)
+               break
+            elseif (gpass(ig,1) == 0)
+               gpass(ig,1) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                gpass(ig,1) = 2;
             elseif (strfind(tline,'segmentation fault'))
                gpass(ig,1) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                gpass(ig,1) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
-               gpass(is,3) = 4;
+            elseif (strfind(tline,'Budget check has failed'))
+               gpass(ig,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                gpass(ig,1) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
@@ -568,16 +580,19 @@ if ngrid>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            gpass(ig,2) = 1;
+            if ~ischar(tline)
+               break
+            elseif (gpass(ig,2) == 0)
+               gpass(ig,2) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                gpass(ig,2) = 2;
             elseif (strfind(tline,'segmentation fault'))
                gpass(ig,2) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                gpass(ig,2) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
-               gpass(is,3) = 4;
+            elseif (strfind(tline,'Budget check has failed'))
+               gpass(ig,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                gpass(ig,2) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
@@ -619,16 +634,19 @@ if ngrid>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            gpass(ig,3) = 1;
+            if ~ischar(tline)
+               break
+            elseif (gpass(ig,3) == 0)
+               gpass(ig,3) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                gpass(ig,3) = 2;
             elseif (strfind(tline,'segmentation fault'))
                gpass(ig,3) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                gpass(ig,3) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
-               gpass(is,3) = 4;
+            elseif (strfind(tline,'Budget check has failed'))
+               gpass(ig,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                gpass(ig,3) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
@@ -686,16 +704,19 @@ if nhifr>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            hpass(ih,1) = 1;
+            if ~ischar(tline)
+               break
+            elseif (hpass(ih,1) == 0)
+               hpass(ih,1) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                hpass(ih,1) = 2;
             elseif (strfind(tline,'segmentation fault'))
                hpass(ih,1) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                hpass(ih,1) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
-               hpass(is,3) = 4;
+            elseif (strfind(tline,'Budget check has failed'))
+               hpass(ih,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                hpass(ih,1) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
@@ -740,16 +761,19 @@ if nhifr>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            hpass(ih,2) = 1;
+            if ~ischar(tline)
+               break
+            elseif (hpass(ih,2) == 0)
+               hpass(ih,2) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                hpass(ih,2) = 2;
             elseif (strfind(tline,'segmentation fault'))
                hpass(ih,2) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                hpass(ih,2) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
-               hpass(is,3) = 4;
+            elseif (strfind(tline,'Budget check has failed'))
+               hpass(ih,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                hpass(ih,2) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
@@ -794,16 +818,19 @@ if nhifr>0
         fid=fopen(outfile);
         while 1
             tline = fgetl(fid);
-            if ~ischar(tline), break, end
-            hpass(ih,3) = 1;
+            if ~ischar(tline)
+               break
+            elseif (hpass(ih,3) == 0)
+               hpass(ih,3) = 1;
+            end
             if (strfind(tline,'sigsegv'))
                hpass(ih,3) = 2;
             elseif (strfind(tline,'segmentation fault'))
                hpass(ih,3) = 2;
-            elseif (strfind(tline,'IFLAG1 problem.'))
+            elseif (strfind(tline,'IFLAG1 problem'))
                hpass(ih,3) = 3;
-            elseif (strfind(tline,'Budget check has failed.'))
-               hpass(is,3) = 4;
+            elseif (strfind(tline,'Budget check has failed'))
+               hpass(ih,3) = 4;
             elseif (strfind(tline,'Meteorological forcing has issues'))
                hpass(ih,3) = 5;
             elseif (strfind(tline,'Specify ED_MET_DRIVER_DB properly'))
@@ -1102,12 +1129,12 @@ for is = 1:nsite
             state_cm(imonth,itmp) = state_cm(imonth,itmp)+mean(tmp);
             
             itmp=5;
-            tmp = hdf5read(tqfile,'/QMEAN_LEAF_TEMP_PY')-273.14;
+            tmp = hdf5read(tqfile,'/QMEAN_LEAF_TEMP_PY')-273.15;
             state_tp(id1:id2,itmp) = tmp;
             state_td(:,itmp)      = state_td(:,itmp) + tmp./nqfiles;
             state_tm(imonth,itmp) = state_tm(imonth,itmp)+mean(tmp);
             
-            tmp = hdf5read(cqfile,'/QMEAN_LEAF_TEMP_PY')-273.14;
+            tmp = hdf5read(cqfile,'/QMEAN_LEAF_TEMP_PY')-273.15;
             state_cp(id1:id2,itmp) = tmp;
             state_cd(:,itmp)      = state_cd(:,itmp) + tmp./nqfiles;
             state_cm(imonth,itmp) = state_cm(imonth,itmp)+mean(tmp);
