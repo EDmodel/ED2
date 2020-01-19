@@ -47,24 +47,18 @@ function [HL,CLIN] = cmlines(varargin)
 %   MATLAB:  7.7.0.471 (R2008b)
 %   AUTHOR:  Carlos Adrian Vargas Aguilera (MEXICO)
 %   CONTACT: nubeobscura@hotmail.com
-
 %   REVISIONS:
 %   1.0      Released. (Jun 08, 2009)
-
 %   DISCLAIMER:
 %   cmlines.m is provided "as is" without warranty of any kind, under the
 %   revised BSD license.
-
 %   Copyright (c) 2009 Carlos Adrian Vargas Aguilera
-
 % INPUTS CHECK-IN
 % -------------------------------------------------------------------------
-
 % Set defaults:
 HL   = {};
 Ha   = gca;
 CMAP = colormap;
-
 % Checks number of inputs:
 if nargin>2
  error('CVARGAS:cmlines:tooManyInputs', ...
@@ -74,7 +68,6 @@ if nargout>2
  error('CVARGAS:cmlines:tooManyOutputs', ...
   'At most 2 outputs are allowed.')
 end
-
 % Checks handles of lines, axes or figure inputs:
 Hl = [];
 if (nargin~=0) && ~isempty(varargin{1}) && all(ishandle(varargin{1}(:))) ...
@@ -96,12 +89,10 @@ if (nargin~=0) && ~isempty(varargin{1}) && all(ishandle(varargin{1}(:))) ...
  end
  varargin(1) = [];
 end
-
 % Looks for CMAP input:
 if nargin && ~isempty(varargin) && ~isempty(varargin{1})
  CMAP = varargin{1};
 end
-
 % Gets line handles:
 if ~isempty(Hl)
  HL{1} = Hl;
@@ -120,11 +111,9 @@ if isempty(HL)
  end
  return
 end
-
 % -------------------------------------------------------------------------
 % MAIN
 % -------------------------------------------------------------------------
-
 % Sets color lines for each set of lines:
 Nlines = length(HL);
 CLIN   = cell(1,Nlines);
@@ -132,21 +121,16 @@ for k  = 1:length(HL)
  
  % Interpolates the color map:
  CLIN{k} = cmapping(length(HL{k}),CMAP);
-
  % Changes lines colors:
  set(HL{k},{'Color'},mat2cell(CLIN{k},ones(1,size(CLIN{k},1)),3))
  
 end
-
 % OUTPUTS CHECK-OUT
 % -------------------------------------------------------------------------
-
 if ~nargout
  clear HL
 elseif Nlines==1
  HL   = HL{1};
  CLIN = CLIN{1};
 end
-
-
 % [EOF]   cmlines.m

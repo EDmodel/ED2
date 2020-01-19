@@ -1,4 +1,4 @@
-function edpoi_biostat(filename,ipy,poistr,figname,visible,type)
+function edpoi_biostat(filename,ipy,poistr,figname,status,visible,type)
 
 global fasz;
 global pftcolor;
@@ -204,7 +204,7 @@ rectangle('Position',[0.0 0.0 1.0 1.0],'FaceColor',[0.7 0.7 0.7]);
 subplot('Position',[0.07 0.9 0.25 0.1]);
 axis off;
 text(0.0,0.6,...
-     sprintf('%s:  %5.2fN %5.2fE',poistr,lat(ipy),lon(ipy)),...
+     sprintf('%s (%s):  %5.2fN %5.2fE',poistr,status,lat(ipy),lon(ipy)),...
      'FontSize',fasz+1);
 
 npatch = length(area_pa);

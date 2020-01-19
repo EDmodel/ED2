@@ -92,25 +92,19 @@ function [CMAP,LEV,WID,CLIM] = cmjoin(varargin)
 %   MATLAB:  7.7.0.471 (R2008b)
 %   AUTHOR:  Carlos Adrian Vargas Aguilera (MEXICO)
 %   CONTACT: nubeobscura@hotmail.com
-
 %   REVISIONS:
 %   1.0       Released as SETCOLORMAP. (Nov 07, 2006)
 %   1.1       English translation. (Nov 11, 2006)
 %   2.0       Rewritten and renamed code (from SETCOLORMAPS to CMJOIN. Now
 %             joins multiple colormaps. Inputs changed. (Jun 08, 2009)
-
 %   DISCLAIMER:
 %   cmjoin.m is provided "as is" without warranty of any kind, under the
 %   revised BSD license.
-
 %   Copyright (c) 2006,2009 Carlos Adrian Vargas Aguilera
-
 % INPUTS CHECK-IN
 % -------------------------------------------------------------------------
-
 % Parameters:
 tol  = 1;            % When rounding the levels.
-
 % Checks inputs and outputs number:
 if nargin<1
  error('CVARGAS:cmjoin:notEnoughInputs',...
@@ -124,7 +118,6 @@ if nargout>4
  error('CVARGAS:cmjoin:tooManyOutputs',...
   'At most 4 outputs are allowed.')
 end
-
 % Checks AX:
 AX = {get(get(0,'CurrentFigure'),'CurrentAxes')};
 if isempty(AX{1})
@@ -139,7 +132,6 @@ if (length(varargin{1})==1) && ishandle(varargin{1}) && ...
    'CMAPS input must be given.')
  end
 end
-
 % Checks CMAPS:
 CMAPS  = varargin{1};
 Ncmaps = length(CMAPS);
@@ -149,7 +141,6 @@ if ~iscell(CMAPS) || (Ncmaps<2)
 end
 varargin(1) = [];
 Nopt        = length(varargin);
-
 % Checks LEV and sets Ncol and Jlev:
 Ncol = []; % Number of colors for each colormap.
 Jlev = []; % Join levels.
@@ -180,7 +171,6 @@ else
    'LEV must have any of length(CMAPS)+[-1 0 1] elements.')
  end
 end
-
 % Checks WID:
 Tcol = []; % Total number of colors for output colormap.
 if (Nopt<2) || isempty(varargin{2})
@@ -206,7 +196,6 @@ else
    'WID must have length 1 or same as CMAPS.')
  end
 end
-
 % Checks CLIM:
 if (Nopt<3) || isempty(varargin{3})
  % Sets default CLIM:
@@ -226,12 +215,9 @@ else
    'CLIM must be a valid color limits. See CAXIS for details.')
  end
 end
-
-
 % -------------------------------------------------------------------------
 % MAIN
 % -------------------------------------------------------------------------
-
 % Gets rounding precision:
 temp = warning('off','MATLAB:log:logOfZero');
 if ~isempty(WID)
@@ -285,7 +271,6 @@ end
 CLIM(1) = floor(CLIM(1)*10^(-precision))*10^precision;
 CLIM(2) =  ceil(CLIM(2)*10^(-precision))*10^precision;
 warning(temp.state,'MATLAB:log:logOfZero')
-
 % Completes levels when only join levels are specified:
 if ~isempty(Jlev)
  cedge = CLIM;
@@ -341,7 +326,6 @@ if ~isempty(Jlev)
  LEV = [cedge(1); Jlev; cedge(2)];
  
 end
-
 % Gets colorband width and sets WID:
 if ~isempty(Ncol)
  if isempty(WID)
@@ -391,12 +375,10 @@ else
  Cwid = d/sum(r);
  WID  = repmat(Cwid,Ncmaps,1);
 end
-
 % Sets LEV when empty:
 if isempty(LEV)
  LEV = linspace(CLIM(1),CLIM(2),Ncmaps+1)';
 end
-
 % Gets number of colors for each colormap:
 Ncol2 = round(diff(LEV)/Cwid);
 if ~isempty(Ncol)
@@ -409,7 +391,6 @@ else
    'Colorband do not match each colormap width. Modify LEV or WID.')
  end
 end
-
 % Generates the colormaps:
 CMAP  = zeros(sum(abs(Ncol2)),3);
 xband = zeros(sum(abs(Ncol2))+1,1);
@@ -429,7 +410,6 @@ end
 if ~isempty(tempr)
  xband(end) = tempr(end);
 end
-
 % Cuts edges:
 ind = find((xband>=CLIM(1)) & (xband<=CLIM(2)));
 if (ind(1)~=1) && ~(any(xband==CLIM(1)))
@@ -440,11 +420,8 @@ if (ind(end)~=length(ind)) && ~(any(xband==CLIM(2)))
 end
 CMAP  = CMAP(ind(1:end-1),:);
 clim2 = xband(ind([1 end]));
-
-
 % OUTPUTS CHECK-OUT
 % -------------------------------------------------------------------------
-
 if ~nargout
  colormap(AX{:},CMAP)
  caxis(AX{:},clim2(:)');
@@ -457,6 +434,4 @@ else
  CLIM = clim2;
  WID  = diff(LEV)./max([Ncol ones(Ncmaps,1)],[],2);
 end
-
-
 % [EOF]   cmjoin.m
