@@ -179,8 +179,11 @@ module ed_max_dims
    ! 4 -- Fire.                                                                            !
    ! 5 -- Forest regrowth.                                                                 !
    ! 6 -- Logged forest.                                                                   !
+   ! MARCOS Added                                                                          !
+   ! 7 -- Understory Thin -- Logged forest (skid trail + road).                            !
+   ! 8 -- Cropland.                                                                        !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_dist_types = 6
+   integer, parameter :: n_dist_types = 6 ! Changed from 6 to include understory thin
    !---------------------------------------------------------------------------------------!
 
 

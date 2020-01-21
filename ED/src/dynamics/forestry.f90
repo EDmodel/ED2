@@ -26,7 +26,10 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    use disturb_coms         , only : ianth_disturb              & ! intent(in)
                                    , lutime                     & ! intent(in)
                                    , min_patch_area             & ! intent(in)
-                                   , min_harvest_biomass        ! ! intent(in)
+                                   , min_harvest_biomass        & ! intent(in)
+                                   , plantation_rotation        & ! intent(in)
+                                   , mature_harvest_age         ! ! intent(in)
+!                                    , min_oldgrowth              ! ! intent(in) ! New; need to add
    use fuse_fiss_utils      , only : terminate_patches          ! ! subroutine
    use ed_max_dims          , only : n_pft                      & ! intent(in)
                                    , n_dbh                      ! ! intent(in)
@@ -49,6 +52,8 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    real                                          :: secondary_harvest_target
    real                                          :: site_harvest_target
    real                                          :: site_harvestable_agb
+!       real                                          :: site_hvmax_btimber
+!       real                                          :: site_hvpot_btimber   
    real                                          :: area_mature_primary
    real                                          :: hvagb_mature_primary
    real                                          :: area_mature_secondary
@@ -59,236 +64,295 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    real                                          :: lambda_mature_secondary
    real                                          :: lambda_mature_plantation
    real                                          :: harvest_deficit
+!    real, dimension(onsp)                         :: pat_hvmax_btimber
+!    real, dimension(onsp)                         :: pat_hvpot_btimber
+
    !----- Local constants. ----------------------------------------------------------------!
    logical                       , parameter     :: print_detail = .false.
    !---------------------------------------------------------------------------------------!
 
+   select case (ianth_disturb)
+   !----- Nothing to do because not basing harvest off of biomass -------------------------!
+   case (0) ! Nothing to do because anthropogenic disturbance is turned off
+	   return
+   case (2) ! Harvest is based on size + area
 
-   !----- Nothing to do here in case anthropogenic disturbance is turned off. -------------!
-   if (ianth_disturb == 0) return
-   !---------------------------------------------------------------------------------------!
+	   !----- Link to the current site. -------------------------------------------------------!
+	   csite => cpoly%site(isi)
+	   !---------------------------------------------------------------------------------------!
 
+	   cpoly%primary_harvest_memory  (isi) = 0.0
+	   cpoly%secondary_harvest_memory(isi) = 0.0
+	   
+	   lambda_mature_plantation = cpoly%disturbance_rates(2,2,isi)
+	   lambda_mature_primary = cpoly%disturbance_rates(6,6,isi)
 
-   !----- Link to the current site. -------------------------------------------------------!
-   csite => cpoly%site(isi)
-   !---------------------------------------------------------------------------------------!
+	   !---------------------------------------------------------------------------------------!
+       !      Loop over patches.                                                               ! 
+       !---------------------------------------------------------------------------------------!
+       patch_loop: do ipa=1,onsp
+  
+		  !------------------------------------------------------------------------------------!
+		  !    Find out whether to harvest this patch.                                         !
+		  !------------------------------------------------------------------------------------!
+		  select case (csite%dist_type(ipa))
+		  case (2)
+			 !----- Forest plantation. --------------------------------------------------------!
+			 if ( csite%age(ipa) > plantation_rotation ) then
+				pot_area_harv(ipa) = csite%area(ipa) * lambda_mature_plantation
+			 end if
+			 !---------------------------------------------------------------------------------!
+		  case (6)
+			 !----- Primary/Secondary forest. -------------------------------------------------!
+			 if ( csite%age(ipa) > mature_harvest_age  ) then
+				pot_area_harv(ipa) = csite%area(ipa) * cpoly%disturbance_rates(6,6,isi)
+			 end if
+		  case default
+			 !----- Agriculture.  Do not log. -------------------------------------------------!
+			 continue
+			 !---------------------------------------------------------------------------------!
+		  end select
+		  !------------------------------------------------------------------------------------!
+	   end do patch_loop
+	   !---------------------------------------------------------------------------------------!
 
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Set biomass targets based on current rates and unapplied harvest from previous   !
-   ! years (memory).  These are in kgC/m2.  In case DBH-based logging is applied, then     !
-   ! harvest target is set to zero.                                                        !
-   !---------------------------------------------------------------------------------------!
-   primary_harvest_target   = cpoly%primary_harvest_target  (isi)                          &
-                            + cpoly%primary_harvest_memory  (isi)
-   secondary_harvest_target = cpoly%secondary_harvest_target(isi)                          &
-                            + cpoly%primary_harvest_memory  (isi)
-   site_harvest_target      = primary_harvest_target + secondary_harvest_target
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Find total harvestable biomass density in kgC/m2.  The harvestable biomass is    !
-   ! not necessarily the same as the total site biomass, because it is possible that the   !
-   ! demand is for trees above a minimum size (which is very common practice in the        !
-   ! tropics).                                                                             !
-   !---------------------------------------------------------------------------------------!
-   site_harvestable_agb = 0.
-   hpat_loop: do ipa=1,onsp
-      cpatch => csite%patch(ipa)
-      ilu = csite%dist_type(ipa)
-
-      !----- Select the minimum DBH depending on the forest category. ---------------------!
-      select case(ilu)
-      case (1)
-         !----- Agriculture.  No timber harvesting here. ----------------------------------!
-         mindbh_harvest(:) = huge(1.)
-         !---------------------------------------------------------------------------------!
-      case (2)
-         !----- Forest plantation.  Usually all biomass is cleared. -----------------------!
-         mindbh_harvest(:) = 0.
-         !---------------------------------------------------------------------------------!
-      case (4,5,6)
-         !----- Secondary vegetation. -----------------------------------------------------!
-         mindbh_harvest(:) = cpoly%mindbh_secondary(:,isi)
-         !---------------------------------------------------------------------------------!
-      case (3)
-         !----- Primary vegetation. -------------------------------------------------------!
-         mindbh_harvest(:) = cpoly%mindbh_primary  (:,isi)
-         !---------------------------------------------------------------------------------!
-      end select
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !     Go over each cohort, seek harvestable biomass.                                 !
-      !------------------------------------------------------------------------------------!
-      hcoh_loop: do ico=1,cpatch%ncohorts
-         ipft = cpatch%pft(ico)
-         if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
-            !----- Cohort is harvestable. -------------------------------------------------!
-            harvestable_agb(ipa) = harvestable_agb(ipa)                                    &
-                                 + cpatch%nplant(ico) * cpatch%agb(ico)
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      end do hcoh_loop
-      !------------------------------------------------------------------------------------!
-
-      !----- Update site biomass only when the patch has sufficient biomass. --------------!
-      if (harvestable_agb(ipa) >= min_harvest_biomass) then
-         site_harvestable_agb = site_harvestable_agb                                       &
-                              + harvestable_agb(ipa) * csite%area(ipa)
-      end if
-      !------------------------------------------------------------------------------------!
-   end do hpat_loop
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     Find out whether any harvest can occur at this site.  For harvest to occur, the   !
-   ! site must meet two criteria:                                                          !
-   ! a. Harvestable biomass must be greater than min_harvest_biomass;                      !
-   ! b. Target biomass must be greater than min_harvest_biomass.                           !
-   !                                                                                       !
-   !    In case one or both criteria are not met, we add the harvest target to memory.     !
-   !---------------------------------------------------------------------------------------!
-   if ( site_harvestable_agb <  min_harvest_biomass                 .or.                   &
-        site_harvest_target  <= site_harvestable_agb * min_patch_area      ) then
-      cpoly%primary_harvest_target  (isi) = 0.0
-      cpoly%secondary_harvest_target(isi) = 0.0
-      cpoly%primary_harvest_memory  (isi) = primary_harvest_target
-      cpoly%secondary_harvest_memory(isi) = secondary_harvest_target
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !       Print the inventory and the target.                                          !
-      !------------------------------------------------------------------------------------!
-      if (print_detail) then
-         write (unit=*,fmt='(a)'      )     ' '
-         write (unit=*,fmt='(a)'      )     '---------------------------------------------'
-         write (unit=*,fmt='(a)'      )     ' FORESTRY.  HARVEST WON''T OCCUR THIS YEAR'
-         write (unit=*,fmt='(a)'      )     ' '
-         write (unit=*,fmt='(a,1x,i5)')     ' ISI                   = ',isi
-         write (unit=*,fmt='(a,1x,es12.5)') ' PRIMARY TARGET AGB    = '                    &
-                                                         , primary_harvest_target
-         write (unit=*,fmt='(a,1x,es12.5)') ' SECONDARY TARGET AGB  = '                    &
-                                                         , secondary_harvest_target
-         write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL TARGET AGB      = '                    &
-                                                         , site_harvest_target
-         write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL HARVESTABLE AGB = '                    &
-                                                         , site_harvestable_agb
-         write (unit=*,fmt='(a)'      )     '---------------------------------------------'
-         write (unit=*,fmt='(a)'      )     ' '
-      end if
-      !------------------------------------------------------------------------------------!
-      return
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !------ Compute current stocks of agb in mature forests. -------------------------------!
-   call inventory_mat_forests(cpoly,isi,onsp,harvestable_agb                               &
-                             ,area_mature_primary   ,hvagb_mature_primary                  &
-                             ,area_mature_secondary ,hvagb_mature_secondary                &
-                             ,area_mature_plantation,hvagb_mature_plantation)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !------ Compute the mature-forest harvest rates. ---------------------------------------!
-   call mat_forest_harv_rates(hvagb_mature_primary,hvagb_mature_secondary                  &
-                             ,hvagb_mature_plantation,primary_harvest_target               &
-                             ,secondary_harvest_target,lambda_mature_primary               &
-                             ,lambda_mature_secondary,lambda_mature_plantation             &
-                             ,harvest_deficit)                                    
-   !---------------------------------------------------------------------------------------!
-
-
+	  write (unit=*,fmt='(a)'      )     ' '
+	  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+	  write (unit=*,fmt='(a)'      )     ' FORESTRY.  HARVEST RATES'
+	  write (unit=*,fmt='(a)'      )     ' '
+	  write (unit=*,fmt='(a,1x,i5)')     ' ISI                    = ',isi
+	  write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PRIMARY)    = '                      &
+													  , lambda_mature_primary
+	  write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PLANTATION) = '                      &
+													  , lambda_mature_plantation
+	  write (unit=*,fmt='(a)'          ) ' '
+	  write (unit=*,fmt='(a)'          ) '------------------------------------------------'
+	  write (unit=*,fmt='(5(a,1x))'    ) '  IPA','   LU','         AGE','        AREA'     &
+														,'     HV_AREA'
+	  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+	  do ipa=1,onsp
+		 write (unit=*,fmt='(2(i5,1x),3(f12.7,1x))') ipa,csite%dist_type(ipa)              &
+												   ,csite%age(ipa),csite%area(ipa)         &
+												   ,pot_area_harv(ipa)
+	  end do
+	  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+	  write (unit=*,fmt='(a)'      )     ' '
 
    !---------------------------------------------------------------------------------------!
-   !      Compute the area lost by mature patches through harvest.                         !
-   !---------------------------------------------------------------------------------------!
-   call area_harvest_mature(cpoly,isi,onsp,harvestable_agb,pot_area_harv                   &
-                           ,lambda_mature_primary,lambda_mature_secondary                  &
-                           ,lambda_mature_plantation)
-   !---------------------------------------------------------------------------------------!
+
+   case (1)
+	   !----- Link to the current site. -------------------------------------------------------!
+	   csite => cpoly%site(isi)
+	   !---------------------------------------------------------------------------------------!
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Compute the area lost by immature patches to meet the biomass demand.            !
-   !---------------------------------------------------------------------------------------!
-   call area_harvest_immature(cpoly,isi,onsp,harvestable_agb,pot_area_harv,harvest_deficit)
-   !---------------------------------------------------------------------------------------!
+	   !---------------------------------------------------------------------------------------!
+	   !      Set biomass targets based on current rates and unapplied harvest from previous   !
+	   ! years (memory).  These are in kgC/m2.  In case DBH-based logging is applied, then     !
+	   ! harvest target is set to zero.                                                        !
+	   !---------------------------------------------------------------------------------------!
+	   primary_harvest_target   = cpoly%primary_harvest_target  (isi)                          &
+								+ cpoly%primary_harvest_memory  (isi)
+	   secondary_harvest_target = cpoly%secondary_harvest_target(isi)                          &
+								+ cpoly%primary_harvest_memory  (isi)
+	   site_harvest_target      = primary_harvest_target + secondary_harvest_target
+	   !---------------------------------------------------------------------------------------!
+
+
+	   !---------------------------------------------------------------------------------------!
+	   !      Find total harvestable biomass density in kgC/m2.  The harvestable biomass is    !
+	   ! not necessarily the same as the total site biomass, because it is possible that the   !
+	   ! demand is for trees above a minimum size (which is very common practice in the        !
+	   ! tropics).                                                                             !
+	   !---------------------------------------------------------------------------------------!
+	   site_harvestable_agb = 0.
+	   hpat_loop: do ipa=1,onsp
+		  cpatch => csite%patch(ipa)
+		  ilu = csite%dist_type(ipa)
+
+		  !----- Select the minimum DBH depending on the forest category. ---------------------!
+		  select case(ilu)
+		  case (1)
+			 !----- Agriculture.  No timber harvesting here. ----------------------------------!
+			 mindbh_harvest(:) = huge(1.)
+			 !---------------------------------------------------------------------------------!
+		  case (2:6)
+			 !----- Harvesting of some sort.  ALl use same variable now -----------------------!
+			 mindbh_harvest(:) = cpoly%mindbh_harvest(:,isi)
+			 !---------------------------------------------------------------------------------!
+		  end select
+		  !------------------------------------------------------------------------------------!
+
+		  !------------------------------------------------------------------------------------!
+		  !     Go over each cohort, seek harvestable biomass.                                 !
+		  !------------------------------------------------------------------------------------!
+		  hcoh_loop: do ico=1,cpatch%ncohorts
+			 ipft = cpatch%pft(ico)
+			 if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
+				!----- Cohort is harvestable. -------------------------------------------------!
+				harvestable_agb(ipa) = harvestable_agb(ipa)                                    &
+									 + cpatch%nplant(ico) * cpatch%agb(ico)
+				!------------------------------------------------------------------------------!
+			 end if
+			 !---------------------------------------------------------------------------------!
+		  end do hcoh_loop
+		  !------------------------------------------------------------------------------------!
+
+		  !----- Update site biomass only when the patch has sufficient biomass. --------------!
+		  if (harvestable_agb(ipa) >= min_harvest_biomass) then
+			 site_harvestable_agb = site_harvestable_agb                                       &
+								  + harvestable_agb(ipa) * csite%area(ipa)
+		  end if
+		  !------------------------------------------------------------------------------------!
+	   end do hpat_loop
+	   !---------------------------------------------------------------------------------------!
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !       Print the inventory and the target.                                             !
-   !---------------------------------------------------------------------------------------!
-   if (print_detail) then
-      write (unit=*,fmt='(a)'      )     ' '
-      write (unit=*,fmt='(a)'      )     '------------------------------------------------'
-      write (unit=*,fmt='(a)'      )     ' FORESTRY.  HARVEST RATES'
-      write (unit=*,fmt='(a)'      )     ' '
-      write (unit=*,fmt='(a,1x,i5)')     ' ISI                    = ',isi
-      write (unit=*,fmt='(a,1x,es12.5)') ' PRIMARY TARGET AGB     = '                      &
-                                                      , primary_harvest_target
-      write (unit=*,fmt='(a,1x,es12.5)') ' SECONDARY TARGET AGB   = '                      &
-                                                      , secondary_harvest_target
-      write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL TARGET AGB       = '                      &
-                                                      , site_harvest_target
-      write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL HARVESTABLE AGB  = '                      &
-                                                      , site_harvestable_agb
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV AGB (PRIMARY)       = '                      &
-                                                      , hvagb_mature_primary
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV AGB (SECONDARY)     = '                      &
-                                                      , hvagb_mature_secondary
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV AGB (PLANTATION)    = '                      &
-                                                      , hvagb_mature_plantation
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (PRIMARY)      = '                      &
-                                                      , area_mature_primary
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (SECONDARY)    = '                      &
-                                                      , area_mature_secondary
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (PLANTATION)   = '                      &
-                                                      , area_mature_plantation
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PRIMARY)    = '                      &
-                                                      , lambda_mature_primary
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (SECONDARY)  = '                      &
-                                                      , lambda_mature_secondary
-      write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PLANTATION) = '                      &
-                                                      , lambda_mature_plantation
-      write (unit=*,fmt='(a)'          ) ' '
-      write (unit=*,fmt='(a,1x,es12.5)') ' HARVEST DEFICIT = ', harvest_deficit
-      write (unit=*,fmt='(a)'          ) ' '
-      write (unit=*,fmt='(a)'          ) '------------------------------------------------'
-      write (unit=*,fmt='(5(a,1x))'    ) '  IPA','   LU','         AGE','        AREA'     &
-                                                        ,'     HV_AREA'
-      write (unit=*,fmt='(a)'      )     '------------------------------------------------'
-      do ipa=1,onsp
-         write (unit=*,fmt='(2(i5,1x),3(f12.7,1x))') ipa,csite%dist_type(ipa)              &
-                                                   ,csite%age(ipa),csite%area(ipa)         &
-                                                   ,pot_area_harv(ipa)
-      end do
-      write (unit=*,fmt='(a)'      )     '------------------------------------------------'
-      write (unit=*,fmt='(a)'      )     ' '
-   end if
-   !---------------------------------------------------------------------------------------!
+	   !=======================================================================================!
+	   !=======================================================================================!
+	   !     Find out whether any harvest can occur at this site.  For harvest to occur, the   !
+	   ! site must meet two criteria:                                                          !
+	   ! a. Harvestable biomass must be greater than min_harvest_biomass;                      !
+	   ! b. Target biomass must be greater than min_harvest_biomass.                           !
+	   !                                                                                       !
+	   !    In case one or both criteria are not met, we add the harvest target to memory.     !
+	   !---------------------------------------------------------------------------------------!
+	   if ( site_harvestable_agb <  min_harvest_biomass                 .or.                   &
+			site_harvest_target  <= site_harvestable_agb * min_patch_area      ) then
+		  cpoly%primary_harvest_target  (isi) = 0.0
+		  cpoly%secondary_harvest_target(isi) = 0.0
+		  cpoly%primary_harvest_memory  (isi) = primary_harvest_target
+		  cpoly%secondary_harvest_memory(isi) = secondary_harvest_target
+		  !------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Reset the primary forest memory, and assign any remaining deficit to the         !
-   ! secondary forest memory.                                                              !
-   !---------------------------------------------------------------------------------------!
-   cpoly%primary_harvest_memory  (isi) = 0.0
-   cpoly%secondary_harvest_memory(isi) = harvest_deficit
-   !---------------------------------------------------------------------------------------!
+		  !------------------------------------------------------------------------------------!
+		  !       Print the inventory and the target.                                          !
+		  !------------------------------------------------------------------------------------!
+		  if (print_detail) then
+			 write (unit=*,fmt='(a)'      )     ' '
+			 write (unit=*,fmt='(a)'      )     '---------------------------------------------'
+			 write (unit=*,fmt='(a)'      )     ' FORESTRY.  HARVEST WON''T OCCUR THIS YEAR'
+			 write (unit=*,fmt='(a)'      )     ' '
+			 write (unit=*,fmt='(a,1x,i5)')     ' ISI                   = ',isi
+			 write (unit=*,fmt='(a,1x,es12.5)') ' PRIMARY TARGET AGB    = '                    &
+															 , primary_harvest_target
+			 write (unit=*,fmt='(a,1x,es12.5)') ' SECONDARY TARGET AGB  = '                    &
+															 , secondary_harvest_target
+			 write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL TARGET AGB      = '                    &
+															 , site_harvest_target
+			 write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL HARVESTABLE AGB = '                    &
+															 , site_harvestable_agb
+			 write (unit=*,fmt='(a)'      )     '---------------------------------------------'
+			 write (unit=*,fmt='(a)'      )     ' '
+		  end if
+		  !------------------------------------------------------------------------------------!
+		  return
+	   end if
+	   !---------------------------------------------------------------------------------------!
 
+
+
+	   !------ Compute current stocks of agb in mature forests. -------------------------------!
+	   call inventory_mat_forests(cpoly,isi,onsp,harvestable_agb                               &
+								 ,area_mature_primary   ,hvagb_mature_primary                  &
+								 ,area_mature_secondary ,hvagb_mature_secondary                &
+								 ,area_mature_plantation,hvagb_mature_plantation)
+	   !---------------------------------------------------------------------------------------!
+
+
+
+	   !------ Compute the mature-forest harvest rates. ---------------------------------------!
+	   call mat_forest_harv_rates(hvagb_mature_primary,hvagb_mature_secondary                  &
+								 ,hvagb_mature_plantation,primary_harvest_target               &
+								 ,secondary_harvest_target,lambda_mature_primary               &
+								 ,lambda_mature_secondary,lambda_mature_plantation             &
+								 ,harvest_deficit)                                    
+	   !---------------------------------------------------------------------------------------!
+
+
+
+	   !---------------------------------------------------------------------------------------!
+	   !      Compute the area lost by mature patches through harvest.                         !
+	   !---------------------------------------------------------------------------------------!
+	   call area_harvest_mature(cpoly,isi,onsp,harvestable_agb,pot_area_harv                   &
+							   ,lambda_mature_primary,lambda_mature_secondary                  &
+							   ,lambda_mature_plantation)
+	   !---------------------------------------------------------------------------------------!
+
+
+
+	   !---------------------------------------------------------------------------------------!
+	   !      Compute the area lost by immature patches to meet the biomass demand.            !
+	   !---------------------------------------------------------------------------------------!
+	   call area_harvest_immature(cpoly,isi,onsp,harvestable_agb,pot_area_harv,harvest_deficit)
+	   !---------------------------------------------------------------------------------------!
+
+
+
+	   !---------------------------------------------------------------------------------------!
+	   !       Print the inventory and the target.                                             !
+	   !---------------------------------------------------------------------------------------!
+	   if (print_detail) then
+		  write (unit=*,fmt='(a)'      )     ' '
+		  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+		  write (unit=*,fmt='(a)'      )     ' FORESTRY.  HARVEST RATES'
+		  write (unit=*,fmt='(a)'      )     ' '
+		  write (unit=*,fmt='(a,1x,i5)')     ' ISI                    = ',isi
+		  write (unit=*,fmt='(a,1x,es12.5)') ' PRIMARY TARGET AGB     = '                      &
+														  , primary_harvest_target
+		  write (unit=*,fmt='(a,1x,es12.5)') ' SECONDARY TARGET AGB   = '                      &
+														  , secondary_harvest_target
+		  write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL TARGET AGB       = '                      &
+														  , site_harvest_target
+		  write (unit=*,fmt='(a,1x,es12.5)') ' TOTAL HARVESTABLE AGB  = '                      &
+														  , site_harvestable_agb
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV AGB (PRIMARY)       = '                      &
+														  , hvagb_mature_primary
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV AGB (SECONDARY)     = '                      &
+														  , hvagb_mature_secondary
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV AGB (PLANTATION)    = '                      &
+														  , hvagb_mature_plantation
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (PRIMARY)      = '                      &
+														  , area_mature_primary
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (SECONDARY)    = '                      &
+														  , area_mature_secondary
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (PLANTATION)   = '                      &
+														  , area_mature_plantation
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PRIMARY)    = '                      &
+														  , lambda_mature_primary
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (SECONDARY)  = '                      &
+														  , lambda_mature_secondary
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HV LAMBDA (PLANTATION) = '                      &
+														  , lambda_mature_plantation
+		  write (unit=*,fmt='(a)'          ) ' '
+		  write (unit=*,fmt='(a,1x,es12.5)') ' HARVEST DEFICIT = ', harvest_deficit
+		  write (unit=*,fmt='(a)'          ) ' '
+		  write (unit=*,fmt='(a)'          ) '------------------------------------------------'
+		  write (unit=*,fmt='(5(a,1x))'    ) '  IPA','   LU','         AGE','        AREA'     &
+															,'     HV_AREA'
+		  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+		  do ipa=1,onsp
+			 write (unit=*,fmt='(2(i5,1x),3(f12.7,1x))') ipa,csite%dist_type(ipa)              &
+													   ,csite%age(ipa),csite%area(ipa)         &
+													   ,pot_area_harv(ipa)
+		  end do
+		  write (unit=*,fmt='(a)'      )     '------------------------------------------------'
+		  write (unit=*,fmt='(a)'      )     ' '
+	   end if
+	   !---------------------------------------------------------------------------------------!
+
+
+	   !---------------------------------------------------------------------------------------!
+	   !      Reset the primary forest memory, and assign any remaining deficit to the         !
+	   ! secondary forest memory.                                                              !
+	   !---------------------------------------------------------------------------------------!
+	   cpoly%primary_harvest_memory  (isi) = 0.0
+	   cpoly%secondary_harvest_memory(isi) = harvest_deficit
+	   !---------------------------------------------------------------------------------------!
+   end select
    return
 end subroutine find_harvest_area
 !==========================================================================================!

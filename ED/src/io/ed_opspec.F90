@@ -2067,9 +2067,9 @@ end do
       end if
    end select
 
-   if (ianth_disturb < 0 .or. ianth_disturb > 1) then
+   if (ianth_disturb < 0 .or. ianth_disturb > 2) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid IANTH_DISTURB, it must be between 0 and 1. Yours is set to',ianth_disturb,'...'
+        'Invalid IANTH_DISTURB, it must be between 0 and 2. Yours is set to',ianth_disturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
@@ -2128,7 +2128,7 @@ end do
    end do pftloop
    
    !----- Checking whether the user choice for agriculture and plantation make sense. -----!
-   if (ianth_disturb == 1) then
+   if (ianth_disturb > 0) then
       !------ Checking the plantation PFT.  It must be a tree PFT. ------------------------!
       select case (plantation_stock)
       case (2,3,4,6,7,8,9,10,11,17)

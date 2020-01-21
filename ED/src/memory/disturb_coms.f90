@@ -59,9 +59,22 @@ module disturb_coms
    !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
    real :: fire_parameter
 
+!    
+!    ! FROM MARCOS
+!    !----- Fractions of fast and structural carbon and nitrogen lost through combustion. ---!
+!    real :: f_combusted_fast_c
+!    real :: f_combusted_struct_c
+!    real :: f_combusted_fast_n
+!    real :: f_combusted_struct_n
+!    !---- Maximum height for non-grass cohort to be considered part of fuel. ---------------!
+!    real :: fuel_height_max
+
    !---------------------------------------------------------------------------------------!
-   !     Anthropogenic disturbance.  1 means that anthropogenic disturbances will be       !
-   ! included, whereas 0 means that it won't.                                              !
+   !     Anthropogenic disturbance.                                                        !
+   ! 0. No anthropogenic disturbance                                                       !
+   ! 1. Anthropogenic disturbances; harvest based on biomass                               !
+   ! 2. Anthropogenic disturbances; forest harvest base don land area                      !
+   ! 3. Marcos' single-site scheme (not implemented)                                       !
    !---------------------------------------------------------------------------------------!
    integer :: ianth_disturb
    !---------------------------------------------------------------------------------------!
@@ -113,6 +126,14 @@ module disturb_coms
    real :: treefall_hite_threshold
    !----- Cut-off for different fire survivorship. ----------------------------------------!
    real :: fire_hite_threshold
+!    
+!    ! MARCOS -- Not implemented
+!    !---------------------------------------------------------------------------------------!
+!    !      Minimum age above which we disregard the disturbance type (land use) and assume  !
+!    ! old growth, thus allowing patch fusion to occur.                                      !
+!    !---------------------------------------------------------------------------------------!
+!    real, dimension(n_dist_types) :: min_oldgrowth
+! 
    !=======================================================================================!
    !=======================================================================================!
 
