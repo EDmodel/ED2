@@ -117,9 +117,9 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
       !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
-
-
-
+ 
+   !EJL printing some debugging info
+   print*, 'nzl ',nzl, '    mzg ',mzg,'   k_rh_active ', k_rh_active
    !---------------------------------------------------------------------------------------!
    !     Integrate the soil extensive properties, plus the minimum and maximum possible    !
    ! soil water content of the active layer.                                               !
@@ -162,15 +162,17 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
      !----- Find the average temperature and the relative soil moisture. -------------------!
      select case (ivertresp)
        case (0)
-       call uextcm2tl(sum_soil_energy,sum_soil_water,layer_soil_hcap,avg_soil_temp,avg_soil_fliq)
+         call uextcm2tl(sum_soil_energy,sum_soil_water,sum_soil_hcap,avg_soil_temp,   &
+                avg_soil_fliq)
+         rel_soil_moist = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )          &
+                                     / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
        case (1)
-       call uextcm2tl(layer_soil_energy,layer_soil_water,layer_soil_hcap,avg_soil_temp,avg_soil_fliq)
+         call uextcm2tl(layer_soil_energy,layer_soil_water,layer_soil_hcap,avg_soil_temp, &
+                avg_soil_fliq)
+         rel_soil_moist = min( 1.0, max(0.0, ( layer_soil_water  - layer_soil_soilcp )      &
+                                     / ( layer_soil_slmsts - layer_soil_soilcp ) ) )
      end select
 
-
-
-     rel_soil_moist = min( 1.0, max(0.0, ( layer_soil_water  - layer_soil_soilcp )              &
-                                     / ( layer_soil_slmsts - layer_soil_soilcp ) ) )
      !--------------------------------------------------------------------------------------!
      !----- Compute soil/temperature modulation of heterotrophic respiration. --------------!
      csite%A_decomp(k,ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist)
@@ -454,6 +456,7 @@ subroutine organic_layer_depth(cgrid)
                  endif
                case (0)
              end select
+!!             print*, cpoly%ntext_soil(k,isi)
            end do
 
 
