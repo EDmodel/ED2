@@ -1,9 +1,10 @@
 function plot_succession(dns,agb_t,agb_c,lai_t,lai_c,...
-    titlestr,pftsucc_img,visible)
+    titlestr,pftsucc_pref,status_t,status_c,visible)
 
 global fasz;
-global pftname;
+global pftshort;
 global pftcolor;
+global npft;
 
 fasz_l = fasz+1;
 
@@ -17,7 +18,6 @@ dx = 0.3; dy = 0.35;
 
 % Determine which pfts are part of the game
 
-npft = size(agb_t,2);
 clear upft;
 ip=0;
 for ipft=1:npft
@@ -31,6 +31,13 @@ if(numel(upft)<1) %Force at least some plotting, C4
     upft(1)=1;
 end
 
+
+% Find total AGB and LAI
+tot_agb_t = sum(agb_t,2);
+tot_agb_c = sum(agb_c,2);
+tot_lai_t = sum(lai_t,2);
+tot_lai_c = sum(lai_c,2);
+
 %-- AGB --
 
 xticks = linspace(min(dns),max(dns),5);
@@ -38,13 +45,17 @@ xvec = datevec(xticks);
 xticklabs = num2str(xvec(:,1));
 xticklabs(end,:) = '    ';
 
-ymax = max([max(max(agb_t)) max(max(agb_c))]);
+ymax = 1.04 .* max([tot_agb_t;tot_agb_c]);
 
 ax1 = axes;
 set(ax1,'Position',[bx by+dy+my dx dy],'FontSize',fasz_l);
-ph=plot(dns,agb_c(:,upft),'LineWidth',1.5);
-for ip=1:numel(upft)
-  set(ph(ip),'Color',pftcolor(upft(ip),:));
+ph=plot(dns,[agb_t(:,upft) tot_agb_t]);
+for ip=1:(numel(upft)+1)
+  if (ip == (numel(upft)+1))
+     set(ph(ip),'Color','k','LineWidth',1.75);
+  else
+     set(ph(ip),'Color',pftcolor(upft(ip),:),'LineWidth',1.25);
+  end
 end
 datetick;
 grid on;
@@ -53,16 +64,21 @@ ylabel('AGB [kgC/m^2]','FontSize',fasz_l)
 set(gca,'XTick',xticks,'XTickLabel',{});
 xlim([min(dns) max(dns)]);
 ylim([0 ymax]);
-title('Mainline','FontSize',fasz_l);
+title(sprintf('Test (%s)',status_t),'FontSize',fasz_l);
 
 ax2 = axes;
 set(ax2,'Position',[bx+dx+mx by+dy+my dx dy],'FontSize',fasz_l);
-
-ph=plot(dns,agb_t(:,upft),'LineWidth',1.5);
-for ip=1:numel(upft)
-  set(ph(ip),'Color',pftcolor(upft(ip),:));
+ph=plot(dns,[agb_c(:,upft) tot_agb_c]);
+for ip=1:(numel(upft)+1)
+  if (ip == (numel(upft)+1))
+     set(ph(ip),'Color','k','LineWidth',1.75);
+  else
+     pftnow = upft(ip);
+     set(ph(ip),'Color',pftcolor(upft(ip),:),'LineWidth',1.25);
+  end
 end
-lhan=legend(ax2,pftname{upft},'Location','East');
+pftleg=[pftshort 'Total'];
+lhan=legend(ax2,pftleg{[upft npft+1]},'Location','East');
 set(lhan,'Position',[bx+2*dx+3*mx 0.35 0.1 0.3],'FontSize',fasz_l)
 datetick;
 grid on;
@@ -71,16 +87,21 @@ ylim([0 ymax]);
 xlim([min(dns) max(dns)]);
 set(gca,'XTick',xticks,'XTickLabel',{});
 set(gca,'YTickLabel',{});
-title('Test','FontSize',fasz_l);
+title(sprintf('MainLine (%s)',status_c),'FontSize',fasz_l);
 
 
-ymax = 7;
+ymax = 1.04 .* max([tot_lai_t;tot_lai_c]);
 
 ax3 = axes;
 set(ax3,'Position',[bx by dx dy],'FontSize',fasz_l);
-ph=plot(dns,lai_c(:,upft),'LineWidth',1.5);
-for ip=1:numel(upft)
-  set(ph(ip),'Color',pftcolor(upft(ip),:));
+ph=plot(dns,[lai_t(:,upft) tot_lai_t]);
+for ip=1:(numel(upft)+1)
+  if (ip == (numel(upft)+1))
+     set(ph(ip),'Color','k','LineWidth',1.75);
+  else
+     pftnow = upft(ip);
+     set(ph(ip),'Color',pftcolor(upft(ip),:),'LineWidth',1.25);
+  end
 end
 datetick;
 grid on;
@@ -92,9 +113,14 @@ ylim([0 ymax]);
 
 ax4 = axes;
 set(ax4,'Position',[bx+dx+mx by dx dy],'FontSize',fasz_l);
-ph=plot(dns,lai_t(:,upft),'LineWidth',1.5);
-for ip=1:numel(upft)
-  set(ph(ip),'Color',pftcolor(upft(ip),:));
+ph=plot(dns,[lai_c(:,upft) tot_lai_c]);
+for ip=1:(numel(upft)+1)
+  if (ip == (numel(upft)+1))
+     set(ph(ip),'Color','k','LineWidth',1.75);
+  else
+     pftnow = upft(ip);
+     set(ph(ip),'Color',pftcolor(upft(ip),:),'LineWidth',1.25);
+  end
 end
 datetick;
 grid on;
@@ -112,7 +138,8 @@ scrpos = get(gcf,'Position');
 newpos = scrpos/100;
 set(gcf,'PaperUnits','inches',...
 'PaperPosition',newpos)
-print('-depsc',pftsucc_img,'-r200');
+print('-depsc',sprintf('%s.eps',pftsucc_pref),'-r300');
+print('-dpng' ,sprintf('%s.png',pftsucc_pref),'-r300');
 drawnow
 set(gcf,'Units',oldscreenunits,...
 'PaperUnits',oldpaperunits,...

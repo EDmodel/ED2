@@ -26,27 +26,28 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       lieu     = poilist$longname[pp]
       iata     = poilist$iata[pp]
       wmo      = poilist$wmo [pp]
-      pathroot = paste(here,ici,sep="/")
-      pathin   = paste(here,ici,"analy",ici,sep="/")
-      pathrst  = paste(here,ici,"histo",ici,sep="/")
-      pathout  = paste(here,ici,"epost",sep="/")
+      pathroot = file.path(here,ici)
+      pathin   = file.path(here,ici,"analy",ici)
+      pathrst  = file.path(here,ici,"histo",ici)
+      pathout  = file.path(here,ici,"epost")
       lon      = poilist$lon[pp]
       lat      = poilist$lat[pp]
    }else if(nchar(ici) == 5 & substring(ici,1,2) == "kz")     {
       #----- Ke's list of polygons. -------------------------------------------------------#
        testpoi  = as.numeric(substring(ici,3,5))
 
-       lieu     = paste("KZ test - polygon ",testpoi,sep="")
+       lieu     = paste0("KZ test - polygon ",testpoi)
        iata     = ici
        wmo      = NA
-       pathroot = paste(here,ici,sep="/")
-       pathin   = paste(pathroot,"analy",ici,sep="/")
-       pathrst  = paste(here,ici,"histo",ici,sep="/")
-       pathout  = paste(pathroot,"epost",sep="/")
+       pathroot = file.path(here,ici)
+       pathin   = file.path(pathroot,"analy",ici)
+       pathrst  = file.path(here,ici,"histo",ici)
+       pathout  = file.path(pathroot,"epost")
        lon      = kzlist[[testpoi]]$lon
        lat      = kzlist[[testpoi]]$lat
 
-   }else if( substring(ici,1,1) %in% c("t","s","e","z") & substring(ici,5,5) == "_"){
+   }else if( ( substring(ici,1,1) %in% c("t","s","e","z") )
+           & ( ( substring(ici,5,5) == "_" ) | ( nchar(ici) == 4 ) ) ){
       #---- IATA-based name with model configuration. -------------------------------------#
       metflag = substring(ici,1,1)
       if (tolower(metflag) == "s"){
@@ -62,20 +63,20 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       pp      = which(poilist$iata == iata)
 
       #----- Put the name of the place and the meteorological forcing. --------------------#
-      testpoi = paste(poilist$longname[pp],thismet,sep="")
+      testpoi = paste0(poilist$longname[pp],thismet)
       lon     = poilist$lon[pp]
       lat     = poilist$lat[pp]
       wmo     = poilist$wmo[pp]
 
       lieu     = simul.description(ici,testpoi,iata=TRUE)
-      pathroot = paste(here,ici,sep="/")
-      pathin   = paste(pathroot,"analy",ici,sep="/")
-      pathrst  = paste(here,ici,"histo",ici,sep="/")
-      pathout  = paste(pathroot,"epost",sep="/")
+      pathroot = file.path(here,ici)
+      pathin   = file.path(pathroot,"analy",ici)
+      pathrst  = file.path(here,ici,"histo",ici)
+      pathout  = file.path(pathroot,"epost")
 
    }else if( substring(ici,4,4) == "_" & substring(ici,9,9) == "_"){
       #---- Convert back to upper case. ---------------------------------------------------#
-      ici      = paste(toupper(substring(ici,1,3)),substring(ici,4),sep="")
+      ici      = paste0(toupper(substring(ici,1,3)),substring(ici,4))
 
       #---- Regional polygon. -------------------------------------------------------------#
       pnumber  = as.numeric(substring(ici,5,8))
@@ -90,19 +91,19 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       wmo     = NA
 
       lieu     = simul.description(ici,testpoi,iata=FALSE)
-      pathroot = paste(here,ici,sep="/")
-      pathin   = paste(pathroot,"analy",ici,sep="/")
-      pathrst  = paste(here,ici,"histo",ici,sep="/")
-      pathout  = paste(pathroot,"epost",sep="/")
+      pathroot = file.path(here,ici)
+      pathin   = file.path(pathroot,"analy",ici)
+      pathrst  = file.path(here,ici,"histo",ici)
+      pathout  = file.path(pathroot,"epost")
 
    }else if(ici == "rondonia")         {
        lieu     = "Rondonia"
        iata     = "RO"
        wmo      = NA
-       pathroot = paste(here,ici,sep="/")
-       pathin   = paste(here,"analy",ici,sep="/")
-       pathrst  = paste(here,"histo",ici,sep="/")
-       pathout  = paste(here,"epost",sep="/")
+       pathroot = file.path(here,ici)
+       pathin   = file.path(here,"analy",ici)
+       pathrst  = file.path(here,"histo",ici)
+       pathout  = file.path(here,"epost")
        lon      = NA
        lat      = NA
 
@@ -110,10 +111,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
        lieu     = "South America"
        iata     = "potveg"
        wmo      = NA
-       pathroot = paste(here,ici,sep="/")
-       pathin   = paste(here,"analy",ici,sep="/")
-       pathrst  = paste(here,"histo",ici,sep="/")
-       pathout  = paste(here,"epost",sep="/")
+       pathroot = file.path(here,ici)
+       pathin   = file.path(here,"analy",ici)
+       pathrst  = file.path(here,"histo",ici)
+       pathout  = file.path(here,"epost")
        lon      = NA
        lat      = NA
 
@@ -122,9 +123,9 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
        iata     = "coupled"
        wmo      = NA
        pathroot = here
-       pathin   = paste(here,"ecoss","coupled",sep="/")
-       pathrst  = paste(here,"ecort","coupled",sep="/")
-       pathout  = paste(here,"epost",sep="/")
+       pathin   = file.path(here,"ecoss","coupled")
+       pathrst  = file.path(here,"ecort","coupled")
+       pathout  = file.path(here,"epost")
        lon      = NA
        lat      = NA
 
@@ -160,10 +161,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             mona=1
          }#end if
-         cmon=substring(100+mona,2)
-         filename     = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon=sprintf("%2.2i",mona)
+         filename     = paste0(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -173,10 +174,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       mo     = 13
       while (mo > mona){
          mo           = mo -1
-         cmon         = substring(100+mo,2)
-         filename     = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mo)
+         filename     = paste0(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -195,10 +196,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             mona=1
          }#end if
-         cmon         = substring(100+mona,2)
-         filename     = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mona)
+         filename     = paste0(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -208,10 +209,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       mo     = 13
       while (mo > mona){
          mo           = mo -1
-         cmon         = substring(100+mo,2)
-         filename     = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mo)
+         filename     = paste0(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -230,10 +231,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             mona=1
          }#end if
-         cmon=substring(100+mona,2)
-         filename     = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         cmon=sprintf("%2.2i",mona)
+         filename     = paste0(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5"    )
+         filename.bz2 = paste0(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -243,10 +244,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       mo     = 13
       while (mo > mona){
          mo           = mo -1
-         cmon         = substring(100+mo,2)
-         filename     = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mo)
+         filename     = paste0(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5"    )
+         filename.bz2 = paste0(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -267,11 +268,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
             mona=1
             daya=1
          }#end if
-         cmon         = substring(100+mona,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mona)
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -287,13 +288,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             daya = 1
          }#end if
-         cmon         = substring(100+mo,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cmon         = sprintf("%2.2i",mo  )
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -302,15 +301,13 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 
       dayz = daya
       dy   = daymax(monz,yearz)
-      cmon = substring(100+monz,2)
+      cmon = sprintf("%2.2i",monz)
       while (dy > daya){
          dy           = dy - 1
-         cday         = substring(100+dy,2)
-         filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cday         = sprintf("%2.2i",dy)
+         filename     = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             dayz = dy
             dy   = daya #----- This will make it leave the loop. -------------------------#
@@ -339,11 +336,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
             mona=1
             daya=1
          }#end if
-         cmon         = substring(100+mona,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mona)
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -359,13 +356,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             daya = 1
          }#end if
-         cmon         = substring(100+mo,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cmon         = sprintf("%2.2i",mo  )
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -374,15 +369,13 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 
       dayz = daya
       dy   = daymax(monz,yearz)
-      cmon = substring(100+monz,2)
+      cmon = sprintf("%2.2i",monz)
       while (dy > daya){
          dy           = dy - 1
-         cday         = substring(100+dy,2)
-         filename     = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cday         = sprintf("%2.2i",dy)
+         filename     = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             dayz = dy
             dy   = daya #----- This will make it leave the loop. -------------------------#
@@ -433,12 +426,13 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- imetrad is the radiation splitting method. --------------------------------------# 
    flagvar[["imetrad"]]         = list( descr   = "SW Radiation splitting"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=4,by=1)
+                                      , values  = seq(from=0,to=5,by=1)
                                       , names   = c( "Input files"
                                                    , "SiB"
                                                    , "Weissman-Norman"
                                                    , "100% diffuse"
                                                    , "100% direct"
+                                                   , "Clearness Index"
                                                    )#end c
                                       )#end list
    #----- icanrad is the canopy radiation model. ------------------------------------------#
@@ -446,6 +440,12 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                       , numeric = TRUE
                                       , values  = seq(from=0,to=2,by=1)
                                       , names   = c("Medvigy","Zhao and Qualls","Liou")
+                                      )#end list
+   #----- ihrzrad is the horizontal shading model. ----------------------------------------#
+   flagvar[["ihrzrad"]]         = list( descr   = "Horizontal shading"
+                                      , numeric = TRUE
+                                      , values  = seq(from=0,to=4,by=1)
+                                      , names   = c("OFF","GAP","PIXEL","DUMMY","OFF")
                                       )#end list
    #----- imetavg is the averaging method for met driver. ---------------------------------#
    flagvar[["imetavg"]]         = list( descr   = "Met driver average"
@@ -461,18 +461,22 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    flagvar[["iallom"]]          = list( descr   = "Allometry"
                                       , numeric = TRUE
                                       , values  = seq(from=0,to=3,by=1)
-                                      , names   = c("Original ED-2.1"
-                                                  ,"AGB-Chave, BL-Original"
-                                                  ,"AGB-Chave, BL-ColeEwel"
-                                                  ,"AGB-Chave, BL-Lescure")
+                                      , names   = c("ED-1.0","ED-2.0","ED-2.1","ED-2.2")
+                                      )#end list
+   #----- ieconomics is the trait trade-off method. ---------------------------------------#
+   flagvar[["ieconomics"]]      = list( descr   = "Economics"
+                                      , numeric = TRUE
+                                      , values  = seq(from=0,to=1,by=1)
+                                      , names   = c("ED-2.0","TNRG data sets")
                                       )#end list
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["h2o.plant.limit"]] = list( descr   = "Water limitation"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=2,by=1)
+                                      , values  = seq(from=0,to=3,by=1)
                                       , names   = c("No limitation"
                                                   ,"Demand/Supply"
-                                                  ,"Matric potential")
+                                                  ,"Matric potl. on fsw"
+                                                  ,"Matric potl. on gsw")
                                       )#end list
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["dd.mort.control"]] = list( descr   = "Dens.-dep. mortality"
@@ -552,8 +556,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- ivegt.dynamics is the flag for vegetation dynamics. -----------------------------#
    flagvar[["ivegt.dynamics"]]  = list( descr   = "Vegetation dynamics"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=1,by=1)
-                                      , names   = c("OFF","ON")
+                                      , values  = seq(from=0,to=2,by=1)
+                                      , names   = c("OFF","ON","Multi")
                                       )#end list
    #----- iphen.scheme is the phenology scheme for tropical broadleaf trees. --------------#
    flagvar[["iphen.scheme"]]    = list( descr   = "Phenology scheme"
@@ -621,16 +625,20 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , names  = c("Normal","2010 drought")
                                        )#end list
    #----- Photosynthesis parameters. ------------------------------------------------------#
-   flagvar[["iphoto"]]           = list( descr  = "Photosynthesis parameters"
+   flagvar[["iphysiol"]]         = list( descr  = "Photosynthesis"
                                       , numeric = TRUE
-                                       , values = seq(from=0,to=1,by=1)
-                                       , names  = c("Old","New")
+                                       , values = seq(from=0,to=3,by=1)
+                                       , names  = c("Arrhenius (no Jmax/TPmax)"
+                                                   ,"Arrenhius (with Jmax/TPmax)"
+                                                   ,"Q10 function (no Jmax/TPmax)"
+                                                   ,"Q10 function (with Jmax/TPmax)"
+                                                   )#end c
                                        )#end list
    #----- Grass type. ---------------------------------------------------------------------#
-   flagvar[["igrass"]]           = list( descr  = "Grass type"
+   flagvar[["igrass"]]           = list( descr  = "Grass scheme"
                                       , numeric = TRUE
-                                       , values = c(3,4,34)
-                                       , names  = c("C3","C4","C3 and C4")
+                                       , values = c(0,1)
+                                       , names  = c("ED-1","Swann")
                                        )#end list
    #----- Grass type. ---------------------------------------------------------------------#
    flagvar[["isoilbc"]]          = list( descr  = "Soil Bnd. Cond."
@@ -831,8 +839,20 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"sas_iage01_pft05"
                                                    ,"sas_iage30_pft02"
                                                    ,"sas_iage30_pft05"
+                                                   ,"ble_age30_pft02"
+                                                   ,"ble_age30_pft05"
+                                                   ,"sas_age01_pft02"
+                                                   ,"sas_age01_pft05"
+                                                   ,"sas_age30_pft02"
+                                                   ,"sas_age30_pft05"
                                                    )#end values
                                        , names  = c("2 PFTs"
+                                                   ,"5 PFTs"
+                                                   ,"Size + 2 PFTs"
+                                                   ,"Size + 5 PFTs"
+                                                   ,"Size + Age + 2 PFTs"
+                                                   ,"Size + Age + 5 PFTs"
+                                                   ,"2 PFTs"
                                                    ,"5 PFTs"
                                                    ,"Size + 2 PFTs"
                                                    ,"Size + 5 PFTs"
@@ -850,10 +870,32 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(0,1)
                                        , names  = c("ED-1.0","ED-2.2")
                                        )#end list
+   flagvar[["iplastic"]]         = list( descr  = "Plasticity"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2)
+                                       , names  = c("Off","height-based","LAI-based")
+                                       )#end list
+   flagvar[["repro.scheme" ]]    = list( descr  = "Seed allocation"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2,3)
+                                       , names  = c("No allocation"
+                                                   ,"Big-bang within site"
+                                                   ,"Big-bang across site"
+                                                   ,"Asymptotic"
+                                                   )#end c
+                                       )#end list
    flagvar[["ianth.disturb"]]    = list( descr  = "Anthropogenic disturbance"
                                        , numeric = TRUE
-                                       , values = c(0,1)
-                                       , names  = c("OFF","ON")
+                                       , values = c(0,1,2)
+                                       , names  = c("OFF","ON","Logging")
+                                       )#end list
+   flagvar[["ihydro"       ]]    = list( descr  = "Plant hydraulics"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2)
+                                       , names  = c( "Static"
+                                                   , "Xu/Christoffersen"
+                                                   , "Xu et al (2016)"
+                                                   )#end c
                                        )#end list
    flagvar[["ianth.dataset"]]    = list( descr  = "LULCC dataset"
                                        , numeric = FALSE
@@ -897,6 +939,68 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(1,4,25,100,2500)
                                        , names  = c("1","4","25","100","2500")
                                        )#end list
+   flagvar[["tf.slope"]]         = list( descr  = "Mortality slope"
+                                       , numeric = FALSE
+                                       , values = c("-","+")
+                                       , names  = c("0.05","0.15")
+                                       )#end list
+   flagvar[["iszpft"  ]]         = list( descr  = "Initial condition"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2)
+                                       , names  = c("Filled","Inventory","Airborne Lidar")
+                                       )#end list
+   flagvar[["teff"  ]]           = list( descr  = "Temperature increase"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("OFF","ON")
+                                       )#end list
+   flagvar[["dhist" ]]           = list( descr  = "LCLU history"
+                                       , numeric = FALSE
+                                       , values = c("int","ril","cl1","cl2","lt1"
+                                                   ,"bn1","bn2","bn3","bn6"
+                                                   ,"lb1","lb2","blb"
+                                                   ,"sec","sb2","lwr","upr")
+                                       , names  = c("Intact"
+                                                   ,"Reduced-Impact Logging"
+                                                   ,"Conventional Logging"
+                                                   ,"Logged twice"
+                                                   ,"Logged and thinned"
+                                                   ,"Burned once"
+                                                   ,"Burned twice"
+                                                   ,"Burned three times"
+                                                   ,"Burned six times"
+                                                   ,"Logged and burned once"
+                                                   ,"Logged and burned twice"
+                                                   ,"Burned, logged, burned"
+                                                   ,"Secondary growth"
+                                                   ,"Secondary and burned twice"
+                                                   ,"Bottomland"
+                                                   ,"Plateau"
+                                                   )#end c
+                                       )#end list
+   flagvar[["sl.scale"     ]]    = list( descr  = "Logging scale"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("Working unit","Landscape")
+                                       )#end list
+   flagvar[["logging.type" ]]    = list( descr  = "Logging type"
+                                       , numeric = FALSE
+                                       , values = c("ril","cvl","scl")
+                                       , names  = c("Reduced-Impact Logging"
+                                                   ,"Conventional Logging"
+                                                   ,"Stand clearing"
+                                                   )#end c
+                                       )#end list
+   flagvar[["icompile" ]]        = list( descr  = "Compilation type"
+                                       , numeric = FALSE
+                                       , values = c("openmp","serial")
+                                       , names  = c("OpenMP","Serial")
+                                       )#end list
+   flagvar[["version"  ]]        = list( descr  = "ED version"
+                                       , numeric = FALSE
+                                       , values = c("ed20","ed21","ed22")
+                                       , names  = c("ED-2.0.12","ED-2.1","ED-2.2")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -921,6 +1025,26 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.0f"          
                                      , off   =    0.0
                                      , mult  =    1.0  )
+   numvar[["kwfact"         ]] = list( descr = "Kw scale factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   =    0.0
+                                     , mult  =    0.001  )
+   numvar[["d0fact"         ]] = list( descr = "D0 scale factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   =    0.0
+                                     , mult  =    0.001  )
+   numvar[["fclump"         ]] = list( descr = "Clumping factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   =    0.0
+                                     , mult  =    0.001  )
+   numvar[["mphoto.trc3"    ]] = list( descr = "Stomatal slope (C3)"
+                                     , unit  = ""
+                                     , fmt   = "%.1f"
+                                     , off   =    0.0
+                                     , mult  =    0.1  )
    numvar[["soil.depth"     ]] = list( descr = "Soil depth"                 
                                      , unit  = "m"                     
                                      , fmt   = "%.1f"          
@@ -935,7 +1059,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , unit  = ""                      
                                      , fmt   = "%.3f"          
                                      , off   =    0.0
-                                     , mult  =    0.001)
+                                     , mult  =    0.0001)
    numvar[["gamma.c4"       ]] = list( descr = "gamma[C4]"                  
                                      , unit  = ""                      
                                      , fmt   = "%.3f"          
@@ -943,19 +1067,34 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , mult  =    0.001)
    numvar[["vm0.c3"         ]] = list( descr = "Vm0fac[C3]"                 
                                      , unit  = ""                      
-                                     , fmt   = "%.2f"          
+                                     , fmt   = "%.3f"          
                                      , off   =    0.0
-                                     , mult  =    0.01 )
+                                     , mult  =    0.001 )
    numvar[["vm0.c4"         ]] = list( descr = "Vm0fac[C4]"                 
                                      , unit  = ""                      
-                                     , fmt   = "%.2f"          
+                                     , fmt   = "%.3f"          
                                      , off   =    0.0
-                                     , mult  =    0.01 )
+                                     , mult  =    0.001 )
    numvar[["vm0"            ]] = list( descr = "Vm0fac"                   
                                      , unit  = ""                      
-                                     , fmt   = "%.2f"          
+                                     , fmt   = "%.1f"          
                                      , off   =    0.0
                                      , mult  =    0.01 )
+   numvar[["leaf.resp"      ]] = list( descr = "Leaf Resp. Factor"                   
+                                     , unit  = ""                      
+                                     , fmt   = "%.4f"          
+                                     , off   =    0.0
+                                     , mult  =    0.0001 )
+   numvar[["grow.resp"      ]] = list( descr = "Grow. Resp. Factor"                   
+                                     , unit  = ""                      
+                                     , fmt   = "%.3f"          
+                                     , off   =    0.0
+                                     , mult  =    0.001 )
+   numvar[["root.resp"      ]] = list( descr = "Root Resp. Factor"                   
+                                     , unit  = ""                      
+                                     , fmt   = "%.3f"          
+                                     , off   =    0.0
+                                     , mult  =    0.001 )
    numvar[["lw.grass"       ]] = list( descr = "Leaf width [grass]"         
                                      , unit  = "cm"                    
                                      , fmt   = "%.1f"          
@@ -1020,8 +1159,13 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , unit  = "--"
                                      , fmt   = "%.1f"
                                      , off   =    0.0
-                                     , mult  =    1.0)
+                                     , mult  =    0.1)
    numvar[["ubmin"          ]] = list( descr = "Min. Wind"
+                                     , unit  = "m/s"
+                                     , fmt   = "%.2f"
+                                     , off   =    0.0
+                                     , mult  =    0.01)
+   numvar[["ustmin"         ]] = list( descr = "Min. u*"
                                      , unit  = "m/s"
                                      , fmt   = "%.2f"
                                      , off   =    0.0
@@ -1043,7 +1187,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , mult  =    0.1)
    numvar[["treefall"       ]] = list( descr = "TF Disturbance"
                                      , unit  = "%/yr"
-                                     , fmt   = "%.2f"
+                                     , fmt   = "%.3f"
                                      , off   =    0.0
                                      , mult  =   0.01)
    numvar[["leaf.absorb.nir"]] = list( descr = "Leaf NIR absorptance"
@@ -1101,6 +1245,36 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%3i"
                                      , off   =   0.0
                                      , mult  =   1.0)
+   numvar[["rcp"  ]]           = list( descr = "RCP"
+                                     , unit  = "W/m2"
+                                     , fmt   = "%.1f"
+                                     , off   =   0.0
+                                     , mult  =   0.1)
+   numvar[["drain"]]           = list( descr = "Rainfall change"
+                                     , unit  = "%"
+                                     , fmt   = "%.1f"
+                                     , off   =   0.0
+                                     , mult  =   0.1)
+   numvar[["bharvest"]]        = list( descr = "Target harvest"
+                                     , unit  = "kgC/m2"
+                                     , fmt   = "%.3f"
+                                     , off   = 0.0
+                                     , mult  = 0.001)
+   numvar[["logging.cycle"]]   = list( descr = "Logging cycle"
+                                     , unit  = "yrs"
+                                     , fmt   = "%4i"
+                                     , off   = 0.0
+                                     , mult  = 1.0)
+   numvar[["topsoil" ]]        = list( descr = "Top soil thickness"
+                                     , unit  = "cm"
+                                     , fmt   = "%.1f"
+                                     , off   = 0.0
+                                     , mult  = -0.1)
+   numvar[["rrffact" ]]        = list( descr = "Root respiration factor"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
+                                     , off   = 0.0
+                                     , mult  = 0.001)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1112,41 +1286,126 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #---------------------------------------------------------------------------------------#
    if (iata){
       lenici = nchar(ici)
-      if (lenici == 8){
+      if (lenici == 4){
+         nparms = 0
+         params = character(0)
+         na     = integer(0)
+         nz     = integer(0)
+      }else if (lenici == 8){
          nparms = 1
-         param  = c("user")
-         na     = c(     6)
-         nz     = c(     8)
-      }else if (lenici == 11){
+         param  = c("dhist")
+         na     = c(      6)
+         nz     = c(      8)
+      }else if (lenici == 9 && grepl(pattern="_ed2",x=ici)){
          nparms = 1
-         param  = c("revision")
-         na     = c(         9)
-         nz     = c(        11)
+         param  = c("version")
+         na     = c(      6)
+         nz     = c(      9)
       }else if (lenici == 10){
          nparms = 1
          param  = c("nzs")
          na     = c(    9)
          nz     = c(   10)
-      }else if (lenici == 12){
+      }else if (lenici == 11){
          nparms = 1
-         param  = c("npatch")
-         na     = c(       9)
-         nz     = c(      12)
-      }else if (lenici == 14){
+         param  = c("icompile")
+         na     = c(         6)
+         nz     = c(        11)
+      }else if (lenici == 12){
+         nparms = 2
+         param  = c("met.forcing","isas")
+         na     = c(            6,    10)
+         nz     = c(            8,    12)
+      }else if (lenici == 13 && grepl(pattern="irepro",x=ici)){
+         nparms = 1
+         param  = c("repro.scheme")
+         na     = c(            12)
+         nz     = c(            13)
+      }else if (lenici == 13 && grepl(pattern="iphen",x=ici)){
+         nparms = 1
+         param  = c("iphen.scheme")
+         na     = c(            11)
+         nz     = c(            13)
+      }else if (lenici == 13 && grepl(pattern="istext",x=ici)){
+         nparms = 1
+         param  = c("isoil.text")
+         na     = c(          12)
+         nz     = c(          13)
+      }else if (lenici == 13 && grepl(pattern="tfall",x=ici)){
+         nparms = 1
+         param  = c("treefall")
+         na     = c(          11)
+         nz     = c(          13)
+      }else if (lenici == 14 && grepl(pattern="ibranch",x=ici)){
+         nparms = 1
+         param  = c("ibranch.thermo")
+         na     = c(              13)
+         nz     = c(              14)
+      }else if (lenici == 14 && grepl(pattern="mslope",x=ici)){
+         nparms = 1
+         param  = c("mslope")
+         na     = c(        12)
+         nz     = c(        14)
+      }else if (lenici == 15 && grepl(pattern="icanrad",x=ici)){
          nparms = 1
          param  = c("icanrad")
          na     = c(        13)
          nz     = c(        15)
-      }else if (lenici == 15){
+      }else if (lenici == 15 && grepl(pattern="iplastic",x=ici)){
          nparms = 1
-         param  = c("revision")
-         na     = c(        13)
+         param  = c("iplastic")
+         na     = c(        14)
          nz     = c(        15)
-      }else if (lenici == 16){
+      }else if (lenici == 15 && grepl(pattern="ivegtdyn",x=ici)){
+         nparms = 1
+         param  = c("ivegt.dynamics")
+         na     = c(        14)
+         nz     = c(        15)
+      }else if (lenici == 15 && grepl(pattern="iphysiol",x=ici)){
+         nparms = 1
+         param  = c("iphysiol")
+         na     = c(        14)
+         nz     = c(        15)
+      }else if (lenici == 15 && grepl(pattern="icanturb",x=ici)){
+         nparms = 1
+         param  = c("icanturb")
+         na     = c(        14)
+         nz     = c(        15)
+      }else if (lenici == 15 && grepl(pattern="h2olimit",x=ici)){
+         nparms = 1
+         param  = c("h2o.plant.limit")
+         na     = c(               14)
+         nz     = c(               15)
+      }else if (lenici == 15 && grepl(pattern="kwfact",x=ici)){
+         nparms = 1
+         param  = c("kwfact")
+         na     = c(      12)
+         nz     = c(      15)
+      }else if (lenici == 15 && grepl(pattern="fclump",x=ici)){
+         nparms = 1
+         param  = c("fclump")
+         na     = c(      12)
+         nz     = c(      15)
+      }else if (lenici == 15 && grepl(pattern="ustmin",x=ici)){
+         nparms = 1
+         param  = c("ustmin")
+         na     = c(      12)
+         nz     = c(      15)
+      }else if (lenici == 16 && grepl(pattern="rrffact",x=ici)){
+         nparms = 1
+         param  = c("rrffact")
+         na     = c(       13)
+         nz     = c(       16)
+      }else if (lenici == 16 && grepl(pattern="ifire",x=ici)){
          nparms = 2
-         param  = c("igrass","icanturb")
-         na     = c(       7,        15)
-         nz     = c(       8,        16)
+         param  = c("dhist","include.fire")
+         na     = c(      6,            15)
+         nz     = c(      8,            16)
+      }else if (lenici == 17 && grepl(pattern="iphen",x=ici)){
+         nparms = 2
+         param  = c("dhist","iphen.scheme")
+         na     = c(      6,            15)
+         nz     = c(      8,            17)
       }else if (lenici == 17){
          nparms = 2
          param  = c("met.forcing","isoil.text")
@@ -1154,9 +1413,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(            8,          17)
       }else if (lenici == 18){
          nparms = 2
-         param  = c("icanturb","isas")
-         na     = c(        13,    16)
-         nz     = c(        14,    18)
+         param  = c("tf.slope","treefall")
+         na     = c(        14,        15)
+         nz     = c(        14,        18)
       }else if (lenici == 19){
          nparms = 3
          param  = c("met.forcing","isas","iage")
@@ -1172,21 +1431,51 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("isas","iage","idiversity")
          na     = c(     6,    14,          20)
          nz     = c(     8,    15,          21)
-      }else if (lenici == 22){
-         nparms = 3
-         param  = c("met.forcing","iustar","icanturb")
-         na     = c(            6,      14,        21)
-         nz     = c(            8,      15,        22)
+      }else if (lenici == 22 && grepl(pattern="iszpft",x=ici)){
+         nparms = 2
+         param  = c("iszpft","iphen.scheme")
+         na     = c(      12,            20)
+         nz     = c(      13,            22)
+      }else if (lenici == 22 && grepl(pattern="iallom",x=ici)){
+         nparms = 2
+         param  = c("iallom","igrass")
+         na     = c(      12,      21)
+         nz     = c(      13,      22)
+      }else if (lenici == 22 && grepl(pattern="iustar",x=ici)){
+         nparms = 2
+         param  = c("iustar","icanturb")
+         na     = c(      14,      21)
+         nz     = c(      15,      22)
+      }else if (lenici == 22 && grepl(pattern="ihrzrad",x=ici)){
+         nparms = 2
+         param  = c("ihrzrad","include.fire")
+         na     = c(       13,            21)
+         nz     = c(       14,            22)
       }else if (lenici == 23){
          nparms = 2
-         param  = c("treefall","sm.fire")
-         na     = c(        11,       21)
-         nz     = c(        13,       23)
-      }else if (lenici == 24){
-         nparms = 3
-         param  = c("leaf.absorb.vis","imetrad")
-         na     = c(               12,       23)
-         nz     = c(               14,       24)
+         param  = c("iustar","icanturb")
+         na     = c(      12,        22)
+         nz     = c(      13,        23)
+      }else if (lenici == 24 && grepl(pattern="ihydro",x=ici)){
+         nparms = 2
+         param  = c("ihydro","ivegt.dynamics")
+         na     = c(      12,              23)
+         nz     = c(      13,              24)
+      }else if (lenici == 24 && grepl(pattern="icanturb",x=ici)){
+         nparms = 2
+         param  = c("iphen.scheme","icanturb")
+         na     = c(            11,        23)
+         nz     = c(            13,        24)
+      }else if (lenici == 24 && grepl(pattern="ihrzrad",x=ici)){
+         nparms = 2
+         param  = c("ihrzrad","imetrad")
+         na     = c(       13,       23)
+         nz     = c(       14,       24)
+      }else if (lenici == 24 && grepl(pattern="iallom",x=ici)){
+         nparms = 2
+         param  = c("iallom","iphysiol")
+         na     = c(      12,      23)
+         nz     = c(      13,      24)
       }else if (lenici == 25){
          nparms = 3
          param  = c("iphen.scheme","d0","include.fire")
@@ -1194,64 +1483,107 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(            12,  18,            25)
       }else if (lenici == 26){
          nparms = 3
-         param  = c("soil.depth","dd.mort.control", "iphen.scheme")
-         na     = c(          10,               17,             24)
-         nz     = c(          11,               18,             26)
+         param  = c("ianth.disturb","logging.type", "bharvest")
+         na     = c(             11,            14,         23)
+         nz     = c(             12,            16,         26)
       }else if (lenici == 27){
-         nparms = 3
-         param  = c("soil.depth","sand", "clay")
-         na     = c(          10,    17,     25)
-         nz     = c(          11,    19,     27)
+         nparms = 2
+         param  = c("ivegt.dynamics","ihrzrad")
+         na     = c(             16,        26)
+         nz     = c(             17,        27)
       }else if (lenici == 28){
          nparms = 3
          param  = c("iphen.scheme", "isoil.text","treefall")
          na     = c(            11,           20,        25)
          nz     = c(            13,           21,        28)
+      }else if (lenici == 29 && grepl(pattern="d0x",x=ici)){
+         nparms = 3
+         param  = c("iphen.scheme","kwfact","d0fact")
+         na     = c(            11,      18,      26)
+         nz     = c(            13,      21,      29)
       }else if (lenici == 29){
          nparms = 3
-         param  = c("yeara","iphen.scheme", "isoil.text")
-         na     = c(      9,            19,           28)
-         nz     = c(     12,            21,           29)
+         param  = c("ivegt.dynamics","ihrzrad","leaf.absorb.vis")
+         na     = c(             11,        18,               26)
+         nz     = c(             12,        19,               29)
+      }else if (lenici == 30 && grepl(pattern="kwx",x=ici)){
+         nparms = 3
+         param  = c("iphen.scheme","kwfact","mphoto.trc3")
+         na     = c(            11,      18,           29)
+         nz     = c(            13,      21,           30)
       }else if (lenici == 30){
-         nparms = 4
-         param  = c("isas","iage","idiversity","leaf.absorb.vis")
-         na     = c(     6,    13,          19,               28)
-         nz     = c(     8,    14,          20,               30)
+         nparms = 3
+         param  = c("include.fire","isoil.text","treefall")
+         na     = c(            11,          19,        27)
+         nz     = c(            12,          20,        30)
       }else if (lenici == 31){
          nparms = 3
          param  = c("iallom","idimort","include.fire")
          na     = c(      12,       22,            30)
          nz     = c(      13,       23,            31)
-      }else if (lenici == 32){
+      }else if (lenici == 32 && grepl(pattern="iecon",x=ici)){
+         nparms = 3
+         param  = c("iallom","ieconomics","iplastic")
+         na     = c(      12,          20,        31)
+         nz     = c(      13,          21,        32)
+      }else if (lenici == 32 && grepl(pattern="imetrad",x=ici)){
+         nparms = 3
+         param  = c("iage","ihrzrad","imetrad")
+         na     = c(    10,       21,       31)
+         nz     = c(    12,       22,       32)
+      }else if (lenici == 34 && grepl(pattern="imetrad",x=ici)){
+         nparms = 3
+         param  = c("ihrzrad","imetrad","vm0")
+         na     = c(       13,       23,   32)
+         nz     = c(       14,       24,   34)
+      }else if (lenici == 34 && grepl(pattern="bharv",x=ici)){
          nparms = 4
-         param  = c("isoil.text","include.fire","fire.parameter","sm.fire")
-         na     = c(         10,             17,              24,       29)
-         nz     = c(         11,             18,              25,       32)
-      }else if (lenici == 36){
+         param  = c("ianth.disturb","logging.type","logging.cycle","bharvest")
+         na     = c(             11,            14,             22,        31)
+         nz     = c(             12,            16,             24,        34)
+      }else if (lenici == 35){
          nparms = 4
          param  = c("include.fire","ianth.disturb","ianth.dataset","isoil.text")
-         na     = c(            11,             19,             22,          35)
-         nz     = c(            12,             20,             28,          36)
+         na     = c(            11,             19,             22,          34)
+         nz     = c(            12,             20,             28,          35)
+      }else if (lenici == 36){
+         nparms = 3
+         param  = c("iustar","icanturb","topsoil")
+         na     = c(      12,        22,       32)
+         nz     = c(      13,        23,       36)
       }else if (lenici == 37){
          nparms = 4
          param  = c("yeara","iphen.scheme","isoil.text","treefall")
          na     = c(      9,            18,          27,        35)
          nz     = c(     11,            20,          28,        37)
-      }else if (lenici == 38){
-         nparms = 4
-         param  = c("yeara","iphen.scheme","isoil.text","treefall")
-         na     = c(      9,            18,          27,        36)
-         nz     = c(     11,            20,          28,        38)
+      }else if (lenici == 39){
+         nparms = 3
+         param  = c("struct","iphen.scheme","include.fire")
+         na     = c(      10,            30,            38)
+         nz     = c(      24,            32,            39)
       }else if (lenici == 40){
-         nparms = 5
-         param  = c("iphen.scheme","iddmort.scheme","treefall","include.fire","isas")
-         na     = c(            10,              18,        26,            35,    38)
-         nz     = c(            12,              19,        29,            36,    40)
-      }else if (lenici == 41){
+         nparms = 4
+         param  = c("grow.resp","vm0","leaf.resp","root.resp")
+         na     = c(         10,   18,         28,         37)
+         nz     = c(         13,   21,         30,         40)
+      }else if (lenici == 41 && grepl(pattern="stext",x=ici)){
          nparms = 5
          param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
          na     = c(            7,           13,           23,            31,          40)
          nz     = c(           10,           16,           24,            33,          41)
+      }else if (lenici == 41 && grepl(pattern="iecon",x=ici)){
+         nparms = 4
+         param  = c("iallom","ieconomics","repro.scheme","iplastic")
+         na     = c(      12,          20,           29,         40)
+         nz     = c(      13,          21,           30,         41)
+      }else if (lenici == 50 && grepl(pattern="bharv",x=ici)){
+         nparms = 6
+         param  = c("ianth.disturb","logging.type",    "sl.scale"
+                   ,"logging.cycle",    "bharvest","include.fire")
+         na     = c(             11,            14,            23
+                   ,             30,            39,            49)
+         nz     = c(             12,            16,            24
+                   ,             32,            42,            50)
       }else if (lenici == 50){
          nparms = 5
          param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","struct")
@@ -1276,7 +1608,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #---------------------------------------------------------------------------------------#
    description = testpoi
    nchar.line  = nchar(description)
-   for (p in 1:nparms){
+   for (p in sequence(nparms)){
       #----- Retrieve the parameter value or flag. ----------------------------------------#
       mycharval  = substring(ici,na[p],nz[p])
       myval      = as.numeric(mycharval)
@@ -1290,20 +1622,19 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
             n = match(mycharval,flagvar[[mytest]]$values)
          }#end if
          if (is.na(n)){
-            stop(paste(" Option ",myval," doesn't exist for",flagvar[[mytest]]$descr,"..."
-                      ,sep=""))
+            browser()
+            stop(paste0(" Option ",myval," doesn't exist for",flagvar[[mytest]]$descr,"!"))
          }else{
-            thisdesc = paste(flagvar[[mytest]]$descr,": ",flagvar[[mytest]]$names[n])
+            thisdesc = paste0(flagvar[[mytest]]$descr,": ",flagvar[[mytest]]$names[n])
          }
       }else if (mytest %in% names(numvar)){
          #----- Numeric variable, put the value in a nicer format. ------------------------#
          val.pretty = sprintf(numvar[[mytest]]$fmt
                              ,numvar[[mytest]]$off + myval*numvar[[mytest]]$mult)
 
-         thisdesc = paste(numvar[[mytest]]$descr," = ",val.pretty,numvar[[mytest]]$unit
-                         ,sep="")
+         thisdesc = paste0(numvar[[mytest]]$descr," = ",val.pretty,numvar[[mytest]]$unit)
       }else{
-         stop(paste(" Invalid parameter test: ",mytest,"...",sep=""))
+         stop(paste0(" Invalid parameter test: ",mytest,"!"))
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1359,9 +1690,9 @@ poitmp[[u]] = list( short           = "allpahuayo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1380,18 +1711,18 @@ poitmp[[u]] = list( short           = "alta_floresta"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "andiroba"    
                   , longname        = "Fazenda Andiroba, PA"
                   , iata            = "and"
-                  , lon             = -46.832
-                  , lat             = -2.551
-                  , alt             = 105.
+                  , lon             = -47.517   # -46.832
+                  , lat             =  -3.315   # -2.551
+                  , alt             = 122       # 105.
                   , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
@@ -1401,9 +1732,9 @@ poitmp[[u]] = list( short           = "andiroba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -1422,9 +1753,9 @@ poitmp[[u]] = list( short           = "angra_dos_reis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1443,9 +1774,9 @@ poitmp[[u]] = list( short           = "araguaiana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1464,9 +1795,9 @@ poitmp[[u]] = list( short           = "araracuara"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1485,9 +1816,9 @@ poitmp[[u]] = list( short           = "asuncion"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1527,9 +1858,9 @@ poitmp[[u]] = list( short           = "barro_colorado"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1548,9 +1879,9 @@ poitmp[[u]] = list( short           = "belem"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1569,9 +1900,9 @@ poitmp[[u]] = list( short           = "belo_horizonte"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1590,9 +1921,9 @@ poitmp[[u]] = list( short           = "belterra"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1611,9 +1942,9 @@ poitmp[[u]] = list( short           = "benjamin_constant"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1632,9 +1963,9 @@ poitmp[[u]] = list( short           = "blumenau"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1653,9 +1984,9 @@ poitmp[[u]] = list( short           = "boa_vista"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1674,9 +2005,9 @@ poitmp[[u]] = list( short           = "bogota"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1695,10 +2026,31 @@ poitmp[[u]] = list( short           = "bom_jesus"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "bonal"    
+                  , longname        = "Fazenda Bonal, AC"
+                  , iata            = "bon"
+                  , lon             = -67.286
+                  , lat             = -9.874
+                  , alt             = 165.
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = +2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "brasilia"          
@@ -1738,8 +2090,8 @@ poitmp[[u]] = list( short           = "bridgetown"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1758,9 +2110,9 @@ poitmp[[u]] = list( short           = "cabo_frio"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1779,9 +2131,9 @@ poitmp[[u]] = list( short           = "cacoal_grande"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1821,9 +2173,9 @@ poitmp[[u]] = list( short           = "cajazeiras"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1842,9 +2194,9 @@ poitmp[[u]] = list( short           = "calabozo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1884,9 +2236,9 @@ poitmp[[u]] = list( short           = "canarana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1905,9 +2257,9 @@ poitmp[[u]] = list( short           = "carajas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1926,9 +2278,9 @@ poitmp[[u]] = list( short           = "cardoso"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -1947,18 +2299,18 @@ poitmp[[u]] = list( short           = "carolina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "cauaxi"
                   , longname        = "Fazenda Cauaxi, PA"
                   , iata            = "cau"
-                  , lon             = -48.483
-                  , lat             =  -3.748
-                  , alt             = 140
+                  , lon             = -47.517 # -48.483
+                  , lat             =  -3.315 #  -3.748
+                  , alt             = 122     # 140
                   , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
@@ -1968,9 +2320,9 @@ poitmp[[u]] = list( short           = "cauaxi"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -1989,9 +2341,9 @@ poitmp[[u]] = list( short           = "cauaxi_und"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -2010,9 +2362,9 @@ poitmp[[u]] = list( short           = "cauaxi_ril"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -2052,9 +2404,9 @@ poitmp[[u]] = list( short           = "cayenne"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2074,8 +2426,8 @@ poitmp[[u]] = list( short           = "chaiten"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2094,9 +2446,9 @@ poitmp[[u]] = list( short           = "ciudad_bolivar"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2115,9 +2467,9 @@ poitmp[[u]] = list( short           = "ciudad_guayana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2136,9 +2488,9 @@ poitmp[[u]] = list( short           = "cochabamba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2178,9 +2530,9 @@ poitmp[[u]] = list( short           = "curacao"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2199,9 +2551,9 @@ poitmp[[u]] = list( short           = "curitiba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2220,9 +2572,9 @@ poitmp[[u]] = list( short           = "curua_una"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2241,9 +2593,9 @@ poitmp[[u]] = list( short           = "cruzeiro_do_sul"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2262,9 +2614,9 @@ poitmp[[u]] = list( short           = "diamantino"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2304,18 +2656,39 @@ poitmp[[u]] = list( short           = "dourados"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "ducke"            
                   , longname        = "Ducke , AM"                  
                   , iata            = "duc"
-                  , lon             = -59.925
-                  , lat             =  -2.955
-                  , alt             = 111
+                  , lon             = -59.940
+                  , lat             =  -2.951
+                  , alt             = 117
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 8
+                  , sand            = 0.433
+                  , clay            = 0.366
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "east_belterra"            
+                  , longname        = "Belterra (East), PA"                  
+                  , iata            = "ebt"
+                  , lon             = -54.888
+                  , lat             =  -3.156
+                  , alt             = 147
                   , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
@@ -2325,9 +2698,51 @@ poitmp[[u]] = list( short           = "ducke"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "east_feliz_natal"            
+                  , longname        = "Feliz Natal (East), MT"                  
+                  , iata            = "fn2"
+                  , lon             = -54.197
+                  , lat             = -11.862
+                  , alt             = 336
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "east_sao_felix"   
+                  , longname        = "Sao Felix (East), PA"      
+                  , iata            = "sx2"
+                  , lon             = -51.793
+                  , lat             =  -6.601
+                  , alt             = 224
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2346,9 +2761,9 @@ poitmp[[u]] = list( short           = "el_triunfo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2367,9 +2782,9 @@ poitmp[[u]] = list( short           = "el_zafire"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2388,9 +2803,9 @@ poitmp[[u]] = list( short           = "emas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2409,9 +2824,9 @@ poitmp[[u]] = list( short           = "erechim"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2430,9 +2845,9 @@ poitmp[[u]] = list( short           = "eunapolis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2459,22 +2874,22 @@ poitmp[[u]] = list( short           = "fazendans"
 u           = u + 1
 poitmp[[u]] = list( short           = "feliz_natal"
                   , longname        = "Feliz Natal, MT"
-                  , iata            = "fna"
-                  , lon             = -55.019
-                  , lat             = -12.501
-                  , alt             = 392.
+                  , iata            = "fzn"
+                  , lon             = -54.692
+                  , lat             = -12.146
+                  , alt             = 350.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.641
+                  , clay            = 0.247
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2493,9 +2908,9 @@ poitmp[[u]] = list( short           = "floriano"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2514,9 +2929,9 @@ poitmp[[u]] = list( short           = "fortaleza"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2535,9 +2950,9 @@ poitmp[[u]] = list( short           = "guarana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2562,6 +2977,27 @@ poitmp[[u]] = list( short           = "harvard"
                   , iphen           = 1
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "humaita"
+                  , longname        = "Fazenda Humaita, AC"
+                  , iata            = "hum"
+                  , lon             = -67.645
+                  , lat             =  -9.756
+                  , alt             = 172.
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "iguape"            
                   , longname        = "Iguape, SP"                  
                   , iata            = "igp"
@@ -2577,9 +3013,9 @@ poitmp[[u]] = list( short           = "iguape"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2598,9 +3034,9 @@ poitmp[[u]] = list( short           = "imperatriz"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2619,9 +3055,9 @@ poitmp[[u]] = list( short           = "iquique"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2640,9 +3076,9 @@ poitmp[[u]] = list( short           = "iquitos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2661,9 +3097,9 @@ poitmp[[u]] = list( short           = "itabaiana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2682,9 +3118,9 @@ poitmp[[u]] = list( short           = "itapeva"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2703,9 +3139,9 @@ poitmp[[u]] = list( short           = "itirapina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2724,9 +3160,9 @@ poitmp[[u]] = list( short           = "jacareacanga"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2745,30 +3181,30 @@ poitmp[[u]] = list( short           = "jamaraqua"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "jamari"
                   , longname        = "Jamari Natl. Forest, RO"
                   , iata            = "jam"
-                  , lon             = -63.00
-                  , lat             =  -9.11
-                  , alt             = 15
+                  , lon             = -63.007
+                  , lat             =  -9.116
+                  , alt             = 112.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.458
+                  , clay            = 0.328
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2787,9 +3223,9 @@ poitmp[[u]] = list( short           = "jiparana"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2808,9 +3244,9 @@ poitmp[[u]] = list( short           = "joao_pessoa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2850,9 +3286,9 @@ poitmp[[u]] = list( short           = "kenia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2871,9 +3307,9 @@ poitmp[[u]] = list( short           = "las_gaviotas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2892,9 +3328,9 @@ poitmp[[u]] = list( short           = "la_esmeralda"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2913,9 +3349,9 @@ poitmp[[u]] = list( short           = "la_lorena"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2934,30 +3370,30 @@ poitmp[[u]] = list( short           = "la_planada"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "la_selva"          
                   , longname        = "La Selva, CRI"               
-                  , iata            = "lzv"
+                  , iata            = "lse"
                   , lon             = -84.010
                   , lat             =  10.430
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
-                  , sand            = 0.570
-                  , clay            = 0.290
+                  , ntext           = 8
+                  , sand            = 0.388
+                  , clay            = 0.329
                   , depth           = "F"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2976,9 +3412,9 @@ poitmp[[u]] = list( short           = "labrea"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2997,9 +3433,9 @@ poitmp[[u]] = list( short           = "lencois"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3018,9 +3454,9 @@ poitmp[[u]] = list( short           = "leticia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3039,9 +3475,9 @@ poitmp[[u]] = list( short           = "lima"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3060,9 +3496,9 @@ poitmp[[u]] = list( short           = "linden"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3081,9 +3517,9 @@ poitmp[[u]] = list( short           = "llochegua"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3102,9 +3538,9 @@ poitmp[[u]] = list( short           = "macapa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3124,8 +3560,8 @@ poitmp[[u]] = list( short           = "malalcahuello"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3144,9 +3580,9 @@ poitmp[[u]] = list( short           = "manaus"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3186,9 +3622,9 @@ poitmp[[u]] = list( short           = "manaus_bdffp"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3207,9 +3643,9 @@ poitmp[[u]] = list( short           = "manicore"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3228,9 +3664,9 @@ poitmp[[u]] = list( short           = "maracay"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3249,9 +3685,9 @@ poitmp[[u]] = list( short           = "maringa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3270,9 +3706,9 @@ poitmp[[u]] = list( short           = "mariscal_estigarribia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3291,9 +3727,9 @@ poitmp[[u]] = list( short           = "maracarume"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3312,9 +3748,9 @@ poitmp[[u]] = list( short           = "montes_claros"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3333,9 +3769,9 @@ poitmp[[u]] = list( short           = "mojui_dos_campos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3376,9 +3812,30 @@ poitmp[[u]] = list( short           = "neuquen"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "nouragues"
+                  , longname        = "Nouragues, GUF"
+                  , iata            = "nrf"
+                  , lon             = -52.683
+                  , lat             =   4.033
+                  , alt             = 77
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.562
+                  , clay            = 0.345
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Nouragues"
+                  , yeara           = 2012
+                  , yearz           = 2018
+                  , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "oeiras"            
@@ -3396,9 +3853,9 @@ poitmp[[u]] = list( short           = "oeiras"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3417,9 +3874,9 @@ poitmp[[u]] = list( short           = "palmas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3438,9 +3895,9 @@ poitmp[[u]] = list( short           = "panama"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3459,9 +3916,9 @@ poitmp[[u]] = list( short           = "paramaribo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3482,12 +3939,12 @@ poitmp[[u]] = list( short           = "paracou"
                   , scolour         = 14
                   , met.driver      = "Paracou"
                   , yeara           = 1999
-                  , yearz           = 2013
+                  , yearz           = 2015
                   , iphen           = -1
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "paragominas"
-                  , longname        = "Fazenda Neonita, PA"
+poitmp[[u]] = list( short           = "neonita"
+                  , longname        = "Neonita, PA"
                   , iata            = "par"
                   , lon             = -47.517
                   , lat             =  -3.315
@@ -3501,30 +3958,30 @@ poitmp[[u]] = list( short           = "paragominas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = +2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "paragominas"
                   , longname        = "Paragominas, PA"
                   , iata            = "prg"
-                  , lon             = -47.349
-                  , lat             =  -2.986
-                  , alt             = 122
+                  , lon             = -47.792
+                  , lat             =  -3.020
+                  , alt             = 81
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.00
-                  , clay            = -1.00
-                  , depth           = "H"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.471
+                  , clay            = 0.328
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Paragominas"
+                  , yeara           = 2004
+                  , yearz           = 2015
                   , iphen           = +2
                   )#end list
 u           = u + 1
@@ -3549,8 +4006,8 @@ poitmp[[u]] = list( short           = "pedegigante"
                   , iphen           = 2
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "petrolina"         
-                  , longname        = "Petrolina, PE"               
+poitmp[[u]] = list( short           = "petrolina"
+                  , longname        = "Petrolina, PE"
                   , iata            = "pnz"
                   , lon             = -40.370
                   , lat             =  -9.165
@@ -3585,9 +4042,9 @@ poitmp[[u]] = list( short           = "piura"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3606,9 +4063,9 @@ poitmp[[u]] = list( short           = "port_of_spain"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3627,9 +4084,9 @@ poitmp[[u]] = list( short           = "porto_de_moz"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3648,9 +4105,9 @@ poitmp[[u]] = list( short           = "porto_velho"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3669,9 +4126,9 @@ poitmp[[u]] = list( short           = "pucallpa"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3690,9 +4147,9 @@ poitmp[[u]] = list( short           = "puerto_suarez"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3711,9 +4168,9 @@ poitmp[[u]] = list( short           = "quibdo"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3753,9 +4210,9 @@ poitmp[[u]] = list( short           = "recife"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3774,9 +4231,9 @@ poitmp[[u]] = list( short           = "redencao"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3795,30 +4252,30 @@ poitmp[[u]] = list( short           = "ribeirao_preto"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "rio_branco"        
                   , longname        = "Rio Branco, AC"              
                   , iata            = "rbr"
-                  , lon             = -67.890
-                  , lat             =  -9.870
-                  , alt             = 142
+                  , lon             = -67.752
+                  , lat             =  -9.824
+                  , alt             = 199.
                   , wmo             = 82917
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 8
+                  , sand            = 0.382
+                  , clay            = 0.308
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3837,9 +4294,9 @@ poitmp[[u]] = list( short           = "riohacha"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3858,9 +4315,9 @@ poitmp[[u]] = list( short           = "salta"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3879,9 +4336,9 @@ poitmp[[u]] = list( short           = "salvador"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3900,9 +4357,9 @@ poitmp[[u]] = list( short           = "san_andres"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3921,9 +4378,9 @@ poitmp[[u]] = list( short           = "san_antonio_del_tachira"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3942,9 +4399,9 @@ poitmp[[u]] = list( short           = "san_jose"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3963,9 +4420,9 @@ poitmp[[u]] = list( short           = "san_fernando_de_apure"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3984,9 +4441,9 @@ poitmp[[u]] = list( short           = "san_pedro"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4005,9 +4462,9 @@ poitmp[[u]] = list( short           = "sao_carlos"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4026,30 +4483,30 @@ poitmp[[u]] = list( short           = "sao_felix_araguaia"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "sao_felix_xingu"   
-                  , longname        = "Sao Felix do Xingu, PA"      
+poitmp[[u]] = list( short           = "sao_felix_xingu"
+                  , longname        = "Sao Felix do Xingu, PA"
                   , iata            = "sfx"
-                  , lon             = -51.801
-                  , lat             =  -6.599
-                  , alt             = 216
+                  , lon             = -52,349
+                  , lat             =  -6.507
+                  , alt             = 197.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "F"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.451
+                  , clay            = 0.309
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4068,9 +4525,30 @@ poitmp[[u]] = list( short           = "sao_gabriel"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "sao_jorge"       
+                  , longname        = "Sao Jorge, PA"
+                  , iata            = "tsj"
+                  , lon             = -54.971
+                  , lat             =  -3.135
+                  , alt             = 111
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4089,9 +4567,9 @@ poitmp[[u]] = list( short           = "sao_luis"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4131,9 +4609,9 @@ poitmp[[u]] = list( short           = "santa_fe"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4152,9 +4630,9 @@ poitmp[[u]] = list( short           = "santarem"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4169,7 +4647,7 @@ poitmp[[u]] = list( short           = "santarem_km67"
                   , ntext           = 16
                   , sand            = 0.390
                   , clay            = 0.590
-                  , depth           = "H"
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -4190,7 +4668,7 @@ poitmp[[u]] = list( short           = "santarem_km77"
                   , ntext           = 16
                   , sand            = 0.390
                   , clay            = 0.590
-                  , depth           = "H"
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -4211,7 +4689,7 @@ poitmp[[u]] = list( short           = "santarem_km83"
                   , ntext           = 16
                   , sand            = 0.390
                   , clay            = 0.590
-                  , depth           = "H"
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
@@ -4236,30 +4714,30 @@ poitmp[[u]] = list( short           = "santarem_km117"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "saraca-taquera"     
                   , longname        = "Saraca-Taquera Natl. Forest, PA"
                   , iata            = "fst"
-                  , lon             = -56.217
-                  , lat             = -1.620
-                  , alt             = 102.
+                  , lon             = -56.223
+                  , lat             = -1.622
+                  , alt             = 104.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "H"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.588
+                  , clay            = 0.272
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4278,9 +4756,9 @@ poitmp[[u]] = list( short           = "serra_do_navio"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4299,9 +4777,9 @@ poitmp[[u]] = list( short           = "sinop"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4320,9 +4798,30 @@ poitmp[[u]] = list( short           = "sobral"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "sorriso"             
+                  , longname        = "Sorriso, MT"                   
+                  , iata            = "smt"
+                  , lon             = -55.723
+                  , lat             = -12.555
+                  , alt             = 379
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 2
+                  , sand            = 0.840
+                  , clay            = 0.120
+                  , depth           = "E"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sorriso"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4341,9 +4840,30 @@ poitmp[[u]] = list( short           = "tabatinga"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "talisma"   
+                  , longname        = "Fazenda Talisma, PA"      
+                  , iata            = "tal"
+                  , lon             = -67.977
+                  , lat             = -10.255
+                  , alt             = 189
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4362,51 +4882,114 @@ poitmp[[u]] = list( short           = "tambopata"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "tanguro"     
+poitmp[[u]] = list( short           = "tanguro_sl"     
                   , longname        = "Fazenda Tanguro, MT"
                   , iata            = "tan"
-                  , lon             = -52.401
-                  , lat             = -13.086
-                  , alt             = 359.
+                  , lon             = -52.409
+                  , lat             = -13.081
+                  , alt             = 349.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
-                  , depth           = "H"
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.664
+                  , clay            = 0.246
+                  , depth           = "I"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Tanguro"
+                  , yeara           = 2009
+                  , yearz           = 2018
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "tanguro_ctrl"     
+                  , longname        = "Tanguro (Intact), MT"
+                  , iata            = "tb0"
+                  , lon             = -52.409
+                  , lat             = -13.081
+                  , alt             = 349.
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.550
+                  , clay            = 0.430
+                  , depth           = "I"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Tanguro_Ctrl"
+                  , yeara           = 2009
+                  , yearz           = 2018
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "tanguro_burn"
+                  , longname        = "Tanguro (Burnt), MT"
+                  , iata            = "tbx"
+                  , lon             = -52.387
+                  , lat             = -13.079
+                  , alt             = 349.
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.664
+                  , clay            = 0.246
+                  , depth           = "I"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Tanguro_Burn"
+                  , yeara           = 2009
+                  , yearz           = 2018
                   , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "tapajos"     
                   , longname        = "Tapajos Natl. Forest, PA"
-                  , iata            = "tap"
-                  , lon             = -54.984
-                  , lat             =  -3.110
-                  , alt             = 124.
+                  , iata            = "tni"
+                  , lon             = -54.955
+                  , lat             =  -2.857
+                  , alt             = 199.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
+                  , isoilflg        = 2
+                  , ntext           = 16
+                  , sand            = 0.390
+                  , clay            = 0.590
                   , depth           = "H"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Santarem_Km67"
+                  , yeara           = 1996
+                  , yearz           = 2012
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "tapajos"     
+                  , longname        = "Tapajos Natl. Forest, PA"
+                  , iata            = "tnf"
+                  , lon             = -54.941
+                  , lat             = -3.129
+                  , alt             = 110.
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 16
+                  , sand            = 0.433
+                  , clay            = 0.430
+                  , depth           = "I"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Santarem_Km67"
+                  , yeara           = 1996
+                  , yearz           = 2012
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4425,9 +5008,9 @@ poitmp[[u]] = list( short           = "tarauaca"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4446,9 +5029,9 @@ poitmp[[u]] = list( short           = "tefe"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4467,9 +5050,9 @@ poitmp[[u]] = list( short           = "teresina"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4488,9 +5071,9 @@ poitmp[[u]] = list( short           = "tirios"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4510,9 +5093,30 @@ poitmp[[u]] = list( short           = "tolhuin"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , yeara           = 1969
+                  , yearz           = 2008
                   , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "tome-acu"   
+                  , longname        = "Tome-Acu, PA"      
+                  , iata            = "tac"
+                  , lon             = -48.314
+                  , lat             =  -2.461
+                  , alt             = 50
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 6
+                  , sand            = 0.504
+                  , clay            = 0.294
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "tonzi"
@@ -4551,9 +5155,9 @@ poitmp[[u]] = list( short           = "vina_del_mar"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4572,9 +5176,9 @@ poitmp[[u]] = list( short           = "vila_franca"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4593,9 +5197,9 @@ poitmp[[u]] = list( short           = "vilhena"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4614,10 +5218,52 @@ poitmp[[u]] = list( short           = "vitoria"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "west_feliz_natal"
+                  , longname        = "Feliz Natal (Vitoria), MT"
+                  , iata            = "fna"
+                  , lon             = -55.019
+                  , lat             = -12.501
+                  , alt             = 392.
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "west_sao_felix"   
+                  , longname        = "Sao Felix (West), PA"      
+                  , iata            = "sx1"
+                  , lon             = -52.904
+                  , lat             =  -6.410
+                  , alt             = 213
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "xingu"             
@@ -4635,9 +5281,9 @@ poitmp[[u]] = list( short           = "xingu"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -4656,15 +5302,15 @@ poitmp[[u]] = list( short           = "yasuni"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
                   , iphen           = -1
                   )#end list
 #----- Make the table global. -------------------------------------------------------------#
 npoi <<- length(poitmp)
 poilist = list()
-for (pp in 1:npoi){
+for (pp in sequence(npoi)){
    for (n in union(names(poilist),names(poitmp[[pp]]))){
       poilist[[n]] = c(poilist[[n]],poitmp[[pp]][[n]])
    }#end for
@@ -4682,137 +5328,138 @@ poilist <<- data.frame(poilist,stringsAsFactors=FALSE)
 #==========================================================================================#
 #     This list has the longitude and latitude of Ke's test polygons.                      #
 #------------------------------------------------------------------------------------------#
+u     = 0
 kztmp = list()
-kztmp[[  1]] = list(lon= -60.5,lat=   5.5)
-kztmp[[  2]] = list(lon= -61.5,lat=   4.5)
-kztmp[[  3]] = list(lon= -59.5,lat=   4.5)
-kztmp[[  4]] = list(lon= -60.5,lat=   3.5)
-kztmp[[  5]] = list(lon= -58.5,lat=   3.5)
-kztmp[[  6]] = list(lon= -56.5,lat=   3.5)
-kztmp[[  7]] = list(lon= -59.5,lat=   2.5)
-kztmp[[  8]] = list(lon= -57.5,lat=   2.5)
-kztmp[[  9]] = list(lon= -55.5,lat=   2.5)
-kztmp[[ 10]] = list(lon= -58.5,lat=   1.5)
-kztmp[[ 11]] = list(lon= -56.5,lat=   1.5)
-kztmp[[ 12]] = list(lon= -54.5,lat=   1.5)
-kztmp[[ 13]] = list(lon= -57.5,lat=   0.5)
-kztmp[[ 14]] = list(lon= -55.5,lat=   0.5)
-kztmp[[ 15]] = list(lon= -53.5,lat=   0.5)
-kztmp[[ 16]] = list(lon= -54.5,lat=  -0.5)
-kztmp[[ 17]] = list(lon= -52.5,lat=  -0.5)
-kztmp[[ 18]] = list(lon= -53.5,lat=  -1.5)
-kztmp[[ 19]] = list(lon= -51.5,lat=  -1.5)
-kztmp[[ 20]] = list(lon= -52.5,lat=  -2.5)
-kztmp[[ 21]] = list(lon= -50.5,lat=  -2.5)
-kztmp[[ 22]] = list(lon= -72.5,lat= -10.5)
-kztmp[[ 23]] = list(lon= -71.5,lat= -10.5)
-kztmp[[ 24]] = list(lon= -70.5,lat= -10.5)
-kztmp[[ 25]] = list(lon= -69.5,lat= -10.5)
-kztmp[[ 26]] = list(lon= -68.5,lat= -10.5)
-kztmp[[ 27]] = list(lon= -67.5,lat= -10.5)
-kztmp[[ 28]] = list(lon= -66.5,lat= -10.5)
-kztmp[[ 29]] = list(lon= -65.5,lat= -10.5)
-kztmp[[ 30]] = list(lon= -64.5,lat= -10.5)
-kztmp[[ 31]] = list(lon= -63.5,lat= -10.5)
-kztmp[[ 32]] = list(lon= -62.5,lat= -10.5)
-kztmp[[ 33]] = list(lon= -61.5,lat= -10.5)
-kztmp[[ 34]] = list(lon= -60.5,lat= -10.5)
-kztmp[[ 35]] = list(lon= -59.5,lat= -10.5)
-kztmp[[ 36]] = list(lon= -58.5,lat= -10.5)
-kztmp[[ 37]] = list(lon= -57.5,lat= -10.5)
-kztmp[[ 38]] = list(lon= -56.5,lat= -10.5)
-kztmp[[ 39]] = list(lon= -55.5,lat= -10.5)
-kztmp[[ 40]] = list(lon= -54.5,lat= -10.5)
-kztmp[[ 41]] = list(lon= -53.5,lat= -10.5)
-kztmp[[ 42]] = list(lon= -52.5,lat= -10.5)
-kztmp[[ 43]] = list(lon= -51.5,lat= -10.5)
-kztmp[[ 44]] = list(lon= -50.5,lat= -10.5)
-kztmp[[ 45]] = list(lon= -49.5,lat= -10.5)
-kztmp[[ 46]] = list(lon= -72.5,lat= -11.5)
-kztmp[[ 47]] = list(lon= -71.5,lat= -11.5)
-kztmp[[ 48]] = list(lon= -70.5,lat= -11.5)
-kztmp[[ 49]] = list(lon= -69.5,lat= -11.5)
-kztmp[[ 50]] = list(lon= -68.5,lat= -11.5)
-kztmp[[ 51]] = list(lon= -67.5,lat= -11.5)
-kztmp[[ 52]] = list(lon= -66.5,lat= -11.5)
-kztmp[[ 53]] = list(lon= -65.5,lat= -11.5)
-kztmp[[ 54]] = list(lon= -64.5,lat= -11.5)
-kztmp[[ 55]] = list(lon= -63.5,lat= -11.5)
-kztmp[[ 56]] = list(lon= -62.5,lat= -11.5)
-kztmp[[ 57]] = list(lon= -61.5,lat= -11.5)
-kztmp[[ 58]] = list(lon= -60.5,lat= -11.5)
-kztmp[[ 59]] = list(lon= -59.5,lat= -11.5)
-kztmp[[ 60]] = list(lon= -58.5,lat= -11.5)
-kztmp[[ 61]] = list(lon= -57.5,lat= -11.5)
-kztmp[[ 62]] = list(lon= -56.5,lat= -11.5)
-kztmp[[ 63]] = list(lon= -55.5,lat= -11.5)
-kztmp[[ 64]] = list(lon= -54.5,lat= -11.5)
-kztmp[[ 65]] = list(lon= -53.5,lat= -11.5)
-kztmp[[ 66]] = list(lon= -52.5,lat= -11.5)
-kztmp[[ 67]] = list(lon= -51.5,lat= -11.5)
-kztmp[[ 68]] = list(lon= -50.5,lat= -11.5)
-kztmp[[ 69]] = list(lon= -49.5,lat= -11.5)
-kztmp[[ 70]] = list(lon= -72.5,lat= -12.5)
-kztmp[[ 71]] = list(lon= -71.5,lat= -12.5)
-kztmp[[ 72]] = list(lon= -70.5,lat= -12.5)
-kztmp[[ 73]] = list(lon= -69.5,lat= -12.5)
-kztmp[[ 74]] = list(lon= -68.5,lat= -12.5)
-kztmp[[ 75]] = list(lon= -67.5,lat= -12.5)
-kztmp[[ 76]] = list(lon= -66.5,lat= -12.5)
-kztmp[[ 77]] = list(lon= -65.5,lat= -12.5)
-kztmp[[ 78]] = list(lon= -64.5,lat= -12.5)
-kztmp[[ 79]] = list(lon= -63.5,lat= -12.5)
-kztmp[[ 80]] = list(lon= -62.5,lat= -12.5)
-kztmp[[ 81]] = list(lon= -61.5,lat= -12.5)
-kztmp[[ 82]] = list(lon= -60.5,lat= -12.5)
-kztmp[[ 83]] = list(lon= -59.5,lat= -12.5)
-kztmp[[ 84]] = list(lon= -58.5,lat= -12.5)
-kztmp[[ 85]] = list(lon= -57.5,lat= -12.5)
-kztmp[[ 86]] = list(lon= -56.5,lat= -12.5)
-kztmp[[ 87]] = list(lon= -55.5,lat= -12.5)
-kztmp[[ 88]] = list(lon= -54.5,lat= -12.5)
-kztmp[[ 89]] = list(lon= -53.5,lat= -12.5)
-kztmp[[ 90]] = list(lon= -52.5,lat= -12.5)
-kztmp[[ 91]] = list(lon= -51.5,lat= -12.5)
-kztmp[[ 92]] = list(lon= -50.5,lat= -12.5)
-kztmp[[ 93]] = list(lon= -49.5,lat= -12.5)
-kztmp[[ 94]] = list(lon= -72.5,lat= -13.5)
-kztmp[[ 95]] = list(lon= -71.5,lat= -13.5)
-kztmp[[ 96]] = list(lon= -70.5,lat= -13.5)
-kztmp[[ 97]] = list(lon= -69.5,lat= -13.5)
-kztmp[[ 98]] = list(lon= -68.5,lat= -13.5)
-kztmp[[ 99]] = list(lon= -67.5,lat= -13.5)
-kztmp[[100]] = list(lon= -66.5,lat= -13.5)
-kztmp[[101]] = list(lon= -65.5,lat= -13.5)
-kztmp[[102]] = list(lon= -64.5,lat= -13.5)
-kztmp[[103]] = list(lon= -63.5,lat= -13.5)
-kztmp[[104]] = list(lon= -62.5,lat= -13.5)
-kztmp[[105]] = list(lon= -61.5,lat= -13.5)
-kztmp[[106]] = list(lon= -60.5,lat= -13.5)
-kztmp[[107]] = list(lon= -59.5,lat= -13.5)
-kztmp[[108]] = list(lon= -58.5,lat= -13.5)
-kztmp[[109]] = list(lon= -57.5,lat= -13.5)
-kztmp[[110]] = list(lon= -56.5,lat= -13.5)
-kztmp[[111]] = list(lon= -55.5,lat= -13.5)
-kztmp[[112]] = list(lon= -54.5,lat= -13.5)
-kztmp[[113]] = list(lon= -53.5,lat= -13.5)
-kztmp[[114]] = list(lon= -52.5,lat= -13.5)
-kztmp[[115]] = list(lon= -51.5,lat= -13.5)
-kztmp[[116]] = list(lon= -50.5,lat= -13.5)
-kztmp[[117]] = list(lon= -49.5,lat= -13.5)
-kztmp[[118]] = list(lon= -62.5,lat= -16.5)
-kztmp[[119]] = list(lon= -60.5,lat= -2.5 )
-kztmp[[120]] = list(lon= -54.5,lat= -2.5 )
-kztmp[[121]] = list(lon= -54.5,lat= -3.5 )
-kztmp[[122]] = list(lon= -50.5,lat= -9.5 )
-kztmp[[123]] = list(lon= -69.5,lat= -3.5 )
-kztmp[[124]] = list(lon= -69.5,lat= -4.5 )
-kztmp[[125]] = list(lon= -52.5,lat= -5.5 )
-kztmp[[126]] = list(lon= -73.5,lat= -5.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat=   5.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat=   4.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat=   4.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat=   3.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat=   3.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat=   3.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat=   2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat=   2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat=   2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat=   1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat=   1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat=   1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat=   0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat=   0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat=   0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat=  -0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat=  -0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat=  -1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat=  -1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat=  -2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat=  -2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -16.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -2.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -2.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -3.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -9.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -3.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -4.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -5.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -73.5,lat= -5.5 )
 #----- Make the table global. -------------------------------------------------------------#
 nkzpoly <<- length(kztmp)
 kzlist = list()
-for (kz in 1:nkzpoly){
+for (kz in sequence(nkzpoly)){
    for (n in union(names(kzlist),names(kztmp[[kz]]))){
       kzlist[[n]] = c(kzlist[[n]],kztmp[[kz]][[n]])
    }#end for

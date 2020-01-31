@@ -173,14 +173,16 @@ module ed_max_dims
    !---------------------------------------------------------------------------------------!
    ! Number of disturbance types:                                                          !
    !                                                                                       !
-   ! 1 -- Clear cut (cropland and pasture).                                                !
+   ! 1 -- Pasture.                                                                         !
    ! 2 -- Forest plantation.                                                               !
    ! 3 -- Tree fall.                                                                       !
    ! 4 -- Fire.                                                                            !
    ! 5 -- Forest regrowth.                                                                 !
-   ! 6 -- Logged forest.                                                                   !
+   ! 6 -- Logged forest (felling).                                                         !
+   ! 7 -- Logged forest (skid trail + road).                                               !
+   ! 8 -- Cropland.                                                                        !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_dist_types = 6
+   integer, parameter :: n_dist_types = 8
    !---------------------------------------------------------------------------------------!
 
 
@@ -233,8 +235,8 @@ module ed_max_dims
    !  MAX_WATER    - maximum number of soil water levels (not assigned to polygons).       !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
-   integer, parameter :: huge_patch   = 3600
-   integer, parameter :: huge_cohort  = 150000
+   integer, parameter :: huge_patch   = 10000
+   integer, parameter :: huge_cohort  = 250000
    integer, parameter :: max_water    = 100
    !---------------------------------------------------------------------------------------!
 
@@ -260,9 +262,11 @@ module ed_max_dims
 #endif
    !---------------------------------------------------------------------------------------!
 
+
    !----- Maximum observation times that can be stored by the obs_timelist ----------------!
    integer, parameter :: max_obstime = 99999
    !---------------------------------------------------------------------------------------!
+
 
    !----- Maximum number of files (site+patch+cohort). ------------------------------------!
    integer, parameter :: maxlist = 3 * maxfiles
@@ -278,6 +282,8 @@ module ed_max_dims
    character(len=str_len), parameter :: undef_character = 'nothing'
    character(len=str_len), parameter :: undef_path      = '/nowhere'
    logical               , parameter :: undef_logical   = .false.
+   integer               , parameter :: skip_integer    = huge(6)
+   real(kind=4)          , parameter :: skip_real       = huge(6.)
    !---------------------------------------------------------------------------------------!
 
 end module ed_max_dims

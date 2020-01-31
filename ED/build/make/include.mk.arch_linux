@@ -7,13 +7,7 @@ MAKE=/usr/bin/make
 BASE=$(ED_ROOT)/build/
 
 # HDF 5  Libraries
-# ED2 HAS OPTIONAL HDF 5 I/O
-# If you wish to use this functionality specify USE_HDF5=1
-# and specify the location of the include directory
-# library files. Make sure you include the zlib.a location too.
-
 # For 64-bit
-USE_HDF5=1
 HDF5_INCS=
 HDF5_LIBS=-lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 USE_COLLECTIVE_MPIO=1
@@ -42,6 +36,7 @@ USE_MPIWTIME=1
 
 # Compile flags ------------------------------------------------
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 C_COMP=mpicc
 LOADER=mpif90

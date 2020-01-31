@@ -106,7 +106,7 @@ nstext.polygon <<- nstext.polygon
 #==========================================================================================#
 #     This function finds the soil parameters.                                             #
 #------------------------------------------------------------------------------------------#
-soil.params <<- function(ntext,isoilflg,slxsand,slxclay){
+soil.params <<- function(ntext,isoilflg,slxsand,slxclay,out.dfr=FALSE){
    #----- Define some prescribed fractions. -----------------------------------------------#
    xsand.def = c( 0.920, 0.825, 0.660, 0.200, 0.410, 0.590
                 , 0.100, 0.320, 0.520, 0.060, 0.200, 0.200
@@ -301,6 +301,11 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay){
    mysoil$thcond3 = 1. - kair
    #---------------------------------------------------------------------------------------#
 
+
+   #----- Select the output format according to the users' choice. ------------------------#
+   if (out.dfr) mysoil = as.data.frame(mysoil,stringsAsFactors=FALSE)
+   #---------------------------------------------------------------------------------------#
+
    return(mysoil)
 }#end function
 #==========================================================================================#
@@ -492,5 +497,26 @@ smoist2hydcond <<- function(smoist,mysoil){
    hydcond = mysoil$slcons * smfrac ^ (2. * mysoil$slbs + 3.)
    return(hydcond)
 }#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function creates soil layers for ED-2 that monotonically increase in depth.     #
+#------------------------------------------------------------------------------------------#
+make.slz <<- function(from,to=-0.02,length.out=16,digits=3,out.char=FALSE){
+   fmt  = paste0("%.",digits,"f")
+   ehgt = log(from/to) / log(length.out)
+   ilyr = rev(sequence(length.out))
+   zlyr = to * ilyr ^ ehgt
+   if (out.char){
+      ans  = sprintf(fmt,zlyr)
+   }else{
+      ans  = round(zlyr,digits)
+   }#end if (out.char)
+   return(ans)
+}#end make.slz
 #==========================================================================================#
 #==========================================================================================#

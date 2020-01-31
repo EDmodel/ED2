@@ -1,4 +1,3 @@
-
 !==========================================================================================!
 !==========================================================================================!
 !     Main subroutine that initialises the several structures for the Ecosystem Demography !
@@ -6,27 +5,37 @@
 ! known as master.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine ed_driver()
-   use update_derived_props_module
-   use ism_hyd
-   use ed_met_driver
-   use ed_init_full_history
-   use ed_init
-   use grid_coms         , only : ngrids              & ! intent(in)
-                                , time                & ! intent(inout)
-                                , timmax              ! ! intent(inout)
-   use ed_state_vars     , only : allocate_edglobals  & ! sub-routine
-                                , filltab_alltypes    & ! sub-routine
-                                , edgrid_g            ! ! intent(inout)
-   use ed_misc_coms      , only : runtype             & ! intent(in)
-                                , iooutput            ! ! intent(in)
-   use soil_coms         , only : alloc_soilgrid      ! ! sub-routine
-   use ed_node_coms      , only : mynum               & ! intent(in)
-                                , nnodetot            & ! intent(in)
-                                , sendnum             & ! intent(inout)
-                                , recvnum             ! ! intent(in)
-   use detailed_coms     , only : idetailed           & ! intent(in)
-                                , patch_keep          ! ! intent(in)
-   use phenology_aux     , only : first_phenology     ! ! subroutine
+   use update_derived_utils , only : update_derived_props          ! ! subroutine
+   use lsm_hyd              , only : initHydrology                 ! ! subroutine
+   use ed_met_driver        , only : init_met_drivers              & ! subroutine
+                                   , read_met_drivers_init         & ! subroutine
+                                   , update_met_drivers            ! ! subroutine
+   use ed_init_history      , only : resume_from_history           ! ! subroutine
+   use ed_init              , only : set_polygon_coordinates       & ! subroutine
+                                   , sfcdata_ed                    & ! subroutine
+                                   , load_ecosystem_state          & ! subroutine
+                                   , read_obstime                  ! ! subroutine
+   use grid_coms            , only : ngrids                        & ! intent(in)
+                                   , time                          & ! intent(inout)
+                                   , timmax                        ! ! intent(inout)
+   use ed_state_vars        , only : allocate_edglobals            & ! sub-routine
+                                   , filltab_alltypes              & ! sub-routine
+                                   , edgrid_g                      ! ! intent(inout)
+   use ed_misc_coms         , only : runtype                       & ! intent(in)
+                                   , iooutput                      ! ! intent(in)
+   use soil_coms            , only : alloc_soilgrid                ! ! sub-routine
+   use ed_node_coms         , only : mynum                         & ! intent(in)
+                                   , nnodetot                      & ! intent(in)
+                                   , sendnum                       ! ! intent(in)
+#if defined(RAMS_MPI)
+   use ed_node_coms         , only : recvnum                       ! ! intent(in)
+#endif
+   use detailed_coms        , only : idetailed                     & ! intent(in)
+                                   , patch_keep                    ! ! intent(in)
+   use phenology_aux        , only : first_phenology               ! ! subroutine
+   use hrzshade_utils       , only : init_cci_variables            ! ! subroutine
+   use canopy_radiation_coms, only : ihrzrad                       ! ! intent(in)
+   use random_utils         , only : init_random_seed              ! ! subroutine
    implicit none
    !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -60,6 +69,26 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Initialise random seed -- the MPI barrier may be unnecessary, added because the   !
+   ! jobs may the the system random number generator.                                      !
+   !---------------------------------------------------------------------------------------!
+#if defined(RAMS_MPI)
+   if (mynum /= 1) then
+      call MPI_RECV(ping,1,MPI_INTEGER,recvnum,79,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+   else
+      write (unit=*,fmt='(a)') ' [+] Init_random_seed...'
+   end if
+#else
+      write (unit=*,fmt='(a)') ' [+] Init_random_seed...'
+#endif
+   call init_random_seed()
+
+#if defined(RAMS_MPI)
+   if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,79,MPI_COMM_WORLD,ierr)
+   if (nnodetot /= 1    ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+#endif
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -95,6 +124,30 @@ subroutine ed_driver()
 #endif
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Initialise any variable that should be initialised after the xml parameters have !
+   ! been read.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_params_after_xml...'
+   call init_derived_params_after_xml()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      In case this simulation will use horizontal shading, initialise the landscape    !
+   ! arrays.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   select case (ihrzrad)
+   case (0)
+      continue
+   case default
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
+      call init_cci_variables()
+   end select
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -135,12 +188,12 @@ subroutine ed_driver()
       if (mynum /= 1) then
          call MPI_RECV(ping,1,MPI_INTEGER,recvnum,81,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
       else
-         write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
+         write (unit=*,fmt='(a)') ' [+] Resume_From_History...'
       end if
 #else
-      write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
+      write (unit=*,fmt='(a)') ' [+] Resume_From_History...'
 #endif
-      call init_full_history_restart()
+      call resume_from_history()
 
 #if defined(RAMS_MPI)
       if (mynum < nnodetot ) then
@@ -168,9 +221,9 @@ subroutine ed_driver()
    ! -2 -- Keep the one with the lowest LAI                                                !
    !---------------------------------------------------------------------------------------!
    patch_detailed = ibclr(idetailed,5) > 0
-   if (patch_detailed) then
+!   if (patch_detailed) then
       call exterminate_patches_except(patch_keep)
-   end if
+!   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -193,8 +246,8 @@ subroutine ed_driver()
 #endif
 
    call init_met_drivers()
-   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Read_Met_Drivers_Init...'
-   call read_met_drivers_init
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Read_Met_Drivers_Init...'
+   call read_met_drivers_init()
 
 
 #if defined(RAMS_MPI)
@@ -212,6 +265,7 @@ subroutine ed_driver()
    do ifm=1,ngrids
       call update_met_drivers(edgrid_g(ifm))
    end do
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -231,8 +285,8 @@ subroutine ed_driver()
 
    !---------------------------------------------------------------------------------------!
    !      Initialise some derived variables.  This must be done outside                    !
-   ! init_full_history_restart because it depends on some meteorological variables that    !
-   ! were not initialised until the sub-routine ed_init_atm was called.                    !
+   ! resume_from_history because it depends on some meteorological variables that were not !
+   ! initialised until the sub-routine ed_init_atm was called.                             !
    !---------------------------------------------------------------------------------------!
    do ifm=1,ngrids
       call update_derived_props(edgrid_g(ifm))
@@ -268,18 +322,33 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
    !      Check how the output was configured and determine the averaging frequency.       !
    !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
+   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Find frqsum...'
    call find_frqsum()
    !---------------------------------------------------------------------------------------!
 
+
    !---------------------------------------------------------------------------------------!
-   !      Read obsevation time list if IOOUTPUT is set as non-zero                        !
+   !      Read obsevation time list if IOOUTPUT is set as non-zero.                        !
+   !                                                                                       !
+   ! MLO --- Whenever reading ASCII files, it is a good idea to apply MPI barriers, to     !
+   !         avoid two nodes accessing the file at the same time (some file systems do not !
+   !         like that).                                                                   !
    !---------------------------------------------------------------------------------------!
    if (iooutput /= 0) then
-        if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Loading obstime_list'
+#if defined(RAMS_MPI)
+        if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,62,MPI_COMM_WORLD         &
+                                     ,MPI_STATUS_IGNORE,ierr)
+#endif
+        if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Load obstime_list...'
         call read_obstime()
+#if defined(RAMS_MPI)
+        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,62,MPI_COMM_WORLD  &
+                                            ,ierr)
+#endif
     end if
    !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Get the CPU time and print the banner.                                           !
@@ -321,30 +390,41 @@ end subroutine ed_driver
 ! variables.  FRQSUM should never exceed one day to avoid build up and overflows.          !
 !------------------------------------------------------------------------------------------!
 subroutine find_frqsum()
-   use ed_misc_coms, only : unitfast   & ! intent(in)
-                          , unitstate  & ! intent(in)
-                          , isoutput   & ! intent(in)
-                          , ifoutput   & ! intent(in)
-                          , itoutput   & ! intent(in)
-                          , iooutput   & ! intent(in)
-                          , imoutput   & ! intent(in)
-                          , idoutput   & ! intent(in)
-                          , iqoutput   & ! intent(in)
-                          , frqstate   & ! intent(in)
-                          , frqfast    & ! intent(in)
-                          , frqsum     ! ! intent(out)
+   use ed_misc_coms, only : unitfast        & ! intent(in)
+                          , unitstate       & ! intent(in)
+                          , isoutput        & ! intent(in)
+                          , ifoutput        & ! intent(in)
+                          , itoutput        & ! intent(in)
+                          , imoutput        & ! intent(in)
+                          , iooutput        & ! intent(in)
+                          , idoutput        & ! intent(in)
+                          , iqoutput        & ! intent(in)
+                          , frqstate        & ! intent(in)
+                          , frqfast         & ! intent(in)
+                          , dtlsm           & ! intent(in)
+                          , radfrq          & ! intent(in)
+                          , frqsum          & ! intent(out)
+                          , frqsumi         & ! intent(out)
+                          , dtlsm_o_frqsum  & ! intent(out)
+                          , radfrq_o_frqsum ! ! intent(out)
    use consts_coms, only: day_sec
 
    implicit none 
-
    !----- Local variables. ----------------------------------------------------------------!
-   logical :: no_fast_output, fast_output
-   no_fast_output = (ifoutput == 0 .and. itoutput == 0 .and. iooutput == 0)
-   fast_output = .not. no_fast_output
+   logical :: fast_output
+   logical :: no_fast_output
+   !---------------------------------------------------------------------------------------!
 
 
-   if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and.     &
-       iqoutput == 0 .and. itoutput == 0 .and. iooutput ==0 ) then
+   !----- Ancillary logical tests. --------------------------------------------------------!
+   fast_output     = ifoutput /= 0 .or. itoutput /= 0 .or. iooutput /= 0
+   no_fast_output = .not. fast_output
+   !---------------------------------------------------------------------------------------!
+
+
+
+   if ( no_fast_output .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and.   &
+        iqoutput == 0  ) then
       write(unit=*,fmt='(a)') '---------------------------------------------------------'
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -407,6 +487,31 @@ subroutine find_frqsum()
    else
       frqsum=min(frqstate,day_sec)
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find some useful conversion factors.                                              !
+   ! 1. FRQSUMI         -- inverse of the elapsed time between two analyses (or one day).  !
+   !                       This should be used by variables that are fluxes and are solved !
+   !                       by RK4, they are holding the integral over the past frqsum      !
+   !                       seconds.                                                        !
+   ! 2. DTLSM_O_FRQSUM  -- inverse of the number of the main time steps (DTLSM) since      !
+   !                       previous analysis.  Only photosynthesis- and decomposition-     !
+   !                       related variables, or STATE VARIABLES should use this factor.   !
+   !                       Do not use this for energy and water fluxes, CO2 eddy flux, and !
+   !                       CO2 storage.                                                    !
+   ! 3. RADFRQ_O_FRQSUM -- inverse of the number of radiation time steps since the         !
+   !                       previous analysis.  Only radiation-related variables should use !
+   !                       this factor.                                                    !
+   !---------------------------------------------------------------------------------------!
+   frqsumi         = 1.0    / frqsum
+   dtlsm_o_frqsum  = dtlsm  * frqsumi
+   radfrq_o_frqsum = radfrq * frqsumi
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine find_frqsum

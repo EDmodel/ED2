@@ -72,10 +72,13 @@ image.map <<- function( x
                       , interp.xyz       = FALSE
                       , interp.method    = c("interp","raster","kriging")
                       , same.mesh        = FALSE
+                      , mar.main         = NULL
+                      , mar.key          = NULL
                       , nx.interp        = NA
                       , ny.interp        = NA
                       , useRaster        = TRUE
                       , byrow            = TRUE
+                      , lo.panel         = NULL
                       , ...
                       ){
 
@@ -102,7 +105,7 @@ image.map <<- function( x
    #---------------------------------------------------------------------------------------#
    #      Check whether x, y, and z are the same type of data.                             #
    #---------------------------------------------------------------------------------------#
-   same.kind = (is.list(x) == is.list(y) && is.list(x) == is.list(y))
+   same.kind = (is.list(x) == is.list(y) && is.list(x) == is.list(z))
    if (! same.kind){
       cat(" X is list: ",is.list(x),"\n")
       cat(" Y is list: ",is.list(y),"\n")
@@ -126,6 +129,44 @@ image.map <<- function( x
 
 
    #---------------------------------------------------------------------------------------#
+   #     Make sure mar.main can be defined for each panel.                                 #
+   #---------------------------------------------------------------------------------------#
+   if (! is.null(mar.main)){
+      #----- Make sure mar.main has a reasonable format. ----------------------------------#
+      if (is.vector(mar.main)){
+         mar.main=replicate(n=npanels,list(mar.main))
+      }else if(is.list(mar.main)){
+         #----- Make sure the list has a reasonable number of entries. --------------------#
+         if (length(mar.main) == 1){
+            mar.main=rep(mar.main,times=npanels)
+         }else if (length(mar.main) != npanels){
+            cat0(" Number of panels: ",npanels)
+            cat0(" Number of elements in list \"mar.main\": ",length(mar.main))
+            stop(" Either provide a single mar.main or provide ",npanels," list entries.")
+         }#end if (length(mar.main) == 1)
+         #---------------------------------------------------------------------------------#
+      }else if (is.matrix(mar.main)){
+         #----- Make sure the matrix has a reasonable number of rows. ---------------------#
+         if (nrow(mar.main) == 1){
+            mar.main = replicate(n=npanels,list(mar.main[1,]))
+         }else if (nrow(mar.main) == npanels){
+            mar.main = split(x=mar.main,f=row(mar.main))
+         }else{
+            cat0(" Number of panels: ",npanels)
+            cat0(" Number of rows in ,matrix \"mar.main\": ",nrow(mar.main))
+            stop(" Matrix \"mar.main\" must have either a single or ",npanels," rows.")
+         }#end if (nrow(mar.main) == 1)
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- No idea of what to do. ----------------------------------------------------#
+         stop(" Variable \"mar.main\" must be a vector, a list, or a matrix.")
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if (! is.null(mar.main))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
    #     If legend is to be plotted, key.vertical has to be TRUE.  In case the user said   #
    # otherwise, return a warning.  Also, define offsets for X and Y according to the       #
    # legends and keys.                                                                     #
@@ -139,7 +180,7 @@ image.map <<- function( x
 
 
    #----- Find the box structure for the panels. ------------------------------------------#
-   lo.panel = pretty.box(npanels,byrow=byrow)
+   if (is.null(lo.panel)) lo.panel = pretty.box(npanels,byrow=byrow)
    #---------------------------------------------------------------------------------------#
 
 
@@ -302,7 +343,9 @@ image.map <<- function( x
    #=======================================================================================#
    #      Second plot: the key scale.                                                      #
    #---------------------------------------------------------------------------------------#
-      if (key.vertical){
+      if (! is.null(mar.key)){
+         par(mar = mar.key)
+      }else if (key.vertical){
          par(mar = lo.panel$mar.key)
       }else{
          par(mar = c(2.1,4.6,1.6,2.1))
@@ -376,66 +419,34 @@ image.map <<- function( x
 
 
 
-
    #=======================================================================================#
    #=======================================================================================#
    #      Now we plot the other panels.                                                    #
    #---------------------------------------------------------------------------------------#
    for (p in sequence(npanels)){
       #----- Find out where the box goes, and set up axes and margins. --------------------#
-      left    = lo.panel$left  [p]
-      right   = lo.panel$right [p]
-      top     = lo.panel$top   [p]
-      bottom  = lo.panel$bottom[p]
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Set the window. --------------------------------------------------------------#
-      if (matrix.plot & edge.axes){
-         if (left && right){
-            mar.left  = 4.6
-            mar.right = 0.6
-         }else if (left){
-            mar.left  = 3.1
-            mar.right = 0.1
-         }else if (right){
-            mar.left  = 0.1
-            mar.right = 3.1
-         }else{
-            mar.left  = 1.6
-            mar.right = 1.6
-         }#end if
-         if (bottom && top){
-            mar.bottom = 5.1
-            mar.top    = 4.1
-         }else if (bottom){
-            mar.bottom = 3.1
-            mar.top    = 1.1
-         }else if (top){
-            mar.bottom = 1.1
-            mar.top    = 3.1
-         }else{
-            mar.bottom = 1.1
-            mar.top    = 1.1
-         }#end if
-         mar.now = c(mar.bottom,mar.left,mar.top,mar.right)
-         #---------------------------------------------------------------------------------#
-      }else if (matrix.plot){
-         mar.left   = 3.1 + 1.0 * (npanels == 1)
-         mar.right  = 1.1 + 1.0 * (npanels == 1)
-         mar.bottom = 4.1 + 1.0 * (npanels == 1)
-         mar.top    = 3.1 + 1.0 * (npanels == 1)
-         mar.now = c(mar.bottom,mar.left,mar.top,mar.right)
-      }else{
-         #----- Find out where the box goes, and set up axes and margins. -----------------#
+      if (edge.axes){
          left    = TRUE
          right   = TRUE
-         bottom  = TRUE
          top     = TRUE
-         mar.now = mar.orig
-         if (! key.vertical) mar.now[1] = 4.1
-         #---------------------------------------------------------------------------------#
+         bottom  = TRUE
+         if (! is.null(mar.main)){
+            mar.now = mar.main[[p]]
+         }else{
+            mar.now = lo.panel$mar0
+         }#end if(! is.null(mar.key))
+      }else{
+         left    = lo.panel$left  [p]
+         right   = lo.panel$right [p]
+         top     = lo.panel$top   [p]
+         bottom  = lo.panel$bottom[p]
+         if (! is.null(mar.main)){
+            mar.now = mar.main[[p]]
+         }else{
+            mar.now = lo.panel$mar   [p,]
+         }#end if
       }#end if
+      #------------------------------------------------------------------------------------#
       plog = ""
       if (xlog) plog = paste(plog,"x",sep="")
       if (ylog) plog = paste(plog,"y",sep="")

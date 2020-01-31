@@ -129,65 +129,84 @@ end subroutine ed_timestep
 ! side this subroutine to avoid confusion when we run nested grid simulations.             !
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_model(ifm)
-   use ed_max_dims  , only : maxgrds                     ! ! intent(in)
-   use ed_misc_coms , only : ivegt_dynamics              & ! intent(in)
-                           , integration_scheme          & ! intent(in)
-                           , simtime                     & ! variable type
-                           , current_time                & ! intent(inout)
-                           , frqfast                     & ! intent(in)
-                           , frqstate                    & ! intent(in)
-                           , out_time_fast               & ! intent(in)
-                           , dtlsm                       & ! intent(in)
-                           , ifoutput                    & ! intent(in)
-                           , isoutput                    & ! intent(in)
-                           , idoutput                    & ! intent(in)
-                           , imoutput                    & ! intent(in)
-                           , iqoutput                    & ! intent(in)
-                           , itoutput                    & ! intent(in)
-                           , iyoutput                    & ! intent(in)
-                           , writing_dail                & ! intent(in)
-                           , writing_mont                & ! intent(in)
-                           , writing_dcyc                & ! intent(in)
-                           , writing_year                & ! intent(in)
-                           , writing_eorq                & ! intent(in)
-                           , writing_long                & ! intent(in)
-                           , frqsum                      & ! intent(inout)
-                           , unitfast                    & ! intent(in)
-                           , unitstate                   & ! intent(in)
-                           , imontha                     & ! intent(in)
-                           , iyeara                      & ! intent(in)
-                           , outstate                    & ! intent(in)
-                           , outfast                     & ! intent(in)
-                           , nrec_fast                   & ! intent(in)
-                           , nrec_state                  & ! intent(in)
-                           , outputmonth                 ! ! intent(in)
-   use grid_coms    , only : ngrids                      & ! intent(in)
-                           , istp                        & ! intent(in)
-                           , time                        & ! intent(inout)
-                           , timmax                      ! ! intent(in)
-   use ed_state_vars, only : edgrid_g                    & ! intent(inout)
-                           , edtype                      & ! variable type
-                           , patchtype                   & ! variable type
-                           , filltab_alltypes            & ! subroutine
-                           , filltables                  ! ! intent(in)
-   use rk4_driver   , only : rk4_timestep                ! ! subroutine
-   use rk4_coms     , only : record_err                  & ! intent(out)
-                           , print_detailed              & ! intent(out)
-                           , print_thbnd                 ! ! intent(out)
-   use ed_node_coms , only : mynum                       & ! intent(in)
-                           , nnodetot                    ! ! intent(in)
-   use mem_polygons , only : maxpatch                    & ! intent(in)
-                           , maxcohort                   ! ! intent(in)
-   use consts_coms  , only : day_sec                     ! ! intent(in)
-   use io_params    , only : ioutput                     ! ! intent(in)
-   use average_utils, only : update_ed_yearly_vars       & ! sub-routine
-                           , integrate_ed_fmean_met_vars & ! sub-routine
-                           , zero_ed_fmean_vars          ! ! sub-routine
+   use ed_max_dims         , only : maxgrds                     ! ! intent(in)
+   use ed_misc_coms        , only : simtime                     & ! structure
+                                  , ivegt_dynamics              & ! intent(in)
+                                  , integration_scheme          & ! intent(in)
+                                  , simtime                     & ! variable type
+                                  , current_time                & ! intent(inout)
+                                  , frqfast                     & ! intent(in)
+                                  , frqstate                    & ! intent(in)
+                                  , out_time_fast               & ! intent(in)
+                                  , dtlsm                       & ! intent(in)
+                                  , month_yrstep                & ! intent(in)
+                                  , ifoutput                    & ! intent(in)
+                                  , isoutput                    & ! intent(in)
+                                  , idoutput                    & ! intent(in)
+                                  , imoutput                    & ! intent(in)
+                                  , iqoutput                    & ! intent(in)
+                                  , itoutput                    & ! intent(in)
+                                  , iyoutput                    & ! intent(in)
+                                  , writing_dail                & ! intent(in)
+                                  , writing_mont                & ! intent(in)
+                                  , writing_dcyc                & ! intent(in)
+                                  , writing_year                & ! intent(in)
+                                  , writing_eorq                & ! intent(in)
+                                  , writing_long                & ! intent(in)
+                                  , frqsum                      & ! intent(inout)
+                                  , unitfast                    & ! intent(in)
+                                  , unitstate                   & ! intent(in)
+                                  , imontha                     & ! intent(in)
+                                  , iyeara                      & ! intent(in)
+                                  , outstate                    & ! intent(in)
+                                  , outfast                     & ! intent(in)
+                                  , nrec_fast                   & ! intent(in)
+                                  , nrec_state                  ! ! intent(in)
+   use ed_init             , only : remove_obstime              & ! sub-routine
+                                  , is_obstime                  ! ! sub-routine
+   use grid_coms           , only : ngrids                      & ! intent(in)
+                                  , istp                        & ! intent(in)
+                                  , time                        & ! intent(inout)
+                                  , timmax                      ! ! intent(in)
+   use ed_state_vars       , only : edgrid_g                    & ! intent(inout)
+                                  , edtype                      & ! variable type
+                                  , patchtype                   & ! variable type
+                                  , filltab_alltypes            & ! subroutine
+                                  , filltables                  ! ! intent(in)
+   use rk4_driver          , only : rk4_timestep                ! ! subroutine
+   use rk4_coms            , only : record_err                  & ! intent(out)
+                                  , print_detailed              & ! intent(out)
+                                  , print_thbnd                 ! ! intent(out)
+   use ed_node_coms        , only : mynum                       & ! intent(in)
+                                  , nnodetot                    ! ! intent(in)
+   use mem_polygons        , only : maxpatch                    & ! intent(in)
+                                  , maxcohort                   ! ! intent(in)
+   use consts_coms         , only : day_sec                     ! ! intent(in)
+   use io_params           , only : ioutput                     ! ! intent(in)
+   use average_utils       , only : update_ed_yearly_vars       & ! sub-routine
+                                  , integrate_ed_fmean_met_vars & ! sub-routine
+                                  , zero_ed_fmean_vars          ! ! sub-routine
+   use edio                , only : ed_output                   ! ! sub-routine
+   use euler_driver        , only : euler_timestep              ! ! sub-routine
+   use heun_driver         , only : heun_timestep               ! ! sub-routine
+   use hybrid_driver       , only : hybrid_timestep             ! ! sub-routine
+   use lsm_hyd             , only : updateHydroParms            & ! sub-routine
+                                  , calcHydroSubsurface         & ! sub-routine
+                                  , calcHydroSurface            & ! sub-routine
+                                  , writeHydro                  ! ! sub-routine
+   use radiate_driver      , only : canopy_radiation            ! ! sub-routine
+   use rk4_integ_utils     , only : initialize_rk4patches       & ! sub-routine
+                                  , initialize_misc_stepvars    ! ! sub-routine
+   use stable_cohorts      , only : flag_stable_cohorts         ! ! sub-routine
+   use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
+   use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in)                   :: ifm
    !----- Local variables. ----------------------------------------------------------------!
+   type(simtime)                         :: daybefore
    logical                               :: analysis_time
+   logical                               :: observation_time
    logical                               :: new_day
    logical                               :: new_month
    logical                               :: new_year
@@ -199,8 +218,13 @@ subroutine ed_coup_model(ifm)
    logical                               :: dail_analy_time
    logical                               :: dcyc_analy_time
    logical                               :: reset_time
+   logical                               :: veget_dyn_on
    integer                               :: ndays
+   integer                               :: dbndays
    integer                               :: jfm
+   integer                               :: obstime_idx
+   real                                  :: dbndaysi
+   real                                  :: gr_tfact0
    !----- External functions. -------------------------------------------------------------!
    integer                    , external :: num_days
    !----- Locally saved variables. --------------------------------------------------------!
@@ -222,21 +246,33 @@ subroutine ed_coup_model(ifm)
       first_time        = .false.
    end if
 
+   !----- Run with vegetation dynamics turned on?  ----------------------------------------!
+   veget_dyn_on = ivegt_dynamics == 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Flagging that this grid has been called.                                          !
    !---------------------------------------------------------------------------------------!
-   calledgrid(ifm) = .true.
+   calledgrid(ifm)     = .true.
 
    istp                = istp + 1
    out_time_fast       = current_time
    out_time_fast%month = -1
+   !---------------------------------------------------------------------------------------!
 
 
-   !----- Updating the cohort status (stable to be solved or unstable). -------------------!
+   !----- Update the cohort status (stable to be solved or unstable). ---------------------!
    call flag_stable_cohorts(edgrid_g(ifm))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Radiation scheme. ---------------------------------------------------------------!
-   call radiate_driver(edgrid_g(ifm))
+   call canopy_radiation(edgrid_g(ifm))
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -259,6 +295,7 @@ subroutine ed_coup_model(ifm)
    case (3)
       call hybrid_timestep(edgrid_g(ifm))
    end select
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -270,7 +307,7 @@ subroutine ed_coup_model(ifm)
       !----- Reset all grids to false for next time step. ---------------------------------!
       calledgrid(1:ngrids) = .false.
    
-      !----- Updating the time. -----------------------------------------------------------!
+      !----- Update the time. ------------------------------------------------------------!
       time = time + dble(dtlsm)
       call update_model_time_dm(current_time, dtlsm)
 
@@ -278,15 +315,15 @@ subroutine ed_coup_model(ifm)
       !     Check whether now is any of those special times...                             !
       !------------------------------------------------------------------------------------!
       new_day         = current_time%time  <  dtlsm
-      new_month       = current_time%date  == 1  .and. new_day
-      new_year        = current_time%month == 1  .and. new_month
+      new_month       = current_time%date  == 1            .and. new_day
+      new_year        = current_time%month == month_yrstep .and. new_month
       mont_analy_time = new_month .and. writing_mont
       dcyc_analy_time = new_month .and. writing_dcyc
-      annual_time     = new_month .and. writing_year .and.                                 &
-                        current_time%month == outputmonth
+      annual_time     = new_year  .and. writing_year
       dail_analy_time = new_day   .and. writing_dail
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       the_end         = mod(time,timmax)       < dble(dtlsm)
+      !------------------------------------------------------------------------------------!
 
       !----- Check whether this is time to write fast analysis output or not. -------------!
       select case (unitfast)
@@ -306,6 +343,30 @@ subroutine ed_coup_model(ifm)
                            mod(real(current_time%year-iyeara),frqfast) == 0.
          dcycle_time     = .false.
       end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Check whether it is an observation time --------------------------------------!
+      if (iooutput == 0 .or. unitfast /= 0) then
+         !------ Observation_time is not used when unitfast /= 0 or iooutput is 0. --------!
+         observation_time = .false. 
+         !---------------------------------------------------------------------------------!
+      else
+         !------ check whether it is the observation time. --------------------------------!
+         call is_obstime(current_time%year,current_time%month,current_time%date            &
+                        ,current_time%time,observation_time,obstime_idx)
+         !---------------------------------------------------------------------------------!
+
+         !------ Get rid of the obstime record if observation_time is true. ---------------!
+         if (observation_time) then
+            call remove_obstime(obstime_idx)
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Check whether this is time to write restart output or not. -------------------!
       select case(unitstate)
@@ -320,6 +381,8 @@ subroutine ed_coup_model(ifm)
                           current_time%month == imontha .and.                              &
                           mod(real(current_time%year-iyeara),frqstate) == 0.
       end select
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !    Update nrec_fast and nrec_state if it is a new month and outfast/outstate are   !
@@ -330,14 +393,6 @@ subroutine ed_coup_model(ifm)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Call the model output driver.                                                  !
-      !------------------------------------------------------------------------------------!
-      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,history_time,dcycle_time,the_end)
       !------------------------------------------------------------------------------------!
 
 
@@ -354,18 +409,6 @@ subroutine ed_coup_model(ifm)
       !------------------------------------------------------------------------------------!
 
 
-
-      !------------------------------------------------------------------------------------!
-      !      Reset time happens every frqsum. This is to avoid variables to build up when  !
-      ! history and analysis are off.  Put outside ed_output so we have a chance to copy   !
-      ! some of these to BRAMS structures.                                                 !
-      !------------------------------------------------------------------------------------!
-      if (reset_time) then
-         do jfm=1,ngrids
-            call zero_ed_fmean_vars(edgrid_g(jfm))
-         end do
-      end if
-
       !------------------------------------------------------------------------------------!
       !     Check whether this is the beginning of a new simulated day.  Longer-scale      !
       ! processes, those which are updated once a day, once a month, or once a year, are   !
@@ -373,32 +416,32 @@ subroutine ed_coup_model(ifm)
       ! this part of the code when all grids have reached this point.                      !
       !------------------------------------------------------------------------------------!
       if (new_day) then
+         !----- Find the number of days in this month and the previous month. ----------------!
+         call yesterday_info(current_time,daybefore,dbndays,dbndaysi)
+         !------------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     This cap limits the growth rate depending on the day of the month.  This is !
+         ! to account for the different time scales between heartwood growth (monthly) and !
+         ! growth of the other tissues (daily).  This factor ensures that growth           !
+         ! respiration is evenly distributed during the month, as opposed to have a spike  !
+         ! on the second day of every month, when live tissues are growing to catch up the !
+         ! allometry after heartwood biomass had increased.  This factor grows as the time !
+         ! step approaches the end of the month, but the biomass increment will be the     !
+         ! same every day and trees will be back on allometry be the time of the following !
+         ! month in case storage is not limiting.
+         !---------------------------------------------------------------------------------!
+         gr_tfact0 = 1.0 / (dbndays - daybefore%date + 1)
+         !------------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !     Compute phenology, growth, mortality, recruitment, disturbance, and check   !
          ! whether we will apply them to the ecosystem or not.                             !
          !---------------------------------------------------------------------------------!
-         select case (ivegt_dynamics)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     Dummy vegetation dynamics, we compute the tendencies but we don't really !
-            ! apply to the vegetation, so they will remain constant throughout the entire  !
-            ! simulation.                                                                  !
-            !------------------------------------------------------------------------------!
-            call vegetation_dynamics_eq_0(new_month,new_year)
-            !------------------------------------------------------------------------------!
-
-         case (1)
-            !------------------------------------------------------------------------------!
-            !     Actual vegetation dynamics, we compute the tendencies and apply to the   !
-            ! vegetation.                                                                  !
-            !------------------------------------------------------------------------------!
-            call vegetation_dynamics(new_month,new_year)
-            !------------------------------------------------------------------------------!
-
-         end select
+         call veg_dynamics_driver(new_month,new_year,gr_tfact0,veget_dyn_on)
          !---------------------------------------------------------------------------------!
-
 
          
          !---------------------------------------------------------------------------------!
@@ -414,27 +457,66 @@ subroutine ed_coup_model(ifm)
             !---- Also, we must re-allocate the cohort-level integration buffer. ----------!
             call initialize_rk4patches(.false.)
          end if
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Update the yearly variables.                                                  !
+      !------------------------------------------------------------------------------------!
+      if (analysis_time .and. new_year .and. new_day) then
+         do jfm = 1,ngrids
+            call update_ed_yearly_vars(edgrid_g(jfm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Call the model output driver.                                                  !
+      !------------------------------------------------------------------------------------!
+      call ed_output(observation_time,analysis_time,new_day,new_month,new_year             &
+                    ,dail_analy_time,mont_analy_time,dcyc_analy_time,annual_time           &
+                    ,history_time,dcycle_time)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Reset time happens every frqsum. This is to avoid variables to build up when  !
+      ! history and analysis are off.  Put outside ed_output so we have a chance to copy   !
+      ! some of these to BRAMS structures.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (reset_time) then
+         do jfm=1,ngrids
+            call zero_ed_fmean_vars(edgrid_g(jfm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Update the hydrology parameters.                                              !
+      !------------------------------------------------------------------------------------!
       if (new_day .and. new_month) then
          do jfm=1,ngrids
             call updateHydroParms(edgrid_g(jfm))
          end do
       end if
-   
+      !------------------------------------------------------------------------------------!
 
-      if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
-         do jfm = 1,ngrids
-            call update_ed_yearly_vars(edgrid_g(jfm))
-         end do
-      end if
 
       !----- Update lateral hydrology. ----------------------------------------------------!
       call calcHydroSubsurface()
       call calcHydroSurface()
       call writeHydro()
+      !------------------------------------------------------------------------------------!
 
    end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine ed_coup_model

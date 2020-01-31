@@ -13,18 +13,20 @@ module mortality
    !=======================================================================================!
    !    This subroutine computes the total PFT-dependent mortality rate:                   !
    !---------------------------------------------------------------------------------------!
-   subroutine mortality_rates(cpatch,ico,avg_daily_temp, patch_age)
+   subroutine mortality_rates(cpatch,ico,avg_daily_temp, patch_age,dist_type)
       use ed_state_vars , only : patchtype                  ! ! Structure
       use pft_coms      , only : mort0                      & ! intent(in)
                                , mort1                      & ! intent(in)
                                , mort2                      & ! intent(in)
                                , mort3                      & ! intent(in)
                                , plant_min_temp             & ! intent(in)
-                               , frost_mort                 ! ! intent(in)
+                               , frost_mort                 & ! intent(in)
+                               , cbr_severe_stress          ! ! intent(in)
       use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
                                , treefall_hite_threshold    & ! intent(in)
                                , time2canopy                ! ! intent(in)
       use ed_max_dims   , only : n_pft                      ! ! intent(in)
+      use ed_misc_coms  , only : economics_scheme           ! ! intent(in)
       use consts_coms   , only : lnexp_min                  & ! intent(in)
                                , lnexp_max                  ! ! intent(in)
       implicit none
@@ -33,10 +35,12 @@ module mortality
       integer        , intent(in) :: ico             ! Current cohort ID
       real           , intent(in) :: avg_daily_temp  ! Mean temperature yesterday
       real           , intent(in) :: patch_age       ! Patch age
+      integer        , intent(in) :: dist_type       ! Disturbance type.
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft            ! PFT 
       real                        :: temp_dep        ! Temp. function  (frost mortality)
       real                        :: expmort         ! Carbon-balance term
+      real                        :: cbr_use         ! Bounded carbon balance.
       !------------------------------------------------------------------------------------!
 
 
@@ -52,18 +56,35 @@ module mortality
 
 
       !------------------------------------------------------------------------------------!
-      ! 2.  Mortality rates due to negative carbon balance.                                !
+      ! 2.  Mortality rates due to negative carbon balance.   Note that the functional     !
+      !     form is slightly different for economics_scheme = 1.                           !
       !------------------------------------------------------------------------------------!
-      expmort = max( lnexp_min, min( lnexp_max                                             &
-                                   , mort2(ipft) * ( cpatch%cbr_bar(ico) - mort0(ipft) ) ) )
-      cpatch%mort_rate(2,ico) = mort1(ipft) / (1. + exp(expmort))
+      cbr_use = max(cpatch%cbr_bar(ico),cbr_severe_stress(ipft))
+      expmort = max( lnexp_min, min( lnexp_max,mort2(ipft) * ( cbr_use - mort0(ipft) ) ) )
+      select case (economics_scheme)
+      case (1)
+         !----- Camac et al (2017).  Mind the minus sign. ---------------------------------!
+         cpatch%mort_rate(2,ico) = mort1(ipft) * exp(-expmort)
+         !---------------------------------------------------------------------------------!
+      case default
+         !----- Moorcroft et al (2001).  Exponential should not have minus sign. ----------!
+         cpatch%mort_rate(2,ico) = mort1(ipft) / (1. + exp(expmort))
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      ! 3.  Mortality due to treefall.                                                     !
+      ! 3.  Background mortality, defined by treefall_disturbance_rate.  For small trees,  !
+      !     this mortality is applied here because they aren't big enough to generate a    !
+      !     new gap.  Likewise, this rate is applied to all trees in a forest plantation,  !
+      !     because otherwise treefall would create a new patch and the land would         !
+      !     transition from managed to unmanaged.                                          !
       !------------------------------------------------------------------------------------!
-      if (cpatch%hite(ico) <= treefall_hite_threshold .and. patch_age > time2canopy) then
+      if (dist_type == 2) then
+         cpatch%mort_rate(3,ico) = treefall_disturbance_rate
+      elseif ( cpatch%hite(ico) <= treefall_hite_threshold .and.                           &
+               patch_age        >  time2canopy             ) then
          cpatch%mort_rate(3,ico) = treefall_disturbance_rate
       else
          cpatch%mort_rate(3,ico) = 0.
@@ -108,32 +129,72 @@ module mortality
    !     This subroutine determines the mortality rates associated with the current        !
    ! disturbance.                                                                          !
    !---------------------------------------------------------------------------------------!
-   subroutine disturbance_mortality(csite,ipa,disturbance_rate,new_lu,dist_path            &
-                                   ,mindbh_harvest)
-      use ed_state_vars, only : sitetype  & ! structure
-                              , patchtype ! ! structure
-      use ed_max_dims  , only : n_pft     ! ! intent(in)
+   subroutine disturbance_mortality(csite,ipa,area_loss,mindbh_harvest)
+      use ed_state_vars, only : sitetype      & ! structure
+                              , patchtype     ! ! structure
+      use ed_max_dims  , only : n_pft         & ! intent(in)
+                              , n_dist_types  ! ! intent(in)
+      use consts_coms  , only : lnexp_max     & ! intent(in)
+                              , tiny_num      & ! intent(in)
+                              , almost_one    ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype)                   , target     :: csite
-      integer                          , intent(in) :: ipa
-      real                             , intent(in) :: disturbance_rate
-      integer                          , intent(in) :: new_lu
-      integer                          , intent(in) :: dist_path
-      real           , dimension(n_pft), intent(in) :: mindbh_harvest
+      type(sitetype)                         , target      :: csite
+      integer                                , intent(in)  :: ipa
+      real          , dimension(n_dist_types), intent(in)  :: area_loss
+      real          , dimension(n_pft)       , intent(in)  :: mindbh_harvest
       !----- Local variables. -------------------------------------------------------------!
-      type(patchtype)                  , pointer    :: cpatch
-      integer                                       :: ico
-      real                                          :: f_survival
+      type(patchtype)                        , pointer     :: cpatch
+      integer                                              :: ico
+      integer                                              :: new_lu
+      real                                                 :: f_survival
+      real           , dimension(:)          , allocatable :: a_factor
       !------------------------------------------------------------------------------------!
 
+
+      !----- Current patch, in case it is empty, return. ----------------------------------!
       cpatch => csite%patch(ipa)
-      do ico=1,cpatch%ncohorts
-         f_survival = survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)
-         cpatch%mort_rate(5,ico) = cpatch%mort_rate(5,ico)                                 &
-                                 - log( f_survival                                         &
-                                      + (1.0 - f_survival) * exp(- disturbance_rate) )
+      if (cpatch%ncohorts == 0) return
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Allocate the "a_factor", which will integrate all disturbances. --------------!
+      allocate(a_factor(cpatch%ncohorts))
+      a_factor(:) = 0.0
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Loop over new disturbance types, add survivors from each disturbance type.     !
+      !------------------------------------------------------------------------------------!
+      do new_lu=1,n_dist_types
+         if (area_loss(new_lu) > tiny_num) then
+            do ico=1,cpatch%ncohorts
+              f_survival    = survivorship(new_lu,csite%dist_type(ipa),mindbh_harvest      &
+                                          ,cpatch,ico)
+              a_factor(ico) = a_factor(ico)                                                &
+                            + ( 1.0 - f_survival ) * area_loss(new_lu) / csite%area(ipa)
+            end do
+         end if
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Loop over cohorts, and find mortality.                                         !
+      !------------------------------------------------------------------------------------!
+      do ico=1,cpatch%ncohorts
+         if ( a_factor(ico) < almost_one ) then
+            cpatch%mort_rate(5,ico) = log( 1.0 / (1.0 - a_factor(ico)) )
+         else
+            cpatch%mort_rate(5,ico) = lnexp_max
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+
+      deallocate(a_factor)
       return
    end subroutine disturbance_mortality
    !=======================================================================================!
@@ -147,40 +208,46 @@ module mortality
    !=======================================================================================!
    !     This function computes the survivorship rate associated with a disturbance.       !
    !  Input variables:                                                                     !
-   !  -- new_lu: the disturbance/land use type after disturbance:                          !
-   !     1. Clear cut (cropland and pasture).                                              !
+   !  -- new_lu/old_lu: the disturbance/land use type after/before disturbance             !
+   !     1. Pasture.                                                                       !
    !     2. Forest plantation.                                                             !
    !     3. Tree fall.                                                                     !
    !     4. Fire.                                                                          !
    !     5. Forest regrowth.                                                               !
-   !     6. Logged forest.                                                                 !
-   !  -- dist_path: the pathway for the disturbance.  The flags depend on new_lu.  See     !
-   !        comments at the select case (new_lu) block for additional details.             !
-   !  -- mindbh_harvest: minimum DBH for harvesting (selective logging and forest          !
-   !        plantantions).  If the tree DBH is greater than mindbh_harvest, the tree may   !
-   !        be harvested, otherwise it may be damaged by logging but not harvested.        !
+   !     6. Logging (tree felling).                                                        !
+   !     7. Logging (mechanical damage).                                                   !
+   !     8. Cropland.                                                                      !
+   !  -- mindbh_harvest: minimum DBH for selective logging.  All trees above threshold     !
+   !                     will be logged in the tree felling patch.                         !
    !  -- cpatch: current patch.                                                            !
    !  -- ico: index for current cohort.                                                    !
    !---------------------------------------------------------------------------------------!
-   real function survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)
+   real function survivorship(new_lu,old_lu,mindbh_harvest,cpatch,ico)
       use ed_state_vars, only : patchtype                ! ! structure
-      use disturb_coms , only : treefall_hite_threshold  & ! intent(in)
-                              , fire_hite_threshold      ! ! intent(in)
+      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
       use pft_coms     , only : treefall_s_ltht          & ! intent(in)
                               , treefall_s_gtht          & ! intent(in)
-                              , fire_s_ltht              & ! intent(in)
-                              , fire_s_gtht              ! ! intent(in)
+                              , fire_s_min               & ! intent(in)
+                              , fire_s_max               & ! intent(in)
+                              , fire_s_inter             & ! intent(in)
+                              , fire_s_slope             & ! intent(in)
+                              , felling_s_gtharv         & ! intent(in)
+                              , felling_s_ltharv         & ! intent(in)
+                              , skid_s_ltharv            & ! intent(in)
+                              , skid_s_gtharv            ! ! intent(in)
       use ed_max_dims  , only : n_pft                    ! ! intent(in)
-      
+      use consts_coms  , only : lnexp_min                & ! intent(in)
+                              , lnexp_max                ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)                 , target     :: cpatch
       real          , dimension(n_pft), intent(in) :: mindbh_harvest
       integer                         , intent(in) :: ico
       integer                         , intent(in) :: new_lu
-      integer                         , intent(in) :: dist_path
+      integer                         , intent(in) :: old_lu
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: ipft
+      real                                         :: lnexp
       !------------------------------------------------------------------------------------!
 
 
@@ -194,36 +261,12 @@ module mortality
       ! and size.                                                                          !
       !------------------------------------------------------------------------------------!
       select case(new_lu)
-      case (1)
+      case (1,2,8)
          !---------------------------------------------------------------------------------!
-         !     Clear cut (cropland/pasture).  For now, nothing survives.                   !
+         !     Clear cut (cropland/pasture/forest plantation).  Nothing survives.          !
          !---------------------------------------------------------------------------------!
          survivorship = 0.0
          !---------------------------------------------------------------------------------!
-
-      case (2)
-         !---------------------------------------------------------------------------------!
-         !     Forest plantation.  Two types of mortality may exist: treefall disturbance  !
-         ! rates (which will maintain a plantation set as a plantation as it is a managed  !
-         ! land), and harvesting.                                                          !
-         !---------------------------------------------------------------------------------!
-         select case (dist_path)
-         case (20)
-            !----- Harvesting, assumes that nothing survives. -----------------------------!
-            survivorship = 0.0
-            !------------------------------------------------------------------------------!
-
-         case (21)
-            !----- Tree fall, assumes typical tree fall mortality. ------------------------!
-            if (cpatch%hite(ico) < treefall_hite_threshold) then
-               survivorship = treefall_s_ltht(ipft)
-            else
-               survivorship = treefall_s_gtht(ipft)
-            end if
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-
       case (3)
          !---------------------------------------------------------------------------------!
          !     Tree fall.  Mortality depends on the cohort height and PFT.                 !
@@ -237,52 +280,67 @@ module mortality
 
       case (4)
          !---------------------------------------------------------------------------------!
-         !     Fire.  For now fire mortality depends on the cohort height and PFT.         !
+         !     Fire.  Currently the fire survival rates are not dependent upon fire        !
+         ! intensity or flame height.  Survival rates are a function of bark thickness     !
+         ! (and size as BT depends on DBH and height).   The original scheme kills all     !
+         ! individuals and this is maintained by setting both fire_s_min and fire_s_max    !
+         ! to 1.                                                                           !
          !---------------------------------------------------------------------------------!
-         if (cpatch%hite(ico) < fire_hite_threshold) then
-            survivorship = fire_s_ltht(ipft)
-         else
-            survivorship = fire_s_gtht(ipft)
-         end if
+         lnexp        = fire_s_inter(ipft) + fire_s_slope(ipft) * cpatch%thbark(ico)
+         lnexp        = max(lnexp_min,min(lnexp_max,lnexp))
+         survivorship = fire_s_min(ipft)                                                   &
+                      + (fire_s_max(ipft) - fire_s_min(ipft)) / (1. + exp(lnexp))
          !---------------------------------------------------------------------------------!
 
-       case (5)
+      case (5)
          !---------------------------------------------------------------------------------!
          !     Abandonment (secondary regrowth).  Two paths are possible: abandonment      !
          ! occurs after one last harvest, or the field/plantation is left as is.           !
          !---------------------------------------------------------------------------------!
-         select case (dist_path)
-         case (50)
-            !----- Agriculture field is left as is. ---------------------------------------!
-            survivorship = 1.0
-            !------------------------------------------------------------------------------!
-         case (51)
-            !----- Forest plantation abandoned following fire. ----------------------------!
-            if (cpatch%hite(ico) < fire_hite_threshold) then
-               survivorship = fire_s_ltht(ipft)
-            else
-               survivorship = fire_s_gtht(ipft)
-            end if
-            !------------------------------------------------------------------------------!
-         case (52)
-            !----- Harvest precedes abandonment.  Nothing survives. -----------------------!
+         select case (old_lu)
+         case (8)
+            !----- Cropland: final harvest. -----------------------------------------------!
             survivorship = 0.0
+            !------------------------------------------------------------------------------!
+         case (2)
+            !------------------------------------------------------------------------------!
+            !     Forest plantation.  Assume fire causes abandonment.   See fire           !
+            ! explanation above.                                                           !
+            !------------------------------------------------------------------------------!
+            lnexp        = fire_s_inter(ipft) + fire_s_slope(ipft) * cpatch%thbark(ico)
+            lnexp        = max(lnexp_min,min(lnexp_max,lnexp))
+            survivorship = fire_s_min(ipft)                                                &
+                         + (fire_s_max(ipft) - fire_s_min(ipft)) / (1. + exp(lnexp))
+            !------------------------------------------------------------------------------!
+         case default
+            !------------------------------------------------------------------------------!
+            !    The only other option is pasture.  Leaving it as a default: everything    !
+            ! survives.                                                                    !
+            !------------------------------------------------------------------------------!
+            survivorship = 1.0
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
-
-       case (6)
+      case (6)
          !---------------------------------------------------------------------------------!
-         !     Logging.  At this point a single pathway exists: cohorts above threshold    !
-         ! are completely removed, and small cohorts have the same survivorship as small   !
-         ! cohorts at a treefall site.  Both could be re-visited in the future, and        !
-         ! different pathways for conventional and reduced-impact logging could be         !
-         ! applied.                                                                        !
+         !     Tree felling.                                                               !
          !---------------------------------------------------------------------------------!
          if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
-            survivorship = 0.0
+            survivorship = felling_s_gtharv(ipft)
          else
-            survivorship = treefall_s_ltht(ipft)
+            survivorship = felling_s_ltharv(ipft)
+         end if
+         !---------------------------------------------------------------------------------!
+      case (7)
+         !---------------------------------------------------------------------------------!
+         !     Collateral damage from logging (skid trails, roads).  The damage currently  !
+         ! takes into account the minimum harvest size, because presumably loggers avoid   !
+         ! damaging trees that may be potentially harvested.                               !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
+            survivorship = skid_s_gtharv(ipft)
+         else
+            survivorship = skid_s_ltharv(ipft)
          end if
          !---------------------------------------------------------------------------------!
       end select

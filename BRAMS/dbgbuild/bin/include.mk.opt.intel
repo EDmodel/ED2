@@ -88,7 +88,7 @@ endif
 
 
 #################################### COMPILER SETTINGS #####################################
-CMACH=PC_LINUX1
+CMACH=PC_INTEL
 F_COMP=ifort
 C_COMP=icc
 LOADER=ifort

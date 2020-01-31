@@ -7,13 +7,22 @@ function [ndat,cbudget,ebudget,wbudget,cstorage,estorage,wstorage,dnv] ...
     
     
 % Text input
-
-% 1YEAR 2MONTH 3DAY 4TIME 5LAI 6WAI 7HEIGHT 8CO2.STORAGE 9CO2.RESIDUAL 
-% 10CO2.DSTORAGE 11CO2.NEP 12CO2.DENS.EFF 13CO2.LOSS2ATM 14ENE.STORAGE 
-% 15ENE.RESIDUAL 16ENE.DSTORAGE 17ENE.PRECIP 18ENE.NETRAD 19ENE.DENS.EFF 
-% 20ENE.PRSS.EFF 21ENE.LOSS2ATM 22ENE.DRAINAGE 23ENE.RUNOFF 24H2O.STORAGE 
-% 25H2O.RESIDUAL 26H2O.DSTORAGE 27H2O.PRECIP 28H2O.DENS.EFF
-% 29H2O.LOSS2ATM 30H2O.DRAINAGE 31H2O.RUNOFF
+%  current_time%year      , current_time%month     , current_time%date       3
+%  current_time%time      , patch_lai              , patch_wai               6
+%  csite%veg_height(ipa)  , co2budget_finalstorage , co2curr_residual        9
+%  co2budget_deltastorage , co2curr_nep            , co2curr_denseffect     12
+%  co2curr_zcaneffect     , co2curr_loss2atm       , cbudget_finalstorage   15
+%  cbudget_committed      , ccurr_residual         , cbudget_deltastorage   18
+%  ccurr_denseffect       , ccurr_zcaneffect       , ccurr_seedrain         21
+%  ccurr_loss2yield       , ccurr_loss2atm         , ebudget_finalstorage   24
+%  ecurr_residual         , ebudget_deltastorage   , ecurr_precipgain       27
+%  ecurr_netrad           , ecurr_denseffect       , ecurr_prsseffect       30
+%  ecurr_hcapeffect       , ecurr_wcapeffect       , ecurr_zcaneffect       33
+%  ecurr_pheneffect       , ecurr_loss2atm         , ecurr_loss2drainage    36
+%  ecurr_loss2runoff      , wbudget_finalstorage   , wcurr_residual         39
+%  wbudget_deltastorage   , wcurr_precipgain       , wcurr_denseffect       42
+%  wcurr_wcapeffect       , wcurr_zcaneffect       , wcurr_pheneffect       45
+%  wcurr_loss2atm         , wcurr_loss2drainage    , wcurr_loss2runoff      48
     
 % First lets get the number of lines in the file
     fid=fopen(filename);
@@ -48,38 +57,11 @@ function [ndat,cbudget,ebudget,wbudget,cstorage,estorage,wstorage,dnv] ...
         hgtv   = zeros(ndat,1); %7
         
         cstorage= zeros(ndat,1);
-        cbudget = zeros(ndat,5);
+        cbudget = zeros(ndat,6);
         estorage= zeros(ndat,1);
         ebudget = zeros(ndat,9);
         wstorage= zeros(ndat,1);
         wbudget = zeros(ndat,7);
-        
- %       cstor  = zeros(ndat,1); %8
- %       cres   = zeros(ndat,1); %9
- %       cdstor = zeros(ndat,1); %10
- %       cnep   = zeros(ndat,1); %11
- %       cdens  = zeros(ndat,1); %12
- %       catm   = zeros(ndat,1); %13
-
- %       estor  = zeros(ndat,1); %14
- %       eres   = zeros(ndat,1); %15
- %       edstor = zeros(ndat,1); %16
- %       epcp   = zeros(ndat,1); %17
- %       ernet  = zeros(ndat,1); %18
- %       edens  = zeros(ndat,1); %19
- %       eprss  = zeros(ndat,1); %20
- %       eatm   = zeros(ndat,1); %21
- %       edrain = zeros(ndat,1); %22
- %       erunn  = zeros(ndat,1); %23
-        
- %       wstor  = zeros(ndat,1); %24
- %       wres   = zeros(ndat,1); %25
- %       wdstor = zeros(ndat,1); %26
- %       wpcp   = zeros(ndat,1); %27
- %       wdens  = zeros(ndat,1); %28
- %       watm   = zeros(ndat,1); %29
- %       wdrain = zeros(ndat,1); %30
- %       wrunn  = zeros(ndat,1); %31
         
         fid=fopen(filename);
         fgetl(fid);
@@ -97,18 +79,27 @@ function [ndat,cbudget,ebudget,wbudget,cstorage,estorage,wstorage,dnv] ...
             
             dnv(id) = datenum(yearv,monthv,dayv,0,0,timev);
         
-            laiv(id)   = dvec(5);
-            waiv(id)   = dvec(6); %6
-            hgtv(id)   = dvec(7); %7
-            cstorage(id)     = dvec(8);
-            cbudget(id,1:5)  = dvec(9:13);
-            estorage(id)     = dvec(14);
-            ebudget(id,1:9) = dvec(15:23);
-            wstorage(id)     = dvec(24);
-            wbudget(id,1:7)  = dvec(25:31);
-            
-           
-            
+            laiv(id)          = dvec(5);
+            waiv(id)          = dvec(6); %6
+            hgtv(id)          = dvec(7); %7
+            % Standardise carbon output.
+            cstorage(id)      = dvec(15)+dvec(16);
+            cbudget(id,1:4)   = dvec(17:20);
+            cbudget(id,5)     = dvec(21)-dvec(22);
+            cbudget(id,6)     = -dvec(23);
+            % Simplify energy output.
+            estorage(id)      = dvec(24);
+            ebudget(id,1:6)   = dvec(25:30);
+            ebudget(id,7)     = dvec(31)+dvec(32)+dvec(33)+dvec(34);
+            ebudget(id,8)     = -dvec(35);
+            ebudget(id,9)     = dvec(36)+dvec(37);
+            % Simplify water output.
+            wstorage(id)      = dvec(38);
+            wbudget(id,1:4)   = dvec(39:42);
+            wbudget(id,5)     = dvec(43)+dvec(44)+dvec(45);
+            wbudget(id,6)     = -dvec(46);
+            wbudget(id,7)     = dvec(47)+dvec(48);
+
         end
         fclose(fid);
         

@@ -23,7 +23,6 @@ BASE=$(ED_ROOT)/build/
 # HDF5 libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may   #
 # still be able to compile without HDF5 but the code is not going to run.                  #
 #------------------------------------------------------------------------------------------#
-USE_HDF5=1
 ZLIB_PATH=/scratch/bramsolam/marcos.longo/Util/zlib-1.2.8/intel
 HDF5_PATH=/scratch/bramsolam/marcos.longo/Util/hdf5-1.8.17/intel
 HDF5_INCS=-I$(HDF5_PATH)/include
@@ -43,6 +42,7 @@ USE_COLLECTIVE_MPIO=0
 
 #################################### COMPILER SETTINGS #####################################
 CMACH=SUNHPC
+FC_TYPE=INTEL
 F_COMP=ifort
 C_COMP=icc
 LOADER=ifort
@@ -81,57 +81,58 @@ MOD_EXT=mod
 ifeq ($(KIND_COMP),)
    KIND_COMP=E
 endif
-#------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
-           -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
-           -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces        \
-           -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
-               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
-               -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces
+   F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended           \
+           -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
+           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
+           -gen-interfaces -qopenmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp  -static
+   LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
+               -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check    \
+               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
+               -gen-interfaces -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
-           -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
-           -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces       \
-           -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
-               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
-               -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces
+   F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
+           -debug-parameters used  -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check       \
+           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
+           -warn interfaces -qopenmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
+   LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
+               -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check    \
+               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
+               -warn interfaces -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
-           -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
-           -assume byterecl -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
-               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
-               -assume byterecl
+   F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
+           -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
+           -implicitnone -assume byterecl -qopenmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
+   LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
+               -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check    \
+               -implicitnone -assume byterecl -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check \
-           -implicitnone -assume byterecl -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv             \
-               -fp-stack-check -implicitnone -assume byterecl
+   F_OPTS= -FR -O0 -recursive -check all,noarg_temp_created -fpe0 -no-ftz -traceback       \
+           -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
+   LOADER_OPTS=-FR -O0 -recursive -check all,noarg_temp_created -fpe0 -no-ftz -traceback   \
+               -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -static
-   C_OPTS= -O3 -DLITTLE -traceback -static
-   F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl -static
-   LOADER_OPTS= -FR -O3 -recursive -traceback -assume byterecl
+   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -qopenmp -static
+   C_OPTS= -O3 -DLITTLE -traceback -qopenmp -static
+   F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl -qopenmp -static
+   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#

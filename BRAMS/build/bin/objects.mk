@@ -267,6 +267,7 @@ OBJ_MODEL =                         \
 	varutils.o                  \
 	vformat.o                   \
 	vtab_fill.o                 \
+	ed_mem_grid_dim_defs.o      \
 	edcp_driver.o               \
 	edcp_init.o                 \
 	edcp_lake_driver.o          \
@@ -293,13 +294,13 @@ OBJ_MODEL =                         \
 	disturb_coms.o              \
 	disturbance.o               \
 	ed_bigleaf_init.o           \
+	ed_cn_utils.o               \
 	ed_filelist.o               \
 	ed_grid.o                   \
-	ed_init_full_history.o      \
+	ed_init_history.o           \
 	ed_init.o                   \
 	ed_init_atm.o               \
 	ed_max_dims.o               \
-	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
 	ed_nbg_init.o               \
 	ed_node_coms.o              \
@@ -319,9 +320,11 @@ OBJ_MODEL =                         \
 	ename_coms.o                \
 	euler_driver.o              \
 	events.o                    \
+	farq_katul.o                \
 	farq_leuning.o              \
 	fatal_error.o               \
-	fire.o                      \
+	fire_ed10.o                 \
+	fire_ed22.o                 \
 	forestry.o                  \
 	fuse_fiss_utils.o           \
 	fusion_fission_coms.o       \
@@ -329,6 +332,7 @@ OBJ_MODEL =                         \
 	growth_balive.o             \
 	h5_output.o                 \
 	heun_driver.o               \
+	hrzshade_utils.o            \
 	hydrology_coms.o            \
 	hydrology_constants.o       \
 	init_hydro_sites.o          \
@@ -343,16 +347,17 @@ OBJ_MODEL =                         \
 	mortality.o                 \
 	multiple_scatter.o          \
 	old_twostream_rad.o         \
-	optimiz_coms.o              \
+	pft_coms.o                  \
 	phenology_aux.o             \
 	phenology_coms.o            \
 	phenology_driv.o            \
 	phenology_startup.o         \
 	photosyn_driv.o             \
 	physiology_coms.o           \
-	pft_coms.o                  \
+	plant_hydro.o               \
 	radiate_driver.o            \
 	radiate_utils.o             \
+	random_utils.o              \
 	reproduction.o              \
 	rk4_coms.o                  \
 	rk4_derivs.o                \
@@ -365,7 +370,7 @@ OBJ_MODEL =                         \
 	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \
-	update_derived_props.o      \
+	update_derived_utils.o      \
 	vegetation_dynamics.o       \
 	detailed_coms.o             \
 	bdf2_solver.o               \
