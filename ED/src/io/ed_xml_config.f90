@@ -2376,7 +2376,11 @@ subroutine putConfigSTRING(tag,value)
   character(*),intent(in) :: tag 
   character(*),intent(in) :: value
   integer :: lenval 
-  lenval = len(value)
+  !! `len(value)` includes trailing whitespace and other stuff, but below, we
+  !! only write `trim(value)`, which is shorter. This leads to a bunch of
+  !! non-readable garbage getting dumped into the output file. We can avoid that
+  !! by doing `len(trim(value))` here, so the lengths match.
+  lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
   call libxml2f90_ll_closetag(tag)
