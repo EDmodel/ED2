@@ -33062,7 +33062,7 @@ module ed_state_vars
          call vtable_edio_r(npts,cpatch%mort_rate                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'MORT_RATE_CO :48:hist:dail') 
-         call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','icohort') 
+         call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','imort,icohort')
       end if
       !------------------------------------------------------------------------------------!
 
@@ -33091,7 +33091,7 @@ module ed_state_vars
          call vtable_edio_r(npts,cpatch%mmean_mort_rate                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'MMEAN_MORT_RATE_CO :48:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','icohort')
+         call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','imort,icohort')
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
