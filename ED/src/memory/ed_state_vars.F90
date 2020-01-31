@@ -15421,7 +15421,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sapa_storage_resp                             &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SAPB_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
+                           ,'DMEAN_SAPA_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Aboveground Sapwood Storage respiration'         &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
