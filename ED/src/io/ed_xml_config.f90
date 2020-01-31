@@ -2259,7 +2259,6 @@ subroutine write_ed_xml_config
      call putConfigINT  ("fuse_relax"         ,ival               )
      !------ New patch/cohort fusion parameters
      call putConfigINT  ("niter_patfus"       ,niter_patfus       )
-     call putConfigREAL ("lai_fuse_tol"       ,lai_fuse_tol       )
      call putConfigREAL ("pat_light_tol_min"  ,pat_light_tol_min  )
      call putConfigREAL ("pat_light_tol_max"  ,pat_light_tol_max  )
      call putConfigREAL ("pat_light_tol_mult" ,pat_light_tol_mult )
