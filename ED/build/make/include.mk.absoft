@@ -38,12 +38,6 @@ BASE=$(ED_ROOT)/build/
 # --------------------------------------------------------------
 
 # HDF 5  Libraries
-# ED2 HAS OPTIONAL HDF 5 I/O
-# If you wish to use this functionality specify USE_HDF5=1
-# and specify the location of the include directory
-# library files. Make sure you include the zlib.a location too.
-
-USE_HDF5=1
 #HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
 #HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
 #          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
@@ -130,6 +124,7 @@ USE_MPIWTIME=0
 
 #----------------- Absoft Pro-Fortran on MacOS -----------------
 CMACH=PC_LINUX1     #THE UNDERSCORING IS VER LINUX LIKE
+FC_TYPE=GNU
 F_COMP=mpif77
 #F_OPTS= -g -fbounds-check -ffpe-trap=zero#,invalid,overflow
 F_OPTS= -O3

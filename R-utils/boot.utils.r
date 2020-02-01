@@ -20,13 +20,14 @@ boot.expected <<- function(data,statistic,R,...){
 #     This is just a wrapper for boot.ci, in which we retrieve the lower bound of the      #
 # confidence interval only.                                                                #
 #------------------------------------------------------------------------------------------#
-boot.ci.lower <<- function(boot.out,...){
-    ci.now = boot.ci(boot.out,...)$percent
+boot.ci.lower <<- function(boot.out,conf=0.95,...){
+    ci.now = boot.ci(boot.out,conf=conf,...)$percent
     if (length(ci.now) == 5){
        ans = ci.now[4]
     }else{
-       ans = NA
-       warning(" Failed using bootstrap...")
+       qlev = 0.5 - 0.5 * conf
+       ans = quantile(boot.out$t,probs=qlev,na.rm=TRUE,names=FALSE)
+       warning(" Confidence interval from \"boot.ci\". failed.  Used \"quantile\" instead.")
     }#end if
     return(ans)
 }#end boot.ci.lower
@@ -43,13 +44,14 @@ boot.ci.lower <<- function(boot.out,...){
 #     This is just a wrapper for boot.ci, in which we retrieve the upper bound of the      #
 # confidence interval only.                                                                #
 #------------------------------------------------------------------------------------------#
-boot.ci.upper <<- function(boot.out,...){
-    ci.now = boot.ci(boot.out,...)$percent
+boot.ci.upper <<- function(boot.out,conf=0.95,...){
+    ci.now = boot.ci(boot.out,conf=conf,...)$percent
     if (length(ci.now) == 5){
        ans = ci.now[5]
     }else{
-       ans = NA
-       warning(" Failed using bootstrap...")
+       qlev = 0.5 + 0.5 * conf
+       ans = quantile(boot.out$t,probs=qlev,na.rm=TRUE,names=FALSE)
+       warning(" Confidence interval from \"boot.ci\". failed.  Used \"quantile\" instead.")
     }#end if
     return(ans)
 }#end boot.ci.upper
@@ -86,24 +88,26 @@ boot.moment <<- function(x,idx) four.moments( x = x[idx]               , na.rm =
 #     Demography-related functions.                                                        #
 #------------------------------------------------------------------------------------------#
 #----- Recruitment. -----------------------------------------------------------------------#
-boot.recruit <<- function(dat,idx,dtime){
+boot.recruit <<- function(dat,idx){
    n.idx         = length(idx)
    p.use         = rbinom(n=n.idx,size=1,prob=dat$p.use        [idx])
    p.established = rbinom(n=n.idx,size=1,prob=dat$p.established[idx])
    N             = sum( dat$property   [idx] * p.use                ,na.rm=TRUE)
    E             = sum( dat$property   [idx] * p.use * p.established,na.rm=TRUE)
-   ans           = exp(log(N/E)/dtime) - 1.0
+   dtbar         = mean(dat$dtime[idx],na.rm=TRUE)
+   ans           = exp(log(N/E)/dtbar) - 1.0
 
    return(ans)
 }#end boot.recruit
 #----- Mortality. -------------------------------------------------------------------------#
-boot.mortality <<- function(dat,idx,dtime){
+boot.mortality <<- function(dat,idx){
    n.idx         = length(idx)
    p.use         = rbinom(n=n.idx,size=1,prob=dat$p.use        [idx])
    p.survivor    = rbinom(n=n.idx,size=1,prob=dat$p.survivor   [idx])
    N             = sum( dat$property   [idx] * p.use                ,na.rm=TRUE)
    S             = sum( dat$property   [idx] * p.use * p.survivor   ,na.rm=TRUE)
-   ans = 1.0 - exp(- log(N/S)/dtime)
+   dtbar         = mean(dat$dtime[idx],na.rm=TRUE)
+   ans = 1.0 - exp(- log(N/S)/dtbar)
    return(ans)
 }#end boot.mortality
 #----- Growth. ----------------------------------------------------------------------------#
@@ -115,24 +119,25 @@ boot.growth <<- function(dat,idx){
    return(ans)
 }#end boot.growth
 #----- Accumulated recruitment. -----------------------------------------------------------#
-boot.acc.recruit <<- function(dat,idx,dtime){
+boot.acc.recruit <<- function(dat,idx){
    n.idx         = length(idx)
    p.use         = rbinom(n=n.idx,size=1,prob=dat$p.use        [idx])
    p.established = rbinom(n=n.idx,size=1,prob=dat$p.established[idx])
+   dtbar         = mean(dat$dtime[idx],na.rm=TRUE)
 
    p.recruit     = p.use * ( 1. - p.established)
-
-   ans           = sum( dat$property   [idx] * p.recruit / dtime    ,na.rm=TRUE)
+   ans           = sum( dat$property   [idx] * p.recruit / dtbar    ,na.rm=TRUE)
    return(ans)
 }#end boot.recruit
 #----- Accumulated mortality. -------------------------------------------------------------#
-boot.acc.mortality <<- function(dat,idx,dtime){
+boot.acc.mortality <<- function(dat,idx){
    n.idx         = length(idx)
    p.use         = rbinom(n=n.idx,size=1,prob=dat$p.use        [idx])
    p.survivor    = rbinom(n=n.idx,size=1,prob=dat$p.survivor   [idx])
+   dtbar         = mean(dat$dtime[idx],na.rm=TRUE)
 
    p.dead        = p.use * (1. - p.survivor)
-   ans           = sum( dat$property   [idx] * p.dead / dtime      ,na.rm=TRUE)
+   ans           = sum( dat$property   [idx] * p.dead / dtbar      ,na.rm=TRUE)
    return(ans)
 }#end boot.mortality
 #----- Above-ground net primary productivity. ---------------------------------------------#

@@ -44,6 +44,7 @@ module ename_coms
       !----- Timestep specification. ------------------------------------------------------!
       real                                              :: dtlsm
       real                                              :: radfrq
+      integer                                           :: month_yrstep
 
       !----- Analysis/history files. ------------------------------------------------------!
       integer                                           :: ifoutput
@@ -139,6 +140,7 @@ module ename_coms
       integer                                           :: ivegt_dynamics
       integer                                           :: ibigleaf
       integer                                           :: integration_scheme
+      integer                                           :: nsub_euler
       integer                                           :: plant_hydro_scheme
       integer                                           :: istomata_scheme
       integer                                           :: istruct_growth_scheme
@@ -149,12 +151,14 @@ module ename_coms
       integer                                           :: ibranch_thermo
       integer                                           :: iphysiol
       integer                                           :: iallom
+      integer                                           :: economics_scheme
       integer                                           :: igrass
       integer                                           :: iphen_scheme
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
       integer                                           :: icanrad
+      integer                                           :: ihrzrad
       real                                              :: ltrans_vis
       real                                              :: ltrans_nir
       real                                              :: lreflect_vis
@@ -163,6 +167,8 @@ module ename_coms
       real                                              :: orient_grass
       real                                              :: clump_tree
       real                                              :: clump_grass
+      integer                                           :: igoutput
+      character(len=str_len)                            :: gfilout
       integer                                           :: h2o_plant_lim
       integer                                           :: iddmort_scheme
       integer                                           :: cbr_scheme
@@ -200,11 +206,26 @@ module ename_coms
       real                                              :: fire_parameter
       real                                              :: sm_fire
       integer                                           :: ianth_disturb
+      integer                                           :: sl_scale
+      integer                                           :: sl_yr_first
+      integer                                           :: sl_nyrs
+      integer               , dimension(n_pft)          :: sl_pft
+      real                  , dimension(n_pft)          :: sl_prob_harvest
+      real                  , dimension(n_pft)          :: sl_mindbh_harvest
+      real                                              :: sl_biomass_harvest
+      real                                              :: sl_skid_rel_area
+      real                                              :: sl_skid_s_gtharv
+      real                                              :: sl_skid_s_ltharv
+      real                                              :: sl_felling_s_ltharv
+      real                                              :: cl_fseeds_harvest
+      real                                              :: cl_fstorage_harvest
+      real                                              :: cl_fleaf_harvest
       integer                                           :: icanturb
       integer                                           :: isfclyrm
       integer                                           :: ied_grndvap
       integer                                           :: ipercol
       integer               , dimension(n_pft)          :: include_these_pft
+      integer                                           :: pasture_stock
       integer                                           :: agri_stock
       integer                                           :: plantation_stock
       integer                                           :: pft_1st_check
@@ -259,6 +280,7 @@ module ename_coms
       integer                                           :: patch_keep
 
       !----- Variables that control the sought number of patches and cohorts. -------------!
+      integer                                           :: ifusion
       integer                                           :: maxsite
       integer                                           :: maxpatch
       integer                                           :: maxcohort
@@ -317,6 +339,7 @@ module ename_coms
 
       enl%dtlsm                     = undef_real
       enl%radfrq                    = undef_real
+      enl%month_yrstep              = undef_integer
 
       enl%ifoutput                  = undef_integer
       enl%idoutput                  = undef_integer
@@ -411,6 +434,7 @@ module ename_coms
       enl%ivegt_dynamics            = undef_integer
       enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
+      enl%nsub_euler                = undef_integer
       enl%plant_hydro_scheme        = undef_integer
       enl%istomata_scheme           = undef_integer
       enl%istruct_growth_scheme     = undef_integer
@@ -421,12 +445,14 @@ module ename_coms
       enl%ibranch_thermo            = undef_integer
       enl%iphysiol                  = undef_integer
       enl%iallom                    = undef_integer
+      enl%economics_scheme          = undef_integer
       enl%igrass                    = undef_integer
       enl%iphen_scheme              = undef_integer
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
       enl%icanrad                   = undef_integer
+      enl%ihrzrad                   = undef_integer
       enl%ltrans_vis                = undef_real
       enl%ltrans_nir                = undef_real
       enl%lreflect_vis              = undef_real
@@ -435,6 +461,8 @@ module ename_coms
       enl%orient_grass              = undef_real
       enl%clump_tree                = undef_real
       enl%clump_grass               = undef_real
+      enl%igoutput                  = undef_integer
+      enl%gfilout                   = undef_path
       enl%h2o_plant_lim             = undef_integer
       enl%iddmort_scheme            = undef_integer
       enl%cbr_scheme                = undef_integer
@@ -472,11 +500,26 @@ module ename_coms
       enl%fire_parameter            = undef_real
       enl%sm_fire                   = undef_real
       enl%ianth_disturb             = undef_integer
+      enl%sl_scale                  = undef_integer
+      enl%sl_yr_first               = undef_integer
+      enl%sl_nyrs                   = undef_integer
+      enl%sl_pft                    = (/(undef_integer,i=1,n_pft)/) 
+      enl%sl_prob_harvest           = (/(undef_real   ,i=1,n_pft)/) 
+      enl%sl_mindbh_harvest         = (/(undef_real   ,i=1,n_pft)/) 
+      enl%sl_biomass_harvest        = undef_real
+      enl%sl_skid_rel_area          = undef_real
+      enl%sl_skid_s_gtharv          = undef_real
+      enl%sl_skid_s_ltharv          = undef_real
+      enl%sl_felling_s_ltharv       = undef_real
+      enl%cl_fseeds_harvest         = undef_real
+      enl%cl_fstorage_harvest       = undef_real
+      enl%cl_fleaf_harvest          = undef_real
       enl%icanturb                  = undef_integer
       enl%isfclyrm                  = undef_integer
       enl%ipercol                   = undef_integer
 
       enl%include_these_pft         = (/(undef_integer,i=1,n_pft)/) 
+      enl%pasture_stock             = undef_integer
       enl%agri_stock                = undef_integer
       enl%plantation_stock          = undef_integer
       enl%pft_1st_check             = undef_integer
@@ -526,6 +569,7 @@ module ename_coms
       enl%idetailed                 = undef_integer
       enl%patch_keep                = undef_integer
 
+      enl%ifusion                   = undef_integer
       enl%maxsite                   = undef_integer
       enl%maxpatch                  = undef_integer
       enl%maxcohort                 = undef_integer

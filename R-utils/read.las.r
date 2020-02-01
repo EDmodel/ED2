@@ -37,6 +37,7 @@ read.las <<- function( lasfile
                      , nrows         = NULL
                      , return.sp     = FALSE
                      , return.header = FALSE
+                     , int.nbits     = 12L # number of bits for intensity (sensor-specific)
                      ){ 
 
 
@@ -50,6 +51,36 @@ read.las <<- function( lasfile
    }#end if
    #---------------------------------------------------------------------------------------#
 
+
+   #---------------------------------------------------------------------------------------#
+   #      Check whether the las is compressed.  In case so, make a temporary file.         #
+   #---------------------------------------------------------------------------------------#
+   is.las = grepl(pattern="\\.las$"      ,x=lasfile)
+   is.gz  = grepl(pattern="\\.las\\.gz$" ,x=lasfile)
+   is.bz2 = grepl(pattern="\\.las\\.bz2$",x=lasfile)
+   if (! file.exists(lasfile)){
+      stop(paste0(" File ",lasfile," doesn't exist!"))
+   }else if (is.las){
+      temp.las = lasfile
+   }else if (is.bz2){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.bz2$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = bunzip2(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else if (is.gz){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.gz$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = gunzip(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else{
+      stop("Unrecognised format: point cloud must be las, las.gz, or las.bz2!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Get the header. -----------------------------------------------------------------#
    hd             = las.header()
    nhd            = nrow(hd)
@@ -58,7 +89,7 @@ read.las <<- function( lasfile
    #---------------------------------------------------------------------------------------#
 
    #---- Open connection, and read the LAS File bytes. ------------------------------------#
-   con                   = file( description = lasfile, open = "rb")
+   con                   = file( description = temp.las, open = "rb")
    isLASFbytes           = readBin( con    = con
                                   , what   = "raw"
                                   , size   = 1
@@ -75,7 +106,7 @@ read.las <<- function( lasfile
                                   , endian = "little"
                                   )#end readBin
    if (! pheader[[hd$Item[1]]] %in% "LASF") {
-      stop(paste("File ",basename(lasfile)," is not a valid LAS file!",sep=""))
+      stop(paste("File ",basename(temp.las)," is not a valid LAS file!",sep=""))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -134,7 +165,7 @@ read.las <<- function( lasfile
 
 
       #----- Read in the actual data. -----------------------------------------------------#
-      con  = file   (description=lasfile, open = "rb")
+      con  = file   (description=temp.las, open = "rb")
       junk = readBin(con=con,what="raw",size=1L,n=offsetToPointData)
       #------------------------------------------------------------------------------------#
 
@@ -197,6 +228,7 @@ read.las <<- function( lasfile
                         , y                = empty
                         , z                = empty
                         , intensity        = empty
+                        , pulse.number     = empty
                         , retn.number      = empty
                         , number.retn.gp   = empty
                         , scan.dir.flag    = empty
@@ -265,6 +297,7 @@ read.las <<- function( lasfile
                              , signed = FALSE
                              , endian = "little"
                              )#end readBin
+      ans$intensity = ans$intensity * 2^(16L-int.nbits)
       #------------------------------------------------------------------------------------#
 
 
@@ -338,7 +371,7 @@ read.las <<- function( lasfile
                                    , what   = "integer"
                                    , size   = 1L
                                    , n      = numberPointRecords
-                                   , signed = FALSE
+                                   , signed = TRUE
                                    , endian = "little"
                                    )#end readBin
       #------------------------------------------------------------------------------------#
@@ -390,6 +423,11 @@ read.las <<- function( lasfile
 
 
 
+      #---- Estimate the pulse number. ----------------------------------------------------#
+      retn.before      = c(Inf,ans$retn.number[-nrow(ans)])
+      ans$pulse.number = cumsum(ans$retn.number == 1 | ans$retn.number <= retn.before)
+      #------------------------------------------------------------------------------------#
+
 
       #------------------------------------------------------------------------------------#
       #     Decide the output format.  Default is a data frame, but it can be also Spatial #
@@ -397,8 +435,13 @@ read.las <<- function( lasfile
       #------------------------------------------------------------------------------------#
       if (return.sp) ans = SpatialPoints(ans)
       #------------------------------------------------------------------------------------#
-
    }#end if (return.header)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Remove temporary file. ----------------------------------------------------------#
+   if (is.gz || is.bz2) file.remove(temp.las)
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Return answer. ------------------------------------------------------------------#
    return (ans)

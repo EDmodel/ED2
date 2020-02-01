@@ -260,6 +260,8 @@ module soil_coms
    integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
    real(kind=4) :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
    real(kind=8) :: freezecoef8         ! Coeff. for infiltration of frozen water [     ---]
+   real(kind=4) :: hydcond_min         ! Coeff. for infiltration of frozen water [     m/s]
+   real(kind=8) :: hydcond_min8        ! Coeff. for infiltration of frozen water [     m/s]
    !---------------------------------------------------------------------------------------!
 
 
@@ -727,7 +729,9 @@ module soil_coms
 
 
       !----- Find the hydraulic conductivity. ---------------------------------------------!
-      hydr_conduct = fzcorr * slcons1(k,nsoil) * relmoist ** (2. * soil(nsoil)%slbs + 3.)
+      hydr_conduct = fzcorr                                                                &
+                   * max( hydcond_min                                                      &
+                        , slcons1(k,nsoil) * relmoist ** (2. * soil(nsoil)%slbs + 3.) )
       !------------------------------------------------------------------------------------!
 
 
@@ -774,8 +778,9 @@ module soil_coms
 
 
       !----- Find the hydraulic conductivity. ---------------------------------------------!
-      hydr_conduct8 = fzcorr * slcons18(k,nsoil)                                           &
-                    * relmoist ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
+      hydr_conduct8 = fzcorr                                                               &
+                    * max( hydcond_min8 , slcons18(k,nsoil) * relmoist                     &
+                                        ** (2.d0 * soil8(nsoil)%slbs + 3.d0) )
       !------------------------------------------------------------------------------------!
 
 

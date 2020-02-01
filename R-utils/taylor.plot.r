@@ -138,13 +138,21 @@ taylor.plot <<- function ( obs
 
 
 
+   #----- Make sure colour variables are vectors of length 2. -----------------------------#
+   corr.col  = rep(corr.col ,times=2)[c(1,2)]
+   sd.col    = rep(sd.col   ,times=2)[c(1,2)]
+   gamma.col = rep(gamma.col,times=2)[c(1,2)]
+   #---------------------------------------------------------------------------------------#
+
+
+
    #---------------------------------------------------------------------------------------#
    #     In case the user asked positive correlation only but there are negative           #
    # correlation points, warn the user.                                                    #
    #---------------------------------------------------------------------------------------#
    R      = sapply(X = mod, FUN = cor, x = obs, use = "pairwise")
    if (is.na(pos.corr)){
-      pos.corr = all(R %>=% 0. | is.na(R))
+      pos.corr = ! any(R %<% 0.)
    }else if (pos.corr && any(R %<% 0)){
       warning(" There are negative correlations, but you've asked positive side only!")
    }#end if
@@ -196,10 +204,10 @@ taylor.plot <<- function ( obs
           xlim           = c(0,maxsd)
           ylim           = c(0,maxsd)
           x.xlab         = sd.obs
-          y.xlab         = -0.15 * maxsd
+          y.xlab         = -0.075 * maxsd
           srt.xlab       =  0
-          x.ylab         = -0.15 * maxsd
-          y.ylab         =   0.5 * maxsd
+          x.ylab         = -0.10 * maxsd
+          y.ylab         =   0.5  * maxsd
           srt.ylab       = 90
           x0.axis        = c(     0,     0)
           y0.axis        = c(     0,     0)
@@ -216,10 +224,10 @@ taylor.plot <<- function ( obs
           xlim           = c(-maxsd,maxsd)
           ylim           = c(     0,maxsd)
           x.xlab         = sd.obs
-          y.xlab         = -0.20 * maxsd
+          y.xlab         = -0.075 * maxsd
           srt.xlab       =  0
           x.ylab         =  0
-          y.ylab         = -0.20 * maxsd
+          y.ylab         = -0.15 * maxsd
           srt.ylab       =  0
           x0.axis        = c(-maxsd,     0)
           y0.axis        = c(     0,     0)
@@ -244,8 +252,20 @@ taylor.plot <<- function ( obs
        plot.window(xlim=xlim, ylim = ylim,xaxs="i",yaxs="i",...)
        title(main=main,cex=cex.axis)
        par(xpd = TRUE)
-       text(x=x.xlab,y=y.xlab,labels=xlab,srt=srt.xlab,cex=cex.axis,col=gamma.col,font=2)
-       text(x=x.ylab,y=y.ylab,labels=ylab,srt=srt.ylab,cex=cex.axis,col=sd.col,font=2)
+       text( x      = x.xlab
+           , y      = y.xlab
+           , labels = xlab
+           , srt    = srt.xlab
+           , cex    = cex.axis
+           , col    = gamma.col[1]
+           )#end text
+       text( x      = x.ylab
+           , y      = y.ylab
+           , labels = ylab
+           , srt    = srt.ylab
+           , cex    = cex.axis
+           , col    = sd.col[1]
+           )#end text
        #-----------------------------------------------------------------------------------#
 
 
@@ -256,7 +276,7 @@ taylor.plot <<- function ( obs
           for (coat in corr.at){
              lines( x   = c(0, maxsd * cos(coat))
                   , y   = c(0, maxsd * sin(coat))
-                  , col = corr.col
+                  , col = corr.col[2]
                   , lty = corr.lty
                   , lwd = corr.lwd
                   )#end lines
@@ -272,8 +292,13 @@ taylor.plot <<- function ( obs
                , col = par.orig$fg, lty = par.orig$lty, lwd = par.orig$lwd)
        axis.ticks = pretty(xlim)
        axis.ticks = axis.ticks[abs(axis.ticks) <= maxsd]
-       axis( side = 1 + pos.corr, at = axis.ticks, las = 1, labels = abs(axis.ticks)
-           , col.axis  = sd.col, cex.axis = cex.axis)
+       axis( side     = 1 + pos.corr
+           , at       = axis.ticks
+           , las      = 1
+           , labels   = abs(axis.ticks)
+           , col.axis = sd.col[1]
+           , cex.axis = cex.axis
+           )#end axis
        #-----------------------------------------------------------------------------------#
 
 
@@ -297,7 +322,7 @@ taylor.plot <<- function ( obs
            for (sdarc in sd.arcs) {
               x.curve = cos(r.sdarc) * sdarc
               y.curve = sin(r.sdarc) * sdarc
-              lines(x = x.curve, y = y.curve, col = sd.col, lty = sd.lty, lwd = sd.lwd)
+              lines(x = x.curve, y = y.curve, col = sd.col[2], lty = sd.lty, lwd = sd.lwd)
            }#end for (sdarc in sd.arcs)
            #-------------------------------------------------------------------------------#
        }# if (plot.sd.arcs)
@@ -324,7 +349,7 @@ taylor.plot <<- function ( obs
            #-------------------------------------------------------------------------------#
            #     Plot the curves.                                                          #
            #-------------------------------------------------------------------------------#
-           for (gg in 1:ngamma){
+           for (gg in sequence(ngamma)){
               x.curve  = cos(r.gamma) * show.gamma[gg] + sd.obs
               y.curve  = sin(r.gamma) * show.gamma[gg]
               r2.curve = x.curve * x.curve + y.curve * y.curve
@@ -338,7 +363,7 @@ taylor.plot <<- function ( obs
               idx          = floor(median(which(! bye)))
               lines( x   = x.curve
                    , y   = y.curve
-                   , col = gamma.col
+                   , col = gamma.col[2]
                    , lwd = gamma.lwd
                    , lty = gamma.lty
                    )#end lines
@@ -346,13 +371,13 @@ taylor.plot <<- function ( obs
               boxed.labels( x      = x.curve[idx]
                           , y      = y.curve[idx]
                           , labels = show.gamma[gg]
-                          , col    = gamma.col
+                          , col    = gamma.col[1]
                           , bg     = gamma.bg
                           , cex    = cex.label
                           , border = FALSE
                           )#end border.labels
               #----------------------------------------------------------------------------#
-           }#end for (gg in 1:ngamma)
+           }#end for (gg in sequence(ngamma))
        }#end if (plot.gamma)
        #-----------------------------------------------------------------------------------#
 
@@ -384,23 +409,22 @@ taylor.plot <<- function ( obs
                , lwd = par.orig$lwd
                )#end segments
        #------ Axis tick labels. ----------------------------------------------------------#
-       for (cc in 1:length(corr.at)){
+       for (cc in seq_along(corr.at)){
           text ( x      = 1.05 * cos(corr.at[cc]) * maxsd
                , y      = 1.05 * sin(corr.at[cc]) * maxsd
                , labels = corr.label[cc]
-               , col    = corr.col
+               , col    = corr.col[1]
                , cex    = 1.1 * cex.label
                , srt    = 180 * corr.at[cc] / pi - 90
                )#end text
-       }#end for (cc in 1:length(corr.at))
+       }#end for (cc in seq_along(corr.at))
        #------ Axis label. ----------------------------------------------------------------#
        text( x      = cos(corr.angle) * maxsd * 1.15
            , y      = sin(corr.angle) * maxsd * 1.15
            , labels = zlab
-           , col    = corr.col
+           , col    = corr.col[1]
            , cex    = cex.axis
            , srt    = 180. * corr.angle.lab / pi - 90.
-           , font   = 2
            )#end text
        #-----------------------------------------------------------------------------------#
 

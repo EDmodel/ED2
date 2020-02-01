@@ -2,20 +2,65 @@
 #==========================================================================================#
 #     This function finds the commonest value for a given vector.                          #
 #------------------------------------------------------------------------------------------#
-commonest = function(x,na.rm=FALSE) {
-  if (na.rm) x = x[! is.na(x)]
+commonest <<- function(x,na.rm=FALSE) {
+   if (na.rm) x = x[! is.na(x)]
 
-  unique.x = unique(x)
-  nu       = length(unique.x)
-  idx      = which.max(tabulate(match(x, unique.x)))
-  fine     = is.finite(idx) && idx %>=% 1 && idx %<=% nu
-  if (fine){
-     often = unique.x[idx]
-  }else{
-     often = NA
-  }#end if
-  return(often)
+   unique.x = unique(x)
+   nu       = length(unique.x)
+   idx      = which.max(tabulate(match(x, unique.x)))
+   fine     = is.finite(idx) && idx %>=% 1 && idx %<=% nu
+   if (fine){
+      often = unique.x[idx]
+   }else{
+      often = NA
+   }#end if
+   return(often)
 }#end function
+#------------------------------------------------------------------------------------------#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the commonest value for a given vector, giving different weights #
+# for each entry.                                                                          #
+#------------------------------------------------------------------------------------------#
+weighted.commonest <<- function(x,w,na.rm=FALSE) {
+   #------ Discard NA entries. ------------------------------------------------------------#
+   if (na.rm){
+      keep = (! is.na(x)) & (w %>% 0)
+   }else{
+      keep = w %>% 0
+   }#end if (na.rm)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Return NA if nothing is kept.                                                     #
+   #---------------------------------------------------------------------------------------#
+   if (sum(keep) == 0){
+      ans = NA
+      return(ans)
+   }else if (sum(keep) == 1){
+      ans = x[keep]
+      return(ans)
+   }else{
+      x   = x[keep]
+      w   = w[keep]
+   }#end if (sum(keep) == 0)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Create an expanded version of x with different probabilities. ------------------#
+   ntw = 3 * round(w / min(w))
+   xw  = sample(x=x,size=sum(ntw),replace=TRUE,prob=w)
+   ans = commonest(x=xw,na.rm=na.rm)
+   #---------------------------------------------------------------------------------------#
+
+  return(ans)
+}#end function weighted.commonest
 #------------------------------------------------------------------------------------------#
 
 

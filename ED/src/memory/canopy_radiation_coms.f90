@@ -13,14 +13,41 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   ! ICANRAD -- Specifies how canopy radiation is solved.  This variable sets both short-  !
-   !            wave and longwave.                                                         !
+   ! ICANRAD -- Specifies how vertical canopy radiation is solved.  This variable sets     !
+   !            both shortwave and longwave.                                               !
    !            0.  Two-stream model (Medvigy 2006), with the possibility to apply         !
    !                finite crown area to direct shortwave radiation.                       !
    !            1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the        !
    !                possibility to apply finite crown area to all radiation fluxes.        !
    !---------------------------------------------------------------------------------------!
    integer :: icanrad
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IHRZRAD      -- Specifies how horizontal canopy radiation is solved.                  !
+   !                 0.  Default ED-2.0: no horizontal patch shading.  All patches receive !
+   !                     the same amount of light at the top.                              !
+   !                 1.  A realized map of the plant community is built by randomly        !
+   !                     assigning gaps associated with gaps (number of gaps proportional  !
+   !                     to the patch area), and populating them with individuals,         !
+   !                     respecting the cohort distribution in each patch.  The crown      !
+   !                     closure index is calculated for the entire landscape and used     !
+   !                     to change the amount of direct light reaching the top of the      !
+   !                     canopy.  Patches are then split into 1-3 patches based on the     !
+   !                     light condition (so expect simulations to be slower).  This       !
+   !                     method is under development, suggestions on how to improve are    !
+   !                     welcome.                                                          !
+   !                 2.  Similar to option 1, except that height for trees with DBH >      !
+   !                     DBH_crit are rescaled to calculate CCI.                           !
+   !                 3.  Dummy horizontal canopy radiation.  This applies the same method  !
+   !                     as 1 and 2 to split patches, but it does not change radiation     !
+   !                     reaching the top of the canopy.  This is only useful to isolate   !
+   !                     the effect of heterogeneous illumination from the patch count.    !
+   !                 4.  Same as 0., but patch fusion takes into account the correction    !
+   !                     for emergent trees.                                               !
+   !---------------------------------------------------------------------------------------!
+   integer :: ihrzrad
    !---------------------------------------------------------------------------------------!
 
 
@@ -86,16 +113,6 @@ module canopy_radiation_coms
       real            , pointer, dimension(:,:) :: radprof_array
    end type radscrtype
    type(radscrtype)   , pointer,dimension(:)    :: radscr(:)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     These are the normalised variables that will be used in the two-stream model.     !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) :: par_beam_norm
-   real(kind=8) :: par_diff_norm
-   real(kind=8) :: nir_beam_norm
-   real(kind=8) :: nir_diff_norm
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -165,8 +182,8 @@ module canopy_radiation_coms
    real(kind=8), dimension(n_pft) :: leaf_scatter_nir
    real(kind=8), dimension(n_pft) :: wood_scatter_nir
    !----- Thermal infrared. ---------------------------------------------------------------!
-   real(kind=8), dimension(n_pft) :: leaf_scatter_tir
-   real(kind=8), dimension(n_pft) :: wood_scatter_tir
+   ! real(kind=8), dimension(n_pft) :: leaf_scatter_tir
+   ! real(kind=8), dimension(n_pft) :: wood_scatter_tir
    !---------------------------------------------------------------------------------------!
 
 
@@ -207,6 +224,86 @@ module canopy_radiation_coms
    real(kind=4)    :: rshort_twilight_min
    real(kind=4)    :: cosz_min
    real(kind=8)    :: cosz_min8
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the method that allow light redistribution based  !
+   ! on patch neighbourhood.  These are initialised in ed_xml_config.f90 or ed_params.f90. !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)    :: cci_radius   ! Maximum radius to calculate CCI               [     m]
+   real(kind=4)    :: cci_pixres   ! Pixel resolution for TCH and CCI              [     m]
+   real(kind=4)    :: cci_gapsize  ! Gap size                                      [     m]
+   real(kind=4)    :: cci_gapmin   ! # of gaps associated with the smallest area   [   ---]
+   integer         :: cci_nretn    ! "Return density" to generate the TCH map      [  1/m2]
+   real(kind=4)    :: cci_hmax     ! Maximum height allowed in the CCI scheme      [     m]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are derived from the properties above, they will be allocated     !
+   ! during the initialisation step.                                                       !
+   !---------------------------------------------------------------------------------------!
+   !----- Total area of each single gap. --------------------------------------------------!
+   real(kind=4)                              :: cci_gaparea
+   !----- Number of grid points in x and y direction (pseudo-landscape). ------------------!
+   integer                                   :: rls_nxy
+   !----- Number of pixels in the pseudo-landscape. ---------------------------------------!
+   integer                                   :: rls_npixel
+   !----- Number of gaps in the pseudo-landscape. -----------------------------------------!
+   integer                                   :: rls_ngap
+   !----- 'raster' length along x/y axes. -------------------------------------------------!
+   real(kind=4)                              :: rls_length
+   !----- Number of pixels in each gap. ---------------------------------------------------!
+   integer                                   :: gap_npixel
+   !----- Total 'raster' landscape area. --------------------------------------------------!
+   real(kind=4)                              :: rls_area
+   !----- Use fixed thresholds to split patches by illumination classes? ------------------!
+   logical                                   :: fixed_hrz_classes
+   !----- Default thresholds in case fixed classes are to be used. ------------------------!
+   real(kind=4)                              :: at_bright_def
+   real(kind=4)                              :: at_dark_def
+   !----- x of the 'raster' landscape. ----------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_x
+   !----- y of the 'raster' landscape. ----------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_y
+   !----- Top-of-canopy height. -----------------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_ztch
+   !----- Crown closure index. ------------------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_cci
+   !----- Absorption correction for incident beam radiation. ------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_fbeam
+   !----- Gap indices (zero is the default). ----------------------------------------------!
+   integer     , dimension(:,:), allocatable :: rls_igp0
+   integer     , dimension(:,:), allocatable :: rls_igp
+   integer     , dimension(:,:), allocatable :: rls_ipa
+   !----- Mask to decide which gaps can be used for any patch. ----------------------------!
+   logical     , dimension(:,:), allocatable :: rls_mask
+   !----- Gap origin. ---------------------------------------------------------------------!
+   real(kind=4), dimension(:)  , allocatable :: gap_x0
+   real(kind=4), dimension(:)  , allocatable :: gap_y0
+   !----- Mean absorption correction for incident beam radiation. -------------------------!
+   real(kind=4), dimension(:)  , allocatable :: gap_fbeam
+   integer     , dimension(:)  , allocatable :: gap_nuse
+   !----- Patch associated with the gap. --------------------------------------------------!
+   integer     , dimension(:)  , allocatable :: gap_ipa
+   !----- Auxiliary variable, patch index before shuffling, gap index after shuffling. ----!
+   integer     , dimension(:)  , allocatable :: gap_idx
+   !----- Mask to decide which gaps can be used for any patch. ----------------------------!
+   logical     , dimension(:)  , allocatable :: gap_mask
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Hold these parameters as constants, the functional form may change soon.          !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) :: at0
+   real(kind=4) :: at1
+   real(kind=8) :: at08
+   real(kind=8) :: at18
    !---------------------------------------------------------------------------------------!
 
 

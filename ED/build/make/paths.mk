@@ -7,7 +7,7 @@
 ED_ROOT=../..
 
 # Versions.
-ED_VERSION=2.1
+ED_VERSION=2.2
 
 # Source directories.
 
